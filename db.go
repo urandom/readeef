@@ -1,38 +1,63 @@
 package readeef
 
 import (
-	"log"
+	"errors"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var db *sqlx.DB
-
 const (
-	create_user_table = `
-CREATE TABLE IF NOT EXISTS users (
-	login TEXT PRIMARY KEY
-	first_name TEXT
-	last_name TEXT
-	email TEXT
-	salt TEXT
-	hash TEXT
-	md5api TEXT
-);`
-
 	exists_user = `SELECT 1 FROM users WHERE login = ?;`
 
-	get_user    = `SELECT first_name, last_name, email, salt, hash, md5api FROM users WHERE login = ?;`
+	get_user    = `SELECT first_name, last_name, email, salt, hash, md5_api FROM users WHERE login = ?;`
 	create_user = `
-INSERT INTO users(first_name, last_name, email, salt, hash, md5api, login)
+INSERT INTO users(first_name, last_name, email, salt, hash, md5_api, login)
 	VALUES(?, ?, ?, ?, ?, ?, ?);`
 	update_user = `
-UPDATE users SET first_name = ?, last_name = ?, email = ?, salt = ?, hash = ?, md5api = ? 
+UPDATE users SET first_name = ?, last_name = ?, email = ?, salt = ?, hash = ?, md5_api = ?
 	WHERE login = ?;`
 )
 
-func getUser(login string) (User, error) {
+var (
+	init_sql = []string{`
+CREATE TABLE IF NOT EXISTS users (
+	login TEXT PRIMARY KEY,
+	first_name TEXT,
+	last_name TEXT,
+	email TEXT,
+	salt TEXT,
+	hash TEXT,
+	md5_api TEXT
+);`,
+	}
+)
+
+type Validator interface {
+	Validate() error
+}
+
+type DB struct {
+	*sqlx.DB
+}
+
+type ValidationError error
+
+func NewDB(driver, conn string) (*DB, error) {
+	dbx, err := sqlx.Connect(driver, conn)
+	if err != nil {
+		return nil, err
+	}
+
+	db := &DB{DB: dbx}
+
+	err = db.init()
+
+	return db, err
+}
+
+func (db DB) GetUser(login string) (User, error) {
 	var u User
 	if err := db.Get(&u, get_user, login); err != nil {
 		return User{}, err
@@ -43,7 +68,11 @@ func getUser(login string) (User, error) {
 	return u, nil
 }
 
-func updateUser(u User) error {
+func (db DB) UpdateUser(u User) error {
+	if err := u.Validate(); err != nil {
+		return err
+	}
+
 	tx, err := db.Beginx()
 	if err != nil {
 		return err
@@ -76,13 +105,13 @@ func updateUser(u User) error {
 	return nil
 }
 
-func init() {
-	var err error
-
-	db, err = sqlx.Connect("sqlite3", "file:./readeef.sqlite?cache=shared&mode=rwc")
-	if err != nil {
-		log.Fatalln(err)
+func (db DB) init() error {
+	for _, sql := range init_sql {
+		_, err := db.Exec(sql)
+		if err != nil {
+			return errors.New(fmt.Sprintf("Error executing '%s': %v", sql, err))
+		}
 	}
 
-	db.MustExec(create_user_table)
+	return nil
 }

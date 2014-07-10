@@ -6,13 +6,14 @@ import (
 	"crypto/rand"
 	"crypto/sha1"
 	"fmt"
+	"net/mail"
 )
 
 type User struct {
+	Login     string
 	FirstName string `db:"first_name"`
 	LastName  string `db:"last_name"`
 	Email     string
-	Login     string
 	Salt      []byte
 	Hash      []byte
 	MD5API    []byte `db:"md5_api"` // "md5(user:pass)"
@@ -20,7 +21,11 @@ type User struct {
 	config Config
 }
 
-func (u User) setPassword(pass string) (User, error) {
+func (u User) String() string {
+	return u.FirstName + " " + u.LastName + " <" + u.Email + ">"
+}
+
+func (u *User) setPassword(pass string) error {
 	h := md5.Sum([]byte(fmt.Sprintf("%s:%s", u.Login, pass)))
 
 	u.MD5API = h[:]
@@ -28,18 +33,28 @@ func (u User) setPassword(pass string) (User, error) {
 	c := 30
 	salt := make([]byte, c)
 	if _, err := rand.Read(salt); err != nil {
-		return u, err
+		return err
 	}
 
 	u.Salt = salt
 
 	u.Hash = u.generateHash(pass)
 
-	return u, nil
+	return nil
 }
 
 func (u User) Authenticate(pass string) bool {
 	return bytes.Equal(u.Hash, u.generateHash(pass))
+}
+
+func (u User) Validate() error {
+	if len(u.Email) > 0 {
+		if _, err := mail.ParseAddress(u.String()); err != nil {
+			return ValidationError(err)
+		}
+	}
+
+	return nil
 }
 
 func (u User) generateHash(pass string) []byte {
