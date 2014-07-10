@@ -79,7 +79,7 @@ func updateUser(u User) error {
 func init() {
 	var err error
 
-	db, err = sqlx.Connect("sqlite3", "./readeef.sqlite")
+	db, err = sqlx.Connect("sqlite3", "file:./readeef.sqlite?cache=shared&mode=rwc")
 	if err != nil {
 		log.Fatalln(err)
 	}
