@@ -22,7 +22,11 @@ type User struct {
 }
 
 func (u User) String() string {
-	return u.FirstName + " " + u.LastName + " <" + u.Email + ">"
+	if u.Email == "" {
+		return u.FirstName + " " + u.LastName
+	} else {
+		return u.FirstName + " " + u.LastName + " <" + u.Email + ">"
+	}
 }
 
 func (u *User) setPassword(pass string) error {
@@ -48,7 +52,7 @@ func (u User) Authenticate(pass string) bool {
 }
 
 func (u User) Validate() error {
-	if len(u.Email) > 0 {
+	if u.Email != "" {
 		if _, err := mail.ParseAddress(u.String()); err != nil {
 			return ValidationError(err)
 		}
