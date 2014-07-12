@@ -44,13 +44,13 @@ type DB struct {
 
 type ValidationError error
 
-func NewDB(driver, conn string) (*DB, error) {
+func NewDB(driver, conn string) (DB, error) {
 	dbx, err := sqlx.Connect(driver, conn)
 	if err != nil {
-		return nil, err
+		return DB{}, err
 	}
 
-	db := &DB{DB: dbx}
+	db := DB{DB: dbx}
 
 	err = db.init()
 

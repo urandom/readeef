@@ -12,6 +12,15 @@ import (
 const authkey = "AUTHUSER"
 const namekey = "AUTHNAME"
 
+// The Auth middleware checks whether the session contains a valid user or
+// login. If it only contains the later, it tries to load the actual user
+// object from the database. If a valid user hasn't been loaded, it redirects
+// to the named controller "auth-login".
+//
+// The middleware expects a readeef.DB object, as well the dispatcher's
+// pattern. It may also receive a slice of path prefixes, relative to the
+// dispatcher's pattern, which should be ignored. The later may also be passed
+// from the Config.Auth.IgnoreURLPrefix
 type Auth struct {
 	DB              DB
 	Pattern         string
@@ -57,7 +66,15 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 		}
 
 		if !validUser {
-			http.Redirect(w, r, r.URL.String(), http.StatusForbidden)
+			d := webfw.GetDispatcher(c)
+			sess.SetFlash(CtxKey("return-to"), r.URL.Path)
+			path := d.NameToPath("auth-login", webfw.MethodGet)
+
+			if path == "" {
+				path = "/"
+			}
+
+			http.Redirect(w, r, path, http.StatusMovedPermanently)
 			return
 		}
 
