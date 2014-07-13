@@ -7,28 +7,22 @@ import (
 	"time"
 )
 
-func ParseFeed(b []byte) (feed, error) {
-	f, err := ParseRss2(b)
+func ParseFeed(source []byte, funcs ...func([]byte) (feed, error)) (feed, error) {
+	var feed feed
+	var err error
 
-	if err != nil {
-		if _, ok := err.(xml.UnmarshalError); ok {
-			f, err = ParseAtom(b)
-			if err != nil {
-				if _, ok := err.(xml.UnmarshalError); ok {
-					f, err = ParseRss1(b)
-					if err != nil {
-						return feed{}, err
-					}
-				} else {
-					return f, err
-				}
+	for _, f := range funcs {
+		feed, err = f(source)
+		if err != nil {
+			if _, ok := err.(xml.UnmarshalError); !ok {
+				return feed, err
 			}
 		} else {
-			return f, err
+			break
 		}
 	}
 
-	return f, nil
+	return feed, err
 }
 
 func parseDate(date string) (time.Time, error) {

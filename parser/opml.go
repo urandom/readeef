@@ -1,4 +1,4 @@
-package readeef
+package parser
 
 import "encoding/xml"
 
@@ -34,13 +34,14 @@ type opmlOutline struct {
 	Url     string `xml:"url,attr,omitempty"`
 }
 
-func ParseOpml(content []byte) Opml {
+func ParseOpml(content []byte) (Opml, error) {
 	var o opmlXml
+	opml := Opml{}
+
 	if err := xml.Unmarshal(content, &o); err != nil {
-		logger.Fatal(err)
+		return opml, err
 	}
 
-	opml := Opml{}
 	for _, outline := range o.Body.Outline {
 		feed := OpmlFeed{Title: outline.Text}
 		if outline.Url == "" {
@@ -51,5 +52,5 @@ func ParseOpml(content []byte) Opml {
 		opml.Feeds = append(opml.Feeds, feed)
 	}
 
-	return opml
+	return opml, nil
 }
