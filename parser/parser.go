@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-func ParseFeed(source []byte, funcs ...func([]byte) (feed, error)) (feed, error) {
-	var feed feed
+func ParseFeed(source []byte, funcs ...func([]byte) (Feed, error)) (Feed, error) {
+	var feed Feed
 	var err error
 
 	for _, f := range funcs {
