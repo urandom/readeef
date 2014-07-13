@@ -40,21 +40,25 @@ type Validator interface {
 
 type DB struct {
 	*sqlx.DB
+	driver        string
+	connectString string
 }
 
 type ValidationError error
 
-func NewDB(driver, conn string) (DB, error) {
-	dbx, err := sqlx.Connect(driver, conn)
+func NewDB(driver, conn string) DB {
+	return DB{driver: driver, connectString: conn}
+}
+
+func (db *DB) Connect() error {
+	dbx, err := sqlx.Connect(db.driver, db.connectString)
 	if err != nil {
-		return DB{}, err
+		return err
 	}
 
-	db := DB{DB: dbx}
+	db.DB = dbx
 
-	err = db.init()
-
-	return db, err
+	return db.init()
 }
 
 func (db DB) GetUser(login string) (User, error) {

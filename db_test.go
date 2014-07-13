@@ -15,8 +15,8 @@ var conn = "file:./" + file + "?cache=shared&mode=rwc"
 func TestUsers(t *testing.T) {
 	os.Remove(file)
 
-	db, err := NewDB("sqlite3", conn)
-	if err != nil {
+	db := NewDB("sqlite3", conn)
+	if err := db.Connect(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -30,7 +30,7 @@ func TestUsers(t *testing.T) {
 
 	u := User{Login: "test", FirstName: "Hello", LastName: "World", Email: "test"}
 
-	if err = db.UpdateUser(u); err == nil {
+	if err := db.UpdateUser(u); err == nil {
 		t.Fatalf("Expected a validation error\n")
 	} else {
 		if _, ok := err.(ValidationError); !ok {
@@ -40,11 +40,11 @@ func TestUsers(t *testing.T) {
 
 	u.Email = "test@example.com"
 
-	if err = db.UpdateUser(u); err != nil {
+	if err := db.UpdateUser(u); err != nil {
 		t.Fatal(err)
 	}
 
-	u, err = db.GetUser("test")
+	u, err := db.GetUser("test")
 	if err != nil {
 		t.Fatal(err)
 	}

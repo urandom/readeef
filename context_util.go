@@ -19,8 +19,9 @@ func GetDB(c context.Context) DB {
 
 	conf := GetConfig(c)
 
-	db, err := NewDB(conf.DB.Driver, conf.DB.Connect)
-	if err != nil {
+	db := NewDB(conf.DB.Driver, conf.DB.Connect)
+
+	if err := db.Connect(); err != nil {
 		panic(err)
 	}
 
