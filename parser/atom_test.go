@@ -45,8 +45,7 @@ func TestAtomParse(t *testing.T) {
 		t.Fatalf("Unexpected feed hub link: '%s'\n", f.HubLink)
 	}
 
-	var i Image
-	if f.Image != i {
+	if f.Image != (Image{}) {
 		t.Fatalf("Unexpected feed image: '%v'\n", f.Image)
 	}
 
@@ -73,7 +72,7 @@ func TestAtomParse(t *testing.T) {
 
 	d, _ := parseDate("2003-12-13T18:30:02Z")
 
-	if a.Date != d {
+	if !a.Date.Equal(d) {
 		t.Fatalf("Unexpected article date: '%s'\n", a.Date)
 	}
 }
