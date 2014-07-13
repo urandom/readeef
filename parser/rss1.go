@@ -6,6 +6,7 @@ type rss1Feed struct {
 	XMLName xml.Name    `xml:"RDF"`
 	Channel rss1Channel `xml:"channel"`
 	Items   []rssItem   `xml:"item"`
+	Image   rssImage    `xml:"image"`
 }
 
 type rss1Channel struct {
@@ -24,24 +25,34 @@ func ParseRss1(b []byte) (Feed, error) {
 		return f, err
 	}
 
+	var image = rss.Image
+	if image == (rssImage{}) {
+		image = rss.Channel.Image
+	}
+
 	f = Feed{
 		Title:       rss.Channel.Title,
 		Description: rss.Channel.Description,
 		Link:        rss.Channel.Link,
 		Image: Image{
-			rss.Channel.Image.Title, rss.Channel.Image.Url,
-			rss.Channel.Image.Width, rss.Channel.Image.Height},
+			image.Title, image.Url,
+			image.Width, image.Height},
 	}
 
 	for _, i := range rss.Items {
-		article := Article{Id: i.Id, Title: i.Title, Description: i.Description, Link: i.Link}
+		article := Article{Title: i.Title, Description: i.Description, Link: i.Link}
+		if i.Id == "" {
+			article.Id = i.Link
+		} else {
+			article.Id = i.Id
+		}
 
 		var err error
 		if i.PubDate != "" {
 			if article.Date, err = parseDate(i.PubDate); err != nil {
 				return f, err
 			}
-		} else {
+		} else if i.Date != "" {
 			if article.Date, err = parseDate(i.Date); err != nil {
 				return f, err
 			}

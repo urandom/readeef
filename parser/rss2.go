@@ -34,7 +34,12 @@ func ParseRss2(b []byte) (Feed, error) {
 	}
 
 	for _, i := range rss.Channel.Items {
-		article := Article{Id: i.Id, Title: i.Title, Description: i.Description, Link: i.Link}
+		article := Article{Title: i.Title, Description: i.Description, Link: i.Link}
+		if i.Id == "" {
+			article.Id = i.Link
+		} else {
+			article.Id = i.Id
+		}
 
 		var err error
 		if i.PubDate != "" {
