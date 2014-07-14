@@ -22,6 +22,7 @@ UPDATE users SET first_name = ?, last_name = ?, email = ?, salt = ?, hash = ?, m
 
 var (
 	init_sql = []string{`
+PRAGMA foreign_keys = ON;`, `
 CREATE TABLE IF NOT EXISTS users (
 	login TEXT PRIMARY KEY,
 	first_name TEXT,
@@ -30,7 +31,55 @@ CREATE TABLE IF NOT EXISTS users (
 	salt TEXT,
 	hash TEXT,
 	md5_api TEXT
-);`,
+);`, `
+CREATE TABLE IF NOT EXISTS feeds (
+	id INTEGER PRIMARY KEY,	
+	title TEXT,
+	description TEXT,
+	link TEXT,
+	hub_link TEXT
+)`, `
+CREATE TABLE IF NOT EXISTS feed_images (
+	id INTEGER PRIMARY KEY,	
+	feed_id INTEGER,
+	title TEXT,
+	url TEXT,
+	width INTEGER,
+	height INTEGER,
+
+	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
+)`, `
+CREATE TABLE IF NOT EXISTS articles (
+	id INTEGER PRIMARY KEY,	
+	feed_id INTEGER,
+	title TEXT,
+	description TEXT,
+	link TEXT,
+	date DATETIME,
+
+	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
+)`, `
+CREATE TABLE IF NOT EXISTS users_feeds (
+	user_login TEXT,
+	feed_id INTEGER,
+
+	FOREIGN KEY(user_login) REFERENCES user(login) ON DELETE CASCADE,
+	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
+)`, `
+CREATE TABLE IF NOT EXISTS users_articles_read (
+	user_login TEXT,
+	article_id INTEGER,
+
+	FOREIGN KEY(user_login) REFERENCES user(login) ON DELETE CASCADE,
+	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
+)`, `
+CREATE TABLE IF NOT EXISTS users_articles_fav (
+	user_login TEXT,
+	article_id INTEGER,
+
+	FOREIGN KEY(user_login) REFERENCES user(login) ON DELETE CASCADE,
+	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
+)`,
 	}
 )
 
