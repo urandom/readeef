@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS feed_images (
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS articles (
-	id INTEGER PRIMARY KEY,	
+	id TEXT PRIMARY KEY,	
 	feed_id INTEGER,
 	title TEXT,
 	description TEXT,
