@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	init_sql = []string{`
+	init_sql_sqlite3 = []string{`
 PRAGMA foreign_keys = ON;`, `
 CREATE TABLE IF NOT EXISTS users (
 	login TEXT PRIMARY KEY,
@@ -99,7 +99,7 @@ func (db *DB) Connect() error {
 }
 
 func (db DB) init() error {
-	for _, sql := range init_sql {
+	for _, sql := range init_sql_sqlite3 {
 		_, err := db.Exec(sql)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error executing '%s': %v", sql, err))
