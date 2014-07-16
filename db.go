@@ -21,39 +21,38 @@ CREATE TABLE IF NOT EXISTS users (
 	md5_api TEXT
 );`, `
 CREATE TABLE IF NOT EXISTS feeds (
-	id INTEGER PRIMARY KEY,	
+	link TEXT PRIMARY KEY,
 	title TEXT,
 	description TEXT,
-	link TEXT,
 	hub_link TEXT
 )`, `
 CREATE TABLE IF NOT EXISTS feed_images (
 	id INTEGER PRIMARY KEY,	
-	feed_id INTEGER,
+	feed_link TEXT,
 	title TEXT,
 	url TEXT,
 	width INTEGER,
 	height INTEGER,
 
-	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
+	FOREIGN KEY(feed_id) REFERENCES feeds(link) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS articles (
 	id TEXT,	
-	feed_id INTEGER,
+	feed_link TEXT,
 	title TEXT,
 	description TEXT,
 	link TEXT,
 	date DATETIME,
 
 	PRIMARY KEY(id, feed_id),
-	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
+	FOREIGN KEY(feed_id) REFERENCES feeds(link) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_feeds (
 	user_login TEXT,
-	feed_id INTEGER,
+	feed_link TEXT,
 
 	FOREIGN KEY(user_login) REFERENCES user(login) ON DELETE CASCADE,
-	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
+	FOREIGN KEY(feed_id) REFERENCES feeds(link) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_articles_read (
 	user_login TEXT,

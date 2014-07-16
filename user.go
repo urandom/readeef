@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/sha1"
+	"errors"
 	"fmt"
 	"net/mail"
 )
@@ -52,6 +53,9 @@ func (u User) Authenticate(pass string) bool {
 }
 
 func (u User) Validate() error {
+	if u.Login == "" {
+		return ValidationError(errors.New("Invalid user login"))
+	}
 	if u.Email != "" {
 		if _, err := mail.ParseAddress(u.String()); err != nil {
 			return ValidationError(err)

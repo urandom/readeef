@@ -1,10 +1,12 @@
 package readeef
 
-import "readeef/parser"
+import (
+	"errors"
+	"readeef/parser"
+)
 
 type Feed struct {
 	parser.Feed
-	Id int
 
 	User     User
 	HubLink  string `db:"hub_link"`
@@ -17,4 +19,12 @@ type Article struct {
 	FeedId   string `db:"feed_id"`
 	Read     bool
 	Favorite bool
+}
+
+func (f Feed) Validate() error {
+	if f.Link != "" {
+		return ValidationError(errors.New("Feed has no link"))
+	}
+
+	return nil
 }

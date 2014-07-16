@@ -12,6 +12,7 @@ INSERT INTO users(first_name, last_name, email, salt, hash, md5_api, login)
 	update_user = `
 UPDATE users SET first_name = ?, last_name = ?, email = ?, salt = ?, hash = ?, md5_api = ?
 	WHERE login = ?;`
+	delete_user = `DELETE FROM users WHERE login = ?`
 )
 
 func (db DB) GetUser(login string) (User, error) {
@@ -53,6 +54,42 @@ func (db DB) UpdateUser(u User) error {
 	defer stmt.Close()
 
 	_, err = stmt.Exec(u.FirstName, u.LastName, u.Email, u.Salt, u.Hash, u.MD5API, u.Login)
+	if err != nil {
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
+func (db DB) DeleteUser(u User) error {
+	if err := u.Validate(); err != nil {
+		return err
+	}
+
+	tx, err := db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	row := db.QueryRow(exists_user, u.Login)
+	var exists int
+	row.Scan(&exists)
+
+	var stmt *sqlx.Stmt
+
+	if exists != 1 {
+		return nil
+	}
+	stmt, err = tx.Preparex(delete_user)
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(u.Login)
 	if err != nil {
 		return err
 	}

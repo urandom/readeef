@@ -12,7 +12,7 @@ import "testing"
 var file = "readeef-test.sqlite"
 var conn = "file:./" + file + "?cache=shared&mode=rwc"
 
-func TestUsers(t *testing.T) {
+func TestDBUsers(t *testing.T) {
 	os.Remove(file)
 
 	db := NewDB("sqlite3", conn)
@@ -118,6 +118,19 @@ func TestUsers(t *testing.T) {
 
 	if !bytes.Equal(u.MD5API, u2.MD5API) {
 		t.Fatal("Expected %s, got %s", u.MD5API, u2.MD5API)
+	}
+
+	db.Close()
+
+	os.Remove(file)
+}
+
+func TestDBFeeds(t *testing.T) {
+	os.Remove(file)
+
+	db := NewDB("sqlite3", conn)
+	if err := db.Connect(); err != nil {
+		t.Fatal(err)
 	}
 
 	db.Close()
