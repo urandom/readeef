@@ -15,7 +15,7 @@ UPDATE users SET first_name = ?, last_name = ?, email = ?, salt = ?, hash = ?, m
 func (db DB) GetUser(login string) (User, error) {
 	var u User
 	if err := db.Get(&u, get_user, login); err != nil {
-		return User{}, err
+		return u, err
 	}
 
 	u.Login = login

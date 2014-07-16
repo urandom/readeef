@@ -1,15 +1,16 @@
 package readeef
 
-import "github.com/jmoiron/sqlx"
-
 const (
-	exists_feed = `SELECT 1 FROM feeds WHERE link = ?`
-	create_feed = `INSERT INTO feeds(title, description, hub_link, link) VALUES(?, ?, ?, ?)`
+	get_feed    = `SELECT title, description, hub_link FROM feeds WHERE link = ?`
+	create_feed = `
+INSERT INTO feeds(link, title, description, hub_link) 
+	SELECT ?, ?, ?, ? EXCEPT SELECT link, title, description, hub_link FROM feeds WHERE link = ?`
 	update_feed = `UPDATE feeds SET title = ?, description = ?, hub_link = ? WHERE link = ?`
 	delete_feed = `DELETE FROM feeds WHERE link = ?`
 
-	exists_user_feed = `SELECT 1 FROM users_feeds WHERE user_login = ? AND feed_link = ?`
-	create_user_feed = `INSERT INTO users_feeds(user_login, feed_link) VALUES(?, ?)`
+	create_user_feed = `
+INSERT INTO users_feeds(user_login, feed_link)
+	SELECT ?, ? EXCEPT SELECT user_login, feed_link FROM users_feeds WHERE user_login = ? AND feed_link = ?`
 	delete_user_feed = `DELETE FROM users_feeds WHERE user_login = ? AND feed_link = ?`
 
 	get_user_feeds = `
@@ -47,6 +48,17 @@ OFFSET ?
 `
 )
 
+func (db DB) GetFeed(link string) (Feed, error) {
+	var f Feed
+	if err := db.Get(&f, get_feed, link); err != nil {
+		return f, err
+	}
+
+	f.Link = link
+
+	return f, nil
+}
+
 func (db DB) UpdateFeed(f Feed) error {
 	if err := f.Validate(); err != nil {
 		return err
@@ -57,24 +69,25 @@ func (db DB) UpdateFeed(f Feed) error {
 		return err
 	}
 
-	exists := 0
-	var stmt *sqlx.Stmt
-
-	row := db.QueryRow(exists_feed, f.Link)
-	row.Scan(&exists)
-
-	if exists == 1 {
-		stmt, err = tx.Preparex(update_feed)
-	} else {
-		stmt, err = tx.Preparex(create_feed)
+	ustmt, err := tx.Preparex(update_feed)
+	if err != nil {
+		return err
 	}
+	defer ustmt.Close()
+
+	_, err = ustmt.Exec(f.Title, f.Description, f.HubLink, f.Link)
+	if err != nil {
+		return err
+	}
+
+	cstmt, err := tx.Preparex(create_feed)
 
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	defer cstmt.Close()
 
-	_, err = stmt.Exec(f.Title, f.Description, f.HubLink, f.Link)
+	_, err = cstmt.Exec(f.Link, f.Title, f.Description, f.HubLink, f.Link)
 	if err != nil {
 		return err
 	}
@@ -94,16 +107,7 @@ func (db DB) DeleteFeed(f Feed) error {
 		return err
 	}
 
-	exists := 0
-	var stmt *sqlx.Stmt
-
-	row := db.QueryRow(exists_feed, f.Link)
-	row.Scan(&exists)
-
-	if exists != 1 {
-		return nil
-	}
-	stmt, err = tx.Preparex(delete_feed)
+	stmt, err := tx.Preparex(delete_feed)
 
 	if err != nil {
 		return err
@@ -132,24 +136,14 @@ func (db DB) CreateUserFeed(u User, f Feed) error {
 		return err
 	}
 
-	exists := 0
-	var stmt *sqlx.Stmt
-
-	row := db.QueryRow(exists_user_feed, u.Login, f.Link)
-	row.Scan(&exists)
-
-	if exists == 1 {
-		return nil
-	}
-
-	stmt, err = tx.Preparex(create_user_feed)
+	stmt, err := tx.Preparex(create_user_feed)
 
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(u.Login, f.Link)
+	_, err = stmt.Exec(u.Login, f.Link, u.Login, f.Link)
 	if err != nil {
 		return err
 	}
@@ -172,17 +166,7 @@ func (db DB) DeleteUserFeed(u User, f Feed) error {
 		return err
 	}
 
-	exists := 0
-	var stmt *sqlx.Stmt
-
-	row := db.QueryRow(exists_user_feed, u.Login, f.Link)
-	row.Scan(&exists)
-
-	if exists != 1 {
-		return nil
-	}
-
-	stmt, err = tx.Preparex(delete_user_feed)
+	stmt, err := tx.Preparex(delete_user_feed)
 
 	if err != nil {
 		return err

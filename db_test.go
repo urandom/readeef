@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"readeef/parser"
 )
 import "testing"
 
@@ -13,12 +14,11 @@ var file = "readeef-test.sqlite"
 var conn = "file:./" + file + "?cache=shared&mode=rwc"
 
 func TestDBUsers(t *testing.T) {
-	os.Remove(file)
-
 	db := NewDB("sqlite3", conn)
 	if err := db.Connect(); err != nil {
 		t.Fatal(err)
 	}
+	defer db.Close()
 
 	if _, err := db.GetUser("test"); err != nil {
 		if err != sql.ErrNoRows {
@@ -34,7 +34,7 @@ func TestDBUsers(t *testing.T) {
 		t.Fatalf("Expected a validation error\n")
 	} else {
 		if _, ok := err.(ValidationError); !ok {
-			t.Fatalf("Expected a validation error \n")
+			t.Fatalf("Expected a validation error, got '%v'\n", err)
 		}
 	}
 
@@ -127,21 +127,61 @@ func TestDBUsers(t *testing.T) {
 	if _, err := db.GetUser("test"); err == nil || err != sql.ErrNoRows {
 		t.Fatalf("Expected to not find the user\n")
 	}
-
-	db.Close()
-
-	os.Remove(file)
 }
 
 func TestDBFeeds(t *testing.T) {
-	os.Remove(file)
-
 	db := NewDB("sqlite3", conn)
 	if err := db.Connect(); err != nil {
 		t.Fatal(err)
 	}
+	defer db.Close()
 
-	db.Close()
+	if _, err := db.GetFeed("http://example.com"); err != nil {
+		if err != sql.ErrNoRows {
+			t.Fatal(err)
+		}
+	} else {
+		t.Fatalf("Expected to get an error\n")
+	}
 
+	f := Feed{Feed: parser.Feed{Title: "test"}}
+	if err := db.UpdateFeed(f); err != nil {
+		if _, ok := err.(ValidationError); !ok {
+			t.Fatalf("Expected a validation error, got '%v'\n", err)
+		}
+	} else {
+		t.Fatalf("Expected to get an error\n")
+	}
+
+	f.Link = "http://example.com"
+	if err := db.UpdateFeed(f); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedStr := "http://example.com"
+	if f, err := db.GetFeed("http://example.com"); err != nil {
+		t.Fatal(err)
+	} else {
+		if f.Link != expectedStr {
+			t.Fatalf("Expected '%s' for a link, got '%s'\n", expectedStr, f.Link)
+		}
+	}
+
+	f.Title = "Example rss"
+	if err := db.UpdateFeed(f); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedStr = "Example rss"
+	if f, err := db.GetFeed("http://example.com"); err != nil {
+		t.Fatal(err)
+	} else {
+		if f.Title != expectedStr {
+			t.Fatalf("Expected '%s' for a title, got '%s'\n", expectedStr, f.Title)
+		}
+	}
+}
+
+func init() {
 	os.Remove(file)
 }

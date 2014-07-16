@@ -54,11 +54,11 @@ func (u User) Authenticate(pass string) bool {
 
 func (u User) Validate() error {
 	if u.Login == "" {
-		return ValidationError(errors.New("Invalid user login"))
+		return ValidationError{errors.New("Invalid user login")}
 	}
 	if u.Email != "" {
 		if _, err := mail.ParseAddress(u.String()); err != nil {
-			return ValidationError(err)
+			return ValidationError{err}
 		}
 	}
 

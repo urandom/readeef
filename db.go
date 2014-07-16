@@ -84,7 +84,9 @@ type DB struct {
 	connectString string
 }
 
-type ValidationError error
+type ValidationError struct {
+	error
+}
 
 func NewDB(driver, conn string) DB {
 	return DB{driver: driver, connectString: conn}

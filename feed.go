@@ -22,8 +22,8 @@ type Article struct {
 }
 
 func (f Feed) Validate() error {
-	if f.Link != "" {
-		return ValidationError(errors.New("Feed has no link"))
+	if f.Link == "" {
+		return ValidationError{errors.New("Feed has no link")}
 	}
 
 	return nil
