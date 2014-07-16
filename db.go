@@ -38,13 +38,14 @@ CREATE TABLE IF NOT EXISTS feed_images (
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS articles (
-	id TEXT PRIMARY KEY,	
+	id TEXT,	
 	feed_id INTEGER,
 	title TEXT,
 	description TEXT,
 	link TEXT,
 	date DATETIME,
 
+	PRIMARY KEY(id, feed_id),
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_feeds (
