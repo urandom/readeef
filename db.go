@@ -52,24 +52,26 @@ CREATE TABLE IF NOT EXISTS users_feeds (
 	feed_link TEXT,
 
 	PRIMARY KEY(user_login, feed_link),
-	FOREIGN KEY(user_login) REFERENCES user(login) ON DELETE CASCADE,
+	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
 	FOREIGN KEY(feed_link) REFERENCES feeds(link) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_articles_read (
 	user_login TEXT,
-	article_id INTEGER,
+	article_id TEXT,
+	article_feed_link TEXT,
 
 	PRIMARY KEY(user_login, article_id),
-	FOREIGN KEY(user_login) REFERENCES user(login) ON DELETE CASCADE,
-	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
+	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
+	FOREIGN KEY(article_id, article_feed_link) REFERENCES articles(id, feed_link) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_articles_fav (
 	user_login TEXT,
-	article_id INTEGER,
+	article_id TEXT,
+	article_feed_link TEXT,
 
 	PRIMARY KEY(user_login, article_id),
-	FOREIGN KEY(user_login) REFERENCES user(login) ON DELETE CASCADE,
-	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
+	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
+	FOREIGN KEY(article_id, article_feed_link) REFERENCES articles(id, feed_link) ON DELETE CASCADE
 )`,
 	}
 )

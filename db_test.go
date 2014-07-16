@@ -180,6 +180,80 @@ func TestDBFeeds(t *testing.T) {
 			t.Fatalf("Expected '%s' for a title, got '%s'\n", expectedStr, f.Title)
 		}
 	}
+
+	u := User{Login: "test"}
+	if err := db.UpdateUser(u); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedInt := 0
+	if feeds, err := db.GetUserFeeds(u); err == nil {
+		if len(feeds) != expectedInt {
+			t.Fatalf("Expected %d user feeds, got %d\n", expectedInt, len(feeds))
+		}
+	} else {
+		t.Fatal(err)
+	}
+
+	f2 := Feed{Feed: parser.Feed{Link: "http://rss.example.com"}}
+	if err := db.UpdateFeed(f2); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := db.CreateUserFeed(u, f); err != nil {
+		t.Fatal(err)
+	}
+
+	if feeds, err := db.GetUserFeeds(u); err == nil {
+		expectedInt = 1
+		if len(feeds) != expectedInt {
+			t.Fatalf("Expected %d user feeds, got %d\n", expectedInt, len(feeds))
+		}
+		expectedStr = "Example rss"
+		if feeds[0].Title != expectedStr {
+			t.Fatalf("Expected '%s' for a title, got '%s'\n", expectedStr, feeds[0].Title)
+		}
+	} else {
+		t.Fatal(err)
+	}
+
+	if err := db.CreateUserFeed(u, f2); err != nil {
+		t.Fatal(err)
+	}
+
+	if feeds, err := db.GetUserFeeds(u); err == nil {
+		expectedInt = 2
+		if len(feeds) != expectedInt {
+			t.Fatalf("Expected %d user feeds, got %d\n", expectedInt, len(feeds))
+		}
+		expectedStr = "Example rss"
+		if feeds[0].Title != expectedStr {
+			t.Fatalf("Expected '%s' for a title, got '%s'\n", expectedStr, feeds[0].Title)
+		}
+		expectedStr = f2.Link
+		if feeds[1].Link != expectedStr {
+			t.Fatalf("Expected '%s' for a link, got '%s'\n", expectedStr, feeds[1].Link)
+		}
+	} else {
+		t.Fatal(err)
+	}
+
+	if err := db.DeleteUserFeed(u, f); err != nil {
+		t.Fatal(err)
+	}
+
+	if feeds, err := db.GetUserFeeds(u); err == nil {
+		expectedInt = 1
+		if len(feeds) != expectedInt {
+			t.Fatalf("Expected %d user feeds, got %d\n", expectedInt, len(feeds))
+		}
+		expectedStr = f2.Link
+		if feeds[0].Link != expectedStr {
+			t.Fatalf("Expected '%s' for a link, got '%s'\n", expectedStr, feeds[0].Link)
+		}
+	} else {
+		t.Fatal(err)
+	}
 }
 
 func init() {
