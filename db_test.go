@@ -8,7 +8,10 @@ import (
 	"os"
 	"readeef/parser"
 )
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 var file = "readeef-test.sqlite"
 var conn = "file:./" + file + "?cache=shared&mode=rwc"
@@ -250,6 +253,54 @@ func TestDBFeeds(t *testing.T) {
 		expectedStr = f2.Link
 		if feeds[0].Link != expectedStr {
 			t.Fatalf("Expected '%s' for a link, got '%s'\n", expectedStr, feeds[0].Link)
+		}
+	} else {
+		t.Fatal(err)
+	}
+
+	f2.User = u
+	if f, err := db.GetFeedArticles(f2); err == nil {
+		expectedInt = 0
+		if len(f.Articles) != expectedInt {
+			t.Fatalf("Expected %d feed articles, got %d\n", expectedInt, len(f.Articles))
+		}
+	} else {
+		t.Fatal(err)
+	}
+
+	t1, err := time.Parse("Mon Jan 2 15:04:05 -0700 MST 2006", "Mon Jan 2 15:04:05 -0700 MST 2006")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	a1 := Article{Article: parser.Article{Id: "1", Title: "Test 1"}}
+	a2 := Article{Article: parser.Article{Id: "2", Title: "Test 2", Date: t1}}
+
+	if f, err := db.CreateFeedArticles(f2, a1, a2); err == nil {
+		expectedInt = 2
+		if len(f.Articles) != expectedInt {
+			t.Fatalf("Expected %d feed articles, got %d\n", expectedInt, len(f.Articles))
+		}
+	} else {
+		t.Fatal(err)
+	}
+
+	expectedDate := t1
+	if f, err := db.GetFeedArticles(f2); err == nil {
+		expectedInt = 2
+		if len(f.Articles) != expectedInt {
+			t.Fatalf("Expected %d feed articles, got %d\n", expectedInt, len(f.Articles))
+		}
+		expectedStr = "1"
+		if f.Articles[0].Id != expectedStr {
+			t.Fatalf("Expected '%s' for article id, got '%s'\n", expectedStr, f.Articles[0].Id)
+		}
+		expectedStr = "Test 2"
+		if f.Articles[1].Title != expectedStr {
+			t.Fatalf("Expected '%s' for article id, got '%s'\n", expectedStr, f.Articles[1].Title)
+		}
+		if !f.Articles[1].Date.Equal(expectedDate) {
+			t.Fatalf("Expected '%s' for article date, got '%s'\n", expectedDate, f.Articles[1].Date)
 		}
 	} else {
 		t.Fatal(err)

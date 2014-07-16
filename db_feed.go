@@ -1,5 +1,7 @@
 package readeef
 
+import "errors"
+
 const (
 	get_feed    = `SELECT title, description, hub_link FROM feeds WHERE link = ?`
 	create_feed = `
@@ -25,7 +27,7 @@ SELECT uf.feed_link, a.id, a.title, a.description, a.link, a.date,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_link = articles.feed_link AND uf.feed_link = ? AND uf.user_login = ?
+	ON uf.feed_link = a.feed_link AND uf.feed_link = ? AND uf.user_login = ?
 LEFT OUTER JOIN users_articles_read ar
 	ON a.id = ar.article_id
 LEFT OUTER JOIN users_articles_fav af
@@ -48,6 +50,10 @@ OFFSET ?
 `
 )
 
+var (
+	ErrNoFeedUser = errors.New("Feed does not have an associated user.")
+)
+
 func (db DB) GetFeed(link string) (Feed, error) {
 	var f Feed
 	if err := db.Get(&f, get_feed, link); err != nil {
@@ -65,6 +71,7 @@ func (db DB) UpdateFeed(f Feed) error {
 	}
 
 	tx, err := db.Beginx()
+	defer tx.Rollback()
 	if err != nil {
 		return err
 	}
@@ -103,6 +110,7 @@ func (db DB) DeleteFeed(f Feed) error {
 	}
 
 	tx, err := db.Beginx()
+	defer tx.Rollback()
 	if err != nil {
 		return err
 	}
@@ -132,6 +140,7 @@ func (db DB) CreateUserFeed(u User, f Feed) error {
 	}
 
 	tx, err := db.Beginx()
+	defer tx.Rollback()
 	if err != nil {
 		return err
 	}
@@ -162,6 +171,7 @@ func (db DB) DeleteUserFeed(u User, f Feed) error {
 	}
 
 	tx, err := db.Beginx()
+	defer tx.Rollback()
 	if err != nil {
 		return err
 	}
@@ -197,7 +207,58 @@ func (db DB) GetUserFeeds(u User) ([]Feed, error) {
 	return feeds, nil
 }
 
+func (db DB) CreateFeedArticles(f Feed, articles ...Article) (Feed, error) {
+	if len(articles) == 0 {
+		return f, nil
+	}
+
+	sql := `INSERT INTO articles(id, feed_link, title, description, link, date) `
+	args := []interface{}{}
+
+	for i, a := range articles {
+		if err := a.Validate(); err != nil {
+			return f, err
+		}
+
+		if i != 0 {
+			sql += `UNION `
+		}
+
+		sql += `SELECT ?, ?, ?, ? ,?, ? EXCEPT SELECT id, feed_link, title, description, link, date FROM articles WHERE id = ? AND feed_link = ? `
+		args = append(args, a.Id, f.Link, a.Title, a.Description, a.Link, a.Date, a.Id, f.Link)
+		a.FeedLink = f.Link
+	}
+
+	tx, err := db.Beginx()
+	defer tx.Rollback()
+	if err != nil {
+		return f, err
+	}
+
+	stmt, err := tx.Preparex(sql)
+
+	if err != nil {
+		return f, err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(args...)
+	if err != nil {
+		return f, err
+	}
+
+	f.Articles = append(articles, f.Articles...)
+
+	tx.Commit()
+
+	return f, nil
+}
+
 func (db DB) GetFeedArticles(f Feed, paging ...int) (Feed, error) {
+	if f.User.Login == "" {
+		return f, ErrNoFeedUser
+	}
+
 	var articles []Article
 
 	limit, offset := pagingLimit(paging)

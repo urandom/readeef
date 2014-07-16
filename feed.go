@@ -16,7 +16,7 @@ type Feed struct {
 type Article struct {
 	parser.Article
 
-	FeedId   string `db:"feed_id"`
+	FeedLink string `db:"feed_link"`
 	Read     bool
 	Favorite bool
 }
@@ -24,6 +24,14 @@ type Article struct {
 func (f Feed) Validate() error {
 	if f.Link == "" {
 		return ValidationError{errors.New("Feed has no link")}
+	}
+
+	return nil
+}
+
+func (a Article) Validate() error {
+	if a.Id == "" {
+		return ValidationError{errors.New("Article has no id")}
 	}
 
 	return nil
