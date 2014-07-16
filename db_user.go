@@ -1,14 +1,11 @@
 package readeef
 
-import "github.com/jmoiron/sqlx"
-
 const (
-	exists_user = `SELECT 1 FROM users WHERE login = ?;`
-
 	get_user    = `SELECT first_name, last_name, email, salt, hash, md5_api FROM users WHERE login = ?;`
 	create_user = `
-INSERT INTO users(first_name, last_name, email, salt, hash, md5_api, login)
-	VALUES(?, ?, ?, ?, ?, ?, ?);`
+INSERT INTO users(login, first_name, last_name, email, salt, hash, md5_api)
+	SELECT ?, ?, ?, ?, ?, ?, ? EXCEPT
+	SELECT login, first_name, last_name, email, salt, hash, md5_api FROM users WHERE login = ?;`
 	update_user = `
 UPDATE users SET first_name = ?, last_name = ?, email = ?, salt = ?, hash = ?, md5_api = ?
 	WHERE login = ?;`
@@ -36,24 +33,26 @@ func (db DB) UpdateUser(u User) error {
 		return err
 	}
 
-	row := db.QueryRow(exists_user, u.Login)
-	var exists int
-	row.Scan(&exists)
-
-	var stmt *sqlx.Stmt
-
-	if exists == 1 {
-		stmt, err = tx.Preparex(update_user)
-	} else {
-		stmt, err = tx.Preparex(create_user)
-	}
+	ustmt, err := tx.Preparex(update_user)
 
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	defer ustmt.Close()
 
-	_, err = stmt.Exec(u.FirstName, u.LastName, u.Email, u.Salt, u.Hash, u.MD5API, u.Login)
+	_, err = ustmt.Exec(u.FirstName, u.LastName, u.Email, u.Salt, u.Hash, u.MD5API, u.Login)
+	if err != nil {
+		return err
+	}
+
+	cstmt, err := tx.Preparex(create_user)
+
+	if err != nil {
+		return err
+	}
+	defer cstmt.Close()
+
+	_, err = cstmt.Exec(u.Login, u.FirstName, u.LastName, u.Email, u.Salt, u.Hash, u.MD5API, u.Login)
 	if err != nil {
 		return err
 	}
@@ -73,16 +72,7 @@ func (db DB) DeleteUser(u User) error {
 		return err
 	}
 
-	row := db.QueryRow(exists_user, u.Login)
-	var exists int
-	row.Scan(&exists)
-
-	var stmt *sqlx.Stmt
-
-	if exists != 1 {
-		return nil
-	}
-	stmt, err = tx.Preparex(delete_user)
+	stmt, err := tx.Preparex(delete_user)
 
 	if err != nil {
 		return err

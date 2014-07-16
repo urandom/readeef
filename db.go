@@ -27,37 +27,39 @@ CREATE TABLE IF NOT EXISTS feeds (
 	hub_link TEXT
 )`, `
 CREATE TABLE IF NOT EXISTS feed_images (
-	id INTEGER PRIMARY KEY,	
+	id INTEGER PRIMARY KEY,
 	feed_link TEXT,
 	title TEXT,
 	url TEXT,
 	width INTEGER,
 	height INTEGER,
 
-	FOREIGN KEY(feed_id) REFERENCES feeds(link) ON DELETE CASCADE
+	FOREIGN KEY(feed_link) REFERENCES feeds(link) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS articles (
-	id TEXT,	
+	id TEXT,
 	feed_link TEXT,
 	title TEXT,
 	description TEXT,
 	link TEXT,
 	date DATETIME,
 
-	PRIMARY KEY(id, feed_id),
-	FOREIGN KEY(feed_id) REFERENCES feeds(link) ON DELETE CASCADE
+	PRIMARY KEY(id, feed_link),
+	FOREIGN KEY(feed_link) REFERENCES feeds(link) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_feeds (
 	user_login TEXT,
 	feed_link TEXT,
 
+	PRIMARY KEY(user_login, feed_link),
 	FOREIGN KEY(user_login) REFERENCES user(login) ON DELETE CASCADE,
-	FOREIGN KEY(feed_id) REFERENCES feeds(link) ON DELETE CASCADE
+	FOREIGN KEY(feed_link) REFERENCES feeds(link) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_articles_read (
 	user_login TEXT,
 	article_id INTEGER,
 
+	PRIMARY KEY(user_login, article_id),
 	FOREIGN KEY(user_login) REFERENCES user(login) ON DELETE CASCADE,
 	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
 )`, `
@@ -65,6 +67,7 @@ CREATE TABLE IF NOT EXISTS users_articles_fav (
 	user_login TEXT,
 	article_id INTEGER,
 
+	PRIMARY KEY(user_login, article_id),
 	FOREIGN KEY(user_login) REFERENCES user(login) ON DELETE CASCADE,
 	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
 )`,
