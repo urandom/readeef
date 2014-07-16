@@ -120,6 +120,14 @@ func TestDBUsers(t *testing.T) {
 		t.Fatal("Expected %s, got %s", u.MD5API, u2.MD5API)
 	}
 
+	if err := db.DeleteUser(u); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := db.GetUser("test"); err == nil || err != sql.ErrNoRows {
+		t.Fatalf("Expected to not find the user\n")
+	}
+
 	db.Close()
 
 	os.Remove(file)
