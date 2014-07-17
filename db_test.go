@@ -203,6 +203,15 @@ func TestDBFeeds(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	expectedInt = 2
+	if feeds, err := db.GetFeeds(); err == nil {
+		if len(feeds) != expectedInt {
+			t.Fatalf("Expected %d feeds, got %d\n", expectedInt, len(feeds))
+		}
+	} else {
+		t.Fatal(err)
+	}
+
 	if err := db.CreateUserFeed(u, f); err != nil {
 		t.Fatal(err)
 	}
@@ -276,7 +285,7 @@ func TestDBFeeds(t *testing.T) {
 	a1 := Article{Article: parser.Article{Id: "1", Title: "Test 1"}}
 	a2 := Article{Article: parser.Article{Id: "2", Title: "Test 2", Date: t1}}
 
-	if f, err := db.CreateFeedArticles(f2, a1, a2); err == nil {
+	if f, err := db.CreateFeedArticles(f2, []Article{a1, a2}); err == nil {
 		expectedInt = 2
 		if len(f.Articles) != expectedInt {
 			t.Fatalf("Expected %d feed articles, got %d\n", expectedInt, len(f.Articles))

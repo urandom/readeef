@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS users_articles_read (
 	article_id TEXT,
 	article_feed_link TEXT,
 
-	PRIMARY KEY(user_login, article_id),
+	PRIMARY KEY(user_login, article_id, article_feed_link),
 	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
 	FOREIGN KEY(article_id, article_feed_link) REFERENCES articles(id, feed_link) ON DELETE CASCADE
 )`, `
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS users_articles_fav (
 	article_id TEXT,
 	article_feed_link TEXT,
 
-	PRIMARY KEY(user_login, article_id),
+	PRIMARY KEY(user_login, article_id, article_feed_link),
 	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
 	FOREIGN KEY(article_id, article_feed_link) REFERENCES articles(id, feed_link) ON DELETE CASCADE
 )`,

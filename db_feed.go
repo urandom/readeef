@@ -10,6 +10,8 @@ INSERT INTO feeds(link, title, description, hub_link)
 	update_feed = `UPDATE feeds SET title = ?, description = ?, hub_link = ? WHERE link = ?`
 	delete_feed = `DELETE FROM feeds WHERE link = ?`
 
+	get_feeds = `SELECT link, title, description, hub_link FROM feeds`
+
 	create_user_feed = `
 INSERT INTO users_feeds(user_login, feed_link)
 	SELECT ?, ? EXCEPT SELECT user_login, feed_link FROM users_feeds WHERE user_login = ? AND feed_link = ?`
@@ -131,6 +133,17 @@ func (db DB) DeleteFeed(f Feed) error {
 
 	return nil
 }
+
+func (db DB) GetFeeds() ([]Feed, error) {
+	var feeds []Feed
+
+	if err := db.Select(&feeds, get_feeds); err != nil {
+		return feeds, err
+	}
+
+	return feeds, nil
+}
+
 func (db DB) CreateUserFeed(u User, f Feed) error {
 	if err := u.Validate(); err != nil {
 		return err
@@ -207,7 +220,7 @@ func (db DB) GetUserFeeds(u User) ([]Feed, error) {
 	return feeds, nil
 }
 
-func (db DB) CreateFeedArticles(f Feed, articles ...Article) (Feed, error) {
+func (db DB) CreateFeedArticles(f Feed, articles []Article) (Feed, error) {
 	if len(articles) == 0 {
 		return f, nil
 	}
@@ -272,6 +285,60 @@ func (db DB) GetFeedArticles(f Feed, paging ...int) (Feed, error) {
 	return f, nil
 }
 
+func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error {
+	var sql string
+	var args []interface{}
+
+	if read {
+		sql = `INSERT INTO users_articles_read(user_login, article_id, article_feed_link) `
+	} else {
+		sql = `DELETE FROM users_articles_read WHERE `
+	}
+	for i, a := range articles {
+		if err := a.Validate(); err != nil {
+			return err
+		}
+
+		if read {
+			if i != 0 {
+				sql += `UNION `
+			}
+
+			sql += `SELECT ?, ?, ? EXCEPT SELECT user_login, article_id, article_feed_link FROM users_articles_read WHERE user_login = ? AND article_id = ? AND article_feed_link = ?`
+			args = append(args, u.Login, a.Id, a.FeedLink, u.Login, a.Id, a.FeedLink)
+		} else {
+			if i != 0 {
+				sql += `OR `
+			}
+
+			sql += `(user_login = ? AND article_id = ? AND article_feed_link = ?)`
+			args = append(args, u.Login, a.Id, a.FeedLink)
+		}
+	}
+
+	tx, err := db.Beginx()
+	defer tx.Rollback()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Preparex(sql)
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(args...)
+	if err != nil {
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
 func (db DB) GetUserFavoriteArticles(u User, paging ...int) ([]Article, error) {
 	var articles []Article
 	limit, offset := pagingLimit(paging)
@@ -284,13 +351,13 @@ func (db DB) GetUserFavoriteArticles(u User, paging ...int) ([]Article, error) {
 }
 
 func pagingLimit(paging []int) (int, int) {
-	limit := 20
+	limit := 50
 	offset := 0
 
 	if len(paging) > 0 {
-		limit = paging[0]
+		offset = paging[0]
 		if len(paging) > 1 {
-			offset = paging[1]
+			limit = paging[1]
 		}
 	}
 
