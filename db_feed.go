@@ -38,6 +38,30 @@ LIMIT ?
 OFFSET ?
 `
 
+	get_unread_feed_articles = `
+SELECT uf.feed_link, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_link = a.feed_link AND uf.feed_link = ? AND uf.user_login = ?
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id
+WHERE ar.article_id IS NULL
+LIMIT ?
+OFFSET ?
+`
+
+	create_all_users_articles_read = `
+INSERT INTO users_articles_read
+	SELECT uf.user_login, a.id, uf.feed_link
+	FROM users_feeds uf INNER JOIN articles a
+		ON uf.feed_link = a.feed_link AND uf.user_login = ? AND uf.feed_link = ?
+`
+	delete_all_users_articles_read = `
+DELETE FROM users_articles_read WHERE user_login = ? AND article_feed_link = ?
+`
 	get_user_favorite_articles = `
 SELECT uf.feed_link, a.id, a.title, a.description, a.link, a.date
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read
@@ -285,7 +309,25 @@ func (db DB) GetFeedArticles(f Feed, paging ...int) (Feed, error) {
 	return f, nil
 }
 
-func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error {
+func (db DB) GetUnreadFeedArticles(f Feed, paging ...int) (Feed, error) {
+	if f.User.Login == "" {
+		return f, ErrNoFeedUser
+	}
+
+	var articles []Article
+
+	limit, offset := pagingLimit(paging)
+
+	if err := db.Select(&articles, get_unread_feed_articles, f.Link, f.User.Login, limit, offset); err != nil {
+		return f, err
+	}
+
+	f.Articles = articles
+
+	return f, nil
+}
+
+func (db DB) MarkFeedArticlesAsRead(u User, articles []Article, read bool) error {
 	var sql string
 	var args []interface{}
 
@@ -339,6 +381,49 @@ func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error
 	return nil
 }
 
+func (db DB) MarkAllFeedArticlesAsRead(f Feed, read bool) error {
+	if f.User.Login == "" {
+		return ErrNoFeedUser
+	}
+	if err := f.Validate(); err != nil {
+		return err
+	}
+
+	tx, err := db.Beginx()
+	defer tx.Rollback()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Preparex(delete_all_users_articles_read)
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(f.User.Login, f.Link)
+	if err != nil {
+		return err
+	}
+
+	stmt, err = tx.Preparex(create_all_users_articles_read)
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(f.User.Login, f.Link)
+	if err != nil {
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
 func (db DB) GetUserFavoriteArticles(u User, paging ...int) ([]Article, error) {
 	var articles []Article
 	limit, offset := pagingLimit(paging)
@@ -348,6 +433,60 @@ func (db DB) GetUserFavoriteArticles(u User, paging ...int) ([]Article, error) {
 	}
 
 	return articles, nil
+}
+
+func (db DB) MarkFeedArticlesAsFavorite(u User, articles []Article, read bool) error {
+	var sql string
+	var args []interface{}
+
+	if read {
+		sql = `INSERT INTO users_articles_fav(user_login, article_id, article_feed_link) `
+	} else {
+		sql = `DELETE FROM users_articles_fav WHERE `
+	}
+	for i, a := range articles {
+		if err := a.Validate(); err != nil {
+			return err
+		}
+
+		if read {
+			if i != 0 {
+				sql += `UNION `
+			}
+
+			sql += `SELECT ?, ?, ? EXCEPT SELECT user_login, article_id, article_feed_link FROM users_articles_fav WHERE user_login = ? AND article_id = ? AND article_feed_link = ?`
+			args = append(args, u.Login, a.Id, a.FeedLink, u.Login, a.Id, a.FeedLink)
+		} else {
+			if i != 0 {
+				sql += `OR `
+			}
+
+			sql += `(user_login = ? AND article_id = ? AND article_feed_link = ?)`
+			args = append(args, u.Login, a.Id, a.FeedLink)
+		}
+	}
+
+	tx, err := db.Beginx()
+	defer tx.Rollback()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Preparex(sql)
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(args...)
+	if err != nil {
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
 }
 
 func pagingLimit(paging []int) (int, int) {
