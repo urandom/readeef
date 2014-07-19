@@ -282,8 +282,8 @@ func TestDBFeeds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	a1 := Article{Article: parser.Article{Id: "1", Title: "Test 1"}}
-	a2 := Article{Article: parser.Article{Id: "2", Title: "Test 2", Date: t1}}
+	a1 := Article{Article: parser.Article{Id: "1", Title: "Test 1"}, FeedLink: f2.Link}
+	a2 := Article{Article: parser.Article{Id: "2", Title: "Test 2", Date: t1}, FeedLink: f2.Link}
 
 	if f, err := db.CreateFeedArticles(f2, []Article{a1, a2}); err == nil {
 		expectedInt = 2
@@ -306,7 +306,7 @@ func TestDBFeeds(t *testing.T) {
 		}
 		expectedStr = "Test 2"
 		if f.Articles[1].Title != expectedStr {
-			t.Fatalf("Expected '%s' for article id, got '%s'\n", expectedStr, f.Articles[1].Title)
+			t.Fatalf("Expected '%s' for article title, got '%s'\n", expectedStr, f.Articles[1].Title)
 		}
 		if !f.Articles[1].Date.Equal(expectedDate) {
 			t.Fatalf("Expected '%s' for article date, got '%s'\n", expectedDate, f.Articles[1].Date)
@@ -320,6 +320,116 @@ func TestDBFeeds(t *testing.T) {
 		if len(f.Articles) != expectedInt {
 			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(f.Articles))
 		}
+	}
+
+	if articles, err := db.GetUnreadUserArticles(f2.User); err == nil {
+		expectedInt = 2
+		if len(articles) != expectedInt {
+			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(articles))
+		}
+
+		f2.Articles = articles
+	}
+
+	if err := db.MarkUserArticlesAsRead(f2.User, f2.Articles, true); err != nil {
+		t.Fatal(err)
+	}
+
+	if f, err := db.GetUnreadFeedArticles(f2); err == nil {
+		expectedInt = 0
+		if len(f.Articles) != expectedInt {
+			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(f.Articles))
+		}
+	}
+
+	if articles, err := db.GetUnreadUserArticles(f2.User); err == nil {
+		expectedInt = 0
+		if len(articles) != expectedInt {
+			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(articles))
+		}
+	}
+
+	if err := db.MarkUserArticlesAsRead(f2.User, f2.Articles, false); err != nil {
+		t.Fatal(err)
+	}
+
+	if articles, err := db.GetUnreadUserArticles(f2.User); err == nil {
+		expectedInt = 2
+		if len(articles) != expectedInt {
+			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(articles))
+		}
+	}
+
+	a3 := Article{Article: parser.Article{Id: "3", Title: "Test 3", Date: time.Now().Add(time.Minute)}, FeedLink: f2.Link}
+
+	f2.Articles = append(f2.Articles, a3)
+	if f, err := db.CreateFeedArticles(f2, []Article{a3}); err == nil {
+		a1, a2, a3 = f.Articles[1], f.Articles[2], f.Articles[0]
+	} else {
+		t.Fatal(err)
+	}
+
+	if err := db.MarkUserArticlesByDateAsRead(f2.User, time.Now(), true); err != nil {
+		t.Fatal(err)
+	}
+
+	if articles, err := db.GetUnreadUserArticles(f2.User); err == nil {
+		expectedInt = 1
+		if len(articles) != expectedInt {
+			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(articles))
+		}
+
+		expectedStr = "Test 3"
+		if articles[0].Title != expectedStr {
+			t.Fatalf("Expected '%s' for article title, got '%s'\n", expectedStr, articles[0].Title)
+		}
+	}
+
+	if articles, err := db.GetUserFavoriteArticles(u); err == nil {
+		expectedInt = 0
+		if len(articles) != expectedInt {
+			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(articles))
+		}
+	} else {
+		t.Fatal(err)
+	}
+
+	if err := db.MarkUserArticlesAsFavorite(u, []Article{a3, a1}, true); err != nil {
+		t.Fatal(err)
+	}
+
+	if articles, err := db.GetUserFavoriteArticles(u); err == nil {
+		expectedInt = 2
+		if len(articles) != expectedInt {
+			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(articles))
+		}
+		expectedStr = "Test 1"
+		if articles[0].Title != expectedStr {
+			t.Fatalf("Expected '%s' for article title, got '%s'\n", expectedStr, articles[0].Title)
+		}
+		expectedStr = "Test 3"
+		if articles[1].Title != expectedStr {
+			t.Fatalf("Expected '%s' for article title, got '%s'\n", expectedStr, articles[1].Title)
+		}
+	} else {
+		t.Fatal(err)
+	}
+
+	if err := db.MarkUserArticlesAsFavorite(u, []Article{a1, a2}, false); err != nil {
+		t.Fatal(err)
+	}
+
+	if articles, err := db.GetUserFavoriteArticles(u); err == nil {
+		expectedInt = 1
+		if len(articles) != expectedInt {
+			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(articles))
+		}
+		expectedStr = "Test 3"
+		if articles[0].Title != expectedStr {
+			t.Fatalf("Expected '%s' for article title, got '%s'\n", expectedStr, articles[0].Title)
+		}
+	} else {
+		t.Fatal(err)
 	}
 }
 

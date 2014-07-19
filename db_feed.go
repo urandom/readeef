@@ -37,6 +37,7 @@ LEFT OUTER JOIN users_articles_read ar
 	ON a.id = ar.article_id
 LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id
+ORDER BY a.date
 LIMIT ?
 OFFSET ?
 `
@@ -52,6 +53,7 @@ LEFT OUTER JOIN users_articles_read ar
 LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id
 WHERE ar.article_id IS NULL
+ORDER BY a.date
 LIMIT ?
 OFFSET ?
 `
@@ -66,6 +68,7 @@ LEFT OUTER JOIN users_articles_read ar
 	ON a.id = ar.article_id
 LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id
+ORDER BY a.date
 LIMIT ?
 OFFSET ?
 `
@@ -81,6 +84,7 @@ LEFT OUTER JOIN users_articles_read ar
 LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id
 WHERE ar.article_id IS NULL
+ORDER BY a.date
 LIMIT ?
 OFFSET ?
 `
@@ -100,14 +104,15 @@ DELETE FROM users_articles_read WHERE user_login = ? AND article_id IN (
 `
 
 	get_user_favorite_articles = `
-SELECT uf.feed_link, a.id, a.title, a.description, a.link, a.date
+SELECT uf.feed_link, a.id, a.title, a.description, a.link, a.date,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read
 FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_link = articles.feed_link AND uf.user_login = ?
+	ON uf.feed_link = a.feed_link AND uf.user_login = ?
 INNER JOIN users_articles_fav af
 	ON a.id = af.article_id
 LEFT OUTER JOIN users_articles_read ar
 	ON a.id = ar.article_id
+ORDER BY a.date
 LIMIT ?
 OFFSET ?
 `
@@ -300,7 +305,6 @@ func (db DB) CreateFeedArticles(f Feed, articles []Article) (Feed, error) {
 
 		sql += `SELECT ?, ?, ?, ? ,?, ? EXCEPT SELECT id, feed_link, title, description, link, date FROM articles WHERE id = ? AND feed_link = ? `
 		args = append(args, a.Id, f.Link, a.Title, a.Description, a.Link, a.Date, a.Id, f.Link)
-		a.FeedLink = f.Link
 	}
 
 	tx, err := db.Beginx()
@@ -389,6 +393,10 @@ func (db DB) GetUnreadUserArticles(u User, paging ...int) ([]Article, error) {
 }
 
 func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error {
+	if len(articles) == 0 {
+		return nil
+	}
+
 	var sql string
 	var args []interface{}
 
@@ -478,7 +486,7 @@ func (db DB) MarkUserArticlesByDateAsRead(u User, d time.Time, read bool) error 
 	return nil
 }
 
-func (db DB) GetFavoriteUserArticles(u User, paging ...int) ([]Article, error) {
+func (db DB) GetUserFavoriteArticles(u User, paging ...int) ([]Article, error) {
 	var articles []Article
 
 	offset, limit := pagingLimit(paging)
@@ -510,7 +518,7 @@ func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) e
 
 		if read {
 			if i != 0 {
-				sql += `UNION `
+				sql += ` UNION `
 			}
 
 			sql += `SELECT ?, ?, ? EXCEPT SELECT user_login, article_id, article_feed_link FROM users_articles_fav WHERE user_login = ? AND article_id = ? AND article_feed_link = ?`

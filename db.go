@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS articles (
 	title TEXT,
 	description TEXT,
 	link TEXT,
-	date DATETIME,
+	date TIMESTAMP,
 
 	PRIMARY KEY(id, feed_link),
 	FOREIGN KEY(feed_link) REFERENCES feeds(link) ON DELETE CASCADE
