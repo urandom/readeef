@@ -314,6 +314,13 @@ func TestDBFeeds(t *testing.T) {
 	} else {
 		t.Fatal(err)
 	}
+
+	if f, err := db.GetUnreadFeedArticles(f2); err == nil {
+		expectedInt = 2
+		if len(f.Articles) != expectedInt {
+			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(f.Articles))
+		}
+	}
 }
 
 func init() {

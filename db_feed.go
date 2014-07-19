@@ -1,11 +1,14 @@
 package readeef
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
 const (
 	get_feed    = `SELECT title, description, hub_link FROM feeds WHERE link = ?`
 	create_feed = `
-INSERT INTO feeds(link, title, description, hub_link) 
+INSERT INTO feeds(link, title, description, hub_link)
 	SELECT ?, ?, ?, ? EXCEPT SELECT link, title, description, hub_link FROM feeds WHERE link = ?`
 	update_feed = `UPDATE feeds SET title = ?, description = ?, hub_link = ? WHERE link = ?`
 	delete_feed = `DELETE FROM feeds WHERE link = ?`
@@ -53,15 +56,49 @@ LIMIT ?
 OFFSET ?
 `
 
-	create_all_users_articles_read = `
+	get_user_articles = `
+SELECT uf.feed_link, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_link = a.feed_link AND uf.user_login = ?
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id
+LIMIT ?
+OFFSET ?
+`
+
+	get_unread_user_articles = `
+SELECT uf.feed_link, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_link = a.feed_link AND uf.user_login = ?
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id
+WHERE ar.article_id IS NULL
+LIMIT ?
+OFFSET ?
+`
+
+	create_all_users_articles_read_by_date = `
 INSERT INTO users_articles_read
 	SELECT uf.user_login, a.id, uf.feed_link
 	FROM users_feeds uf INNER JOIN articles a
-		ON uf.feed_link = a.feed_link AND uf.user_login = ? AND uf.feed_link = ?
+		ON uf.feed_link = a.feed_link AND uf.user_login = ?
+		AND a.id IN (SELECT id FROM articles WHERE date IS NULL OR date < ?)
 `
-	delete_all_users_articles_read = `
-DELETE FROM users_articles_read WHERE user_login = ? AND article_feed_link = ?
+
+	delete_all_users_articles_read_by_date = `
+DELETE FROM users_articles_read WHERE user_login = ? AND article_id IN (
+	SELECT id FROM articles WHERE date IS NULL OR date < ?
+)
 `
+
 	get_user_favorite_articles = `
 SELECT uf.feed_link, a.id, a.title, a.description, a.link, a.date
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read
@@ -298,7 +335,7 @@ func (db DB) GetFeedArticles(f Feed, paging ...int) (Feed, error) {
 
 	var articles []Article
 
-	limit, offset := pagingLimit(paging)
+	offset, limit := pagingLimit(paging)
 
 	if err := db.Select(&articles, get_feed_articles, f.Link, f.User.Login, limit, offset); err != nil {
 		return f, err
@@ -316,7 +353,7 @@ func (db DB) GetUnreadFeedArticles(f Feed, paging ...int) (Feed, error) {
 
 	var articles []Article
 
-	limit, offset := pagingLimit(paging)
+	offset, limit := pagingLimit(paging)
 
 	if err := db.Select(&articles, get_unread_feed_articles, f.Link, f.User.Login, limit, offset); err != nil {
 		return f, err
@@ -327,7 +364,31 @@ func (db DB) GetUnreadFeedArticles(f Feed, paging ...int) (Feed, error) {
 	return f, nil
 }
 
-func (db DB) MarkFeedArticlesAsRead(u User, articles []Article, read bool) error {
+func (db DB) GetUserArticles(u User, paging ...int) ([]Article, error) {
+	var articles []Article
+
+	offset, limit := pagingLimit(paging)
+
+	if err := db.Select(&articles, get_user_articles, u.Login, limit, offset); err != nil {
+		return articles, err
+	}
+
+	return articles, nil
+}
+
+func (db DB) GetUnreadUserArticles(u User, paging ...int) ([]Article, error) {
+	var articles []Article
+
+	offset, limit := pagingLimit(paging)
+
+	if err := db.Select(&articles, get_unread_user_articles, u.Login, limit, offset); err != nil {
+		return articles, err
+	}
+
+	return articles, nil
+}
+
+func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error {
 	var sql string
 	var args []interface{}
 
@@ -381,40 +442,33 @@ func (db DB) MarkFeedArticlesAsRead(u User, articles []Article, read bool) error
 	return nil
 }
 
-func (db DB) MarkAllFeedArticlesAsRead(f Feed, read bool) error {
-	if f.User.Login == "" {
-		return ErrNoFeedUser
-	}
-	if err := f.Validate(); err != nil {
-		return err
-	}
-
+func (db DB) MarkUserArticlesByDateAsRead(u User, d time.Time, read bool) error {
 	tx, err := db.Beginx()
 	defer tx.Rollback()
 	if err != nil {
 		return err
 	}
 
-	stmt, err := tx.Preparex(delete_all_users_articles_read)
+	stmt, err := tx.Preparex(delete_all_users_articles_read_by_date)
 
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(f.User.Login, f.Link)
+	_, err = stmt.Exec(u.Login, d)
 	if err != nil {
 		return err
 	}
 
-	stmt, err = tx.Preparex(create_all_users_articles_read)
+	stmt, err = tx.Preparex(create_all_users_articles_read_by_date)
 
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(f.User.Login, f.Link)
+	_, err = stmt.Exec(u.Login, d)
 	if err != nil {
 		return err
 	}
@@ -424,9 +478,10 @@ func (db DB) MarkAllFeedArticlesAsRead(f Feed, read bool) error {
 	return nil
 }
 
-func (db DB) GetUserFavoriteArticles(u User, paging ...int) ([]Article, error) {
+func (db DB) GetFavoriteUserArticles(u User, paging ...int) ([]Article, error) {
 	var articles []Article
-	limit, offset := pagingLimit(paging)
+
+	offset, limit := pagingLimit(paging)
 
 	if err := db.Select(&articles, get_user_favorite_articles, u.Login, limit, offset); err != nil {
 		return articles, err
@@ -435,7 +490,11 @@ func (db DB) GetUserFavoriteArticles(u User, paging ...int) ([]Article, error) {
 	return articles, nil
 }
 
-func (db DB) MarkFeedArticlesAsFavorite(u User, articles []Article, read bool) error {
+func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) error {
+	if len(articles) == 0 {
+		return nil
+	}
+
 	var sql string
 	var args []interface{}
 
@@ -490,8 +549,8 @@ func (db DB) MarkFeedArticlesAsFavorite(u User, articles []Article, read bool) e
 }
 
 func pagingLimit(paging []int) (int, int) {
-	limit := 50
 	offset := 0
+	limit := 50
 
 	if len(paging) > 0 {
 		offset = paging[0]
@@ -500,5 +559,5 @@ func pagingLimit(paging []int) (int, int) {
 		}
 	}
 
-	return limit, offset
+	return offset, limit
 }

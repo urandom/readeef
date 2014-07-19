@@ -15,10 +15,11 @@ type Feed struct {
 
 type Article struct {
 	parser.Article
-
 	FeedLink string `db:"feed_link"`
 	Read     bool
 	Favorite bool
+
+	Feed Feed
 }
 
 func (f Feed) Validate() error {
