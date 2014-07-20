@@ -6,7 +6,12 @@ import (
 	"code.google.com/p/gcfg"
 )
 
+var apiversion = 1
+
 type Config struct {
+	API struct {
+		Version int
+	}
 	DB struct {
 		Driver  string
 		Connect string
@@ -14,6 +19,10 @@ type Config struct {
 	Auth struct {
 		Secret          string
 		IgnoreURLPrefix []string `gcfg:"ignore-url-prefix"`
+	}
+	Hubbub struct {
+		CallbackURL  string `gcfg:"callback-url"` // http://www.example.com/dispatcher-path/v1/hubbub
+		RelativePath string `gcfg:"relative-path"`
 	}
 }
 
@@ -40,6 +49,7 @@ func ReadConfig(path ...string) (Config, error) {
 		return Config{}, err
 	}
 
+	c.API.Version = apiversion
 	return c, nil
 }
 
@@ -52,6 +62,7 @@ func defaultConfig() (Config, error) {
 		return Config{}, err
 	}
 
+	def.API.Version = apiversion
 	return def, nil
 }
 
@@ -59,4 +70,6 @@ var cfg string = `
 [db]
 	driver = sqlite3
 	connect = file:./readeef.sqlite3?cache=shared&mode=rwc
+[hubbub]
+	relative-path = /hubbub/
 `
