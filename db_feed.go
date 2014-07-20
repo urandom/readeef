@@ -80,9 +80,9 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_link = a.feed_link AND uf.user_login = ?
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id
+	ON a.id = ar.article_id AND a.feed_link = ar.article_feed_link
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id
+	ON a.id = af.article_id AND a.feed_link = af.article_feed_link
 WHERE ar.article_id IS NULL
 ORDER BY a.date
 LIMIT ?
@@ -99,6 +99,20 @@ INSERT INTO users_articles_read
 
 	delete_all_users_articles_read_by_date = `
 DELETE FROM users_articles_read WHERE user_login = ? AND article_id IN (
+	SELECT id FROM articles WHERE date IS NULL OR date < ?
+)
+`
+
+	create_all_users_articles_read_by_feed_date = `
+INSERT INTO users_articles_read
+	SELECT uf.user_login, a.id, uf.feed_link
+	FROM users_feeds uf INNER JOIN articles a
+		ON uf.feed_link = a.feed_link AND uf.user_login = ? AND uf.feed_link = ?
+		AND a.id IN (SELECT id FROM articles WHERE date IS NULL OR date < ?)
+`
+
+	delete_all_users_articles_read_by_feed_date = `
+DELETE FROM users_articles_read WHERE user_login = ? AND article_feed_link = ? AND article_id IN (
 	SELECT id FROM articles WHERE date IS NULL OR date < ?
 )
 `
@@ -210,42 +224,45 @@ func (db DB) GetFeeds() ([]Feed, error) {
 	return feeds, nil
 }
 
-func (db DB) CreateUserFeed(u User, f Feed) error {
+func (db DB) CreateUserFeed(u User, f Feed) (Feed, error) {
 	if err := u.Validate(); err != nil {
-		return err
+		return f, err
 	}
 	if err := f.Validate(); err != nil {
-		return err
+		return f, err
 	}
 
 	tx, err := db.Beginx()
 	defer tx.Rollback()
 	if err != nil {
-		return err
+		return f, err
 	}
 
 	stmt, err := tx.Preparex(create_user_feed)
 
 	if err != nil {
-		return err
+		return f, err
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(u.Login, f.Link, u.Login, f.Link)
 	if err != nil {
-		return err
+		return f, err
 	}
 
 	tx.Commit()
 
-	return nil
+	f.User = u
+
+	return f, nil
 }
 
-func (db DB) DeleteUserFeed(u User, f Feed) error {
-	if err := u.Validate(); err != nil {
+func (db DB) DeleteUserFeed(f Feed) error {
+	if err := f.Validate(); err != nil {
 		return err
 	}
-	if err := f.Validate(); err != nil {
+
+	if err := f.User.Validate(); err != nil {
 		return err
 	}
 
@@ -262,7 +279,7 @@ func (db DB) DeleteUserFeed(u User, f Feed) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(u.Login, f.Link)
+	_, err = stmt.Exec(f.User.Login, f.Link)
 	if err != nil {
 		return err
 	}
@@ -305,6 +322,7 @@ func (db DB) CreateFeedArticles(f Feed, articles []Article) (Feed, error) {
 
 		sql += `SELECT ?, ?, ?, ? ,?, ? EXCEPT SELECT id, feed_link, title, description, link, date FROM articles WHERE id = ? AND feed_link = ? `
 		args = append(args, a.Id, f.Link, a.Title, a.Description, a.Link, a.Date, a.Id, f.Link)
+		a.FeedLink = f.Link
 	}
 
 	tx, err := db.Beginx()
@@ -325,7 +343,7 @@ func (db DB) CreateFeedArticles(f Feed, articles []Article) (Feed, error) {
 		return f, err
 	}
 
-	f.Articles = append(articles, f.Articles...)
+	f.Articles = append(f.Articles, articles...)
 
 	tx.Commit()
 
@@ -486,6 +504,45 @@ func (db DB) MarkUserArticlesByDateAsRead(u User, d time.Time, read bool) error 
 	return nil
 }
 
+func (db DB) MarkFeedArticlesByDateAsRead(f Feed, d time.Time, read bool) error {
+	if f.User.Login == "" {
+		return ErrNoFeedUser
+	}
+
+	tx, err := db.Beginx()
+	defer tx.Rollback()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Preparex(delete_all_users_articles_read_by_feed_date)
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(f.User.Login, f.Link, d)
+	if err != nil {
+		return err
+	}
+
+	stmt, err = tx.Preparex(create_all_users_articles_read_by_feed_date)
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(f.User.Login, f.Link, d)
+	if err != nil {
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
+}
 func (db DB) GetUserFavoriteArticles(u User, paging ...int) ([]Article, error) {
 	var articles []Article
 

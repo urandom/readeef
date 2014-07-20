@@ -133,6 +133,8 @@ func TestDBUsers(t *testing.T) {
 }
 
 func TestDBFeeds(t *testing.T) {
+	var err error
+
 	db := NewDB("sqlite3", conn)
 	if err := db.Connect(); err != nil {
 		t.Fatal(err)
@@ -212,7 +214,7 @@ func TestDBFeeds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := db.CreateUserFeed(u, f); err != nil {
+	if f, err = db.CreateUserFeed(u, f); err != nil {
 		t.Fatal(err)
 	}
 
@@ -229,7 +231,7 @@ func TestDBFeeds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := db.CreateUserFeed(u, f2); err != nil {
+	if f2, err = db.CreateUserFeed(u, f2); err != nil {
 		t.Fatal(err)
 	}
 
@@ -250,7 +252,7 @@ func TestDBFeeds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := db.DeleteUserFeed(u, f); err != nil {
+	if err := db.DeleteUserFeed(f); err != nil {
 		t.Fatal(err)
 	}
 
@@ -364,7 +366,7 @@ func TestDBFeeds(t *testing.T) {
 
 	f2.Articles = append(f2.Articles, a3)
 	if f, err := db.CreateFeedArticles(f2, []Article{a3}); err == nil {
-		a1, a2, a3 = f.Articles[1], f.Articles[2], f.Articles[0]
+		a1, a2, a3 = f.Articles[0], f.Articles[1], f.Articles[2]
 	} else {
 		t.Fatal(err)
 	}
@@ -431,6 +433,46 @@ func TestDBFeeds(t *testing.T) {
 	} else {
 		t.Fatal(err)
 	}
+
+	f3 := Feed{Feed: parser.Feed{Link: "http://rss2.example.com"}}
+	if err := db.UpdateFeed(f3); err != nil {
+		t.Fatal(err)
+	}
+
+	if f3, err = db.CreateUserFeed(u, f3); err != nil {
+		t.Fatal(err)
+	}
+
+	if f3, err = db.CreateFeedArticles(f3, []Article{a1}); err != nil {
+		t.Fatal(err)
+	}
+
+	if articles, err := db.GetUnreadUserArticles(u); err == nil {
+		expectedInt = 2
+		if len(articles) != expectedInt {
+			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(articles))
+		}
+	} else {
+		t.Fatal(err)
+	}
+
+	if err := db.MarkFeedArticlesByDateAsRead(f3, time.Now(), true); err != nil {
+		t.Fatal(err)
+	}
+
+	if articles, err := db.GetUnreadUserArticles(u); err == nil {
+		expectedInt = 1
+		if len(articles) != expectedInt {
+			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(articles))
+		}
+		expectedStr = f2.Link
+		if articles[0].FeedLink != expectedStr {
+			t.Fatalf("Expected '%s' for article feed link, got '%s'\n", expectedStr, articles[0].FeedLink)
+		}
+	} else {
+		t.Fatal(err)
+	}
+
 }
 
 func init() {
