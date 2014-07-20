@@ -34,9 +34,9 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_link = a.feed_link AND uf.feed_link = ? AND uf.user_login = ?
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id
+	ON a.id = ar.article_id AND a.feed_link = ar.article_feed_link
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id
+	ON a.id = af.article_id AND a.feed_link = af.article_feed_link
 ORDER BY a.date
 LIMIT ?
 OFFSET ?
@@ -49,10 +49,26 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_link = a.feed_link AND uf.feed_link = ? AND uf.user_login = ?
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id
+	ON a.id = ar.article_id AND a.feed_link = ar.article_feed_link
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id
+	ON a.id = af.article_id AND a.feed_link = af.article_feed_link
 WHERE ar.article_id IS NULL
+ORDER BY a.date
+LIMIT ?
+OFFSET ?
+`
+
+	get_read_feed_articles = `
+SELECT uf.feed_link, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_link = a.feed_link AND uf.feed_link = ? AND uf.user_login = ?
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_link = ar.article_feed_link
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_link = af.article_feed_link
+WHERE ar.article_id IS NOT NULL
 ORDER BY a.date
 LIMIT ?
 OFFSET ?
@@ -65,9 +81,9 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_link = a.feed_link AND uf.user_login = ?
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id
+	ON a.id = ar.article_id AND a.feed_link = ar.article_feed_link
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id
+	ON a.id = af.article_id AND a.feed_link = af.article_feed_link
 ORDER BY a.date
 LIMIT ?
 OFFSET ?
@@ -84,6 +100,22 @@ LEFT OUTER JOIN users_articles_read ar
 LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id AND a.feed_link = af.article_feed_link
 WHERE ar.article_id IS NULL
+ORDER BY a.date
+LIMIT ?
+OFFSET ?
+`
+
+	get_read_user_articles = `
+SELECT uf.feed_link, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_link = a.feed_link AND uf.user_login = ?
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_link = ar.article_feed_link
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_link = af.article_feed_link
+WHERE ar.article_id IS NOT NULL
 ORDER BY a.date
 LIMIT ?
 OFFSET ?
@@ -123,9 +155,9 @@ CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_link = a.feed_link AND uf.user_login = ?
 INNER JOIN users_articles_fav af
-	ON a.id = af.article_id
+	ON a.id = af.article_id AND a.feed_link = af.article_feed_link
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id
+	ON a.id = ar.article_id AND a.feed_link = ar.article_feed_link
 ORDER BY a.date
 LIMIT ?
 OFFSET ?
@@ -386,6 +418,24 @@ func (db DB) GetUnreadFeedArticles(f Feed, paging ...int) (Feed, error) {
 	return f, nil
 }
 
+func (db DB) GetReadFeedArticles(f Feed, paging ...int) (Feed, error) {
+	if f.User.Login == "" {
+		return f, ErrNoFeedUser
+	}
+
+	var articles []Article
+
+	offset, limit := pagingLimit(paging)
+
+	if err := db.Select(&articles, get_read_feed_articles, f.Link, f.User.Login, limit, offset); err != nil {
+		return f, err
+	}
+
+	f.Articles = articles
+
+	return f, nil
+}
+
 func (db DB) GetUserArticles(u User, paging ...int) ([]Article, error) {
 	var articles []Article
 
@@ -404,6 +454,18 @@ func (db DB) GetUnreadUserArticles(u User, paging ...int) ([]Article, error) {
 	offset, limit := pagingLimit(paging)
 
 	if err := db.Select(&articles, get_unread_user_articles, u.Login, limit, offset); err != nil {
+		return articles, err
+	}
+
+	return articles, nil
+}
+
+func (db DB) GetReadUserArticles(u User, paging ...int) ([]Article, error) {
+	var articles []Article
+
+	offset, limit := pagingLimit(paging)
+
+	if err := db.Select(&articles, get_read_user_articles, u.Login, limit, offset); err != nil {
 		return articles, err
 	}
 

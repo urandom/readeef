@@ -473,6 +473,26 @@ func TestDBFeeds(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	if articles, err := db.GetReadUserArticles(u); err == nil {
+		expectedInt = 3
+		if len(articles) != expectedInt {
+			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(articles))
+		}
+	} else {
+		t.Fatal(err)
+	}
+
+	if f, err := db.GetReadFeedArticles(f3); err == nil {
+		expectedInt = 1
+		if len(f.Articles) != expectedInt {
+			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(f.Articles))
+		}
+		expectedStr = f3.Link
+		if f.Articles[0].FeedLink != expectedStr {
+			t.Fatalf("Expected '%s' for article feed link, got '%s'\n", expectedStr, f.Articles[0].FeedLink)
+		}
+	}
+
 }
 
 func init() {
