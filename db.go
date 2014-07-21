@@ -73,6 +73,15 @@ CREATE TABLE IF NOT EXISTS users_articles_fav (
 	PRIMARY KEY(user_login, article_id, article_feed_link),
 	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
 	FOREIGN KEY(article_id, article_feed_link) REFERENCES articles(id, feed_link) ON DELETE CASCADE
+)`, `
+CREATE TABLE IF NOT EXISTS hubbub (
+	id INTEGER PRIMARY KEY,
+	link TEXT NOT NULL UNIQUE,
+	feed_link TEXT,
+	lease_duration INTEGER,
+	verification_time TIMESTAMP,
+
+	FOREIGN KEY(feed_link) REFERENCES feeds(link) ON DELETE CASCADE
 )`,
 	}
 )
