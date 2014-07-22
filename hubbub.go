@@ -44,7 +44,9 @@ func (h Hubbub) Subscribe(f Feed) error {
 		}
 	}
 
-	return nil
+	s := HubbubSubscription{Link: f.HubLink, FeedLink: f.Link}
+
+	return h.db.UpdateHubbubSubscription(s)
 }
 
 func (s HubbubSubscription) Validate() error {
