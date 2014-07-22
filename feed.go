@@ -2,6 +2,7 @@ package readeef
 
 import (
 	"errors"
+	"net/url"
 	"readeef/parser"
 )
 
@@ -22,7 +23,7 @@ type Article struct {
 }
 
 func (f Feed) Validate() error {
-	if f.Link == "" {
+	if u, err := url.Parse(f.Link); err != nil || !u.IsAbs() {
 		return ValidationError{errors.New("Feed has no link")}
 	}
 
@@ -33,7 +34,7 @@ func (a Article) Validate() error {
 	if a.Id == "" {
 		return ValidationError{errors.New("Article has no id")}
 	}
-	if a.FeedLink == "" {
+	if u, err := url.Parse(a.FeedLink); err != nil || !u.IsAbs() {
 		return ValidationError{errors.New("Article has no feed link")}
 	}
 

@@ -12,7 +12,6 @@ type Hubbub struct {
 }
 
 type HubbubSubscription struct {
-	Id               int64
 	Link             string
 	FeedLink         string        `db:"feed_link"`
 	LeaseDuration    time.Duration `db:"lease_duration"`
@@ -49,11 +48,11 @@ func (h Hubbub) Subscribe(f Feed) error {
 }
 
 func (s HubbubSubscription) Validate() error {
-	if s.Link == "" {
+	if u, err := url.Parse(s.Link); err != nil || !u.IsAbs() {
 		return ValidationError{errors.New("Invalid subscription link")}
 	}
 
-	if s.FeedLink == "" {
+	if u, err := url.Parse(s.FeedLink); err != nil || !u.IsAbs() {
 		return ValidationError{errors.New("Invalid feed link")}
 	}
 
