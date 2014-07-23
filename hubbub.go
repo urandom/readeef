@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
+	"github.com/urandom/webfw"
+	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/util"
 )
 
@@ -29,6 +32,11 @@ type HubbubSubscription struct {
 	SubscriptionFailure bool          `db:"subscription_failure"`
 
 	hubbub Hubbub
+}
+
+type HubbubController struct {
+	webfw.BaseController
+	db DB
 }
 
 var (
@@ -69,7 +77,27 @@ func (h Hubbub) Subscribe(f Feed) error {
 	return nil
 }
 
-func (s HubbubSubscription) Subscription(subscribe bool) error {
+func (s HubbubSubscription) Subscribe() error {
+	return s.subscription(true)
+}
+
+func (s HubbubSubscription) Unsubscribe() error {
+	return s.subscription(false)
+}
+
+func (s HubbubSubscription) Validate() error {
+	if u, err := url.Parse(s.Link); err != nil || !u.IsAbs() {
+		return ValidationError{errors.New("Invalid subscription link")}
+	}
+
+	if u, err := url.Parse(s.FeedLink); err != nil || !u.IsAbs() {
+		return ValidationError{errors.New("Invalid feed link")}
+	}
+
+	return nil
+}
+
+func (s HubbubSubscription) subscription(subscribe bool) error {
 	u := callbackURL(s.hubbub.config, s.FeedLink)
 
 	body := url.Values{}
@@ -97,22 +125,85 @@ func (s HubbubSubscription) Subscription(subscribe bool) error {
 		return SubscriptionError{error: errors.New(resp.Status), Subscription: s}
 	}
 
-	s.SubscriptionFailure = false
-	s.hubbub.db.UpdateHubbubSubscription(s)
-
 	return nil
 }
 
-func (s HubbubSubscription) Validate() error {
-	if u, err := url.Parse(s.Link); err != nil || !u.IsAbs() {
-		return ValidationError{errors.New("Invalid subscription link")}
-	}
+func NewHubbubController(db DB, c Config) HubbubController {
+	return HubbubController{
+		webfw.NewBaseController(c.Hubbub.RelativePath+"/:feed-link", webfw.MethodAll, "hubbub-callback"),
+		db}
+}
 
-	if u, err := url.Parse(s.FeedLink); err != nil || !u.IsAbs() {
-		return ValidationError{errors.New("Invalid feed link")}
-	}
+func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 
-	return nil
+		buf := util.BufferPool.GetBuffer()
+		defer util.BufferPool.Put(buf)
+
+		if _, err := buf.ReadFrom(r.Body); err != nil {
+			webfw.GetLogger(c).Print(err)
+			return
+		}
+
+		params := r.URL.Query()
+		pathParams := webfw.GetParams(c, r)
+		feedLink := params.Get("hub.topic")
+
+		if feedLink == "" {
+			var err error
+			if feedLink = pathParams["feed-link"]; feedLink != "" {
+				feedLink, err = url.QueryUnescape(feedLink)
+			} else {
+				err = errors.New("No feed link could be found")
+			}
+
+			if err != nil {
+				webfw.GetLogger(c).Print(err)
+				return
+			}
+		}
+
+		s, err := con.db.GetHubbubSubscriptionByFeed(feedLink)
+
+		if err != nil {
+			webfw.GetLogger(c).Print(err)
+			return
+		}
+
+		switch params.Get("hub.mode") {
+		case "subscribe":
+			if lease, err := strconv.Atoi(params.Get("hub.lease_seconds")); err == nil {
+				s.LeaseDuration = time.Duration(lease) * time.Second
+			}
+			s.VerificationTime = time.Now()
+
+			w.Write([]byte(params.Get("hub.challenge")))
+		case "unsubscribe":
+			w.Write([]byte(params.Get("hub.challenge")))
+		case "denied":
+			w.Write([]byte{})
+			webfw.GetLogger(c).Printf("Unable to subscribe to '%s': %s\n", feedLink, params.Get("hub.reason"))
+		default:
+			w.Write([]byte{})
+
+			/* FIXME: notify whoever is responsible that new content can be fetched */
+		}
+
+		switch params.Get("hub.mode") {
+		case "subscribe":
+			s.SubscriptionFailure = false
+		case "unsubscribe", "denied":
+			s.SubscriptionFailure = true
+		default:
+			return
+		}
+
+		if err := s.hubbub.db.UpdateHubbubSubscription(s); err != nil {
+			webfw.GetLogger(c).Print(err)
+			return
+		}
+	}
 }
 
 func callbackURL(c Config, link string) string {

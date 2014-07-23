@@ -4,6 +4,9 @@ const (
 	get_hubbub_subscription = `
 SELECT feed_link, lease_duration, verification_time, subscription_failure
 	FROM hubbub_subscriptions WHERE link = ?`
+	get_hubbub_subscription_by_feed = `
+SELECT link, lease_duration, verification_time, subscription_failure
+	FROM hubbub_subscriptions WHERE feed_link = ?`
 	create_hubbub_subscription = `
 INSERT INTO hubbub_subscriptions(link, feed_link, lease_duration, verification_time, subscription_failure)
 	SELECT ?, ?, ?, ?, ? EXCEPT
@@ -25,6 +28,18 @@ func (db DB) GetHubbubSubscription(link string) (HubbubSubscription, error) {
 	}
 
 	s.Link = link
+
+	return s, nil
+}
+
+func (db DB) GetHubbubSubscriptionByFeed(link string) (HubbubSubscription, error) {
+	var s HubbubSubscription
+
+	if err := db.Get(&s, get_hubbub_subscription_by_feed); err != nil {
+		return s, err
+	}
+
+	s.FeedLink = link
 
 	return s, nil
 }
