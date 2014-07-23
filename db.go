@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 	feed_link TEXT NOT NULL UNIQUE,
 	lease_duration INTEGER,
 	verification_time TIMESTAMP,
+	subscription_failure INTEGER,
 
 	PRIMARY KEY(link),
 	FOREIGN KEY(feed_link) REFERENCES feeds(link) ON DELETE CASCADE

@@ -22,10 +22,11 @@ type SubscriptionError struct {
 }
 
 type HubbubSubscription struct {
-	Link             string
-	FeedLink         string        `db:"feed_link"`
-	LeaseDuration    time.Duration `db:"lease_duration"`
-	VerificationTime time.Time     `db:"verification_time"`
+	Link                string
+	FeedLink            string        `db:"feed_link"`
+	LeaseDuration       time.Duration `db:"lease_duration"`
+	VerificationTime    time.Time     `db:"verification_time"`
+	SubscriptionFailure bool          `db:"subscription_failure"`
 
 	hubbub Hubbub
 }
@@ -59,7 +60,7 @@ func (h Hubbub) Subscribe(f Feed) error {
 		}
 	}
 
-	s := HubbubSubscription{Link: f.HubLink, FeedLink: f.Link, hubbub: h}
+	s := HubbubSubscription{Link: f.HubLink, FeedLink: f.Link, hubbub: h, SubscriptionFailure: true}
 
 	if err := h.db.UpdateHubbubSubscription(s); err != nil {
 		return err
@@ -95,6 +96,9 @@ func (s HubbubSubscription) Subscription(subscribe bool) error {
 	} else if resp.StatusCode != 202 {
 		return SubscriptionError{error: errors.New(resp.Status), Subscription: s}
 	}
+
+	s.SubscriptionFailure = false
+	s.hubbub.db.UpdateHubbubSubscription(s)
 
 	return nil
 }
