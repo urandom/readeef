@@ -21,8 +21,9 @@ type Config struct {
 		IgnoreURLPrefix []string `gcfg:"ignore-url-prefix"`
 	}
 	Hubbub struct {
-		CallbackURL  string `gcfg:"callback-url"` // http://www.example.com/dispatcher-path/v1/hubbub
+		CallbackURL  string `gcfg:"callback-url"` // http://www.example.com/dispatcher-path
 		RelativePath string `gcfg:"relative-path"`
+		From         string
 	}
 }
 
@@ -71,5 +72,6 @@ var cfg string = `
 	driver = sqlite3
 	connect = file:./readeef.sqlite3?cache=shared&mode=rwc
 [hubbub]
-	relative-path = /hubbub/
+	relative-path = hubbub
+	from = readeef
 `

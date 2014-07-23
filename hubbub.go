@@ -2,13 +2,23 @@ package readeef
 
 import (
 	"errors"
+	"fmt"
+	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/urandom/webfw/util"
 )
 
 type Hubbub struct {
 	config Config
 	db     DB
+	client *http.Client
+}
+
+type SubscriptionError struct {
+	error
+	Subscription HubbubSubscription
 }
 
 type HubbubSubscription struct {
@@ -16,6 +26,8 @@ type HubbubSubscription struct {
 	FeedLink         string        `db:"feed_link"`
 	LeaseDuration    time.Duration `db:"lease_duration"`
 	VerificationTime time.Time     `db:"verification_time"`
+
+	hubbub Hubbub
 }
 
 var (
@@ -24,7 +36,10 @@ var (
 )
 
 func NewHubbub(db DB, c Config) Hubbub {
-	return Hubbub{db: db, config: c}
+	return Hubbub{db: db, config: c, client: &http.Client{}}
+}
+
+func (h Hubbub) SetClient(c http.Client) {
 }
 
 func (h Hubbub) Subscribe(f Feed) error {
@@ -44,9 +59,44 @@ func (h Hubbub) Subscribe(f Feed) error {
 		}
 	}
 
-	s := HubbubSubscription{Link: f.HubLink, FeedLink: f.Link}
+	s := HubbubSubscription{Link: f.HubLink, FeedLink: f.Link, hubbub: h}
 
-	return h.db.UpdateHubbubSubscription(s)
+	if err := h.db.UpdateHubbubSubscription(s); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s HubbubSubscription) Subscription(subscribe bool) error {
+	u := callbackURL(s.hubbub.config, s.FeedLink)
+
+	body := url.Values{}
+	body.Set("hub.callback", u)
+	if subscribe {
+		body.Set("hub.mode", "subscribe")
+	} else {
+		body.Set("hub.mode", "unsubscribe")
+	}
+	body.Set("hub.topic", s.FeedLink)
+
+	buf := util.BufferPool.GetBuffer()
+	defer util.BufferPool.Put(buf)
+
+	buf.WriteString(body.Encode())
+	req, _ := http.NewRequest("POST", s.Link, buf)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("From", s.hubbub.config.Hubbub.From)
+
+	resp, err := s.hubbub.client.Do(req)
+
+	if err != nil {
+		return SubscriptionError{error: err, Subscription: s}
+	} else if resp.StatusCode != 202 {
+		return SubscriptionError{error: errors.New(resp.Status), Subscription: s}
+	}
+
+	return nil
 }
 
 func (s HubbubSubscription) Validate() error {
@@ -59,4 +109,8 @@ func (s HubbubSubscription) Validate() error {
 	}
 
 	return nil
+}
+
+func callbackURL(c Config, link string) string {
+	return fmt.Sprintf("%s/v%s/%s/%s", c.Hubbub.CallbackURL, c.API.Version, c.Hubbub.RelativePath, url.QueryEscape(link))
 }
