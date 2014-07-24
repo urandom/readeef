@@ -49,7 +49,8 @@ var (
 )
 
 func NewHubbub(db DB, c Config) Hubbub {
-	return Hubbub{db: db, config: c, client: &http.Client{}}
+	return Hubbub{db: db, config: c,
+		client: NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 
 func (h Hubbub) SetClient(c http.Client) {
