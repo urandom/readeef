@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"readeef/parser"
 	"strconv"
 	"time"
 
@@ -18,6 +19,7 @@ type Hubbub struct {
 	db         DB
 	addFeed    chan<- Feed
 	removeFeed chan<- Feed
+	updateFeed chan<- Feed
 	client     *http.Client
 }
 
@@ -132,21 +134,13 @@ func (s HubbubSubscription) subscription(subscribe bool) error {
 
 func NewHubbubController(h Hubbub) HubbubController {
 	return HubbubController{
-		webfw.NewBaseController(h.config.Hubbub.RelativePath+"/:feed-link", webfw.MethodAll, "hubbub-callback"),
+		webfw.NewBaseController(h.config.Hubbub.RelativePath+"/:feed-link", webfw.MethodGet|webfw.MethodPost, "hubbub-callback"),
 		h}
 }
 
 func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
-
-		buf := util.BufferPool.GetBuffer()
-		defer util.BufferPool.Put(buf)
-
-		if _, err := buf.ReadFrom(r.Body); err != nil {
-			webfw.GetLogger(c).Print(err)
-			return
-		}
 
 		params := r.URL.Query()
 		pathParams := webfw.GetParams(c, r)
@@ -173,6 +167,12 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 			return
 		}
 
+		f, err := con.hubbub.db.GetFeed(s.FeedLink)
+		if err != nil {
+			webfw.GetLogger(c).Print(err)
+			return
+		}
+
 		switch params.Get("hub.mode") {
 		case "subscribe":
 			if lease, err := strconv.Atoi(params.Get("hub.lease_seconds")); err == nil {
@@ -189,7 +189,22 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 		default:
 			w.Write([]byte{})
 
-			/* FIXME: notify whoever is responsible that new content can be fetched */
+			buf := util.BufferPool.GetBuffer()
+			defer util.BufferPool.Put(buf)
+
+			if _, err := buf.ReadFrom(r.Body); err != nil {
+				webfw.GetLogger(c).Print(err)
+				return
+			}
+
+			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
+				f = f.UpdateFromParsed(pf)
+			} else {
+				webfw.GetLogger(c).Print(err)
+				return
+			}
+
+			con.hubbub.updateFeed <- f
 
 			return
 		}
@@ -202,12 +217,6 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 		}
 
 		if err := s.hubbub.db.UpdateHubbubSubscription(s); err != nil {
-			webfw.GetLogger(c).Print(err)
-			return
-		}
-
-		f, err := con.hubbub.db.GetFeed(s.FeedLink)
-		if err != nil {
 			webfw.GetLogger(c).Print(err)
 			return
 		}

@@ -22,6 +22,23 @@ type Article struct {
 	Favorite bool
 }
 
+func (f Feed) UpdateFromParsed(pf parser.Feed) Feed {
+	f.Feed = pf
+	f.HubLink = pf.HubLink
+
+	newArticles := make([]Article, len(pf.Articles))
+
+	for i, pa := range pf.Articles {
+		a := Article{Article: pa}
+		a.FeedLink = f.Link
+		newArticles[i] = a
+	}
+
+	f.Articles = append(newArticles, f.Articles...)
+
+	return f
+}
+
 func (f Feed) Validate() error {
 	if u, err := url.Parse(f.Link); err != nil || !u.IsAbs() {
 		return ValidationError{errors.New("Feed has no link")}
