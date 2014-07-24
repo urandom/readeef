@@ -14,9 +14,11 @@ import (
 )
 
 type Hubbub struct {
-	config Config
-	db     DB
-	client *http.Client
+	config     Config
+	db         DB
+	addFeed    chan<- Feed
+	removeFeed chan<- Feed
+	client     *http.Client
 }
 
 type SubscriptionError struct {
@@ -36,7 +38,7 @@ type HubbubSubscription struct {
 
 type HubbubController struct {
 	webfw.BaseController
-	db DB
+	hubbub Hubbub
 }
 
 var (
@@ -128,10 +130,10 @@ func (s HubbubSubscription) subscription(subscribe bool) error {
 	return nil
 }
 
-func NewHubbubController(db DB, c Config) HubbubController {
+func NewHubbubController(h Hubbub) HubbubController {
 	return HubbubController{
-		webfw.NewBaseController(c.Hubbub.RelativePath+"/:feed-link", webfw.MethodAll, "hubbub-callback"),
-		db}
+		webfw.NewBaseController(h.config.Hubbub.RelativePath+"/:feed-link", webfw.MethodAll, "hubbub-callback"),
+		h}
 }
 
 func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
@@ -164,7 +166,7 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 			}
 		}
 
-		s, err := con.db.GetHubbubSubscriptionByFeed(feedLink)
+		s, err := con.hubbub.db.GetHubbubSubscriptionByFeed(feedLink)
 
 		if err != nil {
 			webfw.GetLogger(c).Print(err)
@@ -188,6 +190,8 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 			w.Write([]byte{})
 
 			/* FIXME: notify whoever is responsible that new content can be fetched */
+
+			return
 		}
 
 		switch params.Get("hub.mode") {
@@ -195,13 +199,23 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 			s.SubscriptionFailure = false
 		case "unsubscribe", "denied":
 			s.SubscriptionFailure = true
-		default:
-			return
 		}
 
 		if err := s.hubbub.db.UpdateHubbubSubscription(s); err != nil {
 			webfw.GetLogger(c).Print(err)
 			return
+		}
+
+		f, err := con.hubbub.db.GetFeed(s.FeedLink)
+		if err != nil {
+			webfw.GetLogger(c).Print(err)
+			return
+		}
+
+		if s.SubscriptionFailure {
+			con.hubbub.addFeed <- f
+		} else {
+			con.hubbub.removeFeed <- f
 		}
 	}
 }
