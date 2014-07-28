@@ -15,6 +15,13 @@ INSERT INTO feeds(link, title, description, hub_link)
 
 	get_feeds = `SELECT link, title, description, hub_link FROM feeds`
 
+	get_unsubscribed_feeds = `
+SELECT f.link, f.title, f.description, f.hub_link
+	FROM feeds f LEFT OUTER JOIN hubbub_subscriptions hs
+	ON f.link = hs.feed_link AND hs.subscription_failure == 1
+	ORDER BY f.title
+`
+
 	create_user_feed = `
 INSERT INTO users_feeds(user_login, feed_link)
 	SELECT ?, ? EXCEPT SELECT user_login, feed_link FROM users_feeds WHERE user_login = ? AND feed_link = ?`
@@ -250,6 +257,16 @@ func (db DB) GetFeeds() ([]Feed, error) {
 	var feeds []Feed
 
 	if err := db.Select(&feeds, get_feeds); err != nil {
+		return feeds, err
+	}
+
+	return feeds, nil
+}
+
+func (db DB) GetUnsubscribedFeed() ([]Feed, error) {
+	var feeds []Feed
+
+	if err := db.Select(&feeds, get_unsubscribed_feeds); err != nil {
 		return feeds, err
 	}
 

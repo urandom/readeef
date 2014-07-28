@@ -1,5 +1,6 @@
 package readeef
 
+import "log"
 import "net/http"
 
 type FeedUpdater struct {
@@ -9,26 +10,41 @@ type FeedUpdater struct {
 	addFeed    <-chan Feed
 	removeFeed <-chan Feed
 	updateFeed chan<- Feed
+	done       chan bool
 	client     *http.Client
+	logger     *log.Logger
 }
 
-func NewFeedUpdater(db DB, c Config) FeedUpdater {
-	return FeedUpdater{db: db, config: c,
+func NewFeedUpdater(db DB, c Config, l *log.Logger) FeedUpdater {
+	return FeedUpdater{db: db, config: c, done: make(chan bool), logger: l,
 		client: NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 
 func (fu FeedUpdater) Start() {
-	done := make(chan bool)
-	go fu.reactToChanges(done)
+	go fu.reactToChanges()
+
+	go fu.getFeeds()
 }
 
-func (fu FeedUpdater) reactToChanges(done <-chan bool) {
+func (fu FeedUpdater) reactToChanges() {
 	for {
 		select {
 		case <-fu.addFeed:
 		case <-fu.removeFeed:
-		case <-done:
+		case <-fu.done:
 			break
 		}
+	}
+}
+
+func (fu FeedUpdater) getFeeds() {
+	feeds, err := fu.db.GetUnsubscribedFeed()
+	if err != nil {
+		fu.logger.Printf("Error fetching unsubscribed feeds: %v\n", err)
+		return
+	}
+
+	for _, f := range feeds {
+		fu.addFeed <- f
 	}
 }
