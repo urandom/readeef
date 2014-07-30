@@ -3,6 +3,7 @@ package parser
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 var rss2Xml = `
@@ -20,6 +21,16 @@ var rss2Xml = `
       <generator>Weblog Editor 2.0</generator>
       <managingEditor>editor@example.com</managingEditor>
       <webMaster>webmaster@example.com</webMaster>
+	  <ttl>30</ttl>
+	  <skipHours>
+		  <hour>3</hour>
+		  <hour>15</hour>
+		  <hour>23</hour>
+	  </skipHours>
+	  <skipDays>
+		  <day>Monday</day>
+		  <day>Saturday</day>
+	  </skipDays>
       <item>
          <title>Star City</title>
          <link>http://liftoff.msfc.nasa.gov/news/2003/news-starcity.asp</link>
@@ -96,5 +107,32 @@ func TestRss2Parse(t *testing.T) {
 
 	if f.Articles[1].Id != "http://liftoff.msfc.nasa.gov/2003/05/30.html#item572" {
 		t.Fatalf("Unexpected article id: '%v'\n", f.Articles[1].Id)
+	}
+
+	expectedDuration := 30 * time.Minute
+	if f.TTL != expectedDuration {
+		t.Fatalf("Expected ttl '%d', got: %d\n", expectedDuration, f.TTL)
+	}
+
+	expectedInt := 3
+	if len(f.SkipHours) != expectedInt {
+		t.Fatalf("Expected '%d' number of skipHours, got '%d'\n", expectedInt, len(f.SkipHours))
+	}
+
+	for _, expectedInt = range []int{3, 15, 23} {
+		if !f.SkipHours[expectedInt] {
+			t.Fatalf("Expected '%d' skipHour\n", expectedInt)
+		}
+	}
+
+	expectedInt = 2
+	if len(f.SkipDays) != expectedInt {
+		t.Fatalf("Expected '%d' number of skipDays, got '%d'\n", expectedInt, len(f.SkipDays))
+	}
+
+	for _, expectedStr := range []string{"Monday", "Saturday"} {
+		if !f.SkipDays[expectedStr] {
+			t.Fatalf("Expected '%s' skipDay\n", expectedStr)
+		}
 	}
 }

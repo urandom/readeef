@@ -48,8 +48,9 @@ var (
 	ErrNoFeedHubLink = errors.New("Feed does not contain a hub link")
 )
 
-func NewHubbub(db DB, c Config) Hubbub {
+func NewHubbub(db DB, c Config, addFeed chan<- Feed, removeFeed chan<- Feed, updateFeed chan<- Feed) Hubbub {
 	return Hubbub{db: db, config: c,
+		addFeed: addFeed, removeFeed: removeFeed, updateFeed: updateFeed,
 		client: NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 

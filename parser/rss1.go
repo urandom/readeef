@@ -1,6 +1,10 @@
 package parser
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"strings"
+	"time"
+)
 
 type rss1Feed struct {
 	XMLName xml.Name    `xml:"RDF"`
@@ -15,6 +19,9 @@ type rss1Channel struct {
 	Link        string   `xml:"link"`
 	Description string   `xml:"description"`
 	Image       rssImage `xml:"image"`
+	TTL         int      `xml:"ttl"`
+	SkipHours   []int    `xml:"skipHours>hour"`
+	SkipDays    []string `xml:"skipDays>day"`
 }
 
 func ParseRss1(b []byte) (Feed, error) {
@@ -37,6 +44,20 @@ func ParseRss1(b []byte) (Feed, error) {
 		Image: Image{
 			image.Title, image.Url,
 			image.Width, image.Height},
+	}
+
+	if rss.Channel.TTL != 0 {
+		f.TTL = time.Duration(rss.Channel.TTL) * time.Minute
+	}
+
+	f.SkipHours = make(map[int]bool, len(rss.Channel.SkipHours))
+	for _, v := range rss.Channel.SkipHours {
+		f.SkipHours[v] = true
+	}
+
+	f.SkipDays = make(map[string]bool, len(rss.Channel.SkipDays))
+	for _, v := range rss.Channel.SkipDays {
+		f.SkipDays[strings.Title(v)] = true
 	}
 
 	for _, i := range rss.Items {

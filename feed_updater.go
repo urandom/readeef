@@ -7,16 +7,18 @@ type FeedUpdater struct {
 	config     Config
 	db         DB
 	feeds      []Feed
-	addFeed    <-chan Feed
-	removeFeed <-chan Feed
+	addFeed    chan Feed
+	removeFeed chan Feed
 	updateFeed chan<- Feed
 	done       chan bool
 	client     *http.Client
 	logger     *log.Logger
 }
 
-func NewFeedUpdater(db DB, c Config, l *log.Logger) FeedUpdater {
-	return FeedUpdater{db: db, config: c, done: make(chan bool), logger: l,
+func NewFeedUpdater(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) FeedUpdater {
+	return FeedUpdater{
+		db: db, config: c, logger: l, updateFeed: updateFeed,
+		addFeed: make(chan Feed, 2), removeFeed: make(chan Feed, 2), done: make(chan bool),
 		client: NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 
@@ -24,6 +26,14 @@ func (fu FeedUpdater) Start() {
 	go fu.reactToChanges()
 
 	go fu.getFeeds()
+}
+
+func (fu FeedUpdater) AddFeedChannel() chan<- Feed {
+	return fu.addFeed
+}
+
+func (fu FeedUpdater) removeFeedChannel() chan<- Feed {
+	return fu.removeFeed
 }
 
 func (fu FeedUpdater) reactToChanges() {

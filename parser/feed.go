@@ -9,6 +9,9 @@ type Feed struct {
 	HubLink     string
 	Image       Image
 	Articles    []Article
+	TTL         time.Duration
+	SkipHours   map[int]bool
+	SkipDays    map[string]bool
 }
 
 type Article struct {
