@@ -35,6 +35,13 @@ type Config struct {
 		RelativePath string `gcfg:"relative-path"`
 		From         string
 	}
+	Updater struct {
+		Interval string
+
+		Converted struct {
+			Interval time.Duration
+		}
+	}
 }
 
 func ReadConfig(path ...string) (Config, error) {
@@ -72,6 +79,12 @@ func ReadConfig(path ...string) (Config, error) {
 		c.Timeout.Converted.ReadWrite = d
 	} else {
 		c.Timeout.Converted.ReadWrite = time.Second
+	}
+
+	if d, err := time.ParseDuration(c.Updater.Interval); err == nil {
+		c.Updater.Converted.Interval = d
+	} else {
+		c.Updater.Converted.Interval = 30 * time.Minute
 	}
 	return c, nil
 }
