@@ -16,14 +16,14 @@ type FeedUpdater struct {
 	done        chan bool
 	client      *http.Client
 	logger      *log.Logger
-	feedTickers map[string]time.Ticker
+	feedTickers map[string]*time.Ticker
 }
 
 func NewFeedUpdater(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) FeedUpdater {
 	return FeedUpdater{
 		db: db, config: c, logger: l, updateFeed: updateFeed,
 		addFeed: make(chan Feed, 2), removeFeed: make(chan Feed, 2), done: make(chan bool),
-		feedTickers: map[string]time.Ticker{},
+		feedTickers: map[string]*time.Ticker{},
 		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 
@@ -60,12 +60,40 @@ func (fu FeedUpdater) reactToChanges() {
 				delete(fu.feedTickers, f.Link)
 			}
 		case <-fu.done:
-			break
+			return
 		}
 	}
 }
 
 func (fu FeedUpdater) startUpdatingFeed(f Feed) {
+	d := 30 * time.Minute
+	if fu.config.Updater.Converted.Interval != 0 {
+		if f.TTL != 0 && f.TTL > fu.config.Updater.Converted.Interval {
+			d = f.TTL
+		} else {
+			d = fu.config.Updater.Converted.Interval
+		}
+	}
+
+	ticker := time.NewTicker(d)
+
+	fu.feedTickers[f.Link] = ticker
+
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				now := time.Now()
+				if !f.SkipHours[now.Hour()] && !f.SkipDays[now.Weekday().String()] {
+					// start a goroutine to fetch the content
+				}
+			case <-fu.done:
+				ticker.Stop()
+				delete(fu.feedTickers, f.Link)
+				return
+			}
+		}
+	}()
 }
 
 func (fu FeedUpdater) scheduleFeeds() {
