@@ -1,4 +1,4 @@
-// +build cgo
+// +build sqlite3,cgo
 
 package readeef
 
