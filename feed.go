@@ -9,9 +9,10 @@ import (
 type Feed struct {
 	parser.Feed
 
-	User     User
-	HubLink  string `db:"hub_link"`
-	Articles []Article
+	User        User
+	HubLink     string `db:"hub_link"`
+	UpdateError string `db:"update_error"`
+	Articles    []Article
 }
 
 type Article struct {
@@ -34,7 +35,7 @@ func (f Feed) UpdateFromParsed(pf parser.Feed) Feed {
 		newArticles[i] = a
 	}
 
-	f.Articles = append(newArticles, f.Articles...)
+	f.Articles = newArticles
 
 	return f
 }

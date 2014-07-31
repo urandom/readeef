@@ -19,8 +19,8 @@ func TimeoutDialer(ct time.Duration, rwt time.Duration) func(net, addr string) (
 	}
 }
 
-func NewTimeoutClient(connectTimeout time.Duration, readWriteTimeout time.Duration) *http.Client {
-	return &http.Client{
+func NewTimeoutClient(connectTimeout time.Duration, readWriteTimeout time.Duration) http.Client {
+	return http.Client{
 		Transport: &http.Transport{
 			Dial: TimeoutDialer(connectTimeout, readWriteTimeout),
 		},

@@ -20,7 +20,7 @@ type Hubbub struct {
 	addFeed    chan<- Feed
 	removeFeed chan<- Feed
 	updateFeed chan<- Feed
-	client     *http.Client
+	client     http.Client
 }
 
 type SubscriptionError struct {
@@ -55,6 +55,7 @@ func NewHubbub(db DB, c Config, addFeed chan<- Feed, removeFeed chan<- Feed, upd
 }
 
 func (h Hubbub) SetClient(c http.Client) {
+	h.client = c
 }
 
 func (h Hubbub) Subscribe(f Feed) error {
@@ -201,6 +202,11 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 
 			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
 				f = f.UpdateFromParsed(pf)
+
+				if err := con.hubbub.db.UpdateFeed(f); err != nil {
+					webfw.GetLogger(c).Print(err)
+					return
+				}
 			} else {
 				webfw.GetLogger(c).Print(err)
 				return

@@ -3,6 +3,8 @@ package readeef
 import (
 	"errors"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -220,6 +222,10 @@ func (db DB) UpdateFeed(f Feed) error {
 		return err
 	}
 
+	if err := db.updateFeedArticles(tx, f, f.Articles); err != nil {
+		return err
+	}
+
 	tx.Commit()
 
 	return nil
@@ -357,39 +363,18 @@ func (db DB) CreateFeedArticles(f Feed, articles []Article) (Feed, error) {
 		return f, nil
 	}
 
-	sql := `INSERT INTO articles(id, feed_link, title, description, link, date) `
-	args := []interface{}{}
-
-	for i, a := range articles {
-		if err := a.Validate(); err != nil {
-			return f, err
-		}
-
-		if i != 0 {
-			sql += `UNION `
-		}
-
-		sql += `SELECT ?, ?, ?, ? ,?, ? EXCEPT SELECT id, feed_link, title, description, link, date FROM articles WHERE id = ? AND feed_link = ? `
-		args = append(args, a.Id, f.Link, a.Title, a.Description, a.Link, a.Date, a.Id, f.Link)
-		a.FeedLink = f.Link
-	}
-
 	tx, err := db.Beginx()
 	defer tx.Rollback()
 	if err != nil {
 		return f, err
 	}
 
-	stmt, err := tx.Preparex(sql)
-
-	if err != nil {
+	if err := db.updateFeedArticles(tx, f, articles); err != nil {
 		return f, err
 	}
-	defer stmt.Close()
 
-	_, err = stmt.Exec(args...)
-	if err != nil {
-		return f, err
+	for _, a := range articles {
+		a.FeedLink = f.Link
 	}
 
 	f.Articles = append(f.Articles, articles...)
@@ -688,6 +673,42 @@ func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) e
 	}
 
 	tx.Commit()
+
+	return nil
+}
+
+func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) error {
+	if len(articles) == 0 {
+		return nil
+	}
+
+	sql := `INSERT INTO articles(id, feed_link, title, description, link, date) `
+	args := []interface{}{}
+
+	for i, a := range articles {
+		if err := a.Validate(); err != nil {
+			return err
+		}
+
+		if i != 0 {
+			sql += `UNION `
+		}
+
+		sql += `SELECT ?, ?, ?, ? ,?, ? EXCEPT SELECT id, feed_link, title, description, link, date FROM articles WHERE id = ? AND feed_link = ? `
+		args = append(args, a.Id, f.Link, a.Title, a.Description, a.Link, a.Date, a.Id, f.Link)
+	}
+
+	stmt, err := tx.Preparex(sql)
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(args...)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

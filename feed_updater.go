@@ -2,7 +2,11 @@ package readeef
 
 import (
 	"log"
+	"readeef/parser"
+	"strconv"
 	"time"
+
+	"github.com/urandom/webfw/util"
 )
 import "net/http"
 
@@ -14,7 +18,7 @@ type FeedUpdater struct {
 	removeFeed  chan Feed
 	updateFeed  chan<- Feed
 	done        chan bool
-	client      *http.Client
+	client      http.Client
 	logger      *log.Logger
 	feedTickers map[string]*time.Ticker
 }
@@ -25,6 +29,10 @@ func NewFeedUpdater(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) Feed
 		addFeed: make(chan Feed, 2), removeFeed: make(chan Feed, 2), done: make(chan bool),
 		feedTickers: map[string]*time.Ticker{},
 		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
+}
+
+func (fu FeedUpdater) SetClient(c http.Client) {
+	fu.client = c
 }
 
 func (fu FeedUpdater) Start() {
@@ -55,10 +63,7 @@ func (fu FeedUpdater) reactToChanges() {
 		case f := <-fu.addFeed:
 			fu.startUpdatingFeed(f)
 		case f := <-fu.removeFeed:
-			if t, ok := fu.feedTickers[f.Link]; ok {
-				t.Stop()
-				delete(fu.feedTickers, f.Link)
-			}
+			fu.stopUpdatingFeed(f)
 		case <-fu.done:
 			return
 		}
@@ -85,15 +90,60 @@ func (fu FeedUpdater) startUpdatingFeed(f Feed) {
 			case <-ticker.C:
 				now := time.Now()
 				if !f.SkipHours[now.Hour()] && !f.SkipDays[now.Weekday().String()] {
-					// start a goroutine to fetch the content
+					go fu.requestFeedContent(f)
 				}
 			case <-fu.done:
-				ticker.Stop()
-				delete(fu.feedTickers, f.Link)
+				fu.stopUpdatingFeed(f)
 				return
 			}
 		}
 	}()
+}
+
+func (fu FeedUpdater) stopUpdatingFeed(f Feed) {
+	if t, ok := fu.feedTickers[f.Link]; ok {
+		t.Stop()
+		delete(fu.feedTickers, f.Link)
+	}
+}
+
+func (fu FeedUpdater) requestFeedContent(f Feed) {
+	resp, err := fu.client.Get(f.Link)
+
+	if err != nil {
+		f.UpdateError = err.Error()
+	} else if resp.StatusCode != http.StatusOK {
+		f.UpdateError = "HTTP Status: " + strconv.Itoa(resp.StatusCode)
+	} else {
+		f.UpdateError = ""
+
+		buf := util.BufferPool.GetBuffer()
+		defer util.BufferPool.Put(buf)
+
+		if _, err := buf.ReadFrom(resp.Body); err == nil {
+			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
+				f = f.UpdateFromParsed(pf)
+			} else {
+				f.UpdateError = err.Error()
+			}
+		} else {
+			f.UpdateError = err.Error()
+		}
+
+	}
+
+	if f.UpdateError != "" {
+		fu.logger.Printf("Error updating feed: %s\n", f.UpdateError)
+	}
+
+	select {
+	case <-fu.done:
+		return
+	default:
+		if err := fu.db.UpdateFeed(f); err != nil {
+			fu.logger.Printf("Error updating feed database record: %v\n", err)
+		}
+	}
 }
 
 func (fu FeedUpdater) scheduleFeeds() {

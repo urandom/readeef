@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS feeds (
 	link TEXT PRIMARY KEY,
 	title TEXT,
 	description TEXT,
-	hub_link TEXT
+	hub_link TEXT,
+	update_error TEXT
 )`, `
 CREATE TABLE IF NOT EXISTS feed_images (
 	id INTEGER PRIMARY KEY,
