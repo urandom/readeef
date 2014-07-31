@@ -143,6 +143,8 @@ func (fu FeedUpdater) requestFeedContent(f Feed) {
 		if err := fu.db.UpdateFeed(f); err != nil {
 			fu.logger.Printf("Error updating feed database record: %v\n", err)
 		}
+
+		fu.updateFeed <- f
 	}
 }
 
