@@ -110,6 +110,6 @@ var cfg string = `
 	connect = 1s
 	read-write = 2s
 [hubbub]
-	relative-path = hubbub
+	relative-path = /hubbub
 	from = readeef
 `

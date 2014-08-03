@@ -3,10 +3,12 @@ package readeef
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"readeef/parser"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/urandom/webfw"
@@ -20,7 +22,8 @@ type Hubbub struct {
 	addFeed    chan<- Feed
 	removeFeed chan<- Feed
 	updateFeed chan<- Feed
-	client     http.Client
+	client     *http.Client
+	logger     *log.Logger
 }
 
 type SubscriptionError struct {
@@ -30,10 +33,10 @@ type SubscriptionError struct {
 
 type HubbubSubscription struct {
 	Link                string
-	FeedLink            string        `db:"feed_link"`
-	LeaseDuration       time.Duration `db:"lease_duration"`
-	VerificationTime    time.Time     `db:"verification_time"`
-	SubscriptionFailure bool          `db:"subscription_failure"`
+	FeedLink            string    `db:"feed_link"`
+	LeaseDuration       int64     `db:"lease_duration"`
+	VerificationTime    time.Time `db:"verification_time"`
+	SubscriptionFailure bool      `db:"subscription_failure"`
 
 	hubbub Hubbub
 }
@@ -48,13 +51,13 @@ var (
 	ErrNoFeedHubLink = errors.New("Feed does not contain a hub link")
 )
 
-func NewHubbub(db DB, c Config, addFeed chan<- Feed, removeFeed chan<- Feed, updateFeed chan<- Feed) Hubbub {
-	return Hubbub{db: db, config: c,
+func NewHubbub(db DB, c Config, l *log.Logger, addFeed chan<- Feed, removeFeed chan<- Feed, updateFeed chan<- Feed) Hubbub {
+	return Hubbub{db: db, config: c, logger: l,
 		addFeed: addFeed, removeFeed: removeFeed, updateFeed: updateFeed,
 		client: NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 
-func (h Hubbub) SetClient(c http.Client) {
+func (h Hubbub) SetClient(c *http.Client) {
 	h.client = c
 }
 
@@ -80,6 +83,18 @@ func (h Hubbub) Subscribe(f Feed) error {
 	if err := h.db.UpdateHubbubSubscription(s); err != nil {
 		return err
 	}
+
+	go func() {
+		err := s.Subscribe()
+		if err != nil {
+			f.SubscribeError = err.Error()
+			h.logger.Printf("Error subscribing to hub feed '%s': %s\n", f.Link, err)
+
+			if err := h.db.UpdateFeed(f); err != nil {
+				h.logger.Printf("Error updating feed database record for '%s': %s\n", f.Link, err)
+			}
+		}
+	}()
 
 	return nil
 }
@@ -129,7 +144,7 @@ func (s HubbubSubscription) subscription(subscribe bool) error {
 	if err != nil {
 		return SubscriptionError{error: err, Subscription: s}
 	} else if resp.StatusCode != 202 {
-		return SubscriptionError{error: errors.New(resp.Status), Subscription: s}
+		return SubscriptionError{error: errors.New("Expected response status 202, got " + resp.Status), Subscription: s}
 	}
 
 	return nil
@@ -161,6 +176,8 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 				webfw.GetLogger(c).Print(err)
 				return
 			}
+
+			feedLink = strings.Replace(feedLink, "|", "/", -1)
 		}
 
 		s, err := con.hubbub.db.GetHubbubSubscriptionByFeed(feedLink)
@@ -179,7 +196,7 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 		switch params.Get("hub.mode") {
 		case "subscribe":
 			if lease, err := strconv.Atoi(params.Get("hub.lease_seconds")); err == nil {
-				s.LeaseDuration = time.Duration(lease) * time.Second
+				s.LeaseDuration = int64(lease) * int64(time.Second)
 			}
 			s.VerificationTime = time.Now()
 
@@ -224,19 +241,20 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 			s.SubscriptionFailure = true
 		}
 
-		if err := s.hubbub.db.UpdateHubbubSubscription(s); err != nil {
+		if err := con.hubbub.db.UpdateHubbubSubscription(s); err != nil {
 			webfw.GetLogger(c).Print(err)
 			return
 		}
 
 		if s.SubscriptionFailure {
-			con.hubbub.addFeed <- f
-		} else {
 			con.hubbub.removeFeed <- f
+		} else {
+			con.hubbub.addFeed <- f
 		}
 	}
 }
 
 func callbackURL(c Config, link string) string {
-	return fmt.Sprintf("%s/v%s/%s/%s", c.Hubbub.CallbackURL, c.API.Version, c.Hubbub.RelativePath, url.QueryEscape(link))
+	return fmt.Sprintf("%s/v%d%s/%s", c.Hubbub.CallbackURL, c.API.Version, c.Hubbub.RelativePath,
+		url.QueryEscape(strings.Replace(link, "/", "|", -1)))
 }

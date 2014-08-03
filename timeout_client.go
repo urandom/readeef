@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-var timeoutClient *http.Client
-
 func TimeoutDialer(ct time.Duration, rwt time.Duration) func(net, addr string) (c net.Conn, err error) {
 	return func(netw, addr string) (net.Conn, error) {
 		conn, err := net.DialTimeout(netw, addr, ct)
@@ -19,8 +17,8 @@ func TimeoutDialer(ct time.Duration, rwt time.Duration) func(net, addr string) (
 	}
 }
 
-func NewTimeoutClient(connectTimeout time.Duration, readWriteTimeout time.Duration) http.Client {
-	return http.Client{
+func NewTimeoutClient(connectTimeout time.Duration, readWriteTimeout time.Duration) *http.Client {
+	return &http.Client{
 		Transport: &http.Transport{
 			Dial: TimeoutDialer(connectTimeout, readWriteTimeout),
 		},

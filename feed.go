@@ -9,10 +9,11 @@ import (
 type Feed struct {
 	parser.Feed
 
-	User        User
-	HubLink     string `db:"hub_link"`
-	UpdateError string `db:"update_error"`
-	Articles    []Article
+	User           User
+	HubLink        string `db:"hub_link"`
+	UpdateError    string `db:"update_error"`
+	SubscribeError string `db:"subscribe_error"`
+	Articles       []Article
 }
 
 type Article struct {

@@ -18,7 +18,7 @@ type FeedUpdater struct {
 	removeFeed  chan Feed
 	updateFeed  chan<- Feed
 	done        chan bool
-	client      http.Client
+	client      *http.Client
 	logger      *log.Logger
 	feedTickers map[string]*time.Ticker
 }
@@ -31,7 +31,7 @@ func NewFeedUpdater(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) Feed
 		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 
-func (fu FeedUpdater) SetClient(c http.Client) {
+func (fu FeedUpdater) SetClient(c *http.Client) {
 	fu.client = c
 }
 

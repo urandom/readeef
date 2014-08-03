@@ -8,17 +8,17 @@ import (
 )
 
 const (
-	get_feed    = `SELECT title, description, hub_link FROM feeds WHERE link = ?`
+	get_feed    = `SELECT title, description, hub_link, update_error, subscribe_error FROM feeds WHERE link = ?`
 	create_feed = `
-INSERT INTO feeds(link, title, description, hub_link)
-	SELECT ?, ?, ?, ? EXCEPT SELECT link, title, description, hub_link FROM feeds WHERE link = ?`
-	update_feed = `UPDATE feeds SET title = ?, description = ?, hub_link = ? WHERE link = ?`
+INSERT INTO feeds(link, title, description, hub_link, update_error, subscribe_error)
+	SELECT ?, ?, ?, ?, ?, ? EXCEPT SELECT link, title, description, hub_link, update_error, subscribe_error FROM feeds WHERE link = ?`
+	update_feed = `UPDATE feeds SET title = ?, description = ?, hub_link = ?, update_error = ?, subscribe_error = ? WHERE link = ?`
 	delete_feed = `DELETE FROM feeds WHERE link = ?`
 
-	get_feeds = `SELECT link, title, description, hub_link FROM feeds`
+	get_feeds = `SELECT link, title, description, hub_link, update_error, subscribe_error FROM feeds`
 
 	get_unsubscribed_feeds = `
-SELECT f.link, f.title, f.description, f.hub_link
+SELECT f.link, f.title, f.description, f.hub_link, f.update_error, f.subscribe_error
 	FROM feeds f LEFT OUTER JOIN hubbub_subscriptions hs
 	ON f.link = hs.feed_link AND hs.subscription_failure == 1
 	ORDER BY f.title
@@ -30,7 +30,7 @@ INSERT INTO users_feeds(user_login, feed_link)
 	delete_user_feed = `DELETE FROM users_feeds WHERE user_login = ? AND feed_link = ?`
 
 	get_user_feeds = `
-SELECT f.link, f.title, f.description, f.link, f.hub_link
+SELECT f.link, f.title, f.description, f.link, f.hub_link, f.update_error, f.subscribe_error
 FROM feeds f, users_feeds uf
 WHERE f.link = uf.feed_link
 	AND uf.user_login = ?
@@ -205,7 +205,7 @@ func (db DB) UpdateFeed(f Feed) error {
 	}
 	defer ustmt.Close()
 
-	_, err = ustmt.Exec(f.Title, f.Description, f.HubLink, f.Link)
+	_, err = ustmt.Exec(f.Title, f.Description, f.HubLink, f.UpdateError, f.SubscribeError, f.Link)
 	if err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func (db DB) UpdateFeed(f Feed) error {
 	}
 	defer cstmt.Close()
 
-	_, err = cstmt.Exec(f.Link, f.Title, f.Description, f.HubLink, f.Link)
+	_, err = cstmt.Exec(f.Link, f.Title, f.Description, f.HubLink, f.UpdateError, f.SubscribeError, f.Link)
 	if err != nil {
 		return err
 	}

@@ -23,7 +23,7 @@ UPDATE hubbub_subscriptions SET feed_link = ?, lease_duration = ?,
 func (db DB) GetHubbubSubscription(link string) (HubbubSubscription, error) {
 	var s HubbubSubscription
 
-	if err := db.Get(&s, get_hubbub_subscription); err != nil {
+	if err := db.Get(&s, get_hubbub_subscription, link); err != nil {
 		return s, err
 	}
 
@@ -35,7 +35,7 @@ func (db DB) GetHubbubSubscription(link string) (HubbubSubscription, error) {
 func (db DB) GetHubbubSubscriptionByFeed(link string) (HubbubSubscription, error) {
 	var s HubbubSubscription
 
-	if err := db.Get(&s, get_hubbub_subscription_by_feed); err != nil {
+	if err := db.Get(&s, get_hubbub_subscription_by_feed, link); err != nil {
 		return s, err
 	}
 
