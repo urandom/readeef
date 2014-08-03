@@ -53,6 +53,7 @@ func (db DB) UpdateHubbubSubscription(s HubbubSubscription) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	ustmt, err := tx.Preparex(update_hubbub_subscription)
 
@@ -92,6 +93,7 @@ func (db DB) DeleteHubbubSubscription(s HubbubSubscription) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(delete_hubbub_subscription)
 

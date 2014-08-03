@@ -41,6 +41,10 @@ func (fu FeedUpdater) Start() {
 	go fu.scheduleFeeds()
 }
 
+func (fu FeedUpdater) Stop() {
+	fu.done <- true
+}
+
 func (fu FeedUpdater) AddFeed(f Feed) {
 	fu.addFeed <- f
 }
@@ -85,6 +89,8 @@ func (fu FeedUpdater) startUpdatingFeed(f Feed) {
 	fu.feedTickers[f.Link] = ticker
 
 	go func() {
+		go fu.requestFeedContent(f)
+
 		for {
 			select {
 			case <-ticker.C:

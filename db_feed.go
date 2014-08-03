@@ -194,10 +194,10 @@ func (db DB) UpdateFeed(f Feed) error {
 	}
 
 	tx, err := db.Beginx()
-	defer tx.Rollback()
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	ustmt, err := tx.Preparex(update_feed)
 	if err != nil {
@@ -237,10 +237,10 @@ func (db DB) DeleteFeed(f Feed) error {
 	}
 
 	tx, err := db.Beginx()
-	defer tx.Rollback()
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(delete_feed)
 
@@ -288,10 +288,10 @@ func (db DB) CreateUserFeed(u User, f Feed) (Feed, error) {
 	}
 
 	tx, err := db.Beginx()
-	defer tx.Rollback()
 	if err != nil {
 		return f, err
 	}
+	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(create_user_feed)
 
@@ -322,10 +322,10 @@ func (db DB) DeleteUserFeed(f Feed) error {
 	}
 
 	tx, err := db.Beginx()
-	defer tx.Rollback()
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(delete_user_feed)
 
@@ -364,10 +364,10 @@ func (db DB) CreateFeedArticles(f Feed, articles []Article) (Feed, error) {
 	}
 
 	tx, err := db.Beginx()
-	defer tx.Rollback()
 	if err != nil {
 		return f, err
 	}
+	defer tx.Rollback()
 
 	if err := db.updateFeedArticles(tx, f, articles); err != nil {
 		return f, err
@@ -510,10 +510,10 @@ func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error
 	}
 
 	tx, err := db.Beginx()
-	defer tx.Rollback()
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(sql)
 
@@ -534,10 +534,10 @@ func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error
 
 func (db DB) MarkUserArticlesByDateAsRead(u User, d time.Time, read bool) error {
 	tx, err := db.Beginx()
-	defer tx.Rollback()
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(delete_all_users_articles_read_by_date)
 
@@ -574,10 +574,10 @@ func (db DB) MarkFeedArticlesByDateAsRead(f Feed, d time.Time, read bool) error 
 	}
 
 	tx, err := db.Beginx()
-	defer tx.Rollback()
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(delete_all_users_articles_read_by_feed_date)
 
@@ -655,10 +655,10 @@ func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) e
 	}
 
 	tx, err := db.Beginx()
-	defer tx.Rollback()
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(sql)
 

@@ -51,20 +51,14 @@ func ReadConfig(path ...string) (Config, error) {
 		return Config{}, err
 	}
 
-	if len(path) == 0 {
-		return def, nil
-	}
-
 	c := def
 
-	err = gcfg.ReadFileInto(&c, path[0])
+	if len(path) != 0 {
+		err = gcfg.ReadFileInto(&c, path[0])
 
-	if err != nil {
-		if os.IsNotExist(err) {
-			return def, nil
+		if err != nil && !os.IsNotExist(err) {
+			return Config{}, err
 		}
-
-		return Config{}, err
 	}
 
 	c.API.Version = apiversion

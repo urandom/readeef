@@ -32,6 +32,7 @@ func (db DB) UpdateUser(u User) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	ustmt, err := tx.Preparex(update_user)
 
@@ -71,6 +72,7 @@ func (db DB) DeleteUser(u User) error {
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(delete_user)
 
