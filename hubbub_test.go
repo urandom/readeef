@@ -40,12 +40,6 @@ func TestHubbub(t *testing.T) {
 
 	callbackURL = fmt.Sprintf("%s/callback/v0/hubbub/%s", ts.URL, url.QueryEscape(strings.Replace(ts.URL+"/link", "/", "|", -1)))
 
-	db := NewDB("sqlite3", conn)
-	if err := db.Connect(); err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
 	var conf Config
 	addFeed := make(chan Feed)
 	removeFeed := make(chan Feed)
@@ -133,6 +127,8 @@ func TestHubbub(t *testing.T) {
 	if f.Title != expectedStr {
 		t.Fatalf("Expected feed title to be '%s', got '%s'\n", expectedStr, f.Title)
 	}
+
+	cleanDB(t)
 }
 
 type hublink_con struct {

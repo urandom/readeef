@@ -38,12 +38,6 @@ func TestFeedUpdater(t *testing.T) {
 		}
 	}()
 
-	db := NewDB("sqlite3", conn)
-	if err := db.Connect(); err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
 	conf, err := ReadConfig()
 	if err != nil {
 		t.Fatal(err)
@@ -59,4 +53,6 @@ func TestFeedUpdater(t *testing.T) {
 
 	<-done // First update request
 	<-done // Second update request
+
+	cleanDB(t)
 }

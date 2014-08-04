@@ -15,14 +15,9 @@ import (
 
 var file = "readeef-test.sqlite"
 var conn = "file:./" + file + "?cache=shared&mode=rwc"
+var db DB
 
 func TestDBUsers(t *testing.T) {
-	db := NewDB("sqlite3", conn)
-	if err := db.Connect(); err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
-
 	if _, err := db.GetUser("test"); err != nil {
 		if err != sql.ErrNoRows {
 			t.Fatal(err)
@@ -130,16 +125,12 @@ func TestDBUsers(t *testing.T) {
 	if _, err := db.GetUser("test"); err == nil || err != sql.ErrNoRows {
 		t.Fatalf("Expected to not find the user\n")
 	}
+
+	cleanDB(t)
 }
 
 func TestDBFeeds(t *testing.T) {
 	var err error
-
-	db := NewDB("sqlite3", conn)
-	if err := db.Connect(); err != nil {
-		t.Fatal(err)
-	}
-	defer db.Close()
 
 	if _, err := db.GetFeed("http://example.com"); err != nil {
 		if err != sql.ErrNoRows {
@@ -493,8 +484,43 @@ func TestDBFeeds(t *testing.T) {
 		}
 	}
 
+	cleanDB(t)
 }
 
 func init() {
 	os.Remove(file)
+
+	db = NewDB("sqlite3", conn)
+	if err := db.Connect(); err != nil {
+		panic(err)
+	}
+}
+
+func cleanDB(t *testing.T) {
+	tx, err := db.Beginx()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+
+	sql := []string{
+		`DELETE FROM users`,
+		`DELETE FROM feeds`,
+	}
+
+	for _, s := range sql {
+		stmt, err := tx.Preparex(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+	}
+
+	tx.Commit()
 }
