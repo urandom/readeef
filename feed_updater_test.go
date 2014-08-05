@@ -30,20 +30,12 @@ func TestFeedUpdater(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	go func() {
-		for {
-			select {
-			case <-updateFeed:
-			}
-		}
-	}()
-
 	conf, err := ReadConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	conf.Updater.Converted.Interval = 50 * time.Millisecond
+	conf.Updater.Converted.Interval = 100 * time.Millisecond
 	fu := NewFeedUpdater(db, conf, log.New(os.Stderr, "", 0), updateFeed)
 
 	fu.Start()
@@ -52,6 +44,27 @@ func TestFeedUpdater(t *testing.T) {
 	fu.AddFeed(f)
 
 	<-done // First update request
+
+	f2 := <-updateFeed // Feed gets updated
+
+	f, err = db.GetFeed(f.Link)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if f.SubscribeError != "" {
+		t.Fatal(f.SubscribeError)
+	}
+
+	expectedStr := "Example Feed"
+	if f.Title != expectedStr {
+		t.Fatalf("Expected feed title to be '%s', got '%s'\n", expectedStr, f.Title)
+	}
+
+	if f.Link != f2.Link || f.Title != f2.Title || f.Description != f2.Description {
+		t.Fatal("")
+	}
+
 	<-done // Second update request
 
 	cleanDB(t)
