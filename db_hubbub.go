@@ -3,21 +3,21 @@ package readeef
 const (
 	get_hubbub_subscription = `
 SELECT feed_link, lease_duration, verification_time, subscription_failure
-	FROM hubbub_subscriptions WHERE link = ?`
+	FROM hubbub_subscriptions WHERE link = $1`
 	get_hubbub_subscription_by_feed = `
 SELECT link, lease_duration, verification_time, subscription_failure
-	FROM hubbub_subscriptions WHERE feed_link = ?`
+	FROM hubbub_subscriptions WHERE feed_link = $1`
 	create_hubbub_subscription = `
 INSERT INTO hubbub_subscriptions(link, feed_link, lease_duration, verification_time, subscription_failure)
-	SELECT ?, ?, ?, ?, ? EXCEPT
+	SELECT $1, $2, $3, $4, $5 EXCEPT
 	SELECT link, feed_link, lease_duration, verification_time, subscription_failure
-		FROM hubbub_subscriptions WHERE link = ?
+		FROM hubbub_subscriptions WHERE link = $1
 `
 	update_hubbub_subscription = `
-UPDATE hubbub_subscriptions SET feed_link = ?, lease_duration = ?,
-	verification_time = ?, subscription_failure = ? WHERE link = ?
+UPDATE hubbub_subscriptions SET feed_link = $1, lease_duration = $2,
+	verification_time = $3, subscription_failure = $4 WHERE link = $5
 `
-	delete_hubbub_subscription = `DELETE from hubbub_subscriptions where link = ?`
+	delete_hubbub_subscription = `DELETE from hubbub_subscriptions where link = $1`
 )
 
 func (db DB) GetHubbubSubscription(link string) (HubbubSubscription, error) {
@@ -74,7 +74,7 @@ func (db DB) UpdateHubbubSubscription(s HubbubSubscription) error {
 	}
 	defer cstmt.Close()
 
-	_, err = cstmt.Exec(s.Link, s.FeedLink, s.LeaseDuration, s.VerificationTime, s.SubscriptionFailure, s.Link)
+	_, err = cstmt.Exec(s.Link, s.FeedLink, s.LeaseDuration, s.VerificationTime, s.SubscriptionFailure)
 	if err != nil {
 		return err
 	}

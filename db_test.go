@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-var file = "readeef-test.sqlite"
-var conn = "file:./" + file + "?cache=shared&mode=rwc"
 var db DB
 
 func TestDBUsers(t *testing.T) {
