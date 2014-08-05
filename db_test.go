@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"fmt"
-	"os"
 	"readeef/parser"
 )
 import (
@@ -485,15 +484,6 @@ func TestDBFeeds(t *testing.T) {
 	}
 
 	cleanDB(t)
-}
-
-func init() {
-	os.Remove(file)
-
-	db = NewDB("sqlite3", "file::memory:")
-	if err := db.Connect(); err != nil {
-		panic(err)
-	}
 }
 
 func cleanDB(t *testing.T) {
