@@ -56,7 +56,7 @@ func TestDBUsers(t *testing.T) {
 		t.Fatalf("Expected an empty u.MD5API, got %s\n", u.MD5API)
 	}
 
-	err = u.setPassword("foobar")
+	err = u.SetPassword("foobar")
 	if err != nil {
 		t.Fatal(err)
 	}

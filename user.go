@@ -30,7 +30,7 @@ func (u User) String() string {
 	}
 }
 
-func (u *User) setPassword(pass string) error {
+func (u *User) SetPassword(pass string) error {
 	h := md5.Sum([]byte(fmt.Sprintf("%s:%s", u.Login, pass)))
 
 	u.MD5API = h[:]

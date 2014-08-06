@@ -10,6 +10,8 @@ INSERT INTO users(login, first_name, last_name, email, salt, hash, md5_api)
 UPDATE users SET first_name = $1, last_name = $2, email = $3, salt = $4, hash = $5, md5_api = $6
 	WHERE login = $7`
 	delete_user = `DELETE FROM users WHERE login = $1`
+
+	get_users = `SELECT login, first_name, last_name, email, salt, hash, md5_api FROM users`
 )
 
 func (db DB) GetUser(login string) (User, error) {
@@ -21,6 +23,15 @@ func (db DB) GetUser(login string) (User, error) {
 	u.Login = login
 
 	return u, nil
+}
+
+func (db DB) GetUsers() ([]User, error) {
+	var users []User
+	if err := db.Select(&users, get_users); err != nil {
+		return users, err
+	}
+
+	return users, nil
 }
 
 func (db DB) UpdateUser(u User) error {
