@@ -1,12 +1,20 @@
 package readeef
 
 import (
+	"crypto/hmac"
+	"crypto/md5"
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
+	"github.com/urandom/webfw/util"
 )
 
 const authkey = "AUTHUSER"
@@ -14,6 +22,10 @@ const namekey = "AUTHNAME"
 
 type AuthController interface {
 	LoginRequired(context.Context, *http.Request) bool
+}
+
+type ApiAuthController interface {
+	AuthRequired(context.Context, *http.Request) bool
 }
 
 // The Auth middleware checks whether the session contains a valid user or
@@ -50,6 +62,84 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 				return
 			}
 		} else {
+			if ac, ok := con.(ApiAuthController); ok {
+				if !ac.AuthRequired(c, r) {
+					ph.ServeHTTP(w, r)
+					return
+				}
+			} else {
+				ph.ServeHTTP(w, r)
+				return
+			}
+
+			var u User
+			var err error
+
+			auth := r.Header.Get("Authorization")
+			validUser := false
+
+			if auth != "" {
+				for {
+					if !strings.HasPrefix(auth, "Readeef ") {
+						break
+					}
+					auth = auth[len("Readeef "):]
+
+					parts := strings.SplitN(auth, ":", 2)
+					login := parts[0]
+
+					u, err = mw.DB.GetUser(login)
+					if err != nil {
+						l.Printf("Error getting db user '%s': %v\n", login, err)
+						break
+					}
+
+					var decoded []byte
+					decoded, err = base64.URLEncoding.DecodeString(parts[1])
+					if err != nil {
+						l.Printf("Error decoding auth header: %v\n", err)
+						break
+					}
+
+					date := r.Header.Get("Date")
+					t, err := time.Parse(http.TimeFormat, date)
+					if err != nil || t.Add(30*time.Second).Before(time.Now()) {
+						break
+					}
+
+					buf := util.BufferPool.GetBuffer()
+					defer util.BufferPool.Put(buf)
+
+					buf.ReadFrom(r.Body)
+					r.Body = ioutil.NopCloser(buf)
+
+					contentMD5 := base64.URLEncoding.EncodeToString(md5.New().Sum(buf.Bytes()))
+
+					message := fmt.Sprintf("%s\n%s\n%s\n%s\n",
+						r.Method, contentMD5, r.Header.Get("Content-Type"),
+						date)
+
+					hm := hmac.New(sha256.New, u.MD5API)
+					if _, err := hm.Write([]byte(message)); err != nil {
+						break
+					}
+
+					if !hmac.Equal(hm.Sum(nil), decoded) {
+						break
+					}
+
+					validUser = true
+					break
+				}
+			}
+
+			if !validUser {
+				w.WriteHeader(http.StatusForbidden)
+				return
+			}
+
+			c.Set(r, context.BaseCtxKey("user"), u)
+
 			ph.ServeHTTP(w, r)
 			return
 		}

@@ -1,6 +1,10 @@
 package readeef
 
-import "github.com/urandom/webfw/context"
+import (
+	"net/http"
+
+	"github.com/urandom/webfw/context"
+)
 
 type CtxKey string
 
@@ -26,4 +30,12 @@ func GetDB(c context.Context) DB {
 	}
 
 	return db
+}
+
+func GetUser(c context.Context, r *http.Request) User {
+	if v, ok := c.GetGlobal(CtxKey("user")); ok {
+		return v.(User)
+	}
+
+	return User{}
 }
