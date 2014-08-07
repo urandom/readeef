@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
 	first_name TEXT,
 	last_name TEXT,
 	email TEXT,
+	hash_type TEXT,
 	salt BYTEA,
 	hash BYTEA,
 	md5_api BYTEA

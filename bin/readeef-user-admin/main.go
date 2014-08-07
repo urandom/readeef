@@ -73,6 +73,8 @@ func main() {
 			fmt.Printf("%s\n", u.LastName)
 		case "email":
 			fmt.Printf("%s\n", u.Email)
+		case "hashtype", "hash_type":
+			fmt.Printf("%s\n", u.HashType)
 		case "salt":
 			fmt.Printf("%v\n", u.Salt)
 		case "hash":
@@ -138,7 +140,10 @@ func main() {
 				fmt.Printf(", last name: %s", u.LastName)
 			}
 			if u.Email != "" {
-				fmt.Printf(", email %s", u.Email)
+				fmt.Printf(", email: %s", u.Email)
+			}
+			if u.HashType != "" {
+				fmt.Printf(", has type: %s", u.HashType)
 			}
 			fmt.Printf("\n")
 		}

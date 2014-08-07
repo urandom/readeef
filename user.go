@@ -15,6 +15,7 @@ type User struct {
 	FirstName string `db:"first_name"`
 	LastName  string `db:"last_name"`
 	Email     string
+	HashType  string `db:"hash_type"`
 	Salt      []byte
 	Hash      []byte
 	MD5API    []byte `db:"md5_api"` // "md5(user:pass)"
@@ -43,6 +44,7 @@ func (u *User) SetPassword(pass string) error {
 
 	u.Salt = salt
 
+	u.HashType = "sha1"
 	u.Hash = u.generateHash(pass)
 
 	return nil
