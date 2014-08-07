@@ -12,6 +12,10 @@ import (
 const authkey = "AUTHUSER"
 const namekey = "AUTHNAME"
 
+type AuthController interface {
+	LoginRequired(context.Context, *http.Request) bool
+}
+
 // The Auth middleware checks whether the session contains a valid user or
 // login. If it only contains the later, it tries to load the actual user
 // object from the database. If a valid user hasn't been loaded, it redirects
@@ -39,6 +43,17 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 				return
 			}
 		}
+		con := webfw.GetController(c, r)
+		if ac, ok := con.(AuthController); ok {
+			if !ac.LoginRequired(c, r) {
+				ph.ServeHTTP(w, r)
+				return
+			}
+		} else {
+			ph.ServeHTTP(w, r)
+			return
+		}
+
 		sess := webfw.GetSession(c, r)
 
 		var u User
