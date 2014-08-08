@@ -55,19 +55,61 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 				return
 			}
 		}
-		con := webfw.GetController(c, r)
-		if ac, ok := con.(AuthController); ok {
+
+		route, _, ok := webfw.GetDispatcher(c).RequestRoute(r)
+		if !ok {
+			ph.ServeHTTP(w, r)
+			return
+		}
+
+		switch ac := route.Controller.(type) {
+		case AuthController:
 			if !ac.LoginRequired(c, r) {
 				ph.ServeHTTP(w, r)
 				return
 			}
-		} else {
-			if ac, ok := con.(ApiAuthController); ok {
-				if !ac.AuthRequired(c, r) {
-					ph.ServeHTTP(w, r)
-					return
+
+			sess := webfw.GetSession(c, r)
+
+			var u User
+			validUser := false
+			if uv, ok := sess.Get(authkey); ok {
+				if u, ok = uv.(User); ok {
+					validUser = true
 				}
-			} else {
+			}
+
+			if !validUser {
+				if uv, ok := sess.Get(namekey); ok {
+					if n, ok := uv.(string); ok {
+						var err error
+						u, err = mw.DB.GetUser(n)
+
+						if err == nil {
+							validUser = true
+							sess.Set(authkey, u)
+						} else if _, ok := err.(ValidationError); !ok {
+							l.Print(err)
+						}
+					}
+				}
+			}
+
+			if !validUser {
+				d := webfw.GetDispatcher(c)
+				sess.SetFlash(CtxKey("return-to"), r.URL.Path)
+				path := d.NameToPath("auth-login", webfw.MethodGet)
+
+				if path == "" {
+					path = "/"
+				}
+
+				http.Redirect(w, r, path, http.StatusMovedPermanently)
+				return
+			}
+
+		case ApiAuthController:
+			if !ac.AuthRequired(c, r) {
 				ph.ServeHTTP(w, r)
 				return
 			}
@@ -79,7 +121,8 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 			validUser := false
 
 			if auth != "" {
-				for {
+				switch {
+				default:
 					if !strings.HasPrefix(auth, "Readeef ") {
 						break
 					}
@@ -129,7 +172,6 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 					}
 
 					validUser = true
-					break
 				}
 			}
 
@@ -139,48 +181,6 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 			}
 
 			c.Set(r, context.BaseCtxKey("user"), u)
-
-			ph.ServeHTTP(w, r)
-			return
-		}
-
-		sess := webfw.GetSession(c, r)
-
-		var u User
-		validUser := false
-		if uv, ok := sess.Get(authkey); ok {
-			if u, ok = uv.(User); ok {
-				validUser = true
-			}
-		}
-
-		if !validUser {
-			if uv, ok := sess.Get(namekey); ok {
-				if n, ok := uv.(string); ok {
-					var err error
-					u, err = mw.DB.GetUser(n)
-
-					if err == nil {
-						validUser = true
-						sess.Set(authkey, u)
-					} else if _, ok := err.(ValidationError); !ok {
-						l.Print(err)
-					}
-				}
-			}
-		}
-
-		if !validUser {
-			d := webfw.GetDispatcher(c)
-			sess.SetFlash(CtxKey("return-to"), r.URL.Path)
-			path := d.NameToPath("auth-login", webfw.MethodGet)
-
-			if path == "" {
-				path = "/"
-			}
-
-			http.Redirect(w, r, path, http.StatusMovedPermanently)
-			return
 		}
 
 		ph.ServeHTTP(w, r)
