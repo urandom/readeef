@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"readeef/parser"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/urandom/webfw"
@@ -33,7 +32,7 @@ type SubscriptionError struct {
 
 type HubbubSubscription struct {
 	Link                string
-	FeedLink            string    `db:"feed_link"`
+	FeedId              int64     `db:"feed_id"`
 	LeaseDuration       int64     `db:"lease_duration"`
 	VerificationTime    time.Time `db:"verification_time"`
 	SubscriptionFailure bool      `db:"subscription_failure"`
@@ -78,7 +77,7 @@ func (h Hubbub) Subscribe(f Feed) error {
 		}
 	}
 
-	s := HubbubSubscription{Link: f.HubLink, FeedLink: f.Link, hubbub: h, SubscriptionFailure: true}
+	s := HubbubSubscription{Link: f.HubLink, FeedId: f.Id, hubbub: h, SubscriptionFailure: true}
 
 	if err := h.db.UpdateHubbubSubscription(s); err != nil {
 		return err
@@ -90,7 +89,7 @@ func (h Hubbub) Subscribe(f Feed) error {
 			f.SubscribeError = err.Error()
 			h.logger.Printf("Error subscribing to hub feed '%s': %s\n", f.Link, err)
 
-			if err := h.db.UpdateFeed(f); err != nil {
+			if _, err := h.db.UpdateFeed(f); err != nil {
 				h.logger.Printf("Error updating feed database record for '%s': %s\n", f.Link, err)
 			}
 		}
@@ -112,15 +111,19 @@ func (s HubbubSubscription) Validate() error {
 		return ValidationError{errors.New("Invalid subscription link")}
 	}
 
-	if u, err := url.Parse(s.FeedLink); err != nil || !u.IsAbs() {
-		return ValidationError{errors.New("Invalid feed link")}
+	if s.FeedId == 0 {
+		return ValidationError{errors.New("Invalid feed id")}
 	}
 
 	return nil
 }
 
 func (s HubbubSubscription) subscription(subscribe bool) error {
-	u := callbackURL(s.hubbub.config, s.FeedLink)
+	u := callbackURL(s.hubbub.config, s.FeedId)
+	feed, err := s.hubbub.db.GetFeed(s.FeedId)
+	if err != nil {
+		return SubscriptionError{error: err, Subscription: s}
+	}
 
 	body := url.Values{}
 	body.Set("hub.callback", u)
@@ -129,7 +132,7 @@ func (s HubbubSubscription) subscription(subscribe bool) error {
 	} else {
 		body.Set("hub.mode", "unsubscribe")
 	}
-	body.Set("hub.topic", s.FeedLink)
+	body.Set("hub.topic", feed.Link)
 
 	buf := util.BufferPool.GetBuffer()
 	defer util.BufferPool.Put(buf)
@@ -152,7 +155,7 @@ func (s HubbubSubscription) subscription(subscribe bool) error {
 
 func NewHubbubController(h Hubbub) HubbubController {
 	return HubbubController{
-		webfw.NewBaseController(h.config.Hubbub.RelativePath+"/:feed-link", webfw.MethodGet|webfw.MethodPost, "hubbub-callback"),
+		webfw.NewBaseController(h.config.Hubbub.RelativePath+"/:feed-id", webfw.MethodGet|webfw.MethodPost, "hubbub-callback"),
 		h}
 }
 
@@ -162,32 +165,21 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 
 		params := r.URL.Query()
 		pathParams := webfw.GetParams(c, r)
-		feedLink := params.Get("hub.topic")
-
-		if feedLink == "" {
-			var err error
-			if feedLink = pathParams["feed-link"]; feedLink != "" {
-				feedLink, err = url.QueryUnescape(feedLink)
-			} else {
-				err = errors.New("No feed link could be found")
-			}
-
-			if err != nil {
-				webfw.GetLogger(c).Print(err)
-				return
-			}
-
-			feedLink = strings.Replace(feedLink, "|", "/", -1)
-		}
-
-		s, err := con.hubbub.db.GetHubbubSubscriptionByFeed(feedLink)
+		feedId, err := strconv.ParseInt(pathParams["feed-id"], 10, 64)
 
 		if err != nil {
 			webfw.GetLogger(c).Print(err)
 			return
 		}
 
-		f, err := con.hubbub.db.GetFeed(s.FeedLink)
+		s, err := con.hubbub.db.GetHubbubSubscriptionByFeed(feedId)
+
+		if err != nil {
+			webfw.GetLogger(c).Print(err)
+			return
+		}
+
+		f, err := con.hubbub.db.GetFeed(s.FeedId)
 		if err != nil {
 			webfw.GetLogger(c).Print(err)
 			return
@@ -205,7 +197,7 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 			w.Write([]byte(params.Get("hub.challenge")))
 		case "denied":
 			w.Write([]byte{})
-			webfw.GetLogger(c).Printf("Unable to subscribe to '%s': %s\n", feedLink, params.Get("hub.reason"))
+			webfw.GetLogger(c).Printf("Unable to subscribe to '%s': %s\n", params.Get("hub.topic"), params.Get("hub.reason"))
 		default:
 			w.Write([]byte{})
 
@@ -220,7 +212,7 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
 				f = f.UpdateFromParsed(pf)
 
-				if err := con.hubbub.db.UpdateFeed(f); err != nil {
+				if _, err := con.hubbub.db.UpdateFeed(f); err != nil {
 					webfw.GetLogger(c).Print(err)
 					return
 				}
@@ -254,7 +246,6 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 	}
 }
 
-func callbackURL(c Config, link string) string {
-	return fmt.Sprintf("%s/v%d%s/%s", c.Hubbub.CallbackURL, c.API.Version, c.Hubbub.RelativePath,
-		url.QueryEscape(strings.Replace(link, "/", "|", -1)))
+func callbackURL(c Config, feedId int64) string {
+	return fmt.Sprintf("%s/v%d%s/%d", c.Hubbub.CallbackURL, c.API.Version, c.Hubbub.RelativePath, feedId)
 }

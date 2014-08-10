@@ -12,6 +12,8 @@ import (
 )
 
 func TestFeedUpdater(t *testing.T) {
+	cleanDB(t)
+
 	var ts *httptest.Server
 
 	done := make(chan bool)
@@ -41,13 +43,18 @@ func TestFeedUpdater(t *testing.T) {
 	fu.Start()
 
 	f := Feed{Feed: parser.Feed{Link: ts.URL + "/link"}}
+	f, err = db.UpdateFeed(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	fu.AddFeed(f)
 
 	<-done // First update request
 
 	f2 := <-updateFeed // Feed gets updated
 
-	f, err = db.GetFeed(f.Link)
+	f, err = db.GetFeed(f.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,5 +74,12 @@ func TestFeedUpdater(t *testing.T) {
 
 	<-done // Second update request
 
-	cleanDB(t)
+	fu.RemoveFeed(f)
+
+	time.Sleep(150 * time.Millisecond)
+	select {
+	case <-done:
+		t.Fatalf("Did not expect another request\n")
+	default:
+	}
 }

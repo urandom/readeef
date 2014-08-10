@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"readeef/parser"
 	"strings"
@@ -19,6 +18,8 @@ import (
 )
 
 func TestHubbub(t *testing.T) {
+	cleanDB(t)
+
 	var ts *httptest.Server
 	var callbackURL string
 
@@ -38,8 +39,6 @@ func TestHubbub(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	callbackURL = fmt.Sprintf("%s/callback/v0/hubbub/%s", ts.URL, url.QueryEscape(strings.Replace(ts.URL+"/link", "/", "|", -1)))
-
 	var conf Config
 	addFeed := make(chan Feed)
 	removeFeed := make(chan Feed)
@@ -57,11 +56,17 @@ func TestHubbub(t *testing.T) {
 
 	h := NewHubbub(db, conf, log.New(os.Stderr, "", 0), addFeed, removeFeed, updateFeed)
 	f := Feed{Feed: parser.Feed{Link: ts.URL + "/link"}}
+	f, err = db.UpdateFeed(f)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	err = h.Subscribe(f)
 	if err != ErrNotConfigured {
 		t.Fatalf("Exepcted a ErrNotConfigured error, got: '%v'\n", err)
 	}
+
+	callbackURL = fmt.Sprintf("%s/callback/v0/hubbub/%d", ts.URL, f.Id)
 
 	conf.Hubbub.CallbackURL = ts.URL + "/callback"
 	conf.Hubbub.RelativePath = "/hubbub"
@@ -69,7 +74,7 @@ func TestHubbub(t *testing.T) {
 	conf.Timeout.Converted.ReadWrite = time.Second
 	h = NewHubbub(db, conf, log.New(os.Stderr, "", 0), addFeed, removeFeed, updateFeed)
 
-	dispatcher.Handle(hublink_con{webfw.NewBaseController("/hublink", webfw.MethodAll, ""), callbackURL, ts.URL + "/link", t, done})
+	dispatcher.Handle(hublink_con{webfw.NewBaseController("/hublink", webfw.MethodAll, ""), callbackURL, ts.URL + "/link", done})
 
 	hc := NewHubbubController(h)
 	dispatcher.Handle(hc)
@@ -80,9 +85,9 @@ func TestHubbub(t *testing.T) {
 		t.Fatalf("Exepcted a ErrNoFeedHubLink error, got: '%v'\n", err)
 	}
 
-	f = Feed{Feed: parser.Feed{Link: ts.URL + "/link"}, HubLink: ts.URL + "/hublink"}
+	f.HubLink = ts.URL + "/hublink"
 
-	err = db.UpdateFeed(f)
+	f, err = db.UpdateFeed(f)
 	if err != nil {
 		t.Fatalf("Got an error during feed db update: '%v'\n", err)
 	}
@@ -94,7 +99,7 @@ func TestHubbub(t *testing.T) {
 
 	<-done // hublink request
 	<-done // callback request
-	if s, err := db.GetHubbubSubscriptionByFeed(f.Link); err != nil {
+	if s, err := db.GetHubbubSubscriptionByFeed(f.Id); err != nil {
 		t.Fatal(err)
 	} else {
 		if s.SubscriptionFailure {
@@ -114,7 +119,7 @@ func TestHubbub(t *testing.T) {
 
 	<-done // subscription feed update
 
-	f, err = db.GetFeed(f.Link)
+	f, err = db.GetFeed(f.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,37 +132,34 @@ func TestHubbub(t *testing.T) {
 	if f.Title != expectedStr {
 		t.Fatalf("Expected feed title to be '%s', got '%s'\n", expectedStr, f.Title)
 	}
-
-	cleanDB(t)
 }
 
 type hublink_con struct {
 	webfw.BaseController
 	callbackURL string
 	feedLink    string
-	t           *testing.T
 	done        chan bool
 }
 
 func (con hublink_con) Handler(c context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
-			con.t.Fatal(err)
+			panic(err)
 		}
 
 		expectedStr := con.callbackURL
 		if r.Form.Get("hub.callback") != expectedStr {
-			con.t.Fatalf("Expected hub.callback '%s', got '%s'\n", r.Form.Get("hub.callback"), expectedStr)
+			panic(fmt.Sprintf("Expected hub.callback '%s', got '%s'\n", r.Form.Get("hub.callback"), expectedStr))
 		}
 
 		expectedStr = con.feedLink
 		if r.Form.Get("hub.topic") != expectedStr {
-			con.t.Fatalf("Expected hub.topic '%s', got '%s'\n", r.Form.Get("hub.topic"), expectedStr)
+			panic(fmt.Sprintf("Expected hub.topic '%s', got '%s'\n", r.Form.Get("hub.topic"), expectedStr))
 		}
 
 		expectedStr = "subscribe"
 		if r.Form.Get("hub.mode") != expectedStr {
-			con.t.Fatalf("Expected hub.mode '%s', got '%s'\n", r.Form.Get("hub.mode"), expectedStr)
+			panic(fmt.Sprintf("Expected hub.mode '%s', got '%s'\n", r.Form.Get("hub.mode"), expectedStr))
 		}
 		w.WriteHeader(http.StatusAccepted)
 
@@ -165,18 +167,18 @@ func (con hublink_con) Handler(c context.Context) http.HandlerFunc {
 			res, err := http.Get(con.callbackURL + "?hub.mode=subscribe&hub.challenge=secret")
 			defer func() { con.done <- true }()
 			if err != nil {
-				con.t.Fatal(err)
+				panic(err)
 			}
 
 			challenge, err := ioutil.ReadAll(res.Body)
 			if err != nil {
-				con.t.Fatal(err)
+				panic(err)
 			}
 
 			challengeStr := string(challenge[:])
 			expectedStr = "secret"
 			if challengeStr != expectedStr {
-				con.t.Fatalf("Expected challenge '%s', got '%s'\n", challengeStr, expectedStr)
+				panic(fmt.Sprintf("Expected challenge '%s', got '%s'\n", challengeStr, expectedStr))
 			}
 		}()
 	}

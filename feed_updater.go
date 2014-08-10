@@ -20,14 +20,14 @@ type FeedUpdater struct {
 	done        chan bool
 	client      *http.Client
 	logger      *log.Logger
-	feedTickers map[string]*time.Ticker
+	activeFeeds map[int64]bool
 }
 
 func NewFeedUpdater(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) FeedUpdater {
 	return FeedUpdater{
 		db: db, config: c, logger: l, updateFeed: updateFeed,
 		addFeed: make(chan Feed, 2), removeFeed: make(chan Feed, 2), done: make(chan bool),
-		feedTickers: map[string]*time.Ticker{},
+		activeFeeds: map[int64]bool{},
 		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 
@@ -84,17 +84,19 @@ func (fu FeedUpdater) startUpdatingFeed(f Feed) {
 		}
 	}
 
-	ticker := time.NewTicker(d)
-
-	fu.feedTickers[f.Link] = ticker
+	fu.activeFeeds[f.Id] = true
 
 	go func() {
 		go fu.requestFeedContent(f)
 
+	ticker:
 		for {
 			select {
-			case <-ticker.C:
-				now := time.Now()
+			case now := <-time.After(d):
+				if !fu.activeFeeds[f.Id] {
+					break ticker
+				}
+
 				if !f.SkipHours[now.Hour()] && !f.SkipDays[now.Weekday().String()] {
 					go fu.requestFeedContent(f)
 				}
@@ -107,10 +109,7 @@ func (fu FeedUpdater) startUpdatingFeed(f Feed) {
 }
 
 func (fu FeedUpdater) stopUpdatingFeed(f Feed) {
-	if t, ok := fu.feedTickers[f.Link]; ok {
-		t.Stop()
-		delete(fu.feedTickers, f.Link)
-	}
+	delete(fu.activeFeeds, f.Id)
 }
 
 func (fu FeedUpdater) requestFeedContent(f Feed) {
@@ -146,7 +145,7 @@ func (fu FeedUpdater) requestFeedContent(f Feed) {
 	case <-fu.done:
 		return
 	default:
-		if err := fu.db.UpdateFeed(f); err != nil {
+		if _, err := fu.db.UpdateFeed(f); err != nil {
 			fu.logger.Printf("Error updating feed database record: %v\n", err)
 		}
 

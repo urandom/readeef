@@ -15,6 +15,8 @@ import (
 var db DB
 
 func TestDBUsers(t *testing.T) {
+	cleanDB(t)
+
 	if _, err := db.GetUser("test"); err != nil {
 		if err != sql.ErrNoRows {
 			t.Fatal(err)
@@ -88,31 +90,31 @@ func TestDBUsers(t *testing.T) {
 	}
 
 	if u.Login != u2.Login {
-		t.Fatal("Expected %s, got %s", u.Login, u2.Login)
+		t.Fatalf("Expected %s, got %s", u.Login, u2.Login)
 	}
 
 	if u.FirstName != u2.FirstName {
-		t.Fatal("Expected %s, got %s", u.FirstName, u2.FirstName)
+		t.Fatalf("Expected %s, got %s", u.FirstName, u2.FirstName)
 	}
 
 	if u.LastName != u2.LastName {
-		t.Fatal("Expected %s, got %s", u.LastName, u2.LastName)
+		t.Fatalf("Expected %s, got %s", u.LastName, u2.LastName)
 	}
 
 	if u.Email != u2.Email {
-		t.Fatal("Expected %s, got %s", u.Email, u2.Email)
+		t.Fatalf("Expected %s, got %s", u.Email, u2.Email)
 	}
 
 	if !bytes.Equal(u.Salt, u2.Salt) {
-		t.Fatal("Expected %s, got %s", u.Salt, u2.Salt)
+		t.Fatalf("Expected %v, got %v", u.Salt, u2.Salt)
 	}
 
 	if !bytes.Equal(u.Hash, u2.Hash) {
-		t.Fatal("Expected %s, got %s", u.Hash, u2.Hash)
+		t.Fatalf("Expected %v, got %v", u.Hash, u2.Hash)
 	}
 
 	if !bytes.Equal(u.MD5API, u2.MD5API) {
-		t.Fatal("Expected %s, got %s", u.MD5API, u2.MD5API)
+		t.Fatalf("Expected %s, got %s", u.MD5API, u2.MD5API)
 	}
 
 	if err := db.DeleteUser(u); err != nil {
@@ -122,14 +124,14 @@ func TestDBUsers(t *testing.T) {
 	if _, err := db.GetUser("test"); err == nil || err != sql.ErrNoRows {
 		t.Fatalf("Expected to not find the user\n")
 	}
-
-	cleanDB(t)
 }
 
 func TestDBFeeds(t *testing.T) {
+	cleanDB(t)
+
 	var err error
 
-	if _, err := db.GetFeed("http://example.com"); err != nil {
+	if _, err := db.GetFeed(0); err != nil {
 		if err != sql.ErrNoRows {
 			t.Fatal(err)
 		}
@@ -138,7 +140,7 @@ func TestDBFeeds(t *testing.T) {
 	}
 
 	f := Feed{Feed: parser.Feed{Title: "test"}}
-	if err := db.UpdateFeed(f); err != nil {
+	if f, err = db.UpdateFeed(f); err != nil {
 		if _, ok := err.(ValidationError); !ok {
 			t.Fatalf("Expected a validation error, got '%v'\n", err)
 		}
@@ -147,12 +149,16 @@ func TestDBFeeds(t *testing.T) {
 	}
 
 	f.Link = "http://example.com"
-	if err := db.UpdateFeed(f); err != nil {
+	if f, err = db.UpdateFeed(f); err != nil {
 		t.Fatal(err)
 	}
 
+	if f.Id == 0 {
+		t.Fatal("Expected the feed to get a valid id after insertion in the db\n")
+	}
+
 	expectedStr := "http://example.com"
-	if f, err := db.GetFeed("http://example.com"); err != nil {
+	if f, err = db.GetFeed(f.Id); err != nil {
 		t.Fatal(err)
 	} else {
 		if f.Link != expectedStr {
@@ -161,12 +167,12 @@ func TestDBFeeds(t *testing.T) {
 	}
 
 	f.Title = "Example rss"
-	if err := db.UpdateFeed(f); err != nil {
+	if _, err = db.UpdateFeed(f); err != nil {
 		t.Fatal(err)
 	}
 
 	expectedStr = "Example rss"
-	if f, err := db.GetFeed("http://example.com"); err != nil {
+	if f, err := db.GetFeed(f.Id); err != nil {
 		t.Fatal(err)
 	} else {
 		if f.Title != expectedStr {
@@ -189,7 +195,7 @@ func TestDBFeeds(t *testing.T) {
 	}
 
 	f2 := Feed{Feed: parser.Feed{Link: "http://rss.example.com"}}
-	if err := db.UpdateFeed(f2); err != nil {
+	if f2, err = db.UpdateFeed(f2); err != nil {
 		t.Fatal(err)
 	}
 
@@ -272,8 +278,8 @@ func TestDBFeeds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	a1 := Article{Article: parser.Article{Id: "1", Title: "Test 1"}, FeedLink: f2.Link}
-	a2 := Article{Article: parser.Article{Id: "2", Title: "Test 2", Date: t1}, FeedLink: f2.Link}
+	a1 := Article{Article: parser.Article{Id: "1", Title: "Test 1"}, FeedId: f2.Id}
+	a2 := Article{Article: parser.Article{Id: "2", Title: "Test 2", Date: t1}, FeedId: f2.Id}
 
 	if f, err := db.CreateFeedArticles(f2, []Article{a1, a2}); err == nil {
 		expectedInt = 2
@@ -350,7 +356,7 @@ func TestDBFeeds(t *testing.T) {
 		}
 	}
 
-	a3 := Article{Article: parser.Article{Id: "3", Title: "Test 3", Date: time.Now().Add(time.Minute)}, FeedLink: f2.Link}
+	a3 := Article{Article: parser.Article{Id: "3", Title: "Test 3", Date: time.Now().Add(time.Minute)}, FeedId: f2.Id}
 
 	f2.Articles = append(f2.Articles, a3)
 	if f, err := db.CreateFeedArticles(f2, []Article{a3}); err == nil {
@@ -423,7 +429,7 @@ func TestDBFeeds(t *testing.T) {
 	}
 
 	f3 := Feed{Feed: parser.Feed{Link: "http://rss2.example.com"}}
-	if err := db.UpdateFeed(f3); err != nil {
+	if f3, err = db.UpdateFeed(f3); err != nil {
 		t.Fatal(err)
 	}
 
@@ -453,9 +459,9 @@ func TestDBFeeds(t *testing.T) {
 		if len(articles) != expectedInt {
 			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(articles))
 		}
-		expectedStr = f2.Link
-		if articles[0].FeedLink != expectedStr {
-			t.Fatalf("Expected '%s' for article feed link, got '%s'\n", expectedStr, articles[0].FeedLink)
+		expectedInt64 := f2.Id
+		if articles[0].FeedId != expectedInt64 {
+			t.Fatalf("Expected '%d' for article feed id, got '%d'\n", expectedInt64, articles[0].FeedId)
 		}
 	} else {
 		t.Fatal(err)
@@ -475,13 +481,11 @@ func TestDBFeeds(t *testing.T) {
 		if len(f.Articles) != expectedInt {
 			t.Fatalf("Expected %d unread feed articles, got %d\n", expectedInt, len(f.Articles))
 		}
-		expectedStr = f3.Link
-		if f.Articles[0].FeedLink != expectedStr {
-			t.Fatalf("Expected '%s' for article feed link, got '%s'\n", expectedStr, f.Articles[0].FeedLink)
+		expectedInt64 := f3.Id
+		if f.Articles[0].FeedId != expectedInt64 {
+			t.Fatalf("Expected '%d' for article feed id, got '%d'\n", expectedInt64, f.Articles[0].FeedId)
 		}
 	}
-
-	cleanDB(t)
 }
 
 func cleanDB(t *testing.T) {
