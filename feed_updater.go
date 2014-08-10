@@ -87,7 +87,7 @@ func (fu FeedUpdater) startUpdatingFeed(f Feed) {
 	fu.activeFeeds[f.Id] = true
 
 	go func() {
-		go fu.requestFeedContent(f)
+		fu.requestFeedContent(f)
 
 	ticker:
 		for {
@@ -98,7 +98,7 @@ func (fu FeedUpdater) startUpdatingFeed(f Feed) {
 				}
 
 				if !f.SkipHours[now.Hour()] && !f.SkipDays[now.Weekday().String()] {
-					go fu.requestFeedContent(f)
+					fu.requestFeedContent(f)
 				}
 			case <-fu.done:
 				fu.stopUpdatingFeed(f)

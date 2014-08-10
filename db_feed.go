@@ -395,7 +395,7 @@ func (db DB) GetFeedArticles(f Feed, paging ...int) (Feed, error) {
 
 	var articles []Article
 
-	offset, limit := pagingLimit(paging)
+	limit, offset := pagingLimit(paging)
 
 	if err := db.Select(&articles, db.NamedSQL("get_feed_articles"), f.Id, f.User.Login, limit, offset); err != nil {
 		return f, err
@@ -413,7 +413,7 @@ func (db DB) GetUnreadFeedArticles(f Feed, paging ...int) (Feed, error) {
 
 	var articles []Article
 
-	offset, limit := pagingLimit(paging)
+	limit, offset := pagingLimit(paging)
 
 	if err := db.Select(&articles, db.NamedSQL("get_unread_feed_articles"), f.Id, f.User.Login, limit, offset); err != nil {
 		return f, err
@@ -431,7 +431,7 @@ func (db DB) GetReadFeedArticles(f Feed, paging ...int) (Feed, error) {
 
 	var articles []Article
 
-	offset, limit := pagingLimit(paging)
+	limit, offset := pagingLimit(paging)
 
 	if err := db.Select(&articles, db.NamedSQL("get_read_feed_articles"), f.Id, f.User.Login, limit, offset); err != nil {
 		return f, err
@@ -445,7 +445,7 @@ func (db DB) GetReadFeedArticles(f Feed, paging ...int) (Feed, error) {
 func (db DB) GetUserArticles(u User, paging ...int) ([]Article, error) {
 	var articles []Article
 
-	offset, limit := pagingLimit(paging)
+	limit, offset := pagingLimit(paging)
 
 	if err := db.Select(&articles, db.NamedSQL("get_user_articles"), u.Login, limit, offset); err != nil {
 		return articles, err
@@ -457,7 +457,7 @@ func (db DB) GetUserArticles(u User, paging ...int) ([]Article, error) {
 func (db DB) GetUnreadUserArticles(u User, paging ...int) ([]Article, error) {
 	var articles []Article
 
-	offset, limit := pagingLimit(paging)
+	limit, offset := pagingLimit(paging)
 
 	if err := db.Select(&articles, db.NamedSQL("get_unread_user_articles"), u.Login, limit, offset); err != nil {
 		return articles, err
@@ -469,7 +469,7 @@ func (db DB) GetUnreadUserArticles(u User, paging ...int) ([]Article, error) {
 func (db DB) GetReadUserArticles(u User, paging ...int) ([]Article, error) {
 	var articles []Article
 
-	offset, limit := pagingLimit(paging)
+	limit, offset := pagingLimit(paging)
 
 	if err := db.Select(&articles, db.NamedSQL("get_read_user_articles"), u.Login, limit, offset); err != nil {
 		return articles, err
@@ -617,7 +617,7 @@ func (db DB) MarkFeedArticlesByDateAsRead(f Feed, d time.Time, read bool) error 
 func (db DB) GetUserFavoriteArticles(u User, paging ...int) ([]Article, error) {
 	var articles []Article
 
-	offset, limit := pagingLimit(paging)
+	limit, offset := pagingLimit(paging)
 
 	if err := db.Select(&articles, db.NamedSQL("get_user_favorite_articles"), u.Login, limit, offset); err != nil {
 		return articles, err
@@ -726,17 +726,17 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) error {
 }
 
 func pagingLimit(paging []int) (int, int) {
-	offset := 0
 	limit := 50
+	offset := 0
 
 	if len(paging) > 0 {
-		offset = paging[0]
+		limit = paging[0]
 		if len(paging) > 1 {
-			limit = paging[1]
+			offset = paging[1]
 		}
 	}
 
-	return offset, limit
+	return limit, offset
 }
 
 func init() {
