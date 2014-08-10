@@ -16,6 +16,8 @@ INSERT INTO feeds(link, title, description, hub_link, update_error, subscribe_er
 	update_feed = `UPDATE feeds SET link = $1, title = $2, description = $3, hub_link = $4, update_error = $5, subscribe_error = $6 WHERE id = $7`
 	delete_feed = `DELETE FROM feeds WHERE id = $1`
 
+	get_feed_by_link = `SELECT id, title, description, hub_link, update_error, subscribe_error FROM feeds WHERE link = $1`
+
 	get_feeds = `SELECT id, link, title, description, hub_link, update_error, subscribe_error FROM feeds`
 
 	get_unsubscribed_feeds = `
@@ -261,6 +263,17 @@ func (db DB) DeleteFeed(f Feed) error {
 	tx.Commit()
 
 	return nil
+}
+
+func (db DB) GetFeedByLink(link string) (Feed, error) {
+	var f Feed
+	if err := db.Get(&f, db.NamedSQL("get_feed_by_link"), link); err != nil {
+		return f, err
+	}
+
+	f.Link = link
+
+	return f, nil
 }
 
 func (db DB) GetFeeds() ([]Feed, error) {
@@ -745,6 +758,7 @@ func init() {
 	sql_stmt["generic:update_feed"] = update_feed
 	sql_stmt["generic:delete_feed"] = delete_feed
 	sql_stmt["generic:get_feeds"] = get_feeds
+	sql_stmt["generic:get_feed_by_link"] = get_feed_by_link
 	sql_stmt["generic:get_unsubscribed_feeds"] = get_unsubscribed_feeds
 	sql_stmt["generic:create_user_feed"] = create_user_feed
 	sql_stmt["generic:delete_user_feed"] = delete_user_feed

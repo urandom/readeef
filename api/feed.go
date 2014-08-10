@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"readeef"
 	"readeef/parser"
 	"strconv"
@@ -15,9 +16,10 @@ import (
 
 type Feed struct {
 	webfw.BaseController
+	fu FeedUpdater
 }
 
-func NewFeed() Feed {
+func NewFeed(fu FeedUpdater) Feed {
 	return Feed{
 		webfw.NewBaseController("/v:version/feed/*action", webfw.MethodAll, ""),
 	}
@@ -69,7 +71,60 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			w.Write(b)
-		case "articles":
+		case "add":
+			r.ParseForm()
+
+			link := r.FormValue("url")
+			var u *url.URL
+
+			/* TODO: non-fatal error */
+			if u, err = url.Parse(f.Link); err != nil {
+				break
+				/* TODO: non-fatal error */
+			} else if !u.IsAbs() {
+				err = errors.New("Feed has no link")
+				break
+			}
+
+			err = fu.AddFeedByLink(link)
+			if err != nil {
+				break
+			}
+
+			type response struct {
+				success bool
+			}
+			resp := response{true}
+
+			var b []byte
+			b, err = json.Marshal(resp)
+			if err != nil {
+				break
+			}
+
+			w.Write(b)
+		case "remove":
+			id, err := strconv.ParseInt(parts[1], 10, 64)
+
+			/* TODO: non-fatal error */
+			if err != nil {
+				break
+			}
+
+			fu.RemoveFeed(id)
+
+			type response struct {
+				success bool
+			}
+			resp := response{true}
+
+			var b []byte
+			b, err = json.Marshal(resp)
+			if err != nil {
+				break
+			}
+
+			w.Write(b)
 		default:
 			id, err := strconv.ParseInt(action, 10, 64)
 
@@ -79,6 +134,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			f, err := db.GetFeed(id)
+			/* TODO: non-fatal error */
 			if err != nil {
 				break
 			}
@@ -88,11 +144,13 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 
 			if len(parts) == 3 {
 				limit, err = strconv.Atoi(parts[1])
+				/* TODO: non-fatal error */
 				if err != nil {
 					break
 				}
 
 				offset, err = strconv.Atoi(parts[2])
+				/* TODO: non-fatal error */
 				if err != nil {
 					break
 				}
@@ -102,6 +160,9 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			f, err = db.GetFeedArticles(f, limit, offset)
+			if err != nil {
+				break
+			}
 
 			type response struct {
 				Feed feed

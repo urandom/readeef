@@ -1,6 +1,7 @@
 package readeef
 
 import (
+	"database/sql"
 	"log"
 	"readeef/parser"
 	"strconv"
@@ -23,15 +24,15 @@ type FeedUpdater struct {
 	activeFeeds map[int64]bool
 }
 
-func NewFeedUpdater(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) FeedUpdater {
-	return FeedUpdater{
+func NewFeedUpdater(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) *FeedUpdater {
+	return &FeedUpdater{
 		db: db, config: c, logger: l, updateFeed: updateFeed,
 		addFeed: make(chan Feed, 2), removeFeed: make(chan Feed, 2), done: make(chan bool),
 		activeFeeds: map[int64]bool{},
 		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 
-func (fu FeedUpdater) SetClient(c *http.Client) {
+func (fu *FeedUpdater) SetClient(c *http.Client) {
 	fu.client = c
 }
 
@@ -41,16 +42,50 @@ func (fu FeedUpdater) Start() {
 	go fu.scheduleFeeds()
 }
 
-func (fu FeedUpdater) Stop() {
+func (fu *FeedUpdater) Stop() {
 	fu.done <- true
 }
 
-func (fu FeedUpdater) AddFeed(f Feed) {
+func (fu *FeedUpdater) AddFeed(f Feed) {
 	fu.addFeed <- f
 }
 
-func (fu FeedUpdater) RemoveFeed(f Feed) {
+func (fu *FeedUpdater) RemoveFeed(f Feed) {
 	fu.removeFeed <- f
+}
+
+func (fu *FeedUpdater) AddFeedByLink(link string) error {
+	f, err := fu.db.GetFeedByLink(link)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			f = Feed{Feed: parser.Feed{Link: link}}
+			f, err = fu.db.UpdateFeed(f)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
+	fu.addFeed <- f
+
+	return nil
+}
+
+func (fu *FeedUpdater) RemoveFeedByLink(link string) error {
+	f, err := fu.db.GetFeedByLink(link)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		} else {
+			return err
+		}
+	}
+
+	fu.removeFeed <- f
+
+	return nil
 }
 
 func (fu FeedUpdater) AddFeedChannel() chan<- Feed {
@@ -61,7 +96,7 @@ func (fu FeedUpdater) removeFeedChannel() chan<- Feed {
 	return fu.removeFeed
 }
 
-func (fu FeedUpdater) reactToChanges() {
+func (fu *FeedUpdater) reactToChanges() {
 	for {
 		select {
 		case f := <-fu.addFeed:
@@ -74,7 +109,11 @@ func (fu FeedUpdater) reactToChanges() {
 	}
 }
 
-func (fu FeedUpdater) startUpdatingFeed(f Feed) {
+func (fu *FeedUpdater) startUpdatingFeed(f Feed) {
+	if f.Id == 0 || fu.activeFeeds[f.Id] {
+		return
+	}
+
 	d := 30 * time.Minute
 	if fu.config.Updater.Converted.Interval != 0 {
 		if f.TTL != 0 && f.TTL > fu.config.Updater.Converted.Interval {
@@ -108,11 +147,11 @@ func (fu FeedUpdater) startUpdatingFeed(f Feed) {
 	}()
 }
 
-func (fu FeedUpdater) stopUpdatingFeed(f Feed) {
+func (fu *FeedUpdater) stopUpdatingFeed(f Feed) {
 	delete(fu.activeFeeds, f.Id)
 }
 
-func (fu FeedUpdater) requestFeedContent(f Feed) {
+func (fu *FeedUpdater) requestFeedContent(f Feed) {
 	resp, err := fu.client.Get(f.Link)
 
 	if err != nil {
@@ -153,7 +192,7 @@ func (fu FeedUpdater) requestFeedContent(f Feed) {
 	}
 }
 
-func (fu FeedUpdater) scheduleFeeds() {
+func (fu *FeedUpdater) scheduleFeeds() {
 	feeds, err := fu.db.GetUnsubscribedFeed()
 	if err != nil {
 		fu.logger.Printf("Error fetching unsubscribed feeds: %v\n", err)
