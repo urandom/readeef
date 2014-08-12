@@ -16,10 +16,10 @@ import (
 
 type Feed struct {
 	webfw.BaseController
-	fu FeedUpdater
+	fm FeedManager
 }
 
-func NewFeed(fu FeedUpdater) Feed {
+func NewFeed(fm FeedManager) Feed {
 	return Feed{
 		webfw.NewBaseController("/v:version/feed/*action", webfw.MethodAll, ""),
 	}
@@ -86,7 +86,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				break
 			}
 
-			err = fu.AddFeedByLink(link)
+			err = fm.AddFeedByLink(link)
 			if err != nil {
 				break
 			}
@@ -111,7 +111,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				break
 			}
 
-			fu.RemoveFeed(id)
+			fm.RemoveFeed(id)
 
 			type response struct {
 				success bool

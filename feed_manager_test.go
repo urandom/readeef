@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func TestFeedUpdater(t *testing.T) {
+func TestFeedManager(t *testing.T) {
 	cleanDB(t)
 
 	var ts *httptest.Server
@@ -38,9 +38,9 @@ func TestFeedUpdater(t *testing.T) {
 	}
 
 	conf.Updater.Converted.Interval = 100 * time.Millisecond
-	fu := NewFeedUpdater(db, conf, log.New(os.Stderr, "", 0), updateFeed)
+	fm := NewFeedManager(db, conf, log.New(os.Stderr, "", 0), updateFeed)
 
-	fu.Start()
+	fm.Start()
 
 	f := Feed{Feed: parser.Feed{Link: ts.URL + "/link"}}
 	f, err = db.UpdateFeed(f)
@@ -48,7 +48,7 @@ func TestFeedUpdater(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fu.AddFeed(f)
+	fm.AddFeed(f)
 
 	<-done // First update request
 
@@ -74,7 +74,7 @@ func TestFeedUpdater(t *testing.T) {
 
 	<-done // Second update request
 
-	fu.RemoveFeed(f)
+	fm.RemoveFeed(f)
 
 	time.Sleep(150 * time.Millisecond)
 	select {
