@@ -71,6 +71,43 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			w.Write(b)
+		case "detect":
+			r.ParseForm()
+
+			link := r.FormValue("url")
+			var u *url.URL
+
+			/* TODO: non-fatal error */
+			if u, err = url.Parse(f.Link); err != nil {
+				break
+				/* TODO: non-fatal error */
+			} else if !u.IsAbs() {
+				err = errors.New("Feed has no link")
+				break
+			}
+
+			feeds, err = fm.DetectFeeds(link)
+			if err != nil {
+				break
+			}
+
+			type response struct {
+				Feeds []feed
+			}
+			resp := response{}
+			for _, f := range feeds {
+				resp.Feeds = append(resp.Feeds, feed{
+					Title: f.Title, Description: f.Description, Link: f.Link, Image: f.Image,
+				})
+			}
+
+			var b []byte
+			b, err = json.Marshal(resp)
+			if err != nil {
+				break
+			}
+
+			w.Write(b)
 		case "add":
 			r.ParseForm()
 

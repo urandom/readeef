@@ -108,14 +108,14 @@ func TestFeedManagerDetection(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	_, err := detectParserFeed(ts.URL)
+	_, err := detectParserFeeds(ts.URL)
 	if err == nil {
 		t.Fatalf("Expected an ErrNoFeed error, got nothing\n")
 	} else if err != ErrNoFeed {
 		t.Fatalf("Expected an ErrNoFeed error, got %v\n", err)
 	}
 
-	pf, err := detectParserFeed(ts.URL + "/link")
+	pf, err := detectParserFeeds(ts.URL + "/link")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +125,7 @@ func TestFeedManagerDetection(t *testing.T) {
 		t.Fatalf("Expected '%s' for a url, got '%s'\n", expectedStr, pf[0].Link)
 	}
 
-	pf, err = detectParserFeed(ts.URL + "/html")
+	pf, err = detectParserFeeds(ts.URL + "/html")
 	if err != nil {
 		t.Fatal(err)
 	}

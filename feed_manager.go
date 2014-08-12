@@ -81,7 +81,7 @@ func (fm *FeedManager) AddFeedByLink(link string) error {
 	f, err := fm.db.GetFeedByLink(link)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			parserFeeds, err := detectParserFeed(link)
+			parserFeeds, err := detectParserFeeds(link)
 			if err != nil {
 				return err
 			}
@@ -114,6 +114,39 @@ func (fm *FeedManager) RemoveFeedByLink(link string) error {
 	fm.removeFeed <- f
 
 	return nil
+}
+
+func (fm *FeedManager) DetectFeeds(link string) ([]Feed, error) {
+	feeds := []Feed{}
+
+	if u, err := url.Parse(link); err == nil {
+		if !u.IsAbs() {
+			return feeds, ErrNoAbsolute
+		}
+		link = u.String()
+	} else {
+		return feeds, err
+	}
+
+	f, err := fm.db.GetFeedByLink(link)
+	if err == nil {
+		feeds = append(feeds, f)
+	} else {
+		if err == sql.ErrNoRows {
+			parserFeeds, err := detectParserFeeds(link)
+			if err != nil {
+				return feeds, err
+			}
+
+			for _, f := range parserFeeds {
+				feeds = append(feeds, Feed{Feed: f})
+			}
+		} else {
+			return feeds, err
+		}
+	}
+
+	return feeds, nil
 }
 
 func (fm FeedManager) AddFeedChannel() chan<- Feed {
@@ -232,7 +265,7 @@ func (fm *FeedManager) scheduleFeeds() {
 	}
 }
 
-func detectParserFeed(link string) ([]parser.Feed, error) {
+func detectParserFeeds(link string) ([]parser.Feed, error) {
 	resp, err := http.Get(link)
 	if err != nil {
 		return []parser.Feed{}, err
@@ -271,7 +304,7 @@ func detectParserFeed(link string) ([]parser.Feed, error) {
 						}
 					}
 
-					pfs, err := detectParserFeed(href)
+					pfs, err := detectParserFeeds(href)
 					if err != nil {
 						return []parser.Feed{}, err
 					}
