@@ -232,6 +232,7 @@ func (fm *FeedManager) scheduleFeeds() {
 	}
 }
 
+/* TODO: needs support for multiple rss links in the same page */
 func detectParserFeed(link string) (parser.Feed, error) {
 	resp, err := http.Get(link)
 	if err != nil {

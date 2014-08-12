@@ -83,3 +83,55 @@ func TestFeedManager(t *testing.T) {
 	default:
 	}
 }
+
+func TestFeedManagerDetection(t *testing.T) {
+	var ts *httptest.Server
+
+	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.RequestURI == "/link" {
+			w.WriteHeader(http.StatusOK)
+
+			w.Write([]byte(strings.Replace(atomXml, "{{ .FeedLink }}", ts.URL+"/link", -1)))
+		} else if r.RequestURI == "/html" {
+			w.Write([]byte(`
+<html>
+	<head>
+		<link type="text/css" href="/foo.css">
+		<link rel="alternative" type="application/rss+xml" href="/link"/>
+	</head>
+	<body><main></main></body>
+</html>
+			`))
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer ts.Close()
+
+	_, err := detectParserFeed(ts.URL)
+	if err == nil {
+		t.Fatalf("Expected an ErrNoFeed error, got nothing\n")
+	} else if err != ErrNoFeed {
+		t.Fatalf("Expected an ErrNoFeed error, got %v\n", err)
+	}
+
+	pf, err := detectParserFeed(ts.URL + "/link")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedStr := ts.URL + "/link"
+	if pf.Link != expectedStr {
+		t.Fatalf("Expected '%s' for a url, got '%s'\n", expectedStr, pf.Link)
+	}
+
+	pf, err = detectParserFeed(ts.URL + "/html")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedStr = ts.URL + "/link"
+	if pf.Link != expectedStr {
+		t.Fatalf("Expected '%s' for a url, got '%s'\n", expectedStr, pf.Link)
+	}
+}
