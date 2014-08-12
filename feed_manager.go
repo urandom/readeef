@@ -33,6 +33,9 @@ type FeedManager struct {
 var (
 	commentPattern = regexp.MustCompile("<!--.*?-->")
 	linkPattern    = regexp.MustCompile(`<link ([^>]+)>`)
+
+	ErrNoAbsolute = errors.New("Feed link is not absolute")
+	ErrNoFeed     = errors.New("Feed not found")
 )
 
 func NewFeedManager(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) *FeedManager {
@@ -66,10 +69,24 @@ func (fm *FeedManager) RemoveFeed(f Feed) {
 }
 
 func (fm *FeedManager) AddFeedByLink(link string) error {
+	if u, err := url.Parse(link); err == nil {
+		if !u.IsAbs() {
+			return ErrNoAbsolute
+		}
+		link = u.String()
+	} else {
+		return err
+	}
+
 	f, err := fm.db.GetFeedByLink(link)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			f = Feed{Feed: parser.Feed{Link: link}}
+			parserFeed, err := detectParserFeed(link)
+			if err != nil {
+				return err
+			}
+
+			f = Feed{Feed: parserFeed}
 			f, err = fm.db.UpdateFeed(f)
 			if err != nil {
 				return err
@@ -253,12 +270,12 @@ func detectParserFeed(link string) (parser.Feed, error) {
 						}
 					}
 
-					return getLink(href)
+					return detectParserFeed(href)
 				}
 			}
 
 		}
 	}
 
-	return parser.Feed{}, errors.New("No rss link found")
+	return parser.Feed{}, ErrNoFeed
 }
