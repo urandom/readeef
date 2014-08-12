@@ -2,14 +2,20 @@ package readeef
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 	"readeef/parser"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/urandom/webfw/util"
 )
-import "net/http"
+import (
+	"net/http"
+	"net/url"
+)
 
 type FeedManager struct {
 	config      Config
@@ -23,6 +29,11 @@ type FeedManager struct {
 	logger      *log.Logger
 	activeFeeds map[int64]bool
 }
+
+var (
+	commentPattern = regexp.MustCompile("<!--.*?-->")
+	linkPattern    = regexp.MustCompile(`<link ([^>]+)>`)
+)
 
 func NewFeedManager(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) *FeedManager {
 	return &FeedManager{
@@ -202,4 +213,52 @@ func (fm *FeedManager) scheduleFeeds() {
 	for _, f := range feeds {
 		fm.addFeed <- f
 	}
+}
+
+func detectParserFeed(link string) (parser.Feed, error) {
+	resp, err := http.Get(link)
+	if err != nil {
+		return parser.Feed{}, err
+	}
+
+	buf := util.BufferPool.GetBuffer()
+	defer util.BufferPool.Put(buf)
+
+	buf.ReadFrom(resp.Body)
+
+	if parserFeed, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
+		return parserFeed, nil
+	} else {
+		html := commentPattern.ReplaceAllString(buf.String(), "")
+		links := linkPattern.FindAllStringSubmatch(html, -1)
+
+		for _, l := range links {
+			attrs := l[1]
+			if strings.Contains(attrs, `"application/rss+xml"`) || strings.Contains(attrs, `'application/rss+xml'`) {
+				index := strings.Index(attrs, "href=")
+				attr := attrs[index+6:]
+				index = strings.IndexByte(attr, attrs[index+5])
+				href := attr[:index]
+
+				if u, err := url.Parse(href); err != nil {
+					return parser.Feed{}, err
+				} else {
+					if !u.IsAbs() {
+						l, _ := url.Parse(link)
+
+						if href[0] == '/' {
+							href = l.Scheme + "://" + l.Host + href
+						} else {
+							href = l.Scheme + "://" + l.Host + l.Path[:strings.LastIndex(l.Path, "/")] + "/" + href
+						}
+					}
+
+					return getLink(href)
+				}
+			}
+
+		}
+	}
+
+	return parser.Feed{}, errors.New("No rss link found")
 }
