@@ -81,12 +81,12 @@ func (fm *FeedManager) AddFeedByLink(link string) error {
 	f, err := fm.db.GetFeedByLink(link)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			parserFeed, err := detectParserFeed(link)
+			parserFeeds, err := detectParserFeed(link)
 			if err != nil {
 				return err
 			}
 
-			f = Feed{Feed: parserFeed}
+			f = Feed{Feed: parserFeeds[0]}
 			f, err = fm.db.UpdateFeed(f)
 			if err != nil {
 				return err
@@ -232,11 +232,10 @@ func (fm *FeedManager) scheduleFeeds() {
 	}
 }
 
-/* TODO: needs support for multiple rss links in the same page */
-func detectParserFeed(link string) (parser.Feed, error) {
+func detectParserFeed(link string) ([]parser.Feed, error) {
 	resp, err := http.Get(link)
 	if err != nil {
-		return parser.Feed{}, err
+		return []parser.Feed{}, err
 	}
 
 	buf := util.BufferPool.GetBuffer()
@@ -245,11 +244,12 @@ func detectParserFeed(link string) (parser.Feed, error) {
 	buf.ReadFrom(resp.Body)
 
 	if parserFeed, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
-		return parserFeed, nil
+		return []parser.Feed{parserFeed}, nil
 	} else {
 		html := commentPattern.ReplaceAllString(buf.String(), "")
 		links := linkPattern.FindAllStringSubmatch(html, -1)
 
+		feeds := []parser.Feed{}
 		for _, l := range links {
 			attrs := l[1]
 			if strings.Contains(attrs, `"application/rss+xml"`) || strings.Contains(attrs, `'application/rss+xml'`) {
@@ -259,7 +259,7 @@ func detectParserFeed(link string) (parser.Feed, error) {
 				href := attr[:index]
 
 				if u, err := url.Parse(href); err != nil {
-					return parser.Feed{}, err
+					return []parser.Feed{}, err
 				} else {
 					if !u.IsAbs() {
 						l, _ := url.Parse(link)
@@ -271,12 +271,20 @@ func detectParserFeed(link string) (parser.Feed, error) {
 						}
 					}
 
-					return detectParserFeed(href)
+					pfs, err := detectParserFeed(href)
+					if err != nil {
+						return []parser.Feed{}, err
+					}
+
+					feeds = append(feeds, pfs[0])
 				}
 			}
+		}
 
+		if len(feeds) != 0 {
+			return feeds, nil
 		}
 	}
 
-	return parser.Feed{}, ErrNoFeed
+	return []parser.Feed{}, ErrNoFeed
 }

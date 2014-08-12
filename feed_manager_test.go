@@ -121,8 +121,8 @@ func TestFeedManagerDetection(t *testing.T) {
 	}
 
 	expectedStr := ts.URL + "/link"
-	if pf.Link != expectedStr {
-		t.Fatalf("Expected '%s' for a url, got '%s'\n", expectedStr, pf.Link)
+	if pf[0].Link != expectedStr {
+		t.Fatalf("Expected '%s' for a url, got '%s'\n", expectedStr, pf[0].Link)
 	}
 
 	pf, err = detectParserFeed(ts.URL + "/html")
@@ -131,7 +131,7 @@ func TestFeedManagerDetection(t *testing.T) {
 	}
 
 	expectedStr = ts.URL + "/link"
-	if pf.Link != expectedStr {
-		t.Fatalf("Expected '%s' for a url, got '%s'\n", expectedStr, pf.Link)
+	if pf[0].Link != expectedStr {
+		t.Fatalf("Expected '%s' for a url, got '%s'\n", expectedStr, pf[0].Link)
 	}
 }
