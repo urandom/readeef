@@ -1,17 +1,19 @@
 package readeef
 
+import "encoding/json"
+
 const (
-	get_user    = `SELECT first_name, last_name, email, hash_type, salt, hash, md5_api FROM users WHERE login = $1`
+	get_user    = `SELECT first_name, last_name, email, profile_data, hash_type, salt, hash, md5_api FROM users WHERE login = $1`
 	create_user = `
-INSERT INTO users(login, first_name, last_name, email, hash_type, salt, hash, md5_api)
-	SELECT $1, $2, $3, $4, $5, $6, $7, $8 EXCEPT
-	SELECT login, first_name, last_name, email, hash_type, salt, hash, md5_api FROM users WHERE login = $1`
+INSERT INTO users(login, first_name, last_name, email, profile_data, hash_type, salt, hash, md5_api)
+	SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9 EXCEPT
+	SELECT login, first_name, last_name, email, profile_data, hash_type, salt, hash, md5_api FROM users WHERE login = $1`
 	update_user = `
-UPDATE users SET first_name = $1, last_name = $2, email = $3, hash_type = $4, salt = $5, hash = $6, md5_api = $7
-	WHERE login = $8`
+UPDATE users SET first_name = $1, last_name = $2, email = $3, profile_data = $4, hash_type = $5, salt = $6, hash = $7, md5_api = $8
+	WHERE login = $9`
 	delete_user = `DELETE FROM users WHERE login = $1`
 
-	get_users = `SELECT login, first_name, last_name, email, hash_type, salt, hash, md5_api FROM users`
+	get_users = `SELECT login, first_name, last_name, email, profile_data, hash_type, salt, hash, md5_api FROM users`
 )
 
 func (db DB) GetUser(login string) (User, error) {
@@ -21,6 +23,14 @@ func (db DB) GetUser(login string) (User, error) {
 	}
 
 	u.Login = login
+	if len(u.ProfileJSON) != 0 {
+		if err := json.Unmarshal(u.ProfileJSON, &u.ProfileData); err != nil {
+			return u, err
+		}
+	}
+	if u.ProfileData == nil {
+		u.ProfileData = make(map[string]interface{})
+	}
 
 	return u, nil
 }
@@ -31,11 +41,28 @@ func (db DB) GetUsers() ([]User, error) {
 		return users, err
 	}
 
+	for _, u := range users {
+		if len(u.ProfileJSON) != 0 {
+			if err := json.Unmarshal(u.ProfileJSON, &u.ProfileData); err != nil {
+				return users, err
+			}
+		}
+		if u.ProfileData == nil {
+			u.ProfileData = make(map[string]interface{})
+		}
+	}
+
 	return users, nil
 }
 
 func (db DB) UpdateUser(u User) error {
-	if err := u.Validate(); err != nil {
+	var err error
+	if err = u.Validate(); err != nil {
+		return err
+	}
+
+	u.ProfileJSON, err = json.Marshal(u.ProfileData)
+	if err != nil {
 		return err
 	}
 
@@ -52,7 +79,7 @@ func (db DB) UpdateUser(u User) error {
 	}
 	defer ustmt.Close()
 
-	res, err := ustmt.Exec(u.FirstName, u.LastName, u.Email, u.HashType, u.Salt, u.Hash, u.MD5API, u.Login)
+	res, err := ustmt.Exec(u.FirstName, u.LastName, u.Email, u.ProfileJSON, u.HashType, u.Salt, u.Hash, u.MD5API, u.Login)
 	if err != nil {
 		return err
 	}
@@ -69,7 +96,7 @@ func (db DB) UpdateUser(u User) error {
 	}
 	defer cstmt.Close()
 
-	_, err = cstmt.Exec(u.Login, u.FirstName, u.LastName, u.Email, u.HashType, u.Salt, u.Hash, u.MD5API)
+	_, err = cstmt.Exec(u.Login, u.FirstName, u.LastName, u.Email, u.ProfileJSON, u.HashType, u.Salt, u.Hash, u.MD5API)
 	if err != nil {
 		return err
 	}

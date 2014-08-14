@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
 	first_name TEXT,
 	last_name TEXT,
 	email TEXT,
+	profile_data BYTEA,
 	hash_type TEXT,
 	salt BYTEA,
 	hash BYTEA,

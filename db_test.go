@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"fmt"
+	"math"
 	"readeef/parser"
 )
 import (
@@ -115,6 +116,29 @@ func TestDBUsers(t *testing.T) {
 
 	if !bytes.Equal(u.MD5API, u2.MD5API) {
 		t.Fatalf("Expected %s, got %s", u.MD5API, u2.MD5API)
+	}
+
+	u.ProfileData["pi"] = math.Pi
+	u.ProfileData["string_test"] = "Hello World"
+	u.ProfileData["array"] = []int{1, 2, 3}
+
+	if err := db.UpdateUser(u); err != nil {
+		t.Fatal(err)
+	}
+
+	if u2, err := db.GetUser(u.Login); err == nil {
+		if u2.ProfileData["pi"] != u.ProfileData["pi"] {
+			t.Fatalf("Expected 'pi' to be '%s', got '%s'\n", u.ProfileData["pi"], u2.ProfileData["pi"])
+		}
+		if u2.ProfileData["string_test"] != u.ProfileData["string_test"] {
+			t.Fatalf("Expected 'string_test' to be '%s', got '%s'\n", u.ProfileData["string_test"], u2.ProfileData["string_test"])
+		}
+
+		if len(u2.ProfileData["array"].([]interface{})) != 3 {
+			t.Fatalf("Expected 'array' to be of size 3, got %d\n", len(u2.ProfileData["array"].([]int)))
+		}
+	} else {
+		t.Fatal(err)
 	}
 
 	if err := db.DeleteUser(u); err != nil {
