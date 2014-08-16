@@ -1,4 +1,4 @@
-package v1
+package api
 
 import (
 	"encoding/json"
@@ -16,12 +16,13 @@ import (
 
 type Feed struct {
 	webfw.BaseController
-	fm FeedManager
+	fm *readeef.FeedManager
 }
 
-func NewFeed(fm FeedManager) Feed {
+func NewFeed(fm *readeef.FeedManager) Feed {
 	return Feed{
 		webfw.NewBaseController("/v:version/feed/*action", webfw.MethodAll, ""),
+		fm,
 	}
 }
 
@@ -78,7 +79,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			var u *url.URL
 
 			/* TODO: non-fatal error */
-			if u, err = url.Parse(f.Link); err != nil {
+			if u, err = url.Parse(link); err != nil {
 				break
 				/* TODO: non-fatal error */
 			} else if !u.IsAbs() {
@@ -86,7 +87,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				break
 			}
 
-			feeds, err = fm.DetectFeeds(link)
+			feeds, err := con.fm.DetectFeeds(link)
 			if err != nil {
 				break
 			}
@@ -115,7 +116,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			var u *url.URL
 
 			/* TODO: non-fatal error */
-			if u, err = url.Parse(f.Link); err != nil {
+			if u, err := url.Parse(link); err != nil {
 				break
 				/* TODO: non-fatal error */
 			} else if !u.IsAbs() {
@@ -123,7 +124,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				break
 			}
 
-			err = fm.AddFeedByLink(link)
+			err = con.fm.AddFeedByLink(link)
 			if err != nil {
 				break
 			}
@@ -148,7 +149,13 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				break
 			}
 
-			fm.RemoveFeed(id)
+			feed, err := db.GetFeed(id)
+			/* TODO: non-fatal error */
+			if err != nil {
+				break
+			}
+
+			con.fm.RemoveFeed(feed)
 
 			type response struct {
 				success bool

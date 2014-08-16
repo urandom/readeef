@@ -12,21 +12,20 @@ type Auth struct {
 	webfw.BaseController
 }
 
-func NewAuth() Feed {
+func NewAuth() Auth {
 	return Auth{
 		webfw.NewBaseController("/v:version/auth", webfw.MethodAll, ""),
 	}
 }
 
-func (con Feed) Handler(c context.Context) http.HandlerFunc {
+func (con Auth) Handler(c context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type response struct {
 			auth bool
 		}
 		resp := response{true}
 
-		var b []byte
-		b, err = json.Marshal(resp)
+		b, err := json.Marshal(resp)
 		if err != nil {
 			webfw.GetLogger(c).Print(err)
 
@@ -38,6 +37,6 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 	}
 }
 
-func (con Feed) AuthRequired(c context.Context, r *http.Request) bool {
+func (con Auth) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
 }
