@@ -37,7 +37,9 @@ func main() {
 
 	logger := log.New(os.Stderr, "", 0)
 
-	api.RegisterControllers(cfg, dispatcher, logger)
+	if err := api.RegisterControllers(cfg, dispatcher, logger); err != nil {
+		exitWithError(err.Error())
+	}
 
 	dispatcher = server.Dispatcher("/")
 	web.RegisterControllers(dispatcher)

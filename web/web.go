@@ -6,7 +6,7 @@ import (
 )
 
 func RegisterControllers(dispatcher *webfw.Dispatcher) {
-	middleware.InitializeDefault(dispatcher)
-
 	dispatcher.Handle(NewApp())
+
+	middleware.InitializeDefault(dispatcher)
 }
