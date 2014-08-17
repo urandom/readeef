@@ -7,10 +7,10 @@ import (
 	"readeef"
 
 	"github.com/urandom/webfw"
+	"github.com/urandom/webfw/middleware"
 )
 
 func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, logger *log.Logger) error {
-
 	db := readeef.NewDB(config.DB.Driver, config.DB.Connect)
 	if err := db.Connect(); err != nil {
 		return errors.New(fmt.Sprintf("Error connecting to database: %v", err))
@@ -34,6 +34,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	controller = NewFeed(fm)
 	dispatcher.Handle(controller)
 
+	middleware.InitializeDefault(dispatcher)
 	dispatcher.RegisterMiddleware(readeef.Auth{DB: db, Pattern: dispatcher.Pattern})
 
 	return nil

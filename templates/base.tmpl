@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="{{ .base.lang }}">
+    <head>
+        <title>{{ template "title" . }}</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no">
+
+        {{ template "meta" . }}
+
+        {{ template "styles" . }}
+
+        <script src="/dist/platform/platform.js"></script>
+
+        <link rel="import" href="/dist/core-ajax/core-ajax.html">
+        <link rel="import" href="/dist/font-roboto/roboto.html">
+
+        {{ template "imports" . }}
+    </head>
+    <body {{ template "body-attrs" . }}>
+        {{ template "content" . }}
+        {{ template "scripts" . }}
+    </body>
+</html>
+
+{{ define "title" }}{{ end }}
+{{ define "meta" }}{{ end }}
+{{ define "styles" }}{{ end }}
+{{ define "imports" }}{{ end }}
+{{ define "body-attrs" }}{{ end }}
+{{ define "content" }}{{ end }}
+{{ define "scripts" }}{{ end }}

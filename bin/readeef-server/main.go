@@ -7,6 +7,7 @@ import (
 	"os"
 	"readeef"
 	"readeef/api"
+	"readeef/web"
 
 	"github.com/urandom/webfw"
 )
@@ -37,6 +38,11 @@ func main() {
 	logger := log.New(os.Stderr, "", 0)
 
 	api.RegisterControllers(cfg, dispatcher, logger)
+
+	dispatcher = server.Dispatcher("/")
+	web.RegisterControllers(dispatcher)
+
+	server.ListenAndServe()
 }
 
 func exitWithError(err string) {
