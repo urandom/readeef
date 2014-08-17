@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"readeef"
 	"readeef/api"
@@ -33,7 +34,9 @@ func main() {
 
 	dispatcher := server.Dispatcher("/api/")
 
-	api.RegisterControllers(cfg, dispatcher)
+	logger := log.New(os.Stderr, "", 0)
+
+	api.RegisterControllers(cfg, dispatcher, logger)
 }
 
 func exitWithError(err string) {

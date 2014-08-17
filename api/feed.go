@@ -113,7 +113,6 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			r.ParseForm()
 
 			link := r.FormValue("url")
-			var u *url.URL
 
 			/* TODO: non-fatal error */
 			if u, err := url.Parse(link); err != nil {

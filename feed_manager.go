@@ -153,7 +153,7 @@ func (fm FeedManager) AddFeedChannel() chan<- Feed {
 	return fm.addFeed
 }
 
-func (fm FeedManager) removeFeedChannel() chan<- Feed {
+func (fm FeedManager) RemoveFeedChannel() chan<- Feed {
 	return fm.removeFeed
 }
 

@@ -3,18 +3,29 @@ package api
 import (
 	"errors"
 	"fmt"
+	"log"
 	"readeef"
 
 	"github.com/urandom/webfw"
 )
 
-func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher) error {
+func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, logger *log.Logger) error {
+
 	db := readeef.NewDB(config.DB.Driver, config.DB.Connect)
 	if err := db.Connect(); err != nil {
 		return errors.New(fmt.Sprintf("Error connecting to database: %v", err))
 	}
 
-	fm := readeef.NewFeedManager(db, config)
+	updateFeed := make(chan readeef.Feed)
+
+	fm := readeef.NewFeedManager(db, config, logger, updateFeed)
+
+	if config.Hubbub.CallbackURL != "" {
+		hubbub := readeef.NewHubbub(db, config, logger, fm.RemoveFeedChannel(), fm.AddFeedChannel(), updateFeed)
+
+		dispatcher.Handle(readeef.NewHubbubController(hubbub))
+	}
+
 	var controller webfw.Controller
 
 	controller = NewAuth()
@@ -22,12 +33,6 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher) er
 
 	controller = NewFeed(fm)
 	dispatcher.Handle(controller)
-
-	if config.Hubbub.CallbackURL != "" {
-		hubbub := readeef.NewHubbub(db, config)
-
-		dispatcher.Handle(readeef.NewHubbubController(hubbub))
-	}
 
 	dispatcher.RegisterMiddleware(readeef.Auth{DB: db, Pattern: dispatcher.Pattern})
 
