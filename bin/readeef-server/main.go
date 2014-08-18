@@ -44,7 +44,9 @@ func main() {
 	dispatcher = server.Dispatcher("/")
 	web.RegisterControllers(dispatcher)
 
-	server.ListenAndServe()
+	if err := server.ListenAndServe(); err != nil {
+		exitWithError(fmt.Sprintf("Error starting server: %s\n", err.Error()))
+	}
 }
 
 func exitWithError(err string) {
