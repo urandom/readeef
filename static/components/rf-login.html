@@ -3,7 +3,7 @@
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-shadow/paper-shadow.html">
 
-<polymer-element name="rf-login">
+<polymer-element name="rf-login" attributes="wide">
     <template>
         <style>
             .overlay {
@@ -16,7 +16,7 @@
                 box-sizing: border-box;
                 -moz-box-sizing: border-box;
             }
-            .card:not([narrow]) {
+            .card.wide {
                 margin-top: 64px;
                 max-width: 512px;
                 max-height: 512px;
