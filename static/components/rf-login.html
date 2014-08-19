@@ -17,20 +17,19 @@
                 -moz-box-sizing: border-box;
             }
             .card:not([narrow]) {
-                margin: 0 auto;
+                margin-top: 64px;
                 max-width: 512px;
                 max-height: 512px;
-                box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
                 border-radius: 2px;
             }
             #submit {
-                margin-bottom: -50px;
                 background: #259b24;
             }
         </style>
         <div class="overlay" fit cross-fade></div>
-        <div class="main" fit layout horizontal center>
-            <div class="card" flex layout vertical slide-up-offscreen>
+
+        <div class="main" flex layout vertical center slide-up-offscreen>
+            <div class="card" flex layout vertical>
                 <div layout vertical>
                     <paper-input label="Login" id="login"></paper-input>
                     <paper-input label="Password" id="password" type="password"></paper-input>

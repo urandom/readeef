@@ -3,15 +3,7 @@
     <script src="/dist/platform/platform.js"></script>
 
     <link rel="import" href="/dist/font-roboto/roboto.html">
-
-    <link rel="import" href="/dist/core-item/core-item.html">
-    <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
-    <link rel="import" href="/dist/core-animated-pages/transitions/slide-up.html">
-    <link rel="import" href="/dist/core-animated-pages/transitions/scale-up.html">
-    <link rel="import" href="/dist/core-animated-pages/transitions/tile-cascade.html">
-
-    <link rel="import" href="/components/rf-scaffolding.html">
-    <link rel="import" href="/components/rf-login.html">
+    <link rel="import" href="/components/rf-app.html">
 {{ end }}
 
 {{ define "styles" }}
@@ -25,16 +17,8 @@ body {
 {{ define "body-attrs" }} fullbleed unresolved {{ end }}
 
 {{ define "content" }}
-    <rf-scaffolding menutitle="Menu" maintitle="Content title" cross-fade>
-        <div class="menu-content">
-            <core-item label="One"></core-item>
-            <core-item label="Two"></core-item>
-        </div>
-        <div class="main-content">
-            <h1>Content be here!</h1>
-        </div>
-    </rf-scaffolding>
-    <rf-login></rf-login>
+<rf-app>
+</rf-app>
 {{ end }}
 
 {{ define "scripts" }}

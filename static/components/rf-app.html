@@ -1,0 +1,34 @@
+<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/core-item/core-item.html">
+<link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
+<link rel="import" href="/dist/core-animated-pages/transitions/slide-up.html">
+<link rel="import" href="/dist/core-animated-pages/transitions/scale-up.html">
+<link rel="import" href="/dist/core-animated-pages/transitions/tile-cascade.html">
+
+<link rel="import" href="/components/rf-scaffolding.html">
+<link rel="import" href="/components/rf-login.html">
+
+<polymer-element name="rf-app" vertical layout>
+    <template>
+        <core-animated-pages selected="{{ selected }}" transitions="cross-fade cross-fade-delayed scale-up slide-up slide-up-offscreen slide-down tile-cascade hero-transition" flex>
+            <rf-scaffolding name="scaffolding" menutitle="Menu" maintitle="Content title" cross-fade>
+                <div class="menu-content">
+                    <core-item label="One"></core-item>
+                    <core-item label="Two"></core-item>
+                </div>
+                <div class="main-content">
+                    <h1>Content be here!</h1>
+                </div>
+            </rf-scaffolding>
+
+            <rf-login name="login" layout></rf-login>
+        </core-animated-pages>
+    </template>
+    <script>
+(function() {
+    Polymer('rf-app', {
+        selected: 'login'
+    });
+})();
+    </script>
+</polymer-element>
