@@ -144,7 +144,7 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 						break
 					}
 
-					date := r.Header.Get("Date")
+					date := r.Header.Get("X-Date")
 					t, err := time.Parse(http.TimeFormat, date)
 					if err != nil || t.Add(30*time.Second).Before(time.Now()) {
 						break

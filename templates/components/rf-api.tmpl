@@ -6,6 +6,9 @@
     <template>
         <shadow></shadow>
     </template>
+    <script src="/dist/cryptojs/rollups/md5.js"></script>
+    <script src="/dist/cryptojs/rollups/hmac-sha256.js"></script>
+    <script src="/dist/cryptojs/components/enc-base64-min.js"></script>
     <script>
 (function() {
     Polymer('rf-api', {
@@ -18,7 +21,16 @@
 
             this.xhr = {
                 request: function(args) {
-                    args.headers['Authorization'] = "Readeef " + self.user.login + ":";
+                    var bodyHash = CryptoJS.MD5(args.body).toString(CryptoJS.enc.Base64),
+                        message = args.method + "\n" + bodyHash + "\n",
+                        messageHash;
+
+                    args.headers['X-Date'] = new Date().toUTCString();
+
+                    message += args.headers['content-type'] + "\n" + args.headers['X-Date'] + "\n";
+                    messageHash = CryptoJS.HmacSHA256(message, self.user.md5api).toString(CryptoJS.enc.Base64);
+
+                    args.headers['Authorization'] = "Readeef " + self.user.login + ":" + messageHash;
 
                     xhr.request(args);
                 }
