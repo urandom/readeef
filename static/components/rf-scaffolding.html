@@ -6,14 +6,14 @@
 <link rel="import" href="/dist/core-icons/core-icons.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 
-<polymer-element name="rf-scaffolding" attributes="menutitle maintitle">
+<polymer-element name="rf-scaffolding" attributes="menutitle maintitle wide">
     <template>
         <style>
-            core-drawer-panel:not([narrow]) #navicon {
+            core-drawer-panel:not(.wide) #navicon {
               display: none;
             }
         </style>
-        <core-drawer-panel id="drawer-panel">
+        <core-drawer-panel id="drawer-panel" class="{{ {wide: wide} | tokenList }}" responsiveWidth="768px">
             <core-header-panel drawer>
                 <core-toolbar id="navheader'">
                     <span>{{ menutitle }}</span>
