@@ -4,23 +4,30 @@
 <link rel="import" href="/dist/paper-shadow/paper-shadow.html">
 
 <polymer-element name="rf-login" attributes="wide">
-    <template>
+    <template bind="{{ wide as wide }}">
         <style>
             .overlay {
                 background: #eee;
             }
             .card {
+                margin: 0 auto;
                 position: relative;
                 background-color: white;
                 padding: 20px 16px;
                 box-sizing: border-box;
                 -moz-box-sizing: border-box;
             }
-            .card.wide {
-                margin-top: 64px;
+            .wide .card {
                 max-width: 512px;
                 max-height: 512px;
                 border-radius: 2px;
+            }
+            .card-container {
+                height: 100%;
+                background: transparent;
+            }
+            .card-container:not(.wide) {
+                background: white;
             }
             #submit {
                 background: #259b24;
@@ -28,17 +35,21 @@
         </style>
         <div class="overlay" fit cross-fade></div>
 
-        <div class="main" flex layout vertical center slide-up-offscreen>
-            <div class="card" flex layout vertical>
-                <div layout vertical>
-                    <paper-input label="Login" id="login"></paper-input>
-                    <paper-input label="Password" id="password" type="password"></paper-input>
+        <div class="main" fit layout vertical center slide-up-offscreen>
+            <div class="card-container {{ {wide: wide} | tokenList }}" layout horizontal center fit?="{{ !wide }}">
+                <div class="card" layout vertical>
+                    <div layout vertical>
+                        <paper-input label="Login" id="login"></paper-input>
+                        <paper-input label="Password" id="password" type="password"></paper-input>
+                    </div>
+                    <div horizontal center layout>
+                        <div flex></div>
+                        <paper-fab id="submit" icon="check" on-tap="{{handleLogin}}"></paper-fab>
+                    </div>
+                    <template if="{{ wide }}">
+                        <paper-shadow z="1"></paper-shadow>
+                    </template>
                 </div>
-                <div horizontal center layout>
-                    <div flex></div>
-                    <paper-fab id="submit" icon="check" on-tap="{{handleLogin}}"></paper-fab>
-                </div>
-                <paper-shadow z="1"></paper-shadow>
             </div>
         </div>
     </template>
