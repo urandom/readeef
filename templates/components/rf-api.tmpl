@@ -1,0 +1,35 @@
+{% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/core-ajax/core-ajax.html">
+
+<polymer-element name="rf-api" extends="core-ajax" attributes="user" constructor="RfAPI">
+    <template>
+        <shadow></shadow>
+    </template>
+    <script>
+(function() {
+    Polymer('rf-api', {
+        go: function() {
+            if (!this.user) {
+                return;
+            }
+
+            var xhr = this.xhr, self = this;
+
+            this.xhr = {
+                request: function(args) {
+                    args.headers['Authorization'] = "Readeef " + self.user.login + ":";
+
+                    xhr.request(args);
+                }
+            };
+            var retval = this.super();
+            this.xhr = xhr;
+
+            return retval;
+        }
+    });
+})();
+    </script>
+</polymer-element>
+{% end %}
