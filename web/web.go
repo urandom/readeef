@@ -7,6 +7,7 @@ import (
 
 func RegisterControllers(dispatcher *webfw.Dispatcher) {
 	dispatcher.Handle(NewApp())
+	dispatcher.Handle(NewComponent(dispatcher.Config.Renderer.Dir))
 
 	middleware.InitializeDefault(dispatcher)
 }

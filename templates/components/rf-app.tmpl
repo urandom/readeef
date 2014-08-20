@@ -1,3 +1,4 @@
+{% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-item/core-item.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
@@ -5,8 +6,8 @@
 <link rel="import" href="/dist/core-animated-pages/transitions/scale-up.html">
 <link rel="import" href="/dist/core-animated-pages/transitions/tile-cascade.html">
 
-<link rel="import" href="/components/rf-scaffolding.html">
-<link rel="import" href="/components/rf-login.html">
+<link rel="import" href="/component/rf-scaffolding">
+<link rel="import" href="/component/rf-login">
 
 <polymer-element name="rf-app" vertical layout attributes="{{ user }}">
     <template>
@@ -42,3 +43,4 @@
 })();
     </script>
 </polymer-element>
+{% end %}
