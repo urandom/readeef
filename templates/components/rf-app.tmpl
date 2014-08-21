@@ -13,6 +13,8 @@
 <polymer-element name="rf-app" vertical layout attributes="{{ user userTTL }}">
     <template>
         <core-animated-pages selected="{{ selected }}" transitions="cross-fade cross-fade-delayed scale-up slide-up slide-up-offscreen slide-down tile-cascade hero-transition" fit>
+            <div name="loading" fit cross-fade style="background: #e2e2e2"></div>
+
             <rf-scaffolding name="scaffolding" menutitle="Menu" maintitle="Content title" cross-fade wide="{{ wide }}" user="{{ user }}">
                 <div class="menu-content">
                     <core-item label="One"></core-item>
@@ -24,8 +26,6 @@
             </rf-scaffolding>
 
             <rf-login name="login" id="login" layout wide="{{ wide }}" user="{{ user }}"></rf-login>
-
-            <div name="loading" fit cross-fade style="background: #e2e2e2"></div>
         </core-animated-pages>
         <core-media-query query="min-width: {{responsiveWidth}}" queryMatches="{{wide}}"></core-media-query>
         <rf-api user="{{ user }}" id="authCheck" pathAction="auth" on-core-complete="{{ onAuthCheckComplete }}"></rf-api>
@@ -35,17 +35,15 @@
     Polymer('rf-app', {
         selected: 'loading',
         responsiveWidth: '768px',
-
+        userTTL: 1000 * 60 * 60 * 24 * 15,
         user: null,
 
-        userTTL: 1000 * 60 * 60 * 24 * 15,
-
-        observe: {
-            user: 'onUserChange'
-        },
-
-        onUserChange: function() {
-            console.log(this.user);
+        userChanged: function(oldValue, newValue) {
+            if ((!oldValue && newValue) || (oldValue && !newValue)
+                    || oldValue.login != newValue.login
+                    || oldValue.md5api != newValue.md5api) {
+                this.$.authCheck.go();
+            }
         },
 
         domReady: function() {
@@ -57,9 +55,7 @@
             if (user && user.md5api && user.authTime && (
                 new Date().getTime() - user.authTime <= this.userTTL)) {
 
-                this.$.authCheck.user = user;
-
-                this.$.authCheck.go();
+                this.user = user;
             } else {
                 localStorage.removeItem('user');
                 this.selected = 'login';
@@ -69,9 +65,21 @@
         onAuthCheckComplete: function(event, response) {
             if (response.response == 403) {
                 localStorage.removeItem('user');
-                this.selected = 'login';
+                if (this.selected == 'login') {
+                    this.$.login.invalid = true;
+                } else {
+                    this.selected = 'login';
+                }
             } else if (response.response == 200) {
-                this.selected = 'scaffolding';
+                var user = this.$.authCheck.user;
+                user.authTime = new Date().getTime();
+
+                localStorage.setItem("user", JSON.stringify(this.$.authCheck.user));
+                if (this.selected == 'login' || this.selected == 'loading') {
+                    this.selected = 'scaffolding';
+                }
+
+                this.user = user;
             }
         }
     });

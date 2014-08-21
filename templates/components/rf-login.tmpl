@@ -4,7 +4,7 @@
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-shadow/paper-shadow.html">
 
-<polymer-element name="rf-login" attributes="wide user">
+<polymer-element name="rf-login" attributes="wide user invalid">
     <template bind="{{ wide as wide }}">
         <style>
             .overlay {
@@ -40,15 +40,15 @@
         <div class="overlay" fit cross-fade></div>
 
         <div class="main" fit layout vertical center slide-up>
-            <div class="card-container {{ {wide: wide} | tokenList }}" layout horizontal center fit?="{{ !wide }}">
+            <div class="card-container {{ {wide: wide} | tokenList }}" layout horizontal center fit?="{{ !wide }}" on-keypress="{{ onKeypress }}">
                 <div class="card" layout vertical>
                     <div layout vertical>
-                        <paper-input label="Login" id="login"></paper-input>
+                    <paper-input label="Login" id="login" invalid="{{ invalid }}" error="The login credentials are incorrect"></paper-input>
                         <paper-input label="Password" id="password" type="password"></paper-input>
                     </div>
                     <div horizontal center layout>
                         <div flex></div>
-                        <paper-fab id="submit" icon="arrow-forward" on-tap="{{handleLogin}}"></paper-fab>
+                        <paper-fab id="submit" icon="arrow-forward" on-tap="{{onLogin}}"></paper-fab>
                     </div>
                     <template if="{{ wide }}">
                         <paper-shadow z="1"></paper-shadow>
@@ -60,7 +60,25 @@
     <script>
 (function() {
     Polymer('rf-login', {
-        handleLogin: function() {
+        invalid: false,
+
+        onKeypress: function(event) {
+            var code = event.keyCode || event.charCode, key = event.keyIdentifier;
+
+            if (key == 'Enter' || code == 13) {
+                if (event.target === this.$.login) { 
+                    this.$.password.focusAction();
+                } else if (event.target === this.$.password) {
+                    this.$.submit.click();
+                }
+            }
+        },
+
+        onLogin: function() {
+            this.user = {
+                login: this.$.login.value,
+                md5api: CryptoJS.MD5(this.$.login.value + ":" + this.$.password.value).toString(CryptoJS.enc.Base64)
+            };
         }
     });
 })();
