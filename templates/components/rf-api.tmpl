@@ -2,7 +2,7 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-ajax/core-ajax.html">
 
-<polymer-element name="rf-api" extends="core-ajax" attributes="user" constructor="RfAPI">
+<polymer-element name="rf-api" extends="core-ajax" attributes="user action version" constructor="RfAPI">
     <template>
         <shadow></shadow>
     </template>
@@ -12,9 +12,17 @@
     <script>
 (function() {
     Polymer('rf-api', {
+        version: 1,
+        action: '',
+
         go: function() {
             if (!this.user) {
                 return;
+            }
+
+            if (!this.url) {
+                // TODO: dispatcher prefix
+                this.url = "/api/v" + this.version + "/" + this.action
             }
 
             var xhr = this.xhr, self = this;
@@ -22,7 +30,7 @@
             this.xhr = {
                 request: function(args) {
                     var bodyHash = CryptoJS.MD5(args.body).toString(CryptoJS.enc.Base64),
-                        message = args.method + "\n" + bodyHash + "\n",
+                        message = (args.method || 'GET') + "\n" + bodyHash + "\n",
                         messageHash;
 
                     args.headers['X-Date'] = new Date().toUTCString();

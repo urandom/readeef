@@ -138,7 +138,7 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 					}
 
 					var decoded []byte
-					decoded, err = base64.URLEncoding.DecodeString(parts[1])
+					decoded, err = base64.StdEncoding.DecodeString(parts[1])
 					if err != nil {
 						l.Printf("Error decoding auth header: %v\n", err)
 						break
@@ -156,13 +156,16 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 					buf.ReadFrom(r.Body)
 					r.Body = ioutil.NopCloser(buf)
 
-					contentMD5 := base64.URLEncoding.EncodeToString(md5.New().Sum(buf.Bytes()))
+					contentMD5 := base64.StdEncoding.EncodeToString(md5.New().Sum(buf.Bytes()))
 
 					message := fmt.Sprintf("%s\n%s\n%s\n%s\n",
 						r.Method, contentMD5, r.Header.Get("Content-Type"),
 						date)
 
-					hm := hmac.New(sha256.New, u.MD5API)
+					b := make([]byte, base64.StdEncoding.EncodedLen(len(u.MD5API)))
+					base64.StdEncoding.Encode(b, u.MD5API)
+
+					hm := hmac.New(sha256.New, b)
 					if _, err := hm.Write([]byte(message)); err != nil {
 						break
 					}
