@@ -42,7 +42,7 @@ func main() {
 	}
 
 	dispatcher = server.Dispatcher("/")
-	web.RegisterControllers(dispatcher)
+	web.RegisterControllers(dispatcher, "/api/")
 
 	if err := server.ListenAndServe(); err != nil {
 		exitWithError(fmt.Sprintf("Error starting server: %s\n", err.Error()))

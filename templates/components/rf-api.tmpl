@@ -21,8 +21,7 @@
             }
 
             if (!this.url) {
-                // TODO: dispatcher prefix
-                this.url = "/api/v" + this.version + "/" + this.action
+                this.url = "{% .apiPattern %}v" + this.version + "/" + this.action
             }
 
             var xhr = this.xhr, self = this;
@@ -30,7 +29,7 @@
             this.xhr = {
                 request: function(args) {
                     var bodyHash = CryptoJS.MD5(args.body).toString(CryptoJS.enc.Base64),
-                        message = (args.method || 'GET') + "\n" + bodyHash + "\n",
+                        message = args.url + "\n" + (args.method || 'GET') + "\n" + bodyHash + "\n",
                         messageHash;
 
                     args.headers['X-Date'] = new Date().toUTCString();

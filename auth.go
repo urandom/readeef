@@ -158,8 +158,8 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 
 					contentMD5 := base64.StdEncoding.EncodeToString(md5.New().Sum(buf.Bytes()))
 
-					message := fmt.Sprintf("%s\n%s\n%s\n%s\n",
-						r.Method, contentMD5, r.Header.Get("Content-Type"),
+					message := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n",
+						r.RequestURI, r.Method, contentMD5, r.Header.Get("Content-Type"),
 						date)
 
 					b := make([]byte, base64.StdEncoding.EncodedLen(len(u.MD5API)))
