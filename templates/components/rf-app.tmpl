@@ -10,7 +10,7 @@
 <link rel="import" href="/component/rf-scaffolding">
 <link rel="import" href="/component/rf-login">
 
-<polymer-element name="rf-app" vertical layout attributes="{{ user }}">
+<polymer-element name="rf-app" vertical layout attributes="{{ user userTTL }}">
     <template>
         <core-animated-pages selected="{{ selected }}" transitions="cross-fade cross-fade-delayed scale-up slide-up slide-up-offscreen slide-down tile-cascade hero-transition" fit>
             <rf-scaffolding name="scaffolding" menutitle="Menu" maintitle="Content title" cross-fade wide="{{ wide }}" user="{{ user }}">
@@ -28,6 +28,7 @@
             <div name="loading" fit cross-fade style="background: #e2e2e2"></div>
         </core-animated-pages>
         <core-media-query query="min-width: {{responsiveWidth}}" queryMatches="{{wide}}"></core-media-query>
+        <rf-api user="{{ user }}" id="authCheck" pathAction="auth" on-core-complete="{{ onAuthCheckComplete }}"></rf-api>
     </template>
     <script>
 (function() {
@@ -37,12 +38,41 @@
 
         user: null,
 
+        userTTL: 1000 * 60 * 60 * 24 * 15,
+
         observe: {
             user: 'onUserChange'
         },
 
         onUserChange: function() {
             console.log(this.user);
+        },
+
+        domReady: function() {
+            var user;
+            try {
+                user = JSON.parse(localStorage.getItem('user'));
+            } catch (e) {}
+            
+            if (user && user.md5api && user.authTime && (
+                new Date().getTime() - user.authTime <= this.userTTL)) {
+
+                this.$.authCheck.user = user;
+
+                this.$.authCheck.go();
+            } else {
+                localStorage.removeItem('user');
+                this.selected = 'login';
+            }
+        },
+
+        onAuthCheckComplete: function(event, response) {
+            if (response.response == 403) {
+                localStorage.removeItem('user');
+                this.selected = 'login';
+            } else if (response.response == 200) {
+                this.selected = 'scaffolding';
+            }
         }
     });
 })();
