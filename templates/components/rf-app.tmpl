@@ -1,10 +1,12 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-item/core-item.html">
+<link rel="import" href="/dist/core-overlay/core-overlay.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
 <link rel="import" href="/dist/core-animated-pages/transitions/slide-up.html">
 <link rel="import" href="/dist/core-animated-pages/transitions/scale-up.html">
 <link rel="import" href="/dist/core-animated-pages/transitions/tile-cascade.html">
+<link rel="import" href="/dist/core-transition/core-transition-css.html">
 
 <link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-scaffolding">
@@ -13,7 +15,8 @@
 <polymer-element name="rf-app" vertical layout attributes="{{ user userTTL }}">
     <template>
         <core-animated-pages selected="{{ selected }}" transitions="cross-fade cross-fade-delayed scale-up slide-up slide-up-offscreen slide-down tile-cascade hero-transition" fit>
-            <div name="loading" fit cross-fade style="background: #e2e2e2"></div>
+            <core-overlay name="loading" opened?="{{ selected == 'loading' }}" backdrop style="background-color: #e2e2e2;" transition="core-transition-top">
+            </core-overlay>
 
             <rf-scaffolding name="scaffolding" menutitle="Menu" maintitle="Content title" cross-fade wide="{{ wide }}" user="{{ user }}">
                 <div class="menu-content">
@@ -39,10 +42,14 @@
         user: null,
 
         userChanged: function(oldValue, newValue) {
-            if ((!oldValue && newValue) || (oldValue && !newValue)
-                    || oldValue.login != newValue.login
-                    || oldValue.md5api != newValue.md5api) {
-                this.$.authCheck.go();
+            if (!newValue) {
+                this.selected = 'login';
+            } else {
+                if ((!oldValue && newValue) || (oldValue && !newValue)
+                        || oldValue.login != newValue.login
+                        || oldValue.md5api != newValue.md5api) {
+                    this.$.authCheck.go();
+                }
             }
         },
 
