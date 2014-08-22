@@ -1,6 +1,7 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/paper-item/paper-item.html">
+<link rel="import" href="/dist/core-localstorage/core-localstorage.html">
 <link rel="import" href="/dist/core-overlay/core-overlay.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
 <link rel="import" href="/dist/core-animated-pages/transitions/slide-up.html">
@@ -36,6 +37,7 @@
         </core-animated-pages>
         <core-media-query query="min-width: {{responsiveWidth}}" queryMatches="{{wide}}"></core-media-query>
         <rf-api user="{{ user }}" id="authCheck" pathAction="auth" on-core-complete="{{ onAuthCheckComplete }}"></rf-api>
+        <core-localstorage name="user" value="{{user}}"></core-localstorage>
     </template>
     <script>
 (function() {
@@ -58,34 +60,22 @@
         },
 
         domReady: function() {
-            var user;
-            try {
-                user = JSON.parse(localStorage.getItem('user'));
-            } catch (e) {}
-            
-            if (user && user.md5api && user.authTime && (
-                new Date().getTime() - user.authTime <= this.userTTL)) {
-
-                this.user = user;
-            } else {
-                localStorage.removeItem('user');
+            if (!this.user) {
                 this.selected = 'login';
             }
         },
 
         onAuthCheckComplete: function(event, response) {
             if (response.response == 403) {
-                localStorage.removeItem('user');
                 if (this.selected == 'login') {
                     this.$.login.invalid = true;
                 } else {
                     this.selected = 'login';
                 }
             } else if (response.response == 200) {
-                var user = this.$.authCheck.user;
+                var user = this.user;
                 user.authTime = new Date().getTime();
 
-                localStorage.setItem("user", JSON.stringify(this.$.authCheck.user));
                 if (this.selected == 'login' || this.selected == 'loading') {
                     this.selected = 'scaffolding';
                 }
