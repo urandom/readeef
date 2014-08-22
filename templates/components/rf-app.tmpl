@@ -29,7 +29,7 @@
                 </div>
                 <div class="menu-content">
                     <paper-item label="Settings"></paper-item>
-                    <paper-item label="Sign Out"></paper-item>
+                    <paper-item label="Sign Out" on-click="{{ onSignOut }}"></paper-item>
                 </div>
             </rf-scaffolding>
 
@@ -37,7 +37,7 @@
         </core-animated-pages>
         <core-media-query query="min-width: {{responsiveWidth}}" queryMatches="{{wide}}"></core-media-query>
         <rf-api user="{{ user }}" id="authCheck" pathAction="auth" on-core-complete="{{ onAuthCheckComplete }}"></rf-api>
-        <core-localstorage name="user" value="{{user}}"></core-localstorage>
+        <core-localstorage name="user" id="userStorage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
     </template>
     <script>
 (function() {
@@ -48,21 +48,17 @@
         user: null,
 
         userChanged: function(oldValue, newValue) {
-            if (!newValue) {
-                this.selected = 'login';
-            } else {
-                if ((!oldValue && newValue) || (oldValue && !newValue)
-                        || oldValue.login != newValue.login
-                        || oldValue.md5api != newValue.md5api) {
-                    this.$.authCheck.go();
+            this.async(function() {
+                if (!newValue) {
+                    this.selected = 'login';
+                } else {
+                    if ((!oldValue && newValue) || (oldValue && !newValue)
+                            || oldValue.login != newValue.login
+                            || oldValue.md5api != newValue.md5api) {
+                        this.$.authCheck.go();
+                    }
                 }
-            }
-        },
-
-        domReady: function() {
-            if (!this.user) {
-                this.selected = 'login';
-            }
+            })
         },
 
         onAuthCheckComplete: function(event, response) {
@@ -73,15 +69,30 @@
                     this.selected = 'login';
                 }
             } else if (response.response == 200) {
-                var user = this.user;
-                user.authTime = new Date().getTime();
+                this.user.authTime = new Date().getTime();
 
                 if (this.selected == 'login' || this.selected == 'loading') {
                     this.selected = 'scaffolding';
                 }
 
-                this.user = user;
+                this.$.userStorage.save();
             }
+        },
+
+        onUserLoad: function(event, detail, sender) {
+            if (sender.value) {
+                if (!sender.value.authTime || new Date().getTime() - this.user.authTime > this.userTTL) {
+                    sender.value = null;
+                }
+            }
+
+            if (!sender.value) {
+                this.selected = 'login';
+            }
+        },
+
+        onSignOut: function(event) {
+            this.user = null;
         }
     });
 })();
