@@ -39,12 +39,12 @@
         </style>
         <div class="overlay" fit cross-fade></div>
 
-        <div class="main" fit layout vertical center slide-up>
+        <div class="main" fit layout vertical center slide-up-offscreen>
             <div class="card-container {{ {wide: wide} | tokenList }}" layout horizontal center fit?="{{ !wide }}" on-keypress="{{ onKeypress }}">
                 <div class="card" layout vertical>
                     <div layout vertical>
-                    <paper-input label="Login" id="login" invalid="{{ invalid }}" error="The login credentials are incorrect"></paper-input>
-                        <paper-input label="Password" id="password" type="password"></paper-input>
+                    <paper-input label="Login" id="login" invalid="{{ invalid }}" error="The login credentials are incorrect" tabindex="1"></paper-input>
+                        <paper-input label="Password" id="password" type="password" tabindex="2"></paper-input>
                     </div>
                     <div horizontal center layout>
                         <div flex></div>
@@ -69,7 +69,7 @@
                 if (event.target === this.$.login) { 
                     this.$.password.focusAction();
                 } else if (event.target === this.$.password) {
-                    this.$.submit.click();
+                    this.$.submit.asyncFire('tap');
                 }
             }
         },
@@ -79,6 +79,9 @@
                 login: this.$.login.value,
                 md5api: CryptoJS.MD5(this.$.login.value + ":" + this.$.password.value).toString(CryptoJS.enc.Base64)
             };
+
+            this.$.login.value = "";
+            this.$.password.value = "";
         }
     });
 })();

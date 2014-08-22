@@ -27,10 +27,8 @@
                 <div class="main-content">
                     <h1>Content be here!</h1>
                 </div>
-                <div class="menu-content">
-                    <paper-item label="Settings"></paper-item>
-                    <paper-item label="Sign Out" on-click="{{ onSignOut }}"></paper-item>
-                </div>
+                <paper-item label="Settings" class="menu-content"></paper-item>
+                <paper-item label="Sign Out" class="menu-content" on-click="{{ onSignOut }}"></paper-item>
             </rf-scaffolding>
 
             <rf-login name="login" id="login" layout wide="{{ wide }}" user="{{ user }}"></rf-login>
