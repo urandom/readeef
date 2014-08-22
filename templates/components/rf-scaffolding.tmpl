@@ -6,10 +6,14 @@
 <link rel="import" href="/dist/core-drawer-panel/core-drawer-panel.html">
 <link rel="import" href="/dist/core-icons/core-icons.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/dist/paper-menu-button/paper-menu-button.html">
 
-<polymer-element name="rf-scaffolding" attributes="menutitle maintitle wide user">
+<polymer-element name="rf-scaffolding" attributes="drawertitle maintitle wide user">
     <template>
         <style>
+            core-toolbar {
+                background-color: #558AE0;
+            }
             core-drawer-panel.wide #navicon {
               display: none;
             }
@@ -17,10 +21,10 @@
         <core-drawer-panel id="drawer-panel" class="{{ {wide: wide} | tokenList }}" responsiveWidth="768px">
             <core-header-panel drawer>
                 <core-toolbar id="navheader'">
-                    <span>{{ menutitle }}</span>
+                    <span>{{ drawertitle }}</span>
                 </core-toolbar>
                 <core-menu>
-                    <content select=".menu-content"></content>
+                    <content select=".drawer-content"></content>
                 </core-menu>
             </core-header-panel>
 
@@ -28,6 +32,11 @@
                 <core-toolbar id="mainheader">
                     <paper-icon-button id="navicon" icon="menu"></paper-icon-button>
                     <span flex>{{ maintitle }}</span>
+                    <paper-icon-button icon="refresh"></paper-icon-button>
+                    {%/* TODO: Replace with paper-menu-button */%}
+                    <paper-menu-button icon="more-vert" halign="right">
+                        <content select=".menu-content"></content>
+                    </paper-menu-button>
                 </core-toolbar>
                 <div class="content">
                     <content select=".main-content"></content>

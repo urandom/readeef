@@ -1,6 +1,6 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
-<link rel="import" href="/dist/core-item/core-item.html">
+<link rel="import" href="/dist/paper-item/paper-item.html">
 <link rel="import" href="/dist/core-overlay/core-overlay.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
 <link rel="import" href="/dist/core-animated-pages/transitions/slide-up.html">
@@ -15,16 +15,20 @@
 <polymer-element name="rf-app" vertical layout attributes="{{ user userTTL }}">
     <template>
         <core-animated-pages selected="{{ selected }}" transitions="cross-fade cross-fade-delayed scale-up slide-up slide-up-offscreen slide-down tile-cascade hero-transition" fit>
-            <core-overlay name="loading" opened?="{{ selected == 'loading' }}" backdrop style="background-color: #e2e2e2;" transition="core-transition-top">
+            <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
             </core-overlay>
 
-            <rf-scaffolding name="scaffolding" menutitle="Menu" maintitle="Content title" cross-fade wide="{{ wide }}" user="{{ user }}">
-                <div class="menu-content">
-                    <core-item label="One"></core-item>
-                    <core-item label="Two"></core-item>
+            <rf-scaffolding name="scaffolding" drawertitle="Menu" maintitle="Content title" cross-fade wide="{{ wide }}" user="{{ user }}">
+                <div class="drawer-content">
+                    <paper-item label="One"></paper-item>
+                    <paper-item label="Two"></paper-item>
                 </div>
                 <div class="main-content">
                     <h1>Content be here!</h1>
+                </div>
+                <div class="menu-content">
+                    <paper-item label="Settings"></paper-item>
+                    <paper-item label="Sign Out"></paper-item>
                 </div>
             </rf-scaffolding>
 
