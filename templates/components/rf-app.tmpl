@@ -2,10 +2,6 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 
 <link rel="import" href="/dist/paper-item/paper-item.html">
-<link rel="import" href="/dist/paper-dialog/paper-dialog.html">
-<link rel="import" href="/dist/paper-dialog/paper-dialog-transition.html">
-<link rel="import" href="/dist/paper-button/paper-button.html">
-<link rel="import" href="/dist/paper-input/paper-input.html">
 
 <link rel="import" href="/dist/core-localstorage/core-localstorage.html">
 <link rel="import" href="/dist/core-overlay/core-overlay.html">
@@ -18,6 +14,7 @@
 <link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-scaffolding">
 <link rel="import" href="/component/rf-login">
+<link rel="import" href="/component/rf-dialog-add-feed">
 
 <polymer-element name="rf-app" vertical layout attributes="{{ user userTTL }}">
     <template>
@@ -70,18 +67,13 @@
         <rf-api user="{{ user }}" id="authCheck" pathAction="auth" on-core-complete="{{ onAuthCheckComplete }}"></rf-api>
         <core-localstorage name="user" id="userStorage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
 
-        <paper-dialog id="add-feed-dialog" heading="Add feed" transition="paper-dialog-transition-center" backdrop>
-            <p>Enter the address of a feed, or a website that might contain one or more feeds.</p>
+        <rf-dialog-add-feed id="add-feed-dialog"></rf-dialog-add-feed>
 
-            <paper-input label="URL" id="feed-url"></paper-input>
-
-            <paper-button label="Decline" affirmative></paper-button>
-            <paper-button label="Accept" affirmative autofocus></paper-button>
-
-        </paper-dialog>
     </template>
     <script>
 (function() {
+    "use strict";
+
     Polymer('rf-app', {
         selected: 'loading',
         responsiveWidth: '768px',

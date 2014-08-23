@@ -1,0 +1,30 @@
+{% define "content" %}
+<link rel="import" href="/dist/paper-dialog/paper-dialog.html">
+<link rel="import" href="/dist/paper-dialog/paper-dialog-transition.html">
+<link rel="import" href="/dist/paper-button/paper-button.html">
+<link rel="import" href="/dist/paper-input/paper-input.html">
+
+<polymer-element name="rf-dialog-add-feed" attributes="wide user">
+    <template>
+        <paper-dialog id="add-feed-dialog" heading="Add feed" transition="paper-dialog-transition-center" backdrop>
+            <p>Enter the address of a feed, or a website that might contain one or more feeds.</p>
+
+            <paper-input label="URL" id="feed-url"></paper-input>
+
+            <paper-button label="Decline" affirmative></paper-button>
+            <paper-button label="Accept" affirmative autofocus></paper-button>
+        </paper-dialog>
+    </template>
+    <script>
+(function() {
+    "use strict";
+
+    Polymer('rf-dialog-add-feed', {
+        toggle: function() {
+            this.$['add-feed-dialog'].toggle();
+        }
+    });
+})();
+    </script>
+</polymer-element>
+{% end %}
