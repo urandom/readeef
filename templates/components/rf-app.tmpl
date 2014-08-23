@@ -1,6 +1,12 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
+
 <link rel="import" href="/dist/paper-item/paper-item.html">
+<link rel="import" href="/dist/paper-dialog/paper-dialog.html">
+<link rel="import" href="/dist/paper-dialog/paper-dialog-transition.html">
+<link rel="import" href="/dist/paper-button/paper-button.html">
+<link rel="import" href="/dist/paper-input/paper-input.html">
+
 <link rel="import" href="/dist/core-localstorage/core-localstorage.html">
 <link rel="import" href="/dist/core-overlay/core-overlay.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
@@ -47,6 +53,9 @@
 
             <rf-scaffolding name="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}">
                 <div fit class="drawer-title bottom">Feeds</div>
+
+                <paper-item label="Add feed" class="drawer-content" on-click="{{ onAddFeed }}"></paper-item>
+                <hr class="drawer-content">
                 <paper-item label="Settings" class="drawer-content"></paper-item>
                 <paper-item label="Sign Out" class="drawer-content" on-click="{{ onSignOut }}"></paper-item>
 
@@ -60,6 +69,16 @@
         <core-media-query query="min-width: {{responsiveWidth}}" queryMatches="{{wide}}"></core-media-query>
         <rf-api user="{{ user }}" id="authCheck" pathAction="auth" on-core-complete="{{ onAuthCheckComplete }}"></rf-api>
         <core-localstorage name="user" id="userStorage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
+
+        <paper-dialog id="add-feed-dialog" heading="Add feed" transition="paper-dialog-transition-center" backdrop>
+            <p>Enter the address of a feed, or a website that might contain one or more feeds.</p>
+
+            <paper-input label="URL" id="feed-url"></paper-input>
+
+            <paper-button label="Decline" affirmative></paper-button>
+            <paper-button label="Accept" affirmative autofocus></paper-button>
+
+        </paper-dialog>
     </template>
     <script>
 (function() {
@@ -113,8 +132,12 @@
             }
         },
 
-        onSignOut: function(event) {
+        onSignOut: function() {
             this.user = null;
+        },
+
+        onAddFeed: function() {
+            this.$['add-feed-dialog'].toggle();
         }
     });
 })();

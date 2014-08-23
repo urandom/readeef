@@ -67,14 +67,6 @@
                 drawerPanel.togglePanel();
             });
 
-        },
-
-        userChanged: function(oldValue, newValue) {
-            if (!newValue) {
-                this.async(function() {
-                    this.$['drawer-menu'].selected = null;
-                });
-            }
         }
     });
 })();
