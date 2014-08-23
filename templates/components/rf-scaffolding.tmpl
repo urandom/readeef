@@ -40,7 +40,7 @@
                 <core-toolbar id="navheader" class="medium-tall">
                     <content select=".drawer-title"></content>
                 </core-toolbar>
-                <core-menu>
+                <core-menu id="drawer-menu">
                     <content select=".drawer-content"></content>
                 </core-menu>
             </core-header-panel>
@@ -67,6 +67,14 @@
                 drawerPanel.togglePanel();
             });
 
+        },
+
+        userChanged: function(oldValue, newValue) {
+            if (!newValue) {
+                this.async(function() {
+                    this.$['drawer-menu'].selected = null;
+                });
+            }
         }
     });
 })();
