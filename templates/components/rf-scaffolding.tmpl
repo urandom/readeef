@@ -8,7 +8,7 @@
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-menu-button/paper-menu-button.html">
 
-<polymer-element name="rf-scaffolding" attributes="drawertitle maintitle wide user">
+<polymer-element name="rf-scaffolding" attributes="wide user">
     <template>
         <style>
             core-toolbar {
@@ -17,26 +17,38 @@
             core-drawer-panel.wide #navicon {
               display: none;
             }
+
+            .refreshButton {
+                position: absolute;
+                bottom: -28px;
+                right: 24px;
+                z-index: 1;
+                background-color: #fcfcfc;
+                color: #666464;
+            }
+
+            .content {
+                margin: 64px 120px 60px 5px;
+                background-color: #fff;
+                box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+                border-radius: 2px;
+                overflow: hidden;
+            }
         </style>
         <core-drawer-panel id="drawer-panel" class="{{ {wide: wide} | tokenList }}" responsiveWidth="768px">
             <core-header-panel drawer>
-                <core-toolbar id="navheader'">
-                    <span>{{ drawertitle }}</span>
+                <core-toolbar id="navheader" class="medium-tall">
+                    <content select=".drawer-title"></content>
                 </core-toolbar>
                 <core-menu>
                     <content select=".drawer-content"></content>
                 </core-menu>
             </core-header-panel>
 
-            <core-header-panel main>
-                <core-toolbar id="mainheader">
+            <core-header-panel main mode="cover" shadow>
+                <core-toolbar id="mainheader" class="medium-tall">
                     <paper-icon-button id="navicon" icon="menu"></paper-icon-button>
-                    <span flex>{{ maintitle }}</span>
-                    <paper-icon-button icon="refresh"></paper-icon-button>
-                    {%/* TODO: Replace with paper-menu-button */%}
-                    <paper-menu-button icon="more-vert" halign="right">
-                        <content select=".menu-content"></content>
-                    </paper-menu-button>
+                    <paper-fab class="refreshButton bottom" icon="refresh"></paper-fab>
                 </core-toolbar>
                 <div class="content">
                     <content select=".main-content"></content>

@@ -15,20 +15,44 @@
 
 <polymer-element name="rf-app" vertical layout attributes="{{ user userTTL }}">
     <template>
+        <style>
+            .content-label {
+                height: 80px;
+                line-height: 80px;
+                padding-left: 24px;
+                background-color: #fff;
+                letter-spacing: 0.05em;
+                margin: 0;
+                font-size: 24px;
+                font-weight: 400;
+                color: #5265a2;
+            }
+
+            .drawer-title.bottom {
+                padding: 25px 0 20px 60px;
+                margin: 0;
+                width: auto;
+                color: white;
+                font-size: 24px;
+                font-weight: 400;
+            }
+
+            .drawer-content {
+                padding-left: 50px;
+            }
+        </style>
         <core-animated-pages selected="{{ selected }}" transitions="cross-fade cross-fade-delayed scale-up slide-up slide-up-offscreen slide-down tile-cascade hero-transition" fit>
             <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
             </core-overlay>
 
-            <rf-scaffolding name="scaffolding" drawertitle="Menu" maintitle="Content title" cross-fade wide="{{ wide }}" user="{{ user }}">
-                <div class="drawer-content">
-                    <paper-item label="One"></paper-item>
-                    <paper-item label="Two"></paper-item>
-                </div>
+            <rf-scaffolding name="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}">
+                <div fit class="drawer-title bottom">Feeds</div>
+                <paper-item label="Settings" class="drawer-content"></paper-item>
+                <paper-item label="Sign Out" class="drawer-content" on-click="{{ onSignOut }}"></paper-item>
+
                 <div class="main-content">
-                    <h1>Content be here!</h1>
+                    <h1 class="content-label">Content be here!</h1>
                 </div>
-                <paper-item label="Settings" class="menu-content"></paper-item>
-                <paper-item label="Sign Out" class="menu-content" on-click="{{ onSignOut }}"></paper-item>
             </rf-scaffolding>
 
             <rf-login name="login" id="login" layout wide="{{ wide }}" user="{{ user }}"></rf-login>
