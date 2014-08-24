@@ -20,19 +20,24 @@
     <template>
         <style>
             .drawer-title.bottom {
-                padding: 25px 0 20px 60px;
+                padding: 20px 0 20px 60px;
                 margin: 0;
                 width: auto;
                 color: white;
-                font-size: 24px;
                 font-weight: 400;
+                font-size: 18px;
+            }
+
+            .wide .drawer-title.bottom {
+                padding-top: 25px;
+                font-size: 24px;
             }
 
             .drawer-content {
                 padding-left: 50px;
             }
         </style>
-        <core-animated-pages selected="{{ selected }}" transitions="cross-fade cross-fade-delayed scale-up slide-up slide-up-offscreen slide-down tile-cascade hero-transition" fit>
+        <core-animated-pages selected="{{ selected }}" transitions="cross-fade cross-fade-delayed scale-up slide-up slide-up-offscreen slide-down tile-cascade hero-transition" fit class="{{ {wide: wide} | tokenList }}">
             <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
             </core-overlay>
 
