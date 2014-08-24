@@ -8,7 +8,7 @@
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-menu-button/paper-menu-button.html">
 
-<polymer-element name="rf-scaffolding" attributes="wide user">
+<polymer-element name="rf-scaffolding" attributes="wide user contenttitle">
     <template>
         <style>
             core-toolbar {
@@ -28,16 +28,32 @@
             }
 
             .content {
-                margin: 64px 120px 60px 5px;
                 background-color: #fff;
-                box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
-                border-radius: 2px;
                 overflow: hidden;
             }
+
+            .wide .content {
+                margin: 64px 120px 60px 5px;
+                box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
+                border-radius: 2px;
+            }
+
+            .content-label {
+                height: 80px;
+                line-height: 80px;
+                padding-left: 24px;
+                background-color: #fff;
+                letter-spacing: 0.05em;
+                margin: 0;
+                font-size: 24px;
+                font-weight: 400;
+                color: #5265a2;
+            }
+
         </style>
         <core-drawer-panel id="drawer-panel" class="{{ {wide: wide} | tokenList }}" responsiveWidth="768px">
             <core-header-panel drawer>
-                <core-toolbar id="navheader" class="medium-tall">
+                <core-toolbar id="navheader" class="{{ {'medium-tall': wide } | tokenList }}">
                     <content select=".drawer-title"></content>
                 </core-toolbar>
                 <core-menu id="drawer-menu">
@@ -45,12 +61,14 @@
                 </core-menu>
             </core-header-panel>
 
-            <core-header-panel main mode="cover" shadow>
-                <core-toolbar id="mainheader" class="medium-tall">
+            <core-header-panel main mode="{{ {'cover': wide } | tokenList }}" shadow>
+                <core-toolbar id="mainheader" class="{{ {'medium-tall': wide } | tokenList }}">
                     <paper-icon-button id="navicon" icon="menu"></paper-icon-button>
+                    <div flex hidden?="{{ wide }}">{{ contenttitle }}</div>
                     <paper-fab class="refreshButton bottom" icon="refresh"></paper-fab>
                 </core-toolbar>
                 <div class="content">
+                    <h1 class="content-label" hidden?="{{ !wide }}">{{ contenttitle }}</h1>
                     <content select=".main-content"></content>
                 </div>
             </core-header-panel>

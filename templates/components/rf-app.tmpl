@@ -19,18 +19,6 @@
 <polymer-element name="rf-app" vertical layout attributes="{{ user userTTL }}">
     <template>
         <style>
-            .content-label {
-                height: 80px;
-                line-height: 80px;
-                padding-left: 24px;
-                background-color: #fff;
-                letter-spacing: 0.05em;
-                margin: 0;
-                font-size: 24px;
-                font-weight: 400;
-                color: #5265a2;
-            }
-
             .drawer-title.bottom {
                 padding: 25px 0 20px 60px;
                 margin: 0;
@@ -48,7 +36,7 @@
             <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
             </core-overlay>
 
-            <rf-scaffolding name="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}">
+            <rf-scaffolding name="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" contenttitle="Feed Title">
                 <div fit class="drawer-title bottom">Feeds</div>
 
                 <paper-item label="Add feed" class="drawer-content" on-click="{{ onAddFeed }}"></paper-item>
@@ -57,7 +45,7 @@
                 <paper-item label="Sign Out" class="drawer-content" on-click="{{ onSignOut }}"></paper-item>
 
                 <div class="main-content">
-                    <h1 class="content-label">Content be here!</h1>
+                    <p>Content be here!</p>
                 </div>
             </rf-scaffolding>
 
