@@ -37,5 +37,8 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	middleware.InitializeDefault(dispatcher)
 	dispatcher.RegisterMiddleware(readeef.Auth{DB: db, Pattern: dispatcher.Pattern})
 
+	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
+	dispatcher.Context.SetGlobal(readeef.CtxKey("db"), db)
+
 	return nil
 }

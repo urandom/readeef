@@ -83,11 +83,20 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				break
 				/* TODO: non-fatal error */
 			} else if !u.IsAbs() {
-				u.Scheme = "http:"
+				u.Scheme = "http"
+				if u.Host == "" {
+					parts := strings.SplitN(u.Path, "/", 2)
+					u.Host = parts[0]
+					if len(parts) > 1 {
+						u.Path = "/" + parts[1]
+					} else {
+						u.Path = ""
+					}
+				}
 				link = u.String()
 			}
 
-			feeds, err := con.fm.DetectFeeds(link)
+			feeds, err := con.fm.DiscoverFeeds(link)
 			if err != nil {
 				break
 			}
