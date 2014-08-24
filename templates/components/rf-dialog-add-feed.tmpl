@@ -3,11 +3,24 @@
 <link rel="import" href="/dist/paper-dialog/paper-dialog-transition.html">
 <link rel="import" href="/dist/paper-dialog/paper-dialog.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
+<link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
 
 <link rel="import" href="/component/rf-api">
 
 <polymer-element name="rf-dialog-add-feed" attributes="wide user">
     <template>
+        <style>
+        ul {
+            padding: 0;
+        }
+
+        li {
+            list-style: none;
+        }
+        paper-checkbox {
+            margin-right: 10px;
+        }
+        </style>
         <paper-dialog id="add-feed-dialog" heading="Add feed" transition="paper-dialog-transition-center" backdrop on-core-overlay-open="{{ onOpen }}" closeSelector="[dismissive],[affirmative]:not([transient])">
             <template if="{{ !feeds }}">
                 <p>Enter the address of a feed, or a website that might contain one or more feeds.</p>
@@ -21,7 +34,10 @@
                 <p>Found the following feeds for '{{url}}':</p>
                 <ul>
                 <template repeat="{{feed in feeds}}">
-                    <li><a href="{{ feed.Link }}">{{ feed.Title }}: {{ feed.Description}}</a></li>
+                    <li>
+                        <paper-checkbox checked="{{ feed.selected }}"></paper-checkbox>
+                        <a href="{{ feed.Link }}">{{ feed.Title }}: {{ feed.Description}}</a>
+                    </li>
                 </template>
                 </ul>
             </template>
@@ -63,7 +79,14 @@
         onAdd: function() {
             var params = {url: []};
             for (var i = 0, f; f = this.feeds[i]; ++i) {
-                params.url.push(f.Link);
+                if (f.selected) {
+                    params.url.push(f.Link);
+                }
+            }
+
+            if (!params.url.length) {
+                this.toggle();
+                return;
             }
 
             this.$.add.params = JSON.stringify(params)
@@ -73,6 +96,9 @@
 
         onDiscoverResponse: function(event, data) {
             if (data.response) {
+                data.response.Feeds.forEach(function(f) {
+                    f.selected = true;
+                });
                 this.feeds = data.response.Feeds;
             } else {
                 this.feeds = [];
