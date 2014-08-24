@@ -69,7 +69,8 @@
                 <core-toolbar id="mainheader" class="{{ {'medium-tall': wide } | tokenList }}">
                     <paper-icon-button id="navicon" icon="menu"></paper-icon-button>
                     <div flex hidden?="{{ wide }}">{{ contenttitle }}</div>
-                    <paper-fab class="refreshButton bottom" icon="refresh"></paper-fab>
+                    <paper-icon-button id="refresh-menu" icon="refresh" hidden?="{{ wide }}"></paper-icon-button>
+                    <paper-fab class="refreshButton bottom" icon="refresh" hidden?="{{ !wide }}"></paper-fab>
                 </core-toolbar>
                 <div class="content">
                     <h1 class="content-label" hidden?="{{ !wide }}">{{ contenttitle }}</h1>
