@@ -25,7 +25,7 @@
             <template if="{{ !feeds }}">
                 <p>Enter the address of a feed, or a website that might contain one or more feeds.</p>
 
-                <paper-input label="URL" id="feed-url" value="{{ url }}" on-keypress="{{ onUrlKeypress }}"></paper-input>
+                <paper-input label="URL" id="feed-url" value="{{ url }}" on-keypress="{{ onUrlKeypress }}" floatingLabel tabindex="1"></paper-input>
             </template>
             <template if="{{ feeds && !feeds.length }}">
                 <p>No feeds found for '{{url}}'</p>
@@ -131,6 +131,7 @@
 
         onAddResponse: function(event, data) {
             if (data.response && data.response.Success) {
+                this.fire('feeds-added');
             }
 
             this.loading = false;

@@ -27,6 +27,7 @@ func NewFeed(fm *readeef.FeedManager) Feed {
 }
 
 type feed struct {
+	Id          int64
 	Title       string
 	Description string
 	Link        string
@@ -62,7 +63,8 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			resp := response{}
 			for _, f := range feeds {
 				resp.Feeds = append(resp.Feeds, feed{
-					Title: f.Title, Description: f.Description, Link: f.Link, Image: f.Image,
+					Id: f.Id, Title: f.Title, Description: f.Description,
+					Link: f.Link, Image: f.Image,
 				})
 			}
 
@@ -109,7 +111,8 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			resp := response{}
 			for _, f := range feeds {
 				resp.Feeds = append(resp.Feeds, feed{
-					Title: f.Title, Description: f.Description, Link: f.Link, Image: f.Image,
+					Id: f.Id, Title: f.Title, Description: f.Description,
+					Link: f.Link, Image: f.Image,
 				})
 			}
 
@@ -237,8 +240,8 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			resp := response{Feed: feed{
-				Title: f.Title, Description: f.Description, Link: f.Link, Image: f.Image,
-				Articles: f.Articles,
+				Id: f.Id, Title: f.Title, Description: f.Description,
+				Link: f.Link, Image: f.Image, Articles: f.Articles,
 			}}
 
 			var b []byte
