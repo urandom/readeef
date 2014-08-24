@@ -8,13 +8,27 @@
 
 <polymer-element name="rf-dialog-add-feed" attributes="wide user">
     <template>
-        <paper-dialog id="add-feed-dialog" heading="Add feed" transition="paper-dialog-transition-center" backdrop on-core-overlay-open="{{ onOpen }}">
-            <p>Enter the address of a feed, or a website that might contain one or more feeds.</p>
+        <paper-dialog id="add-feed-dialog" heading="Add feed" transition="paper-dialog-transition-center" backdrop on-core-overlay-open="{{ onOpen }}" closeSelector="[dismissive],[affirmative]:not([transient])">
+            <template if="{{ !feeds }}">
+                <p>Enter the address of a feed, or a website that might contain one or more feeds.</p>
 
-            <paper-input label="URL" id="feed-url" value="{{ url }}"></paper-input>
+                <paper-input label="URL" id="feed-url" value="{{ url }}"></paper-input>
+            </template>
+            <template if="{{ feeds && !feeds.length }}">
+                <p>No feeds found for '{{url}}'</p>
+            </template>
+            <template if="{{ feeds && feeds.length }}">
+                <p>Found the following feeds for '{{url}}':</p>
+                <ul>
+                <template repeat="{{feed in feeds}}">
+                    <li><a href="{{ feed.Link }}">{{ feed.Title }}: {{ feed.Description}}</a></li>
+                </template>
+                </ul>
+            </template>
 
-            <paper-button label="Decline" affirmative></paper-button>
-            <paper-button label="Accept" affirmative autofocus></paper-button>
+            <paper-button label="Cancel" affirmative></paper-button>
+            <paper-button label="Find" on-tap="{{ onFind }}" id="find-feeds" affirmative transient autofocus hidden?="{{ !url || feeds }}"></paper-button>
+            <paper-button label="Add" on-tap="{{ onAdd }}" id="add-feeds" affirmative autofocus hidden?="{{ !feeds || !feeds.length }}"></paper-button>
         </paper-dialog>
 
         <rf-api user="{{ user }}" id="discover" pathAction="feed/discover" params="{&quot;url&quot;: &quot;{{ url }}&quot;}" on-core-response="{{ onDiscoverResponse }}"></rf-api>
@@ -24,16 +38,25 @@
     "use strict";
 
     Polymer('rf-dialog-add-feed', {
+        created: function() {
+            this.feeds = null;
+        },
+
         toggle: function() {
             this.$['add-feed-dialog'].toggle();
         },
 
         onOpen: function() {
-            this.$['feed-url'].value = '';
+            this.url = "";
+            this.feeds = null;
         },
 
-        onDiscoverResponse: function() {
-            console.log(arguments);
+        onFind: function() {
+            this.$.discover.go();
+        },
+
+        onDiscoverResponse: function(event, data) {
+            this.feeds = data.response.Feeds;
         }
     });
 })();
