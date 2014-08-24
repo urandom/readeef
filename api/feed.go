@@ -45,6 +45,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 		parts := strings.Split(actionParam["action"], "/")
 		action := parts[0]
 
+	SWITCH:
 		switch action {
 		case "all":
 			var feeds []readeef.Feed
@@ -96,7 +97,8 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				link = u.String()
 			}
 
-			feeds, err := con.fm.DiscoverFeeds(link)
+			var feeds []readeef.Feed
+			feeds, err = con.fm.DiscoverFeeds(link)
 			if err != nil {
 				break
 			}
@@ -120,27 +122,37 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			w.Write(b)
 		case "add":
 			r.ParseForm()
+			links := r.Form["url"]
+			success := false
 
-			link := r.FormValue("url")
-
-			/* TODO: non-fatal error */
-			if u, err := url.Parse(link); err != nil {
-				break
+			for _, link := range links {
 				/* TODO: non-fatal error */
-			} else if !u.IsAbs() {
-				err = errors.New("Feed has no link")
-				break
-			}
+				var u *url.URL
+				if u, err = url.Parse(link); err != nil {
+					break SWITCH
+					/* TODO: non-fatal error */
+				} else if !u.IsAbs() {
+					err = errors.New("Feed has no link")
+					break SWITCH
+				}
 
-			err = con.fm.AddFeedByLink(link)
-			if err != nil {
-				break
+				var f readeef.Feed
+				f, err = con.fm.AddFeedByLink(link)
+				if err != nil {
+					break SWITCH
+				}
+
+				_, err = db.CreateUserFeed(readeef.GetUser(c, r), f)
+				if err != nil {
+					break SWITCH
+				}
+				success = true
 			}
 
 			type response struct {
-				success bool
+				Success bool
 			}
-			resp := response{true}
+			resp := response{success}
 
 			var b []byte
 			b, err = json.Marshal(resp)
@@ -150,14 +162,16 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 
 			w.Write(b)
 		case "remove":
-			id, err := strconv.ParseInt(parts[1], 10, 64)
+			var id int64
+			id, err = strconv.ParseInt(parts[1], 10, 64)
 
 			/* TODO: non-fatal error */
 			if err != nil {
 				break
 			}
 
-			feed, err := db.GetFeed(id)
+			var feed readeef.Feed
+			feed, err = db.GetFeed(id)
 			/* TODO: non-fatal error */
 			if err != nil {
 				break
@@ -178,14 +192,16 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 
 			w.Write(b)
 		default:
-			id, err := strconv.ParseInt(action, 10, 64)
+			var id int64
+			id, err = strconv.ParseInt(action, 10, 64)
 
 			if err != nil {
 				err = errors.New("Unknown action " + action)
 				break
 			}
 
-			f, err := db.GetFeed(id)
+			var f readeef.Feed
+			f, err = db.GetFeed(id)
 			/* TODO: non-fatal error */
 			if err != nil {
 				break

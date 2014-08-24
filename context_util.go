@@ -33,7 +33,7 @@ func GetDB(c context.Context) DB {
 }
 
 func GetUser(c context.Context, r *http.Request) User {
-	if v, ok := c.GetGlobal(CtxKey("user")); ok {
+	if v, ok := c.Get(r, context.BaseCtxKey("user")); ok {
 		return v.(User)
 	}
 

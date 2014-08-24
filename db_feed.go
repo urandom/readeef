@@ -304,6 +304,11 @@ func (db DB) CreateUserFeed(u User, f Feed) (Feed, error) {
 		return f, err
 	}
 
+	// FIXME: Remove when the 'FOREIGN KEY constraing failed' bug is removed
+	if db.driver == "sqlite3" {
+		db.Query("SELECT 1")
+	}
+
 	tx, err := db.Beginx()
 	if err != nil {
 		return f, err

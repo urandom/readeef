@@ -68,14 +68,14 @@ func (fm *FeedManager) RemoveFeed(f Feed) {
 	fm.removeFeed <- f
 }
 
-func (fm *FeedManager) AddFeedByLink(link string) error {
+func (fm *FeedManager) AddFeedByLink(link string) (Feed, error) {
 	if u, err := url.Parse(link); err == nil {
 		if !u.IsAbs() {
-			return ErrNoAbsolute
+			return Feed{}, ErrNoAbsolute
 		}
 		link = u.String()
 	} else {
-		return err
+		return Feed{}, err
 	}
 
 	f, err := fm.db.GetFeedByLink(link)
@@ -83,37 +83,37 @@ func (fm *FeedManager) AddFeedByLink(link string) error {
 		if err == sql.ErrNoRows {
 			parserFeeds, err := discoverParserFeeds(link)
 			if err != nil {
-				return err
+				return Feed{}, err
 			}
 
 			f = Feed{Feed: parserFeeds[0]}
 			f, err = fm.db.UpdateFeed(f)
 			if err != nil {
-				return err
+				return Feed{}, err
 			}
 		} else {
-			return err
+			return Feed{}, err
 		}
 	}
 
 	fm.addFeed <- f
 
-	return nil
+	return f, nil
 }
 
-func (fm *FeedManager) RemoveFeedByLink(link string) error {
+func (fm *FeedManager) RemoveFeedByLink(link string) (Feed, error) {
 	f, err := fm.db.GetFeedByLink(link)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil
+			return Feed{}, nil
 		} else {
-			return err
+			return Feed{}, err
 		}
 	}
 
 	fm.removeFeed <- f
 
-	return nil
+	return f, nil
 }
 
 func (fm *FeedManager) DiscoverFeeds(link string) ([]Feed, error) {

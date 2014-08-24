@@ -27,17 +27,20 @@
             </template>
 
             <paper-button label="Cancel" affirmative></paper-button>
-            <paper-button label="Find" on-tap="{{ onFind }}" id="find-feeds" affirmative transient autofocus hidden?="{{ !url || feeds }}"></paper-button>
-            <paper-button label="Add" on-tap="{{ onAdd }}" id="add-feeds" affirmative autofocus hidden?="{{ !feeds || !feeds.length }}"></paper-button>
+            <paper-button label="Find" on-tap="{{ onFind }}" id="find-feeds" affirmative transient autofocus disabled?="{{ !url }}" hidden?="{{ feeds }}"></paper-button>
+            <paper-button label="Add" on-tap="{{ onAdd }}" id="add-feeds" affirmative transient autofocus hidden?="{{ !feeds || !feeds.length }}"></paper-button>
         </paper-dialog>
 
-        <rf-api user="{{ user }}" id="discover" pathAction="feed/discover" params="{&quot;url&quot;: &quot;{{ url }}&quot;}" on-core-response="{{ onDiscoverResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="discover" pathAction="feed/discover" on-core-response="{{ onDiscoverResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="add" pathAction="feed/add" on-core-response="{{ onAddResponse }}"></rf-api>
     </template>
     <script>
 (function() {
     "use strict";
 
     Polymer('rf-dialog-add-feed', {
+        loading: false,
+
         created: function() {
             this.feeds = null;
         },
@@ -52,11 +55,29 @@
         },
 
         onFind: function() {
+            this.$.discover.params = JSON.stringify({"url": this.url});
             this.$.discover.go();
+            this.loading = true;
+        },
+
+        onAdd: function() {
+            var params = {url: []};
+            for (var i = 0, f; f = this.feeds[i]; ++i) {
+                params.url.push(f.Link);
+            }
+
+            this.$.add.params = JSON.stringify(params)
+            this.$.add.go();
+            this.loading = true;
         },
 
         onDiscoverResponse: function(event, data) {
-            this.feeds = data.response.Feeds;
+            if (data.response) {
+                this.feeds = data.response.Feeds;
+            } else {
+                this.feeds = [];
+            }
+            this.loading = false;
         }
     });
 })();
