@@ -25,7 +25,7 @@
             <template if="{{ !feeds }}">
                 <p>Enter the address of a feed, or a website that might contain one or more feeds.</p>
 
-                <paper-input label="URL" id="feed-url" value="{{ url }}"></paper-input>
+                <paper-input label="URL" id="feed-url" value="{{ url }}" on-keypress="{{ onUrlKeypress }}"></paper-input>
             </template>
             <template if="{{ feeds && !feeds.length }}">
                 <p>No feeds found for '{{url}}'</p>
@@ -41,9 +41,12 @@
                 </template>
                 </ul>
             </template>
+            <template if="{{ loading }}">
+                <p>Loading&hellip;</p>
+            </template>
 
             <paper-button label="Cancel" affirmative></paper-button>
-            <paper-button label="Find" on-tap="{{ onFind }}" id="find-feeds" affirmative transient autofocus disabled?="{{ !url }}" hidden?="{{ feeds }}"></paper-button>
+            <paper-button label="Find" on-tap="{{ onFind }}" id="find-feeds" affirmative transient autofocus hidden?="{{ feeds }}"></paper-button>
             <paper-button label="Add" on-tap="{{ onAdd }}" id="add-feeds" affirmative transient autofocus hidden?="{{ !feeds || !feeds.length }}"></paper-button>
         </paper-dialog>
 
@@ -68,9 +71,29 @@
         onOpen: function() {
             this.url = "";
             this.feeds = null;
+            this.loading = false;
+        },
+
+        onUrlKeypress: function(event, detail, sender) {
+            var code = event.keyCode || event.charCode, key = event.keyIdentifier;
+
+            if (key == 'Enter' || code == 13) {
+                sender.blur();
+
+                if (!this.url) {
+                    return;
+                }
+
+                this.$['find-feeds'].asyncFire('tap');
+            }
         },
 
         onFind: function() {
+            if (!this.url) {
+                this.toggle();
+                return;
+            }
+
             this.$.discover.params = JSON.stringify({"url": this.url});
             this.$.discover.go();
             this.loading = true;
@@ -104,6 +127,14 @@
                 this.feeds = [];
             }
             this.loading = false;
+        },
+
+        onAddResponse: function(event, data) {
+            if (data.response && data.response.Success) {
+            }
+
+            this.loading = false;
+            this.toggle();
         }
     });
 })();
