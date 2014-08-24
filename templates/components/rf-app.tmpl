@@ -57,10 +57,10 @@
             <rf-login name="login" id="login" layout wide="{{ wide }}" user="{{ user }}"></rf-login>
         </core-animated-pages>
         <core-media-query query="min-width: {{responsiveWidth}}" queryMatches="{{wide}}"></core-media-query>
-        <rf-api user="{{ user }}" id="authCheck" pathAction="auth" on-core-complete="{{ onAuthCheckComplete }}"></rf-api>
-        <core-localstorage name="user" id="userStorage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
+        <rf-api user="{{ user }}" id="auth-check" pathAction="auth" on-core-complete="{{ onAuthCheckComplete }}"></rf-api>
+        <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
 
-        <rf-dialog-add-feed id="add-feed-dialog"></rf-dialog-add-feed>
+        <rf-dialog-add-feed id="add-feed-dialog" wide="{{ wide }}" user="{{ user }}"></rf-dialog-add-feed>
 
     </template>
     <script>
@@ -81,7 +81,7 @@
                     if ((!oldValue && newValue) || (oldValue && !newValue)
                             || oldValue.login != newValue.login
                             || oldValue.md5api != newValue.md5api) {
-                        this.$.authCheck.go();
+                        this.$['auth-check'].go();
                     }
                 }
             })
@@ -101,7 +101,7 @@
                     this.selected = 'scaffolding';
                 }
 
-                this.$.userStorage.save();
+                this.$['user-storage'].save();
             }
         },
 

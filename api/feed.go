@@ -72,7 +72,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			w.Write(b)
-		case "detect":
+		case "discover":
 			r.ParseForm()
 
 			link := r.FormValue("url")
@@ -83,8 +83,8 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				break
 				/* TODO: non-fatal error */
 			} else if !u.IsAbs() {
-				err = errors.New("Feed has no link")
-				break
+				u.Scheme = "http:"
+				link = u.String()
 			}
 
 			feeds, err := con.fm.DetectFeeds(link)

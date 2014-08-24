@@ -1,19 +1,23 @@
 {% define "content" %}
-<link rel="import" href="/dist/paper-dialog/paper-dialog.html">
-<link rel="import" href="/dist/paper-dialog/paper-dialog-transition.html">
 <link rel="import" href="/dist/paper-button/paper-button.html">
+<link rel="import" href="/dist/paper-dialog/paper-dialog-transition.html">
+<link rel="import" href="/dist/paper-dialog/paper-dialog.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
+
+<link rel="import" href="/component/rf-api">
 
 <polymer-element name="rf-dialog-add-feed" attributes="wide user">
     <template>
-        <paper-dialog id="add-feed-dialog" heading="Add feed" transition="paper-dialog-transition-center" backdrop>
+        <paper-dialog id="add-feed-dialog" heading="Add feed" transition="paper-dialog-transition-center" backdrop on-core-overlay-open="{{ onOpen }}">
             <p>Enter the address of a feed, or a website that might contain one or more feeds.</p>
 
-            <paper-input label="URL" id="feed-url"></paper-input>
+            <paper-input label="URL" id="feed-url" value="{{ url }}"></paper-input>
 
             <paper-button label="Decline" affirmative></paper-button>
             <paper-button label="Accept" affirmative autofocus></paper-button>
         </paper-dialog>
+
+        <rf-api user="{{ user }}" id="discover" pathAction="feed/discover" params="{&quot;url&quot;: &quot;{{ url }}&quot;}" on-core-response="{{ onDiscoverResponse }}"></rf-api>
     </template>
     <script>
 (function() {
@@ -22,6 +26,14 @@
     Polymer('rf-dialog-add-feed', {
         toggle: function() {
             this.$['add-feed-dialog'].toggle();
+        },
+
+        onOpen: function() {
+            this.$['feed-url'].value = '';
+        },
+
+        onDiscoverResponse: function() {
+            console.log(arguments);
         }
     });
 })();
