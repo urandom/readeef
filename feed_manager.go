@@ -201,6 +201,7 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 	go func() {
 		fm.requestFeedContent(f)
 
+		Debug.Printf("Starting feed scheduler for %s and duration %d\n", f.Link, d)
 	ticker:
 		for {
 			select {

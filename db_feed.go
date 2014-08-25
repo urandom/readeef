@@ -198,13 +198,18 @@ func (db DB) UpdateFeed(f Feed) (Feed, error) {
 		return f, err
 	}
 
+	// FIXME: Remove when the 'FOREIGN KEY constraing failed' bug is removed
+	if db.driver == "sqlite3" {
+		db.Query("SELECT 1")
+	}
+
 	tx, err := db.Beginx()
 	if err != nil {
 		return f, err
 	}
 	defer tx.Rollback()
 
-	Debug.Println("Upading feed " + f.Link)
+	Debug.Println("Updading feed " + f.Link)
 
 	ustmt, err := tx.Preparex(db.NamedSQL("update_feed"))
 	if err != nil {

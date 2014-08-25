@@ -41,5 +41,14 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
 	dispatcher.Context.SetGlobal(readeef.CtxKey("db"), db)
 
+	go func() {
+		for {
+			select {
+			case f := <-updateFeed:
+				readeef.Debug.Println("Feed " + f.Link + " updated")
+			}
+		}
+	}()
+
 	return nil
 }
