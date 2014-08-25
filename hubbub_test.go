@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"readeef/parser"
 	"strings"
 	"testing"
 	"time"
@@ -55,7 +54,7 @@ func TestHubbub(t *testing.T) {
 	}()
 
 	h := NewHubbub(db, conf, log.New(os.Stderr, "", 0), addFeed, removeFeed, updateFeed)
-	f := Feed{Feed: parser.Feed{Link: ts.URL + "/link"}}
+	f := Feed{Link: ts.URL + "/link"}
 	f, err = db.UpdateFeed(f)
 	if err != nil {
 		t.Fatal(err)

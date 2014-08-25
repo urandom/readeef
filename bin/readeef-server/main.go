@@ -36,6 +36,7 @@ func main() {
 	dispatcher := server.Dispatcher("/api/")
 
 	logger := log.New(os.Stderr, "", 0)
+	readeef.InitDebug(logger, cfg)
 
 	if err := api.RegisterControllers(cfg, dispatcher, logger); err != nil {
 		exitWithError(err.Error())

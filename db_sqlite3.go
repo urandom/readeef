@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS feeds (
 	title TEXT,
 	description TEXT,
 	hub_link TEXT,
+	site_link TEXT,
 	update_error TEXT,
 	subscribe_error TEXT
 )`, `

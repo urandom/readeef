@@ -19,6 +19,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	updateFeed := make(chan readeef.Feed)
 
 	fm := readeef.NewFeedManager(db, config, logger, updateFeed)
+	fm.Start()
 
 	if config.Hubbub.CallbackURL != "" {
 		hubbub := readeef.NewHubbub(db, config, logger, fm.RemoveFeedChannel(), fm.AddFeedChannel(), updateFeed)

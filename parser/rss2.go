@@ -34,7 +34,7 @@ func ParseRss2(b []byte) (Feed, error) {
 	f = Feed{
 		Title:       rss.Channel.Title,
 		Description: rss.Channel.Description,
-		Link:        rss.Channel.Link,
+		SiteLink:    rss.Channel.Link,
 		Image: Image{
 			rss.Channel.Image.Title, rss.Channel.Image.Url,
 			rss.Channel.Image.Width, rss.Channel.Image.Height},

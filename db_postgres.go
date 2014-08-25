@@ -6,8 +6,8 @@ import _ "github.com/lib/pq"
 
 const (
 	postgres_create_feed = `
-INSERT INTO feeds(link, title, description, hub_link, update_error, subscribe_error)
-	SELECT $1, $2, $3, $4, $5, $6 EXCEPT SELECT link, title, description, hub_link, update_error, subscribe_error FROM feeds WHERE link = $6 RETURNING id`
+INSERT INTO feeds(link, title, description, hub_link, site_link, update_error, subscribe_error)
+	SELECT $1, $2, $3, $4, $5, $6, $7 EXCEPT SELECT link, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds WHERE link = $1 RETURNING id`
 )
 
 var (
@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS feeds (
 	title TEXT,
 	description TEXT,
 	hub_link TEXT,
+	site_link TEXT,
 	update_error TEXT,
 	subscribe_error TEXT
 )`, `

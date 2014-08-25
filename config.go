@@ -10,6 +10,9 @@ import (
 var apiversion = 1
 
 type Config struct {
+	Readeef struct {
+		Debug bool
+	}
 	API struct {
 		Version int
 	}
@@ -97,6 +100,8 @@ func defaultConfig() (Config, error) {
 }
 
 var cfg string = `
+[readeef]
+	debug = true
 [db]
 	driver = sqlite3
 	connect = file:./readeef.sqlite3?cache=shared&mode=rwc

@@ -51,12 +51,16 @@ func (fm *FeedManager) SetClient(c *http.Client) {
 }
 
 func (fm FeedManager) Start() {
+	Debug.Println("Starting the feed manager")
+
 	go fm.reactToChanges()
 
 	go fm.scheduleFeeds()
 }
 
 func (fm *FeedManager) Stop() {
+	Debug.Println("Stopping the feed manager")
+
 	fm.done <- true
 }
 
@@ -81,12 +85,14 @@ func (fm *FeedManager) AddFeedByLink(link string) (Feed, error) {
 	f, err := fm.db.GetFeedByLink(link)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			parserFeeds, err := discoverParserFeeds(link)
+			Debug.Println("Discovering feeds in " + link)
+
+			feeds, err := discoverParserFeeds(link)
 			if err != nil {
 				return Feed{}, err
 			}
 
-			f = Feed{Feed: parserFeeds[0]}
+			f = feeds[0]
 			f, err = fm.db.UpdateFeed(f)
 			if err != nil {
 				return Feed{}, err
@@ -96,6 +102,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (Feed, error) {
 		}
 	}
 
+	Debug.Println("Adding feed " + f.Link + " to manager")
 	fm.addFeed <- f
 
 	return f, nil
@@ -110,6 +117,8 @@ func (fm *FeedManager) RemoveFeedByLink(link string) (Feed, error) {
 			return Feed{}, err
 		}
 	}
+
+	Debug.Println("Removing feed " + f.Link + " from manager")
 
 	fm.removeFeed <- f
 
@@ -133,13 +142,15 @@ func (fm *FeedManager) DiscoverFeeds(link string) ([]Feed, error) {
 		feeds = append(feeds, f)
 	} else {
 		if err == sql.ErrNoRows {
-			parserFeeds, err := discoverParserFeeds(link)
+			Debug.Println("Discovering feeds in " + link)
+
+			discovered, err := discoverParserFeeds(link)
 			if err != nil {
 				return feeds, err
 			}
 
-			for _, f := range parserFeeds {
-				feeds = append(feeds, Feed{Feed: f})
+			for _, f := range discovered {
+				feeds = append(feeds, f)
 			}
 		} else {
 			return feeds, err
@@ -172,6 +183,7 @@ func (fm *FeedManager) reactToChanges() {
 
 func (fm *FeedManager) startUpdatingFeed(f Feed) {
 	if f.Id == 0 || fm.activeFeeds[f.Id] {
+		Debug.Println("Feed " + f.Link + " already active")
 		return
 	}
 
@@ -209,10 +221,13 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 }
 
 func (fm *FeedManager) stopUpdatingFeed(f Feed) {
+	Debug.Println("Stopping feed update for " + f.Link)
 	delete(fm.activeFeeds, f.Id)
 }
 
 func (fm *FeedManager) requestFeedContent(f Feed) {
+	Debug.Println("Requesting feed content for " + f.Link)
+
 	resp, err := fm.client.Get(f.Link)
 
 	if err != nil {
@@ -261,14 +276,16 @@ func (fm *FeedManager) scheduleFeeds() {
 	}
 
 	for _, f := range feeds {
+		Debug.Println("Scheduling feed " + f.Link)
+
 		fm.addFeed <- f
 	}
 }
 
-func discoverParserFeeds(link string) ([]parser.Feed, error) {
+func discoverParserFeeds(link string) ([]Feed, error) {
 	resp, err := http.Get(link)
 	if err != nil {
-		return []parser.Feed{}, err
+		return []Feed{}, err
 	}
 
 	buf := util.BufferPool.GetBuffer()
@@ -277,13 +294,12 @@ func discoverParserFeeds(link string) ([]parser.Feed, error) {
 	buf.ReadFrom(resp.Body)
 
 	if parserFeed, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
-		parserFeed.Link = link
-		return []parser.Feed{parserFeed}, nil
+		return []Feed{Feed{Feed: parserFeed, Link: link}}, nil
 	} else {
 		html := commentPattern.ReplaceAllString(buf.String(), "")
 		links := linkPattern.FindAllStringSubmatch(html, -1)
 
-		feeds := []parser.Feed{}
+		feeds := []Feed{}
 		for _, l := range links {
 			attrs := l[1]
 			if strings.Contains(attrs, `"application/rss+xml"`) || strings.Contains(attrs, `'application/rss+xml'`) {
@@ -293,7 +309,7 @@ func discoverParserFeeds(link string) ([]parser.Feed, error) {
 				href := attr[:index]
 
 				if u, err := url.Parse(href); err != nil {
-					return []parser.Feed{}, err
+					return []Feed{}, err
 				} else {
 					if !u.IsAbs() {
 						l, _ := url.Parse(link)
@@ -305,12 +321,12 @@ func discoverParserFeeds(link string) ([]parser.Feed, error) {
 						}
 					}
 
-					pfs, err := discoverParserFeeds(href)
+					fs, err := discoverParserFeeds(href)
 					if err != nil {
-						return []parser.Feed{}, err
+						return []Feed{}, err
 					}
 
-					feeds = append(feeds, pfs[0])
+					feeds = append(feeds, fs[0])
 				}
 			}
 		}
@@ -320,5 +336,5 @@ func discoverParserFeeds(link string) ([]parser.Feed, error) {
 		}
 	}
 
-	return []parser.Feed{}, ErrNoFeed
+	return []Feed{}, ErrNoFeed
 }

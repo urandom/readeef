@@ -5,7 +5,7 @@ import "time"
 type Feed struct {
 	Title       string
 	Description string
-	Link        string
+	SiteLink    string
 	HubLink     string
 	Image       Image
 	Articles    []Article

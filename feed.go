@@ -11,6 +11,8 @@ type Feed struct {
 
 	User           User
 	Id             int64
+	Link           string
+	SiteLink       string `db:"site_link"`
 	HubLink        string `db:"hub_link"`
 	UpdateError    string `db:"update_error"`
 	SubscribeError string `db:"subscribe_error"`

@@ -36,7 +36,7 @@ func ParseAtom(b []byte) (Feed, error) {
 	f = Feed{
 		Title:       rss.Title,
 		Description: rss.Description,
-		Link:        rss.Link.Href,
+		SiteLink:    rss.Link.Href,
 		Image: Image{
 			rss.Image.Title, rss.Image.Url,
 			rss.Image.Width, rss.Image.Height},

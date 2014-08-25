@@ -218,7 +218,7 @@ func TestDBFeeds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	f2 := Feed{Feed: parser.Feed{Link: "http://rss.example.com"}}
+	f2 := Feed{Link: "http://rss.example.com"}
 	if f2, err = db.UpdateFeed(f2); err != nil {
 		t.Fatal(err)
 	}
@@ -452,7 +452,7 @@ func TestDBFeeds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	f3 := Feed{Feed: parser.Feed{Link: "http://rss2.example.com"}}
+	f3 := Feed{Link: "http://rss2.example.com"}
 	if f3, err = db.UpdateFeed(f3); err != nil {
 		t.Fatal(err)
 	}

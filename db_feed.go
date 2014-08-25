@@ -9,19 +9,19 @@ import (
 )
 
 const (
-	get_feed    = `SELECT link, title, description, hub_link, update_error, subscribe_error FROM feeds WHERE id = $1`
+	get_feed    = `SELECT link, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds WHERE id = $1`
 	create_feed = `
-INSERT INTO feeds(link, title, description, hub_link, update_error, subscribe_error)
-	SELECT $1, $2, $3, $4, $5, $6 EXCEPT SELECT link, title, description, hub_link, update_error, subscribe_error FROM feeds WHERE link = $6`
-	update_feed = `UPDATE feeds SET link = $1, title = $2, description = $3, hub_link = $4, update_error = $5, subscribe_error = $6 WHERE id = $7`
+INSERT INTO feeds(link, title, description, hub_link, site_link, update_error, subscribe_error)
+	SELECT $1, $2, $3, $4, $5, $6, $7 EXCEPT SELECT link, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds WHERE link = $1`
+	update_feed = `UPDATE feeds SET link = $1, title = $2, description = $3, hub_link = $4, site_link = $5, update_error = $6, subscribe_error = $7 WHERE id = $8`
 	delete_feed = `DELETE FROM feeds WHERE id = $1`
 
-	get_feed_by_link = `SELECT id, title, description, hub_link, update_error, subscribe_error FROM feeds WHERE link = $1`
+	get_feed_by_link = `SELECT id, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds WHERE link = $1`
 
-	get_feeds = `SELECT id, link, title, description, hub_link, update_error, subscribe_error FROM feeds`
+	get_feeds = `SELECT id, link, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds`
 
 	get_unsubscribed_feeds = `
-SELECT f.id, f.link, f.title, f.description, f.hub_link, f.update_error, f.subscribe_error
+SELECT f.id, f.link, f.title, f.description, f.hub_link, f.site_link, f.update_error, f.subscribe_error
 	FROM feeds f LEFT OUTER JOIN hubbub_subscriptions hs
 	ON f.id = hs.feed_id AND hs.subscription_failure = '1'
 	ORDER BY f.title
@@ -33,7 +33,7 @@ INSERT INTO users_feeds(user_login, feed_id)
 	delete_user_feed = `DELETE FROM users_feeds WHERE user_login = $1 AND feed_id = $2`
 
 	get_user_feeds = `
-SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.update_error, f.subscribe_error
+SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
 FROM feeds f, users_feeds uf
 WHERE f.id = uf.feed_id
 	AND uf.user_login = $1
@@ -181,6 +181,8 @@ var (
 )
 
 func (db DB) GetFeed(id int64) (Feed, error) {
+	Debug.Printf("Getting feed for %d\n", id)
+
 	var f Feed
 	if err := db.Get(&f, db.NamedSQL("get_feed"), id); err != nil {
 		return f, err
@@ -202,13 +204,15 @@ func (db DB) UpdateFeed(f Feed) (Feed, error) {
 	}
 	defer tx.Rollback()
 
+	Debug.Println("Upading feed " + f.Link)
+
 	ustmt, err := tx.Preparex(db.NamedSQL("update_feed"))
 	if err != nil {
 		return f, err
 	}
 	defer ustmt.Close()
 
-	res, err := ustmt.Exec(f.Link, f.Title, f.Description, f.HubLink, f.UpdateError, f.SubscribeError, f.Id)
+	res, err := ustmt.Exec(f.Link, f.Title, f.Description, f.HubLink, f.SiteLink, f.UpdateError, f.SubscribeError, f.Id)
 	if err != nil {
 		return f, err
 	}
@@ -220,7 +224,7 @@ func (db DB) UpdateFeed(f Feed) (Feed, error) {
 		}
 		defer cstmt.Close()
 
-		id, err := db.CreateWithId(cstmt, f.Link, f.Title, f.Description, f.HubLink, f.UpdateError, f.SubscribeError)
+		id, err := db.CreateWithId(cstmt, f.Link, f.Title, f.Description, f.HubLink, f.SiteLink, f.UpdateError, f.SubscribeError)
 		if err != nil {
 			return f, err
 		}
@@ -266,6 +270,8 @@ func (db DB) DeleteFeed(f Feed) error {
 }
 
 func (db DB) GetFeedByLink(link string) (Feed, error) {
+	Debug.Println("Getting feed " + link)
+
 	var f Feed
 	if err := db.Get(&f, db.NamedSQL("get_feed_by_link"), link); err != nil {
 		return f, err

@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"readeef/parser"
 	"strings"
 	"testing"
 	"time"
@@ -42,7 +41,7 @@ func TestFeedManager(t *testing.T) {
 
 	fm.Start()
 
-	f := Feed{Feed: parser.Feed{Link: ts.URL + "/link"}}
+	f := Feed{Link: ts.URL + "/link"}
 	f, err = db.UpdateFeed(f)
 	if err != nil {
 		t.Fatal(err)
