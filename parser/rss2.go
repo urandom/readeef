@@ -1,8 +1,8 @@
 package parser
 
 import (
+	"bytes"
 	"encoding/xml"
-	"fmt"
 	"strings"
 	"time"
 )
@@ -15,7 +15,7 @@ type rss2Feed struct {
 type rss2Channel struct {
 	XMLName     xml.Name  `xml:"channel"`
 	Title       string    `xml:"title"`
-	Link        string    `xml:"link"`
+	Link        string    `xml:"parserfeed link"`
 	Description string    `xml:"description"`
 	Image       rssImage  `xml:"image"`
 	Items       []rssItem `xml:"item"`
@@ -28,11 +28,13 @@ func ParseRss2(b []byte) (Feed, error) {
 	var f Feed
 	var rss rss2Feed
 
-	if err := xml.Unmarshal(b, &rss); err != nil {
+	decoder := xml.NewDecoder(bytes.NewReader(b))
+	decoder.DefaultSpace = "parserfeed"
+
+	if err := decoder.Decode(&rss); err != nil {
 		return f, err
 	}
 
-	fmt.Printf("%#v\n", rss.Channel)
 	f = Feed{
 		Title:       rss.Channel.Title,
 		Description: rss.Channel.Description,

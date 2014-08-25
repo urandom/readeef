@@ -1,6 +1,9 @@
 package parser
 
-import "encoding/xml"
+import (
+	"bytes"
+	"encoding/xml"
+)
 
 type atomFeed struct {
 	XMLName     xml.Name   `xml:"feed"`
@@ -29,7 +32,10 @@ func ParseAtom(b []byte) (Feed, error) {
 	var f Feed
 	var rss atomFeed
 
-	if err := xml.Unmarshal(b, &rss); err != nil {
+	decoder := xml.NewDecoder(bytes.NewReader(b))
+	decoder.DefaultSpace = "parserfeed"
+
+	if err := decoder.Decode(&rss); err != nil {
 		return f, err
 	}
 

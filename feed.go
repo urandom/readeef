@@ -30,6 +30,7 @@ type Article struct {
 func (f Feed) UpdateFromParsed(pf parser.Feed) Feed {
 	f.Feed = pf
 	f.HubLink = pf.HubLink
+	f.SiteLink = pf.SiteLink
 
 	newArticles := make([]Article, len(pf.Articles))
 

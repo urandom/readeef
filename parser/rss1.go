@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bytes"
 	"encoding/xml"
 	"strings"
 	"time"
@@ -28,7 +29,10 @@ func ParseRss1(b []byte) (Feed, error) {
 	var f Feed
 	var rss rss1Feed
 
-	if err := xml.Unmarshal(b, &rss); err != nil {
+	decoder := xml.NewDecoder(bytes.NewReader(b))
+	decoder.DefaultSpace = "parserfeed"
+
+	if err := decoder.Decode(&rss); err != nil {
 		return f, err
 	}
 
