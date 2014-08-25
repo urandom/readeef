@@ -102,8 +102,8 @@ func TestRss1Parse(t *testing.T) {
 		t.Fatalf("Unexpected feed description: '%s'\n", strings.TrimSpace(f.Description))
 	}
 
-	if f.Link != "http://xml.com/pub" {
-		t.Fatalf("Unexpected feed link: '%s'\n", f.Link)
+	if f.SiteLink != "http://xml.com/pub" {
+		t.Fatalf("Unexpected feed link: '%s'\n", f.SiteLink)
 	}
 
 	if f.HubLink != "" {

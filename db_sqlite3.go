@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS feed_images (
 	width INTEGER,
 	height INTEGER,
 
-	FOREIGN KEY(feed_id) REFERENCES feeds(link) ON DELETE CASCADE
+	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS articles (
 	id TEXT,
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS articles (
 	date TIMESTAMP,
 
 	PRIMARY KEY(id, feed_id),
-	FOREIGN KEY(feed_id) REFERENCES feeds(link) ON DELETE CASCADE
+	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_feeds (
 	user_login TEXT,
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS users_feeds (
 
 	PRIMARY KEY(user_login, feed_id),
 	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
-	FOREIGN KEY(feed_id) REFERENCES feeds(link) ON DELETE CASCADE
+	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_articles_read (
 	user_login TEXT,
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 	subscription_failure INTEGER,
 
 	PRIMARY KEY(link),
-	FOREIGN KEY(feed_id) REFERENCES feeds(link) ON DELETE CASCADE
+	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`,
 	}
 )

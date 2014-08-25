@@ -37,8 +37,8 @@ func TestAtomParse(t *testing.T) {
 		t.Fatalf("Unexpected feed description: '%s'\n", f.Description)
 	}
 
-	if f.Link != "http://example.org/" {
-		t.Fatalf("Unexpected feed link: '%s'\n", f.Link)
+	if f.SiteLink != "http://example.org/" {
+		t.Fatalf("Unexpected feed link: '%s'\n", f.SiteLink)
 	}
 
 	if f.HubLink != "" {

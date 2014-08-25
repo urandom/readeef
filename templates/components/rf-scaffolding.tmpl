@@ -37,14 +37,14 @@
             }
 
             .wide .content {
-                margin: 64px 120px 60px 5px;
+                margin: 10px 120px 60px 5px;
                 box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.26);
                 border-radius: 2px;
             }
 
             .content-label {
-                height: 80px;
-                line-height: 80px;
+                height: 60px;
+                line-height: 60px;
                 padding-left: 24px;
                 background-color: #fff;
                 letter-spacing: 0.05em;
@@ -57,7 +57,7 @@
         </style>
         <core-drawer-panel id="drawer-panel" class="{{ {wide: wide} | tokenList }}" responsiveWidth="768px">
             <core-header-panel drawer>
-                <core-toolbar id="navheader" class="{{ {'medium-tall': wide } | tokenList }}">
+                <core-toolbar id="navheader">
                     <content select=".drawer-title"></content>
                 </core-toolbar>
                 <core-menu id="drawer-menu">
@@ -66,7 +66,7 @@
             </core-header-panel>
 
             <core-header-panel main mode="{{ {'cover': wide } | tokenList }}" shadow>
-                <core-toolbar id="mainheader" class="{{ {'medium-tall': wide } | tokenList }}">
+                <core-toolbar id="mainheader">
                     <paper-icon-button id="navicon" icon="menu"></paper-icon-button>
                     <div flex hidden?="{{ wide }}">{{ contenttitle }}</div>
                     <paper-icon-button id="refresh-menu" icon="refresh" hidden?="{{ wide }}"></paper-icon-button>

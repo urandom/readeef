@@ -66,8 +66,8 @@ func TestRss2Parse(t *testing.T) {
 		t.Fatalf("Unexpected feed description: '%s'\n", strings.TrimSpace(f.Description))
 	}
 
-	if f.Link != "http://liftoff.msfc.nasa.gov/" {
-		t.Fatalf("Unexpected feed link: '%s'\n", f.Link)
+	if f.SiteLink != "http://liftoff.msfc.nasa.gov/" {
+		t.Fatalf("Unexpected feed link: '%s'\n", f.SiteLink)
 	}
 
 	if f.HubLink != "" {

@@ -2,6 +2,7 @@ package parser
 
 import (
 	"encoding/xml"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -31,6 +32,7 @@ func ParseRss2(b []byte) (Feed, error) {
 		return f, err
 	}
 
+	fmt.Printf("%#v\n", rss.Channel)
 	f = Feed{
 		Title:       rss.Channel.Title,
 		Description: rss.Channel.Description,
@@ -55,11 +57,18 @@ func ParseRss2(b []byte) (Feed, error) {
 	}
 
 	for _, i := range rss.Channel.Items {
-		article := Article{Title: i.Title, Description: i.Description, Link: i.Link}
+		article := Article{Title: i.Title, Link: i.Link}
+
 		if i.Id == "" {
 			article.Id = i.Link
 		} else {
 			article.Id = i.Id
+		}
+
+		if i.Content == "" || len(i.Content) < len(i.Description) {
+			article.Description = i.Description
+		} else {
+			article.Description = i.Content
 		}
 
 		var err error

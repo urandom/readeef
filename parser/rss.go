@@ -16,6 +16,7 @@ type rssItem struct {
 	Title       string   `xml:"title"`
 	Link        string   `xml:"link"`
 	Description string   `xml:"description"`
+	Content     string   `xml:"content:encoded"`
 	PubDate     string   `xml:"pubDate"`
 	Date        string   `xml:"date"`
 	TTL         int      `xml:"ttl"`

@@ -46,7 +46,9 @@
                 <div fit class="drawer-title bottom">Feeds</div>
 
                 <paper-item label="Add feed" class="drawer-content" on-tap="{{ onAddFeed }}"></paper-item>
-                <hr class="drawer-content">
+                <template if="{{ feeds.length > 0 }}">
+                    <hr class="drawer-content">
+                </template>
                 <template if="{{ feeds.length > 1 }}">
                     <paper-item label="All" class="drawer-content" on-tap="{{ onFeedTap }}" feed-id="__all__" selectable></paper-item>
                 </template>
