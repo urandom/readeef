@@ -42,7 +42,7 @@
             <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
             </core-overlay>
 
-            <rf-scaffolding name="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" contenttitle="Feed Title">
+            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" contenttitle="Feed Title" on-rf-feed-refresh="{{ onFeedRefresh }}" currentFeedId="{{ currentFeedId }}">
                 <div fit class="drawer-title bottom">Feeds</div>
 
                 <paper-item label="Add feed" class="drawer-content" on-tap="{{ onAddFeed }}"></paper-item>
@@ -50,10 +50,10 @@
                     <hr class="drawer-content">
                 </template>
                 <template if="{{ feeds.length > 1 }}">
-                    <paper-item label="All" class="drawer-content" on-tap="{{ onFeedTap }}" feed-id="__all__" selectable></paper-item>
+                    <paper-item label="All" class="drawer-content" on-tap="{{ onFeedTap }}" name="__all__" selectable></paper-item>
                 </template>
                 <template repeat="{{ feed in feeds }}">
-                    <paper-item label="{{ feed.Title }}" class="drawer-content" on-tap="{{ onFeedTap }}" title="{{ feed.Description }}" feed-id="{{ feed.Id }}" selectable></paper-item>
+                    <paper-item label="{{ feed.Title }}" class="drawer-content" on-tap="{{ onFeedTap }}" title="{{ feed.Description }}" name="{{ feed.Id }}" selectable></paper-item>
                 </template>
                 <hr class="drawer-content">
                 <paper-item label="Settings" class="drawer-content"></paper-item>
@@ -71,6 +71,8 @@
         <rf-api id="all-feeds" pathAction="feed/all" on-core-response="{{ onAllFeedsResponse }}" user="{{ user }}"></rf-api>
 
         <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
+        <core-localstorage name="{{ user.login }}-settings" id="user-settings-storage" value="{{userSettings}}" on-core-localstorage-load="{{ onUserSettingsLoad }}"></core-localstorage>
+
         <core-media-query query="min-width: {{responsiveWidth}}" queryMatches="{{wide}}"></core-media-query>
 
         <rf-dialog-add-feed id="add-feed-dialog" wide="{{ wide }}" user="{{ user }}" on-feeds-added="{{ onFeedsAdded }}"></rf-dialog-add-feed>
@@ -84,6 +86,8 @@
         responsiveWidth: '768px',
         userTTL: 1000 * 60 * 60 * 24 * 15,
         user: null,
+        userSettings: {},
+        currentFeedId: null,
 
         created: function() {
             this.feeds = [];
@@ -101,6 +105,10 @@
                     }
                 }
             })
+        },
+
+        currentFeedIdChanged: function(oldValue, newValue) {
+            console.log(newValue);
         },
 
         onAuthCheckComplete: function(event, response) {
@@ -135,6 +143,14 @@
             }
         },
 
+        onUserSettingsLoad: function(event, detail, sender) {
+            if (sender.value) {
+                if (sender.value.currentFeedId) {
+                    this.currentFeedId = sender.value.currentFeedId;
+                }
+            }
+        },
+
         onSignOut: function() {
             this.user = null;
         },
@@ -154,7 +170,17 @@
         },
 
         onFeedTap: function(event) {
-            console.log(event.target);
+            this.currentFeedId = event.target.getAttribute('name');
+
+            this.userSettings.currentFeedId = this.currentFeedId;
+            
+            this.async(function() {
+                this.userSettings = Polymer.extend({}, this.userSettings);
+            });
+        },
+
+        onFeedRefresh: function(event, detail, sender) {
+            console.log(event, detail, sender);
         }
     });
 })();
