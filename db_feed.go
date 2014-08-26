@@ -39,6 +39,10 @@ WHERE f.id = uf.feed_id
 	AND uf.user_login = $1
 `
 
+	update_feed_article = `
+UPDATE articles SET title = $1, description = $2, link = $3, date = $4 WHERE id = $5 AND feed_id = $6
+`
+
 	get_feed_articles = `
 SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
@@ -721,11 +725,40 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) error {
 		return nil
 	}
 
+	Debug.Println("Updating feed articles for " + f.Link)
+
+	newArticles := []Article{}
+
+	for _, a := range articles {
+		if err := a.Validate(); err != nil {
+			return err
+		}
+
+		stmt, err := tx.Preparex(db.NamedSQL("update_feed_article"))
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		res, err := stmt.Exec(a.Title, a.Description, a.Link, a.Date, a.Id, f.Id)
+		if err != nil {
+			return err
+		}
+
+		if num, err := res.RowsAffected(); err != nil || num == 0 {
+			newArticles = append(newArticles, a)
+		}
+	}
+
+	if len(newArticles) == 0 {
+		return nil
+	}
+
 	sql := `INSERT INTO articles(id, feed_id, title, description, link, date) `
 	args := []interface{}{}
 	index := 1
 
-	for i, a := range articles {
+	for i, a := range newArticles {
 		if err := a.Validate(); err != nil {
 			return err
 		}
@@ -779,6 +812,7 @@ func init() {
 	sql_stmt["generic:create_user_feed"] = create_user_feed
 	sql_stmt["generic:delete_user_feed"] = delete_user_feed
 	sql_stmt["generic:get_user_feeds"] = get_user_feeds
+	sql_stmt["generic:update_feed_article"] = update_feed_article
 	sql_stmt["generic:get_feed_articles"] = get_feed_articles
 	sql_stmt["generic:get_unread_feed_articles"] = get_unread_feed_articles
 	sql_stmt["generic:get_read_feed_articles"] = get_read_feed_articles
