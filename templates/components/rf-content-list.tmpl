@@ -1,0 +1,37 @@
+{% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/core-selection/core-selection.html">
+
+<polymer-element name="rf-content-list" attributes="wide user feed">
+    <template bind="{{ wide as wide }}">
+        <style>
+            polyfill-next-selector {
+                content: ':host > .selected';
+            }
+            ::content > .selected {
+                font-weight: bold;
+                font-style: italic;
+            }
+        </style>
+        <ul on-tap="{{ onItemTap }}">
+            <content></content>
+        </ul>
+        <core-selection id="selection" on-core-select="{{ onSelect }}"></core-selection>
+    </template>
+    <script>
+(function() {
+    "use strict";
+
+    Polymer('rf-content-list', {
+        onItemTap: function(event) {
+            this.$.selection.select(event.target);
+        },
+
+        onSelect: function(event, detail) {
+            detail.item.classList.toggle("selected", detail.isSelected);
+        }
+    });
+})();
+    </script>
+</polymer-element>
+{% end %}

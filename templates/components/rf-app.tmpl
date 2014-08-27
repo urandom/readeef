@@ -15,6 +15,7 @@
 <link rel="import" href="/component/rf-scaffolding">
 <link rel="import" href="/component/rf-login">
 <link rel="import" href="/component/rf-dialog-add-feed">
+<link rel="import" href="/component/rf-content-list">
 
 <polymer-element name="rf-app" vertical layout attributes="{{ user userTTL }}">
     <template>
@@ -42,7 +43,7 @@
             <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
             </core-overlay>
 
-            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" contenttitle="Feed Title" on-rf-feed-refresh="{{ onFeedRefresh }}" currentFeedId="{{ currentFeedId }}">
+            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" on-rf-feed-refresh="{{ onFeedRefresh }}" feed="{{ currentFeed }}">
                 <div fit class="drawer-title bottom">Feeds</div>
 
                 <paper-item label="Add feed" class="drawer-content" on-tap="{{ onAddFeed }}"></paper-item>
@@ -60,7 +61,13 @@
                 <paper-item label="Sign Out" class="drawer-content" on-tap="{{ onSignOut }}"></paper-item>
 
                 <div class="main-content">
-                    <p>Content be here!</p>
+                    <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}">
+                        <template repeat="{{ article in currentFeed.Articles }}">
+                            <li class="{{ {read: article.Read, favorite: article.Favorite} | tokenList }}" id="{{ article.Id }}">
+                                <a href="#" title="{{ article.Title }}">{{ article.Title }}</a>
+                            </li>
+                        </template>
+                    </rf-content-list>
                 </div>
             </rf-scaffolding>
 
@@ -88,6 +95,8 @@
         user: null,
         userSettings: {},
         currentFeedId: null,
+        currentFeed: null,
+        feedIdMap: {},
 
         created: function() {
             this.feeds = [];
@@ -108,7 +117,22 @@
         },
 
         currentFeedIdChanged: function(oldValue, newValue) {
-            console.log(newValue);
+            if (newValue == "__all__") {
+            } else {
+                this.currentFeed = this.feedIdMap[newValue];
+            }
+        },
+
+        feedsChanged: function(oldValue, newValue) {
+            var self = this;
+
+            newValue.forEach(function(feed) {
+                self.feedIdMap[feed.Id] = feed;
+            });
+
+            if (!this.currentFeed && this.currentFeedId) {
+                this.currentFeed = this.feedIdMap[this.currentFeedId];
+            }
         },
 
         onAuthCheckComplete: function(event, response) {

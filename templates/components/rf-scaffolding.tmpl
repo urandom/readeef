@@ -8,7 +8,7 @@
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-menu-button/paper-menu-button.html">
 
-<polymer-element name="rf-scaffolding" attributes="wide user contenttitle currentFeedId">
+<polymer-element name="rf-scaffolding" attributes="wide user feed">
     <template>
         <style>
             core-toolbar {
@@ -43,7 +43,6 @@
             }
 
             .content-label {
-                height: 60px;
                 line-height: 60px;
                 padding-left: 24px;
                 background-color: #f8f8f8;
@@ -54,13 +53,20 @@
                 color: #5265a2;
             }
 
+            .content-label small {
+                display: block;
+                margin-top: -10px;
+                line-height: 14px;
+                font-size: 12px;
+            }
+
         </style>
         <core-drawer-panel id="drawer-panel" class="{{ {wide: wide} | tokenList }}" responsiveWidth="768px">
             <core-header-panel drawer>
                 <core-toolbar id="navheader">
                     <content select=".drawer-title"></content>
                 </core-toolbar>
-                <core-menu id="drawer-menu" selected="{{ currentFeedId }}">
+                <core-menu id="drawer-menu" selected="{{ feed.Id }}">
                     <content select=".drawer-content"></content>
                 </core-menu>
             </core-header-panel>
@@ -68,12 +74,24 @@
             <core-header-panel main mode="{{ {'cover': wide } | tokenList }}" shadow>
                 <core-toolbar id="mainheader">
                     <paper-icon-button id="navicon" icon="menu"></paper-icon-button>
-                    <div flex hidden?="{{ wide }}">{{ contenttitle }}</div>
+                    <div flex hidden?="{{ wide }}">{{ feed.Title }}</div>
                     <paper-icon-button id="refresh-menu" icon="refresh" hidden?="{{ wide }}" on-tap="{{ onRefresh }}"></paper-icon-button>
                     <paper-fab class="refreshButton bottom" icon="refresh" hidden?="{{ !wide }}" on-tap="{{ onRefresh }}"></paper-fab>
                 </core-toolbar>
                 <div class="content">
-                    <h1 class="content-label" hidden?="{{ !wide }}">{{ contenttitle }}</h1>
+                    <h1 class="content-label" hidden?="{{ !wide }}">
+                        <template if="{{ feed.SiteLink }}">
+                            <a href="{{ feed.SiteLink }}" target="feed-homepage">
+                                {{ feed.Title }}
+                            </a>
+                        </template>
+                        <template if="{{ !feed.SiteLink }}">
+                            {{ feed.Title }}
+                        </template>
+                        <template if="{{ feed.Description }}">
+                            <br><small>{{ feed.Description }}</small>
+                        </template>
+                    </h1>
                     <content select=".main-content"></content>
                 </div>
             </core-header-panel>
