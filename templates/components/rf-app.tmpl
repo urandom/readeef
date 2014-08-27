@@ -38,6 +38,11 @@
                 padding-left: 50px;
             }
 
+            .drawer-content /deep/ #label {
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
         </style>
         <core-animated-pages selected="{{ selected }}" transitions="cross-fade cross-fade-delayed scale-up slide-up slide-up-offscreen slide-down tile-cascade hero-transition" fit class="{{ {wide: wide} | tokenList }}">
             <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
