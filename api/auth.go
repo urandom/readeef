@@ -21,7 +21,7 @@ func NewAuth() Auth {
 func (con Auth) Handler(c context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		type response struct {
-			auth bool
+			Auth bool
 		}
 		resp := response{true}
 

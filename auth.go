@@ -39,6 +39,7 @@ type ApiAuthController interface {
 // from the Config.Auth.IgnoreURLPrefix
 type Auth struct {
 	DB              DB
+	Nonce           *Nonce
 	Pattern         string
 	IgnoreURLPrefix []string
 }

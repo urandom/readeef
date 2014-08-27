@@ -50,8 +50,8 @@
             <paper-button label="Add" on-tap="{{ onAdd }}" id="add-feeds" affirmative transient autofocus hidden?="{{ !feeds || !feeds.length }}"></paper-button>
         </paper-dialog>
 
-        <rf-api user="{{ user }}" id="discover" pathAction="feed/discover" on-core-response="{{ onDiscoverResponse }}"></rf-api>
-        <rf-api user="{{ user }}" id="add" pathAction="feed/add" on-core-response="{{ onAddResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="discover" pathAction="feed/discover" on-rf-api-response="{{ onDiscoverResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="add" pathAction="feed/add" on-rf-api-response="{{ onAddResponse }}"></rf-api>
     </template>
     <script>
 (function() {

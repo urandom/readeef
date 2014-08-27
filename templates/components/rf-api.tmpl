@@ -2,9 +2,11 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-ajax/core-ajax.html">
 
-<polymer-element name="rf-api" extends="core-ajax" attributes="user pathAction version" handleAs="json" constructor="RfAPI">
+<polymer-element name="rf-api" attributes="user pathAction version url" constructor="RfAPI" hidden>
     <template>
-        <shadow></shadow>
+        <content></content>
+        <core-ajax id="request" url="{% .apiPattern %}v{{version}}/{{pathAction}}" handleAs="json" on-core-response="{{ onRequestResponse }}" on-core-complete="{{ onRequestComplete }}" on-core-error="{{ onRequestError }}"></core-ajax>
+        <core-ajax id="nonce" url="{% .apiPattern %}v{{version}}/nonce" handleAs="json"></core-ajax>
     </template>
     <script src="/dist/cryptojs/rollups/md5.js"></script>
     <script src="/dist/cryptojs/rollups/hmac-sha256.js"></script>
@@ -20,32 +22,53 @@
                 return;
             }
 
-            if (!this.url) {
-                this.url = "{% .apiPattern %}v" + this.version + "/" + this.pathAction
+            var self = this;
+
+            this.$.nonce.processResponse = function(xhr) {
+                var response = this.evalResponse(xhr);
+                this.response = response;
+
+                var xhr = self.$.request.xhr;
+
+                if (!self.url) {
+                    self.url = "{% .apiPattern %}v" + self.version + "/" + self.pathAction
+                }
+
+                self.$.request.url = self.url;
+                self.$.request.xhr = {
+                    request: function(args) {
+                        var bodyHash = CryptoJS.MD5(args.body).toString(CryptoJS.enc.Base64),
+                            message = args.url + "\n" + (args.method || 'GET') + "\n" + bodyHash + "\n",
+                            messageHash;
+
+                        args.headers['X-Date'] = new Date().toUTCString();
+                        args.headers['X-Nonce'] = response.Nonce;
+
+                        message += args.headers['content-type'] + "\n" + args.headers['X-Date'] + "\n";
+                        messageHash = CryptoJS.HmacSHA256(message, self.user.md5api).toString(CryptoJS.enc.Base64);
+
+                        args.headers['Authorization'] = "Readeef " + self.user.login + ":" + messageHash;
+
+                        xhr.request(args);
+                    }
+                };
+                self.$.request.go();
+                self.$.request.xhr = xhr;
             }
 
-            var xhr = this.xhr, self = this;
+            return this.$.nonce.go();
+        },
 
-            this.xhr = {
-                request: function(args) {
-                    var bodyHash = CryptoJS.MD5(args.body).toString(CryptoJS.enc.Base64),
-                        message = args.url + "\n" + (args.method || 'GET') + "\n" + bodyHash + "\n",
-                        messageHash;
+        onRequestResponse: function(event, detail) {
+            this.fire('rf-api-response', detail);
+        },
 
-                    args.headers['X-Date'] = new Date().toUTCString();
+        onRequestError: function(event, detail) {
+            this.fire('rf-api-error', detail);
+        },
 
-                    message += args.headers['content-type'] + "\n" + args.headers['X-Date'] + "\n";
-                    messageHash = CryptoJS.HmacSHA256(message, self.user.md5api).toString(CryptoJS.enc.Base64);
-
-                    args.headers['Authorization'] = "Readeef " + self.user.login + ":" + messageHash;
-
-                    xhr.request(args);
-                }
-            };
-            var retval = this.super();
-            this.xhr = xhr;
-
-            return retval;
+        onRequestComplete: function(event, detail) {
+            this.fire('rf-api-complete', detail);
         }
     });
 })();

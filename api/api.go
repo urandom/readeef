@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"readeef"
+	"time"
 
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/middleware"
@@ -27,6 +28,8 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		dispatcher.Handle(readeef.NewHubbubController(hubbub))
 	}
 
+	nonce := readeef.NewNonce()
+
 	var controller webfw.Controller
 
 	controller = NewAuth()
@@ -35,8 +38,11 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	controller = NewFeed(fm)
 	dispatcher.Handle(controller)
 
+	controller = NewNonce(nonce)
+	dispatcher.Handle(controller)
+
 	middleware.InitializeDefault(dispatcher)
-	dispatcher.RegisterMiddleware(readeef.Auth{DB: db, Pattern: dispatcher.Pattern})
+	dispatcher.RegisterMiddleware(readeef.Auth{DB: db, Pattern: dispatcher.Pattern, Nonce: nonce})
 
 	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
 	dispatcher.Context.SetGlobal(readeef.CtxKey("db"), db)
@@ -46,6 +52,8 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 			select {
 			case f := <-updateFeed:
 				readeef.Debug.Println("Feed " + f.Link + " updated")
+			case <-time.After(5 * time.Minute):
+				nonce.Clean(45 * time.Second)
 			}
 		}
 	}()
