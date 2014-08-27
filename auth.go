@@ -151,6 +151,12 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 						break
 					}
 
+					nonce := r.Header.Get("X-Nonce")
+					if !mw.Nonce.Check(nonce) {
+						break
+					}
+					mw.Nonce.Remove(nonce)
+
 					buf := util.BufferPool.GetBuffer()
 					defer util.BufferPool.Put(buf)
 
@@ -162,9 +168,9 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 					uriParts := strings.SplitN(r.RequestURI, "?", 2)
 					uri := uriParts[0]
 
-					message := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n",
+					message := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s\n",
 						uri, r.Method, contentMD5, r.Header.Get("Content-Type"),
-						date)
+						date, nonce)
 
 					b := make([]byte, base64.StdEncoding.EncodedLen(len(u.MD5API)))
 					base64.StdEncoding.Encode(b, u.MD5API)
