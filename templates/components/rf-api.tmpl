@@ -2,10 +2,10 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-ajax/core-ajax.html">
 
-<polymer-element name="rf-api" attributes="user pathAction version url" constructor="RfAPI" hidden>
+<polymer-element name="rf-api" attributes="user pathAction version url params" constructor="RfAPI" hidden>
     <template>
         <content></content>
-        <core-ajax id="request" url="{% .apiPattern %}v{{version}}/{{pathAction}}" handleAs="json" on-core-response="{{ onRequestResponse }}" on-core-complete="{{ onRequestComplete }}" on-core-error="{{ onRequestError }}"></core-ajax>
+        <core-ajax id="request" url="{% .apiPattern %}v{{version}}/{{pathAction}}" handleAs="json" params="{{params}}" on-core-response="{{ onRequestResponse }}" on-core-complete="{{ onRequestComplete }}" on-core-error="{{ onRequestError }}"></core-ajax>
         <core-ajax id="nonce" url="{% .apiPattern %}v{{version}}/nonce" handleAs="json"></core-ajax>
     </template>
     <script src="/dist/cryptojs/rollups/md5.js"></script>
@@ -16,6 +16,24 @@
     Polymer('rf-api', {
         version: 1,
         pathAction: '',
+
+        ready: function() {
+            this.$.request.xhr.toQueryString = function(params) {
+                var r = [];
+                for (var n in params) {
+                    var v = params[n];
+                    n = encodeURIComponent(n);
+                    if (Array.isArray(v)) {
+                        v.forEach(function(val) {
+                            r.push(val == null ? n : (n + '=' + encodeURIComponent(val)));
+                        });
+                    } else {
+                        r.push(v == null ? n : (n + '=' + encodeURIComponent(v)));
+                    }
+                }
+                return r.join('&');
+            };
+        },
 
         go: function() {
             if (!this.user) {
