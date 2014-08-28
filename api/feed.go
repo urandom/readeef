@@ -195,20 +195,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 
 			w.Write(b)
 		default:
-			var id int64
-			id, err = strconv.ParseInt(action, 10, 64)
-
-			if err != nil {
-				err = errors.New("Unknown action " + action)
-				break
-			}
-
-			var f readeef.Feed
-			f, err = db.GetFeed(id)
-			/* TODO: non-fatal error */
-			if err != nil {
-				break
-			}
+			var articles []readeef.Article
 
 			limit := 50
 			offset := 0
@@ -230,19 +217,41 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				limit = 50
 			}
 
-			f, err = db.GetFeedArticles(f, limit, offset)
-			if err != nil {
-				break
+			if action == "__all__" {
+				articles, err = db.GetUserArticles(user, limit, offset)
+				if err != nil {
+					break
+				}
+			} else {
+				var f readeef.Feed
+
+				var id int64
+				id, err = strconv.ParseInt(action, 10, 64)
+
+				if err != nil {
+					err = errors.New("Unknown action " + action)
+					break
+				}
+
+				f, err = db.GetFeed(id)
+				/* TODO: non-fatal error */
+				if err != nil {
+					break
+				}
+
+				f, err = db.GetFeedArticles(f, limit, offset)
+				if err != nil {
+					break
+				}
+
+				articles = f.Articles
 			}
 
 			type response struct {
-				Feed feed
+				Articles []readeef.Article
 			}
 
-			resp := response{Feed: feed{
-				Id: f.Id, Title: f.Title, Description: f.Description,
-				Link: f.Link, Image: f.Image, Articles: f.Articles,
-			}}
+			resp := response{Articles: articles}
 
 			var b []byte
 			b, err = json.Marshal(resp)

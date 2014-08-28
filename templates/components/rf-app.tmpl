@@ -93,6 +93,18 @@
 (function() {
     "use strict";
 
+    function createAllPseudoFeed() {
+        // TODO: i18n
+        return {
+            Id: "__all__",
+            Title: "All feed articles",
+            Description: "",
+            Articles: null,
+            Image: {},
+            Link: "",
+        }
+    }
+
     Polymer('rf-app', {
         selected: 'loading',
         responsiveWidth: '768px',
@@ -124,6 +136,7 @@
 
         currentFeedIdChanged: function(oldValue, newValue) {
             if (newValue == "__all__") {
+                this.currentFeed = createAllPseudoFeed();
             } else {
                 this.currentFeed = this.feedIdMap[newValue];
             }
