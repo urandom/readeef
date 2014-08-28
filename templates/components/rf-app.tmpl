@@ -111,6 +111,7 @@
             this.async(function() {
                 if (!newValue) {
                     this.selected = 'login';
+                    this.feeds = [];
                 } else {
                     if ((!oldValue && newValue) || (oldValue && !newValue)
                             || oldValue.login != newValue.login
