@@ -5,6 +5,8 @@
 <link rel="import" href="/dist/paper-input/paper-input.html">
 <link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
 
+<link rel="import" href="/dist/loading-wave/loading-wave.html">
+
 <link rel="import" href="/component/rf-api">
 
 <polymer-element name="rf-dialog-add-feed" attributes="wide user">
@@ -42,7 +44,7 @@
                 </ul>
             </template>
             <template if="{{ loading }}">
-                <p>Loading&hellip;</p>
+                <loading-wave></loading-wave>
             </template>
 
             <paper-button label="Cancel" affirmative></paper-button>

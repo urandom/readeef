@@ -239,6 +239,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 					break
 				}
 
+				f.User = user
 				f, err = db.GetFeedArticles(f, limit, offset)
 				if err != nil {
 					break

@@ -11,6 +11,8 @@
 <link rel="import" href="/dist/core-animated-pages/transitions/tile-cascade.html">
 <link rel="import" href="/dist/core-transition/core-transition-css.html">
 
+<link rel="import" href="/dist/loading-wave/loading-wave.html">
+
 <link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-scaffolding">
 <link rel="import" href="/component/rf-login">
@@ -43,6 +45,10 @@
                 text-overflow: ellipsis;
             }
 
+            loading-wave {
+                margin: 20px;
+            }
+
         </style>
         <core-animated-pages selected="{{ selected }}" transitions="cross-fade cross-fade-delayed scale-up slide-up slide-up-offscreen slide-down tile-cascade hero-transition" fit class="{{ {wide: wide} | tokenList }}">
             <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
@@ -66,13 +72,20 @@
                 <paper-item label="Sign Out" class="drawer-content" on-tap="{{ onSignOut }}"></paper-item>
 
                 <div class="main-content">
-                    <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}">
-                        <template repeat="{{ article in currentFeed.Articles }}">
-                            <li class="{{ {read: article.Read, favorite: article.Favorite} | tokenList }}" id="{{ article.Id }}">
-                                <a href="#" title="{{ article.Title }}">{{ article.Title }}</a>
-                            </li>
-                        </template>
-                    </rf-content-list>
+                    <template if="{{ loadingArticles }}">
+                        <div layout vertical center>
+                            <loading-wave background="#f8f8f8"></loading-wave>
+                        </div>
+                    </template>
+                    <template if="{{ !loadingArticles }}">
+                        <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}">
+                            <template repeat="{{ article in currentFeed.Articles }}">
+                                <li class="{{ {read: article.Read, favorite: article.Favorite} | tokenList }}" id="{{ article.Id }}">
+                                    <a href="#" title="{{ article.Title }}">{{ article.Title }}</a>
+                                </li>
+                            </template>
+                        </rf-content-list>
+                    </template>
                 </div>
             </rf-scaffolding>
 
@@ -81,6 +94,7 @@
 
         <rf-api id="auth-check" pathAction="auth" on-rf-api-complete="{{ onAuthCheckComplete }}" user="{{ user }}"></rf-api>
         <rf-api id="all-feeds" pathAction="feed/all" on-rf-api-response="{{ onAllFeedsResponse }}" user="{{ user }}"></rf-api>
+        <rf-api id="feed-articles" pathAction="feed/{{ currentFeedId }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}"></rf-api>
 
         <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
         <core-localstorage name="{{ user.login }}-settings" id="user-settings-storage" value="{{userSettings}}" on-core-localstorage-load="{{ onUserSettingsLoad }}"></core-localstorage>
@@ -113,6 +127,8 @@
         userSettings: {},
         currentFeedId: null,
         currentFeed: null,
+        loadingArticles: false,
+        loadingArticlesTime: 0,
         feedIdMap: {},
 
         created: function() {
@@ -139,6 +155,14 @@
                 this.currentFeed = createAllPseudoFeed();
             } else {
                 this.currentFeed = this.feedIdMap[newValue];
+            }
+        },
+
+        currentFeedChanged: function(oldValue, newValue) {
+            if (newValue) {
+                this.loadingArticles = true;
+                this.loadingArticlesTime = new Date().getTime();
+                this.$['feed-articles'].go();
             }
         },
 
@@ -224,6 +248,18 @@
 
         onFeedRefresh: function(event, detail, sender) {
             console.log(event, detail, sender);
+        },
+
+        onFeedArticlesResponse: function(event, data) {
+            if (data.response) {
+                var elapsed = new Date().getTime() - this.loadingArticlesTime,
+                    t = 1000 - elapsed;
+
+                this.async(function() {
+                    this.currentFeed.Articles = data.response.Articles;
+                    this.loadingArticles = false;
+                }, null, t > 0 ? t : 0)
+            }
         }
     });
 })();
