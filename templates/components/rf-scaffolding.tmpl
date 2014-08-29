@@ -13,7 +13,16 @@
         <style>
             core-toolbar {
                 background-color: #558AE0;
+                color: white;
             }
+            core-drawer-panel:not(.wide) core-toolbar {
+                height: 48px;
+                font-size: 1.2em;
+            }
+            core-drawer-panel:not(.wide) core-toolbar /deep/ .toolbar-tools {
+                height: 48px;
+            }
+
             core-drawer-panel.wide #navicon {
               display: none;
             }
@@ -58,10 +67,6 @@
                 margin-top: -10px;
                 line-height: 14px;
                 font-size: 12px;
-            }
-
-            .not(.wide) /deep/ core-toolbar {
-                height: 48px;
             }
 
         </style>
