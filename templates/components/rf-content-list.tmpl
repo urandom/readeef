@@ -5,16 +5,20 @@
 <polymer-element name="rf-content-list" attributes="wide user feed feeds">
     <template bind="{{ wide as wide }}">
         <style>
-            core-list .article {
+            .card {
+                background-color: #fff;
+                box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.16);
+                border-radius: 3px;
+                margin: 0 8px 8px;
+                padding: 8px;
                 height: 36px;
                 white-space: nowrap;
                 text-overflow: ellipsis;
                 overflow: hidden;
-                padding: 8px;
-                margin: 8px;
                 box-sizing: border-box;
-                background-color: #fff;
-                box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.16);
+            }
+            core-list .article {
+                height: 44px;
             }
 
             .title-wrapper {
@@ -52,12 +56,14 @@
         </style>
         <core-list data="{{ articles }}" height="44" id="articles-list" on-core-activate="{{ onArticleActivate }}">
             <template>
-                <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}" layout horizontal>
-                    <div class="feed-origin" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</div>
-                    <span flex class="title-wrapper">
-                        <span class="title">{{ Title }}</span>
-                        <span flex class="short-description">{{ ShortDescription }}</span>
-                    </span>
+                <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}">
+                    <div class="card" layout horizontal>
+                        <div class="feed-origin" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</div>
+                        <span flex class="title-wrapper">
+                            <span class="title">{{ Title }}</span>
+                            <span flex class="short-description">{{ ShortDescription }}</span>
+                        </span>
+                    </div>
                 </div>
             </template>
         </core-list>
