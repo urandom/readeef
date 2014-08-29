@@ -10,12 +10,17 @@
                 white-space: nowrap;
                 text-overflow: ellipsis;
                 overflow: hidden;
-                overflow: hidden;
                 padding: 8px 24px;
                 box-sizing: border-box;
             }
 
-            .article .title {
+            .title-wrapper {
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                overflow: hidden;
+            }
+
+            .title {
                 font-size: 14px;
                 line-height: 20px;
             }
@@ -24,14 +29,14 @@
                 font-weight: bold;
             }
 
-            .article .short-description {
+            .short-description {
                 font-size: 10px;
                 line-height: 20px;
                 padding-left: 1em;
                 font-weight: 200;
             }
 
-            .article .feed-origin {
+            .feed-origin {
                 font-size: 8px;
                 line-height: 20px;
                 font-weight: 200;
@@ -43,8 +48,8 @@
             <template>
                 <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}" layout horizontal>
                     <span class="feed-origin" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</span>
-                    <span flex class="title">
-                        {{ Title }}
+                    <span flex class="title-wrapper">
+                        <span class="title">{{ Title }}</span>
                         <span flex class="short-description">{{ ShortDescription }}</span>
                     </span>
                 </div>

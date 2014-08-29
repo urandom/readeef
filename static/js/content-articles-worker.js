@@ -4,6 +4,7 @@ self.addEventListener('message', function(event) {
 
     for (var i = 0, a; a = current.Articles[i]; ++i) {
         a.ShortDescription = a.Description.replace(/<!--.*?-->/g, '')
+            .replace(/<script.*?<\/script>/, '')
             .replace(/<\w[^>]*>/g, '').replace(/<\/[^>]*>/g, '').trim().replace(/\s\s+/g, ' ');
 
         if (current.Id == "__all__") {

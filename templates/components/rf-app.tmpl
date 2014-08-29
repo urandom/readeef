@@ -147,10 +147,12 @@
         },
 
         currentFeedIdChanged: function(oldValue, newValue) {
-            if (newValue == "__all__") {
-                this.currentFeed = createAllPseudoFeed();
-            } else {
-                this.currentFeed = this.feedIdMap[newValue];
+            if (this.feeds.length) {
+                if (newValue == "__all__") {
+                    this.currentFeed = createAllPseudoFeed();
+                } else {
+                    this.currentFeed = this.feedIdMap[newValue];
+                }
             }
         },
 
@@ -169,7 +171,7 @@
             });
 
             if (!this.currentFeed && this.currentFeedId) {
-                this.currentFeed = this.feedIdMap[this.currentFeedId];
+                this.currentFeedIdChanged(this.currentFeedId, this.currentFeedId);
             }
         },
 
