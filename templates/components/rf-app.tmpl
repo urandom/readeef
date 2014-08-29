@@ -128,7 +128,6 @@
         currentFeedId: null,
         currentFeed: null,
         loadingArticles: false,
-        loadingArticlesTime: 0,
         feedIdMap: {},
 
         created: function() {
@@ -161,7 +160,6 @@
         currentFeedChanged: function(oldValue, newValue) {
             if (newValue) {
                 this.loadingArticles = true;
-                this.loadingArticlesTime = new Date().getTime();
                 this.$['feed-articles'].go();
             }
         },
@@ -251,13 +249,10 @@
 
         onFeedArticlesResponse: function(event, data) {
             if (data.response) {
-                var elapsed = new Date().getTime() - this.loadingArticlesTime,
-                    t = 1000 - elapsed;
-
                 this.async(function() {
                     this.currentFeed.Articles = data.response.Articles;
                     this.loadingArticles = false;
-                }, null, t > 0 ? t : 0)
+                });
             }
         }
     });
