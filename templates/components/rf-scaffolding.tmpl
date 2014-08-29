@@ -60,6 +60,10 @@
                 font-size: 12px;
             }
 
+            .not(.wide) /deep/ core-toolbar {
+                height: 48px;
+            }
+
         </style>
         <core-drawer-panel id="drawer-panel" class="{{ {wide: wide} | tokenList }}" responsiveWidth="768px">
             <core-header-panel drawer>

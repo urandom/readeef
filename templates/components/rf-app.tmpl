@@ -182,9 +182,8 @@
             if (response.response == 403) {
                 if (this.selected == 'login') {
                     this.$.login.invalid = true;
-                } else {
-                    this.selected = 'login';
                 }
+                this.user = null;
             } else if (response.response == 200) {
                 this.user.authTime = new Date().getTime();
 
