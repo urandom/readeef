@@ -10,8 +10,11 @@
                 white-space: nowrap;
                 text-overflow: ellipsis;
                 overflow: hidden;
-                padding: 8px 24px;
+                padding: 8px;
+                margin: 8px;
                 box-sizing: border-box;
+                background-color: #fff;
+                box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.16);
             }
 
             .title-wrapper {
@@ -44,7 +47,7 @@
             }
 
         </style>
-        <core-list data="{{ articles }}" height="36" id="articles-list" on-core-activate="{{ onArticleActivate }}">
+        <core-list data="{{ articles }}" height="44" id="articles-list" on-core-activate="{{ onArticleActivate }}">
             <template>
                 <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}" layout horizontal>
                     <span class="feed-origin" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</span>
