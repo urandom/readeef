@@ -1,34 +1,68 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
-<link rel="import" href="/dist/core-selection/core-selection.html">
+<link rel="import" href="/dist/core-list/core-list.html">
 
 <polymer-element name="rf-content-list" attributes="wide user feed">
     <template bind="{{ wide as wide }}">
         <style>
-            polyfill-next-selector {
-                content: ':host > .selected';
+            core-list .article {
+                height: 36px;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                overflow: hidden;
+                overflow: hidden;
+                padding: 8px 24px;
+                box-sizing: border-box;
             }
-            ::content > .selected {
+
+            .article .title {
+                font-size: 14px;
+                line-height: 20px;
+            }
+
+            .article.selected .title {
                 font-weight: bold;
-                font-style: italic;
             }
+
+            .article .short-description {
+                font-size: 10px;
+                line-height: 20px;
+                padding-left: 1em;
+                font-weight: 200;
+            }
+
         </style>
-        <ul on-tap="{{ onItemTap }}">
-            <content></content>
-        </ul>
-        <core-selection id="selection" on-core-select="{{ onSelect }}"></core-selection>
+        <core-list data="{{ articles }}" height="36" id="articles-list" on-core-activate="{{ onArticleActivate }}">
+            <template>
+                <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}">
+                    <span flex class="title">{{ Title }}</span><span flex class="short-description">{{ ShortDescription }}</span>
+                </div>
+            </template>
+        </core-list>
     </template>
     <script>
 (function() {
     "use strict";
 
     Polymer('rf-content-list', {
-        onItemTap: function(event) {
-            this.$.selection.select(event.target);
+        created: function() {
+            this.articles = [];
         },
 
-        onSelect: function(event, detail) {
-            detail.item.classList.toggle("selected", detail.isSelected);
+        feedChanged: function(oldValue, newValue) {
+            var self = this;
+
+            if (newValue.Articles) {
+                var worker = new Worker('/js/content-articles-worker.js');
+                worker.addEventListener('message', function(event) {
+                    self.articles = event.data.articles;
+                });
+                worker.postMessage(newValue.Articles);
+            }
+        },
+
+        onArticleActivate: function(event, detail) {
+            console.log(detail);
         }
     });
 })();

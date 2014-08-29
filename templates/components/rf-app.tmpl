@@ -81,13 +81,7 @@
                         </div>
                     </template>
                     <template if="{{ !loadingArticles }}">
-                        <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}">
-                            <template repeat="{{ article in currentFeed.Articles }}">
-                                <li class="{{ {read: article.Read, favorite: article.Favorite} | tokenList }}" id="{{ article.Id }}">
-                                    <a href="#" title="{{ article.Title }}">{{ article.Title }}</a>
-                                </li>
-                            </template>
-                        </rf-content-list>
+                        <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}"></rf-content-list>
                     </template>
                 </div>
             </rf-scaffolding>
