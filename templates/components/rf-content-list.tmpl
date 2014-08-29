@@ -5,20 +5,24 @@
 <polymer-element name="rf-content-list" attributes="wide user feed feeds">
     <template bind="{{ wide as wide }}">
         <style>
+            core-list {
+                padding-top: 8px;
+                overflow: hidden;
+            }
+
             .card {
                 background-color: #fff;
                 box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.16);
                 border-radius: 3px;
                 margin: 0 8px 8px;
                 padding: 8px;
-                height: 36px;
-                white-space: nowrap;
-                text-overflow: ellipsis;
-                overflow: hidden;
-                box-sizing: border-box;
             }
-            core-list .article {
+            .article {
                 height: 44px;
+            }
+
+            .article.selected {
+                height: auto;
             }
 
             .title-wrapper {
@@ -27,12 +31,17 @@
                 overflow: hidden;
             }
 
+            .article.selected .title-wrapper {
+                padding-left: 94px;
+            }
+
             .title {
                 font-size: 14px;
                 line-height: 20px;
             }
 
             .article.selected .title {
+                font-size: 16px;
                 font-weight: bold;
             }
 
@@ -51,18 +60,32 @@
                 width: 80px;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .article-description {
+                padding: 16px 94px;
+            }
+
+            .article-link {
+                padding: 16px 94px;
             }
 
         </style>
-        <core-list data="{{ articles }}" height="44" id="articles-list" on-core-activate="{{ onArticleActivate }}">
+        <core-list data="{{ articles }}" height="{{ itemHeight }}" id="articles-list" on-core-activate="{{ onArticleActivate }}">
             <template>
                 <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}">
-                    <div class="card" layout horizontal>
-                        <div class="feed-origin" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</div>
-                        <span flex class="title-wrapper">
-                            <span class="title">{{ Title }}</span>
-                            <span flex class="short-description">{{ ShortDescription }}</span>
-                        </span>
+                    <div class="card" layout vertical>
+                        <div layout horizontal>
+                            <div class="feed-origin" hidden?="{{ !FeedOrigin || selected }}">{{ FeedOrigin }}</div>
+                            <span flex class="title-wrapper">
+                                <span class="title">{{ Title }}</span>
+                                <span flex class="short-description" hidden?="{{ selected }}">{{ ShortDescription }}</span>
+                            </span>
+                        </div>
+                        <div hidden class="article-description">
+                        </div>
+                        <a hidden href="{{ Link }}" target="_blank" class="article-link">View the article</a>
                     </div>
                 </div>
             </template>
@@ -73,6 +96,9 @@
     "use strict";
 
     Polymer('rf-content-list', {
+        itemHeight: 44,
+        listHeight: 0,
+
         created: function() {
             this.articles = [];
         },
@@ -80,6 +106,7 @@
         feedChanged: function(oldValue, newValue) {
             var self = this;
 
+            this.listHeight = 0;
             if (newValue.Articles) {
                 var worker = new Worker('/js/content-articles-worker.js'),
                     data = {current: newValue};
@@ -91,11 +118,49 @@
                     data.feeds = this.feeds;
                 }
                 worker.postMessage(data);
+            } else if (this.articles.length) {
+                this.articles = [];
             }
         },
 
         onArticleActivate: function(event, detail) {
-            console.log(detail);
+            var description = detail.item.querySelector('.article-description'),
+                link = detail.item.querySelector('.article-link'),
+                list = this.$['articles-list'],
+                previous = this.$['articles-list'].querySelectorAll(
+                    '.article-description:not([hidden]), .article-link:not([hidden])'
+                ), style, height, delta, resizeFunc;
+
+            for (var i = 0, e; e = previous[i]; ++i) {
+                e.hidden = true;
+            }
+
+            if (!this.listHeight) {
+                this.listHeight = list.offsetHeight;
+            }
+
+            description.innerHTML = detail.data.Description;
+
+            description.hidden = false;
+            link.hidden = false;
+
+            resizeFunc = function() {
+                style = getComputedStyle(detail.item);
+                height = parseInt(style.getPropertyValue('height'))
+
+                delta = height - this.itemHeight;
+
+                list.style.height = this.listHeight + delta + "px";
+
+                var images = description.querySelectorAll('img')
+                    .array().filter(function(img) { return !img.complete; });
+
+                if (images.length) {
+                    images[0].addEventListener('load', resizeFunc.bind(this));
+                }
+            };
+
+            this.async(resizeFunc);
         }
     });
 })();

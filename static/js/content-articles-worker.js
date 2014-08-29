@@ -3,8 +3,13 @@ self.addEventListener('message', function(event) {
     var articles = [], current = event.data.current, feeds = event.data.feeds, feedMap;
 
     for (var i = 0, a; a = current.Articles[i]; ++i) {
-        a.ShortDescription = a.Description.replace(/<!--.*?-->/g, '')
-            .replace(/<script.*?<\/script>/, '')
+        a.Description = a.Description.replace(/<!--.*?-->/g, '').replace(/<script.*?<\/script\s*>/g, '')
+            .replace(/<iframe.*?<\/iframe\s*>/g, '')
+            .replace(/<frame.*?<\/frame\s*>/g, '')
+            .replace(/(<\w[^>]*?["'])javascript:([^>]*>)/g, '$1$2')
+            .replace(/(<\w[^>]*?)\s+on\w+=(['"]).*?\2([^>]*>)/g, '$1$3');
+
+        a.ShortDescription = a.Description
             .replace(/<\w[^>]*>/g, '').replace(/<\/[^>]*>/g, '').trim().replace(/\s\s+/g, ' ');
 
         if (current.Id == "__all__") {
