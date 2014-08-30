@@ -147,12 +147,6 @@
                 e.hidden = true;
             }
 
-            if (detail.item.querySelector('.article-description') == previous[0]) {
-                list.$.selection.toggle(detail.data);
-                list.style.height = this.listHeight + "px";
-                return;
-            }
-
             if (!this.listHeight) {
                 this.listHeight = list.offsetHeight;
             }
