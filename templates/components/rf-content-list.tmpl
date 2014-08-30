@@ -31,10 +31,6 @@
                 overflow: hidden;
             }
 
-            .article.selected .title-wrapper {
-                padding-left: 94px;
-            }
-
             .title {
                 font-size: 14px;
                 line-height: 20px;
@@ -63,12 +59,14 @@
                 white-space: nowrap;
             }
 
-            .article-description {
+            .article-content {
                 padding: 16px 94px;
             }
-
+            core-list:not(.wide) .article-content {
+                padding: 8px;
+            }
             .article-link {
-                padding: 16px 94px;
+                padding-top: 16px;
             }
 
             .article-description img, 
@@ -78,20 +76,22 @@
             }
 
         </style>
-        <core-list data="{{ articles }}" height="{{ itemHeight }}" id="articles-list" on-core-activate="{{ onArticleActivate }}">
+        <core-list class="{{ {wide: wide} | tokenList }}" data="{{ articles }}" height="{{ itemHeight }}" id="articles-list" on-core-activate="{{ onArticleActivate }}">
             <template>
                 <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}">
                     <div class="card" layout vertical>
                         <div layout horizontal>
-                            <div class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin || selected }}">{{ FeedOrigin }}</div>
+                            <div class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</div>
                             <span flex class="title-wrapper">
                                 <span class="title" title="{{ Title }}">{{ Title }}</span>
                                 <span flex class="short-description" hidden?="{{ selected }}">{{ ShortDescription }}</span>
                             </span>
                         </div>
-                        <div hidden class="article-description">
+                        <div hidden class="article-content">
+                            <div class="article-description">
+                            </div>
+                            <a href="{{ Link }}" target="_blank" class="article-link">View the article</a>
                         </div>
-                        <a hidden href="{{ Link }}" target="_blank" class="article-link">View the article</a>
                     </div>
                 </div>
             </template>
@@ -117,12 +117,22 @@
 
            var self = this;
 
-           document.querySelector('rf-app').$.scaffolding.$['content-panel'].addEventListener('scroll', function(event) {
+           document.querySelector('rf-app').$.scaffolding.$['content-panel']
+               .addEventListener('scroll', function(event) {
+
                if (!self.articles.length) {
                    return;
                }
 
                if (this.scroller.offsetHeight + this.scroller.scrollTop + 50 > this.scroller.scrollHeight) {
+                   var previous = self.$['articles-list'].querySelector(
+                       '.article-content:not([hidden])'
+                   );
+
+                   if (previous) {
+                       previous.hidden;
+                   }
+
                    self.asyncFire('rf-request-articles');
                }
            });
@@ -168,25 +178,30 @@
         },
 
         onArticleActivate: function(event, detail) {
-            var description = detail.item.querySelector('.article-description'),
-                link = detail.item.querySelector('.article-link'),
+            var content = detail.item.querySelector('.article-content'),
                 list = this.$['articles-list'],
-                previous = this.$['articles-list'].querySelectorAll(
-                    '.article-description:not([hidden]), .article-link:not([hidden])'
+                forward = false,
+                previous = this.$['articles-list'].querySelector(
+                    '.article-content:not([hidden])'
                 ), style, height, delta, resizeFunc;
 
-            for (var i = 0, e; e = previous[i]; ++i) {
-                e.hidden = true;
+            if (previous) {
+                var article = previous.closest('.article'),
+                    articles = previous.closest('core-list').querySelectorAll('.article').array();
+
+                if (articles.indexOf(article) < articles.indexOf(detail.item)) {
+                    forward = true;
+                }
+
+                previous.hidden = true;
             }
 
             if (!this.listHeight) {
                 this.listHeight = list.offsetHeight;
             }
 
-            description.innerHTML = detail.data.Description;
-
-            description.hidden = false;
-            link.hidden = false;
+            content.querySelector('.article-description').innerHTML = detail.data.Description;
+            content.hidden = false;
 
             resizeFunc = function() {
                 style = getComputedStyle(detail.item);
@@ -196,7 +211,7 @@
 
                 list.style.height = this.listHeight + delta + "px";
 
-                var images = description.querySelectorAll('img')
+                var images = content.querySelectorAll('img')
                     .array().filter(function(img) { return !img.complete; });
 
                 if (images.length) {
@@ -205,6 +220,10 @@
             };
 
             this.async(resizeFunc);
+
+            if (forward) {
+                detail.item.offsetParent.scrollTop = detail.item.offsetTop;
+            }
         }
     });
 })();
