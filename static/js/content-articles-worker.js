@@ -2,12 +2,18 @@ self.addEventListener('message', function(event) {
     "use strict";
     var articles = [], current = event.data.current, feeds = event.data.feeds, feedMap;
 
-    for (var i = 0, a; a = current.Articles[i]; ++i) {
-        a.Description = a.Description.replace(/<!--.*?-->/g, '').replace(/<script.*?<\/script\s*>/g, '')
-            .replace(/<iframe.*?<\/iframe\s*>/g, '')
-            .replace(/<frame.*?<\/frame\s*>/g, '')
-            .replace(/(<\w[^>]*?["'])javascript:([^>]*>)/g, '$1$2')
-            .replace(/(<\w[^>]*?)\s+on\w+=(['"]).*?\2([^>]*>)/g, '$1$3');
+    for (var i = 0, a, pre; a = current.Articles[i]; ++i) {
+        a.Description = a.Description.replace(/<!--.*?-->/g, '').replace(/<script.*?<\/script\s*>/g, '');
+
+        pre = "";
+        while (pre != a.Description) {
+            if (pre) {
+                a.Description = pre;
+            }
+
+            pre = a.Description.replace(/(<\w[^>]*?["'])javascript:([^>]*>)/g, '$1$2')
+                .replace(/(<\w[^>]*?)\s+on\w+=(['"]).*?\2([^>]*>)/g, '$1$3');
+        }
 
         a.ShortDescription = a.Description
             .replace(/<\w[^>]*>/g, '').replace(/<\/[^>]*>/g, '').trim().replace(/\s\s+/g, ' ');

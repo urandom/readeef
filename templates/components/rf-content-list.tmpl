@@ -71,6 +71,12 @@
                 padding: 16px 94px;
             }
 
+            .article-description img, 
+            .article-description object, 
+            .article-description iframe {
+                max-width: 100%;
+            }
+
         </style>
         <core-list data="{{ articles }}" height="{{ itemHeight }}" id="articles-list" on-core-activate="{{ onArticleActivate }}">
             <template>
@@ -103,6 +109,12 @@
             this.articles = [];
         },
 
+        /* TODO: enable again once feasible
+        domReady: function() {
+            this.$['articles-list'].scrollTarget = document.querySelector('rf-app').$.scaffolding.$['content-panel'];
+        },
+        */
+
         feedChanged: function(oldValue, newValue) {
             var self = this;
 
@@ -133,6 +145,12 @@
 
             for (var i = 0, e; e = previous[i]; ++i) {
                 e.hidden = true;
+            }
+
+            if (detail.item.querySelector('.article-description') == previous[0]) {
+                list.$.selection.toggle(detail.data);
+                list.style.height = this.listHeight + "px";
+                return;
             }
 
             if (!this.listHeight) {
