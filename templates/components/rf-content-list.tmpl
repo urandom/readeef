@@ -83,9 +83,9 @@
                 <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}">
                     <div class="card" layout vertical>
                         <div layout horizontal>
-                            <div class="feed-origin" hidden?="{{ !FeedOrigin || selected }}">{{ FeedOrigin }}</div>
+                            <div class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin || selected }}">{{ FeedOrigin }}</div>
                             <span flex class="title-wrapper">
-                                <span class="title">{{ Title }}</span>
+                                <span class="title" title="{{ Title }}">{{ Title }}</span>
                                 <span flex class="short-description" hidden?="{{ selected }}">{{ ShortDescription }}</span>
                             </span>
                         </div>
@@ -104,34 +104,66 @@
     Polymer('rf-content-list', {
         itemHeight: 44,
         listHeight: 0,
+        pathObserver: null,
 
         created: function() {
             this.articles = [];
         },
 
-        /* TODO: enable again once feasible
         domReady: function() {
+            /* TODO: enable again once feasible
             this.$['articles-list'].scrollTarget = document.querySelector('rf-app').$.scaffolding.$['content-panel'];
+            */
+
+           var self = this;
+
+           document.querySelector('rf-app').$.scaffolding.$['content-panel'].addEventListener('scroll', function(event) {
+               if (!self.articles.length) {
+                   return;
+               }
+
+               if (this.scroller.offsetHeight + this.scroller.scrollTop + 50 > this.scroller.scrollHeight) {
+                   self.asyncFire('rf-request-articles');
+               }
+           });
         },
-        */
 
         feedChanged: function(oldValue, newValue) {
-            var self = this;
-
             this.listHeight = 0;
-            if (newValue.Articles) {
-                var worker = new Worker('/js/content-articles-worker.js'),
-                    data = {current: newValue};
 
-                worker.addEventListener('message', function(event) {
-                    self.articles = event.data.articles;
-                });
-                if (newValue.Id == "__all__") {
-                    data.feeds = this.feeds;
+            var processArticles = (function processArticles() {
+                if (this.feed.Articles && this.feed.Articles.length) {
+                    var worker = new Worker('/js/content-articles-worker.js'),
+                        data = {current: this.feed};
+
+                    worker.addEventListener('message', function(event) {
+                        this.articles = event.data.articles;
+                    }.bind(this));
+                    if (this.feed.Id == "__all__") {
+                        data.feeds = this.feeds;
+                    }
+                    worker.postMessage(data);
+                } else if (this.articles.length) {
+                    this.articles = [];
                 }
-                worker.postMessage(data);
-            } else if (this.articles.length) {
-                this.articles = [];
+            }).bind(this);
+
+            if (newValue) {
+                processArticles();
+
+                if (this.pathObserver) {
+                    this.pathObserver.close();
+                }
+
+                this.pathObserver = new PathObserver(newValue, 'Articles');
+                this.pathObserver.open(function(newValue) {
+                    if (newValue.length == this.pathObserver._articleLength) {
+                        return;
+                    }
+
+                    this.pathObserver._articleLength = newValue.length;
+                    processArticles();
+                }.bind(this));
             }
         },
 
