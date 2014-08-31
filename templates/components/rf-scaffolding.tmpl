@@ -10,7 +10,7 @@
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-menu-button/paper-menu-button.html">
 
-<polymer-element name="rf-scaffolding" attributes="wide user userSettings feed article">
+<polymer-element name="rf-scaffolding" attributes="wide user settings feed article display">
     <template>
         <style>
             core-toolbar {
@@ -86,10 +86,10 @@
 
         </style>
         <template id="article-list-menu-items">
-            <paper-item label="Older first" hidden?="{{ !userSettings.newerFirst }}" on-tap="{{ onOlderFirst }}"></paper-item>
-            <paper-item label="Newer first" hidden?="{{ userSettings.newerFirst }}" on-tap="{{ onNewerFirst }}"></paper-item>
-            <paper-item label="Unread only" hidden?="{{ userSettings.unreadOnly }}" on-tap="{{ onUnreadOnly }}"></paper-item>
-            <paper-item label="Read and unread" hidden?="{{ !userSettings.unreadOnly }}" on-tap="{{ onReadAndUnread }}"></paper-item>
+            <paper-item label="Older first" hidden?="{{ !settings.newerFirst }}" on-tap="{{ onOlderFirst }}"></paper-item>
+            <paper-item label="Newer first" hidden?="{{ settings.newerFirst }}" on-tap="{{ onNewerFirst }}"></paper-item>
+            <paper-item label="Unread only" hidden?="{{ settings.unreadOnly }}" on-tap="{{ onUnreadOnly }}"></paper-item>
+            <paper-item label="Read and unread" hidden?="{{ !settings.unreadOnly }}" on-tap="{{ onReadAndUnread }}"></paper-item>
             <paper-item label="Mark all as read" on-tap="{{ onMarkAllAsRead }}"></paper-item>
         </template>
         <core-drawer-panel id="drawer-panel" class="{{ {wide: wide} | tokenList }}" responsiveWidth="768px">
@@ -104,37 +104,38 @@
 
             <core-header-panel main mode="{{ {'cover': wide } | tokenList }}" shadow id="content-panel">
                 <core-toolbar id="mainheader">
-                    <paper-icon-button id="navicon" icon="menu" hidden?="{{ article }}"></paper-icon-button>
-                    <paper-icon-button id="back-menu" icon="arrow-back" hidden?="{{ !article }}" on-tap="{{ onArticleBack }}"></paper-icon-button>
-                    <div flex hidden?="{{ wide }}" class="title">{{ feed.Title }}</div>
-                    <paper-icon-button id="previous-article-menu" icon="hardware:keyboard-arrow-left" hidden?="{{ !article || article.First }}" on-tap="{{ onArticlePrevious }}"></paper-icon-button>
-                    <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" hidden?="{{ !article || article.Last }}" on-tap="{{ onArticleNext }}"></paper-icon-button>
-                    <paper-icon-button id="refresh-menu" icon="refresh" on-tap="{{ onRefresh }}" hidden?="{{ article }}"></paper-icon-button>
-                    <paper-menu-button icon="more-vert" halign="right" hidden?="{{ article }}">
+                    <paper-icon-button id="navicon" icon="menu" hidden?="{{ display != 'feed' || article }}"></paper-icon-button>
+                    <paper-icon-button id="back-menu" icon="arrow-back" hidden?="{{ display == 'feed' && !article }}" on-tap="{{ onArticleBack }}"></paper-icon-button>
+                    <div flex hidden?="{{ wide }}" class="title">{{ display == 'feed' ? feed.Title : 'Settings' }}</div>
+                    <paper-icon-button id="previous-article-menu" icon="hardware:keyboard-arrow-left" hidden?="{{ display != 'feed' || !article || article.First }}" on-tap="{{ onArticlePrevious }}"></paper-icon-button>
+                    <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" hidden?="{{ display != 'feed' || !article || article.Last }}" on-tap="{{ onArticleNext }}"></paper-icon-button>
+                    <paper-icon-button id="refresh-menu" icon="refresh" on-tap="{{ onRefresh }}" hidden?="{{ display != 'feed' || article }}"></paper-icon-button>
+
+                    <paper-menu-button icon="more-vert" halign="right" hidden?="{{ display != 'feed' || article }}">
                         <template bind ref="article-list-menu-items"></template>
                     </paper-menu-button>
 
-                    <paper-fab class="refreshButton bottom" icon="refresh" hidden?="{{ !wide }}" on-tap="{{ onRefresh }}"></paper-fab>
+                    <paper-fab class="refreshButton bottom" icon="refresh" hidden?="{{ display != 'feed' || !wide }}" on-tap="{{ onRefresh }}"></paper-fab>
                 </core-toolbar>
                 <div class="content">
                     <h1 class="content-label" hidden?="{{ !wide }}" layout horizontal>
-                        <paper-icon-button id="back-title" icon="arrow-back" class="title-icon" style="opacity: {{ article ? 100 : 0 }}" on-tap="{{ onArticleBack }}"></paper-icon-button>
+                        <paper-icon-button id="back-title" icon="arrow-back" class="title-icon" style="opacity: {{ display != 'feed' || article ? 100 : 0 }}" on-tap="{{ onArticleBack }}"></paper-icon-button>
                         <div flex layout vertical>
-                            <template if="{{ feed.SiteLink }}">
+                            <template if="{{ display == 'feed' && feed.SiteLink }}">
                                 <a href="{{ feed.SiteLink }}" target="feed-homepage">
                                     {{ feed.Title }}
                                 </a>
                             </template>
-                            <template if="{{ !feed.SiteLink }}">
-                                {{ feed.Title }}
+                            <template if="{{ display != 'feed' || !feed.SiteLink }}">
+                                {{ display == 'feed' ? feed.Title : 'Settings' }}
                             </template>
-                            <template if="{{ feed.Description }}">
+                            <template if="{{ display == 'feed' && feed.Description }}">
                                 <br><small>{{ feed.Description }}</small>
                             </template>
                         </div>
-                        <paper-icon-button id="previous-article-title" icon="hardware:keyboard-arrow-left" class="title-icon" style="opacity: {{ article && !article.First ? 100 : 0 }}" on-tap="{{ onArticlePrevious }}"></paper-icon-button>
-                        <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" class="title-icon" style="opacity: {{ article && !article.Last ? 100 : 0 }}" on-tap="{{ onArticleNext }}"></paper-icon-button>
-                        <paper-menu-button icon="more-vert" halign="right" hidden?="{{ article }}" class="title-icon">
+                        <paper-icon-button id="previous-article-title" icon="hardware:keyboard-arrow-left" class="title-icon" style="opacity: {{ article && !article.First ? 100 : 0 }}" on-tap="{{ onArticlePrevious }}" hidden?="{{ display != 'feed' }}"></paper-icon-button>
+                        <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" class="title-icon" style="opacity: {{ article && !article.Last ? 100 : 0 }}" on-tap="{{ onArticleNext }}" hidden?="{{ display != 'feed' }}"></paper-icon-button>
+                        <paper-menu-button icon="more-vert" halign="right" hidden?="{{ display != 'feed' || article }}" class="title-icon">
                             <template bind ref="article-list-menu-items"></template>
                         </paper-menu-button>
                     </h1>
@@ -149,6 +150,8 @@
     "use strict";
 
     Polymer('rf-scaffolding', {
+        display: "feed",
+
         ready: function() {
             var drawerPanel = this.$['drawer-panel'];
 
@@ -169,9 +172,13 @@
             event.stopPropagation();
             event.preventDefault();
 
-            this.async(function() {
-                this.article = null;
-            });
+            if (this.display == 'feed') {
+                this.async(function() {
+                    this.article = null;
+                });
+            } else {
+                this.display = 'feed';
+            }
         },
 
         onArticlePrevious: function() {
@@ -183,27 +190,27 @@
         },
 
         onOlderFirst: function() {
-            var settings = Polymer.extend({}, this.userSettings);
+            var settings = Polymer.extend({}, this.settings);
             settings.newerFirst = false;
-            this.userSettings = settings;
+            this.settings = settings;
         },
 
         onNewerFirst: function() {
-            var settings = Polymer.extend({}, this.userSettings);
+            var settings = Polymer.extend({}, this.settings);
             settings.newerFirst = true;
-            this.userSettings = settings;
+            this.settings = settings;
         },
 
         onUnreadOnly: function() {
-            var settings = Polymer.extend({}, this.userSettings);
+            var settings = Polymer.extend({}, this.settings);
             settings.unreadOnly = true;
-            this.userSettings = settings;
+            this.settings = settings;
         },
 
         onReadAndUnread: function() {
-            var settings = Polymer.extend({}, this.userSettings);
+            var settings = Polymer.extend({}, this.settings);
             settings.unreadOnly = false;
-            this.userSettings = settings;
+            this.settings = settings;
         },
 
         onMarkAllAsRead: function() {

@@ -58,7 +58,7 @@
             <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
             </core-overlay>
 
-            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" userSettings="{{ userSettings }}" feed="{{ currentFeed }}" article="{{ currentArticle }}">
+            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feed="{{ currentFeed }}" article="{{ currentArticle }}" display="{{ display }}">
                 <div fit class="drawer-title bottom">Feeds</div>
 
                 <paper-item label="Add feed" class="drawer-content" on-tap="{{ onAddFeed }}"></paper-item>
@@ -73,11 +73,12 @@
                     <paper-item label="{{ feed.Title }}" class="drawer-content" on-tap="{{ onFeedTap }}" title="{{ feed.Description }}" name="{{ feed.Id }}" selectable></paper-item>
                 </template>
                 <hr class="drawer-content">
-                <paper-item label="Settings" class="drawer-content"></paper-item>
+                <paper-item label="Settings" class="drawer-content" on-tap="{{ onDisplaySettings }}"></paper-item>
                 <paper-item label="Sign Out" class="drawer-content" on-tap="{{ onSignOut }}"></paper-item>
 
                 <div class="main-content">
-                    <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" hidden?="{{ loadingArticles }}"></rf-content-list>
+                    <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" hidden?="{{ display != 'feed' || loadingArticles }}"></rf-content-list>
+                    <rf-settings id="settings" wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" hidden?="{{ display == 'feed' }}"></rf-settings>
                     <template if="{{ loadingArticles || loadingMoreArticles }}">
                         <div layout vertical center>
                             <loading-wave background="#f8f8f8"></loading-wave>
@@ -144,6 +145,7 @@
         loadingMoreArticles: false,
         feedIdMap: {},
         noMoreArticles: false,
+        display: 'feed',
         limit: 50,
         offset: 0,
 
@@ -241,6 +243,10 @@
             }
         },
 
+        onDisplaySettings: function() {
+            this.display = 'settings';
+        },
+
         onSignOut: function() {
             this.user = null;
         },
@@ -260,6 +266,10 @@
         },
 
         onFeedTap: function(event) {
+            if (this.display != 'feed') {
+                this.display = 'feed';
+            }
+
             this.currentFeedId = event.target.getAttribute('name');
 
             this.userSettings.currentFeedId = this.currentFeedId;
