@@ -6,6 +6,9 @@ self.addEventListener('message', function(event) {
         articleMap = {};
 
     for (var i = 0, a; a = articles[i]; ++i) {
+        delete a.First;
+        delete a.Last;
+
         articleMap[a.Id] = a;
     }
 
@@ -14,6 +17,9 @@ self.addEventListener('message', function(event) {
             articles.push(a);
         }
     }
+
+    articles[0].First = true;
+    articles[articles.length - 1].Last = true;
 
     self.postMessage({articles: articles});
 });

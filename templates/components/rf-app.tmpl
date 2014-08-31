@@ -10,6 +10,7 @@
 <link rel="import" href="/dist/core-animated-pages/transitions/scale-up.html">
 <link rel="import" href="/dist/core-animated-pages/transitions/tile-cascade.html">
 <link rel="import" href="/dist/core-transition/core-transition-css.html">
+<link rel="import" href="/dist/core-signals/core-signals.html">
 
 <link rel="import" href="/dist/loading-wave/loading-wave.html">
 
@@ -75,7 +76,7 @@
                 <paper-item label="Sign Out" class="drawer-content" on-tap="{{ onSignOut }}"></paper-item>
 
                 <div class="main-content">
-                    <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" on-rf-request-articles="{{ onRequestArticles }}" hidden?="{{ loadingArticles }}"></rf-content-list>
+                    <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" hidden?="{{ loadingArticles }}"></rf-content-list>
                     <template if="{{ loadingArticles || loadingMoreArticles }}">
                         <div layout vertical center>
                             <loading-wave background="#f8f8f8"></loading-wave>
@@ -95,6 +96,8 @@
         <core-localstorage name="{{ user.login }}-settings" id="user-settings-storage" value="{{userSettings}}" on-core-localstorage-load="{{ onUserSettingsLoad }}"></core-localstorage>
 
         <core-media-query query="min-width: {{responsiveWidth}}" queryMatches="{{wide}}"></core-media-query>
+
+        <core-signals on-core-signal-rf-request-articles="{{ onRequestArticles }}"></core-signals>
 
         <rf-dialog-add-feed id="add-feed-dialog" wide="{{ wide }}" user="{{ user }}" on-feeds-added="{{ onFeedsAdded }}"></rf-dialog-add-feed>
     </template>

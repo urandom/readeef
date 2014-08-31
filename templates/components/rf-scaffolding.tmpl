@@ -5,6 +5,8 @@
 <link rel="import" href="/dist/core-header-panel/core-header-panel.html">
 <link rel="import" href="/dist/core-drawer-panel/core-drawer-panel.html">
 <link rel="import" href="/dist/core-icons/core-icons.html">
+<link rel="import" href="/dist/core-icons/hardware-icons.html">
+
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-menu-button/paper-menu-button.html">
 
@@ -55,8 +57,7 @@
 
             .content-label {
                 line-height: 60px;
-                padding-left: 24px;
-                padding-bottom: 12px;
+                padding: 0 24px 12px;
                 background-color: #f8f8f8;
                 letter-spacing: 0.05em;
                 margin: 0;
@@ -72,7 +73,7 @@
                 font-size: 12px;
             }
 
-            .content-label #back-title {
+            .content-label .title-icon {
                 line-height: 24px;
                 margin-top: 10px;
             }
@@ -93,12 +94,20 @@
                     <paper-icon-button id="navicon" icon="menu" hidden?="{{ article }}"></paper-icon-button>
                     <paper-icon-button id="back-menu" icon="arrow-back" hidden?="{{ !article }}" on-tap="{{ onArticleBack }}"></paper-icon-button>
                     <div flex hidden?="{{ wide }}">{{ feed.Title }}</div>
+                    <paper-icon-button id="previous-article-menu" icon="hardware:keyboard-arrow-left" hidden?="{{ !article || article.First }}" on-tap="{{ onArticlePrevious }}"></paper-icon-button>
+                    <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" hidden?="{{ !article || article.Last }}" on-tap="{{ onArticleNext }}"></paper-icon-button>
                     <paper-icon-button id="refresh-menu" icon="refresh" on-tap="{{ onRefresh }}"></paper-icon-button>
+                    <paper-menu-button icon="more-vert" halign="right">
+                        <paper-item label="Older first"></paper-item>
+                        <paper-item label="Unread only"></paper-item>
+                        <paper-item label="Mark all as read"></paper-item>
+                    </paper-menu-button>
+
                     <paper-fab class="refreshButton bottom" icon="refresh" hidden?="{{ !wide }}" on-tap="{{ onRefresh }}"></paper-fab>
                 </core-toolbar>
                 <div class="content">
                     <h1 class="content-label" hidden?="{{ !wide }}" layout horizontal>
-                        <paper-icon-button id="back-title" icon="arrow-back" style="opacity: {{ article ? 100 : 0 }}" on-tap="{{ onArticleBack }}"></paper-icon-button>
+                        <paper-icon-button id="back-title" icon="arrow-back" class="title-icon" style="opacity: {{ article ? 100 : 0 }}" on-tap="{{ onArticleBack }}"></paper-icon-button>
                         <div flex layout vertical>
                             <template if="{{ feed.SiteLink }}">
                                 <a href="{{ feed.SiteLink }}" target="feed-homepage">
@@ -112,6 +121,13 @@
                                 <br><small>{{ feed.Description }}</small>
                             </template>
                         </div>
+                        <paper-icon-button id="previous-article-title" icon="hardware:keyboard-arrow-left" class="title-icon" style="opacity: {{ article && !article.First ? 100 : 0 }}" on-tap="{{ onArticlePrevious }}"></paper-icon-button>
+                        <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" class="title-icon" style="opacity: {{ article && !article.Last ? 100 : 0 }}" on-tap="{{ onArticleNext }}"></paper-icon-button>
+                        <paper-menu-button icon="more-vert" halign="right" class="title-icon">
+                            <paper-item label="Older first"></paper-item>
+                            <paper-item label="Unread only"></paper-item>
+                            <paper-item label="Mark all as read"></paper-item>
+                        </paper-menu-button>
                     </h1>
                     <content select=".main-content"></content>
                 </div>
@@ -142,6 +158,14 @@
 
         onArticleBack: function(event) {
             this.article = null;
+        },
+
+        onArticlePrevious: function() {
+            this.fire('core-signal', {name: 'rf-previous-article'});
+        },
+
+        onArticleNext: function() {
+            this.fire('core-signal', {name: 'rf-next-article'});
         }
     });
 })();

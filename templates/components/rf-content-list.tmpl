@@ -117,8 +117,8 @@
             </section>
 
         </core-animated-pages>
-        <core-signals on-core-signal-next-article="{{ nextArticle }}"></core-signals>
-        <core-signals on-core-signal-previous-article="{{ previousArticle }}"></core-signals>
+        <core-signals on-core-signal-rf-next-article="{{ nextArticle }}"></core-signals>
+        <core-signals on-core-signal-rf-previous-article="{{ previousArticle }}"></core-signals>
     </template>
     <script>
 (function() {
@@ -168,7 +168,7 @@
                 }
 
                 if (contentPanel.scroller.offsetHeight + contentPanel.scroller.scrollTop + 50 > contentPanel.scroller.scrollHeight) {
-                    this.asyncFire('rf-request-articles');
+                    this.asyncFire('core-signal', {name: 'rf-request-articles'});
                 }
             }.bind(this));
         },
@@ -219,6 +219,10 @@
                 this.$.pages.querySelector('.article-description').innerHTML = this.article.Description;
 
                 this.$.pages.selected = 'detail';
+
+                if (newValue.Last) {
+                    this.asyncFire('core-signal', {name: 'rf-request-articles'});
+                }
             } else {
                 this.$.pages.selected = 'list';
             }
