@@ -58,7 +58,7 @@
             <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
             </core-overlay>
 
-            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" article="{{ currentArticle }}">
+            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" userSettings="{{ userSettings }}" feed="{{ currentFeed }}" article="{{ currentArticle }}">
                 <div fit class="drawer-title bottom">Feeds</div>
 
                 <paper-item label="Add feed" class="drawer-content" on-tap="{{ onAddFeed }}"></paper-item>

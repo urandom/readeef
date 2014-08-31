@@ -10,7 +10,7 @@
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-menu-button/paper-menu-button.html">
 
-<polymer-element name="rf-scaffolding" attributes="wide user feed article">
+<polymer-element name="rf-scaffolding" attributes="wide user userSettings feed article">
     <template>
         <style>
             core-toolbar {
@@ -85,6 +85,13 @@
             }
 
         </style>
+        <template id="article-list-menu-items">
+            <paper-item label="Older first" hidden?="{{ userSettings.newerFirst }}" on-tap="{{ onOlderFirst }}"></paper-item>
+            <paper-item label="Newer first" hidden?="{{ !userSettings.newerFirst }}" on-tap="{{ onNewerFirst }}"></paper-item>
+            <paper-item label="Unread only" hidden?="{{ userSettings.unreadOnly }}" on-tap="{{ onUnreadOnly }}"></paper-item>
+            <paper-item label="Read and unread" hidden?="{{ !userSettings.unreadOnly }}" on-tap="{{ onReadAndUnread }}"></paper-item>
+            <paper-item label="Mark all as read" on-tap="{{ onMarkAllAsRead }}"></paper-item>
+        </template>
         <core-drawer-panel id="drawer-panel" class="{{ {wide: wide} | tokenList }}" responsiveWidth="768px">
             <core-header-panel drawer>
                 <core-toolbar id="navheader">
@@ -104,9 +111,7 @@
                     <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" hidden?="{{ !article || article.Last }}" on-tap="{{ onArticleNext }}"></paper-icon-button>
                     <paper-icon-button id="refresh-menu" icon="refresh" on-tap="{{ onRefresh }}" hidden?="{{ article }}"></paper-icon-button>
                     <paper-menu-button icon="more-vert" halign="right" hidden?="{{ article }}">
-                        <paper-item label="Older first"></paper-item>
-                        <paper-item label="Unread only"></paper-item>
-                        <paper-item label="Mark all as read"></paper-item>
+                        <template bind ref="article-list-menu-items"></template>
                     </paper-menu-button>
 
                     <paper-fab class="refreshButton bottom" icon="refresh" hidden?="{{ !wide }}" on-tap="{{ onRefresh }}"></paper-fab>
@@ -130,9 +135,7 @@
                         <paper-icon-button id="previous-article-title" icon="hardware:keyboard-arrow-left" class="title-icon" style="opacity: {{ article && !article.First ? 100 : 0 }}" on-tap="{{ onArticlePrevious }}"></paper-icon-button>
                         <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" class="title-icon" style="opacity: {{ article && !article.Last ? 100 : 0 }}" on-tap="{{ onArticleNext }}"></paper-icon-button>
                         <paper-menu-button icon="more-vert" halign="right" hidden?="{{ article }}" class="title-icon">
-                            <paper-item label="Older first"></paper-item>
-                            <paper-item label="Unread only"></paper-item>
-                            <paper-item label="Mark all as read"></paper-item>
+                            <template bind ref="article-list-menu-items"></template>
                         </paper-menu-button>
                     </h1>
                     <content select=".main-content"></content>
@@ -177,6 +180,26 @@
 
         onArticleNext: function() {
             this.fire('core-signal', {name: 'rf-next-article'});
+        },
+
+        onOlderFirst: function() {
+            console.log("older");
+        },
+
+        onNewerFirst: function() {
+            console.log("newer");
+        },
+
+        onUnreadOnly: function() {
+            console.log("unread");
+        },
+
+        onReadAndUnread: function() {
+            console.log("read");
+        },
+
+        onMarkAllAsRead: function() {
+            console.log("mark-all");
         }
     });
 })();
