@@ -2,8 +2,9 @@ package parser
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/xml"
-	"strings"
 )
 
 type atomFeed struct {
@@ -51,7 +52,10 @@ func ParseAtom(b []byte) (Feed, error) {
 
 	for _, i := range rss.Items {
 		article := Article{Id: i.Id, Title: i.Title, Description: i.Description, Link: i.Link.Href}
-		article.Id = strings.Replace(article.Id, "/", "|", -1)
+
+		hash := sha1.New()
+		hash.Write([]byte(article.Id))
+		article.Id = hex.EncodeToString(hash.Sum(nil))
 
 		var err error
 		if article.Date, err = parseDate(i.Date); err != nil {

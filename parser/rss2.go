@@ -2,6 +2,8 @@ package parser
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/xml"
 	"strings"
 	"time"
@@ -66,7 +68,10 @@ func ParseRss2(b []byte) (Feed, error) {
 		} else {
 			article.Id = i.Id
 		}
-		article.Id = strings.Replace(article.Id, "/", "|", -1)
+
+		hash := sha1.New()
+		hash.Write([]byte(article.Id))
+		article.Id = hex.EncodeToString(hash.Sum(nil))
 
 		if i.Content == "" || len(i.Content) < len(i.Description) {
 			article.Description = i.Description

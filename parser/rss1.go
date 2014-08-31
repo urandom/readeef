@@ -2,6 +2,8 @@ package parser
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/xml"
 	"strings"
 	"time"
@@ -72,7 +74,9 @@ func ParseRss1(b []byte) (Feed, error) {
 			article.Id = i.Id
 		}
 
-		article.Id = strings.Replace(article.Id, "/", "|", -1)
+		hash := sha1.New()
+		hash.Write([]byte(article.Id))
+		article.Id = hex.EncodeToString(hash.Sum(nil))
 
 		var err error
 		if i.PubDate != "" {
