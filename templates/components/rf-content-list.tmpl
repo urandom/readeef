@@ -86,9 +86,9 @@
                         <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}">
                             <div class="card" layout vertical hero-id="article-card-{{ Id }}" hero?="{{ selected }}">
                                 <div layout horizontal>
-                                    <div class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}" hero-id="article-origin-{{ Id }}" hero?="{{ selected }}">{{ FeedOrigin }}</div>
+                                    <div class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</div>
                                     <span flex class="title-wrapper">
-                                        <span class="title" title="{{ Title }}" hero-id="article-title-{{ Id }}" hero?="{{ selected }}">{{ Title }}</span>
+                                        <span class="title" title="{{ Title }}">{{ Title }}</span>
                                         <span class="short-description">{{ ShortDescription }}</span>
                                     </span>
                                 </div>
@@ -102,9 +102,9 @@
                 <div class="article-detail">
                     <div class="card" layout vertical hero-id="article-card-{{ article.Id }}" hero>
                         <div layout horizontal>
-                            <div class="feed-origin" title="{{ article.FeedOrigin }}" hidden?="{{ !article.FeedOrigin }}" hero-id="article-origin-{{ article.Id }}" hero>{{ article.FeedOrigin }}</div>
+                            <div class="feed-origin" title="{{ article.FeedOrigin }}" hidden?="{{ !article.FeedOrigin }}">{{ article.FeedOrigin }}</div>
                             <span flex class="title-wrapper">
-                                <span class="title" title="{{ article.Title }}" hero-id="article-title-{{ article.Id }}" hero>{{ article.Title }}</span>
+                                <span class="title" title="{{ article.Title }}">{{ article.Title }}</span>
                             </span>
                         </div>
                         <div class="article-content">
