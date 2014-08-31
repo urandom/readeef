@@ -293,9 +293,7 @@
 
                     clone.go()
 
-                    this.async(function() {
-                        this.articles = [].concat(this.articles);
-                    });
+                    this.$['articles-list'].refresh(true);
 
                     break;
                 }
@@ -305,6 +303,7 @@
         onFavoriteArticleToggle: function() {
             this.article.Favorite = !this.article.Favorite;
             this.$['article-favorite'].go();
+            this.$['articles-list'].refresh(true);
         }
 
     });
