@@ -49,7 +49,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 
 	SWITCH:
 		switch action {
-		case "all":
+		case "list":
 			var feeds []readeef.Feed
 			feeds, err = db.GetUserFeeds(user)
 
@@ -237,6 +237,15 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 					} else {
 						articles, err = db.GetUserArticles(user, limit, offset)
 					}
+				}
+				if err != nil {
+					break
+				}
+			} else if action == "__favorite__" {
+				if newerFirst {
+					articles, err = db.GetUserFavoriteArticlesDesc(user, limit, offset)
+				} else {
+					articles, err = db.GetUserFavoriteArticles(user, limit, offset)
 				}
 				if err != nil {
 					break

@@ -242,7 +242,8 @@ DELETE FROM users_articles_read WHERE user_login = $1 AND article_feed_id = $2 A
 
 	get_user_favorite_articles = `
 SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
-CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+1 AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
 INNER JOIN users_articles_fav af
@@ -250,6 +251,21 @@ INNER JOIN users_articles_fav af
 LEFT OUTER JOIN users_articles_read ar
 	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
 ORDER BY a.date
+LIMIT $2
+OFFSET $3
+`
+
+	get_user_favorite_articles_desc = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+1 AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+INNER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+ORDER BY a.date DESC
 LIMIT $2
 OFFSET $3
 `
@@ -706,15 +722,11 @@ func (db DB) MarkFeedArticlesByDateAsRead(f Feed, d time.Time, read bool) error 
 	return nil
 }
 func (db DB) GetUserFavoriteArticles(u User, paging ...int) ([]Article, error) {
-	var articles []Article
+	return db.getUserFavoriteArticles(u, "get_user_favorite_articles", paging...)
+}
 
-	limit, offset := pagingLimit(paging)
-
-	if err := db.Select(&articles, db.NamedSQL("get_user_favorite_articles"), u.Login, limit, offset); err != nil {
-		return articles, err
-	}
-
-	return articles, nil
+func (db DB) GetUserFavoriteArticlesDesc(u User, paging ...int) ([]Article, error) {
+	return db.getUserFavoriteArticles(u, "get_user_favorite_articles_desc", paging...)
 }
 
 func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) error {
@@ -875,6 +887,18 @@ func (db DB) getUserArticles(u User, namedSQL string, paging ...int) ([]Article,
 	return articles, nil
 }
 
+func (db DB) getUserFavoriteArticles(u User, namedSQL string, paging ...int) ([]Article, error) {
+	var articles []Article
+
+	limit, offset := pagingLimit(paging)
+
+	if err := db.Select(&articles, db.NamedSQL(namedSQL), u.Login, limit, offset); err != nil {
+		return articles, err
+	}
+
+	return articles, nil
+}
+
 func pagingLimit(paging []int) (int, int) {
 	limit := 50
 	offset := 0
@@ -917,4 +941,5 @@ func init() {
 	sql_stmt["generic:create_all_users_articles_read_by_feed_date"] = create_all_users_articles_read_by_feed_date
 	sql_stmt["generic:delete_all_users_articles_read_by_feed_date"] = delete_all_users_articles_read_by_feed_date
 	sql_stmt["generic:get_user_favorite_articles"] = get_user_favorite_articles
+	sql_stmt["generic:get_user_favorite_articles_desc"] = get_user_favorite_articles_desc
 }
