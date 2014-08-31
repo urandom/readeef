@@ -47,7 +47,7 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 				read := params["value"] == "true"
 				previouslyRead := article.Read
 
-				if !previouslyRead {
+				if previouslyRead != read {
 					err = db.MarkUserArticlesAsRead(user, []readeef.Article{article}, read)
 
 					if err != nil {
@@ -60,7 +60,7 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 					Read    bool
 				}
 
-				resp := response{Success: !previouslyRead, Read: read}
+				resp := response{Success: previouslyRead != read, Read: read}
 
 				var b []byte
 				b, err = json.Marshal(resp)
@@ -73,7 +73,7 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 				favorite := params["value"] == "true"
 				previouslyFavorite := article.Favorite
 
-				if !previouslyFavorite {
+				if previouslyFavorite != favorite {
 					err = db.MarkUserArticlesAsFavorite(user, []readeef.Article{article}, favorite)
 
 					if err != nil {
@@ -86,7 +86,7 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 					Favorite bool
 				}
 
-				resp := response{Success: !previouslyFavorite, Favorite: favorite}
+				resp := response{Success: previouslyFavorite != favorite, Favorite: favorite}
 
 				var b []byte
 				b, err = json.Marshal(resp)
