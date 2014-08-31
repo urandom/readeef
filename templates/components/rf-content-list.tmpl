@@ -134,6 +134,7 @@
         itemHeight: 44,
         listHeight: 0,
         pathObserver: null,
+        listPosition: 0,
 
         nextArticle: function() {
             if (this.article) {
@@ -221,7 +222,13 @@
         },
 
         articleChanged: function(oldValue, newValue) {
+            var scroller = document.querySelector('rf-app').$.scaffolding.$['content-panel'].scroller;
+
             if (newValue) {
+                if (!oldValue) {
+                    this.listPosition = scroller.scrollTop;
+                }
+
                 this.$.pages.querySelector('.article-description').innerHTML = this.article.Description;
 
                 this.$.pages.selected = 'detail';
@@ -234,8 +241,16 @@
                 if (newValue.Last) {
                     this.asyncFire('core-signal', {name: 'rf-request-articles'});
                 }
+
+                this.async(function() {
+                    scroller.scrollTop = 0;
+                });
             } else {
                 this.$.pages.selected = 'list';
+
+                this.async(function() {
+                    scroller.scrollTop = this.listPosition;
+                });
             }
         },
 
