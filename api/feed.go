@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"readeef"
@@ -197,28 +198,46 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 		default:
 			var articles []readeef.Article
 
-			limit := 50
-			offset := 0
+			var limit, offset int
 
-			if len(parts) == 3 {
-				limit, err = strconv.Atoi(parts[1])
-				/* TODO: non-fatal error */
-				if err != nil {
-					break
-				}
-
-				offset, err = strconv.Atoi(parts[2])
-				/* TODO: non-fatal error */
-				if err != nil {
-					break
-				}
+			if len(parts) != 5 {
+				err = errors.New(fmt.Sprintf("Expected 5 arguments, got %d", len(parts)))
+				break
 			}
+
+			limit, err = strconv.Atoi(parts[1])
+			/* TODO: non-fatal error */
+			if err != nil {
+				break
+			}
+
+			offset, err = strconv.Atoi(parts[2])
+			/* TODO: non-fatal error */
+			if err != nil {
+				break
+			}
+
+			newerFirst := parts[3] == "true"
+			unreadOnly := parts[4] == "true"
+
 			if limit > 50 {
 				limit = 50
 			}
 
 			if action == "__all__" {
-				articles, err = db.GetUserArticles(user, limit, offset)
+				if newerFirst {
+					if unreadOnly {
+						articles, err = db.GetUnreadUserArticlesDesc(user, limit, offset)
+					} else {
+						articles, err = db.GetUserArticlesDesc(user, limit, offset)
+					}
+				} else {
+					if unreadOnly {
+						articles, err = db.GetUnreadUserArticles(user, limit, offset)
+					} else {
+						articles, err = db.GetUserArticles(user, limit, offset)
+					}
+				}
 				if err != nil {
 					break
 				}
@@ -240,7 +259,20 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				}
 
 				f.User = user
-				f, err = db.GetFeedArticles(f, limit, offset)
+
+				if newerFirst {
+					if unreadOnly {
+						f, err = db.GetUnreadFeedArticlesDesc(f, limit, offset)
+					} else {
+						f, err = db.GetFeedArticlesDesc(f, limit, offset)
+					}
+				} else {
+					if unreadOnly {
+						f, err = db.GetUnreadFeedArticles(f, limit, offset)
+					} else {
+						f, err = db.GetFeedArticles(f, limit, offset)
+					}
+				}
 				if err != nil {
 					break
 				}

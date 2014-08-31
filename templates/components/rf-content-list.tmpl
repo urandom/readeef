@@ -231,11 +231,10 @@
 
                 this.pathObserver = new PathObserver(newValue, 'Articles');
                 this.pathObserver.open(function(newValue) {
-                    if (newValue.length == this.pathObserver._articleLength) {
+                    if (!newValue) {
                         return;
                     }
 
-                    this.pathObserver._articleLength = newValue.length;
                     processArticles();
                 }.bind(this));
             }
@@ -263,6 +262,7 @@
                 }
             } else {
                 this.$.pages.selected = 'list';
+                this.$['articles-list'].refresh(true);
 
                 this.async(function() {
                     scroller.scrollTop = this.listPosition;

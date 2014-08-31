@@ -86,8 +86,8 @@
 
         </style>
         <template id="article-list-menu-items">
-            <paper-item label="Older first" hidden?="{{ userSettings.newerFirst }}" on-tap="{{ onOlderFirst }}"></paper-item>
-            <paper-item label="Newer first" hidden?="{{ !userSettings.newerFirst }}" on-tap="{{ onNewerFirst }}"></paper-item>
+            <paper-item label="Older first" hidden?="{{ !userSettings.newerFirst }}" on-tap="{{ onOlderFirst }}"></paper-item>
+            <paper-item label="Newer first" hidden?="{{ userSettings.newerFirst }}" on-tap="{{ onNewerFirst }}"></paper-item>
             <paper-item label="Unread only" hidden?="{{ userSettings.unreadOnly }}" on-tap="{{ onUnreadOnly }}"></paper-item>
             <paper-item label="Read and unread" hidden?="{{ !userSettings.unreadOnly }}" on-tap="{{ onReadAndUnread }}"></paper-item>
             <paper-item label="Mark all as read" on-tap="{{ onMarkAllAsRead }}"></paper-item>
@@ -183,23 +183,31 @@
         },
 
         onOlderFirst: function() {
-            console.log("older");
+            var settings = Polymer.extend({}, this.userSettings);
+            settings.newerFirst = false;
+            this.userSettings = settings;
         },
 
         onNewerFirst: function() {
-            console.log("newer");
+            var settings = Polymer.extend({}, this.userSettings);
+            settings.newerFirst = true;
+            this.userSettings = settings;
         },
 
         onUnreadOnly: function() {
-            console.log("unread");
+            var settings = Polymer.extend({}, this.userSettings);
+            settings.unreadOnly = true;
+            this.userSettings = settings;
         },
 
         onReadAndUnread: function() {
-            console.log("read");
+            var settings = Polymer.extend({}, this.userSettings);
+            settings.unreadOnly = false;
+            this.userSettings = settings;
         },
 
         onMarkAllAsRead: function() {
-            console.log("mark-all");
+            this.fire('core-signal', {name: 'rf-mark-all-as-read'});
         }
     });
 })();

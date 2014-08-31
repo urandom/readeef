@@ -90,7 +90,7 @@
 
         <rf-api id="auth-check" pathAction="auth" on-rf-api-complete="{{ onAuthCheckComplete }}" user="{{ user }}"></rf-api>
         <rf-api id="all-feeds" pathAction="feed/all" on-rf-api-response="{{ onAllFeedsResponse }}" user="{{ user }}"></rf-api>
-        <rf-api id="feed-articles" pathAction="feed/{{ currentFeedId }}/{{ limit }}/{{ offset }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}"></rf-api>
+        <rf-api id="feed-articles" pathAction="feed/{{ currentFeedId }}/{{ limit }}/{{ offset }}/{{ userSettings.newerFirst }}/{{ userSettings.unreadOnly }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}"></rf-api>
 
         <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
         <core-localstorage name="{{ user.login }}-settings" id="user-settings-storage" value="{{userSettings}}" on-core-localstorage-load="{{ onUserSettingsLoad }}"></core-localstorage>
@@ -153,6 +153,14 @@
             })
         },
 
+        userSettingsChanged: function(oldValue, newValue) {
+            if (oldValue && newValue) {
+                if (oldValue.newerFirst != newValue.newerFirst || oldValue.unreadOnly != newValue.unreadOnly) {
+                    this.updateFeedArticles();
+                }
+            }
+        },
+
         currentFeedIdChanged: function(oldValue, newValue) {
             if (this.feeds.length) {
                 if (newValue == "__all__") {
@@ -164,13 +172,7 @@
         },
 
         currentFeedChanged: function(oldValue, newValue) {
-            if (newValue) {
-                this.noMoreArticles = false;
-                this.offset = 0;
-
-                this.loadingArticles = true;
-                this.$['feed-articles'].go();
-            }
+            this.updateFeedArticles();
         },
 
         feedsChanged: function(oldValue, newValue) {
@@ -253,9 +255,7 @@
         },
 
         onFeedRefresh: function(event, detail, sender) {
-            this.currentArticle = null;
-            this.currentFeed.Articles = null;
-            this.currentFeedChanged(this.currentFeed, this.currentFeed);
+            this.updateFeedArticles();
         },
 
         onFeedArticlesResponse: function(event, data) {
@@ -288,6 +288,21 @@
 
             this.loadingMoreArticles = true;
             this.offset += this.limit;
+            this.$['feed-articles'].go();
+        },
+
+        updateFeedArticles: function() {
+            if (!this.currentFeed) {
+                return;
+            }
+
+            this.currentArticle = null;
+            this.currentFeed.Articles = null;
+
+            this.noMoreArticles = false;
+            this.offset = 0;
+
+            this.loadingArticles = true;
             this.$['feed-articles'].go();
         }
     });

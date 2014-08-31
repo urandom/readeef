@@ -71,6 +71,21 @@ LIMIT $3
 OFFSET $4
 `
 
+	get_feed_articles_desc = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.feed_id = $1 AND uf.user_login = $2
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+ORDER BY a.date DESC
+LIMIT $3
+OFFSET $4
+`
+
 	get_unread_feed_articles = `
 SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
@@ -83,6 +98,22 @@ LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
 WHERE ar.article_id IS NULL
 ORDER BY a.date
+LIMIT $3
+OFFSET $4
+`
+
+	get_unread_feed_articles_desc = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.feed_id = $1 AND uf.user_login = $2
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+WHERE ar.article_id IS NULL
+ORDER BY a.date DESC
 LIMIT $3
 OFFSET $4
 `
@@ -118,6 +149,21 @@ LIMIT $2
 OFFSET $3
 `
 
+	get_user_articles_desc = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+ORDER BY a.date DESC
+LIMIT $2
+OFFSET $3
+`
+
 	get_unread_user_articles = `
 SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
@@ -130,6 +176,22 @@ LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
 WHERE ar.article_id IS NULL
 ORDER BY a.date
+LIMIT $2
+OFFSET $3
+`
+
+	get_unread_user_articles_desc = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+WHERE ar.article_id IS NULL
+ORDER BY a.date DESC
 LIMIT $2
 OFFSET $3
 `
@@ -446,39 +508,19 @@ func (db DB) CreateFeedArticles(f Feed, articles []Article) (Feed, error) {
 }
 
 func (db DB) GetFeedArticles(f Feed, paging ...int) (Feed, error) {
-	if f.User.Login == "" {
-		return f, ErrNoFeedUser
-	}
+	return db.getFeedArticles(f, "get_feed_articles", paging...)
+}
 
-	var articles []Article
-
-	limit, offset := pagingLimit(paging)
-
-	if err := db.Select(&articles, db.NamedSQL("get_feed_articles"), f.Id, f.User.Login, limit, offset); err != nil {
-		return f, err
-	}
-
-	f.Articles = articles
-
-	return f, nil
+func (db DB) GetFeedArticlesDesc(f Feed, paging ...int) (Feed, error) {
+	return db.getFeedArticles(f, "get_feed_articles_desc", paging...)
 }
 
 func (db DB) GetUnreadFeedArticles(f Feed, paging ...int) (Feed, error) {
-	if f.User.Login == "" {
-		return f, ErrNoFeedUser
-	}
+	return db.getFeedArticles(f, "get_unread_feed_articles", paging...)
+}
 
-	var articles []Article
-
-	limit, offset := pagingLimit(paging)
-
-	if err := db.Select(&articles, db.NamedSQL("get_unread_feed_articles"), f.Id, f.User.Login, limit, offset); err != nil {
-		return f, err
-	}
-
-	f.Articles = articles
-
-	return f, nil
+func (db DB) GetUnreadFeedArticlesDesc(f Feed, paging ...int) (Feed, error) {
+	return db.getFeedArticles(f, "get_unread_feed_articles_desc", paging...)
 }
 
 func (db DB) GetReadFeedArticles(f Feed, paging ...int) (Feed, error) {
@@ -500,27 +542,19 @@ func (db DB) GetReadFeedArticles(f Feed, paging ...int) (Feed, error) {
 }
 
 func (db DB) GetUserArticles(u User, paging ...int) ([]Article, error) {
-	var articles []Article
+	return db.getUserArticles(u, "get_user_articles", paging...)
+}
 
-	limit, offset := pagingLimit(paging)
-
-	if err := db.Select(&articles, db.NamedSQL("get_user_articles"), u.Login, limit, offset); err != nil {
-		return articles, err
-	}
-
-	return articles, nil
+func (db DB) GetUserArticlesDesc(u User, paging ...int) ([]Article, error) {
+	return db.getUserArticles(u, "get_user_articles_desc", paging...)
 }
 
 func (db DB) GetUnreadUserArticles(u User, paging ...int) ([]Article, error) {
-	var articles []Article
+	return db.getUserArticles(u, "get_unread_user_articles", paging...)
+}
 
-	limit, offset := pagingLimit(paging)
-
-	if err := db.Select(&articles, db.NamedSQL("get_unread_user_articles"), u.Login, limit, offset); err != nil {
-		return articles, err
-	}
-
-	return articles, nil
+func (db DB) GetUnreadUserArticlesDesc(u User, paging ...int) ([]Article, error) {
+	return db.getUserArticles(u, "get_unread_user_articles_desc", paging...)
 }
 
 func (db DB) GetReadUserArticles(u User, paging ...int) ([]Article, error) {
@@ -811,6 +845,36 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) error {
 	return nil
 }
 
+func (db DB) getFeedArticles(f Feed, namedSQL string, paging ...int) (Feed, error) {
+	if f.User.Login == "" {
+		return f, ErrNoFeedUser
+	}
+
+	var articles []Article
+
+	limit, offset := pagingLimit(paging)
+
+	if err := db.Select(&articles, db.NamedSQL(namedSQL), f.Id, f.User.Login, limit, offset); err != nil {
+		return f, err
+	}
+
+	f.Articles = articles
+
+	return f, nil
+}
+
+func (db DB) getUserArticles(u User, namedSQL string, paging ...int) ([]Article, error) {
+	var articles []Article
+
+	limit, offset := pagingLimit(paging)
+
+	if err := db.Select(&articles, db.NamedSQL(namedSQL), u.Login, limit, offset); err != nil {
+		return articles, err
+	}
+
+	return articles, nil
+}
+
 func pagingLimit(paging []int) (int, int) {
 	limit := 50
 	offset := 0
@@ -839,10 +903,14 @@ func init() {
 	sql_stmt["generic:get_feed_article"] = get_feed_article
 	sql_stmt["generic:update_feed_article"] = update_feed_article
 	sql_stmt["generic:get_feed_articles"] = get_feed_articles
+	sql_stmt["generic:get_feed_articles_desc"] = get_feed_articles_desc
 	sql_stmt["generic:get_unread_feed_articles"] = get_unread_feed_articles
+	sql_stmt["generic:get_unread_feed_articles_desc"] = get_unread_feed_articles_desc
 	sql_stmt["generic:get_read_feed_articles"] = get_read_feed_articles
 	sql_stmt["generic:get_user_articles"] = get_user_articles
+	sql_stmt["generic:get_user_articles_desc"] = get_user_articles_desc
 	sql_stmt["generic:get_unread_user_articles"] = get_unread_user_articles
+	sql_stmt["generic:get_unread_user_articles_desc"] = get_unread_user_articles_desc
 	sql_stmt["generic:get_read_user_articles"] = get_read_user_articles
 	sql_stmt["generic:create_all_users_articles_read_by_date"] = create_all_users_articles_read_by_date
 	sql_stmt["generic:delete_all_users_articles_read_by_date"] = delete_all_users_articles_read_by_date
