@@ -58,7 +58,7 @@
             <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
             </core-overlay>
 
-            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" on-rf-feed-refresh="{{ onFeedRefresh }}" feed="{{ currentFeed }}" article="{{ currentArticle }}">
+            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" article="{{ currentArticle }}">
                 <div fit class="drawer-title bottom">Feeds</div>
 
                 <paper-item label="Add feed" class="drawer-content" on-tap="{{ onAddFeed }}"></paper-item>
@@ -98,6 +98,7 @@
         <core-media-query query="min-width: {{responsiveWidth}}" queryMatches="{{wide}}"></core-media-query>
 
         <core-signals on-core-signal-rf-request-articles="{{ onRequestArticles }}"></core-signals>
+        <core-signals on-core-signal-rf-feed-refresh="{{ onFeedRefresh }}"></core-signals>
 
         <rf-dialog-add-feed id="add-feed-dialog" wide="{{ wide }}" user="{{ user }}" on-feeds-added="{{ onFeedsAdded }}"></rf-dialog-add-feed>
     </template>
@@ -252,7 +253,8 @@
         },
 
         onFeedRefresh: function(event, detail, sender) {
-            console.log(event, detail, sender);
+            this.currentArticle = null;
+            this.currentFeedChanged(this.currentFeed, this.currentFeed);
         },
 
         onFeedArticlesResponse: function(event, data) {

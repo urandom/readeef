@@ -102,7 +102,7 @@
                     <div flex hidden?="{{ wide }}" class="title">{{ feed.Title }}</div>
                     <paper-icon-button id="previous-article-menu" icon="hardware:keyboard-arrow-left" hidden?="{{ !article || article.First }}" on-tap="{{ onArticlePrevious }}"></paper-icon-button>
                     <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" hidden?="{{ !article || article.Last }}" on-tap="{{ onArticleNext }}"></paper-icon-button>
-                    <paper-icon-button id="refresh-menu" icon="refresh" on-tap="{{ onRefresh }}"></paper-icon-button>
+                    <paper-icon-button id="refresh-menu" icon="refresh" on-tap="{{ onRefresh }}" hidden?="{{ article }}"></paper-icon-button>
                     <paper-menu-button icon="more-vert" halign="right" hidden?="{{ article }}">
                         <paper-item label="Older first"></paper-item>
                         <paper-item label="Unread only"></paper-item>
@@ -159,7 +159,7 @@
         },
 
         onRefresh: function() {
-            this.fire("rf-feed-refresh");
+            this.fire('core-signal', {name: "rf-feed-refresh"});
         },
 
         onArticleBack: function(event) {
