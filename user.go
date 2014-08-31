@@ -16,6 +16,7 @@ type User struct {
 	LastName    string `db:"last_name"`
 	Email       string
 	HashType    string `db:"hash_type"`
+	Admin       bool
 	ProfileJSON []byte `db:"profile_data"`
 	Salt        []byte
 	Hash        []byte

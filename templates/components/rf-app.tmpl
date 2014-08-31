@@ -138,7 +138,7 @@
         responsiveWidth: '768px',
         userTTL: 1000 * 60 * 60 * 24 * 15,
         user: null,
-        userSettings: {},
+        userSettings: {newerFirst: false, unreadOnly: false},
         currentFeedId: null,
         currentFeed: null,
         currentArticle: null,
@@ -240,6 +240,12 @@
             if (sender.value) {
                 if (sender.value.currentFeedId) {
                     this.currentFeedId = sender.value.currentFeedId;
+                }
+                if (!('newerFirst' in sender.value)) {
+                    sender.value.newerFirst = false;
+                }
+                if (!('unreadOnly' in sender.value)) {
+                    sender.value.unreadOnly = false;
                 }
             }
         },
