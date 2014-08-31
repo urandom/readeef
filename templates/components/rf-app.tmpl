@@ -57,7 +57,7 @@
             <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
             </core-overlay>
 
-            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" on-rf-feed-refresh="{{ onFeedRefresh }}" feed="{{ currentFeed }}">
+            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" on-rf-feed-refresh="{{ onFeedRefresh }}" feed="{{ currentFeed }}" article="{{ currentArticle }}">
                 <div fit class="drawer-title bottom">Feeds</div>
 
                 <paper-item label="Add feed" class="drawer-content" on-tap="{{ onAddFeed }}"></paper-item>
@@ -76,7 +76,7 @@
 
                 <div class="main-content">
                     <template if="{{ !loadingArticles }}">
-                        <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" on-rf-request-articles="{{ onRequestArticles }}"></rf-content-list>
+                        <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" on-rf-request-articles="{{ onRequestArticles }}"></rf-content-list>
                     </template>
                     <template if="{{ loadingArticles || loadingMoreArticles }}">
                         <div layout vertical center>
@@ -124,6 +124,7 @@
         userSettings: {},
         currentFeedId: null,
         currentFeed: null,
+        currentArticle: null,
         loadingArticles: false,
         loadingMoreArticles: false,
         feedIdMap: {},

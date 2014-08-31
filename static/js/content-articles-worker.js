@@ -3,7 +3,9 @@ self.addEventListener('message', function(event) {
     var articles = [], current = event.data.current, feeds = event.data.feeds, feedMap;
 
     for (var i = 0, a, pre; a = current.Articles[i]; ++i) {
-        a.Description = a.Description.replace(/<!--.*?-->/g, '').replace(/<script.*?<\/script\s*>/g, '');
+        a.Description = a.Description.replace(/<!--.*?-->/g, '')
+            .replace(/<script.*?<\/script\s*>/g, '')
+            .replace(/(<a )(.*?<\/a\s*>)/g, '$1 target="feed-article" $2');
 
         pre = "";
         while (pre != a.Description) {

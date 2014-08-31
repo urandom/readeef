@@ -1,13 +1,18 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-list/core-list.html">
+<link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
 
-<polymer-element name="rf-content-list" attributes="wide user feed feeds">
+<polymer-element name="rf-content-list" attributes="wide user feed feeds article">
     <template bind="{{ wide as wide }}">
         <style>
             core-list {
                 padding-top: 8px;
                 overflow: hidden;
+            }
+
+            core-animated-pages > section[active] {
+                position: relative;
             }
 
             .card {
@@ -21,10 +26,6 @@
                 height: 44px;
             }
 
-            .article.selected {
-                height: auto;
-            }
-
             .title-wrapper {
                 white-space: nowrap;
                 text-overflow: ellipsis;
@@ -36,7 +37,7 @@
                 line-height: 20px;
             }
 
-            .article.selected .title {
+            .article-detail .title {
                 font-size: 16px;
                 font-weight: bold;
             }
@@ -76,26 +77,45 @@
             }
 
         </style>
-        <core-list class="{{ {wide: wide} | tokenList }}" data="{{ articles }}" height="{{ itemHeight }}" id="articles-list" on-core-activate="{{ onArticleActivate }}">
-            <template>
-                <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}">
-                    <div class="card" layout vertical>
+        <core-animated-pages id="pages" selected="list" transitions="cross-fade-all hero-transition">
+
+            <section name="list">
+                <core-list class="{{ {wide: wide} | tokenList }}" data="{{ articles }}" height="{{ itemHeight }}" id="articles-list" on-core-activate="{{ onArticleActivate }}" cross-fade>
+                    <template>
+                        <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}">
+                            <div class="card" layout vertical hero-id="article-card-{{ Id }}" hero2?="{{ selected }}">
+                                <div layout horizontal>
+                                    <div class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}" hero-id="article-origin-{{ Id }}" hero?="{{ selected }}">{{ FeedOrigin }}</div>
+                                    <span flex class="title-wrapper">
+                                        <span class="title" title="{{ Title }}" hero-id="article-title-{{ Id }}" hero?="{{ selected }}">{{ Title }}</span>
+                                        <span class="short-description" cross-fade>{{ ShortDescription }}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </core-list>
+            </section>
+
+            <section name="detail">
+                <div class="article-detail">
+                    <div class="card" layout vertical hero2>
                         <div layout horizontal>
-                            <div class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</div>
+                            <div class="feed-origin" title="{{ article.FeedOrigin }}" hidden?="{{ !article.FeedOrigin }}" hero-id="article-origin-{{ article.Id }}" hero>{{ article.FeedOrigin }}</div>
                             <span flex class="title-wrapper">
-                                <span class="title" title="{{ Title }}">{{ Title }}</span>
-                                <span flex class="short-description" hidden?="{{ selected }}">{{ ShortDescription }}</span>
+                                <span class="title" title="{{ article.Title }}" hero-id="article-title-{{ article.Id }}" hero>{{ article.Title }}</span>
                             </span>
                         </div>
-                        <div hidden class="article-content">
-                            <div class="article-description">
-                            </div>
-                            <a href="{{ Link }}" target="_blank" class="article-link">View the article</a>
+                        <div class="article-content">
+                            <div class="article-description"></div>
+
+                            <a href="{{ article.Link }}" target="_blank" class="article-link">View the article</a>
                         </div>
                     </div>
                 </div>
-            </template>
-        </core-list>
+            </section>
+
+        </core-animated-pages>
     </template>
     <script>
 (function() {
@@ -105,41 +125,32 @@
         itemHeight: 44,
         listHeight: 0,
         pathObserver: null,
+        article: null,
 
         created: function() {
             this.articles = [];
         },
 
         domReady: function() {
-            /* TODO: enable again once feasible
-            this.$['articles-list'].scrollTarget = document.querySelector('rf-app').$.scaffolding.$['content-panel'];
-            */
+            var contentPanel = document.querySelector('rf-app').$.scaffolding.$['content-panel'];
 
-           var self = this;
+            this.$['articles-list'].scrollTarget = contentPanel;
 
-           document.querySelector('rf-app').$.scaffolding.$['content-panel']
-               .addEventListener('scroll', function(event) {
+            contentPanel.addEventListener('scroll', function(event) {
+                if (!this.articles.length || this.$.pages.selected == "detail") {
+                    return;
+                }
 
-               if (!self.articles.length) {
-                   return;
-               }
-
-               if (this.scroller.offsetHeight + this.scroller.scrollTop + 50 > this.scroller.scrollHeight) {
-                   var previous = self.$['articles-list'].querySelector(
-                       '.article-content:not([hidden])'
-                   );
-
-                   if (previous) {
-                       previous.hidden;
-                   }
-
-                   self.asyncFire('rf-request-articles');
-               }
-           });
+                if (contentPanel.scroller.offsetHeight + contentPanel.scroller.scrollTop + 50 > contentPanel.scroller.scrollHeight) {
+                    this.asyncFire('rf-request-articles');
+                }
+            }.bind(this));
         },
 
         feedChanged: function(oldValue, newValue) {
             this.listHeight = 0;
+
+            this.article = null;
 
             var processArticles = (function processArticles() {
                 if (this.feed.Articles && this.feed.Articles.length) {
@@ -177,54 +188,20 @@
             }
         },
 
+        articleChanged: function(oldValue, newValue) {
+            if (newValue) {
+                this.$.pages.querySelector('.article-description').innerHTML = this.article.Description;
+
+                this.$.pages.selected = 'detail';
+            } else {
+                this.$.pages.selected = 'list';
+            }
+        },
+
         onArticleActivate: function(event, detail) {
-            var content = detail.item.querySelector('.article-content'),
-                list = this.$['articles-list'],
-                forward = false,
-                previous = this.$['articles-list'].querySelector(
-                    '.article-content:not([hidden])'
-                ), style, height, delta, resizeFunc;
-
-            if (previous) {
-                var article = previous.closest('.article'),
-                    articles = previous.closest('core-list').querySelectorAll('.article').array();
-
-                if (articles.indexOf(article) < articles.indexOf(detail.item)) {
-                    forward = true;
-                }
-
-                previous.hidden = true;
-            }
-
-            if (!this.listHeight) {
-                this.listHeight = list.offsetHeight;
-            }
-
-            content.querySelector('.article-description').innerHTML = detail.data.Description;
-            content.hidden = false;
-
-            resizeFunc = function() {
-                style = getComputedStyle(detail.item);
-                height = parseInt(style.getPropertyValue('height'))
-
-                delta = height - this.itemHeight;
-
-                list.style.height = this.listHeight + delta + "px";
-
-                var images = content.querySelectorAll('img')
-                    .array().filter(function(img) { return !img.complete; });
-
-                if (images.length) {
-                    images[0].addEventListener('load', resizeFunc.bind(this));
-                }
-            };
-
-            this.async(resizeFunc);
-
-            if (forward) {
-                detail.item.offsetParent.scrollTop = detail.item.offsetTop;
-            }
+            this.article = detail.data;
         }
+
     });
 })();
     </script>
