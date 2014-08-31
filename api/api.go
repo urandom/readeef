@@ -9,6 +9,7 @@ import (
 
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/middleware"
+	"github.com/urandom/webfw/renderer"
 )
 
 func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, logger *log.Logger) error {
@@ -49,6 +50,11 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
 	dispatcher.Context.SetGlobal(readeef.CtxKey("db"), db)
+
+	dispatcher.Renderer = renderer.NewRenderer(dispatcher.Config.Renderer.Dir,
+		dispatcher.Config.Renderer.Base)
+
+	dispatcher.Renderer.Delims("{%", "%}")
 
 	go func() {
 		for {
