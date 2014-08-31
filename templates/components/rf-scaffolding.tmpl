@@ -68,13 +68,11 @@
             .content-label small {
                 display: block;
                 margin-top: -10px;
-                margin-left: 40px;
                 line-height: 14px;
                 font-size: 12px;
             }
 
             .content-label #back-title {
-                float: left;
                 line-height: 24px;
                 margin-top: 10px;
             }
@@ -99,19 +97,21 @@
                     <paper-fab class="refreshButton bottom" icon="refresh" hidden?="{{ !wide }}" on-tap="{{ onRefresh }}"></paper-fab>
                 </core-toolbar>
                 <div class="content">
-                    <h1 class="content-label" hidden?="{{ !wide }}">
+                    <h1 class="content-label" hidden?="{{ !wide }}" layout horizontal>
                         <paper-icon-button id="back-title" icon="arrow-back" style="opacity: {{ article ? 100 : 0 }}" on-tap="{{ onArticleBack }}"></paper-icon-button>
-                        <template if="{{ feed.SiteLink }}">
-                            <a href="{{ feed.SiteLink }}" target="feed-homepage">
+                        <div flex layout vertical>
+                            <template if="{{ feed.SiteLink }}">
+                                <a href="{{ feed.SiteLink }}" target="feed-homepage">
+                                    {{ feed.Title }}
+                                </a>
+                            </template>
+                            <template if="{{ !feed.SiteLink }}">
                                 {{ feed.Title }}
-                            </a>
-                        </template>
-                        <template if="{{ !feed.SiteLink }}">
-                            {{ feed.Title }}
-                        </template>
-                        <template if="{{ feed.Description }}">
-                            <br><small>{{ feed.Description }}</small>
-                        </template>
+                            </template>
+                            <template if="{{ feed.Description }}">
+                                <br><small>{{ feed.Description }}</small>
+                            </template>
+                        </div>
                     </h1>
                     <content select=".main-content"></content>
                 </div>
