@@ -2,6 +2,7 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-list/core-list.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
+<link rel="import" href="/dist/core-signals/core-signals.html">
 
 <polymer-element name="rf-content-list" attributes="wide user feed feeds article">
     <template bind="{{ wide as wide }}">
@@ -26,7 +27,7 @@
                 height: 44px;
             }
 
-            .title-wrapper {
+            .article .title-wrapper {
                 white-space: nowrap;
                 text-overflow: ellipsis;
                 overflow: hidden;
@@ -63,7 +64,7 @@
             .article-content {
                 padding: 16px 94px;
             }
-            core-list:not(.wide) .article-content {
+            core-animated-pages:not(.wide) .article-content {
                 padding: 8px;
             }
             .article-link {
@@ -77,18 +78,18 @@
             }
 
         </style>
-        <core-animated-pages id="pages" selected="list" transitions="cross-fade-all hero-transition">
+        <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="list" transitions="hero-transition">
 
             <section name="list">
-                <core-list class="{{ {wide: wide} | tokenList }}" data="{{ articles }}" height="{{ itemHeight }}" id="articles-list" on-core-activate="{{ onArticleActivate }}" cross-fade>
+                <core-list data="{{ articles }}" height="{{ itemHeight }}" id="articles-list" on-core-activate="{{ onArticleActivate }}">
                     <template>
                         <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}">
-                            <div class="card" layout vertical hero-id="article-card-{{ Id }}" hero2?="{{ selected }}">
+                            <div class="card" layout vertical hero-id="article-card-{{ Id }}" hero?="{{ selected }}">
                                 <div layout horizontal>
                                     <div class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}" hero-id="article-origin-{{ Id }}" hero?="{{ selected }}">{{ FeedOrigin }}</div>
                                     <span flex class="title-wrapper">
                                         <span class="title" title="{{ Title }}" hero-id="article-title-{{ Id }}" hero?="{{ selected }}">{{ Title }}</span>
-                                        <span class="short-description" cross-fade>{{ ShortDescription }}</span>
+                                        <span class="short-description">{{ ShortDescription }}</span>
                                     </span>
                                 </div>
                             </div>
@@ -97,9 +98,9 @@
                 </core-list>
             </section>
 
-            <section name="detail">
+            <section name="detail" hidden?="{{ !article }}">
                 <div class="article-detail">
-                    <div class="card" layout vertical hero2>
+                    <div class="card" layout vertical hero-id="article-card-{{ article.Id }}" hero>
                         <div layout horizontal>
                             <div class="feed-origin" title="{{ article.FeedOrigin }}" hidden?="{{ !article.FeedOrigin }}" hero-id="article-origin-{{ article.Id }}" hero>{{ article.FeedOrigin }}</div>
                             <span flex class="title-wrapper">
@@ -116,6 +117,8 @@
             </section>
 
         </core-animated-pages>
+        <core-signals on-core-signal-next-article="{{ nextArticle }}"></core-signals>
+        <core-signals on-core-signal-previous-article="{{ previousArticle }}"></core-signals>
     </template>
     <script>
 (function() {
@@ -125,7 +128,30 @@
         itemHeight: 44,
         listHeight: 0,
         pathObserver: null,
-        article: null,
+
+        nextArticle: function() {
+            if (this.article) {
+                var index = this.articles.indexOf(this.article);
+
+                if (index < this.articles.length - 1) {
+                    this.article = this.articles[index + 1];
+                }
+            } else {
+                this.article = this.articles[0];
+            }
+        },
+
+        previousArticle: function() {
+            if (this.article) {
+                var index = this.articles.indexOf(this.article);
+
+                if (index) {
+                    this.article = this.articles[index - 1];
+                }
+            } else {
+                this.article = this.articles[this.articles.length - 1];
+            }
+        },
 
         created: function() {
             this.articles = [];

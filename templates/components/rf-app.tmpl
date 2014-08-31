@@ -75,9 +75,7 @@
                 <paper-item label="Sign Out" class="drawer-content" on-tap="{{ onSignOut }}"></paper-item>
 
                 <div class="main-content">
-                    <template if="{{ !loadingArticles }}">
-                        <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" on-rf-request-articles="{{ onRequestArticles }}"></rf-content-list>
-                    </template>
+                    <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" on-rf-request-articles="{{ onRequestArticles }}" hidden?="{{ loadingArticles }}"></rf-content-list>
                     <template if="{{ loadingArticles || loadingMoreArticles }}">
                         <div layout vertical center>
                             <loading-wave background="#f8f8f8"></loading-wave>
