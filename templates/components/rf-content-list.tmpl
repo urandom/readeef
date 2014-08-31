@@ -4,6 +4,8 @@
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
 <link rel="import" href="/dist/core-signals/core-signals.html">
 
+<link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
+
 <link rel="import" href="/component/rf-api">
 
 <polymer-element name="rf-content-list" attributes="wide user feed feeds article">
@@ -84,6 +86,16 @@
                 max-width: 100%;
             }
 
+            .favorite {
+                margin-top: -2px;
+            }
+
+            .favorite /deep/ #icon {
+                margin: 5px;
+                width: 14px;
+                height: 14px;
+            }
+
         </style>
         <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="list" transitions="hero-transition" on-core-animated-pages-transition-end="{{ onPagesTransitionEnd }}">
 
@@ -93,6 +105,7 @@
                         <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}">
                             <div class="card" layout vertical hero-id="article-card-{{ Id }}" hero?="{{ selected }}">
                                 <div layout horizontal>
+                                    <paper-icon-button class="favorite" icon="{{ {'favorite-outline': !Favorite, favorite: Favorite} | tokenList }}" on-tap="{{ onFavoriteToggle }}" data-article-id="{{ Id }}" data-feed-id="{{ FeedId }}"></paper-icon-button>
                                     <div class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</div>
                                     <span flex class="title-wrapper">
                                         <span class="title" title="{{ Title }}">{{ Title }}</span>
@@ -109,6 +122,7 @@
                 <div class="article-detail">
                     <div class="card" layout vertical hero-id="article-card-{{ article.Id }}" hero>
                         <div layout horizontal>
+                            <paper-icon-button class="favorite" icon="{{ {'favorite-outline': !article.Favorite, favorite: article.Favorite} | tokenList }}" on-tap="{{ onFavoriteArticleToggle }}" data-article-id="{{ Id }}"></paper-icon-button>
                             <div class="feed-origin" title="{{ article.FeedOrigin }}" hidden?="{{ !article.FeedOrigin }}">{{ article.FeedOrigin }}</div>
                             <span flex class="title-wrapper">
                                 <span class="title" title="{{ article.Title }}">{{ article.Title }}</span>
@@ -125,8 +139,8 @@
 
         </core-animated-pages>
 
-        <rf-api id="article-read" pathAction="article/read/{{ article.FeedId }}/{{ article.Id }}/{{ article.Read }}" on-rf-api-response="{{ onArticleReadResponse }}" user="{{ user }}"></rf-api>
-        <rf-api id="article-favorite" pathAction="article/favorite/{{ article.FeedId }}/{{ article.Id }}/{{ article.Favorite }}" on-rf-api-response="{{ onArticleFavoriteResponse }}" user="{{ user }}"></rf-api>
+        <rf-api id="article-read" method="post" pathAction="article/read/{{ article.FeedId }}/{{ article.Id }}/{{ article.Read }}" on-rf-api-response="{{ onArticleReadResponse }}" user="{{ user }}"></rf-api>
+        <rf-api id="article-favorite" method="post" pathAction="article/favorite/{{ article.FeedId }}/{{ article.Id }}/{{ article.Favorite }}" on-rf-api-response="{{ onArticleFavoriteResponse }}" user="{{ user }}"></rf-api>
 
         <core-signals on-core-signal-rf-next-article="{{ nextArticle }}"></core-signals>
         <core-signals on-core-signal-rf-previous-article="{{ previousArticle }}"></core-signals>
@@ -261,6 +275,31 @@
 
         onPagesTransitionEnd: function(event) {
             document.querySelector('rf-app').$.scaffolding.$['content-panel'].scroller.scrollTop = 0;
+        },
+
+        onFavoriteToggle: function(event) {
+            event.stopPropagation();
+            event.preventDefault();
+
+            var articleId = event.target.getAttribute('data-article-id');
+            for (var i = 0, a; a = this.articles[i]; ++i) {
+                if (a.Id == articleId) {
+                    a.Favorite = !a.Favorite;
+
+                    var clone = this.$['article-favorite'].cloneNode(true);
+                    clone.pathAction = "article/favorite/" + a.FeedId + "/" + a.Id + "/" + a.Favorite;
+                    clone.user = this.user;
+
+                    clone.go()
+
+                    break;
+                }
+            }
+        },
+
+        onFavoriteArticleToggle: function() {
+            this.article.Favorite = !this.article.Favorite;
+            this.$['article-favorite'].go();
         }
 
     });
