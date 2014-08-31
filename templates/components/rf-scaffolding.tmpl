@@ -31,6 +31,12 @@
               display: none;
             }
 
+            .title {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
             .refreshButton {
                 position: absolute;
                 bottom: -28px;
@@ -93,11 +99,11 @@
                 <core-toolbar id="mainheader">
                     <paper-icon-button id="navicon" icon="menu" hidden?="{{ article }}"></paper-icon-button>
                     <paper-icon-button id="back-menu" icon="arrow-back" hidden?="{{ !article }}" on-tap="{{ onArticleBack }}"></paper-icon-button>
-                    <div flex hidden?="{{ wide }}">{{ feed.Title }}</div>
+                    <div flex hidden?="{{ wide }}" class="title">{{ feed.Title }}</div>
                     <paper-icon-button id="previous-article-menu" icon="hardware:keyboard-arrow-left" hidden?="{{ !article || article.First }}" on-tap="{{ onArticlePrevious }}"></paper-icon-button>
                     <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" hidden?="{{ !article || article.Last }}" on-tap="{{ onArticleNext }}"></paper-icon-button>
                     <paper-icon-button id="refresh-menu" icon="refresh" on-tap="{{ onRefresh }}"></paper-icon-button>
-                    <paper-menu-button icon="more-vert" halign="right">
+                    <paper-menu-button icon="more-vert" halign="right" hidden?="{{ article }}">
                         <paper-item label="Older first"></paper-item>
                         <paper-item label="Unread only"></paper-item>
                         <paper-item label="Mark all as read"></paper-item>
@@ -123,7 +129,7 @@
                         </div>
                         <paper-icon-button id="previous-article-title" icon="hardware:keyboard-arrow-left" class="title-icon" style="opacity: {{ article && !article.First ? 100 : 0 }}" on-tap="{{ onArticlePrevious }}"></paper-icon-button>
                         <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" class="title-icon" style="opacity: {{ article && !article.Last ? 100 : 0 }}" on-tap="{{ onArticleNext }}"></paper-icon-button>
-                        <paper-menu-button icon="more-vert" halign="right" class="title-icon">
+                        <paper-menu-button icon="more-vert" halign="right" hidden?="{{ article }}" class="title-icon">
                             <paper-item label="Older first"></paper-item>
                             <paper-item label="Unread only"></paper-item>
                             <paper-item label="Mark all as read"></paper-item>
