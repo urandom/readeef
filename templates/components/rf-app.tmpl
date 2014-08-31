@@ -254,6 +254,7 @@
 
         onFeedRefresh: function(event, detail, sender) {
             this.currentArticle = null;
+            this.currentFeed.Articles = null;
             this.currentFeedChanged(this.currentFeed, this.currentFeed);
         },
 

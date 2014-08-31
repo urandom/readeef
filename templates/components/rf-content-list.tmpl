@@ -80,7 +80,7 @@
             }
 
         </style>
-        <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="list" transitions="hero-transition">
+        <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="list" transitions="hero-transition" on-core-animated-pages-transition-end="{{ onPagesTransitionEnd }}">
 
             <section name="list">
                 <core-list data="{{ articles }}" height="{{ itemHeight }}" id="articles-list" on-core-activate="{{ onArticleActivate }}">
@@ -241,10 +241,6 @@
                 if (newValue.Last) {
                     this.asyncFire('core-signal', {name: 'rf-request-articles'});
                 }
-
-                this.async(function() {
-                    scroller.scrollTop = 0;
-                });
             } else {
                 this.$.pages.selected = 'list';
 
@@ -256,6 +252,10 @@
 
         onArticleActivate: function(event, detail) {
             this.article = detail.data;
+        },
+
+        onPagesTransitionEnd: function(event) {
+            document.querySelector('rf-app').$.scaffolding.$['content-panel'].scroller.scrollTop = 0;
         }
 
     });
