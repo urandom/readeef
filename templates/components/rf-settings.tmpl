@@ -1,12 +1,19 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/paper-tab/paper-tab.html">
+<link rel="import" href="/dist/paper-tabs/paper-tabs.html">
 
 <link rel="import" href="/component/rf-api">
 
-<polymer-element name="rf-settings" attributes="wide user settings">
+<polymer-element name="rf-settings" attributes="wide user settings feeds">
     <template>
         <style>
         </style>
+        <paper-tabs selected="{{ selectedTab }}">
+            <paper-tab name="feeds">Manage Feeds</paper-tab>
+            <paper-tab name="add-feed">Add Feed</paper-tab>
+            <paper-tab name="user">Your settings</paper-tab>
+        </paper-tabs>
         
     </template>
     <script>
@@ -14,6 +21,7 @@
     "use strict";
 
     Polymer('rf-settings', {
+        selectedTab: 'feeds'
     });
 })();
     </script>

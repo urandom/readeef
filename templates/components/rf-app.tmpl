@@ -19,6 +19,7 @@
 <link rel="import" href="/component/rf-login">
 <link rel="import" href="/component/rf-dialog-add-feed">
 <link rel="import" href="/component/rf-content-list">
+<link rel="import" href="/component/rf-settings">
 
 <polymer-element name="rf-app" vertical layout attributes="{{ user userTTL }}">
     <template>
@@ -78,7 +79,7 @@
 
                 <div class="main-content">
                     <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" hidden?="{{ display != 'feed' || loadingArticles }}"></rf-content-list>
-                    <rf-settings id="settings" wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" hidden?="{{ display == 'feed' }}"></rf-settings>
+                    <rf-settings id="settings" wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feeds="{{ feeds }}" hidden?="{{ display == 'feed' }}"></rf-settings>
                     <template if="{{ loadingArticles || loadingMoreArticles }}">
                         <div layout vertical center>
                             <loading-wave background="#f8f8f8"></loading-wave>
