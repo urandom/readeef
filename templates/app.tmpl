@@ -17,6 +17,14 @@ body {
 html /deep/ .drawer-content.core-selected[selectable] {
     font-weight: bold;
 }
+
+html /deep/ paper-tab::shadow #ink {
+    color: #558AE0;
+}
+
+html /deep/ paper-tabs::shadow #selectionBar {
+    background-color: #558AE0;
+}
 </style>
 {% end %}
 {% define "body-attrs" %} fullbleed unresolved {% end %}
