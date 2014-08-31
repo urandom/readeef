@@ -1,19 +1,35 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
-<link rel="import" href="/dist/paper-tab/paper-tab.html">
+<link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
+<link rel="import" href="/dist/core-animated-pages/transitions/slide-from-right.html">
+
 <link rel="import" href="/dist/paper-tabs/paper-tabs.html">
 
 <link rel="import" href="/component/rf-api">
 
-<polymer-element name="rf-settings" attributes="wide user settings feeds">
+<polymer-element name="rf-settings" attributes="wide user settings feeds" layout vertical>
     <template>
         <style>
+            core-animated-pages > section[active] {
+                position: relative;
+            }
         </style>
-        <paper-tabs selected="{{ selectedTab }}">
+        <paper-tabs id="tabs" selected="{{ selectedTab }}">
             <paper-tab name="feeds">Manage Feeds</paper-tab>
             <paper-tab name="add-feed">Add Feed</paper-tab>
-            <paper-tab name="user">Your settings</paper-tab>
+            <paper-tab name="user">Your Settings</paper-tab>
         </paper-tabs>
+        <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}">
+            <section name="feeds">
+                <div slide-from-right>Manage feeds</div>
+            </section>
+            <section name="add-feed">
+                <div slide-from-right>Add feed</div>
+            </section>
+            <section name="user">
+                <div slide-from-right>Your settings</div>
+            </section>
+        </core-animated-pages>
         
     </template>
     <script>
