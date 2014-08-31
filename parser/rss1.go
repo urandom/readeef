@@ -72,6 +72,8 @@ func ParseRss1(b []byte) (Feed, error) {
 			article.Id = i.Id
 		}
 
+		article.Id = strings.Replace(article.Id, "/", "|", -1)
+
 		var err error
 		if i.PubDate != "" {
 			if article.Date, err = parseDate(i.PubDate); err != nil {

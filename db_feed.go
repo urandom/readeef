@@ -39,6 +39,19 @@ WHERE f.id = uf.feed_id
 	AND uf.user_login = $1
 `
 
+	get_feed_article = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.feed_id = $1 AND a.Id = $2
+	AND uf.user_login = $3
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+`
+
 	update_feed_article = `
 UPDATE articles SET title = $1, description = $2, link = $3, date = $4 WHERE id = $5 AND feed_id = $6
 `
@@ -393,6 +406,17 @@ func (db DB) GetUserFeeds(u User) ([]Feed, error) {
 	}
 
 	return feeds, nil
+}
+
+func (db DB) GetFeedArticle(feedId int64, articleId string, user User) (Article, error) {
+	Debug.Printf("Getting feed article for %d - %s\n", feedId, articleId)
+
+	var a Article
+	if err := db.Get(&a, db.NamedSQL("get_feed_article"), feedId, articleId, user.Login); err != nil {
+		return a, err
+	}
+
+	return a, nil
 }
 
 func (db DB) CreateFeedArticles(f Feed, articles []Article) (Feed, error) {
@@ -812,6 +836,7 @@ func init() {
 	sql_stmt["generic:create_user_feed"] = create_user_feed
 	sql_stmt["generic:delete_user_feed"] = delete_user_feed
 	sql_stmt["generic:get_user_feeds"] = get_user_feeds
+	sql_stmt["generic:get_feed_article"] = get_feed_article
 	sql_stmt["generic:update_feed_article"] = update_feed_article
 	sql_stmt["generic:get_feed_articles"] = get_feed_articles
 	sql_stmt["generic:get_unread_feed_articles"] = get_unread_feed_articles

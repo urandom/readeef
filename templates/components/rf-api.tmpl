@@ -56,13 +56,15 @@
                 self.$.request.xhr = {
                     request: function(args) {
                         var bodyHash = CryptoJS.MD5(args.body).toString(CryptoJS.enc.Base64),
-                            message = args.url + "\n" + (args.method || 'GET') + "\n" + bodyHash + "\n",
+                            message = encodeURI(args.url) + "\n" + (args.method || 'GET') + "\n",
                             messageHash;
 
                         args.headers['X-Date'] = new Date().toUTCString();
                         args.headers['X-Nonce'] = response.Nonce;
 
-                        message += args.headers['Content-Type'] + "\n" + args.headers['X-Date'] + "\n" + args.headers['X-Nonce'] + "\n";
+                        message += bodyHash + "\n" + args.headers['Content-Type'] + "\n"
+                                + args.headers['X-Date'] + "\n" + args.headers['X-Nonce'] + "\n";
+
                         messageHash = CryptoJS.HmacSHA256(message, self.user.md5api).toString(CryptoJS.enc.Base64);
 
                         args.headers['Authorization'] = "Readeef " + self.user.login + ":" + messageHash;

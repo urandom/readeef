@@ -38,6 +38,9 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	controller = NewFeed(fm)
 	dispatcher.Handle(controller)
 
+	controller = NewArticle()
+	dispatcher.Handle(controller)
+
 	controller = NewNonce(nonce)
 	dispatcher.Handle(controller)
 

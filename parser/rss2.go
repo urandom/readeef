@@ -66,6 +66,7 @@ func ParseRss2(b []byte) (Feed, error) {
 		} else {
 			article.Id = i.Id
 		}
+		article.Id = strings.Replace(article.Id, "/", "|", -1)
 
 		if i.Content == "" || len(i.Content) < len(i.Description) {
 			article.Description = i.Description

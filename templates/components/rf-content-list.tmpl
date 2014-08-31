@@ -4,6 +4,8 @@
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
 <link rel="import" href="/dist/core-signals/core-signals.html">
 
+<link rel="import" href="/component/rf-api">
+
 <polymer-element name="rf-content-list" attributes="wide user feed feeds article">
     <template bind="{{ wide as wide }}">
         <style>
@@ -117,6 +119,10 @@
             </section>
 
         </core-animated-pages>
+
+        <rf-api id="article-read" pathAction="article/read/{{ article.FeedId }}/{{ article.Id }}/{{ article.Read }}" on-rf-api-response="{{ onArticleReadResponse }}" user="{{ user }}"></rf-api>
+        <rf-api id="article-favorite" pathAction="article/favorite/{{ article.FeedId }}/{{ article.Id }}/{{ article.Favorite }}" on-rf-api-response="{{ onArticleFavoriteResponse }}" user="{{ user }}"></rf-api>
+
         <core-signals on-core-signal-rf-next-article="{{ nextArticle }}"></core-signals>
         <core-signals on-core-signal-rf-previous-article="{{ previousArticle }}"></core-signals>
     </template>
@@ -219,6 +225,11 @@
                 this.$.pages.querySelector('.article-description').innerHTML = this.article.Description;
 
                 this.$.pages.selected = 'detail';
+
+                if (!newValue.Read) {
+                    newValue.Read = true;
+                    this.$['article-read'].go();
+                }
 
                 if (newValue.Last) {
                     this.asyncFire('core-signal', {name: 'rf-request-articles'});
