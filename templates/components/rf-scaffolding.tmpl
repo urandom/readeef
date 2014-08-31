@@ -163,7 +163,12 @@
         },
 
         onArticleBack: function(event) {
-            this.article = null;
+            event.stopPropagation();
+            event.preventDefault();
+
+            this.async(function() {
+                this.article = null;
+            });
         },
 
         onArticlePrevious: function() {
