@@ -3,17 +3,17 @@ package readeef
 import "encoding/json"
 
 const (
-	get_user    = `SELECT first_name, last_name, email, admin, profile_data, hash_type, salt, hash, md5_api FROM users WHERE login = $1`
+	get_user    = `SELECT first_name, last_name, email, admin, active, profile_data, hash_type, salt, hash, md5_api FROM users WHERE login = $1`
 	create_user = `
-INSERT INTO users(login, first_name, last_name, email, admin, profile_data, hash_type, salt, hash, md5_api)
-	SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10 EXCEPT
-	SELECT login, first_name, last_name, email, admin, profile_data, hash_type, salt, hash, md5_api FROM users WHERE login = $1`
+INSERT INTO users(login, first_name, last_name, email, admin, active, profile_data, hash_type, salt, hash, md5_api)
+	SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11 EXCEPT
+	SELECT login, first_name, last_name, email, admin, active, profile_data, hash_type, salt, hash, md5_api FROM users WHERE login = $1`
 	update_user = `
-UPDATE users SET first_name = $1, last_name = $2, email = $3, admin = $4, profile_data = $5, hash_type = $6, salt = $7, hash = $8, md5_api = $9
-	WHERE login = $10`
+UPDATE users SET first_name = $1, last_name = $2, email = $3, admin = $4, active = $5, profile_data = $6, hash_type = $7, salt = $8, hash = $9, md5_api = $10
+	WHERE login = $11`
 	delete_user = `DELETE FROM users WHERE login = $1`
 
-	get_users = `SELECT login, first_name, last_name, email, admin, profile_data, hash_type, salt, hash, md5_api FROM users`
+	get_users = `SELECT login, first_name, last_name, email, admin, active, profile_data, hash_type, salt, hash, md5_api FROM users`
 )
 
 func (db DB) GetUser(login string) (User, error) {
@@ -79,7 +79,7 @@ func (db DB) UpdateUser(u User) error {
 	}
 	defer ustmt.Close()
 
-	res, err := ustmt.Exec(u.FirstName, u.LastName, u.Email, u.Admin, u.ProfileJSON, u.HashType, u.Salt, u.Hash, u.MD5API, u.Login)
+	res, err := ustmt.Exec(u.FirstName, u.LastName, u.Email, u.Admin, u.Active, u.ProfileJSON, u.HashType, u.Salt, u.Hash, u.MD5API, u.Login)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (db DB) UpdateUser(u User) error {
 	}
 	defer cstmt.Close()
 
-	_, err = cstmt.Exec(u.Login, u.FirstName, u.LastName, u.Email, u.Admin, u.ProfileJSON, u.HashType, u.Salt, u.Hash, u.MD5API)
+	_, err = cstmt.Exec(u.Login, u.FirstName, u.LastName, u.Email, u.Admin, u.Active, u.ProfileJSON, u.HashType, u.Salt, u.Hash, u.MD5API)
 	if err != nil {
 		return err
 	}

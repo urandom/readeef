@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
 	last_name TEXT,
 	email TEXT,
 	admin INTEGER DEFAULT 0,
+	active INTEGER DEFAULT 1,
 	profile_data TEXT,
 	hash_type TEXT,
 	salt TEXT,

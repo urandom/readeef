@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
 	last_name TEXT,
 	email TEXT,
 	admin BOOLEAN DEFAULT 'f',
+	active BOOLEAN DEFAULT 't',
 	profile_data BYTEA,
 	hash_type TEXT,
 	salt BYTEA,
