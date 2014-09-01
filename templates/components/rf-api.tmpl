@@ -55,14 +55,28 @@
                 self.$.request.url = self.url;
                 self.$.request.xhr = {
                     request: function(args) {
-                        var bodyHash = CryptoJS.MD5(args.body).toString(CryptoJS.enc.Base64),
-                            message = encodeURI(args.url) + "\n" + (args.method.toUpperCase() || 'GET') + "\n",
-                            messageHash;
+                        var method = (args.method.toUpperCase() || 'GET'),
+                            params = xhr.toQueryString(args.params),
+                            message, messageHash, bodyHash;
+
+                        if (xhr.isBodyMethod(method) && !args.body) {
+                            args.body = params;
+                        } else if (params && method == 'GET') {
+                            /* Make sure the order of the parameters is
+                             * consistent with that's in the message, don't
+                             * let the xhr do it */
+                            args.url += (args.url.indexOf('?') > 0 ? '&' : '?') + params;
+
+                            delete args.params;
+                        }
+
+                        bodyHash = CryptoJS.MD5(args.body).toString(CryptoJS.enc.Base64);
 
                         args.headers['X-Date'] = new Date().toUTCString();
                         args.headers['X-Nonce'] = response.Nonce;
 
-                        message += bodyHash + "\n" + args.headers['Content-Type'] + "\n"
+                        message = encodeURI(args.url) + "\n" + method + "\n"
+                                + bodyHash + "\n" + args.headers['Content-Type'] + "\n"
                                 + args.headers['X-Date'] + "\n" + args.headers['X-Nonce'] + "\n";
 
                         messageHash = CryptoJS.HmacSHA256(message, self.user.md5api).toString(CryptoJS.enc.Base64);

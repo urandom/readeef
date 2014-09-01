@@ -87,7 +87,7 @@
             </core-animated-pages>
         </div>
         <rf-api user="{{ user }}" id="discover-feed" pathAction="feed/discover" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
-        <rf-api user="{{ user }}" id="add-feed" pathAction="feed/add" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="add-feed" method="post" pathAction="feed/add" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
         
     </template>
     <script>
