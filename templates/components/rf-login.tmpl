@@ -43,8 +43,8 @@
             <div class="card-container {{ {wide: wide} | tokenList }}" layout horizontal center fit?="{{ !wide }}" on-keypress="{{ onKeypress }}">
                 <div class="card" layout vertical>
                     <div layout vertical>
-                    <paper-input label="Login" id="login" invalid="{{ invalid }}" error="The login credentials are incorrect" tabindex="1"></paper-input>
-                        <paper-input label="Password" id="password" type="password" tabindex="2"></paper-input>
+                    <paper-input label="Login" id="login" invalid="{{ invalid }}" error="The login credentials are incorrect" tabindex="1" floatingLabel></paper-input>
+                        <paper-input label="Password" id="password" type="password" tabindex="2" floatingLabel></paper-input>
                     </div>
                     <div horizontal center layout>
                         <div flex></div>

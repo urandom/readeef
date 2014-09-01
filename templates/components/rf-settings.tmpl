@@ -1,7 +1,6 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
-<link rel="import" href="/dist/core-animated-pages/transitions/slide-from-right.html">
 
 <link rel="import" href="/dist/paper-button/paper-button.html">
 <link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
@@ -24,7 +23,7 @@
                 background-color: #fff;
                 box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.16);
                 border-radius: 3px;
-                margin: 0 8px 8px;
+                margin: 24px;
                 padding: 8px;
             }
 
@@ -32,7 +31,7 @@
                 background: #259b24;
             }
         </style>
-        <div class="card" layout vertical flex>
+        <div layout vertical flex>
             <paper-tabs id="tabs" selected="{{ selectedTab }}">
                 <paper-tab name="general">General</paper-tab>
                 <paper-tab name="feeds">Manage Feeds</paper-tab>
@@ -41,47 +40,55 @@
                     <paper-tab name="admin">Admin</paper-tab>
                 </template>
             </paper-tabs>
-            <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}" transitions="slide-from-right">
-                <section name="general">
-                    <div slide-from-right>General</div>
+            <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}" transitions="hero-transition cross-fade-all">
+                <section name="general" layout vertical center>
+                    <div class="container" hero-p>
+                        <div class="card" hero-id="setting-card" hero>General</div>
+                    </div>
                 </section>
-                <section name="feeds">
-                    <div slide-from-right>Manage feeds</div>
+                <section name="feeds" layout vertical center>
+                    <div class="container" hero-p>
+                        <div class="card" hero-id="setting-card" hero>Manage feeds</div>
+                    </div>
                 </section>
-                <section name="add-feed">
-                    <div slide-from-right>
-                        <template if="{{ !discoveredFeeds }}">
-                            <p>Enter the address of a feed, or a website that might contain one or more feeds.</p>
+                <section name="add-feed" layout vertical center>
+                    <div class="container" hero-p>
+                        <div class="card" hero-id="setting-card" hero>
+                            <template if="{{ !discoveredFeeds }}">
+                                <p>Enter the address of a feed, or a website that might contain one or more feeds.</p>
 
-                            <paper-input label="URL" id="feed-url" value="{{ url }}" on-keypress="{{ onAddFeedUrlKeypress }}" floatingLabel tabindex="1"></paper-input>
-                        </template>
-                        <template if="{{ discoveredFeeds && !discoveredFeeds.length }}">
-                            <p>No feeds found for '{{url}}'</p>
-                        </template>
-                        <template if="{{ discoveredFeeds && discoveredFeeds.length }}">
-                            <p>Found the following feeds for '{{url}}':</p>
-                            <ul>
-                            <template repeat="{{ feed in discoveredFeeds }}">
-                                <li>
-                                    <paper-checkbox checked="{{ feed.selected }}"></paper-checkbox>
-                                    <a href="{{ feed.Link }}">{{ feed.Title }}: {{ feed.Description}}</a>
-                                </li>
+                                <paper-input label="URL" id="feed-url" value="{{ url }}" on-keypress="{{ onAddFeedUrlKeypress }}" floatingLabel tabindex="1"></paper-input>
                             </template>
-                            </ul>
-                        </template>
-                        <template if="{{ loading }}">
-                            <loading-wave></loading-wave>
-                        </template>
+                            <template if="{{ discoveredFeeds && !discoveredFeeds.length }}">
+                                <p>No feeds found for '{{url}}'</p>
+                            </template>
+                            <template if="{{ discoveredFeeds && discoveredFeeds.length }}">
+                                <p>Found the following feeds for '{{url}}':</p>
+                                <ul>
+                                <template repeat="{{ feed in discoveredFeeds }}">
+                                    <li>
+                                        <paper-checkbox checked="{{ feed.selected }}"></paper-checkbox>
+                                        <a href="{{ feed.Link }}">{{ feed.Title }}: {{ feed.Description}}</a>
+                                    </li>
+                                </template>
+                                </ul>
+                            </template>
+                            <template if="{{ loading }}">
+                                <loading-wave background="#f8f8f8"></loading-wave>
+                            </template>
 
-                        <div layout horizontal end-justified>
-                            <paper-button label="Find" on-tap="{{ onFindFeed }}" id="find-feeds" autofocus hidden?="{{ discoveredFeeds }}"></paper-button>
-                            <paper-button label="Add" on-tap="{{ onAddFeed }}" id="add-feeds" autofocus hidden?="{{ !discoveredFeeds || !discoveredFeeds.length }}"></paper-button>
+                            <div layout horizontal end-justified>
+                                <paper-button label="Find" on-tap="{{ onFindFeed }}" id="find-feeds" autofocus hidden?="{{ discoveredFeeds }}"></paper-button>
+                                <paper-button label="Add" on-tap="{{ onAddFeed }}" id="add-feeds" autofocus hidden?="{{ !discoveredFeeds || !discoveredFeeds.length }}"></paper-button>
+                            </div>
                         </div>
                     </div>
                 </section>
                 <template if="{{ user.Admin }}">
-                    <section name="admin">
-                        <div slide-from-right>Admin</div>
+                    <section name="admin" layout vertical center>
+                        <div class="container" hero-p>
+                            <div class="card" hero-id="setting-card" hero>Admin</div>
+                        </div>
                     </section>
                 </template>
             </core-animated-pages>
