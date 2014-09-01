@@ -25,10 +25,22 @@
                 border-radius: 3px;
                 margin: 24px;
                 padding: 8px;
+                max-width: 1024px;
             }
 
             #save {
                 background: #259b24;
+            }
+
+            li {
+                padding: 8px;
+                list-style: none;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            li paper-checkbox {
+                margin-right: 8px;
             }
         </style>
         <div layout vertical flex>
@@ -53,11 +65,19 @@
                 </section>
                 <section name="add-feed" layout vertical center>
                     <div class="container" hero-p>
-                        <div class="card" hero-id="setting-card" hero>
+                        <div class="card" hero-id="setting-card" hero layout vertical>
                             <template if="{{ !discoveredFeeds }}">
-                                <p>Enter the address of a feed, or a website that might contain one or more feeds.</p>
+                                <p>
+                                    Enter the address of a feed, or a website that might contain one or more feeds.
+                                </p>
 
                                 <paper-input label="URL" id="feed-url" value="{{ url }}" on-keypress="{{ onAddFeedUrlKeypress }}" floatingLabel tabindex="1"></paper-input>
+
+                                <p>
+                                    Alternatively, you may provide an OPML file that contains a list of feeds.
+                                </p>
+
+                                <input type="file" id="opml" name="opml" accept=".opml" tabindex="2">
                             </template>
                             <template if="{{ discoveredFeeds && !discoveredFeeds.length }}">
                                 <p>No feeds found for '{{url}}'</p>
@@ -74,7 +94,7 @@
                                 </ul>
                             </template>
                             <template if="{{ loading }}">
-                                <loading-wave background="#f8f8f8"></loading-wave>
+                                <loading-wave self-center></loading-wave>
                             </template>
 
                             <div layout horizontal end-justified>
@@ -94,6 +114,7 @@
             </core-animated-pages>
         </div>
         <rf-api user="{{ user }}" id="discover-feed" pathAction="feed/discover" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="discover-opml" pathAction="feed/opml" method="POST" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="add-feed" method="post" pathAction="feed/add" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
         
     </template>
@@ -125,12 +146,27 @@
         },
 
         onFindFeed: function() {
-            if (!this.url) {
-                return;
-            }
+            if (this.$.opml.files.length) {
+                var file = this.$.opml.files[0], fileReader = new FileReader();
 
-            this.$['discover-feed'].params = JSON.stringify({"url": this.url});
-            this.$['discover-feed'].go();
+                fileReader.onload = function(event) {
+                    var contents = event.target.result;
+
+                    this.$['discover-opml'].body = contents;
+                    this.$['discover-opml'].contentType = file.type;
+
+                    this.$['discover-opml'].go();
+                }.bind(this);
+
+                fileReader.readAsText(file);
+            } else {
+                if (!this.url) {
+                    return;
+                }
+
+                this.$['discover-feed'].params = JSON.stringify({"url": this.url});
+                this.$['discover-feed'].go();
+            }
             this.loading = true;
         },
 

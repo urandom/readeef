@@ -13,6 +13,7 @@ import (
 
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
+	"github.com/urandom/webfw/util"
 )
 
 type Feed struct {
@@ -187,6 +188,48 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				success bool
 			}
 			resp := response{true}
+
+			var b []byte
+			b, err = json.Marshal(resp)
+			if err != nil {
+				break
+			}
+
+			w.Write(b)
+		case "opml":
+			buf := util.BufferPool.GetBuffer()
+			defer util.BufferPool.Put(buf)
+
+			buf.ReadFrom(r.Body)
+
+			var opml parser.Opml
+			opml, err = parser.ParseOpml(buf.Bytes())
+			if err != nil {
+				break
+			}
+
+			var feeds []readeef.Feed
+			for _, opmlFeed := range opml.Feeds {
+				var discovered []readeef.Feed
+
+				discovered, err = con.fm.DiscoverFeeds(opmlFeed.Url)
+				if err != nil {
+					continue
+				}
+
+				feeds = append(feeds, discovered...)
+			}
+
+			type response struct {
+				Feeds []feed
+			}
+			resp := response{}
+			for _, f := range feeds {
+				resp.Feeds = append(resp.Feeds, feed{
+					Id: f.Id, Title: f.Title, Description: f.Description,
+					Link: f.Link, Image: f.Image,
+				})
+			}
 
 			var b []byte
 			b, err = json.Marshal(resp)

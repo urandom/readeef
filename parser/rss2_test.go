@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"strings"
 	"testing"
 	"time"
@@ -83,7 +85,9 @@ func TestRss2Parse(t *testing.T) {
 	}
 
 	a := f.Articles[0]
-	if a.Id != "http://liftoff.msfc.nasa.gov/2003/06/03.html#item573" {
+	hash := sha1.New()
+	hash.Write([]byte("http://liftoff.msfc.nasa.gov/2003/06/03.html#item573"))
+	if a.Id != hex.EncodeToString(hash.Sum(nil)) {
 		t.Fatalf("Unexpected article id: '%v'\n", a.Id)
 	}
 
@@ -105,7 +109,9 @@ func TestRss2Parse(t *testing.T) {
 		t.Fatalf("Unexpected article date: '%s'\n", a.Date)
 	}
 
-	if f.Articles[1].Id != "http://liftoff.msfc.nasa.gov/2003/05/30.html#item572" {
+	hash = sha1.New()
+	hash.Write([]byte("http://liftoff.msfc.nasa.gov/2003/05/30.html#item572"))
+	if f.Articles[1].Id != hex.EncodeToString(hash.Sum(nil)) {
 		t.Fatalf("Unexpected article id: '%v'\n", f.Articles[1].Id)
 	}
 
