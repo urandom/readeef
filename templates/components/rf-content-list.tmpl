@@ -231,10 +231,6 @@
 
                 this.pathObserver = new PathObserver(newValue, 'Articles');
                 this.pathObserver.open(function(newValue) {
-                    if (!newValue) {
-                        return;
-                    }
-
                     processArticles();
                 }.bind(this));
             }

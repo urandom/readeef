@@ -307,6 +307,10 @@
                     this.noMoreArticles = true;
                     this.loadingArticles = false;
                     this.loadingMoreArticles = false;
+
+                    if (!this.offset) {
+                        this.currentFeed.Articles = null;
+                    }
                 }
             }
         },
