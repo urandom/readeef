@@ -77,7 +77,7 @@
 
                 <div class="main-content">
                     <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" hidden?="{{ display != 'feed' || loadingArticles }}"></rf-content-list>
-                    <rf-settings id="settings" wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feeds="{{ feeds }}" hidden?="{{ display == 'feed' }}"></rf-settings>
+                    <rf-settings id="settings" wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feeds="{{ feeds }}" hidden?="{{ display == 'feed' }}" display="{{ display }}"></rf-settings>
                     <template if="{{ loadingArticles || loadingMoreArticles }}">
                         <div layout vertical center>
                             <loading-wave background="#f8f8f8"></loading-wave>

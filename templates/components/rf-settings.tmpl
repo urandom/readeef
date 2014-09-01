@@ -1,6 +1,7 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
+<link rel="import" href="/dist/core-animated-pages/transitions/slide-from-right.html">
 
 <link rel="import" href="/dist/paper-button/paper-button.html">
 <link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
@@ -12,7 +13,7 @@
 
 <link rel="import" href="/component/rf-api">
 
-<polymer-element name="rf-settings" attributes="wide user settings feeds" layout horizontal center-justified>
+<polymer-element name="rf-settings" attributes="wide user settings feeds display" layout horizontal center-justified>
     <template>
         <style>
             core-animated-pages > section[active] {
@@ -52,19 +53,19 @@
                     <paper-tab name="admin">Admin</paper-tab>
                 </template>
             </paper-tabs>
-            <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}" transitions="hero-transition cross-fade-all">
+            <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}" transitions="hero-transition slide-from-right">
                 <section name="general" layout vertical center>
-                    <div class="container" hero-p>
-                        <div class="card" hero-id="setting-card" hero>General</div>
+                    <div class="container" slide-from-right>
+                        <div class="card" hero-id="setting-card" hero2>General</div>
                     </div>
                 </section>
                 <section name="feeds" layout vertical center>
-                    <div class="container" hero-p>
-                        <div class="card" hero-id="setting-card" hero>Manage feeds</div>
+                    <div class="container" slide-from-right>
+                        <div class="card" hero-id="setting-card" hero2>Manage feeds</div>
                     </div>
                 </section>
                 <section name="add-feed" layout vertical center>
-                    <div class="container" hero-p>
+                    <div class="container" slide-from-right>
                         <div class="card" hero-id="setting-card" hero layout vertical>
                             <template if="{{ !discoveredFeeds }}">
                                 <p>
@@ -106,8 +107,8 @@
                 </section>
                 <template if="{{ user.Admin }}">
                     <section name="admin" layout vertical center>
-                        <div class="container" hero-p>
-                            <div class="card" hero-id="setting-card" hero>Admin</div>
+                        <div class="container" slide-from-right>
+                            <div class="card" hero-id="setting-card" hero2>Admin</div>
                         </div>
                     </section>
                 </template>
@@ -128,6 +129,12 @@
 
         attached: function() {
             this.cleanFields();
+        },
+
+        displayChanged: function(oldValue, newValue) {
+            if (newValue != 'settings') {
+                this.cleanFields();
+            }
         },
 
         onAddFeedUrlKeypress: function(event, detail, sender) {
