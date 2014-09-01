@@ -177,10 +177,12 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 
 					hm := hmac.New(sha256.New, b)
 					if _, err := hm.Write([]byte(message)); err != nil {
+						l.Printf("Error generating the hashed message: %v\n", err)
 						break
 					}
 
 					if !hmac.Equal(hm.Sum(nil), decoded) {
+						l.Printf("Error matching the supplied auth message to the generated one.\n")
 						break
 					}
 

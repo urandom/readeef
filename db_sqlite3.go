@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
 	first_name TEXT,
 	last_name TEXT,
 	email TEXT,
-	admin INTEGER,
+	admin INTEGER DEFAULT 0,
 	profile_data TEXT,
 	hash_type TEXT,
 	salt TEXT,
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 	feed_id INTEGER NOT NULL UNIQUE,
 	lease_duration INTEGER,
 	verification_time TIMESTAMP,
-	subscription_failure INTEGER,
+	subscription_failure INTEGER DEFAULT 0,
 
 	PRIMARY KEY(link),
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE

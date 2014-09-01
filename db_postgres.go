@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
 	first_name TEXT,
 	last_name TEXT,
 	email TEXT,
-	admin BOOLEAN,
+	admin BOOLEAN DEFAULT 'f',
 	profile_data BYTEA,
 	hash_type TEXT,
 	salt BYTEA,
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 	feed_id INTEGER NOT NULL UNIQUE,
 	lease_duration INTEGER,
 	verification_time TIMESTAMP WITH TIME ZONE,
-	subscription_failure BOOLEAN,
+	subscription_failure BOOLEAN DEFAULT 'f',
 
 	PRIMARY KEY(link),
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
