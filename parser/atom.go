@@ -21,6 +21,7 @@ type atomItem struct {
 	Id          string   `xml:"id"`
 	Title       string   `xml:"title"`
 	Description string   `xml:"summary"`
+	Content     string   `xml:"string"`
 	Link        atomLink `xml:"link"`
 	Date        string   `xml:"updated"`
 }
@@ -51,11 +52,17 @@ func ParseAtom(b []byte) (Feed, error) {
 	}
 
 	for _, i := range rss.Items {
-		article := Article{Id: i.Id, Title: i.Title, Description: i.Description, Link: i.Link.Href}
+		article := Article{Id: i.Id, Title: i.Title, Link: i.Link.Href}
 
 		hash := sha1.New()
 		hash.Write([]byte(article.Id))
 		article.Id = hex.EncodeToString(hash.Sum(nil))
+
+		if i.Content == "" || len(i.Content) < len(i.Description) {
+			article.Description = i.Description
+		} else {
+			article.Description = i.Content
+		}
 
 		var err error
 		if article.Date, err = parseDate(i.Date); err != nil {

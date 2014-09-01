@@ -163,13 +163,16 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 					buf.ReadFrom(r.Body)
 					r.Body = ioutil.NopCloser(buf)
 
-					contentMD5 := base64.StdEncoding.EncodeToString(md5.New().Sum(buf.Bytes()))
+					bodyHash := md5.New()
+					if _, err := bodyHash.Write(buf.Bytes()); err != nil {
+						l.Printf("Error generating the hash for the request body: %v\n", err)
+						break
+					}
 
-					uriParts := strings.SplitN(r.RequestURI, "?", 2)
-					uri := uriParts[0]
+					contentMD5 := base64.StdEncoding.EncodeToString(bodyHash.Sum(nil))
 
 					message := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s\n",
-						uri, r.Method, contentMD5, r.Header.Get("Content-Type"),
+						r.RequestURI, r.Method, contentMD5, r.Header.Get("Content-Type"),
 						date, nonce)
 
 					b := make([]byte, base64.StdEncoding.EncodedLen(len(u.MD5API)))
