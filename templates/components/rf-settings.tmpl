@@ -4,6 +4,7 @@
 <link rel="import" href="/dist/core-animated-pages/transitions/slide-from-right.html">
 
 <link rel="import" href="/dist/paper-button/paper-button.html">
+<link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
@@ -33,6 +34,10 @@
                 background: #259b24;
             }
 
+            ul {
+                padding-left: 20px;
+            }
+
             li {
                 padding: 8px;
                 list-style: none;
@@ -42,6 +47,10 @@
             }
             li paper-checkbox {
                 margin-right: 8px;
+            }
+
+            [name="feeds"] li span {
+                line-height: 40px;
             }
         </style>
         <div layout vertical flex>
@@ -54,19 +63,31 @@
                 </template>
             </paper-tabs>
             <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}" transitions="hero-transition slide-from-right">
+
                 <section name="general" layout vertical center>
                     <div class="container" slide-from-right>
-                        <div class="card" hero-id="setting-card" hero2>General</div>
+                        <div class="card">General</div>
                     </div>
                 </section>
+
                 <section name="feeds" layout vertical center>
                     <div class="container" slide-from-right>
-                        <div class="card" hero-id="setting-card" hero2>Manage feeds</div>
+                        <div class="card" layout vertical>
+                            <ul>
+                                <template repeat="{{ feed in feeds }}">
+                                <li title="{{ feed.Title }}" layout horizontal>
+                                    <span flex>{{ feed.Title }}</span>
+                                    <paper-icon-button icon="remove" on-tap="{{ onRemoveFeed }}" data-feed-id="{{ feed.Id }}"></paper-icon-button>
+                                </li>
+                                </template>
+                            </ul>
+                        </div>
                     </div>
                 </section>
+
                 <section name="add-feed" layout vertical center>
                     <div class="container" slide-from-right>
-                        <div class="card" hero-id="setting-card" hero layout vertical>
+                        <div class="card" layout vertical>
                             <template if="{{ !discoveredFeeds }}">
                                 <p>
                                     Enter the address of a feed, or a website that might contain one or more feeds.
@@ -105,15 +126,20 @@
                         </div>
                     </div>
                 </section>
+
                 <template if="{{ user.Admin }}">
                     <section name="admin" layout vertical center>
                         <div class="container" slide-from-right>
-                            <div class="card" hero-id="setting-card" hero2>Admin</div>
+                            <div class="card">Admin</div>
                         </div>
                     </section>
                 </template>
+
             </core-animated-pages>
         </div>
+
+        <rf-api user="{{ user }}" id="remove-feed" method="post" pathAction="feed/remove/{{ removedFeed }}" on-rf-api-response="{{ onRemoveFeedResponse }}"></rf-api>
+
         <rf-api user="{{ user }}" id="discover-feed" pathAction="feed/discover" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="discover-opml" pathAction="feed/opml" method="post" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="add-feed" method="post" pathAction="feed/add" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
@@ -126,6 +152,7 @@
     Polymer('rf-settings', {
         selectedTab: 'general',
         loading: false,
+        removedFeed: null,
 
         attached: function() {
             this.cleanFields();
@@ -213,6 +240,17 @@
             }
 
             this.cleanFields();
+        },
+
+        onRemoveFeed: function(event, detail, sender) {
+            this.removedFeed = sender.getAttribute("data-feed-id");
+            this.$['remove-feed'].go();
+        },
+
+        onRemoveFeedResponse: function(event, data) {
+            if (data.response && data.response.Success) {
+                this.fire('core-signal', {name: 'rf-feeds-removed'});
+            }
         },
 
         cleanFields: function() {

@@ -100,7 +100,8 @@
 
         <core-signals on-core-signal-rf-request-articles="{{ onRequestArticles }}"></core-signals>
         <core-signals on-core-signal-rf-feed-refresh="{{ onFeedRefresh }}"></core-signals>
-        <core-signals on-core-signal-rf-feeds-added="{{ onFeedsAdded }}"></core-signals>
+        <core-signals on-core-signal-rf-feeds-added="{{ onFeedsChanged }}"></core-signals>
+        <core-signals on-core-signal-rf-feeds-removed="{{ onFeedsChanged }}"></core-signals>
 
     </template>
     <script>
@@ -260,7 +261,7 @@
             this.$['add-feed-dialog'].toggle();
         },
 
-        onFeedsAdded: function() {
+        onFeedsChanged: function() {
             this.$['list-feeds'].go();
         },
 

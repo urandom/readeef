@@ -185,7 +185,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			con.fm.RemoveFeed(feed)
 
 			type response struct {
-				success bool
+				Success bool
 			}
 			resp := response{true}
 
