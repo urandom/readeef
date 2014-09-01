@@ -21,7 +21,7 @@ type atomItem struct {
 	Id          string   `xml:"id"`
 	Title       string   `xml:"title"`
 	Description string   `xml:"summary"`
-	Content     string   `xml:"string"`
+	Content     string   `xml:"content"`
 	Link        atomLink `xml:"link"`
 	Date        string   `xml:"updated"`
 }
