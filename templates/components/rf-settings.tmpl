@@ -3,8 +3,13 @@
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
 <link rel="import" href="/dist/core-animated-pages/transitions/slide-from-right.html">
 
+<link rel="import" href="/dist/paper-button/paper-button.html">
+<link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
+<link rel="import" href="/dist/paper-input/paper-input.html">
 <link rel="import" href="/dist/paper-tabs/paper-tabs.html">
+
+<link rel="import" href="/dist/loading-wave/loading-wave.html">
 
 <link rel="import" href="/component/rf-api">
 
@@ -21,7 +26,6 @@
                 border-radius: 3px;
                 margin: 0 8px 8px;
                 padding: 8px;
-                max-width: 1280px;
             }
 
             #save {
@@ -30,23 +34,60 @@
         </style>
         <div class="card" layout vertical flex>
             <paper-tabs id="tabs" selected="{{ selectedTab }}">
+                <paper-tab name="general">General</paper-tab>
                 <paper-tab name="feeds">Manage Feeds</paper-tab>
                 <paper-tab name="add-feed">Add Feed</paper-tab>
-                <paper-tab name="user">Your Settings</paper-tab>
+                <template if="{{ user.Admin }}">
+                    <paper-tab name="admin">Admin</paper-tab>
+                </template>
             </paper-tabs>
-            <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}">
+            <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}" transitions="slide-from-right">
+                <section name="general">
+                    <div slide-from-right>General</div>
+                </section>
                 <section name="feeds">
                     <div slide-from-right>Manage feeds</div>
                 </section>
                 <section name="add-feed">
-                    <div slide-from-right>Add feed</div>
+                    <div slide-from-right>
+                        <template if="{{ !discoveredFeeds }}">
+                            <p>Enter the address of a feed, or a website that might contain one or more feeds.</p>
+
+                            <paper-input label="URL" id="feed-url" value="{{ url }}" on-keypress="{{ onAddFeedUrlKeypress }}" floatingLabel tabindex="1"></paper-input>
+                        </template>
+                        <template if="{{ discoveredFeeds && !discoveredFeeds.length }}">
+                            <p>No feeds found for '{{url}}'</p>
+                        </template>
+                        <template if="{{ discoveredFeeds && discoveredFeeds.length }}">
+                            <p>Found the following feeds for '{{url}}':</p>
+                            <ul>
+                            <template repeat="{{ feed in discoveredFeeds }}">
+                                <li>
+                                    <paper-checkbox checked="{{ feed.selected }}"></paper-checkbox>
+                                    <a href="{{ feed.Link }}">{{ feed.Title }}: {{ feed.Description}}</a>
+                                </li>
+                            </template>
+                            </ul>
+                        </template>
+                        <template if="{{ loading }}">
+                            <loading-wave></loading-wave>
+                        </template>
+
+                        <div layout horizontal end-justified>
+                            <paper-button label="Find" on-tap="{{ onFindFeed }}" id="find-feeds" autofocus hidden?="{{ discoveredFeeds }}"></paper-button>
+                            <paper-button label="Add" on-tap="{{ onAddFeed }}" id="add-feeds" autofocus hidden?="{{ !discoveredFeeds || !discoveredFeeds.length }}"></paper-button>
+                        </div>
+                    </div>
                 </section>
-                <section name="user">
-                    <div slide-from-right>Your settings</div>
-                </section>
+                <template if="{{ user.Admin }}">
+                    <section name="admin">
+                        <div slide-from-right>Admin</div>
+                    </section>
+                </template>
             </core-animated-pages>
-            <paper-fab id="save" icon="check" on-tap="{{onSave}}" self-end></paper-fab>
         </div>
+        <rf-api user="{{ user }}" id="discover-feed" pathAction="feed/discover" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="add-feed" pathAction="feed/add" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
         
     </template>
     <script>
@@ -54,7 +95,81 @@
     "use strict";
 
     Polymer('rf-settings', {
-        selectedTab: 'feeds'
+        selectedTab: 'general',
+        loading: false,
+
+        attached: function() {
+            this.cleanFields();
+        },
+
+        onAddFeedUrlKeypress: function(event, detail, sender) {
+            var code = event.keyCode || event.charCode, key = event.keyIdentifier;
+
+            if (key == 'Enter' || code == 13) {
+                sender.blur();
+
+                if (!this.url) {
+                    this.$['feed-url'].required = true;
+                    return;
+                }
+
+                this.$['find-feeds'].asyncFire('tap');
+            }
+        },
+
+        onFindFeed: function() {
+            if (!this.url) {
+                return;
+            }
+
+            this.$['discover-feed'].params = JSON.stringify({"url": this.url});
+            this.$['discover-feed'].go();
+            this.loading = true;
+        },
+
+        onAddFeed: function() {
+            var params = {url: []};
+            for (var i = 0, f; f = this.discoveredFeeds[i]; ++i) {
+                if (f.selected) {
+                    params.url.push(f.Link);
+                }
+            }
+
+            if (!params.url.length) {
+                /* TODO: show that nothing was selected */
+                return;
+            }
+
+            this.$['add-feed'].params = JSON.stringify(params)
+            this.$['add-feed'].go();
+            this.loading = true;
+        },
+
+        onDiscoverFeedResponse: function(event, data) {
+            if (data.response) {
+                data.response.Feeds.forEach(function(f) {
+                    f.selected = true;
+                });
+                this.discoveredFeeds = data.response.Feeds;
+            } else {
+                this.discoveredFeeds = [];
+            }
+            this.loading = false;
+        },
+
+        onAddFeedResponse: function(event, data) {
+            if (data.response && data.response.Success) {
+                this.fire('core-signal', {name: 'rf-feeds-added'});
+            }
+
+            this.cleanFields();
+        },
+
+        cleanFields: function() {
+            this.url = "";
+            this.discoveredFeeds = null;
+            this.loading = false;
+        }
     });
 })();
     </script>

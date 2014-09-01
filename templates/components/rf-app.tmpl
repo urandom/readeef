@@ -17,7 +17,6 @@
 <link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-scaffolding">
 <link rel="import" href="/component/rf-login">
-<link rel="import" href="/component/rf-dialog-add-feed">
 <link rel="import" href="/component/rf-content-list">
 <link rel="import" href="/component/rf-settings">
 
@@ -62,7 +61,6 @@
             <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feed="{{ currentFeed }}" article="{{ currentArticle }}" display="{{ display }}">
                 <div fit class="drawer-title bottom">Feeds</div>
 
-                <paper-item label="Add feed" class="drawer-content" on-tap="{{ onAddFeed }}"></paper-item>
                 <template if="{{ feeds.length > 0 }}">
                     <paper-item label="Favorite" class="drawer-content" on-tap="{{ onFeedTap }}" name="__favorite__" selectable></paper-item>
                     <hr class="drawer-content">
@@ -102,8 +100,8 @@
 
         <core-signals on-core-signal-rf-request-articles="{{ onRequestArticles }}"></core-signals>
         <core-signals on-core-signal-rf-feed-refresh="{{ onFeedRefresh }}"></core-signals>
+        <core-signals on-core-signal-rf-feeds-added="{{ onFeedsAdded }}"></core-signals>
 
-        <rf-dialog-add-feed id="add-feed-dialog" wide="{{ wide }}" user="{{ user }}" on-feeds-added="{{ onFeedsAdded }}"></rf-dialog-add-feed>
     </template>
     <script>
 (function() {

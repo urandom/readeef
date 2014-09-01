@@ -315,12 +315,16 @@ func discoverParserFeeds(link string) ([]Feed, error) {
 					if !u.IsAbs() {
 						l, _ := url.Parse(link)
 
-						if href[0] == '/' {
-							href = l.Scheme + "://" + l.Host + href
-						} else {
-							href = l.Scheme + "://" + l.Host + l.Path[:strings.LastIndex(l.Path, "/")] + "/" + href
+						u.Scheme = l.Scheme
+
+						if u.Host == "" {
+							u.Host = l.Host
 						}
+
+						href = u.String()
 					}
+
+					Debug.Printf("Checking if '%s' is a valid feed link\n", href)
 
 					fs, err := discoverParserFeeds(href)
 					if err != nil {
