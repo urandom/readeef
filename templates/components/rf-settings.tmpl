@@ -115,7 +115,7 @@
             </core-animated-pages>
         </div>
         <rf-api user="{{ user }}" id="discover-feed" pathAction="feed/discover" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
-        <rf-api user="{{ user }}" id="discover-opml" pathAction="feed/opml" method="POST" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="discover-opml" pathAction="feed/opml" method="post" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="add-feed" method="post" pathAction="feed/add" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
         
     </template>
