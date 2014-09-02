@@ -41,7 +41,6 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 		}
 
 		if err == nil {
-
 			switch action {
 			case "read":
 				read := params["value"] == "true"

@@ -96,6 +96,7 @@
         <rf-api id="auth-check" pathAction="auth" on-rf-api-complete="{{ onAuthCheckComplete }}" user="{{ user }}"></rf-api>
         <rf-api id="list-feeds" pathAction="feed/list" on-rf-api-response="{{ onAllFeedsResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="feed-articles" pathAction="feed/{{ currentFeedId }}/{{ limit }}/{{ offset }}/{{ userSettings.newerFirst }}/{{ userSettings.unreadOnly }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}"></rf-api>
+        <rf-api id="feed-read-all" pathAction="feed/read/{{ currentFeedId }}/{{ readUntilMilliSec }}" on-rf-api-response="{{ onFeedReadAllResponse }}" user="{{ user }}"></rf-api>
 
         <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
         <core-localstorage name="{{ user.login }}-settings" id="user-settings-storage" value="{{userSettings}}" on-core-localstorage-load="{{ onUserSettingsLoad }}"></core-localstorage>
@@ -155,6 +156,7 @@
         display: 'feed',
         limit: 50,
         offset: 0,
+        readUntilMilliSec: 0,
 
         created: function() {
             this.feeds = [];
@@ -355,11 +357,13 @@
         },
 
         onMarkAllAsRead: function() {
-            switch (this.currentFeed.Id) {
-            case "__all__":
-                break;
-            default:
-                break;
+            this.readUntilMilliSec = new Date().getTime();
+            this.$['feed-read-all'].go();
+        },
+
+        onFeedReadAllResponse: function(event, data) {
+            if (data.response && data.response.Success) {
+                this.updateFeedArticles();
             }
         }
     });

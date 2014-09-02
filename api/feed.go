@@ -10,6 +10,7 @@ import (
 	"readeef/parser"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
@@ -281,6 +282,61 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			w.Write(b)
+		case "read":
+			switch {
+			case parts[1] == "__all__":
+				var seconds int64
+				seconds, err = strconv.ParseInt(parts[2], 10, 64)
+				/* TODO: non-fatal error */
+				if err != nil {
+					break
+				}
+
+				t := time.Unix(seconds/1000, 0)
+
+				err = db.MarkUserArticlesByDateAsRead(user, t, true)
+			default:
+				var id int64
+				var seconds int64
+
+				id, err = strconv.ParseInt(parts[1], 10, 64)
+				/* TODO: non-fatal error */
+				if err != nil {
+					break
+				}
+
+				seconds, err = strconv.ParseInt(parts[2], 10, 64)
+				/* TODO: non-fatal error */
+				if err != nil {
+					break
+				}
+
+				t := time.Unix(seconds/1000, 0)
+
+				var feed readeef.Feed
+				feed, err = db.GetUserFeed(id, user)
+				/* TODO: non-fatal error */
+				if err != nil {
+					break
+				}
+
+				err = db.MarkFeedArticlesByDateAsRead(feed, t, true)
+			}
+
+			if err == nil {
+				type response struct {
+					Success bool
+				}
+				resp := response{true}
+
+				var b []byte
+				b, err = json.Marshal(resp)
+				if err != nil {
+					break
+				}
+
+				w.Write(b)
+			}
 		default:
 			var articles []readeef.Article
 
