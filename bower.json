@@ -18,6 +18,7 @@
     "polymer": "Polymer/polymer#~0.4.0",
     "core-elements": "Polymer/core-elements#~0.4.0",
     "paper-elements": "Polymer/paper-elements#~0.4.0",
-    "loading-wave": "~0.0.1"
+    "loading-wave": "~0.0.1",
+    "moment": "~2.8.2"
   }
 }

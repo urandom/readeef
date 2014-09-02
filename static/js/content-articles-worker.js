@@ -1,3 +1,5 @@
+importScripts("/dist/moment/min/moment.min.js");
+
 self.addEventListener('message', function(event) {
     "use strict";
     var articles = [], current = event.data.current, feeds = event.data.feeds, feedMap;
@@ -19,6 +21,8 @@ self.addEventListener('message', function(event) {
 
         a.ShortDescription = a.Description
             .replace(/<\w[^>]*>/g, '').replace(/<\/[^>]*>/g, '').trim().replace(/\s\s+/g, ' ');
+
+        a.RelativeDate = moment(a.Date).fromNow();
 
         if (current.Id == "__all__") {
             if (!feedMap) {
