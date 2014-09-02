@@ -116,7 +116,7 @@
                         <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}">
                             <div class="card" layout vertical hero-id="article-card-{{ Id }}" hero?="{{ selected }}">
                                 <div layout horizontal>
-                                    <paper-icon-button class="favorite-button" icon="{{ {'favorite-outline': !Favorite, favorite: Favorite} | tokenList }}" on-tap="{{ onFavoriteToggle }}" data-article-id="{{ Id }}" data-feed-id="{{ FeedId }}"></paper-icon-button>
+                                    <paper-icon-button class="favorite-button" icon="{{ {'bookmark-outline': !Favorite, bookmark: Favorite} | tokenList }}" on-tap="{{ onFavoriteToggle }}" data-article-id="{{ Id }}" data-feed-id="{{ FeedId }}"></paper-icon-button>
                                     <span class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</span>
                                     <span flex class="title-wrapper">
                                         <span class="title" title="{{ Title }}">{{ Title }}</span>
@@ -134,7 +134,7 @@
                 <div class="article-detail">
                     <div class="card" layout vertical hero-id="article-card-{{ article.Id }}" hero>
                         <div layout horizontal>
-                            <paper-icon-button class="favorite-button" icon="{{ {'favorite-outline': !article.Favorite, favorite: article.Favorite} | tokenList }}" on-tap="{{ onFavoriteArticleToggle }}" data-article-id="{{ Id }}"></paper-icon-button>
+                            <paper-icon-button class="favorite-button" icon="{{ {'bookmark-outline': !article.Favorite, bookmark: article.Favorite} | tokenList }}" on-tap="{{ onFavoriteArticleToggle }}" data-article-id="{{ Id }}"></paper-icon-button>
                             <span class="feed-origin" title="{{ article.FeedOrigin }}" hidden?="{{ !wide || !article.FeedOrigin }}" style="float: left">{{ article.FeedOrigin }}</span>
                             <span flex class="title-wrapper" layout vertical>
                                 <span class="title" title="{{ article.Title }}">{{ article.Title }}</span>

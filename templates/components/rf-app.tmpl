@@ -106,6 +106,7 @@
         <core-signals on-core-signal-rf-feed-refresh="{{ onFeedRefresh }}"></core-signals>
         <core-signals on-core-signal-rf-feeds-added="{{ onFeedsChanged }}"></core-signals>
         <core-signals on-core-signal-rf-feeds-removed="{{ onFeedsChanged }}"></core-signals>
+        <core-signals on-core-signal-rf-mark-all-as-read="{{ onMarkAllAsRead }}"></core-signals>
 
     </template>
     <script>
@@ -351,6 +352,15 @@
 
             this.loadingArticles = true;
             this.$['feed-articles'].go();
+        },
+
+        onMarkAllAsRead: function() {
+            switch (this.currentFeed.Id) {
+            case "__all__":
+                break;
+            default:
+                break;
+            }
         }
     });
 })();
