@@ -131,9 +131,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				Feeds []feed
 			}
 			resp := response{}
-			readeef.Debug.Printf("%#v, %#v\n", userFeedIdMap, userFeedLinkMap)
 			for _, f := range feeds {
-				readeef.Debug.Printf("%d, %s\n", f.Id, f.Link)
 				if !userFeedIdMap[f.Id] && !userFeedLinkMap[f.Link] {
 					resp.Feeds = append(resp.Feeds, feed{
 						Id: f.Id, Title: f.Title, Description: f.Description,
