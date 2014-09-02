@@ -8,6 +8,13 @@ const (
 	postgres_create_feed = `
 INSERT INTO feeds(link, title, description, hub_link, site_link, update_error, subscribe_error)
 	SELECT $1, $2, $3, $4, $5, $6, $7 EXCEPT SELECT link, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds WHERE link = $1 RETURNING id`
+	postgres_get_user_feeds = `
+SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
+FROM feeds f, users_feeds uf
+WHERE f.id = uf.feed_id
+	AND uf.user_login = $1
+ORDER BY f.title COLLATE "default"
+`
 )
 
 var (
@@ -98,4 +105,5 @@ CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 func init() {
 	init_sql["postgres"] = init_sql_postgres
 	sql_stmt["postgres:create_feed"] = postgres_create_feed
+	sql_stmt["postgres:get_user_feeds"] = postgres_get_user_feeds
 }

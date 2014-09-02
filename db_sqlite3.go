@@ -4,6 +4,16 @@ package readeef
 
 import _ "github.com/mattn/go-sqlite3"
 
+const (
+	sqlite3_get_user_feeds = `
+SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
+FROM feeds f, users_feeds uf
+WHERE f.id = uf.feed_id
+	AND uf.user_login = $1
+ORDER BY f.title COLLATE NOCASE
+`
+)
+
 var (
 	init_sql_sqlite3 = []string{`
 PRAGMA foreign_keys = ON;`, `
@@ -93,4 +103,5 @@ CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 
 func init() {
 	init_sql["sqlite3"] = init_sql_sqlite3
+	sql_stmt["sqlite3:get_user_feeds"] = sqlite3_get_user_feeds
 }
