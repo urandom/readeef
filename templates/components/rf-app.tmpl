@@ -317,7 +317,7 @@
         },
 
         onRequestArticles: function(event) {
-            if (this.loadingMoreArticles || this.noMoreArticles) {
+            if (this.loadingMoreArticles || this.noMoreArticles || this.display != 'feed') {
                 return;
             }
 

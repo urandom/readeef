@@ -27,6 +27,13 @@ SELECT f.id, f.link, f.title, f.description, f.hub_link, f.site_link, f.update_e
 	ORDER BY f.title
 `
 
+	get_user_feed = `
+SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
+FROM feeds f, users_feeds uf
+WHERE f.id = uf.feed_id
+	AND f.id = $1 AND uf.user_login = $2
+`
+
 	create_user_feed = `
 INSERT INTO users_feeds(user_login, feed_id)
 	SELECT $1, $2 EXCEPT SELECT user_login, feed_id FROM users_feeds WHERE user_login = $1 AND feed_id = $2`
@@ -400,6 +407,18 @@ func (db DB) GetUnsubscribedFeed() ([]Feed, error) {
 	}
 
 	return feeds, nil
+}
+
+func (db DB) GetUserFeed(id int64, u User) (Feed, error) {
+	var f Feed
+
+	if err := db.Get(&f, db.NamedSQL("get_user_feed"), id, u.Login); err != nil {
+		return f, err
+	}
+
+	f.User = u
+
+	return f, nil
 }
 
 func (db DB) CreateUserFeed(u User, f Feed) (Feed, error) {
@@ -921,6 +940,7 @@ func init() {
 	sql_stmt["generic:get_feeds"] = get_feeds
 	sql_stmt["generic:get_feed_by_link"] = get_feed_by_link
 	sql_stmt["generic:get_unsubscribed_feeds"] = get_unsubscribed_feeds
+	sql_stmt["generic:get_user_feed"] = get_user_feed
 	sql_stmt["generic:create_user_feed"] = create_user_feed
 	sql_stmt["generic:delete_user_feed"] = delete_user_feed
 	sql_stmt["generic:get_user_feeds"] = get_user_feeds

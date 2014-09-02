@@ -176,7 +176,13 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			var feed readeef.Feed
-			feed, err = db.GetFeed(id)
+			feed, err = db.GetUserFeed(id, user)
+			/* TODO: non-fatal error */
+			if err != nil {
+				break
+			}
+
+			err = db.DeleteUserFeed(feed)
 			/* TODO: non-fatal error */
 			if err != nil {
 				break

@@ -224,6 +224,17 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 func (fm *FeedManager) stopUpdatingFeed(f Feed) {
 	Debug.Println("Stopping feed update for " + f.Link)
 	delete(fm.activeFeeds, f.Id)
+
+	users, err := fm.db.GetFeedUsers(f)
+	if err != nil {
+		fm.logger.Printf("Error getting users for feed '%s': %v\n", err)
+	} else {
+		if len(users) == 0 {
+			Debug.Println("Removing orphan feed " + f.Link + " from the database")
+
+			fm.db.DeleteFeed(f)
+		}
+	}
 }
 
 func (fm *FeedManager) requestFeedContent(f Feed) {

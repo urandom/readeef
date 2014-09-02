@@ -14,6 +14,13 @@ UPDATE users SET first_name = $1, last_name = $2, email = $3, admin = $4, active
 	delete_user = `DELETE FROM users WHERE login = $1`
 
 	get_users = `SELECT login, first_name, last_name, email, admin, active, profile_data, hash_type, salt, hash, md5_api FROM users`
+
+	get_feed_users = `
+SELECT u.login, u.first_name, u.last_name, u.email, u.admin, u.active,
+	   u.profile_data, u.hash_type, u.salt, u.hash, u.md5_api
+FROM users u, users_feeds uf
+WHERE u.login = uf.user_login AND uf.feed_id = $1
+`
 )
 
 func (db DB) GetUser(login string) (User, error) {
@@ -23,16 +30,12 @@ func (db DB) GetUser(login string) (User, error) {
 	}
 
 	u.Login = login
-	if len(u.ProfileJSON) != 0 {
-		if err := json.Unmarshal(u.ProfileJSON, &u.ProfileData); err != nil {
-			return u, err
-		}
-	}
-	if u.ProfileData == nil {
-		u.ProfileData = make(map[string]interface{})
+	users, err := initUsers([]User{u})
+	if err != nil {
+		return u, err
 	}
 
-	return u, nil
+	return users[0], nil
 }
 
 func (db DB) GetUsers() ([]User, error) {
@@ -41,18 +44,7 @@ func (db DB) GetUsers() ([]User, error) {
 		return users, err
 	}
 
-	for _, u := range users {
-		if len(u.ProfileJSON) != 0 {
-			if err := json.Unmarshal(u.ProfileJSON, &u.ProfileData); err != nil {
-				return users, err
-			}
-		}
-		if u.ProfileData == nil {
-			u.ProfileData = make(map[string]interface{})
-		}
-	}
-
-	return users, nil
+	return initUsers(users)
 }
 
 func (db DB) UpdateUser(u User) error {
@@ -134,10 +126,35 @@ func (db DB) DeleteUser(u User) error {
 	return nil
 }
 
+func (db DB) GetFeedUsers(f Feed) ([]User, error) {
+	var users []User
+	if err := db.Select(&users, db.NamedSQL("get_feed_users"), f.Id); err != nil {
+		return users, err
+	}
+
+	return initUsers(users)
+}
+
+func initUsers(users []User) ([]User, error) {
+	for _, u := range users {
+		if len(u.ProfileJSON) != 0 {
+			if err := json.Unmarshal(u.ProfileJSON, &u.ProfileData); err != nil {
+				return users, err
+			}
+		}
+		if u.ProfileData == nil {
+			u.ProfileData = make(map[string]interface{})
+		}
+	}
+
+	return users, nil
+}
+
 func init() {
 	sql_stmt["generic:get_user"] = get_user
 	sql_stmt["generic:create_user"] = create_user
 	sql_stmt["generic:update_user"] = update_user
 	sql_stmt["generic:delete_user"] = delete_user
 	sql_stmt["generic:get_users"] = get_users
+	sql_stmt["generic:get_feed_users"] = get_feed_users
 }
