@@ -15,6 +15,13 @@ WHERE f.id = uf.feed_id
 	AND uf.user_login = $1
 ORDER BY f.title COLLATE "default"
 `
+	postgres_get_user_tag_feeds = `
+SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
+FROM feeds f, users_feeds_tags uft
+WHERE f.id = uft.feed_id
+	AND uft.user_login = $1 AND uft.tag = $2
+ORDER BY f.title COLLATE "default"
+`
 )
 
 var (
@@ -71,6 +78,15 @@ CREATE TABLE IF NOT EXISTS users_feeds (
 	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`, `
+CREATE TABLE IF NOT EXISTS users_feeds_tags (
+	user_login TEXT,
+	feed_id INTEGER,
+	tag TEXT,
+
+	PRIMARY KEY(user_login, feed_id, tag),
+	FOREIGN KEY(user_login) REFERENCES users_feeds(user_login) ON DELETE CASCADE,
+	FOREIGN KEY(feed_id) REFERENCES users_feeds(feed_id) ON DELETE CASCADE
+)`, `
 CREATE TABLE IF NOT EXISTS users_articles_read (
 	user_login TEXT,
 	article_id TEXT,
@@ -106,4 +122,5 @@ func init() {
 	init_sql["postgres"] = init_sql_postgres
 	sql_stmt["postgres:create_feed"] = postgres_create_feed
 	sql_stmt["postgres:get_user_feeds"] = postgres_get_user_feeds
+	sql_stmt["postgres:get_user_tag_feeds"] = postgres_get_user_tag_feeds
 }
