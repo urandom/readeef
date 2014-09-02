@@ -17,13 +17,13 @@ type atomFeed struct {
 }
 
 type atomItem struct {
-	XMLName     xml.Name `xml:"entry"`
-	Id          string   `xml:"id"`
-	Title       string   `xml:"title"`
-	Description string   `xml:"summary"`
-	Content     string   `xml:"content"`
-	Link        atomLink `xml:"link"`
-	Date        string   `xml:"updated"`
+	XMLName     xml.Name   `xml:"entry"`
+	Id          string     `xml:"id"`
+	Title       string     `xml:"title"`
+	Description rssContent `xml:"summary"`
+	Content     rssContent `xml:"content"`
+	Link        atomLink   `xml:"link"`
+	Date        string     `xml:"updated"`
 }
 
 type atomLink struct {
@@ -57,12 +57,7 @@ func ParseAtom(b []byte) (Feed, error) {
 		hash := sha1.New()
 		hash.Write([]byte(article.Id))
 		article.Id = hex.EncodeToString(hash.Sum(nil))
-
-		if len(i.Content) < len(i.Description) {
-			article.Description = i.Description
-		} else {
-			article.Description = i.Content
-		}
+		article.Description = getLargerContent(i.Content, i.Description)
 
 		var err error
 		if article.Date, err = parseDate(i.Date); err != nil {

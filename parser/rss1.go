@@ -67,12 +67,13 @@ func ParseRss1(b []byte) (Feed, error) {
 	}
 
 	for _, i := range rss.Items {
-		article := Article{Title: i.Title, Description: i.Description, Link: i.Link}
+		article := Article{Title: i.Title, Link: i.Link}
 		if i.Id == "" {
 			article.Id = i.Link
 		} else {
 			article.Id = i.Id
 		}
+		article.Description = getLargerContent(i.Content, i.Description)
 
 		hash := sha1.New()
 		hash.Write([]byte(article.Id))
