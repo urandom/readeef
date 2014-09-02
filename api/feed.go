@@ -182,6 +182,10 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 
 				for _, f := range discovered {
 					if !userFeedMap[f.Id] {
+						if len(opmlFeed.Tags) > 0 {
+							f.Link += "#" + strings.Join(opmlFeed.Tags, ",")
+						}
+
 						feeds = append(feeds, f)
 					}
 				}
@@ -227,10 +231,16 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 					break SWITCH
 				}
 
-				_, err = db.CreateUserFeed(readeef.GetUser(c, r), f)
+				f, err = db.CreateUserFeed(readeef.GetUser(c, r), f)
 				if err != nil {
 					break SWITCH
 				}
+
+				tags := strings.SplitN(u.Fragment, ",", -1)
+				if u.Fragment != "" && len(tags) > 0 {
+					err = db.CreateUserFeedTag(f, tags...)
+				}
+
 				success = true
 			}
 

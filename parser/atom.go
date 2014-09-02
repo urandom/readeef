@@ -58,7 +58,7 @@ func ParseAtom(b []byte) (Feed, error) {
 		hash.Write([]byte(article.Id))
 		article.Id = hex.EncodeToString(hash.Sum(nil))
 
-		if i.Content == "" || len(i.Content) < len(i.Description) {
+		if len(i.Content) < len(i.Description) {
 			article.Description = i.Description
 		} else {
 			article.Description = i.Content

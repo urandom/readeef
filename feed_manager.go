@@ -77,6 +77,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (Feed, error) {
 		if !u.IsAbs() {
 			return Feed{}, ErrNoAbsolute
 		}
+		u.Fragment = ""
 		link = u.String()
 	} else {
 		return Feed{}, err

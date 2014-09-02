@@ -51,7 +51,7 @@ func (db DB) GetUserFeedTags(u User, f Feed) ([]string, error) {
 	return tags, nil
 }
 
-func (db DB) CreateUserFeedTag(f Feed, tag string) error {
+func (db DB) CreateUserFeedTag(f Feed, tags ...string) error {
 	if err := f.Validate(); err != nil {
 		return err
 	}
@@ -77,9 +77,11 @@ func (db DB) CreateUserFeedTag(f Feed, tag string) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(f.User.Login, f.Id, tag)
-	if err != nil {
-		return err
+	for _, tag := range tags {
+		_, err = stmt.Exec(f.User.Login, f.Id, tag)
+		if err != nil {
+			return err
+		}
 	}
 
 	tx.Commit()
@@ -87,7 +89,7 @@ func (db DB) CreateUserFeedTag(f Feed, tag string) error {
 	return nil
 }
 
-func (db DB) DeleteUserFeedTag(f Feed, tag string) error {
+func (db DB) DeleteUserFeedTag(f Feed, tags ...string) error {
 	if err := f.Validate(); err != nil {
 		return err
 	}
@@ -109,9 +111,11 @@ func (db DB) DeleteUserFeedTag(f Feed, tag string) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(f.User.Login, f.Id, tag)
-	if err != nil {
-		return err
+	for _, tag := range tags {
+		_, err = stmt.Exec(f.User.Login, f.Id, tag)
+		if err != nil {
+			return err
+		}
 	}
 
 	tx.Commit()

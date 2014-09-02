@@ -83,8 +83,7 @@ CREATE TABLE IF NOT EXISTS users_feeds_tags (
 	tag TEXT,
 
 	PRIMARY KEY(user_login, feed_id, tag),
-	FOREIGN KEY(user_login) REFERENCES users_feeds(user_login) ON DELETE CASCADE,
-	FOREIGN KEY(feed_id) REFERENCES users_feeds(feed_id) ON DELETE CASCADE
+	FOREIGN KEY(user_login, feed_id) REFERENCES users_feeds(user_login, feed_id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_articles_read (
 	user_login TEXT,

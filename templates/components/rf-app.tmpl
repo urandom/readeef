@@ -186,7 +186,7 @@
         },
 
         currentFeedIdChanged: function(oldValue, newValue) {
-            if (this.feeds.length) {
+            if (this.feeds && this.feeds.length) {
                 if (newValue == "__all__") {
                     this.currentFeed = createAllPseudoFeed();
                 } else if (newValue == "__favorite__") {
@@ -204,9 +204,11 @@
         feedsChanged: function(oldValue, newValue) {
             var self = this;
 
-            newValue.forEach(function(feed) {
-                self.feedIdMap[feed.Id] = feed;
-            });
+            if (newValue) {
+                newValue.forEach(function(feed) {
+                    self.feedIdMap[feed.Id] = feed;
+                });
+            }
 
             if (!this.currentFeed && this.currentFeedId) {
                 this.currentFeedIdChanged(this.currentFeedId, this.currentFeedId);

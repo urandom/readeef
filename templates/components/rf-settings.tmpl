@@ -60,8 +60,8 @@
         <div layout vertical flex>
             <paper-tabs id="tabs" selected="{{ selectedTab }}">
                 <paper-tab name="general">General</paper-tab>
-                <paper-tab name="feeds">Manage Feeds</paper-tab>
                 <paper-tab name="add-feed">Add Feed</paper-tab>
+                <paper-tab name="feeds">Manage Feeds</paper-tab>
                 <template if="{{ user.Admin }}">
                     <paper-tab name="admin">Admin</paper-tab>
                 </template>
@@ -71,24 +71,6 @@
                 <section name="general" layout vertical center>
                     <div class="container" slide-from-right>
                         <div class="card">General</div>
-                    </div>
-                </section>
-
-                <section name="feeds" layout vertical center>
-                    <div class="container" slide-from-right>
-                        <div class="card" layout vertical>
-                            <ul>
-                                <template repeat="{{ feed in feeds }}">
-                                <li title="{{ feed.Title }}" layout horizontal>
-                                    <span layout vertical center-justified>
-                                        <img src="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" alt="favicon" class="feed-favicon">
-                                    </span>
-                                    <span flex>{{ feed.Title }}</span>
-                                    <paper-icon-button icon="remove" on-tap="{{ onRemoveFeed }}" data-feed-id="{{ feed.Id }}"></paper-icon-button>
-                                </li>
-                                </template>
-                            </ul>
-                        </div>
                     </div>
                 </section>
 
@@ -130,6 +112,24 @@
                                 <paper-button label="Find" on-tap="{{ onFindFeed }}" id="find-feeds" autofocus hidden?="{{ discoveredFeeds }}"></paper-button>
                                 <paper-button label="Add" on-tap="{{ onAddFeed }}" id="add-feeds" autofocus hidden?="{{ !discoveredFeeds || !discoveredFeeds.length }}"></paper-button>
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section name="feeds" layout vertical center>
+                    <div class="container" slide-from-right>
+                        <div class="card" layout vertical>
+                            <ul>
+                                <template repeat="{{ feed in feeds }}">
+                                <li title="{{ feed.Title }}" layout horizontal>
+                                    <span layout vertical center-justified>
+                                        <img src="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" alt="favicon" class="feed-favicon">
+                                    </span>
+                                    <span flex>{{ feed.Title }}</span>
+                                    <paper-icon-button icon="remove" on-tap="{{ onRemoveFeed }}" data-feed-id="{{ feed.Id }}"></paper-icon-button>
+                                </li>
+                                </template>
+                            </ul>
                         </div>
                     </div>
                 </section>
