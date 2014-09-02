@@ -44,6 +44,10 @@
                 padding-left: 50px;
             }
 
+            paper-item.drawer-content::shadow #icon > div {
+                background-repeat: no-repeat;
+            }
+
             .drawer-content /deep/ #label {
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -69,7 +73,7 @@
                     <paper-item label="All" class="drawer-content" on-tap="{{ onFeedTap }}" name="__all__" selectable></paper-item>
                 </template>
                 <template repeat="{{ feed in feeds }}">
-                    <paper-item label="{{ feed.Title }}" class="drawer-content" on-tap="{{ onFeedTap }}" title="{{ feed.Description }}" name="{{ feed.Id }}" selectable></paper-item>
+                    <paper-item label="{{ feed.Title }}" iconSrc="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" class="drawer-content" on-tap="{{ onFeedTap }}" title="{{ feed.Description }}" name="{{ feed.Id }}" selectable></paper-item>
                 </template>
                 <hr class="drawer-content">
                 <paper-item label="Settings" class="drawer-content" on-tap="{{ onDisplaySettings }}"></paper-item>
@@ -107,6 +111,8 @@
     <script>
 (function() {
     "use strict";
+
+    var urlParser = document.createElement('a');
 
     function createAllPseudoFeed() {
         // TODO: i18n
@@ -202,6 +208,12 @@
             if (!this.currentFeed && this.currentFeedId) {
                 this.currentFeedIdChanged(this.currentFeedId, this.currentFeedId);
             }
+        },
+
+        domain: function(value) {
+            urlParser.href = value;
+
+            return urlParser.host;
         },
 
         onAuthCheckComplete: function(event, response) {

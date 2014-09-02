@@ -52,6 +52,10 @@
             [name="feeds"] li span {
                 line-height: 40px;
             }
+
+            .feed-favicon {
+                margin-right: 5px;
+            }
         </style>
         <div layout vertical flex>
             <paper-tabs id="tabs" selected="{{ selectedTab }}">
@@ -76,6 +80,9 @@
                             <ul>
                                 <template repeat="{{ feed in feeds }}">
                                 <li title="{{ feed.Title }}" layout horizontal>
+                                    <span layout vertical center-justified>
+                                        <img src="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" alt="favicon" class="feed-favicon">
+                                    </span>
                                     <span flex>{{ feed.Title }}</span>
                                     <paper-icon-button icon="remove" on-tap="{{ onRemoveFeed }}" data-feed-id="{{ feed.Id }}"></paper-icon-button>
                                 </li>
@@ -149,6 +156,8 @@
 (function() {
     "use strict";
 
+    var urlParser = document.createElement('a');
+
     Polymer('rf-settings', {
         selectedTab: 'general',
         loading: false,
@@ -162,6 +171,12 @@
             if (newValue != 'settings') {
                 this.cleanFields();
             }
+        },
+
+        domain: function(value) {
+            urlParser.href = value;
+
+            return urlParser.host;
         },
 
         onAddFeedUrlKeypress: function(event, detail, sender) {
