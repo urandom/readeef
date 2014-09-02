@@ -35,6 +35,7 @@ type feed struct {
 	Link        string
 	Image       parser.Image
 	Articles    []readeef.Article
+	Tags        []string
 }
 
 func (con Feed) Handler(c context.Context) http.HandlerFunc {
@@ -52,7 +53,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 		switch action {
 		case "list":
 			var feeds []readeef.Feed
-			feeds, err = db.GetUserFeeds(user)
+			feeds, err = db.GetUserTagsFeeds(user)
 
 			if err != nil {
 				break
@@ -66,7 +67,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			for _, f := range feeds {
 				resp.Feeds = append(resp.Feeds, feed{
 					Id: f.Id, Title: f.Title, Description: f.Description,
-					Link: f.Link, Image: f.Image,
+					Link: f.Link, Image: f.Image, Tags: f.Tags,
 				})
 			}
 

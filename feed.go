@@ -17,6 +17,7 @@ type Feed struct {
 	UpdateError    string `db:"update_error"`
 	SubscribeError string `db:"subscribe_error"`
 	Articles       []Article
+	Tags           []string
 }
 
 type Article struct {

@@ -22,7 +22,14 @@ WHERE f.id = uft.feed_id
 	AND uft.user_login = $1 AND uft.tag = $2
 ORDER BY LOWER(f.title)
 `
+
+	get_user_feed_ids_tags = `SELECT feed_id, tag FROM users_feeds_tags WHERE user_login = $1 ORDER BY feed_id`
 )
+
+type feedIdTag struct {
+	FeedId int64 `db:"feed_id"`
+	Tag    string
+}
 
 func (db DB) GetUserTags(u User) ([]string, error) {
 	var tags []string
@@ -126,10 +133,37 @@ func (db DB) GetUserTagFeeds(u User, tag string) ([]Feed, error) {
 	return feeds, nil
 }
 
+func (db DB) GetUserTagsFeeds(u User) ([]Feed, error) {
+	var feedIdTags []feedIdTag
+
+	if err := db.Select(&feedIdTags, db.NamedSQL("get_user_feed_ids_tags"), u.Login); err != nil {
+		return []Feed{}, err
+	}
+
+	if feeds, err := db.GetUserFeeds(u); err == nil {
+		feedMap := make(map[int64]int)
+
+		for i := 0; i < len(feeds); i++ {
+			feedMap[feeds[i].Id] = i
+		}
+
+		for _, tuple := range feedIdTags {
+			if i, ok := feedMap[tuple.FeedId]; ok {
+				feeds[i].Tags = append(feeds[i].Tags, tuple.Tag)
+			}
+		}
+
+		return feeds, nil
+	} else {
+		return []Feed{}, err
+	}
+}
+
 func init() {
 	sql_stmt["generic:get_user_tags"] = get_user_tags
 	sql_stmt["generic:get_user_feed_tags"] = get_user_feed_tags
 	sql_stmt["generic:create_user_feed_tag"] = create_user_feed_tag
 	sql_stmt["generic:delete_user_feed_tag"] = delete_user_feed_tag
 	sql_stmt["generic:get_user_tag_feeds"] = get_user_tag_feeds
+	sql_stmt["generic:get_user_feed_ids_tags"] = get_user_feed_ids_tags
 }
