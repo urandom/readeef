@@ -108,6 +108,86 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				break
 			}
 
+			var userFeeds []readeef.Feed
+			userFeeds, err = db.GetUserFeeds(user)
+			if err != nil {
+				break
+			}
+
+			userFeedIdMap := make(map[int64]bool)
+			userFeedLinkMap := make(map[string]bool)
+			for _, f := range userFeeds {
+				userFeedIdMap[f.Id] = true
+				userFeedLinkMap[f.Link] = true
+
+				u, err := url.Parse(f.Link)
+				if err == nil && strings.HasPrefix(u.Host, "www.") {
+					u.Host = u.Host[4:]
+					userFeedLinkMap[u.String()] = true
+				}
+			}
+
+			type response struct {
+				Feeds []feed
+			}
+			resp := response{}
+			readeef.Debug.Printf("%#v, %#v\n", userFeedIdMap, userFeedLinkMap)
+			for _, f := range feeds {
+				readeef.Debug.Printf("%d, %s\n", f.Id, f.Link)
+				if !userFeedIdMap[f.Id] && !userFeedLinkMap[f.Link] {
+					resp.Feeds = append(resp.Feeds, feed{
+						Id: f.Id, Title: f.Title, Description: f.Description,
+						Link: f.Link, Image: f.Image,
+					})
+				}
+			}
+
+			var b []byte
+			b, err = json.Marshal(resp)
+			if err != nil {
+				break
+			}
+
+			w.Write(b)
+		case "opml":
+			buf := util.BufferPool.GetBuffer()
+			defer util.BufferPool.Put(buf)
+
+			buf.ReadFrom(r.Body)
+
+			var opml parser.Opml
+			opml, err = parser.ParseOpml(buf.Bytes())
+			if err != nil {
+				break
+			}
+
+			var userFeeds []readeef.Feed
+			userFeeds, err = db.GetUserFeeds(user)
+			if err != nil {
+				break
+			}
+
+			userFeedMap := make(map[int64]bool)
+			for _, f := range userFeeds {
+				userFeedMap[f.Id] = true
+			}
+
+			var feeds []readeef.Feed
+			for _, opmlFeed := range opml.Feeds {
+				var discovered []readeef.Feed
+
+				discovered, err = con.fm.DiscoverFeeds(opmlFeed.Url)
+				if err != nil {
+					continue
+				}
+
+				for _, f := range discovered {
+					if !userFeedMap[f.Id] {
+						feeds = append(feeds, f)
+					}
+				}
+			}
+
 			type response struct {
 				Feeds []feed
 			}
@@ -195,48 +275,6 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				Success bool
 			}
 			resp := response{true}
-
-			var b []byte
-			b, err = json.Marshal(resp)
-			if err != nil {
-				break
-			}
-
-			w.Write(b)
-		case "opml":
-			buf := util.BufferPool.GetBuffer()
-			defer util.BufferPool.Put(buf)
-
-			buf.ReadFrom(r.Body)
-
-			var opml parser.Opml
-			opml, err = parser.ParseOpml(buf.Bytes())
-			if err != nil {
-				break
-			}
-
-			var feeds []readeef.Feed
-			for _, opmlFeed := range opml.Feeds {
-				var discovered []readeef.Feed
-
-				discovered, err = con.fm.DiscoverFeeds(opmlFeed.Url)
-				if err != nil {
-					continue
-				}
-
-				feeds = append(feeds, discovered...)
-			}
-
-			type response struct {
-				Feeds []feed
-			}
-			resp := response{}
-			for _, f := range feeds {
-				resp.Feeds = append(resp.Feeds, feed{
-					Id: f.Id, Title: f.Title, Description: f.Description,
-					Link: f.Link, Image: f.Image,
-				})
-			}
 
 			var b []byte
 			b, err = json.Marshal(resp)

@@ -224,9 +224,11 @@
 
         onDiscoverFeedResponse: function(event, data) {
             if (data.response) {
-                data.response.Feeds.forEach(function(f) {
-                    f.selected = true;
-                });
+                if (data.response.Feeds) {
+                    data.response.Feeds.forEach(function(f) {
+                        f.selected = true;
+                    });
+                }
                 this.discoveredFeeds = data.response.Feeds;
             } else {
                 this.discoveredFeeds = [];
