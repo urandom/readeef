@@ -93,7 +93,7 @@
             <rf-login name="login" id="login" layout wide="{{ wide }}" user="{{ user }}"></rf-login>
         </core-animated-pages>
 
-        <rf-api id="auth-check" pathAction="auth" on-rf-api-complete="{{ onAuthCheckComplete }}" user="{{ user }}"></rf-api>
+        <rf-api id="auth-check" pathAction="auth" on-rf-api-response="{{ onAuthCheckResponse }}" on-rf-api-complete="{{ onAuthCheckComplete }}" user="{{ user }}"></rf-api>
         <rf-api id="list-feeds" pathAction="feed/list" on-rf-api-response="{{ onAllFeedsResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="feed-articles" pathAction="feed/{{ currentFeedId }}/{{ limit }}/{{ offset }}/{{ userSettings.newerFirst }}/{{ userSettings.unreadOnly }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="feed-read-all" pathAction="feed/read/{{ currentFeedId }}/{{ readUntilMilliSec }}" on-rf-api-response="{{ onFeedReadAllResponse }}" user="{{ user }}"></rf-api>
@@ -227,17 +227,23 @@
                     this.$.login.invalid = true;
                 }
                 this.user = null;
-            } else if (response.response == 200) {
-                this.user.authTime = new Date().getTime();
-
-                if (this.selected == 'login' || this.selected == 'loading') {
-                    this.selected = 'scaffolding';
-                }
-
-                this.$['user-storage'].save();
-
-                this.$['list-feeds'].go();
             }
+        },
+
+        onAuthCheckResponse: function(event, data) {
+            this.user.authTime = new Date().getTime();
+            this.user.admin = data.response.User.Admin;
+            this.user.email = data.response.User.Email;
+            this.user.firstName = data.response.User.FirstName;
+            this.user.lastName = data.response.User.lastName;
+
+            if (this.selected == 'login' || this.selected == 'loading') {
+                this.selected = 'scaffolding';
+            }
+
+            this.$['user-storage'].save();
+
+            this.$['list-feeds'].go();
         },
 
         onUserLoad: function(event, detail, sender) {

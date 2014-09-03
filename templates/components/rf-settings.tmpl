@@ -61,7 +61,7 @@
                 <paper-item name="general" label="General"></paper-item>
                 <paper-item name="add-feed" label="Add Feed"></paper-item>
                 <paper-item name="feeds" label="Manage Feeds"></paper-item>
-                <template if="{{ user.Admin }}">
+                <template if="{{ user.admin }}">
                     <paper-item name="admin" label="Admin"></paper-item>
                 </template>
             </paper-dropdown>
@@ -133,7 +133,7 @@
                     </div>
                 </section>
 
-                <template if="{{ user.Admin }}">
+                <template if="{{ user.admin }}">
                     <section name="admin" layout vertical center>
                         <div class="container" hero-p>
                             <div class="card" hero-id="card" hero>Admin</div>

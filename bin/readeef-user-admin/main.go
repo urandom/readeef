@@ -31,7 +31,7 @@ func main() {
 		login := flag.Arg(1)
 		pass := flag.Arg(2)
 
-		u := readeef.User{Login: login}
+		u := readeef.User{Login: login, Active: true}
 		if err := u.SetPassword(pass); err != nil {
 			exitWithError(fmt.Sprintf("Error setting password for user '%s': %v", login, err))
 		}
