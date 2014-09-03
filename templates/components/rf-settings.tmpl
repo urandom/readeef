@@ -8,7 +8,8 @@
 <link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
-<link rel="import" href="/dist/paper-tabs/paper-tabs.html">
+<link rel="import" href="/dist/paper-dropdown/paper-dropdown.html">
+<link rel="import" href="/dist/paper-item/paper-item.html">
 
 <link rel="import" href="/dist/loading-wave/loading-wave.html">
 
@@ -30,8 +31,9 @@
                 max-width: 1024px;
             }
 
-            #save {
-                background: #259b24;
+            #dropdown {
+                background: transparent;
+                margin-left: 24px;
             }
 
             ul {
@@ -41,9 +43,6 @@
             li {
                 padding: 8px;
                 list-style: none;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
             }
             li paper-checkbox {
                 margin-right: 8px;
@@ -57,26 +56,26 @@
                 margin-right: 5px;
             }
         </style>
-        <div layout vertical flex>
-            <paper-tabs id="tabs" selected="{{ selectedTab }}">
-                <paper-tab name="general">General</paper-tab>
-                <paper-tab name="add-feed">Add Feed</paper-tab>
-                <paper-tab name="feeds">Manage Feeds</paper-tab>
+        <div layout vertical flex start>
+            <paper-dropdown id="dropdown" selected="{{ selectedTab }}">
+                <paper-item name="general" label="General"></paper-item>
+                <paper-item name="add-feed" label="Add Feed"></paper-item>
+                <paper-item name="feeds" label="Manage Feeds"></paper-item>
                 <template if="{{ user.Admin }}">
-                    <paper-tab name="admin">Admin</paper-tab>
+                    <paper-item name="admin" label="Admin"></paper-item>
                 </template>
-            </paper-tabs>
+            </paper-dropdown>
             <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}" transitions="hero-transition slide-from-right">
 
                 <section name="general" layout vertical center>
-                    <div class="container" slide-from-right>
-                        <div class="card">General</div>
+                    <div class="container" hero-p>
+                        <div class="card" hero-id="card" hero>General</div>
                     </div>
                 </section>
 
                 <section name="add-feed" layout vertical center>
-                    <div class="container" slide-from-right>
-                        <div class="card" layout vertical>
+                    <div class="container" hero-p>
+                        <div class="card" hero-id="card" hero layout vertical>
                             <template if="{{ !discoveredFeeds }}">
                                 <p>
                                     Enter the address of a feed, or a website that might contain one or more feeds.
@@ -117,9 +116,9 @@
                 </section>
 
                 <section name="feeds" layout vertical center>
-                    <div class="container" slide-from-right>
-                        <div class="card" layout vertical>
-                            <ul>
+                    <div class="container" hero-p>
+                        <div class="card" hero-id="card" hero layout vertical>
+                            <ul cross-fade>
                                 <template repeat="{{ feed in feeds }}">
                                 <li title="{{ feed.Title }}" layout horizontal>
                                     <span layout vertical center-justified>
@@ -136,8 +135,8 @@
 
                 <template if="{{ user.Admin }}">
                     <section name="admin" layout vertical center>
-                        <div class="container" slide-from-right>
-                            <div class="card">Admin</div>
+                        <div class="container" hero-p>
+                            <div class="card" hero-id="card" hero>Admin</div>
                         </div>
                     </section>
                 </template>
