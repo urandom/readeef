@@ -81,6 +81,10 @@ func main() {
 			fmt.Printf("%v\n", u.Hash)
 		case "md5api", "md5_api":
 			fmt.Printf("%v\n", u.MD5API)
+		case "admin":
+			fmt.Printf("%v\n", u.Admin)
+		case "active":
+			fmt.Printf("%v\n", u.Active)
 		default:
 			exitWithError(fmt.Sprintf("Unknown user property '%s'", prop))
 		}
@@ -108,6 +112,16 @@ func main() {
 		case "password":
 			if err := u.SetPassword(val); err != nil {
 				exitWithError(fmt.Sprintf("Error setting password for user '%s': %v", u.Login, err))
+			}
+		case "admin", "active":
+			enabled := false
+			if val == "1" || val == "true" || val == "on" {
+				enabled = true
+			}
+			if lowerProp == "admin" {
+				u.Admin = enabled
+			} else {
+				u.Active = enabled
 			}
 		default:
 			exitWithError(fmt.Sprintf("Unknown user property '%s'", prop))
