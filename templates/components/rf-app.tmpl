@@ -97,7 +97,7 @@
         <rf-api id="list-feeds" pathAction="feed/list" on-rf-api-response="{{ onAllFeedsResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="feed-articles" pathAction="feed/{{ currentFeedId }}/{{ limit }}/{{ offset }}/{{ userSettings.newerFirst || false }}/{{ userSettings.unreadOnly || false }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="feed-read-all" pathAction="feed/read/{{ currentFeedId }}/{{ readUntilMilliSec }}" on-rf-api-response="{{ onFeedReadAllResponse }}" user="{{ user }}"></rf-api>
-        <rf-api id="user-settings" pathAction="user/settings" on-rf-api-response="{{ onUserSettingsResponse }}" user="{{ user }}" method="POST"></rf-api>
+        <rf-api id="user-settings" on-rf-api-response="{{ onUserSettingsResponse }}" user="{{ user }}" method="POST"></rf-api>
 
         <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
 
@@ -145,7 +145,7 @@
         responsiveWidth: '768px',
         userTTL: 1000 * 60 * 60 * 24 * 15,
         user: null,
-        userSettings: {newerFirst: false, unreadOnly: false},
+        userSettings: null,
         currentFeedId: null,
         currentFeed: null,
         currentArticle: null,
@@ -157,6 +157,7 @@
         limit: 50,
         offset: 0,
         readUntilMilliSec: 0,
+        userObserver: null,
         userSettingsObserver: null,
 
         created: function() {
@@ -165,44 +166,63 @@
 
         userChanged: function(oldValue, newValue) {
             this.async(function() {
+                if (this.userSettingsObserver) {
+                    this.userSettingsObserver.close();
+                }
+
                 if (!newValue) {
                     this.selected = 'login';
                     this.feeds = [];
+                    this.userSettings = null;
                 } else {
-                    if ((!oldValue && newValue) || (oldValue && !newValue)
-                            || oldValue.login != newValue.login
-                            || oldValue.md5api != newValue.md5api) {
+                    if (!oldValue
+                        || oldValue.login != newValue.login
+                        || oldValue.md5api != newValue.md5api) {
                         this.$['auth-check'].go();
                     }
+
+                    this.userObserver = new ObjectObserver(this.user);
+                    this.userObserver.open(function (added, removed, changed, getOldValueFn) {
+                        var ajax = this.$['user-settings'];
+                        Object.keys(changed).forEach(function(attribute) {
+                            switch (attribute) {
+                            case "firstName":
+                            case "lastName":
+                            case "email":
+                            case "password":
+                                ajax.body = changed[attribute];
+                                ajax.pathAction = "user/" + attribute;
+                                ajax.go();
+                                break;
+                            }
+                        });
+                    }.bind(this));
                 }
+
             })
         },
 
         userSettingsChanged: function(oldValue, newValue) {
-            if (newValue) {
-                this.currentFeedId = newValue.currentFeedId;
-                this.display = newValue.display || 'feed';
-            }
-
-            if (oldValue) {
-                this.$['user-settings'].body = JSON.stringify(this.userSettings);
-                this.$['user-settings'].go();
-            }
-
             if (this.userSettingsObserver) {
                 this.userSettingsObserver.close();
             }
 
-            this.userSettingsObserver = new ObjectObserver(this.userSettings);
-            this.userSettingsObserver.open(function (added, removed, changed, getOldValueFn) {
-                var amalgamation = Polymer.extend(Polymer.extend(Polymer.extend({}, added), removed), changed);
-                if ('newerFirst' in amalgamation || 'unreadOnly' in amalgamation) {
-                    this.updateFeedArticles();
-                }
+            if (newValue) {
+                this.currentFeedId = newValue.currentFeedId;
+                this.display = newValue.display || 'feed';
 
-                this.$['user-settings'].body = JSON.stringify(this.userSettings);
-                this.$['user-settings'].go();
-            }.bind(this));
+                this.userSettingsObserver = new ObjectObserver(this.userSettings);
+                this.userSettingsObserver.open(function (added, removed, changed, getOldValueFn) {
+                    var amalgamation = Polymer.extend(Polymer.extend(Polymer.extend({}, added), removed), changed);
+                    if ('newerFirst' in amalgamation || 'unreadOnly' in amalgamation) {
+                        this.updateFeedArticles();
+                    }
+
+                    this.$['user-settings'].body = JSON.stringify(this.userSettings);
+                    this.$['user-settings'].pathAction = "user/profileData";
+                    this.$['user-settings'].go();
+                }.bind(this));
+            }
         },
 
         displayChanged: function(oldValue, newValue) {

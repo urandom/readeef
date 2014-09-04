@@ -8,8 +8,7 @@
 <link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
-<link rel="import" href="/dist/paper-dropdown/paper-dropdown.html">
-<link rel="import" href="/dist/paper-item/paper-item.html">
+<link rel="import" href="/dist/paper-tabs/paper-tabs.html">
 
 <link rel="import" href="/dist/loading-wave/loading-wave.html">
 
@@ -26,8 +25,8 @@
                 background-color: #fff;
                 box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.16);
                 border-radius: 3px;
-                margin: 24px;
-                padding: 8px;
+                margin: 16px;
+                padding: 24px;
                 max-width: 1024px;
             }
 
@@ -37,7 +36,7 @@
             }
 
             ul {
-                padding-left: 20px;
+                padding: 0;
             }
 
             li {
@@ -56,25 +55,32 @@
                 margin-right: 5px;
             }
         </style>
-        <div layout vertical flex start>
-            <paper-dropdown id="dropdown" selected="{{ selectedTab }}">
-                <paper-item name="general" label="General"></paper-item>
-                <paper-item name="add-feed" label="Add Feed"></paper-item>
-                <paper-item name="feeds" label="Manage Feeds"></paper-item>
+        <div layout vertical flex>
+            <paper-tabs id="tabs" selected="{{ selectedTab }}">
+                <paper-tab name="general">General</paper-tab>
+                <paper-tab name="add-feed">Add Feed</paper-tab>
+                <paper-tab name="feeds">Manage Feeds</paper-tab>
                 <template if="{{ user.admin }}">
-                    <paper-item name="admin" label="Admin"></paper-item>
+                    <paper-tab name="admin">Admin</paper-tab>
                 </template>
-            </paper-dropdown>
-            <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}" transitions="hero-transition slide-from-right">
+            </paper-tabs>
+            <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}" transitions="slide-from-right">
 
                 <section name="general" layout vertical center>
-                    <div class="container" hero-p>
-                        <div class="card" hero-id="card" hero>General</div>
+                    <div class="container" slide-from-left>
+                        <div class="card" hero-id="card" hero layout vertical>
+                            <p>
+                                Personalize your feed reader
+                            </p>
+                            <paper-input label="First name" id="first-name" value="{{ user.firstName }}" floatingLabel tabindex="1"></paper-input>
+                            <paper-input label="Last name" id="last-name" value="{{ user.lastName }}" floatingLabel tabindex="2"></paper-input>
+                            <paper-input label="Email" id="email" type="email" value="{{ user.email }}" floatingLabel tabindex="3"></paper-input>
+                        </div>
                     </div>
                 </section>
 
                 <section name="add-feed" layout vertical center>
-                    <div class="container" hero-p>
+                    <div class="container" slide-from-left>
                         <div class="card" hero-id="card" hero layout vertical>
                             <template if="{{ !discoveredFeeds }}">
                                 <p>
@@ -116,7 +122,7 @@
                 </section>
 
                 <section name="feeds" layout vertical center>
-                    <div class="container" hero-p>
+                    <div class="container" slide-from-left>
                         <div class="card" hero-id="card" hero layout vertical>
                             <ul cross-fade>
                                 <template repeat="{{ feed in feeds }}">
@@ -135,7 +141,7 @@
 
                 <template if="{{ user.admin }}">
                     <section name="admin" layout vertical center>
-                        <div class="container" hero-p>
+                        <div class="container" slide-from-left>
                             <div class="card" hero-id="card" hero>Admin</div>
                         </div>
                     </section>

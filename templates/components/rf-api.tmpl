@@ -57,7 +57,7 @@
                     request: function(args) {
                         var method = (args.method.toUpperCase() || 'GET'),
                             params = xhr.toQueryString(args.params),
-                            urlParts, url, message, messageHash, bodyHash;
+                            urlParts, url, message, messageHash, body, bodyHash;
 
                         if (xhr.isBodyMethod(method) && !args.body) {
                             args.body = params;
@@ -70,7 +70,11 @@
                             delete args.params;
                         }
 
-                        bodyHash = CryptoJS.MD5(args.body).toString(CryptoJS.enc.Base64);
+                        body = args.body;
+                        if (body != null) {
+                            body = body.toString();
+                        }
+                        bodyHash = CryptoJS.MD5(body).toString(CryptoJS.enc.Base64);
 
                         args.headers['X-Date'] = new Date().toUTCString();
                         args.headers['X-Nonce'] = response.Nonce;

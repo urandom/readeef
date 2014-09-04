@@ -2,11 +2,13 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"readeef"
 
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
+	"github.com/urandom/webfw/util"
 )
 
 type UserSettings struct {
@@ -15,13 +17,12 @@ type UserSettings struct {
 
 func NewUserSettings() UserSettings {
 	return UserSettings{
-		webfw.NewBaseController("/v:version/user/settings", webfw.MethodGet|webfw.MethodPost, ""),
+		webfw.NewBaseController("/v:version/user/:attribute", webfw.MethodGet|webfw.MethodPost, ""),
 	}
 }
 
 func (con UserSettings) Handler(c context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var resp interface{}
 		var err error
 
 		db := readeef.GetDB(c)
@@ -33,31 +34,52 @@ func (con UserSettings) Handler(c context.Context) http.HandlerFunc {
 			return
 		}
 
-		if r.Method == "GET" {
-			type response struct {
-				Login       string
-				ProfileData map[string]interface{}
-			}
+		params := webfw.GetParams(c, r)
+		attr := params["attribute"]
 
-			resp = response{
-				Login:       user.Login,
-				ProfileData: user.ProfileData,
+		resp := map[string]interface{}{"Login": user.Login}
+		if r.Method == "GET" {
+			switch attr {
+			case "firstName":
+				resp[attr] = user.FirstName
+			case "lastName":
+				resp[attr] = user.LastName
+			case "email":
+				resp[attr] = user.Email
+			case "profileData":
+				resp[attr] = user.ProfileData
+			default:
+				err = errors.New("Error getting user attribute: unknown attribute " + attr)
 			}
 		} else if r.Method == "POST" {
-			dec := json.NewDecoder(r.Body)
+			buf := util.BufferPool.GetBuffer()
+			defer util.BufferPool.Put(buf)
 
-			err = dec.Decode(&user.ProfileData)
-			if err == nil {
-				err = db.UpdateUser(user)
+			buf.ReadFrom(r.Body)
 
-				if err == nil {
-					type response struct {
-						Success bool
-					}
-					resp = response{true}
-				}
+			switch attr {
+			case "firstName":
+				user.FirstName = buf.String()
+			case "lastName":
+				user.LastName = buf.String()
+			case "email":
+				user.Email = buf.String()
+			case "password":
+				err = user.SetPassword(buf.String())
+			case "profileData":
+				err = json.Unmarshal(buf.Bytes(), &user.ProfileData)
+			default:
+				err = errors.New("Error getting user attribute: unknown attribute " + attr)
 			}
 
+			if err == nil {
+				err = db.UpdateUser(user)
+			}
+
+			if err == nil {
+				resp["Success"] = true
+				resp["Attribute"] = attr
+			}
 		}
 
 		var b []byte
