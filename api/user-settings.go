@@ -65,7 +65,19 @@ func (con UserSettings) Handler(c context.Context) http.HandlerFunc {
 			case "email":
 				user.Email = buf.String()
 			case "password":
-				err = user.SetPassword(buf.String())
+				data := struct {
+					Current string
+					New     string
+				}{}
+				err = json.Unmarshal(buf.Bytes(), &data)
+				if err == nil {
+					/* TODO: non-fatal error */
+					if user.Authenticate(data.Current) {
+						err = user.SetPassword(data.New)
+					} else {
+						err = errors.New("Error change user password: current password is invalid")
+					}
+				}
 			case "profileData":
 				err = json.Unmarshal(buf.Bytes(), &user.ProfileData)
 			default:

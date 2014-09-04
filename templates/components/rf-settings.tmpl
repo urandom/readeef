@@ -9,6 +9,8 @@
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
 <link rel="import" href="/dist/paper-dropdown/paper-dropdown.html">
+<link rel="import" href="/dist/paper-dialog/paper-dialog.html">
+<link rel="import" href="/dist/paper-dialog/paper-dialog-transition.html">
 
 <link rel="import" href="/dist/loading-wave/loading-wave.html">
 
@@ -54,6 +56,7 @@
             .feed-favicon {
                 margin-right: 5px;
             }
+
         </style>
         <div layout vertical flex start>
             <paper-dropdown id="dropdown" selected="{{ selectedTab }}">
@@ -75,13 +78,18 @@
                             <paper-input label="First name" id="first-name" value="{{ user.firstName }}" floatingLabel tabindex="1"></paper-input>
                             <paper-input label="Last name" id="last-name" value="{{ user.lastName }}" floatingLabel tabindex="2"></paper-input>
                             <paper-input label="Email" id="email" type="email" value="{{ user.email }}" floatingLabel tabindex="3"></paper-input>
-                            <p style="margin-bottom: 0; margin-top: 30px;">
-                                Change your password
-                            </p>
-                            <paper-input label="Current password" id="password" type="password" floatingLabel tabindex="4"></paper-input>
-                            <paper-input label="New password" id="new-password" type="password" floatingLabel tabindex="4"></paper-input>
-                            <paper-input label="Confirm new password" id="confirm-new-password" type="password" floatingLabel tabindex="5"></paper-input>
-                            <paper-button label="Change password" on-tap="{{ onPasswordChange }}" id="password-change" autofocus self-end></paper-button>
+
+                            <paper-button label="Change password" on-tap="{{ onChangePassword }}" self-end></paper-button>
+
+                            <paper-dialog id="set-password-dialog" heading="Change your password" transition="paper-dialog-transition-bottom" closeSelector="[dismissive],[affirmative]:not([transient])" on-core-overlay-open="{{ cleanFields }}" on-keypress="{{ onPasswordDialogKeypress }}">
+                                <small>A successfull change will force a re-log</small>
+                                <paper-input label="Current password" id="password" type="password" floatingLabel tabindex="4"></paper-input>
+                                <paper-input label="New password" id="new-password" type="password" floatingLabel tabindex="4"></paper-input>
+                                <paper-input label="Confirm new password" id="confirm-new-password" type="password" floatingLabel tabindex="5"></paper-input>
+
+                                <paper-button label="Cancel" affirmative></paper-button>
+                                <paper-button label="Apply" id="apply-password-change" on-tap="{{ onApplyPasswordChange }}" affirmative autofocus transient></paper-button>
+                            </paper-dialog>
                         </div>
                     </div>
                 </section>
@@ -162,6 +170,7 @@
         <rf-api user="{{ user }}" id="discover-feed" pathAction="feed/discover" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="discover-opml" pathAction="feed/opml" method="post" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="add-feed" method="post" pathAction="feed/add" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
+        <rf-api id="password-change" pathAction="user/password" on-rf-api-response="{{ onPasswordChangeResponse }}" user="{{ user }}" method="post"></rf-api>
         
     </template>
     <script>
@@ -282,10 +291,61 @@
             }
         },
 
+        onChangePassword: function() {
+            this.$['set-password-dialog'].toggle();
+        },
+
+        onApplyPasswordChange: function() {
+            ["password", "new-password", "confirm-new-password"].forEach(function(id) {
+                if (!this.$[id].value) {
+                    this.$[id].required = true;
+                    this.$[id].value = null;
+                }
+            }.bind(this));
+
+            if (this.$["new-password"].value != this.$["confirm-new-password"].value) {
+                this.$["confirm-new-password"].invalid = true;
+                this.$["confirm-new-password"].error = "Make sure the new password fields match.";
+            }
+
+            this.$['password-change'].body = JSON.stringify({
+                "Current": this.$.password.value,
+                "New": this.$["new-password"].value
+            });
+            this.$['password-change'].go();
+        },
+
+        onPasswordChangeResponse: function(event, data) {
+            if (data.response && data.response.Success) {
+                this.user = null;
+            }
+        },
+
+        onPasswordDialogKeypress: function(event) {
+            var code = event.keyCode || event.charCode, key = event.keyIdentifier;
+
+            if (key == 'Enter' || code == 13) {
+                if (event.target === this.$.password) { 
+                    this.$["new-password"].focusAction();
+                } else if (event.target === this.$["new-password"]) {
+                    this.$["confirm-new-password"].focusAction();
+                } else if (event.target === this.$["confirm-new-password"]) {
+                    this.$["apply-password-change"].asyncFire('tap');
+                }
+            }
+        },
+
         cleanFields: function() {
             this.url = "";
             this.discoveredFeeds = null;
             this.loading = false;
+
+            ["password", "new-password", "confirm-new-password"].forEach(function(id) {
+                this.$[id].required = false;
+                this.$[id].invalid = false;
+                this.$[id].value = "";
+                this.$[id].error = "";
+            }.bind(this));
         }
     });
 })();
