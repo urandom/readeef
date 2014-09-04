@@ -191,27 +191,19 @@
         },
 
         onOlderFirst: function() {
-            var settings = Polymer.extend({}, this.settings);
-            settings.newerFirst = false;
-            this.settings = settings;
+            this.settings.newerFirst = false;
         },
 
         onNewerFirst: function() {
-            var settings = Polymer.extend({}, this.settings);
-            settings.newerFirst = true;
-            this.settings = settings;
+            this.settings.newerFirst = true;
         },
 
         onUnreadOnly: function() {
-            var settings = Polymer.extend({}, this.settings);
-            settings.unreadOnly = true;
-            this.settings = settings;
+            this.settings.unreadOnly = true;
         },
 
         onReadAndUnread: function() {
-            var settings = Polymer.extend({}, this.settings);
-            settings.unreadOnly = false;
-            this.settings = settings;
+            this.settings.unreadOnly = false;
         },
 
         onMarkAllAsRead: function() {

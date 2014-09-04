@@ -157,6 +157,7 @@
         limit: 50,
         offset: 0,
         readUntilMilliSec: 0,
+        userSettingsObserver: null,
 
         created: function() {
             this.feeds = [];
@@ -178,11 +179,6 @@
         },
 
         userSettingsChanged: function(oldValue, newValue) {
-            if (oldValue && newValue) {
-                if (oldValue.newerFirst != newValue.newerFirst || oldValue.unreadOnly != newValue.unreadOnly) {
-                    this.updateFeedArticles();
-                }
-            }
             if (newValue) {
                 this.currentFeedId = newValue.currentFeedId;
                 this.display = newValue.display || 'feed';
@@ -191,12 +187,24 @@
             if (oldValue) {
                 this.$['user-settings'].go();
             }
+
+            if (this.userSettingsObserver) {
+                this.userSettingsObserver.close();
+            }
+
+            this.userSettingsObserver = new ObjectObserver(this.userSettings);
+            this.userSettingsObserver.open(function (added, removed, changed, getOldValueFn) {
+                var amalgamation = Polymer.extend(Polymer.extend(Polymer.extend({}, added), removed), changed);
+                if ('newerFirst' in amalgamation || 'unreadOnly' in amalgamation) {
+                    this.updateFeedArticles();
+                }
+
+                this.$['user-settings'].go();
+            }.bind(this));
         },
 
         displayChanged: function(oldValue, newValue) {
-            var settings = Polymer.extend({}, this.userSettings);
-            settings.display = newValue;
-            this.userSettings = settings;
+            this.userSettings.display = newValue;
         },
 
         currentFeedIdChanged: function(oldValue, newValue) {
@@ -306,8 +314,6 @@
 
             this.currentFeedId = event.target.getAttribute('name');
 
-            this.userSettings.currentFeedId = this.currentFeedId;
-            
             this.async(function() {
                 this.userSettings = Polymer.extend({}, this.userSettings);
             });
