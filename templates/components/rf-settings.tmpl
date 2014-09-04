@@ -68,20 +68,14 @@
             .theme.blue {
                 background: {{ g.color.blue.primary }};
             }
-            .theme.blue[active] {
-                border-color: {{ g.color.blue.primaryDark }};
-            }
             .theme.indigo {
                 background: {{ g.color.indigo.primary }};
-            }
-            .theme.indigo[active] {
-                border-color: {{ g.color.indigo.primaryDark }};
             }
             .theme.green {
                 background: {{ g.color.green.primary }};
             }
-            .theme.green[active] {
-                border-color: {{ g.color.green.primaryDark }};
+            .theme.lime {
+                background: {{ g.color.lime.primary }};
             }
         </style>
         <div layout vertical flex start>
@@ -107,9 +101,11 @@
                             <p>
                                 Pick your style
                             </p>
-                            <paper-icon-button class="theme blue" on-tap="{{ onThemeSelect }}"></paper-icon-button>
-                            <paper-icon-button class="theme indigo" on-tap="{{ onThemeSelect }}"></paper-icon-button>
-                            <paper-icon-button class="theme green" on-tap="{{ onThemeSelect }}"></paper-icon-button>
+                            <div layout horizontal justified>
+                                <template repeat="{{ color in ['blue', 'indigo', 'green', 'lime'] }}">
+                                    <paper-icon-button class="theme {{ color }}" on-tap="{{ onThemeSelect }}"></paper-icon-button>
+                                </template>
+                            </div>
 
                             <paper-button label="Change password" on-tap="{{ onChangePassword }}" self-end></paper-button>
 
