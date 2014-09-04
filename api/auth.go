@@ -46,7 +46,7 @@ func (con Auth) Handler(c context.Context) http.HandlerFunc {
 			User: User{
 				Login:     user.Login,
 				FirstName: user.FirstName,
-				LastName:  user.FirstName,
+				LastName:  user.LastName,
 				Email:     user.Email,
 				Admin:     user.Admin,
 			},
