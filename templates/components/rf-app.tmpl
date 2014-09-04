@@ -216,6 +216,8 @@
                 } else {
                     this.currentFeed = this.feedIdMap[newValue];
                 }
+
+                this.userSettings.currentFeedId = newValue;
             }
         },
 
@@ -313,10 +315,6 @@
             }
 
             this.currentFeedId = event.target.getAttribute('name');
-
-            this.async(function() {
-                this.userSettings = Polymer.extend({}, this.userSettings);
-            });
         },
 
         onFeedRefresh: function(event, detail, sender) {
