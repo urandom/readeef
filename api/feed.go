@@ -46,6 +46,12 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 		db := readeef.GetDB(c)
 		user := readeef.GetUser(c, r)
 
+		if !user.Active {
+			readeef.Debug.Println("User " + user.Login + " is inactive")
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
 		actionParam := webfw.GetParams(c, r)
 		parts := strings.Split(actionParam["action"], "/")
 		action := parts[0]

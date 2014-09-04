@@ -97,9 +97,9 @@
         <rf-api id="list-feeds" pathAction="feed/list" on-rf-api-response="{{ onAllFeedsResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="feed-articles" pathAction="feed/{{ currentFeedId }}/{{ limit }}/{{ offset }}/{{ userSettings.newerFirst }}/{{ userSettings.unreadOnly }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="feed-read-all" pathAction="feed/read/{{ currentFeedId }}/{{ readUntilMilliSec }}" on-rf-api-response="{{ onFeedReadAllResponse }}" user="{{ user }}"></rf-api>
+        <rf-api id="user-settings" pathAction="user/settings" on-rf-api-response="{{ onUserSettingsResponse }}" user="{{ user }}" method="POST" body="{{ userSettings | toJSON }}"></rf-api>
 
         <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
-        <core-localstorage name="{{ user.login }}-settings" id="user-settings-storage" value="{{userSettings}}" on-core-localstorage-load="{{ onUserSettingsLoad }}"></core-localstorage>
 
         <core-media-query query="min-width: {{responsiveWidth}}" queryMatches="{{wide}}"></core-media-query>
 
@@ -183,6 +183,20 @@
                     this.updateFeedArticles();
                 }
             }
+            if (newValue) {
+                this.currentFeedId = newValue.currentFeedId;
+                this.display = newValue.display || 'feed';
+            }
+
+            if (oldValue) {
+                this.$['user-settings'].go();
+            }
+        },
+
+        displayChanged: function(oldValue, newValue) {
+            var settings = Polymer.extend({}, this.userSettings);
+            settings.display = newValue;
+            this.userSettings = settings;
         },
 
         currentFeedIdChanged: function(oldValue, newValue) {
@@ -221,6 +235,10 @@
             return urlParser.host;
         },
 
+        toJSON: function(value) {
+            return JSON.stringify(value);
+        },
+
         onAuthCheckComplete: function(event, response) {
             if (response.response == 403) {
                 if (this.selected == 'login') {
@@ -236,6 +254,7 @@
             this.user.email = data.response.User.Email;
             this.user.firstName = data.response.User.FirstName;
             this.user.lastName = data.response.User.lastName;
+            this.userSettings = data.response.ProfileData;
 
             if (this.selected == 'login' || this.selected == 'loading') {
                 this.selected = 'scaffolding';
@@ -255,20 +274,6 @@
 
             if (!sender.value) {
                 this.selected = 'login';
-            }
-        },
-
-        onUserSettingsLoad: function(event, detail, sender) {
-            if (sender.value) {
-                if (sender.value.currentFeedId) {
-                    this.currentFeedId = sender.value.currentFeedId;
-                }
-                if (!('newerFirst' in sender.value)) {
-                    sender.value.newerFirst = false;
-                }
-                if (!('unreadOnly' in sender.value)) {
-                    sender.value.unreadOnly = false;
-                }
             }
         },
 

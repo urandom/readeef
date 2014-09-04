@@ -136,7 +136,8 @@ func (db DB) GetFeedUsers(f Feed) ([]User, error) {
 }
 
 func initUsers(users []User) ([]User, error) {
-	for _, u := range users {
+	for i := 0; i < len(users); i++ {
+		u := &users[i]
 		if len(u.ProfileJSON) != 0 {
 			if err := json.Unmarshal(u.ProfileJSON, &u.ProfileData); err != nil {
 				return users, err
