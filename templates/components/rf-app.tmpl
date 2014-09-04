@@ -95,9 +95,9 @@
 
         <rf-api id="auth-check" pathAction="auth" on-rf-api-response="{{ onAuthCheckResponse }}" on-rf-api-complete="{{ onAuthCheckComplete }}" user="{{ user }}"></rf-api>
         <rf-api id="list-feeds" pathAction="feed/list" on-rf-api-response="{{ onAllFeedsResponse }}" user="{{ user }}"></rf-api>
-        <rf-api id="feed-articles" pathAction="feed/{{ currentFeedId }}/{{ limit }}/{{ offset }}/{{ userSettings.newerFirst }}/{{ userSettings.unreadOnly }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}"></rf-api>
+        <rf-api id="feed-articles" pathAction="feed/{{ currentFeedId }}/{{ limit }}/{{ offset }}/{{ userSettings.newerFirst || false }}/{{ userSettings.unreadOnly || false }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="feed-read-all" pathAction="feed/read/{{ currentFeedId }}/{{ readUntilMilliSec }}" on-rf-api-response="{{ onFeedReadAllResponse }}" user="{{ user }}"></rf-api>
-        <rf-api id="user-settings" pathAction="user/settings" on-rf-api-response="{{ onUserSettingsResponse }}" user="{{ user }}" method="POST" body="{{ userSettings | toJSON }}"></rf-api>
+        <rf-api id="user-settings" pathAction="user/settings" on-rf-api-response="{{ onUserSettingsResponse }}" user="{{ user }}" method="POST"></rf-api>
 
         <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
 
@@ -185,6 +185,7 @@
             }
 
             if (oldValue) {
+                this.$['user-settings'].body = JSON.stringify(this.userSettings);
                 this.$['user-settings'].go();
             }
 
@@ -199,6 +200,7 @@
                     this.updateFeedArticles();
                 }
 
+                this.$['user-settings'].body = JSON.stringify(this.userSettings);
                 this.$['user-settings'].go();
             }.bind(this));
         },
@@ -243,10 +245,6 @@
             urlParser.href = value;
 
             return urlParser.host;
-        },
-
-        toJSON: function(value) {
-            return JSON.stringify(value);
         },
 
         onAuthCheckComplete: function(event, response) {
