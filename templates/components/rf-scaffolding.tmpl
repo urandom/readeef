@@ -6,6 +6,7 @@
 <link rel="import" href="/dist/core-drawer-panel/core-drawer-panel.html">
 <link rel="import" href="/dist/core-icons/core-icons.html">
 <link rel="import" href="/dist/core-icons/hardware-icons.html">
+<link rel="import" href="/dist/core-style/core-style.html">
 
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
@@ -14,10 +15,6 @@
 <polymer-element name="rf-scaffolding" attributes="wide user settings feed article display">
     <template>
         <style>
-            core-toolbar {
-                background-color: #558AE0;
-                color: white;
-            }
             core-drawer-panel:not(.wide) core-toolbar {
                 height: 48px;
                 font-size: 1.2em;
@@ -65,12 +62,10 @@
             .content-label {
                 line-height: 60px;
                 padding: 0 24px 12px;
-                background-color: #f8f8f8;
                 letter-spacing: 0.05em;
                 margin: 0;
                 font-size: 24px;
                 font-weight: 400;
-                color: #5265a2;
             }
 
             .content-label small {
@@ -86,6 +81,8 @@
             }
 
         </style>
+        <core-style ref="rf-theme"></core-style>
+
         <template id="article-list-menu-items">
             <paper-item label="Older first" hidden?="{{ !settings.newerFirst }}" on-tap="{{ onOlderFirst }}"></paper-item>
             <paper-item label="Newer first" hidden?="{{ settings.newerFirst }}" on-tap="{{ onNewerFirst }}"></paper-item>
@@ -95,7 +92,7 @@
         </template>
         <core-drawer-panel id="drawer-panel" class="{{ {wide: wide} | tokenList }}" responsiveWidth="768px">
             <core-header-panel drawer>
-                <core-toolbar id="navheader">
+                <core-toolbar id="navheader" class="primary-color">
                     <content select=".drawer-title"></content>
                 </core-toolbar>
                 <core-menu id="drawer-menu" selected="{{ feed.Id }}" notap>
@@ -104,7 +101,7 @@
             </core-header-panel>
 
             <core-header-panel main mode="{{ {'cover': wide } | tokenList }}" shadow id="content-panel">
-                <core-toolbar id="mainheader">
+                <core-toolbar id="mainheader" class="primary-color">
                     <paper-icon-button id="navicon" icon="menu" hidden?="{{ display != 'feed' || article }}"></paper-icon-button>
                     <paper-icon-button id="back-menu" icon="arrow-back" hidden?="{{ display == 'feed' && !article }}" on-tap="{{ onArticleBack }}"></paper-icon-button>
                     <div flex hidden?="{{ wide }}" class="title">{{ display == 'feed' ? feed.Title : 'Settings' }}</div>
@@ -119,7 +116,7 @@
                     <paper-fab class="refreshButton bottom" icon="refresh" hidden?="{{ display != 'feed' || !wide }}" on-tap="{{ onRefresh }}"></paper-fab>
                 </core-toolbar>
                 <div class="content">
-                    <h1 class="content-label" hidden?="{{ !wide }}" layout horizontal>
+                    <h1 class="content-label primary-dark-transparent-inverted-color" hidden?="{{ !wide }}" layout horizontal>
                         <paper-icon-button id="back-title" icon="arrow-back" class="title-icon" style="opacity: {{ display != 'feed' || article ? 100 : 0 }}" on-tap="{{ onArticleBack }}"></paper-icon-button>
                         <div flex layout vertical>
                             <template if="{{ display == 'feed' && feed.SiteLink }}">

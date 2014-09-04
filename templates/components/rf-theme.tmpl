@@ -1,0 +1,42 @@
+{% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/core-style/core-style.html">
+
+<script>
+    CoreStyle.g.theme = "blue";
+    CoreStyle.g.color = {
+        blue: {
+            primary: "#5677fc",
+            primaryDark: "#2a36b1"
+        },
+        indigo: {
+            primary: "#3f51b5",
+            primaryDark: "#1a237e"
+        },
+        green: {
+            primary: "#259b24",
+            primaryDark: "#0d5302"
+        }
+    };
+</script>
+
+<core-style id="rf-theme">
+    .primary-color {
+        background-color: {{ g.color[g.theme].primary }};
+        color: white;
+    }
+    /* 900 */
+    .primary-dark-color {
+        background-color: {{ g.color[g.theme].primaryDark }};
+        color: white;
+    }
+    .primary-transparent-inverted-color {
+        color: {{ g.color[g.theme].primary }};
+        background-color: transparent;
+    }
+    .primary-dark-transparent-inverted-color {
+        color: {{ g.color[g.theme].primaryDark }};
+        background-color: transparent;
+    }
+</core-style>
+{% end %}

@@ -210,12 +210,17 @@
             if (newValue) {
                 this.currentFeedId = newValue.currentFeedId;
                 this.display = newValue.display || 'feed';
+                CoreStyle.g.theme = newValue.theme || 'blue';
 
                 this.userSettingsObserver = new ObjectObserver(this.userSettings);
                 this.userSettingsObserver.open(function (added, removed, changed, getOldValueFn) {
                     var amalgamation = Polymer.extend(Polymer.extend(Polymer.extend({}, added), removed), changed);
                     if ('newerFirst' in amalgamation || 'unreadOnly' in amalgamation) {
                         this.updateFeedArticles();
+                    }
+
+                    if ('theme' in amalgamation) {
+                        CoreStyle.g.theme = amalgamation.theme;
                     }
 
                     this.$['user-settings'].body = JSON.stringify(this.userSettings);

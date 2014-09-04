@@ -57,6 +57,32 @@
                 margin-right: 5px;
             }
 
+            .theme {
+                width: 56px;
+                height: 56px;
+                border-radius: 50%;
+                border-width: 2px;
+                border-color: transparent;
+            }
+
+            .theme.blue {
+                background: {{ g.color.blue.primary }};
+            }
+            .theme.blue[active] {
+                border-color: {{ g.color.blue.primaryDark }};
+            }
+            .theme.indigo {
+                background: {{ g.color.indigo.primary }};
+            }
+            .theme.indigo[active] {
+                border-color: {{ g.color.indigo.primaryDark }};
+            }
+            .theme.green {
+                background: {{ g.color.green.primary }};
+            }
+            .theme.green[active] {
+                border-color: {{ g.color.green.primaryDark }};
+            }
         </style>
         <div layout vertical flex start>
             <paper-dropdown id="dropdown" selected="{{ selectedTab }}">
@@ -78,6 +104,12 @@
                             <paper-input label="First name" id="first-name" value="{{ user.firstName }}" floatingLabel tabindex="1"></paper-input>
                             <paper-input label="Last name" id="last-name" value="{{ user.lastName }}" floatingLabel tabindex="2"></paper-input>
                             <paper-input label="Email" id="email" type="email" value="{{ user.email }}" floatingLabel tabindex="3"></paper-input>
+                            <p>
+                                Pick your style
+                            </p>
+                            <paper-icon-button class="theme blue" on-tap="{{ onThemeSelect }}"></paper-icon-button>
+                            <paper-icon-button class="theme indigo" on-tap="{{ onThemeSelect }}"></paper-icon-button>
+                            <paper-icon-button class="theme green" on-tap="{{ onThemeSelect }}"></paper-icon-button>
 
                             <paper-button label="Change password" on-tap="{{ onChangePassword }}" self-end></paper-button>
 
@@ -183,6 +215,8 @@
         selectedTab: 'general',
         loading: false,
         removedFeed: null,
+
+        g: CoreStyle.g,
 
         attached: function() {
             this.cleanFields();
@@ -333,6 +367,12 @@
                     this.$["apply-password-change"].asyncFire('tap');
                 }
             }
+        },
+
+        onThemeSelect: function(event, detail, sender) {
+            var theme = sender.className.replace(/^theme /, '');
+
+            this.settings.theme = theme;
         },
 
         cleanFields: function() {

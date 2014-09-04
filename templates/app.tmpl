@@ -3,6 +3,8 @@
     <script src="/dist/platform/platform.js"></script>
 
     <link rel="import" href="/dist/font-roboto/roboto.html">
+    <link rel="import" href="/dist/core-style/core-style.html">
+    <link rel="import" href="/component/rf-theme">
     <link rel="import" href="/component/rf-app">
 {% end %}
 
@@ -16,14 +18,6 @@ body {
 
 html /deep/ .drawer-content.core-selected[selectable] {
     font-weight: bold;
-}
-
-html /deep/ paper-tab::shadow #ink {
-    color: #558AE0;
-}
-
-html /deep/ paper-tabs::shadow #selectionBar {
-    background-color: #558AE0;
 }
 
 /* bug: Polymer 0.4 shows scrollbars in the menus */
