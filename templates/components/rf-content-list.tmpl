@@ -107,6 +107,10 @@
                 padding-top: 16px;
             }
 
+            .article-description {
+                font-size: 130%;
+            }
+
             .article-description img, 
             .article-description object, 
             .article-description iframe {
@@ -287,7 +291,28 @@
                     this.listPosition = scroller.scrollTop;
                 }
 
-                this.$.pages.querySelector('.article-description').innerHTML = newValue.Description;
+                var description = this.$.pages.querySelector('.article-description'),
+                    imageStyler = function() {
+                        if (image.width < 300) {
+                            image.style.float = "right";
+                            if (image.parentNode) {
+                                image.parentNode.style.clear = "both";
+                            } else {
+                                description.style.clear = "both";
+                            }
+                        }
+                    }, image;
+
+                description.innerHTML = newValue.Description;
+                image = description.querySelector('img');
+
+                if (image) {
+                    if (image.complete) {
+                        imageStyler();
+                    } else {
+                        image.addEventListener('load', imageStyler);
+                    }
+                }
 
                 this.$.pages.selected = 'detail';
 
