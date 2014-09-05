@@ -7,7 +7,7 @@
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 
 <link rel="import" href="/component/rf-api">
-<link rel="import" href="/component/rf-link">
+<link rel="import" href="/component/rf-button-link">
 
 <polymer-element name="rf-content-list" attributes="wide user feed feeds article">
     <template bind="{{ wide as wide }}">
@@ -167,7 +167,7 @@
                         <div class="article-content">
                             <div class="article-description"></div>
 
-                            <rf-link href="{{ article.Link }}" target="feed-article" class="article-link" label="View the article"></rf-link>
+                            <rf-button-link href="{{ article.Link }}" target="feed-article" class="article-link" label="View the article"></rf-button-link>
                         </div>
                     </div>
                 </div>

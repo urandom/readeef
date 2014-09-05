@@ -2,14 +2,14 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/paper-button/paper-button.html">
 
-<polymer-element name="rf-link" extends="paper-button" attributes="href target" role="link">
+<polymer-element name="rf-button-link" extends="paper-button" attributes="href target" role="link">
     <template>
         <shadow></shadow>
         <a href="{{ href }}" target="{{ target }}" hidden id="link"></a>
     </template>
     <script>
 (function() {
-    Polymer('rf-link', {
+    Polymer('rf-button-link', {
         href: '',
         target: '',
 
