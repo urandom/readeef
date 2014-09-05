@@ -358,6 +358,12 @@
                 this.previousArticle();
             } else if (key == "U+0048" || code == 104 || code == 72) { // h
                 this.article = null;
+            } else if (key == "U+0056" || code == 118 || code == 86) { // v
+                if (this.article) {
+                    this.$.pages.querySelector('.article-link').openInBackground();
+                }
+            } else if (key == "U+0052" || code == 114 || code == 82) { // r
+                this.fire('core-signal', {name: "rf-feed-refresh"});
             }
         }
     });
