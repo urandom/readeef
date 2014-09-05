@@ -129,7 +129,7 @@
                 display: none;
             }
         </style>
-        <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="list" transitions="hero-transition" on-core-animated-pages-transition-end="{{ onPagesTransitionEnd }}">
+        <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="list" transitions="hero-transition" on-core-animated-pages-transition-end="{{ onPagesTransitionEnd }}" on-keypress="{{ onContentKeypress }}">
 
             <section name="list">
                 <core-list data="{{ articles }}" height="{{ itemHeight }}" id="articles-list" on-core-activate="{{ onArticleActivate }}">
@@ -194,6 +194,10 @@
         listHeight: 0,
         pathObserver: null,
         listPosition: 0,
+        
+        ready: function() {
+            document.addEventListener('keypress', this.onContentKeypress.bind(this), false);
+        },
 
         nextArticle: function() {
             if (this.article) {
@@ -339,8 +343,23 @@
             this.article.Favorite = !this.article.Favorite;
             this.$['article-favorite'].go();
             this.$['articles-list'].refresh(true);
-        }
+        },
 
+        onContentKeypress: function(event) {
+            if (this.$.pages.offsetWidth == 0 && this.$.pages.offsetHeight == 0) {
+                return;
+            }
+
+            var code = event.keyCode || event.charCode, key = event.keyIdentifier;
+
+            if (key == "U+004A" || code == 106 || code == 74) { // j
+                this.nextArticle();
+            } else if (key == "U+004B" || code == 107 || code == 75) { // k
+                this.previousArticle();
+            } else if (key == "U+0048" || code == 104 || code == 72) { // h
+                this.article = null;
+            }
+        }
     });
 })();
     </script>
