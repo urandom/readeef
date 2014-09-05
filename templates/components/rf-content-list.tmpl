@@ -79,18 +79,26 @@
 
             .article-content {
                 padding: 16px 94px;
-                max-width: 800px;
-                margin: 0 auto;
             }
-            .article-detail .title-wrapper {
-                max-width: 820px;
-                margin: 0 auto;
-            }
-
             core-animated-pages:not(.wide) .article-content {
                 padding: 8px;
             }
+
+            @media(min-width: 1350px) {
+                core-animated-pages .article-content {
+                    width: 800px;
+                    margin: 0 auto;
+                }
+
+                core-animated-pages .article-detail .title-wrapper {
+                    max-width: 800px;
+                    margin: 0 auto;
+                }
+            }
+
+
             .article-link {
+                display: block;
                 padding-top: 16px;
             }
 
