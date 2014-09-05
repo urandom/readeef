@@ -239,7 +239,7 @@
                     worker.addEventListener('message', function(event) {
                         this.articles = event.data.articles;
                     }.bind(this));
-                    if (this.feed.Id == "__all__") {
+                    if (this.feed.Id == "tag:__all__") {
                         data.feeds = this.feeds;
                     }
                     worker.postMessage(data);

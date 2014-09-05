@@ -300,7 +300,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			w.Write(b)
 		case "read":
 			switch {
-			case parts[1] == "__all__":
+			case parts[1] == "tag:__all__":
 				var seconds int64
 				seconds, err = strconv.ParseInt(parts[2], 10, 64)
 				/* TODO: non-fatal error */
@@ -382,7 +382,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				limit = 50
 			}
 
-			if action == "__all__" {
+			if action == "tag:__all__" {
 				if newerFirst {
 					if unreadOnly {
 						articles, err = db.GetUnreadUserArticlesDesc(user, limit, offset)
@@ -399,7 +399,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				if err != nil {
 					break
 				}
-			} else if action == "__favorite__" {
+			} else if action == "tag:__favorite__" {
 				if newerFirst {
 					articles, err = db.GetUserFavoriteArticlesDesc(user, limit, offset)
 				} else {

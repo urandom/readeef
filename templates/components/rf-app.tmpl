@@ -65,11 +65,11 @@
                 <div fit class="drawer-title bottom">Feeds</div>
 
                 <template if="{{ feeds.length > 0 }}">
-                    <paper-item label="Favorite" class="drawer-content" on-tap="{{ onFeedTap }}" name="__favorite__" selectable></paper-item>
+                    <paper-item label="Favorite" class="drawer-content" on-tap="{{ onFeedTap }}" name="tag:__favorite__" selectable></paper-item>
                     <hr class="drawer-content">
                 </template>
                 <template if="{{ feeds.length > 1 }}">
-                    <paper-item label="All" class="drawer-content" on-tap="{{ onFeedTap }}" name="__all__" selectable></paper-item>
+                    <paper-item label="All" class="drawer-content" on-tap="{{ onFeedTap }}" name="tag:__all__" selectable></paper-item>
                 </template>
                 <template repeat="{{ feed in feeds }}">
                     <paper-item label="{{ feed.Title }}" iconSrc="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" class="drawer-content" on-tap="{{ onFeedTap }}" title="{{ feed.Description }}" name="{{ feed.Id }}" selectable></paper-item>
@@ -118,7 +118,7 @@
     function createAllPseudoFeed() {
         // TODO: i18n
         return {
-            Id: "__all__",
+            Id: "tag:__all__",
             Title: "All feed articles",
             Description: "",
             Articles: null,
@@ -130,7 +130,7 @@
     function createFavoritePseudoFeed() {
         // TODO: i18n
         return {
-            Id: "__favorite__",
+            Id: "tag:__favorite__",
             Title: "Favorite feed articles",
             Description: "",
             Articles: null,
@@ -235,9 +235,9 @@
 
         currentFeedIdChanged: function(oldValue, newValue) {
             if (this.feeds && this.feeds.length) {
-                if (newValue == "__all__") {
+                if (newValue == "tag:__all__") {
                     this.currentFeed = createAllPseudoFeed();
-                } else if (newValue == "__favorite__") {
+                } else if (newValue == "tag:__favorite__") {
                     this.currentFeed = createFavoritePseudoFeed();
                 } else {
                     this.currentFeed = this.feedIdMap[newValue];
