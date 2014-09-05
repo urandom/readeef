@@ -70,6 +70,10 @@
                             delete args.params;
                         }
 
+                        if (method == 'POST' && args.headers['Content-Type'].indexOf('charset=') == -1) {
+                            args.headers['Content-Type'] += "; charset=UTF-8";
+                        }
+
                         body = args.body;
                         if (body != null) {
                             body = body.toString();
