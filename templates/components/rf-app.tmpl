@@ -190,7 +190,7 @@
                             case "email":
                             case "password":
                                 ajax.body = changed[attribute];
-                                ajax.pathAction = "user/" + attribute;
+                                ajax.pathAction = "user-settings/" + attribute;
                                 ajax.go();
                                 break;
                             }
@@ -223,7 +223,7 @@
                     }
 
                     this.$['user-settings'].body = JSON.stringify(this.userSettings);
-                    this.$['user-settings'].pathAction = "user/profileData";
+                    this.$['user-settings'].pathAction = "user-settings/profileData";
                     this.$['user-settings'].go();
                 }.bind(this));
             }

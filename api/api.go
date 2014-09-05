@@ -42,6 +42,9 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	controller = NewArticle()
 	dispatcher.Handle(controller)
 
+	controller = NewUser()
+	dispatcher.Handle(controller)
+
 	controller = NewUserSettings()
 	dispatcher.Handle(controller)
 

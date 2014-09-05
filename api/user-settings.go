@@ -17,7 +17,7 @@ type UserSettings struct {
 
 func NewUserSettings() UserSettings {
 	return UserSettings{
-		webfw.NewBaseController("/v:version/user/:attribute", webfw.MethodGet|webfw.MethodPost, ""),
+		webfw.NewBaseController("/v:version/user-settings/:attribute", webfw.MethodGet|webfw.MethodPost, ""),
 	}
 }
 

@@ -146,16 +146,6 @@
                             </div>
 
                             <paper-button label="Change password" on-tap="{{ onChangePassword }}" self-end></paper-button>
-
-                            <paper-dialog id="set-password-dialog" heading="Change your password" transition="paper-dialog-transition-bottom" closeSelector="[dismissive],[affirmative]:not([transient])" on-core-overlay-open="{{ cleanFields }}" on-keypress="{{ onPasswordDialogKeypress }}">
-                                <small>A successfull change will force a re-log</small>
-                                <paper-input label="Current password" id="password" type="password" floatingLabel tabindex="4"></paper-input>
-                                <paper-input label="New password" id="new-password" type="password" floatingLabel tabindex="4"></paper-input>
-                                <paper-input label="Confirm new password" id="confirm-new-password" type="password" floatingLabel tabindex="5"></paper-input>
-
-                                <paper-button label="Cancel" affirmative></paper-button>
-                                <paper-button label="Apply" id="apply-password-change" on-tap="{{ onApplyPasswordChange }}" affirmative autofocus transient></paper-button>
-                            </paper-dialog>
                         </div>
                     </div>
                 </section>
@@ -223,7 +213,26 @@
                 <template if="{{ user.admin }}">
                     <section name="admin" layout vertical center>
                         <div class="container" slide-from-left>
-                            <div class="card" hero-id="card" hero>Admin</div>
+                            <div class="card" hero-id="card" hero layout vertical>
+                                <template if="{{ users.length }}">
+                                <ul cross-fade>
+                                    <template repeat="{{ user in users }}">
+                                    <li title="{{ user.FirstName || user.Login }} {{ user.LastName}}" layout horizontal center data-user-login="{{ user.Login }}">
+                                        <paper-checkbox checked="{{ user.Active }}" on-tap="{{ onToggleActiveUser}}"></paper-checkbox>
+                                        <span flex>{{ user.FirstName || user.Login }} {{ user.LastName }}</span>
+                                        <paper-icon-button icon="remove" on-tap="{{ onRemoveUser }}"></paper-icon-button>
+                                    </li>
+                                    </template>
+                                </ul>
+                                </template>
+
+                                <template if="{{ !users.length }}">
+                                <h3>There are no other users</h3>
+                                </template>
+
+                                <paper-button label="Create user" on-tap="{{ onCreateUser }}" self-end></paper-button>
+
+                            </div>
                         </div>
                     </section>
                 </template>
@@ -231,12 +240,33 @@
             </core-animated-pages>
         </div>
 
+        <paper-dialog id="set-password-dialog" heading="Change your password" transition="paper-dialog-transition-bottom" closeSelector="[dismissive],[affirmative]:not([transient])" on-core-overlay-open="{{ cleanFields }}" on-keypress="{{ onPasswordDialogKeypress }}">
+            <small>A successfull change will force a re-log</small>
+            <paper-input label="Current password" id="password" type="password" floatingLabel tabindex="4"></paper-input>
+            <paper-input label="New password" id="new-password" type="password" floatingLabel tabindex="5"></paper-input>
+            <paper-input label="Confirm new password" id="confirm-new-password" type="password" floatingLabel tabindex="6"></paper-input>
+
+            <paper-button label="Cancel" affirmative></paper-button>
+            <paper-button label="Apply" id="apply-password-change" on-tap="{{ onApplyPasswordChange }}" affirmative autofocus transient></paper-button>
+        </paper-dialog>
+
+        <paper-dialog id="add-user-dialog" heading="Add a new user" transition="paper-dialog-transition-bottom" closeSelector="[dismissive],[affirmative]:not([transient])" on-core-overlay-open="{{ cleanFields }}" on-keypress="{{ onNewUserDialogKeypress }}">
+            <paper-input label="Login" id="add-user-login" floatingLabel tabindex="7"></paper-input>
+            <paper-input label="Password" id="add-user-password" type="password" floatingLabel tabindex="8"></paper-input>
+
+            <paper-button label="Cancel" affirmative></paper-button>
+            <paper-button label="Apply" id="add-user-apply" on-tap="{{ onApplyCreateUser }}" affirmative autofocus transient></paper-button>
+        </paper-dialog>
+
         <rf-api user="{{ user }}" id="remove-feed" method="post" pathAction="feed/remove/{{ removedFeed }}" on-rf-api-response="{{ onRemoveFeedResponse }}"></rf-api>
 
         <rf-api user="{{ user }}" id="discover-feed" pathAction="feed/discover" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="discover-opml" pathAction="feed/opml" method="post" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="add-feed" method="post" pathAction="feed/add" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
-        <rf-api id="password-change" pathAction="user/password" on-rf-api-response="{{ onPasswordChangeResponse }}" user="{{ user }}" method="post"></rf-api>
+        <rf-api id="password-change" pathAction="user-settings/password" on-rf-api-response="{{ onPasswordChangeResponse }}" user="{{ user }}" method="post"></rf-api>
+
+        <rf-api user="{{ user }}" id="user-list" pathAction="user/list" on-rf-api-response="{{ onUserListResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="user-add" pathAction="user/create" method="post" on-rf-api-response="{{ onUserAddResponse }}"></rf-api>
         
     </template>
     <script>
@@ -249,15 +279,19 @@
         selectedTab: 'general',
         loading: false,
         removedFeed: null,
+        users: null,
 
         g: CoreStyle.g,
 
         attached: function() {
             this.cleanFields();
+            this.users = [];
         },
 
         displayChanged: function(oldValue, newValue) {
-            if (newValue != 'settings') {
+            if (newValue == 'settings') {
+                this.$['user-list'].go();
+            } else {
                 this.cleanFields();
             }
         },
@@ -364,16 +398,23 @@
         },
 
         onApplyPasswordChange: function() {
+            var invalid = false;
             ["password", "new-password", "confirm-new-password"].forEach(function(id) {
                 if (!this.$[id].value) {
                     this.$[id].required = true;
                     this.$[id].value = null;
+                    invalid = true;
                 }
             }.bind(this));
 
             if (this.$["new-password"].value != this.$["confirm-new-password"].value) {
                 this.$["confirm-new-password"].invalid = true;
                 this.$["confirm-new-password"].error = "Make sure the new password fields match.";
+                invalid = true;
+            }
+
+            if (invalid) {
+                return;
             }
 
             this.$['password-change'].body = JSON.stringify({
@@ -414,13 +455,55 @@
             this.discoveredFeeds = null;
             this.loading = false;
 
-            ["password", "new-password", "confirm-new-password"].forEach(function(id) {
+            ["password", "new-password", "confirm-new-password", "add-user-login", "add-user-password"].forEach(function(id) {
                 this.$[id].required = false;
                 this.$[id].invalid = false;
                 this.$[id].value = "";
                 this.$[id].error = "";
             }.bind(this));
+        },
+
+        onUserListResponse: function(event, data) {
+            if (data.response && data.response.Users) {
+                this.users = data.response.Users.filter(function(user) {
+                    return user.Login != this.user.login;
+                }.bind(this));
+            }
+        },
+
+        onCreateUser: function() {
+            this.$['add-user-dialog'].toggle();
+        },
+
+        onApplyCreateUser: function() {
+            var invalid = false;
+            ["add-user-login", "add-user-password"].forEach(function(id) {
+                if (!this.$[id].value) {
+                    this.$[id].required = true;
+                    this.$[id].value = null;
+                    invalid = true;
+                }
+            }.bind(this));
+
+            if (invalid) {
+                return;
+            }
+
+            this.$['user-add'].body = JSON.stringify({
+                "Login": this.$['add-user-login'].value,
+                "Password": this.$['add-user-password'].value
+            });
+            this.$['user-add'].go();
+        },
+
+        onUserAddResponse: function(event, data) {
+            if (data.response && data.response.Success) {
+                this.$['user-list'].go();
+            }
+
+            this.$['add-user-dialog'].toggle();
         }
+
     });
 })();
     </script>
