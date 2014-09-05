@@ -1,0 +1,26 @@
+{% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/paper-button/paper-button.html">
+
+<polymer-element name="rf-link" extends="paper-button" attributes="href target" role="link">
+    <template>
+        <shadow></shadow>
+        <a href="{{ href }}" target="{{ target }}" hidden id="link"></a>
+    </template>
+    <script>
+(function() {
+    Polymer('rf-link', {
+        href: '',
+        target: '',
+
+        upAction: function(event) {
+            this.super(event);
+            if (!event.defaultPrevented) {
+                this.$.link.click();
+            }
+        }
+    });
+})();
+    </script>
+</polymer-element>
+{% end %}
