@@ -57,6 +57,10 @@
                 margin-right: 5px;
             }
 
+            .theme-bubbles {
+                margin: 8px 0;
+            }
+
             .theme {
                 width: 56px;
                 height: 56px;
@@ -68,14 +72,38 @@
             .theme.blue {
                 background: {{ g.color.blue.primary }};
             }
+            .theme.lightBlue {
+                background: {{ g.color.lightBlue.primary }};
+            }
             .theme.indigo {
                 background: {{ g.color.indigo.primary }};
             }
             .theme.green {
                 background: {{ g.color.green.primary }};
             }
+            .theme.lightGreen {
+                background: {{ g.color.lightGreen.primary }};
+            }
             .theme.lime {
                 background: {{ g.color.lime.primary }};
+            }
+            .theme.red {
+                background: {{ g.color.red.primary }};
+            }
+            .theme.pink {
+                background: {{ g.color.pink.primary }};
+            }
+            .theme.purple {
+                background: {{ g.color.purple.primary }};
+            }
+            .theme.amber {
+                background: {{ g.color.amber.primary }};
+            }
+            .theme.deepOrange {
+                background: {{ g.color.deepOrange.primary }};
+            }
+            .theme.grey {
+                background: {{ g.color.grey.primary }};
             }
         </style>
         <div layout vertical flex start>
@@ -101,8 +129,18 @@
                             <p>
                                 Pick your style
                             </p>
-                            <div layout horizontal justified>
-                                <template repeat="{{ color in ['blue', 'indigo', 'green', 'lime'] }}">
+                            <div class="theme-bubbles" layout horizontal justified>
+                                <template repeat="{{ color in ['blue', 'lightBlue', 'indigo', 'green'] }}">
+                                    <paper-icon-button class="theme {{ color }}" on-tap="{{ onThemeSelect }}"></paper-icon-button>
+                                </template>
+                            </div>
+                            <div class="theme-bubbles" layout horizontal justified>
+                                <template repeat="{{ color in ['lightGreen', 'lime', 'red', 'pink'] }}">
+                                    <paper-icon-button class="theme {{ color }}" on-tap="{{ onThemeSelect }}"></paper-icon-button>
+                                </template>
+                            </div>
+                            <div class="theme-bubbles" layout horizontal justified>
+                                <template repeat="{{ color in ['purple', 'amber', 'deepOrange', 'grey'] }}">
                                     <paper-icon-button class="theme {{ color }}" on-tap="{{ onThemeSelect }}"></paper-icon-button>
                                 </template>
                             </div>
