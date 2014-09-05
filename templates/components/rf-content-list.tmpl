@@ -284,9 +284,9 @@
                 }
             } else {
                 this.$.pages.selected = 'list';
-                this.$['articles-list'].refresh(true);
 
                 this.async(function() {
+                    this.$['articles-list'].refresh(true);
                     scroller.scrollTop = this.listPosition;
                 });
             }
