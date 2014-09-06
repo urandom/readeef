@@ -260,7 +260,7 @@
                     worker.addEventListener('message', function(event) {
                         this.articles = event.data.articles;
                     }.bind(this));
-                    if (this.feed.Id.indexOf("tag:") == 0) {
+                    if (this.feed.Id.toString().indexOf("tag:") == 0) {
                         data.feeds = this.feeds;
                     }
                     worker.postMessage(data);
