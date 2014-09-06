@@ -67,7 +67,7 @@
             <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
             </core-overlay>
 
-            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feed="{{ currentFeed }}" article="{{ currentArticle }}" display="{{ display }}">
+            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feed="{{ currentFeed }}" article="{{ currentArticle }}" display="{{ display }}" updateAvailable="{{ updateAvailable }}">
                 <div fit class="drawer-title bottom">Feeds</div>
 
                 <template if="{{ feeds.length > 0 }}">
@@ -108,6 +108,7 @@
         <rf-api id="feed-articles" pathAction="feed/{{ currentFeedId }}/{{ limit }}/{{ offset }}/{{ userSettings.newerFirst || false }}/{{ userSettings.unreadOnly || false }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="feed-read-all" pathAction="feed/read/{{ currentFeedId }}/{{ readUntilMilliSec }}" on-rf-api-response="{{ onFeedReadAllResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="user-settings" on-rf-api-response="{{ onUserSettingsResponse }}" user="{{ user }}" method="post"></rf-api>
+        <rf-api id="feed-update-notifier" pathAction="feed-update-notifier" on-rf-api-response="{{ onFeedUpdateNotify }}" user="{{ user }}"></rf-api>
 
         <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
 
@@ -170,6 +171,7 @@
         readUntilMilliSec: 0,
         userObserver: null,
         userSettingsObserver: null,
+        updateAvailable: false,
 
         created: function() {
             this.feeds = [];
@@ -308,6 +310,7 @@
             this.$['user-storage'].save();
 
             this.$['list-feeds'].go();
+            this.$['feed-update-notifier'].go();
         },
 
         onUserLoad: function(event, detail, sender) {
@@ -403,6 +406,7 @@
             this.currentArticle = null;
             this.currentFeed.Articles = null;
 
+            this.updateAvailable = false;
             this.noMoreArticles = false;
             this.offset = 0;
 
@@ -436,6 +440,35 @@
 
         onFeedTagsChange: function() {
             this.updateTags();
+        },
+
+        onFeedUpdateNotify: function(event, data) {
+            if (!this.user) {
+                return;
+            }
+
+            if (data.response && data.response.Feed) {
+                if (this.currentFeedId.toString().indexOf("tag:") == 0) {
+                    var currentTag = this.currentFeedId.substring(4);
+
+                    for (var i = 0, tag; tag = this.tags[i]; ++i) {
+                        if (tag.name == currentTag) {
+                            for (var j = 0, feed; feed = tag.feeds[j]; ++j) {
+                                if (feed.Id == data.response.Feed.Id) {
+                                    this.updateAvailable = true;
+                                    break;
+                                }
+                            }
+                            break;
+                        }
+                    }
+
+                } else if (this.currentFeedId == data.response.Feed.Id) {
+                    this.updateAvailable = true;
+                }
+            }
+
+            this.$['feed-update-notifier'].go();
         },
 
         updateTags: function() {

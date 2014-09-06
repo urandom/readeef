@@ -48,6 +48,9 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	controller = NewUserSettings()
 	dispatcher.Handle(controller)
 
+	controller = NewFeedUpdateNotificator(updateFeed)
+	dispatcher.Handle(controller)
+
 	controller = NewNonce(nonce)
 	dispatcher.Handle(controller)
 
@@ -65,8 +68,6 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	go func() {
 		for {
 			select {
-			case f := <-updateFeed:
-				readeef.Debug.Println("Feed " + f.Link + " updated")
 			case <-time.After(5 * time.Minute):
 				nonce.Clean(45 * time.Second)
 			}

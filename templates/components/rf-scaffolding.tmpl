@@ -12,7 +12,7 @@
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-menu-button/paper-menu-button.html">
 
-<polymer-element name="rf-scaffolding" attributes="wide user settings feed article display">
+<polymer-element name="rf-scaffolding" attributes="wide user settings feed article display updateAvailable">
     <template>
         <style>
             core-drawer-panel:not(.wide) core-toolbar {
@@ -107,13 +107,13 @@
                     <div flex hidden?="{{ wide }}" class="title">{{ display == 'feed' ? feed.Title : 'Settings' }}</div>
                     <paper-icon-button id="previous-article-menu" icon="hardware:keyboard-arrow-left" hidden?="{{ display != 'feed' || !article || article.First }}" on-tap="{{ onArticlePrevious }}"></paper-icon-button>
                     <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" hidden?="{{ display != 'feed' || !article || article.Last }}" on-tap="{{ onArticleNext }}"></paper-icon-button>
-                    <paper-icon-button id="refresh-menu" icon="refresh" on-tap="{{ onRefresh }}" hidden?="{{ display != 'feed' || article }}"></paper-icon-button>
+                    <paper-icon-button id="refresh-menu" icon="refresh" class="{{ {'primary-dark-color': updateAvailable} | tokenList }}" on-tap="{{ onRefresh }}" hidden?="{{ display != 'feed' || article }}"></paper-icon-button>
 
                     <paper-menu-button icon="more-vert" halign="right" hidden?="{{ display != 'feed' || article }}">
                         <template bind ref="article-list-menu-items"></template>
                     </paper-menu-button>
 
-                    <paper-fab class="refresh-button bottom" icon="refresh" hidden?="{{ display != 'feed' || !wide }}" on-tap="{{ onRefresh }}"></paper-fab>
+                    <paper-fab class="refresh-button bottom {{ {'primary-dark-color': updateAvailable} | tokenList }}" icon="refresh" hidden?="{{ display != 'feed' || !wide }}" on-tap="{{ onRefresh }}"></paper-fab>
                 </core-toolbar>
                 <div class="content">
                     <h1 class="content-label primary-dark-transparent-inverted-color" hidden?="{{ !wide }}" layout horizontal>
@@ -205,7 +205,8 @@
 
         onMarkAllAsRead: function() {
             this.fire('core-signal', {name: 'rf-mark-all-as-read'});
-        }
+        },
+
     });
 })();
     </script>
