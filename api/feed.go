@@ -268,9 +268,21 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			if r.Method == "GET" {
 				resp["Tags"] = feed.Tags
 			} else if r.Method == "POST" {
+				var tags []string
+
+				tags, err = db.GetUserFeedTags(user, feed)
+				if err != nil {
+					break
+				}
+
+				err = db.DeleteUserFeedTag(feed, tags...)
+				if err != nil {
+					break
+				}
+
 				decoder := json.NewDecoder(r.Body)
 
-				var tags []string
+				tags = []string{}
 				err = decoder.Decode(&tags)
 				if err != nil {
 					break
@@ -280,6 +292,9 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				if err != nil {
 					break
 				}
+
+				resp["Success"] = true
+				resp["Id"] = feed.Id
 			}
 		case "read":
 			switch {
@@ -371,7 +386,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				if err != nil {
 					break
 				}
-			} else if action == "tag:__favorite__" {
+			} else if action == "__favorite__" {
 				if newerFirst {
 					articles, err = db.GetUserFavoriteArticlesDesc(user, limit, offset)
 				} else {

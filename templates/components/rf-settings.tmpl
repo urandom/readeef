@@ -276,7 +276,7 @@
         <rf-api user="{{ user }}" id="discover-feed" pathAction="feed/discover" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="discover-opml" pathAction="feed/opml" method="post" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="add-feed" method="post" pathAction="feed/add" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
-        <rf-api user="{{ user }}" id="feed-tags" method="post" pathAction="feed/tags/{{ taggedFeed }}" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="feed-tags" method="post" pathAction="feed/tags/{{ taggedFeed }}" on-rf-api-response="{{ onFeedTagsResponse }}"></rf-api>
         <rf-api id="password-change" pathAction="user-settings/password" on-rf-api-response="{{ onPasswordChangeResponse }}" user="{{ user }}" method="post"></rf-api>
 
         <rf-api user="{{ user }}" id="user-list" pathAction="user/list" on-rf-api-response="{{ onUserListResponse }}"></rf-api>
@@ -584,6 +584,17 @@
             this.taggedFeed = sender.templateInstance.model.feed.Id;
             this.$['feed-tags'].body = JSON.stringify(tags)
             this.$['feed-tags'].go();
+        },
+
+        onFeedTagsResponse: function(event, data) {
+            if (data.response && data.response.Success) {
+                var feed = this.feeds.filter(function(feed) {
+                    if (feed.Id == data.response.Id) {
+                        return feed;
+                    }
+                });
+                this.fire('core-signal', {name: 'rf-feed-tags-changed', data: feed});
+            }
         }
     });
 })();

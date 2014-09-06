@@ -33,9 +33,14 @@ type feedIdTag struct {
 
 func (db DB) GetUserTags(u User) ([]string, error) {
 	var tags []string
+	var dbFeed []feedIdTag
 
-	if err := db.Select(&tags, db.NamedSQL("get_user_tags"), u.Login); err != nil {
+	if err := db.Select(&dbFeed, db.NamedSQL("get_user_tags"), u.Login); err != nil {
 		return tags, err
+	}
+
+	for _, t := range dbFeed {
+		tags = append(tags, t.Tag)
 	}
 
 	return tags, nil
@@ -43,9 +48,14 @@ func (db DB) GetUserTags(u User) ([]string, error) {
 
 func (db DB) GetUserFeedTags(u User, f Feed) ([]string, error) {
 	var tags []string
+	var dbFeed []feedIdTag
 
-	if err := db.Select(&tags, db.NamedSQL("get_user_feed_tags"), u.Login, f.Id); err != nil {
+	if err := db.Select(&dbFeed, db.NamedSQL("get_user_feed_tags"), u.Login, f.Id); err != nil {
 		return tags, err
+	}
+
+	for _, t := range dbFeed {
+		tags = append(tags, t.Tag)
 	}
 
 	return tags, nil
