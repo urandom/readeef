@@ -430,6 +430,8 @@
             if (collapse) {
                 collapse.toggle();
             }
+
+            event.stopPropagation();
         },
 
         onFeedTagsChange: function() {
