@@ -111,7 +111,7 @@
                 <paper-item name="general" label="General"></paper-item>
                 <paper-item name="add-feed" label="Add Feed"></paper-item>
                 <paper-item name="feeds" label="Manage Feeds"></paper-item>
-                <template if="{{ user.admin }}">
+                <template if="{{ user.Admin }}">
                     <paper-item name="admin" label="Admin"></paper-item>
                 </template>
             </paper-dropdown>
@@ -123,9 +123,9 @@
                             <p>
                                 Personalize your feed reader
                             </p>
-                            <paper-input label="First name" id="first-name" value="{{ user.firstName }}" floatingLabel tabindex="1"></paper-input>
-                            <paper-input label="Last name" id="last-name" value="{{ user.lastName }}" floatingLabel tabindex="2"></paper-input>
-                            <paper-input label="Email" id="email" type="email" value="{{ user.email }}" floatingLabel tabindex="3"></paper-input>
+                            <paper-input label="First name" id="first-name" value="{{ user.FirstName }}" floatingLabel tabindex="1"></paper-input>
+                            <paper-input label="Last name" id="last-name" value="{{ user.LastName }}" floatingLabel tabindex="2"></paper-input>
+                            <paper-input label="Email" id="email" type="email" value="{{ user.Email }}" floatingLabel tabindex="3"></paper-input>
                             <p>
                                 Pick your style
                             </p>
@@ -210,7 +210,7 @@
                     </div>
                 </section>
 
-                <template if="{{ user.admin }}">
+                <template if="{{ user.Admin }}">
                     <section name="admin" layout vertical center>
                         <div class="container" slide-from-left>
                             <div class="card" hero-id="card" hero layout vertical>
@@ -266,7 +266,7 @@
         <rf-api id="password-change" pathAction="user-settings/password" on-rf-api-response="{{ onPasswordChangeResponse }}" user="{{ user }}" method="post"></rf-api>
 
         <rf-api user="{{ user }}" id="user-list" pathAction="user/list" on-rf-api-response="{{ onUserListResponse }}"></rf-api>
-        <rf-api user="{{ user }}" id="user-add" pathAction="user/create" method="post" on-rf-api-response="{{ onUserAddResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="user-add" pathAction="user/add" method="post" on-rf-api-response="{{ onUserAddResponse }}"></rf-api>
         
     </template>
     <script>
@@ -466,7 +466,7 @@
         onUserListResponse: function(event, data) {
             if (data.response && data.response.Users) {
                 this.users = data.response.Users.filter(function(user) {
-                    return user.Login != this.user.login;
+                    return user.Login != this.user.Login;
                 }.bind(this));
             }
         },

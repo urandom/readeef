@@ -40,13 +40,13 @@ func (con UserSettings) Handler(c context.Context) http.HandlerFunc {
 		resp := map[string]interface{}{"Login": user.Login}
 		if r.Method == "GET" {
 			switch attr {
-			case "firstName":
+			case "FirstName":
 				resp[attr] = user.FirstName
-			case "lastName":
+			case "LastName":
 				resp[attr] = user.LastName
-			case "email":
+			case "Email":
 				resp[attr] = user.Email
-			case "profileData":
+			case "ProfileData":
 				resp[attr] = user.ProfileData
 			default:
 				err = errors.New("Error getting user attribute: unknown attribute " + attr)
@@ -58,11 +58,11 @@ func (con UserSettings) Handler(c context.Context) http.HandlerFunc {
 			buf.ReadFrom(r.Body)
 
 			switch attr {
-			case "firstName":
+			case "FirstName":
 				user.FirstName = buf.String()
-			case "lastName":
+			case "LastName":
 				user.LastName = buf.String()
-			case "email":
+			case "Email":
 				user.Email = buf.String()
 			case "password":
 				data := struct {

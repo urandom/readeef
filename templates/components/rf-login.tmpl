@@ -78,8 +78,8 @@
 
         onLogin: function() {
             this.user = {
-                login: this.$.login.value,
-                md5api: CryptoJS.MD5(this.$.login.value + ":" + this.$.password.value).toString(CryptoJS.enc.Base64)
+                Login: this.$.login.value,
+                MD5API: CryptoJS.MD5(this.$.login.value + ":" + this.$.password.value).toString(CryptoJS.enc.Base64)
             };
 
             this.$.login.value = "";

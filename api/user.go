@@ -29,8 +29,13 @@ func (con User) Handler(c context.Context) http.HandlerFunc {
 		db := readeef.GetDB(c)
 		user := readeef.GetUser(c, r)
 
-		if !user.Active {
-			readeef.Debug.Println("User " + user.Login + " is inactive")
+		if !user.Active || !user.Admin {
+			if !user.Active {
+				readeef.Debug.Println("User " + user.Login + " is inactive")
+			} else {
+				readeef.Debug.Println("User " + user.Login + " is not an admin")
+			}
+
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
@@ -69,7 +74,7 @@ func (con User) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			resp["Users"] = userList
-		case "create":
+		case "add":
 			buf := util.BufferPool.GetBuffer()
 			defer util.BufferPool.Put(buf)
 

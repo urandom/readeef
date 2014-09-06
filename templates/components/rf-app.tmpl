@@ -175,8 +175,8 @@
                     this.userSettings = null;
                 } else {
                     if (!oldValue
-                        || oldValue.login != newValue.login
-                        || oldValue.md5api != newValue.md5api) {
+                        || oldValue.Login != newValue.Login
+                        || oldValue.MD5API != newValue.MD5API) {
                         this.$['auth-check'].go();
                     }
 
@@ -185,10 +185,9 @@
                         var ajax = this.$['user-settings'];
                         Object.keys(changed).forEach(function(attribute) {
                             switch (attribute) {
-                            case "firstName":
-                            case "lastName":
-                            case "email":
-                            case "password":
+                            case "FirstName":
+                            case "LastName":
+                            case "Email":
                                 ajax.body = changed[attribute];
                                 ajax.pathAction = "user-settings/" + attribute;
                                 ajax.go();
@@ -223,7 +222,7 @@
                     }
 
                     this.$['user-settings'].body = JSON.stringify(this.userSettings);
-                    this.$['user-settings'].pathAction = "user-settings/profileData";
+                    this.$['user-settings'].pathAction = "user-settings/ProfileData";
                     this.$['user-settings'].go();
                 }.bind(this));
             }
@@ -282,10 +281,10 @@
 
         onAuthCheckResponse: function(event, data) {
             this.user.authTime = new Date().getTime();
-            this.user.admin = data.response.User.Admin;
-            this.user.email = data.response.User.Email;
-            this.user.firstName = data.response.User.FirstName;
-            this.user.lastName = data.response.User.LastName;
+            this.user.Admin = data.response.User.Admin;
+            this.user.Email = data.response.User.Email;
+            this.user.FirstName = data.response.User.FirstName;
+            this.user.LastName = data.response.User.LastName;
             this.userSettings = data.response.ProfileData;
 
             if (this.selected == 'login' || this.selected == 'loading') {

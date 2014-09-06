@@ -91,9 +91,9 @@
                                 + bodyHash + "\n" + args.headers['Content-Type'] + "\n"
                                 + args.headers['X-Date'] + "\n" + args.headers['X-Nonce'] + "\n";
 
-                        messageHash = CryptoJS.HmacSHA256(message, self.user.md5api).toString(CryptoJS.enc.Base64);
+                        messageHash = CryptoJS.HmacSHA256(message, self.user.MD5API || "").toString(CryptoJS.enc.Base64);
 
-                        args.headers['Authorization'] = "Readeef " + self.user.login + ":" + messageHash;
+                        args.headers['Authorization'] = "Readeef " + self.user.Login + ":" + messageHash;
 
                         xhr.request(args);
                     }
