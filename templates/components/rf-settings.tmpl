@@ -197,12 +197,25 @@
                         <div class="card" hero-id="card" hero layout vertical>
                             <ul cross-fade>
                                 <template repeat="{{ feed in feeds }}">
-                                <li title="{{ feed.Title }}" layout horizontal>
-                                    <span layout vertical center-justified>
+                                <li title="{{ feed.Title }}" layout vertical>
+                                    <template if="{{ wide }}">
+                                    <div layout horizontal center>
                                         <img src="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" alt="favicon" class="feed-favicon">
-                                    </span>
-                                    <span flex>{{ feed.Title }}</span>
-                                    <paper-icon-button icon="remove" on-tap="{{ onRemoveFeed }}"></paper-icon-button>
+                                        <span flex style="padding-right: 10px">{{ feed.Title }}</span>
+                                        <paper-input value="{{ feed.Tags }}" on-change="{{ onFeedTagsChange }}" placeholder="Comma-separated tag list"></paper-input>
+                                        <paper-icon-button icon="remove" on-tap="{{ onRemoveFeed }}"></paper-icon-button>
+                                    </div>
+                                    </template>
+                                    <template if="{{ !wide }}">
+                                    <div layout horizontal center>
+                                        <img src="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" alt="favicon" class="feed-favicon">
+                                        <span flex>{{ feed.Title }}</span>
+                                    </div>
+                                    <div layout horizontal center>
+                                        <paper-input value="{{ feed.Tags }}" on-change="{{ onFeedTagsChange }}" flex placeholder="Comma-separated tag list"></paper-input>
+                                        <paper-icon-button icon="remove" on-tap="{{ onRemoveFeed }}"></paper-icon-button>
+                                    </div>
+                                    </template>
                                 </li>
                                 </template>
                             </ul>
@@ -263,6 +276,7 @@
         <rf-api user="{{ user }}" id="discover-feed" pathAction="feed/discover" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="discover-opml" pathAction="feed/opml" method="post" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="add-feed" method="post" pathAction="feed/add" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="feed-tags" method="post" pathAction="feed/tags/{{ taggedFeed }}" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
         <rf-api id="password-change" pathAction="user-settings/password" on-rf-api-response="{{ onPasswordChangeResponse }}" user="{{ user }}" method="post"></rf-api>
 
         <rf-api user="{{ user }}" id="user-list" pathAction="user/list" on-rf-api-response="{{ onUserListResponse }}"></rf-api>
@@ -282,6 +296,7 @@
         selectedTab: 'general',
         loading: false,
         removedFeed: null,
+        taggedFeed: null,
         removedUser: null,
         addedUser: null,
         toggleActiveUser: null,
@@ -297,7 +312,9 @@
 
         displayChanged: function(oldValue, newValue) {
             if (newValue == 'settings') {
-                this.$['user-list'].go();
+                if (this.user.Admin) {
+                    this.$['user-list'].go();
+                }
             } else {
                 this.cleanFields();
             }
@@ -307,6 +324,10 @@
             urlParser.href = value;
 
             return urlParser.host;
+        },
+
+        splitTags: function(value) {
+            return value ? value.join(", ") : value;
         },
 
         onAddFeedUrlKeypress: function(event, detail, sender) {
@@ -549,6 +570,20 @@
                     return user;
                 });
             }
+        },
+
+        onFeedTagsChange: function(event, detail, sender) {
+            if (typeof sender.value != "string") {
+                return;
+            }
+
+            var tags = sender.value.split(/\s*,\s*/);
+
+            sender.templateInstance.model.feed.Tags = tags;
+
+            this.taggedFeed = sender.templateInstance.model.feed.Id;
+            this.$['feed-tags'].body = JSON.stringify(tags)
+            this.$['feed-tags'].go();
         }
     });
 })();

@@ -24,7 +24,7 @@ type Feed struct {
 
 func NewFeed(fm *readeef.FeedManager) Feed {
 	return Feed{
-		webfw.NewBaseController("/v:version/feed/*action", webfw.MethodAll, ""),
+		webfw.NewBaseController("/v:version/feed/*action", webfw.MethodGet|webfw.MethodPost, ""),
 		fm,
 	}
 }
@@ -56,6 +56,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 		parts := strings.Split(actionParam["action"], "/")
 		action := parts[0]
 
+		resp := make(map[string]interface{})
 	SWITCH:
 		switch action {
 		case "list":
@@ -66,25 +67,16 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				break
 			}
 
-			type response struct {
-				Feeds []feed
-			}
+			respFeeds := []feed{}
 
-			resp := response{}
 			for _, f := range feeds {
-				resp.Feeds = append(resp.Feeds, feed{
+				respFeeds = append(respFeeds, feed{
 					Id: f.Id, Title: f.Title, Description: f.Description,
 					Link: f.Link, Image: f.Image, Tags: f.Tags,
 				})
 			}
 
-			var b []byte
-			b, err = json.Marshal(resp)
-			if err != nil {
-				break
-			}
-
-			w.Write(b)
+			resp["Feeds"] = respFeeds
 		case "discover":
 			r.ParseForm()
 
@@ -134,26 +126,17 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				}
 			}
 
-			type response struct {
-				Feeds []feed
-			}
-			resp := response{}
+			respFeeds := []feed{}
 			for _, f := range feeds {
 				if !userFeedIdMap[f.Id] && !userFeedLinkMap[f.Link] {
-					resp.Feeds = append(resp.Feeds, feed{
+					respFeeds = append(respFeeds, feed{
 						Id: f.Id, Title: f.Title, Description: f.Description,
 						Link: f.Link, Image: f.Image,
 					})
 				}
 			}
 
-			var b []byte
-			b, err = json.Marshal(resp)
-			if err != nil {
-				break
-			}
-
-			w.Write(b)
+			resp["Feeds"] = respFeeds
 		case "opml":
 			buf := util.BufferPool.GetBuffer()
 			defer util.BufferPool.Put(buf)
@@ -197,24 +180,14 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				}
 			}
 
-			type response struct {
-				Feeds []feed
-			}
-			resp := response{}
+			respFeeds := []feed{}
 			for _, f := range feeds {
-				resp.Feeds = append(resp.Feeds, feed{
+				respFeeds = append(respFeeds, feed{
 					Id: f.Id, Title: f.Title, Description: f.Description,
 					Link: f.Link, Image: f.Image,
 				})
 			}
-
-			var b []byte
-			b, err = json.Marshal(resp)
-			if err != nil {
-				break
-			}
-
-			w.Write(b)
+			resp["Feeds"] = respFeeds
 		case "add":
 			r.ParseForm()
 			links := r.Form["url"]
@@ -250,18 +223,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				success = true
 			}
 
-			type response struct {
-				Success bool
-			}
-			resp := response{success}
-
-			var b []byte
-			b, err = json.Marshal(resp)
-			if err != nil {
-				break
-			}
-
-			w.Write(b)
+			resp["Success"] = success
 		case "remove":
 			var id int64
 			id, err = strconv.ParseInt(parts[1], 10, 64)
@@ -286,18 +248,39 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 
 			con.fm.RemoveFeed(feed)
 
-			type response struct {
-				Success bool
-			}
-			resp := response{true}
+			resp["Success"] = true
+		case "tags":
+			var id int64
+			id, err = strconv.ParseInt(parts[1], 10, 64)
 
-			var b []byte
-			b, err = json.Marshal(resp)
+			/* TODO: non-fatal error */
 			if err != nil {
 				break
 			}
 
-			w.Write(b)
+			var feed readeef.Feed
+			feed, err = db.GetUserFeed(id, user)
+			/* TODO: non-fatal error */
+			if err != nil {
+				break
+			}
+
+			if r.Method == "GET" {
+				resp["Tags"] = feed.Tags
+			} else if r.Method == "POST" {
+				decoder := json.NewDecoder(r.Body)
+
+				var tags []string
+				err = decoder.Decode(&tags)
+				if err != nil {
+					break
+				}
+
+				err = db.CreateUserFeedTag(feed, tags...)
+				if err != nil {
+					break
+				}
+			}
 		case "read":
 			switch {
 			case parts[1] == "tag:__all__":
@@ -340,18 +323,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			if err == nil {
-				type response struct {
-					Success bool
-				}
-				resp := response{true}
-
-				var b []byte
-				b, err = json.Marshal(resp)
-				if err != nil {
-					break
-				}
-
-				w.Write(b)
+				resp["Success"] = true
 			}
 		default:
 			var articles []readeef.Article
@@ -447,26 +419,22 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				articles = f.Articles
 			}
 
-			type response struct {
-				Articles []readeef.Article
-			}
-
-			resp := response{Articles: articles}
-
-			var b []byte
-			b, err = json.Marshal(resp)
-			if err != nil {
-				break
-			}
-
-			w.Write(b)
+			resp["Articles"] = articles
 		}
 
-		if err != nil {
+		var b []byte
+		if err == nil {
+			b, err = json.Marshal(resp)
+		}
+
+		if err == nil {
+			w.Write(b)
+		} else {
 			webfw.GetLogger(c).Print(err)
 
 			w.WriteHeader(http.StatusInternalServerError)
 		}
+
 	}
 }
 
