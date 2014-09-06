@@ -1,3 +1,4 @@
+* Parallelize feed discovery and adding
 * Sliding between articles
 * More tests
 * TinyRSS API emulation
