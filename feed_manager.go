@@ -307,7 +307,10 @@ func discoverParserFeeds(link string) ([]Feed, error) {
 	buf.ReadFrom(resp.Body)
 
 	if parserFeed, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
-		return []Feed{Feed{Feed: parserFeed, Link: link}}, nil
+		feed := Feed{Link: link}
+		feed = feed.UpdateFromParsed(parserFeed)
+
+		return []Feed{feed}, nil
 	} else {
 		html := commentPattern.ReplaceAllString(buf.String(), "")
 		links := linkPattern.FindAllStringSubmatch(html, -1)
