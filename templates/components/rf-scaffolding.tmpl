@@ -35,7 +35,7 @@
                 text-overflow: ellipsis;
             }
 
-            .refreshButton {
+            .refresh-button {
                 position: absolute;
                 bottom: -28px;
                 right: 24px;
@@ -113,7 +113,7 @@
                         <template bind ref="article-list-menu-items"></template>
                     </paper-menu-button>
 
-                    <paper-fab class="refreshButton bottom" icon="refresh" hidden?="{{ display != 'feed' || !wide }}" on-tap="{{ onRefresh }}"></paper-fab>
+                    <paper-fab class="refresh-button bottom" icon="refresh" hidden?="{{ display != 'feed' || !wide }}" on-tap="{{ onRefresh }}"></paper-fab>
                 </core-toolbar>
                 <div class="content">
                     <h1 class="content-label primary-dark-transparent-inverted-color" hidden?="{{ !wide }}" layout horizontal>
