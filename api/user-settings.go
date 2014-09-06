@@ -64,6 +64,8 @@ func (con UserSettings) Handler(c context.Context) http.HandlerFunc {
 				user.LastName = buf.String()
 			case "Email":
 				user.Email = buf.String()
+			case "ProfileData":
+				err = json.Unmarshal(buf.Bytes(), &user.ProfileData)
 			case "password":
 				data := struct {
 					Current string
@@ -78,8 +80,6 @@ func (con UserSettings) Handler(c context.Context) http.HandlerFunc {
 						err = errors.New("Error change user password: current password is invalid")
 					}
 				}
-			case "profileData":
-				err = json.Unmarshal(buf.Bytes(), &user.ProfileData)
 			default:
 				err = errors.New("Error getting user attribute: unknown attribute " + attr)
 			}

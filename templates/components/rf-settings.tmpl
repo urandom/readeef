@@ -202,7 +202,7 @@
                                         <img src="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" alt="favicon" class="feed-favicon">
                                     </span>
                                     <span flex>{{ feed.Title }}</span>
-                                    <paper-icon-button icon="remove" on-tap="{{ onRemoveFeed }}" data-feed-id="{{ feed.Id }}"></paper-icon-button>
+                                    <paper-icon-button icon="remove" on-tap="{{ onRemoveFeed }}"></paper-icon-button>
                                 </li>
                                 </template>
                             </ul>
@@ -217,8 +217,8 @@
                                 <template if="{{ users.length }}">
                                 <ul cross-fade>
                                     <template repeat="{{ user in users }}">
-                                    <li title="{{ user.FirstName || user.Login }} {{ user.LastName}}" layout horizontal center data-user-login="{{ user.Login }}">
-                                        <paper-checkbox checked="{{ user.Active }}" on-tap="{{ onToggleActiveUser}}"></paper-checkbox>
+                                    <li title="{{ user.FirstName || user.Login }} {{ user.LastName}}" layout horizontal center>
+                                        <paper-checkbox checked="{{ user.Active }}" on-change="{{ onToggleActiveUser}}"></paper-checkbox>
                                         <span flex>{{ user.FirstName || user.Login }} {{ user.LastName }}</span>
                                         <paper-icon-button icon="remove" on-tap="{{ onRemoveUser }}"></paper-icon-button>
                                     </li>
@@ -266,7 +266,10 @@
         <rf-api id="password-change" pathAction="user-settings/password" on-rf-api-response="{{ onPasswordChangeResponse }}" user="{{ user }}" method="post"></rf-api>
 
         <rf-api user="{{ user }}" id="user-list" pathAction="user/list" on-rf-api-response="{{ onUserListResponse }}"></rf-api>
-        <rf-api user="{{ user }}" id="user-add" pathAction="user/add" method="post" on-rf-api-response="{{ onUserAddResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="user-add" pathAction="user/add/{{ addedUser }}" method="post" on-rf-api-response="{{ onUserAddResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="user-remove" pathAction="user/remove/{{ removedUser }}" method="post" on-rf-api-response="{{ onUserRemoveResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="user-" pathAction="user/remove/{{ removedUser }}" method="post" on-rf-api-response="{{ onUserRemoveResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="user-toggle-active" pathAction="user/active/{{ toggleActiveUser }}/{{ toggleActiveUserState }}" method="post" on-rf-api-response="{{ onUserToggleActiveResponse }}"></rf-api>
         
     </template>
     <script>
@@ -279,6 +282,10 @@
         selectedTab: 'general',
         loading: false,
         removedFeed: null,
+        removedUser: null,
+        addedUser: null,
+        toggleActiveUser: null,
+        toggleActiveUserState: false,
         users: null,
 
         g: CoreStyle.g,
@@ -383,7 +390,7 @@
         },
 
         onRemoveFeed: function(event, detail, sender) {
-            this.removedFeed = sender.getAttribute("data-feed-id");
+            this.removedFeed = sender.templateInstance.model.feed.Id;
             this.$['remove-feed'].go();
         },
 
@@ -475,6 +482,18 @@
             this.$['add-user-dialog'].toggle();
         },
 
+        onNewUserDialogKeypress: function(event) {
+            var code = event.keyCode || event.charCode, key = event.keyIdentifier;
+
+            if (key == 'Enter' || code == 13) {
+                if (event.target === this.$['add-user-login']) { 
+                    this.$['add-user-password'].focusAction();
+                } else if (event.target === this.$['add-user-password']) {
+                    this.$['add-user-apply'].asyncFire('tap');
+                }
+            }
+        },
+
         onApplyCreateUser: function() {
             var invalid = false;
             ["add-user-login", "add-user-password"].forEach(function(id) {
@@ -489,10 +508,8 @@
                 return;
             }
 
-            this.$['user-add'].body = JSON.stringify({
-                "Login": this.$['add-user-login'].value,
-                "Password": this.$['add-user-password'].value
-            });
+            this.addedUser = this.$['add-user-login'].value;
+            this.$['user-add'].body = this.$['add-user-password'].value;
             this.$['user-add'].go();
         },
 
@@ -502,8 +519,37 @@
             }
 
             this.$['add-user-dialog'].toggle();
-        }
+        },
 
+        onRemoveUser: function(event, detail, sender) {
+            this.removedUser = sender.templateInstance.model.user.Login;
+            this.$['user-remove'].go();
+        },
+
+        onUserRemoveResponse: function(event, data) {
+            if (data.response && data.response.Success) {
+                this.users = this.users.filter(function(user) {
+                    return user.Login != data.response.Login;
+                });
+            }
+        },
+
+        onToggleActiveUser: function(event, detail, sender) {
+            this.toggleActiveUser = sender.templateInstance.model.user.Login;
+            this.toggleActiveUserState = sender.checked;
+            this.$['user-toggle-active'].go();
+        },
+
+        onUserToggleActiveResponse: function(event, data) {
+            if (!data.response.Success) {
+                this.users = this.users.map(function(user) {
+                    if (user.Login == data.response.Login) {
+                        user.Active = !user.Active;
+                    }
+                    return user;
+                });
+            }
+        }
     });
 })();
     </script>

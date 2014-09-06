@@ -39,9 +39,9 @@ func main() {
 		if err := db.UpdateUser(u); err != nil {
 			exitWithError(fmt.Sprintf("Error updating the user database record for '%s': %v", login, err))
 		}
-	case "delete":
+	case "remove":
 		if flag.NArg() != 2 {
-			exitWithError("Not enough arguments for 'delete' command. Login must be specified")
+			exitWithError("Not enough arguments for 'remove' command. Login must be specified")
 		}
 		login := flag.Arg(1)
 

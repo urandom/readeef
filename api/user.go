@@ -1,8 +1,10 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"readeef"
 	"strings"
@@ -75,24 +77,30 @@ func (con User) Handler(c context.Context) http.HandlerFunc {
 
 			resp["Users"] = userList
 		case "add":
+			if len(parts) != 2 {
+				err = errors.New(fmt.Sprintf("Expected 2 arguments, got %d", len(parts)))
+				break
+			}
+
+			login := parts[1]
+
+			_, err = db.GetUser(login)
+			/* TODO: non-fatal error */
+			if err == nil {
+				err = errors.New("User with login " + login + " already exists")
+				break
+			} else if err != sql.ErrNoRows {
+				break
+			}
+
 			buf := util.BufferPool.GetBuffer()
 			defer util.BufferPool.Put(buf)
 
 			buf.ReadFrom(r.Body)
 
-			data := struct {
-				Login    string
-				Password string
-			}{}
+			u := readeef.User{Login: login}
 
-			err = json.Unmarshal(buf.Bytes(), &data)
-			if err != nil {
-				break
-			}
-
-			u := readeef.User{Login: data.Login}
-
-			err = u.SetPassword(data.Password)
+			err = u.SetPassword(buf.String())
 			if err != nil {
 				break
 			}
@@ -103,6 +111,64 @@ func (con User) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			resp["Success"] = true
+			resp["Login"] = login
+		case "remove":
+			if len(parts) != 2 {
+				err = errors.New(fmt.Sprintf("Expected 2 arguments, got %d", len(parts)))
+				break
+			}
+
+			login := parts[1]
+
+			if user.Login == login {
+				err = errors.New("The current user cannot be removed")
+				break
+			}
+
+			var u readeef.User
+
+			u, err = db.GetUser(login)
+			if err != nil {
+				break
+			}
+
+			err = db.DeleteUser(u)
+			if err != nil {
+				break
+			}
+
+			resp["Success"] = true
+			resp["Login"] = login
+		case "active":
+			if len(parts) != 3 {
+				err = errors.New(fmt.Sprintf("Expected 3 arguments, got %d", len(parts)))
+				break
+			}
+
+			login := parts[1]
+
+			if user.Login == login {
+				err = errors.New("The current user cannot be removed")
+				break
+			}
+
+			active := parts[2] == "true"
+
+			var u readeef.User
+
+			u, err = db.GetUser(login)
+			if err != nil {
+				break
+			}
+
+			u.Active = active
+			err = db.UpdateUser(u)
+			if err != nil {
+				break
+			}
+
+			resp["Success"] = true
+			resp["Login"] = login
 		default:
 			err = errors.New("Error processing request: unknown action " + action)
 		}
