@@ -369,7 +369,16 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				limit = 50
 			}
 
-			if action == "tag:__all__" {
+			if action == "__favorite__" {
+				if newerFirst {
+					articles, err = db.GetUserFavoriteArticlesDesc(user, limit, offset)
+				} else {
+					articles, err = db.GetUserFavoriteArticles(user, limit, offset)
+				}
+				if err != nil {
+					break
+				}
+			} else if action == "tag:__all__" {
 				if newerFirst {
 					if unreadOnly {
 						articles, err = db.GetUnreadUserArticlesDesc(user, limit, offset)
@@ -386,11 +395,20 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				if err != nil {
 					break
 				}
-			} else if action == "__favorite__" {
+			} else if strings.HasPrefix(action, "tag:") {
+				tag := action[4:]
 				if newerFirst {
-					articles, err = db.GetUserFavoriteArticlesDesc(user, limit, offset)
+					if unreadOnly {
+						articles, err = db.GetUnreadUserTagArticlesDesc(user, tag, limit, offset)
+					} else {
+						articles, err = db.GetUserTagArticlesDesc(user, tag, limit, offset)
+					}
 				} else {
-					articles, err = db.GetUserFavoriteArticles(user, limit, offset)
+					if unreadOnly {
+						articles, err = db.GetUnreadUserTagArticles(user, tag, limit, offset)
+					} else {
+						articles, err = db.GetUserTagArticles(user, tag, limit, offset)
+					}
 				}
 				if err != nil {
 					break

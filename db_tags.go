@@ -24,6 +24,76 @@ ORDER BY LOWER(f.title)
 `
 
 	get_user_feed_ids_tags = `SELECT feed_id, tag FROM users_feeds_tags WHERE user_login = $1 ORDER BY feed_id`
+
+	get_user_tag_articles = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+INNER JOIN users_feeds_tags uft
+	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login AND uft.tag = $2
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+ORDER BY a.date
+LIMIT $3
+OFFSET $4
+`
+
+	get_user_tag_articles_desc = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+INNER JOIN users_feeds_tags uft
+	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login AND uft.tag = $2
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+ORDER BY a.date DESC
+LIMIT $3
+OFFSET $4
+`
+
+	get_unread_user_tag_articles = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+INNER JOIN users_feeds_tags uft
+	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login AND uft.tag = $2
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+WHERE ar.article_id IS NULL
+ORDER BY a.date
+LIMIT $3
+OFFSET $4
+`
+
+	get_unread_user_tag_articles_desc = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+INNER JOIN users_feeds_tags uft
+	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login AND uft.tag = $2
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+WHERE ar.article_id IS NULL
+ORDER BY a.date DESC
+LIMIT $3
+OFFSET $4
+`
 )
 
 type feedIdTag struct {
@@ -173,6 +243,34 @@ func (db DB) GetUserTagsFeeds(u User) ([]Feed, error) {
 	}
 }
 
+func (db DB) GetUserTagArticles(u User, tag string, paging ...int) ([]Article, error) {
+	return db.getUserTagArticles(u, tag, "get_user_tag_articles", paging...)
+}
+
+func (db DB) GetUserTagArticlesDesc(u User, tag string, paging ...int) ([]Article, error) {
+	return db.getUserTagArticles(u, tag, "get_user_tag_articles_desc", paging...)
+}
+
+func (db DB) GetUnreadUserTagArticles(u User, tag string, paging ...int) ([]Article, error) {
+	return db.getUserTagArticles(u, tag, "get_unread_user_tag_articles", paging...)
+}
+
+func (db DB) GetUnreadUserTagArticlesDesc(u User, tag string, paging ...int) ([]Article, error) {
+	return db.getUserTagArticles(u, tag, "get_unread_user_tag_articles_desc", paging...)
+}
+
+func (db DB) getUserTagArticles(u User, tag, namedSQL string, paging ...int) ([]Article, error) {
+	var articles []Article
+
+	limit, offset := pagingLimit(paging)
+
+	if err := db.Select(&articles, db.NamedSQL(namedSQL), u.Login, tag, limit, offset); err != nil {
+		return articles, err
+	}
+
+	return articles, nil
+}
+
 func init() {
 	sql_stmt["generic:get_user_tags"] = get_user_tags
 	sql_stmt["generic:get_user_feed_tags"] = get_user_feed_tags
@@ -180,4 +278,8 @@ func init() {
 	sql_stmt["generic:delete_user_feed_tag"] = delete_user_feed_tag
 	sql_stmt["generic:get_user_tag_feeds"] = get_user_tag_feeds
 	sql_stmt["generic:get_user_feed_ids_tags"] = get_user_feed_ids_tags
+	sql_stmt["generic:get_user_tag_articles"] = get_user_tag_articles
+	sql_stmt["generic:get_user_tag_articles_desc"] = get_user_tag_articles_desc
+	sql_stmt["generic:get_unread_user_tag_articles"] = get_unread_user_tag_articles
+	sql_stmt["generic:get_unread_user_tag_articles_desc"] = get_unread_user_tag_articles_desc
 }

@@ -127,11 +127,11 @@
 
     var urlParser = document.createElement('a');
 
-    function createAllPseudoFeed() {
+    function createPseudoTagFeed(tag) {
         // TODO: i18n
         return {
-            Id: "tag:__all__",
-            Title: "All feed articles",
+            Id: "tag:" + tag,
+            Title: tag == '__all__' ? 'All feed articles' : 'Articles from ' + tag,
             Description: "",
             Articles: null,
             Image: {},
@@ -248,10 +248,10 @@
 
         currentFeedIdChanged: function(oldValue, newValue) {
             if (this.feeds && this.feeds.length) {
-                if (newValue == "tag:__all__") {
-                    this.currentFeed = createAllPseudoFeed();
-                } else if (newValue == "__favorite__") {
+                if (newValue == "__favorite__") {
                     this.currentFeed = createFavoritePseudoFeed();
+                } else if (newValue.indexOf("tag:") == 0) {
+                    this.currentFeed = createPseudoTagFeed(newValue.substring(4));
                 } else {
                     this.currentFeed = this.feedIdMap[newValue];
                 }
