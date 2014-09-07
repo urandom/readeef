@@ -53,7 +53,7 @@ func TestHubbub(t *testing.T) {
 		}
 	}()
 
-	h := NewHubbub(db, conf, log.New(os.Stderr, "", 0), addFeed, removeFeed, updateFeed)
+	h := NewHubbub(db, conf, log.New(os.Stderr, "", 0), "/callback/", addFeed, removeFeed, updateFeed)
 	f := Feed{Link: ts.URL + "/link"}
 	f, err = db.UpdateFeed(f)
 	if err != nil {
@@ -67,11 +67,11 @@ func TestHubbub(t *testing.T) {
 
 	callbackURL = fmt.Sprintf("%s/callback/v0/hubbub/%d", ts.URL, f.Id)
 
-	conf.Hubbub.CallbackURL = ts.URL + "/callback"
+	conf.Hubbub.CallbackURL = ts.URL
 	conf.Hubbub.RelativePath = "/hubbub"
 	conf.Timeout.Converted.Connect = time.Second
 	conf.Timeout.Converted.ReadWrite = time.Second
-	h = NewHubbub(db, conf, log.New(os.Stderr, "", 0), addFeed, removeFeed, updateFeed)
+	h = NewHubbub(db, conf, log.New(os.Stderr, "", 0), "/callback/", addFeed, removeFeed, updateFeed)
 
 	dispatcher.Handle(hublink_con{webfw.NewBaseController("/hublink", webfw.MethodAll, ""), callbackURL, ts.URL + "/link", done})
 

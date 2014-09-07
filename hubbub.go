@@ -18,6 +18,7 @@ import (
 type Hubbub struct {
 	config     Config
 	db         DB
+	pattern    string
 	addFeed    chan<- Feed
 	removeFeed chan<- Feed
 	updateFeed chan<- Feed
@@ -50,8 +51,8 @@ var (
 	ErrNoFeedHubLink = errors.New("Feed does not contain a hub link")
 )
 
-func NewHubbub(db DB, c Config, l *log.Logger, addFeed chan<- Feed, removeFeed chan<- Feed, updateFeed chan<- Feed) Hubbub {
-	return Hubbub{db: db, config: c, logger: l,
+func NewHubbub(db DB, c Config, l *log.Logger, pattern string, addFeed chan<- Feed, removeFeed chan<- Feed, updateFeed chan<- Feed) Hubbub {
+	return Hubbub{db: db, config: c, logger: l, pattern: pattern,
 		addFeed: addFeed, removeFeed: removeFeed, updateFeed: updateFeed,
 		client: NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
@@ -119,7 +120,7 @@ func (s HubbubSubscription) Validate() error {
 }
 
 func (s HubbubSubscription) subscription(subscribe bool) error {
-	u := callbackURL(s.hubbub.config, s.FeedId)
+	u := callbackURL(s.hubbub.config, s.hubbub.pattern, s.FeedId)
 	feed, err := s.hubbub.db.GetFeed(s.FeedId)
 	if err != nil {
 		return SubscriptionError{error: err, Subscription: s}
@@ -246,6 +247,6 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 	}
 }
 
-func callbackURL(c Config, feedId int64) string {
-	return fmt.Sprintf("%s/v%d%s/%d", c.Hubbub.CallbackURL, c.API.Version, c.Hubbub.RelativePath, feedId)
+func callbackURL(c Config, pattern string, feedId int64) string {
+	return fmt.Sprintf("%s%sv%d%s/%d", c.Hubbub.CallbackURL, pattern, c.API.Version, c.Hubbub.RelativePath, feedId)
 }

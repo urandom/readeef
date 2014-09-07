@@ -13,18 +13,19 @@ import (
 )
 
 func main() {
-	confpath := flag.String("config", "", "config path")
+	serverconfpath := flag.String("server-config", "", "server config path")
+	readeefconfpath := flag.String("readeef-config", "", "readeef config path")
 	host := flag.String("host", "", "server host")
 	port := flag.Int("port", 0, "server port")
 
 	flag.Parse()
 
-	cfg, err := readeef.ReadConfig(*confpath)
+	cfg, err := readeef.ReadConfig(*readeefconfpath)
 	if err != nil {
-		exitWithError(fmt.Sprintf("Error reading config from path '%s': %v", *confpath, err))
+		exitWithError(fmt.Sprintf("Error reading config from path '%s': %v", *readeefconfpath, err))
 	}
 
-	server := webfw.NewServer(*confpath)
+	server := webfw.NewServer(*serverconfpath)
 	if *host != "" {
 		server.SetHost(*host)
 	}

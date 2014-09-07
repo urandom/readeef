@@ -34,7 +34,7 @@ type Config struct {
 		IgnoreURLPrefix []string `gcfg:"ignore-url-prefix"`
 	}
 	Hubbub struct {
-		CallbackURL  string `gcfg:"callback-url"` // http://www.example.com/dispatcher-path
+		CallbackURL  string `gcfg:"callback-url"` // http://www.example.com
 		RelativePath string `gcfg:"relative-path"`
 		From         string
 	}
