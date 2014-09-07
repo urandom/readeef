@@ -338,6 +338,10 @@ func (db DB) UpdateFeed(f Feed) (Feed, error) {
 		}
 
 		f.Id = id
+
+		for i := 0; i < len(f.Articles); i++ {
+			f.Articles[i].FeedId = id
+		}
 	}
 
 	if err := db.updateFeedArticles(tx, f, f.Articles); err != nil {
