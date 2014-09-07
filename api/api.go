@@ -21,13 +21,18 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	updateFeed := make(chan readeef.Feed)
 
 	fm := readeef.NewFeedManager(db, config, logger, updateFeed)
-	fm.Start()
 
 	if config.Hubbub.CallbackURL != "" {
 		hubbub := readeef.NewHubbub(db, config, logger, dispatcher.Pattern, fm.RemoveFeedChannel(), fm.AddFeedChannel(), updateFeed)
+		if err := hubbub.InitSubscriptions(); err != nil {
+			return errors.New(fmt.Sprintf("Error initializing hubbub subscriptions: %v", err))
+		}
 
+		fm.SetHubbub(hubbub)
 		dispatcher.Handle(readeef.NewHubbubController(hubbub))
 	}
+
+	fm.Start()
 
 	nonce := readeef.NewNonce()
 

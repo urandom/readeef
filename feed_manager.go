@@ -28,6 +28,7 @@ type FeedManager struct {
 	client      *http.Client
 	logger      *log.Logger
 	activeFeeds map[int64]bool
+	hubbub      *Hubbub
 }
 
 var (
@@ -44,6 +45,10 @@ func NewFeedManager(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) *Fee
 		addFeed: make(chan Feed, 2), removeFeed: make(chan Feed, 2), done: make(chan bool),
 		activeFeeds: map[int64]bool{},
 		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
+}
+
+func (fm *FeedManager) SetHubbub(hubbub *Hubbub) {
+	fm.hubbub = hubbub
 }
 
 func (fm *FeedManager) SetClient(c *http.Client) {
@@ -65,6 +70,14 @@ func (fm *FeedManager) Stop() {
 }
 
 func (fm *FeedManager) AddFeed(f Feed) {
+	if f.HubLink != "" && fm.hubbub != nil {
+		err := fm.hubbub.Subscribe(f)
+
+		if err == nil || err == ErrSubscribed {
+			return
+		}
+	}
+
 	fm.addFeed <- f
 }
 
@@ -104,7 +117,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (Feed, error) {
 	}
 
 	Debug.Println("Adding feed " + f.Link + " to manager")
-	fm.addFeed <- f
+	fm.AddFeed(f)
 
 	return f, nil
 }
@@ -291,7 +304,7 @@ func (fm *FeedManager) scheduleFeeds() {
 	for _, f := range feeds {
 		Debug.Println("Scheduling feed " + f.Link)
 
-		fm.addFeed <- f
+		fm.AddFeed(f)
 	}
 }
 

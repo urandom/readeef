@@ -28,7 +28,7 @@ type Hubbub struct {
 
 type SubscriptionError struct {
 	error
-	Subscription HubbubSubscription
+	Subscription *HubbubSubscription
 }
 
 type HubbubSubscription struct {
@@ -38,30 +38,31 @@ type HubbubSubscription struct {
 	VerificationTime    time.Time `db:"verification_time"`
 	SubscriptionFailure bool      `db:"subscription_failure"`
 
-	hubbub Hubbub
+	hubbub *Hubbub
 }
 
 type HubbubController struct {
 	webfw.BaseController
-	hubbub Hubbub
+	hubbub *Hubbub
 }
 
 var (
 	ErrNotConfigured = errors.New("Hubbub callback URL is not set")
 	ErrNoFeedHubLink = errors.New("Feed does not contain a hub link")
+	ErrSubscribed    = errors.New("Feed already subscribed")
 )
 
-func NewHubbub(db DB, c Config, l *log.Logger, pattern string, addFeed chan<- Feed, removeFeed chan<- Feed, updateFeed chan<- Feed) Hubbub {
-	return Hubbub{db: db, config: c, logger: l, pattern: pattern,
+func NewHubbub(db DB, c Config, l *log.Logger, pattern string, addFeed chan<- Feed, removeFeed chan<- Feed, updateFeed chan<- Feed) *Hubbub {
+	return &Hubbub{db: db, config: c, logger: l, pattern: pattern,
 		addFeed: addFeed, removeFeed: removeFeed, updateFeed: updateFeed,
 		client: NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 
-func (h Hubbub) SetClient(c *http.Client) {
+func (h *Hubbub) SetClient(c *http.Client) {
 	h.client = c
 }
 
-func (h Hubbub) Subscribe(f Feed) error {
+func (h *Hubbub) Subscribe(f Feed) error {
 	if u, err := url.Parse(h.config.Hubbub.CallbackURL); err != nil {
 		return ErrNotConfigured
 	} else {
@@ -78,36 +79,71 @@ func (h Hubbub) Subscribe(f Feed) error {
 		}
 	}
 
-	s := HubbubSubscription{Link: f.HubLink, FeedId: f.Id, hubbub: h, SubscriptionFailure: true}
+	if _, err := h.db.GetHubbubSubscription(f.HubLink); err == nil {
+		Debug.Println("Already subscribed to " + f.HubLink)
+		return ErrSubscribed
+	}
+
+	s := &HubbubSubscription{Link: f.HubLink, FeedId: f.Id, hubbub: h, SubscriptionFailure: true}
 
 	if err := h.db.UpdateHubbubSubscription(s); err != nil {
 		return err
 	}
 
 	go func() {
-		err := s.Subscribe()
-		if err != nil {
-			f.SubscribeError = err.Error()
-			h.logger.Printf("Error subscribing to hub feed '%s': %s\n", f.Link, err)
+		h.subscribe(s, f)
+	}()
 
-			if _, err := h.db.UpdateFeed(f); err != nil {
-				h.logger.Printf("Error updating feed database record for '%s': %s\n", f.Link, err)
+	return nil
+}
+
+func (h *Hubbub) InitSubscriptions() error {
+	subscriptions, err := h.db.GetHubbubSubscriptions()
+	if err != nil {
+		return err
+	}
+
+	Debug.Printf("Initializing %d hubbub subscriptions", len(subscriptions))
+
+	go func() {
+		for _, s := range subscriptions {
+			f, err := h.db.GetFeed(s.FeedId)
+			if err != nil {
+				continue
 			}
+
+			s.hubbub = h
+
+			h.subscribe(s, f)
 		}
 	}()
 
 	return nil
 }
 
-func (s HubbubSubscription) Subscribe() error {
+func (h *Hubbub) subscribe(s *HubbubSubscription, f Feed) {
+	err := s.Subscribe()
+	if err != nil {
+		f.SubscribeError = err.Error()
+		h.logger.Printf("Error subscribing to hub feed '%s': %s\n", f.Link, err)
+
+		if _, err := h.db.UpdateFeed(f); err != nil {
+			h.logger.Printf("Error updating feed database record for '%s': %s\n", f.Link, err)
+		}
+
+		h.removeFeed <- f
+	}
+}
+
+func (s *HubbubSubscription) Subscribe() error {
 	return s.subscription(true)
 }
 
-func (s HubbubSubscription) Unsubscribe() error {
+func (s *HubbubSubscription) Unsubscribe() error {
 	return s.subscription(false)
 }
 
-func (s HubbubSubscription) Validate() error {
+func (s *HubbubSubscription) Validate() error {
 	if u, err := url.Parse(s.Link); err != nil || !u.IsAbs() {
 		return ValidationError{errors.New("Invalid subscription link")}
 	}
@@ -119,7 +155,7 @@ func (s HubbubSubscription) Validate() error {
 	return nil
 }
 
-func (s HubbubSubscription) subscription(subscribe bool) error {
+func (s *HubbubSubscription) subscription(subscribe bool) error {
 	u := callbackURL(s.hubbub.config, s.hubbub.pattern, s.FeedId)
 	feed, err := s.hubbub.db.GetFeed(s.FeedId)
 	if err != nil {
@@ -129,8 +165,10 @@ func (s HubbubSubscription) subscription(subscribe bool) error {
 	body := url.Values{}
 	body.Set("hub.callback", u)
 	if subscribe {
+		Debug.Println("Subscribing to hubbub for " + feed.Link + " with url " + u)
 		body.Set("hub.mode", "subscribe")
 	} else {
+		Debug.Println("Unsubscribing to hubbub for " + feed.Link + " with url " + u)
 		body.Set("hub.mode", "unsubscribe")
 	}
 	body.Set("hub.topic", feed.Link)
@@ -154,7 +192,7 @@ func (s HubbubSubscription) subscription(subscribe bool) error {
 	return nil
 }
 
-func NewHubbubController(h Hubbub) HubbubController {
+func NewHubbubController(h *Hubbub) HubbubController {
 	return HubbubController{
 		webfw.NewBaseController(h.config.Hubbub.RelativePath+"/:feed-id", webfw.MethodGet|webfw.MethodPost, "hubbub-callback"),
 		h}
@@ -185,6 +223,8 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 			webfw.GetLogger(c).Print(err)
 			return
 		}
+
+		Debug.Println("Receiving hubbub event " + params.Get("hub.mode") + " for " + f.Link)
 
 		switch params.Get("hub.mode") {
 		case "subscribe":
