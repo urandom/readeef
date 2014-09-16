@@ -25,6 +25,9 @@ var (
 	init_sql_sqlite3 = []string{`
 PRAGMA foreign_keys = ON;`, `
 PRAGMA journal_mode = WAL;`, `
+CREATE TABLE IF NOT EXISTS readeef (
+	db_version INTEGER
+)`, `
 CREATE TABLE IF NOT EXISTS users (
 	login TEXT PRIMARY KEY,
 	first_name TEXT,

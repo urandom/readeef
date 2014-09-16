@@ -7,8 +7,11 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var init_sql = make(map[string][]string)
-var sql_stmt = make(map[string]string)
+var (
+	db_version = 1
+	init_sql   = make(map[string][]string)
+	sql_stmt   = make(map[string]string)
+)
 
 type Validator interface {
 	Validate() error
@@ -49,6 +52,15 @@ func (db DB) init() error {
 		}
 	} else {
 		return errors.New(fmt.Sprintf("No init sql for driver '%s'", db.driver))
+	}
+
+	_, err := db.Exec(`DELETE FROM readeef`)
+	/* TODO: per-database statements */
+	if err == nil {
+		_, err = db.Exec(`INSERT INTO readeef(db_version) VALUES($1)`, db_version)
+	}
+	if err != nil {
+		return errors.New(fmt.Sprintf("Error initializing readeef utility table: %v", err))
 	}
 
 	return nil

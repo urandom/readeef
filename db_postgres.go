@@ -26,6 +26,9 @@ ORDER BY f.title COLLATE "default"
 
 var (
 	init_sql_postgres = []string{`
+CREATE TABLE IF NOT EXISTS readeef (
+	db_version INTEGER
+)`, `
 CREATE TABLE IF NOT EXISTS users (
 	login TEXT PRIMARY KEY,
 	first_name TEXT,
