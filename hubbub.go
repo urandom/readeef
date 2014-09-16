@@ -98,6 +98,10 @@ func (h *Hubbub) Subscribe(f Feed) error {
 }
 
 func (h *Hubbub) InitSubscriptions() error {
+	if err := h.db.FailHubbubSubscriptions(); err != nil {
+		return err
+	}
+
 	subscriptions, err := h.db.GetHubbubSubscriptions()
 	if err != nil {
 		return err
@@ -127,7 +131,7 @@ func (h *Hubbub) subscribe(s *HubbubSubscription, f Feed) {
 		f.SubscribeError = err.Error()
 		h.logger.Printf("Error subscribing to hub feed '%s': %s\n", f.Link, err)
 
-		if _, err := h.db.UpdateFeed(f); err != nil {
+		if _, _, err := h.db.UpdateFeed(f); err != nil {
 			h.logger.Printf("Error updating feed database record for '%s': %s\n", f.Link, err)
 		}
 
@@ -250,10 +254,13 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 				return
 			}
 
+			newArticles := false
+
 			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
 				f = f.UpdateFromParsed(pf)
 
-				if _, err := con.hubbub.db.UpdateFeed(f); err != nil {
+				_, newArticles, err = con.hubbub.db.UpdateFeed(f)
+				if err != nil {
 					webfw.GetLogger(c).Print(err)
 					return
 				}
@@ -262,7 +269,9 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 				return
 			}
 
-			con.hubbub.updateFeed <- f
+			if newArticles {
+				con.hubbub.updateFeed <- f
+			}
 
 			return
 		}

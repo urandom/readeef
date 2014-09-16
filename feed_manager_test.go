@@ -42,7 +42,7 @@ func TestFeedManager(t *testing.T) {
 	fm.Start()
 
 	f := Feed{Link: ts.URL + "/link"}
-	f, err = db.UpdateFeed(f)
+	f, _, err = db.UpdateFeed(f)
 	if err != nil {
 		t.Fatal(err)
 	}

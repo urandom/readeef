@@ -296,9 +296,9 @@ func (db DB) GetFeed(id int64) (Feed, error) {
 	return f, nil
 }
 
-func (db DB) UpdateFeed(f Feed) (Feed, error) {
+func (db DB) UpdateFeed(f Feed) (Feed, bool, error) {
 	if err := f.Validate(); err != nil {
-		return f, err
+		return f, false, err
 	}
 
 	// FIXME: Remove when the 'FOREIGN KEY constraing failed' bug is removed
@@ -308,7 +308,7 @@ func (db DB) UpdateFeed(f Feed) (Feed, error) {
 
 	tx, err := db.Beginx()
 	if err != nil {
-		return f, err
+		return f, false, err
 	}
 	defer tx.Rollback()
 
@@ -316,25 +316,25 @@ func (db DB) UpdateFeed(f Feed) (Feed, error) {
 
 	ustmt, err := tx.Preparex(db.NamedSQL("update_feed"))
 	if err != nil {
-		return f, err
+		return f, false, err
 	}
 	defer ustmt.Close()
 
 	res, err := ustmt.Exec(f.Link, f.Title, f.Description, f.HubLink, f.SiteLink, f.UpdateError, f.SubscribeError, f.Id)
 	if err != nil {
-		return f, err
+		return f, false, err
 	}
 
 	if num, err := res.RowsAffected(); err != nil || num == 0 {
 		cstmt, err := tx.Preparex(db.NamedSQL("create_feed"))
 		if err != nil {
-			return f, err
+			return f, false, err
 		}
 		defer cstmt.Close()
 
 		id, err := db.CreateWithId(cstmt, f.Link, f.Title, f.Description, f.HubLink, f.SiteLink, f.UpdateError, f.SubscribeError)
 		if err != nil {
-			return f, err
+			return f, false, err
 		}
 
 		f.Id = id
@@ -344,13 +344,14 @@ func (db DB) UpdateFeed(f Feed) (Feed, error) {
 		}
 	}
 
-	if err := db.updateFeedArticles(tx, f, f.Articles); err != nil {
-		return f, err
+	newArticles, err := db.updateFeedArticles(tx, f, f.Articles)
+	if err != nil {
+		return f, false, err
 	}
 
 	tx.Commit()
 
-	return f, nil
+	return f, newArticles, nil
 }
 
 func (db DB) DeleteFeed(f Feed) error {
@@ -532,7 +533,7 @@ func (db DB) CreateFeedArticles(f Feed, articles []Article) (Feed, error) {
 	}
 	defer tx.Rollback()
 
-	if err := db.updateFeedArticles(tx, f, articles); err != nil {
+	if _, err := db.updateFeedArticles(tx, f, articles); err != nil {
 		return f, err
 	}
 
@@ -814,9 +815,9 @@ func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) e
 	return nil
 }
 
-func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) error {
+func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) (bool, error) {
 	if len(articles) == 0 {
-		return nil
+		return false, nil
 	}
 
 	Debug.Println("Updating feed articles for " + f.Link)
@@ -825,18 +826,18 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) error {
 
 	for _, a := range articles {
 		if err := a.Validate(); err != nil {
-			return err
+			return false, err
 		}
 
 		stmt, err := tx.Preparex(db.NamedSQL("update_feed_article"))
 		if err != nil {
-			return err
+			return false, err
 		}
 		defer stmt.Close()
 
 		res, err := stmt.Exec(a.Title, a.Description, a.Link, a.Date, a.Id, f.Id)
 		if err != nil {
-			return err
+			return false, err
 		}
 
 		if num, err := res.RowsAffected(); err != nil || num == 0 {
@@ -845,7 +846,7 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) error {
 	}
 
 	if len(newArticles) == 0 {
-		return nil
+		return false, nil
 	}
 
 	sql := `INSERT INTO articles(id, feed_id, title, description, link, date) `
@@ -854,7 +855,7 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) error {
 
 	for i, a := range newArticles {
 		if err := a.Validate(); err != nil {
-			return err
+			return false, err
 		}
 
 		if i != 0 {
@@ -869,16 +870,16 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) error {
 	stmt, err := tx.Preparex(sql)
 
 	if err != nil {
-		return err
+		return false, err
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(args...)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	return true, nil
 }
 
 func (db DB) getFeedArticles(f Feed, namedSQL string, paging ...int) (Feed, error) {

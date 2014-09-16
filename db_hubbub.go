@@ -26,10 +26,14 @@ UPDATE hubbub_subscriptions SET feed_id = $1, lease_duration = $2,
 	get_hubbub_subscriptions = `
 SELECT link, feed_id, lease_duration, verification_time, subscription_failure
 	FROM hubbub_subscriptions`
+
+	fail_hubbub_subscriptions = `
+UPDATE hubbub_subscriptions SET subscription_failure = '1'
+`
 )
 
 func (db DB) GetHubbubSubscription(link string) (*HubbubSubscription, error) {
-	var s *HubbubSubscription
+	s := &HubbubSubscription{}
 
 	if err := db.Get(s, db.NamedSQL("get_hubbub_subscription"), link); err != nil {
 		return s, err
@@ -41,7 +45,7 @@ func (db DB) GetHubbubSubscription(link string) (*HubbubSubscription, error) {
 }
 
 func (db DB) GetHubbubSubscriptionByFeed(feedId int64) (*HubbubSubscription, error) {
-	var s *HubbubSubscription
+	s := &HubbubSubscription{}
 
 	if err := db.Get(s, db.NamedSQL("get_hubbub_subscription_by_feed"), feedId); err != nil {
 		return s, err
@@ -135,6 +139,14 @@ func (db DB) GetHubbubSubscriptions() ([]*HubbubSubscription, error) {
 	return s, nil
 }
 
+func (db DB) FailHubbubSubscriptions() error {
+	if _, err := db.Exec(db.NamedSQL("fail_hubbub_subscriptions")); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func init() {
 	sql_stmt["generic:get_hubbub_subscription"] = get_hubbub_subscription
 	sql_stmt["generic:get_hubbub_subscription_by_feed"] = get_hubbub_subscription_by_feed
@@ -142,4 +154,5 @@ func init() {
 	sql_stmt["generic:update_hubbub_subscription"] = update_hubbub_subscription
 	sql_stmt["generic:delete_hubbub_subscription"] = delete_hubbub_subscription
 	sql_stmt["generic:get_hubbub_subscriptions"] = get_hubbub_subscriptions
+	sql_stmt["generic:fail_hubbub_subscriptions"] = fail_hubbub_subscriptions
 }

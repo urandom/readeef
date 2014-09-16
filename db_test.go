@@ -164,7 +164,7 @@ func TestDBFeeds(t *testing.T) {
 	}
 
 	f := Feed{Feed: parser.Feed{Title: "test"}}
-	if f, err = db.UpdateFeed(f); err != nil {
+	if f, _, err = db.UpdateFeed(f); err != nil {
 		if _, ok := err.(ValidationError); !ok {
 			t.Fatalf("Expected a validation error, got '%v'\n", err)
 		}
@@ -173,7 +173,7 @@ func TestDBFeeds(t *testing.T) {
 	}
 
 	f.Link = "http://example.com"
-	if f, err = db.UpdateFeed(f); err != nil {
+	if f, _, err = db.UpdateFeed(f); err != nil {
 		t.Fatal(err)
 	}
 
@@ -191,7 +191,7 @@ func TestDBFeeds(t *testing.T) {
 	}
 
 	f.Title = "Example rss"
-	if _, err = db.UpdateFeed(f); err != nil {
+	if _, _, err = db.UpdateFeed(f); err != nil {
 		t.Fatal(err)
 	}
 
@@ -219,7 +219,7 @@ func TestDBFeeds(t *testing.T) {
 	}
 
 	f2 := Feed{Link: "http://rss.example.com"}
-	if f2, err = db.UpdateFeed(f2); err != nil {
+	if f2, _, err = db.UpdateFeed(f2); err != nil {
 		t.Fatal(err)
 	}
 
@@ -259,12 +259,12 @@ func TestDBFeeds(t *testing.T) {
 			t.Fatalf("Expected %d user feeds, got %d\n", expectedInt, len(feeds))
 		}
 		expectedStr = "Example rss"
-		if feeds[0].Title != expectedStr {
-			t.Fatalf("Expected '%s' for a title, got '%s'\n", expectedStr, feeds[0].Title)
+		if feeds[1].Title != expectedStr {
+			t.Fatalf("Expected '%s' for a title, got '%s'\n", expectedStr, feeds[1].Title)
 		}
 		expectedStr = f2.Link
-		if feeds[1].Link != expectedStr {
-			t.Fatalf("Expected '%s' for a link, got '%s'\n", expectedStr, feeds[1].Link)
+		if feeds[0].Link != expectedStr {
+			t.Fatalf("Expected '%s' for a link, got '%s'\n", expectedStr, feeds[0].Link)
 		}
 	} else {
 		t.Fatal(err)
@@ -453,7 +453,7 @@ func TestDBFeeds(t *testing.T) {
 	}
 
 	f3 := Feed{Link: "http://rss2.example.com"}
-	if f3, err = db.UpdateFeed(f3); err != nil {
+	if f3, _, err = db.UpdateFeed(f3); err != nil {
 		t.Fatal(err)
 	}
 

@@ -55,7 +55,7 @@ func TestHubbub(t *testing.T) {
 
 	h := NewHubbub(db, conf, log.New(os.Stderr, "", 0), "/callback/", addFeed, removeFeed, updateFeed)
 	f := Feed{Link: ts.URL + "/link"}
-	f, err = db.UpdateFeed(f)
+	f, _, err = db.UpdateFeed(f)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func TestHubbub(t *testing.T) {
 
 	f.HubLink = ts.URL + "/hublink"
 
-	f, err = db.UpdateFeed(f)
+	f, _, err = db.UpdateFeed(f)
 	if err != nil {
 		t.Fatalf("Got an error during feed db update: '%v'\n", err)
 	}
@@ -130,6 +130,16 @@ func TestHubbub(t *testing.T) {
 	expectedStr := "Example Feed"
 	if f.Title != expectedStr {
 		t.Fatalf("Expected feed title to be '%s', got '%s'\n", expectedStr, f.Title)
+	}
+
+	subs, err := db.GetHubbubSubscriptions()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedInt := 1
+	if len(subs) != expectedInt {
+		t.Fatalf("Expected %d subscriptions, got %d\n", expectedInt, len(subs))
 	}
 }
 

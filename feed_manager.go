@@ -107,7 +107,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (Feed, error) {
 			}
 
 			f = feeds[0]
-			f, err = fm.db.UpdateFeed(f)
+			f, _, err = fm.db.UpdateFeed(f)
 			if err != nil {
 				return Feed{}, err
 			}
@@ -215,18 +215,22 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 	go func() {
 		fm.requestFeedContent(f)
 
+		ticker := time.After(d)
+
 		Debug.Printf("Starting feed scheduler for %s and duration %d\n", f.Link, d)
-	ticker:
+	TICKER:
 		for {
 			select {
-			case now := <-time.After(d):
+			case now := <-ticker:
 				if !fm.activeFeeds[f.Id] {
-					break ticker
+					break TICKER
 				}
 
 				if !f.SkipHours[now.Hour()] && !f.SkipDays[now.Weekday().String()] {
 					fm.requestFeedContent(f)
 				}
+
+				ticker = time.After(d)
 			case <-fm.done:
 				fm.stopUpdatingFeed(f)
 				return
@@ -286,11 +290,14 @@ func (fm *FeedManager) requestFeedContent(f Feed) {
 	case <-fm.done:
 		return
 	default:
-		if _, err := fm.db.UpdateFeed(f); err != nil {
+		_, newArticles, err := fm.db.UpdateFeed(f)
+		if err != nil {
 			fm.logger.Printf("Error updating feed database record: %v\n", err)
 		}
 
-		fm.updateFeed <- f
+		if newArticles {
+			fm.updateFeed <- f
+		}
 	}
 }
 
