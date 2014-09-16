@@ -90,6 +90,12 @@
             <paper-item label="Read and unread" hidden?="{{ !settings.unreadOnly }}" on-tap="{{ onReadAndUnread }}"></paper-item>
             <paper-item label="Mark all as read" on-tap="{{ onMarkAllAsRead }}"></paper-item>
         </template>
+
+        <template id="article-navigation-menu-items">
+            <paper-icon-button icon="hardware:keyboard-arrow-left" class="title-icon" style="opacity: {{ article && !article.First ? 100 : 0 }}" on-tap="{{ onArticlePrevious }}" hidden?="{{ display != 'feed' }}"></paper-icon-button>
+            <paper-icon-button icon="hardware:keyboard-arrow-right" class="title-icon" style="opacity: {{ article && !article.Last ? 100 : 0 }}" on-tap="{{ onArticleNext }}" hidden?="{{ display != 'feed' }}"></paper-icon-button>
+        </template>
+
         <core-drawer-panel id="drawer-panel" class="{{ {wide: wide} | tokenList }}" responsiveWidth="768px">
             <core-header-panel drawer>
                 <core-toolbar id="navheader" class="primary-color">
@@ -105,8 +111,7 @@
                     <paper-icon-button id="navicon" icon="menu" hidden?="{{ display != 'feed' || article }}"></paper-icon-button>
                     <paper-icon-button id="back-menu" icon="arrow-back" hidden?="{{ display == 'feed' && !article }}" on-tap="{{ onArticleBack }}"></paper-icon-button>
                     <div flex hidden?="{{ wide }}" class="title">{{ display == 'feed' ? feed.Title : 'Settings' }}</div>
-                    <paper-icon-button id="previous-article-menu" icon="hardware:keyboard-arrow-left" hidden?="{{ display != 'feed' || !article || article.First }}" on-tap="{{ onArticlePrevious }}"></paper-icon-button>
-                    <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" hidden?="{{ display != 'feed' || !article || article.Last }}" on-tap="{{ onArticleNext }}"></paper-icon-button>
+                    <template bind ref="article-navigation-menu-items"></template>
                     <paper-icon-button id="refresh-menu" icon="refresh" class="{{ {'primary-dark-color': updateAvailable} | tokenList }}" on-tap="{{ onRefresh }}" hidden?="{{ display != 'feed' || article }}"></paper-icon-button>
 
                     <paper-menu-button icon="more-vert" halign="right" hidden?="{{ display != 'feed' || article }}">
@@ -131,8 +136,8 @@
                                 <br><small>{{ feed.Description }}</small>
                             </template>
                         </div>
-                        <paper-icon-button id="previous-article-title" icon="hardware:keyboard-arrow-left" class="title-icon" style="opacity: {{ article && !article.First ? 100 : 0 }}" on-tap="{{ onArticlePrevious }}" hidden?="{{ display != 'feed' }}"></paper-icon-button>
-                        <paper-icon-button id="next-article-title" icon="hardware:keyboard-arrow-right" class="title-icon" style="opacity: {{ article && !article.Last ? 100 : 0 }}" on-tap="{{ onArticleNext }}" hidden?="{{ display != 'feed' }}"></paper-icon-button>
+
+                        <template bind ref="article-navigation-menu-items"></template>
                         <paper-menu-button icon="more-vert" halign="right" hidden?="{{ display != 'feed' || article }}" class="title-icon">
                             <template bind ref="article-list-menu-items"></template>
                         </paper-menu-button>
