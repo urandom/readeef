@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"math/rand"
 	"readeef/parser"
 	"regexp"
 	"strconv"
@@ -37,6 +38,8 @@ var (
 
 	ErrNoAbsolute = errors.New("Feed link is not absolute")
 	ErrNoFeed     = errors.New("Feed not found")
+
+	httpStatusPrefix = "HTTP Status: "
 )
 
 func NewFeedManager(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) *FeedManager {
@@ -227,10 +230,16 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 				}
 
 				if !f.SkipHours[now.Hour()] && !f.SkipDays[now.Weekday().String()] {
-					fm.requestFeedContent(f)
+					f = fm.requestFeedContent(f)
 				}
 
-				ticker = time.After(d)
+				if f.UpdateError != "" && !strings.HasPrefix(f.UpdateError, httpStatusPrefix) {
+					rand.Seed(time.Now().Unix())
+					secs := rand.Intn(45-15) + 15
+					ticker = time.After(time.Duration(secs) * time.Second)
+				} else {
+					ticker = time.After(d)
+				}
 			case <-fm.done:
 				fm.stopUpdatingFeed(f)
 				return
@@ -255,7 +264,7 @@ func (fm *FeedManager) stopUpdatingFeed(f Feed) {
 	}
 }
 
-func (fm *FeedManager) requestFeedContent(f Feed) {
+func (fm *FeedManager) requestFeedContent(f Feed) Feed {
 	Debug.Println("Requesting feed content for " + f.Link)
 
 	resp, err := fm.client.Get(f.Link)
@@ -263,7 +272,7 @@ func (fm *FeedManager) requestFeedContent(f Feed) {
 	if err != nil {
 		f.UpdateError = err.Error()
 	} else if resp.StatusCode != http.StatusOK {
-		f.UpdateError = "HTTP Status: " + strconv.Itoa(resp.StatusCode)
+		f.UpdateError = httpStatusPrefix + strconv.Itoa(resp.StatusCode)
 	} else {
 		f.UpdateError = ""
 
@@ -288,9 +297,9 @@ func (fm *FeedManager) requestFeedContent(f Feed) {
 
 	select {
 	case <-fm.done:
-		return
+		return f
 	default:
-		_, newArticles, err := fm.db.UpdateFeed(f)
+		f, newArticles, err := fm.db.UpdateFeed(f)
 		if err != nil {
 			fm.logger.Printf("Error updating feed database record: %v\n", err)
 		}
@@ -298,6 +307,8 @@ func (fm *FeedManager) requestFeedContent(f Feed) {
 		if newArticles {
 			fm.updateFeed <- f
 		}
+
+		return f
 	}
 }
 
