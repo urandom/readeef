@@ -11,6 +11,7 @@
 <link rel="import" href="/dist/paper-dropdown/paper-dropdown.html">
 <link rel="import" href="/dist/paper-dialog/paper-dialog.html">
 <link rel="import" href="/dist/paper-dialog/paper-dialog-transition.html">
+<link rel="import" href="/dist/paper-toast/paper-toast.html">
 
 <link rel="import" href="/dist/loading-wave/loading-wave.html">
 
@@ -201,7 +202,13 @@
                                     <template if="{{ wide }}">
                                     <div layout horizontal center>
                                         <img src="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" alt="favicon" class="feed-favicon">
-                                        <span flex style="padding-right: 10px">{{ feed.Title }}</span>
+                                        <span flex style="padding-right: 10px" layout horizontal>
+                                            {{ feed.Title }}
+                                            <template if="{{ user.Admin && (feed.UpdateError || feed.SubscribeError) }}">
+                                                <paper-icon-button icon="warning" on-tap="{{ onDisplayFeedErrors }}"></paper-icon-button>
+                                                <paper-toast text="{{ feed.UpdateError + '\n' + feed.SubscribeError }}"></paper-toast>
+                                            </template>
+                                        </span>
                                         <paper-input value="{{ feed.Tags }}" on-change="{{ onFeedTagsChange }}" placeholder="Comma-separated tag list"></paper-input>
                                         <paper-icon-button icon="remove" on-tap="{{ onRemoveFeed }}"></paper-icon-button>
                                     </div>
@@ -595,6 +602,10 @@
                 });
                 this.fire('core-signal', {name: 'rf-feed-tags-changed', data: feed});
             }
+        },
+
+        onDisplayFeedErrors: function(event, detail, sender) {
+            sender.parentNode.querySelector('paper-toast').toggle();
         }
     });
 })();

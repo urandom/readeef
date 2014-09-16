@@ -30,13 +30,15 @@ func NewFeed(fm *readeef.FeedManager) Feed {
 }
 
 type feed struct {
-	Id          int64
-	Title       string
-	Description string
-	Link        string
-	Image       parser.Image
-	Articles    []readeef.Article
-	Tags        []string
+	Id             int64
+	Title          string
+	Description    string
+	Link           string
+	Image          parser.Image
+	Articles       []readeef.Article
+	UpdateError    string
+	SubscribeError string
+	Tags           []string
 }
 
 func (con Feed) Handler(c context.Context) http.HandlerFunc {
@@ -73,6 +75,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				respFeeds = append(respFeeds, feed{
 					Id: f.Id, Title: f.Title, Description: f.Description,
 					Link: f.Link, Image: f.Image, Tags: f.Tags,
+					UpdateError: f.UpdateError, SubscribeError: f.SubscribeError,
 				})
 			}
 
