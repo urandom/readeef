@@ -46,14 +46,6 @@ func (con FeedUpdateNotificator) Handler(c context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var err error
 
-		user := readeef.GetUser(c, r)
-
-		if !user.Active {
-			readeef.Debug.Println("User " + user.Login + " is inactive")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
 		receiver := make(chan readeef.Feed)
 
 		mutex.Lock()

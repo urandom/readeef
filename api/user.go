@@ -40,12 +40,8 @@ func (con User) Handler(c context.Context) http.HandlerFunc {
 		db := readeef.GetDB(c)
 		user := readeef.GetUser(c, r)
 
-		if !user.Active || !user.Admin {
-			if !user.Active {
-				readeef.Debug.Println("User " + user.Login + " is inactive")
-			} else {
-				readeef.Debug.Println("User " + user.Login + " is not an admin")
-			}
+		if !user.Admin {
+			readeef.Debug.Println("User " + user.Login + " is not an admin")
 
 			w.WriteHeader(http.StatusForbidden)
 			return

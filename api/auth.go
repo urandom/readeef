@@ -22,11 +22,6 @@ func NewAuth() Auth {
 func (con Auth) Handler(c context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user := readeef.GetUser(c, r)
-		if !user.Active {
-			readeef.Debug.Println("User " + user.Login + " is inactive")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
 
 		type User struct {
 			Login     string

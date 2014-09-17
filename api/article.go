@@ -27,12 +27,6 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 		db := readeef.GetDB(c)
 		user := readeef.GetUser(c, r)
 
-		if !user.Active {
-			readeef.Debug.Println("User " + user.Login + " is inactive")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
 		params := webfw.GetParams(c, r)
 		action := params["action"]
 

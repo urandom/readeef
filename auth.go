@@ -96,6 +96,11 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 				}
 			}
 
+			if validUser && !u.Active {
+				Debug.Println("User " + u.Login + " is inactive")
+				validUser = false
+			}
+
 			if !validUser {
 				d := webfw.GetDispatcher(c)
 				sess.SetFlash(CtxKey("return-to"), r.URL.Path)
@@ -186,6 +191,11 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 
 					if !hmac.Equal(hm.Sum(nil), decoded) {
 						l.Printf("Error matching the supplied auth message to the generated one.\n")
+						break
+					}
+
+					if !u.Active {
+						Debug.Println("User " + u.Login + " is inactive")
 						break
 					}
 
