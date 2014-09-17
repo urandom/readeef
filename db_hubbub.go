@@ -2,10 +2,6 @@ package readeef
 
 const (
 	get_hubbub_subscription = `
-SELECT feed_id, lease_duration, verification_time, subscription_failure
-	FROM hubbub_subscriptions WHERE link = $1`
-
-	get_hubbub_subscription_by_feed = `
 SELECT link, lease_duration, verification_time, subscription_failure
 	FROM hubbub_subscriptions WHERE feed_id = $1`
 
@@ -32,22 +28,10 @@ UPDATE hubbub_subscriptions SET subscription_failure = '1'
 `
 )
 
-func (db DB) GetHubbubSubscription(link string) (*HubbubSubscription, error) {
+func (db DB) GetHubbubSubscription(feedId int64) (*HubbubSubscription, error) {
 	s := &HubbubSubscription{}
 
-	if err := db.Get(s, db.NamedSQL("get_hubbub_subscription"), link); err != nil {
-		return s, err
-	}
-
-	s.Link = link
-
-	return s, nil
-}
-
-func (db DB) GetHubbubSubscriptionByFeed(feedId int64) (*HubbubSubscription, error) {
-	s := &HubbubSubscription{}
-
-	if err := db.Get(s, db.NamedSQL("get_hubbub_subscription_by_feed"), feedId); err != nil {
+	if err := db.Get(s, db.NamedSQL("get_hubbub_subscription"), feedId); err != nil {
 		return s, err
 	}
 
@@ -149,7 +133,6 @@ func (db DB) FailHubbubSubscriptions() error {
 
 func init() {
 	sql_stmt["generic:get_hubbub_subscription"] = get_hubbub_subscription
-	sql_stmt["generic:get_hubbub_subscription_by_feed"] = get_hubbub_subscription_by_feed
 	sql_stmt["generic:create_hubbub_subscription"] = create_hubbub_subscription
 	sql_stmt["generic:update_hubbub_subscription"] = update_hubbub_subscription
 	sql_stmt["generic:delete_hubbub_subscription"] = delete_hubbub_subscription

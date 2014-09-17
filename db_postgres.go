@@ -108,13 +108,13 @@ CREATE TABLE IF NOT EXISTS users_articles_fav (
 	FOREIGN KEY(article_id, article_feed_id) REFERENCES articles(id, feed_id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
+	feed_id INTEGER,
 	link TEXT,
-	feed_id INTEGER NOT NULL UNIQUE,
 	lease_duration INTEGER,
 	verification_time TIMESTAMP WITH TIME ZONE,
 	subscription_failure BOOLEAN DEFAULT 'f',
 
-	PRIMARY KEY(link),
+	PRIMARY KEY(feed_id),
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`,
 	}

@@ -98,7 +98,7 @@ func TestHubbub(t *testing.T) {
 
 	<-done // hublink request
 	<-done // callback request
-	if s, err := db.GetHubbubSubscriptionByFeed(f.Id); err != nil {
+	if s, err := db.GetHubbubSubscription(f.Id); err != nil {
 		t.Fatal(err)
 	} else {
 		if s.SubscriptionFailure {

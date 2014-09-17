@@ -56,7 +56,7 @@ LEFT OUTER JOIN users_articles_read ar
 	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
 LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
-ORDER BY a.date DESC
+ORDER BY read ASC, a.date DESC
 LIMIT $3
 OFFSET $4
 `

@@ -79,7 +79,7 @@ func (h *Hubbub) Subscribe(f Feed) error {
 		}
 	}
 
-	if _, err := h.db.GetHubbubSubscription(f.HubLink); err == nil {
+	if _, err := h.db.GetHubbubSubscription(f.Id); err == nil {
 		Debug.Println("Already subscribed to " + f.HubLink)
 		return ErrSubscribed
 	}
@@ -215,7 +215,7 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 			return
 		}
 
-		s, err := con.hubbub.db.GetHubbubSubscriptionByFeed(feedId)
+		s, err := con.hubbub.db.GetHubbubSubscription(feedId)
 
 		if err != nil {
 			webfw.GetLogger(c).Print(err)
