@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"readeef"
@@ -24,7 +23,7 @@ type Feed struct {
 
 func NewFeed(fm *readeef.FeedManager) Feed {
 	return Feed{
-		webfw.NewBaseController("/v:version/feed/*action", webfw.MethodGet|webfw.MethodPost, ""),
+		webfw.NewBaseController("", webfw.MethodGet, ""),
 		fm,
 	}
 }
@@ -41,6 +40,23 @@ type feed struct {
 	Tags           []string
 }
 
+func (con Feed) Patterns() map[string]webfw.MethodIdentifierTuple {
+	prefix := "/v:version/feed/"
+
+	return map[string]webfw.MethodIdentifierTuple{
+		prefix + "list":            webfw.MethodIdentifierTuple{webfw.MethodGet, "list"},
+		prefix + "discover":        webfw.MethodIdentifierTuple{webfw.MethodGet, "discover"},
+		prefix + "opml":            webfw.MethodIdentifierTuple{webfw.MethodPost, "opml"},
+		prefix + "add":             webfw.MethodIdentifierTuple{webfw.MethodPost, "add"},
+		prefix + "remove/:feed-id": webfw.MethodIdentifierTuple{webfw.MethodPost, "remove"},
+		prefix + "tags/:feed-id":   webfw.MethodIdentifierTuple{webfw.MethodGet | webfw.MethodPost, "tags"},
+
+		prefix + "read/:feed-id/:timestamp": webfw.MethodIdentifierTuple{webfw.MethodPost, "read"},
+
+		prefix + "articles/:feed-id/:limit/:offset/:newer-first/:unread-only": webfw.MethodIdentifierTuple{webfw.MethodGet, "articles"},
+	}
+}
+
 func (con Feed) Handler(c context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var err error
@@ -54,11 +70,10 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			return
 		}
 
-		actionParam := webfw.GetParams(c, r)
-		parts := strings.Split(actionParam["action"], "/")
-		action := parts[0]
-
+		action := webfw.GetMultiPatternIdentifier(c, r)
+		params := webfw.GetParams(c, r)
 		resp := make(map[string]interface{})
+
 	SWITCH:
 		switch action {
 		case "list":
@@ -229,7 +244,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			resp["Success"] = success
 		case "remove":
 			var id int64
-			id, err = strconv.ParseInt(parts[1], 10, 64)
+			id, err = strconv.ParseInt(params["feed-id"], 10, 64)
 
 			/* TODO: non-fatal error */
 			if err != nil {
@@ -254,7 +269,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			resp["Success"] = true
 		case "tags":
 			var id int64
-			id, err = strconv.ParseInt(parts[1], 10, 64)
+			id, err = strconv.ParseInt(params["feed-id"], 10, 64)
 
 			/* TODO: non-fatal error */
 			if err != nil {
@@ -300,41 +315,40 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				resp["Id"] = feed.Id
 			}
 		case "read":
+			feedId := params["feed-id"]
+			timestamp := params["timestamp"]
+
+			var seconds int64
+			seconds, err = strconv.ParseInt(timestamp, 10, 64)
+			/* TODO: non-fatal error */
+			if err != nil {
+				break
+			}
+
+			t := time.Unix(seconds/1000, 0)
+
 			switch {
-			case parts[1] == "tag:__all__":
-				var seconds int64
-				seconds, err = strconv.ParseInt(parts[2], 10, 64)
-				/* TODO: non-fatal error */
-				if err != nil {
-					break
-				}
-
-				t := time.Unix(seconds/1000, 0)
-
+			case feedId == "tag:__all__":
 				err = db.MarkUserArticlesByDateAsRead(user, t, true)
+			case feedId == "__favorite__":
+				// Favorites are assumbed to have been read already
+			case strings.HasPrefix(feedId, "tag:"):
+				tag := feedId[4:]
+				err = db.MarkUserTagArticlesByDateAsRead(user, tag, t, true)
 			default:
 				var id int64
-				var seconds int64
 
-				id, err = strconv.ParseInt(parts[1], 10, 64)
+				id, err = strconv.ParseInt(feedId, 10, 64)
 				/* TODO: non-fatal error */
 				if err != nil {
-					break
+					break SWITCH
 				}
-
-				seconds, err = strconv.ParseInt(parts[2], 10, 64)
-				/* TODO: non-fatal error */
-				if err != nil {
-					break
-				}
-
-				t := time.Unix(seconds/1000, 0)
 
 				var feed readeef.Feed
 				feed, err = db.GetUserFeed(id, user)
 				/* TODO: non-fatal error */
 				if err != nil {
-					break
+					break SWITCH
 				}
 
 				err = db.MarkFeedArticlesByDateAsRead(feed, t, true)
@@ -343,36 +357,33 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			if err == nil {
 				resp["Success"] = true
 			}
-		default:
+		case "articles":
 			var articles []readeef.Article
 
 			var limit, offset int
 
-			if len(parts) != 5 {
-				err = errors.New(fmt.Sprintf("Expected 5 arguments, got %d", len(parts)))
-				break
-			}
+			feedId := params["feed-id"]
 
-			limit, err = strconv.Atoi(parts[1])
+			limit, err = strconv.Atoi(params["limit"])
 			/* TODO: non-fatal error */
 			if err != nil {
 				break
 			}
 
-			offset, err = strconv.Atoi(parts[2])
+			offset, err = strconv.Atoi(params["offset"])
 			/* TODO: non-fatal error */
 			if err != nil {
 				break
 			}
 
-			newerFirst := parts[3] == "true"
-			unreadOnly := parts[4] == "true"
+			newerFirst := params["newer-first"] == "true"
+			unreadOnly := params["unread-only"] == "true"
 
 			if limit > 50 {
 				limit = 50
 			}
 
-			if action == "__favorite__" {
+			if feedId == "__favorite__" {
 				if newerFirst {
 					articles, err = db.GetUserFavoriteArticlesDesc(user, limit, offset)
 				} else {
@@ -381,7 +392,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				if err != nil {
 					break
 				}
-			} else if action == "tag:__all__" {
+			} else if feedId == "tag:__all__" {
 				if newerFirst {
 					if unreadOnly {
 						articles, err = db.GetUnreadUserArticlesDesc(user, limit, offset)
@@ -398,8 +409,8 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				if err != nil {
 					break
 				}
-			} else if strings.HasPrefix(action, "tag:") {
-				tag := action[4:]
+			} else if strings.HasPrefix(feedId, "tag:") {
+				tag := feedId[4:]
 				if newerFirst {
 					if unreadOnly {
 						articles, err = db.GetUnreadUserTagArticlesDesc(user, tag, limit, offset)
@@ -420,10 +431,10 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				var f readeef.Feed
 
 				var id int64
-				id, err = strconv.ParseInt(action, 10, 64)
+				id, err = strconv.ParseInt(feedId, 10, 64)
 
 				if err != nil {
-					err = errors.New("Unknown action " + action)
+					err = errors.New("Unknown feed id " + feedId)
 					break
 				}
 

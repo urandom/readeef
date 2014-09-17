@@ -4,10 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"readeef"
-	"strings"
 
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
@@ -20,7 +18,18 @@ type User struct {
 
 func NewUser() User {
 	return User{
-		webfw.NewBaseController("/v:version/user/*action", webfw.MethodGet|webfw.MethodPost, ""),
+		webfw.NewBaseController("", webfw.MethodGet, ""),
+	}
+}
+
+func (con User) Patterns() map[string]webfw.MethodIdentifierTuple {
+	prefix := "/v:version/user/"
+
+	return map[string]webfw.MethodIdentifierTuple{
+		prefix + "list":                 webfw.MethodIdentifierTuple{webfw.MethodGet, "list"},
+		prefix + "add/:login":           webfw.MethodIdentifierTuple{webfw.MethodPost, "add"},
+		prefix + "remove/:login":        webfw.MethodIdentifierTuple{webfw.MethodPost, "remove"},
+		prefix + "active/:login/:state": webfw.MethodIdentifierTuple{webfw.MethodPost, "active"},
 	}
 }
 
@@ -42,11 +51,10 @@ func (con User) Handler(c context.Context) http.HandlerFunc {
 			return
 		}
 
-		actionParam := webfw.GetParams(c, r)
-		parts := strings.Split(actionParam["action"], "/")
-		action := parts[0]
-
+		action := webfw.GetMultiPatternIdentifier(c, r)
+		params := webfw.GetParams(c, r)
 		resp := make(map[string]interface{})
+
 		switch action {
 		case "list":
 			users, err := db.GetUsers()
@@ -77,12 +85,7 @@ func (con User) Handler(c context.Context) http.HandlerFunc {
 
 			resp["Users"] = userList
 		case "add":
-			if len(parts) != 2 {
-				err = errors.New(fmt.Sprintf("Expected 2 arguments, got %d", len(parts)))
-				break
-			}
-
-			login := parts[1]
+			login := params["login"]
 
 			_, err = db.GetUser(login)
 			/* TODO: non-fatal error */
@@ -113,12 +116,7 @@ func (con User) Handler(c context.Context) http.HandlerFunc {
 			resp["Success"] = true
 			resp["Login"] = login
 		case "remove":
-			if len(parts) != 2 {
-				err = errors.New(fmt.Sprintf("Expected 2 arguments, got %d", len(parts)))
-				break
-			}
-
-			login := parts[1]
+			login := params["login"]
 
 			if user.Login == login {
 				err = errors.New("The current user cannot be removed")
@@ -140,19 +138,14 @@ func (con User) Handler(c context.Context) http.HandlerFunc {
 			resp["Success"] = true
 			resp["Login"] = login
 		case "active":
-			if len(parts) != 3 {
-				err = errors.New(fmt.Sprintf("Expected 3 arguments, got %d", len(parts)))
-				break
-			}
-
-			login := parts[1]
+			login := params["login"]
 
 			if user.Login == login {
 				err = errors.New("The current user cannot be removed")
 				break
 			}
 
-			active := parts[2] == "true"
+			active := params["state"] == "true"
 
 			var u readeef.User
 
@@ -169,8 +162,6 @@ func (con User) Handler(c context.Context) http.HandlerFunc {
 
 			resp["Success"] = true
 			resp["Login"] = login
-		default:
-			err = errors.New("Error processing request: unknown action " + action)
 		}
 
 		var b []byte

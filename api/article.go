@@ -16,7 +16,7 @@ type Article struct {
 
 func NewArticle() Article {
 	return Article{
-		webfw.NewBaseController("/v:version/article/:action/:feedId/:articleId/:value", webfw.MethodAll, ""),
+		webfw.NewBaseController("/v:version/article/:action/:feed-id/:article-id/:value", webfw.MethodAll, ""),
 	}
 }
 
@@ -36,14 +36,14 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 		params := webfw.GetParams(c, r)
 		action := params["action"]
 
-		readeef.Debug.Printf("Invoking Article controller with action '%s', feed id '%s' and article id '%s'\n", action, params["feedId"], params["articleId"])
+		readeef.Debug.Printf("Invoking Article controller with action '%s', feed id '%s' and article id '%s'\n", action, params["feed-id"], params["article-id"])
 
 		var feedId int64
-		feedId, err = strconv.ParseInt(params["feedId"], 10, 64)
+		feedId, err = strconv.ParseInt(params["feed-id"], 10, 64)
 
 		var article readeef.Article
 		if err == nil {
-			article, err = db.GetFeedArticle(feedId, params["articleId"], user)
+			article, err = db.GetFeedArticle(feedId, params["article-id"], user)
 		}
 
 		if err == nil {

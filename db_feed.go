@@ -220,7 +220,7 @@ LIMIT $2
 OFFSET $3
 `
 
-	create_all_users_articles_read_by_date = `
+	create_all_user_articles_read_by_date = `
 INSERT INTO users_articles_read
 	SELECT uf.user_login, a.id, uf.feed_id
 	FROM users_feeds uf INNER JOIN articles a
@@ -228,7 +228,7 @@ INSERT INTO users_articles_read
 		AND a.id IN (SELECT id FROM articles WHERE date IS NULL OR date < $2)
 `
 
-	delete_all_users_articles_read_by_date = `
+	delete_all_user_articles_read_by_date = `
 DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
 	SELECT id FROM articles WHERE date IS NULL OR date < $2
 )
@@ -678,7 +678,7 @@ func (db DB) MarkUserArticlesByDateAsRead(u User, d time.Time, read bool) error 
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(db.NamedSQL("delete_all_users_articles_read_by_date"))
+	stmt, err := tx.Preparex(db.NamedSQL("delete_all_user_articles_read_by_date"))
 
 	if err != nil {
 		return err
@@ -690,7 +690,7 @@ func (db DB) MarkUserArticlesByDateAsRead(u User, d time.Time, read bool) error 
 		return err
 	}
 
-	stmt, err = tx.Preparex(db.NamedSQL("create_all_users_articles_read_by_date"))
+	stmt, err = tx.Preparex(db.NamedSQL("create_all_user_articles_read_by_date"))
 
 	if err != nil {
 		return err
@@ -962,8 +962,8 @@ func init() {
 	sql_stmt["generic:get_unread_user_articles"] = get_unread_user_articles
 	sql_stmt["generic:get_unread_user_articles_desc"] = get_unread_user_articles_desc
 	sql_stmt["generic:get_read_user_articles"] = get_read_user_articles
-	sql_stmt["generic:create_all_users_articles_read_by_date"] = create_all_users_articles_read_by_date
-	sql_stmt["generic:delete_all_users_articles_read_by_date"] = delete_all_users_articles_read_by_date
+	sql_stmt["generic:create_all_user_articles_read_by_date"] = create_all_user_articles_read_by_date
+	sql_stmt["generic:delete_all_user_articles_read_by_date"] = delete_all_user_articles_read_by_date
 	sql_stmt["generic:create_all_users_articles_read_by_feed_date"] = create_all_users_articles_read_by_feed_date
 	sql_stmt["generic:delete_all_users_articles_read_by_feed_date"] = delete_all_users_articles_read_by_feed_date
 	sql_stmt["generic:get_user_favorite_articles"] = get_user_favorite_articles

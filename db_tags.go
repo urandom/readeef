@@ -1,5 +1,7 @@
 package readeef
 
+import "time"
+
 const (
 	get_user_tags      = `SELECT tag FROM users_feeds_tags WHERE user_login = $1`
 	get_user_feed_tags = `SELECT tag FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2`
@@ -93,6 +95,26 @@ WHERE ar.article_id IS NULL
 ORDER BY a.date DESC
 LIMIT $3
 OFFSET $4
+`
+
+	create_all_user_tag_articles_read_by_date = `
+INSERT INTO users_articles_read
+	SELECT uf.user_login, a.id, uf.feed_id
+	FROM users_feeds uf INNER JOIN users_feeds_tags uft
+		ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login
+			AND uft.user_login = $1 AND uft.tag = $2
+	INNER JOIN articles a
+		ON uf.feed_id = a.feed_id
+		AND a.id IN (SELECT id FROM articles WHERE date IS NULL OR date < $3)
+`
+
+	delete_all_user_tag_articles_read_by_date = `
+DELETE FROM users_articles_read WHERE user_login = $1
+	AND article_feed_id IN (
+		SELECT feed_id FROM users_feeds_tags WHERE user_login = $1 AND tag = $2
+	) AND article_id IN (
+		SELECT id FROM articles WHERE date IS NULL OR date < $3
+	)
 `
 )
 
@@ -271,6 +293,42 @@ func (db DB) getUserTagArticles(u User, tag, namedSQL string, paging ...int) ([]
 	return articles, nil
 }
 
+func (db DB) MarkUserTagArticlesByDateAsRead(u User, tag string, d time.Time, read bool) error {
+	tx, err := db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Preparex(db.NamedSQL("delete_all_user_tag_articles_read_by_date"))
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(u.Login, tag, d)
+	if err != nil {
+		return err
+	}
+
+	stmt, err = tx.Preparex(db.NamedSQL("create_all_user_tag_articles_read_by_date"))
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(u.Login, tag, d)
+	if err != nil {
+		return err
+	}
+
+	tx.Commit()
+
+	return nil
+}
+
 func init() {
 	sql_stmt["generic:get_user_tags"] = get_user_tags
 	sql_stmt["generic:get_user_feed_tags"] = get_user_feed_tags
@@ -282,4 +340,6 @@ func init() {
 	sql_stmt["generic:get_user_tag_articles_desc"] = get_user_tag_articles_desc
 	sql_stmt["generic:get_unread_user_tag_articles"] = get_unread_user_tag_articles
 	sql_stmt["generic:get_unread_user_tag_articles_desc"] = get_unread_user_tag_articles_desc
+	sql_stmt["generic:create_all_user_tag_articles_read_by_date"] = create_all_user_tag_articles_read_by_date
+	sql_stmt["generic:delete_all_user_tag_articles_read_by_date"] = delete_all_user_tag_articles_read_by_date
 }
