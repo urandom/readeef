@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"readeef"
-	"readeef/api"
-	"readeef/web"
 
+	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/api"
+	"github.com/urandom/readeef/web"
 	"github.com/urandom/webfw"
 )
 

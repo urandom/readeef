@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"readeef"
 	"time"
 
+	"github.com/urandom/readeef"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/middleware"
 	"github.com/urandom/webfw/renderer"

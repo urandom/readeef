@@ -6,7 +6,8 @@ import (
 	"database/sql"
 	"fmt"
 	"math"
-	"readeef/parser"
+
+	"github.com/urandom/readeef/parser"
 )
 import (
 	"testing"

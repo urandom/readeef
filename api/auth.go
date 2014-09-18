@@ -3,8 +3,8 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"readeef"
 
+	"github.com/urandom/readeef"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 )

@@ -5,12 +5,12 @@ import (
 	"errors"
 	"log"
 	"math/rand"
-	"readeef/parser"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/urandom/readeef/parser"
 	"github.com/urandom/webfw/util"
 )
 import (

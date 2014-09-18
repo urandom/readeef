@@ -3,7 +3,8 @@ package readeef
 import (
 	"errors"
 	"net/url"
-	"readeef/parser"
+
+	"github.com/urandom/readeef/parser"
 )
 
 type Feed struct {

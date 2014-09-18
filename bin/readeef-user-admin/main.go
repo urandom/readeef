@@ -4,8 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"readeef"
 	"strings"
+
+	"github.com/urandom/readeef"
 )
 
 func main() {

@@ -6,10 +6,10 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"readeef/parser"
 	"strconv"
 	"time"
 
+	"github.com/urandom/readeef/parser"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/util"
