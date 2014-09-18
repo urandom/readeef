@@ -4,7 +4,7 @@
   "authors": [
     "Viktor Kojouharov <developer@sugr.org>"
   ],
-  "license": "GPL-3.0+",
+  "license": "LGPL-3.0+",
   "homepage": "http://sugr.org",
   "private": true,
   "ignore": [
