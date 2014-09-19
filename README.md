@@ -34,6 +34,7 @@ Unless you are using SQLite, readeef will need to be configured as well. A minim
 You are now ready to add the first user to the system. Turn the user into an administrator to be able to add more users via the web interface.
 
 > ./readeef-user-admin -config $CONFIG_FILE add $USER_LOGIN $USER_PASS
+
 > ./readeef-user-admin -config $CONFIG_FILE set $USER_LOGIN admin true
 
 The standalone server may take two config files. The first is the readeef configuration file, and the other is the server configuration. The later one is optional. The default server configuration may be seen in the source code of this file: [webfw/config.go](https://github.com/urandom/webfw/blob/master/config.go#L120). The server will need to be started in the same directory that contains the 'static' and 'templates' directories, typically the checkout itself.
