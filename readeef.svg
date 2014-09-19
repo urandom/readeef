@@ -17,16 +17,16 @@
    version="1.1"
    inkscape:version="0.48.4 r9939"
    sodipodi:docname="readeef.svg"
-   inkscape:export-filename="/home/urandom/.go/src/github.com/urandom/readeef/static/images/readeef-small.png"
-   inkscape:export-xdpi="90"
-   inkscape:export-ydpi="90">
+   inkscape:export-filename="/home/urandom/.go/src/github.com/urandom/readeef/static/images/readeef-big.png"
+   inkscape:export-xdpi="720"
+   inkscape:export-ydpi="720">
   <defs
      id="defs2987">
     <linearGradient
        id="linearGradient4146"
        osb:paint="solid">
       <stop
-         style="stop-color:#191919;stop-opacity:1;"
+         style="stop-color:#fff3ef;stop-opacity:1;"
          offset="0"
          id="stop4148" />
     </linearGradient>
@@ -138,17 +138,17 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="7.9999996"
-     inkscape:cx="20.488335"
-     inkscape:cy="22.598382"
+     inkscape:zoom="11.313708"
+     inkscape:cx="24.25111"
+     inkscape:cy="23.007943"
      inkscape:current-layer="layer8"
      showgrid="false"
      inkscape:grid-bbox="true"
      inkscape:document-units="px"
      inkscape:window-width="1071"
      inkscape:window-height="750"
-     inkscape:window-x="772"
-     inkscape:window-y="178"
+     inkscape:window-x="198"
+     inkscape:window-y="186"
      inkscape:window-maximized="0"
      inkscape:snap-bbox="true"
      showguides="true"
@@ -323,7 +323,7 @@
      style="display:inline">
     <text
        xml:space="preserve"
-       style="font-size:18px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#3e2912;fill-opacity:0.47938155;stroke:none;display:inline;filter:url(#filter5702);font-family:Ubuntu;-inkscape-font-specification:Ubuntu"
+       style="font-size:18px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#ffefea;fill-opacity:1;stroke:none;display:inline;filter:url(#filter5702);font-family:Ubuntu;-inkscape-font-specification:Ubuntu"
        x="17.5"
        y="29.197754"
        id="text4137-4"
@@ -332,7 +332,7 @@
          id="tspan4139-2"
          x="17.5"
          y="29.197754"
-         style="font-size:18px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;fill:#3e2912;fill-opacity:0.47938155;stroke:none;font-family:Roboto;-inkscape-font-specification:Roboto Bold">rf</tspan></text>
+         style="font-size:18px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;fill:#ffefea;fill-opacity:1;stroke:none;font-family:Roboto;-inkscape-font-specification:Roboto Bold">rf</tspan></text>
   </g>
   <g
      inkscape:groupmode="layer"
