@@ -17,9 +17,9 @@
    version="1.1"
    inkscape:version="0.48.4 r9939"
    sodipodi:docname="readeef.svg"
-   inkscape:export-filename="/home/urandom/Projects/homepage/src/sugr.org/static/images/readeef.png"
-   inkscape:export-xdpi="960"
-   inkscape:export-ydpi="960">
+   inkscape:export-filename="/home/urandom/.go/src/github.com/urandom/readeef/static/images/readeef-small.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
   <defs
      id="defs2987">
     <linearGradient
@@ -138,18 +138,18 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="11.313708"
-     inkscape:cx="25.32543"
-     inkscape:cy="19.67531"
-     inkscape:current-layer="layer6"
+     inkscape:zoom="7.9999996"
+     inkscape:cx="20.488335"
+     inkscape:cy="22.598382"
+     inkscape:current-layer="layer8"
      showgrid="false"
      inkscape:grid-bbox="true"
      inkscape:document-units="px"
-     inkscape:window-width="1920"
-     inkscape:window-height="1030"
-     inkscape:window-x="0"
-     inkscape:window-y="25"
-     inkscape:window-maximized="1"
+     inkscape:window-width="1071"
+     inkscape:window-height="750"
+     inkscape:window-x="772"
+     inkscape:window-y="178"
+     inkscape:window-maximized="0"
      inkscape:snap-bbox="true"
      showguides="true"
      inkscape:guide-bbox="true">
@@ -296,7 +296,7 @@
      style="display:inline">
     <path
        sodipodi:type="arc"
-       style="color:#000000;fill:#db8634;fill-opacity:1;fill-rule:nonzero;stroke:url(#radialGradient4133);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
+       style="color:#000000;fill:#ff5722;fill-opacity:1;fill-rule:nonzero;stroke:url(#radialGradient4133);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate"
        id="path4125"
        sodipodi:cx="24"
        sodipodi:cy="24"
@@ -323,7 +323,7 @@
      style="display:inline">
     <text
        xml:space="preserve"
-       style="font-size:18px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#3e2912;fill-opacity:1;stroke:none;display:inline;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;filter:url(#filter5702)"
+       style="font-size:18px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#3e2912;fill-opacity:0.47938155;stroke:none;display:inline;filter:url(#filter5702);font-family:Ubuntu;-inkscape-font-specification:Ubuntu"
        x="17.5"
        y="29.197754"
        id="text4137-4"
@@ -332,7 +332,7 @@
          id="tspan4139-2"
          x="17.5"
          y="29.197754"
-         style="font-size:18px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;fill:#3e2912;fill-opacity:1;stroke:none;font-family:Roboto;-inkscape-font-specification:Roboto Bold">rf</tspan></text>
+         style="font-size:18px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;fill:#3e2912;fill-opacity:0.47938155;stroke:none;font-family:Roboto;-inkscape-font-specification:Roboto Bold">rf</tspan></text>
   </g>
   <g
      inkscape:groupmode="layer"
