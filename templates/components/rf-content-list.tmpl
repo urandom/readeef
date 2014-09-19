@@ -314,6 +314,14 @@
                     }
                 }
 
+                Array.prototype.forEach.call(
+                    description.querySelectorAll('img'),
+                    function(element) {
+                        element.style.width = 'auto';
+                        element.style.height = 'auto';
+                    }
+                );
+
                 this.$.pages.selected = 'detail';
 
                 if (!newValue.Read) {
