@@ -39,3 +39,7 @@ You are now ready to add the first user to the system. Turn the user into an adm
 The standalone server may take two config files. The first is the readeef configuration file, and the other is the server configuration. The later one is optional. The default server configuration may be seen in the source code of this file: [webfw/config.go](https://github.com/urandom/webfw/blob/master/config.go#L120). The server will need to be started in the same directory that contains the 'static' and 'templates' directories, typically the checkout itself.
 
 > ./readeef-server -server-config $SERVER_CONFIG_FILE -readeef-config $CONFIG_FILE 2> error.log > access.log
+
+In order for the web interface to actually work, the client-side libraries will need to be fetched. This is best done with bower. Make sure the _.bowerrc_ file, provided with the sources, is in the same directory that contains the 'static' directory. In there, just run the following:
+
+> bower update
