@@ -108,7 +108,7 @@
         <rf-api id="feed-articles" pathAction="feed/articles/{{ currentFeedId }}/{{ limit }}/{{ offset }}/{{ userSettings.newerFirst || false }}/{{ userSettings.unreadOnly || false }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="feed-read-all" pathAction="feed/read/{{ currentFeedId }}/{{ readUntilMilliSec }}" on-rf-api-response="{{ onFeedReadAllResponse }}" user="{{ user }}" method="post"></rf-api>
         <rf-api id="user-settings" on-rf-api-response="{{ onUserSettingsResponse }}" user="{{ user }}" method="post"></rf-api>
-        <rf-api id="feed-update-notifier" pathAction="feed-update-notifier" on-rf-api-response="{{ onFeedUpdateNotify }}" user="{{ user }}"></rf-api>
+        <rf-api id="feed-update-notifier" pathAction="feed-update-notifier" on-rf-api-response="{{ onFeedUpdateNotify }}" on-rf-api-complete="{{ onFeedUpdateNotifyComplete }}" user="{{ user }}"></rf-api>
 
         <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
 
@@ -172,6 +172,7 @@
         userObserver: null,
         userSettingsObserver: null,
         updateAvailable: false,
+        lastUpdateNotifyStart: 0,
 
         created: function() {
             this.feeds = [];
@@ -467,8 +468,16 @@
                     this.updateAvailable = true;
                 }
             }
+        },
 
+        onFeedUpdateNotifyComplete: function() {
+            if (this.lastUpdateNotifyStart) {
+                if (new Date().getTime() - this.lastUpdateNotifyStart < 1000) {
+                    this.job('update-notifier', this.onFeedUpdateNotifyComplete);
+                }
+            }
             this.$['feed-update-notifier'].go();
+            this.lastUpdateNotifyStart = new Date().getTime();
         },
 
         updateTags: function() {
