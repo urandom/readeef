@@ -9,7 +9,7 @@ Some screenshots may also be had [on this page](http://www.sugr.org/en/products/
 Quick start
 ===========
 
-readeef is written in Go, and as of September 2014, requires at least version 1.3 of the language. It also uses build tags to specify which database support to be built it. The currently supported databases are PostgreSQL ('postgres' tag), and SQLite ('sqlite3' tag). The later is not recommended, as locking problems will occur. 
+readeef is written in Go, and as of September 2014, requires at least version 1.3 of the language. It also uses build tags to specify which database support is to be built in. The currently supported databases are PostgreSQL ('postgres' tag), and SQLite ('sqlite3' tag). The later is not recommended, as locking problems will occur. 
 Two binaries may be built from the sources. The first is a user administration script, which has to be used to add the first user to the system. It may be built using the following command:
 
 > go build -tags postgres github.com/urandom/readeef/bin/readeef-user-admin
