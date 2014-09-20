@@ -474,6 +474,7 @@
             if (this.lastUpdateNotifyStart) {
                 if (new Date().getTime() - this.lastUpdateNotifyStart < 1000) {
                     this.job('update-notifier', this.onFeedUpdateNotifyComplete);
+                    return;
                 }
             }
             this.$['feed-update-notifier'].go();
