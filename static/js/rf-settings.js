@@ -75,8 +75,32 @@
                     return;
                 }
 
-                this.$['discover-feed'].params = JSON.stringify({"url": this.url});
-                this.$['discover-feed'].go();
+                if (window.google && google.feeds) {
+                    google.feeds.findFeeds(this.url, function(response) {
+                        if (response.status.code == 200) {
+                            var feeds = [], urls = {};
+
+                            for (var i = 0, e; e = response.entries[i]; ++i) {
+                                if (!urls[e.url]) {
+                                    feeds.push({
+                                        Link: e.url,
+                                        Title: this.stripTags(e.title),
+                                        Description: this.stripTags(e.contentSnippet)
+                                    });
+                                    urls[e.url] = true;
+                                }
+                            }
+
+                            feeds[0].selected = true;
+                            this.onDiscoverFeedResponse(null, {response: {Feeds: feeds, skipSelection: true}});
+                        } else {
+                            this.onDiscoverFeedError();
+                        }
+                    }.bind(this));
+                } else {
+                    this.$['discover-feed'].params = JSON.stringify({"url": this.url});
+                    this.$['discover-feed'].go();
+                }
             }
             this.loading = true;
         },
@@ -102,9 +126,11 @@
         onDiscoverFeedResponse: function(event, data) {
             if (data.response) {
                 if (data.response.Feeds) {
-                    data.response.Feeds.forEach(function(f) {
-                        f.selected = true;
-                    });
+                    if (!data.response.skipSelection) {
+                        data.response.Feeds.forEach(function(f) {
+                            f.selected = true;
+                        });
+                    }
                 } else if (data.response.Error) {
                     this.$['feed-url'].error = this.$['feed-url'].getAttribute("data-" + data.response.ErrorType);
                     this.$['feed-url'].invalid = true;
@@ -319,6 +345,13 @@
 
         onDisplayFeedErrors: function(event, detail, sender) {
             sender.parentNode.querySelector('paper-toast').toggle();
+        },
+
+        stripTags: function(html) {
+            var div = document.createElement("div");
+            div.innerHTML = html;
+
+            return div.textContent || "";
         }
     });
 })();

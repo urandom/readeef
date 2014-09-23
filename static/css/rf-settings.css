@@ -8,7 +8,6 @@ core-animated-pages > section[active] {
     border-radius: 3px;
     margin: 16px;
     padding: 24px;
-    max-width: 1024px;
 }
 
 #dropdown {

@@ -88,9 +88,9 @@
                                 <p>Found the following feeds for '{{url}}':</p>
                                 <ul>
                                 <template repeat="{{ feed in discoveredFeeds }}">
-                                    <li>
+                                    <li layout horizontal center>
                                         <paper-checkbox checked="{{ feed.selected }}"></paper-checkbox>
-                                        <a href="{{ feed.Link }}">{{ feed.Title }}: {{ feed.Description}}</a>
+                                        <a href="{{ feed.Link }}">{{ feed.Title }}<br><small>{{ feed.Description}}</small></a>
                                     </li>
                                 </template>
                                 </ul>
