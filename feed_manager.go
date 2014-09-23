@@ -356,7 +356,7 @@ func discoverParserFeeds(link string) ([]Feed, error) {
 				href := attr[:index]
 
 				if u, err := url.Parse(href); err != nil {
-					return []Feed{}, err
+					return []Feed{}, ErrNoFeed
 				} else {
 					if !u.IsAbs() {
 						l, _ := url.Parse(link)

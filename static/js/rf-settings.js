@@ -105,11 +105,20 @@
                     data.response.Feeds.forEach(function(f) {
                         f.selected = true;
                     });
+                } else if (data.response.Error) {
+                    this.$['feed-url'].error = this.$['feed-url'].getAttribute("data-" + data.response.ErrorType);
+                    this.$['feed-url'].invalid = true;
                 }
                 this.discoveredFeeds = data.response.Feeds;
             } else {
                 this.discoveredFeeds = [];
             }
+            this.loading = false;
+        },
+
+        onDiscoverFeedError: function(event) {
+            this.$['feed-url'].error = this.$['feed-url'].getAttribute("data-error-internal");
+            this.$['feed-url'].invalid = true;
             this.loading = false;
         },
 

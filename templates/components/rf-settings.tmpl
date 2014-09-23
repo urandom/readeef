@@ -73,7 +73,7 @@
                                     Enter the address of a feed, or a website that might contain one or more feeds.
                                 </p>
 
-                                <paper-input label="URL" id="feed-url" value="{{ url }}" on-keypress="{{ onAddFeedUrlKeypress }}" floatingLabel tabindex="1"></paper-input>
+                                <paper-input label="URL" id="feed-url" value="{{ url }}" on-keypress="{{ onAddFeedUrlKeypress }}" floatingLabel tabindex="1" data-error-no-feed="No feeds were found" data-error-no-absolute="The value is not a valid absolute URL" data-error-internal="There was an error processing the request"></paper-input>
 
                                 <p>
                                     Alternatively, you may provide an OPML file that contains a list of feeds.
@@ -194,8 +194,8 @@
 
         <rf-api user="{{ user }}" id="remove-feed" method="post" pathAction="feed/remove/{{ removedFeed }}" on-rf-api-response="{{ onRemoveFeedResponse }}"></rf-api>
 
-        <rf-api user="{{ user }}" id="discover-feed" pathAction="feed/discover" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
-        <rf-api user="{{ user }}" id="discover-opml" pathAction="feed/opml" method="post" on-rf-api-response="{{ onDiscoverFeedResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="discover-feed" pathAction="feed/discover" on-rf-api-response="{{ onDiscoverFeedResponse }}" on-rf-api-error="{{ onDiscoverFeedError }}"></rf-api>
+        <rf-api user="{{ user }}" id="discover-opml" pathAction="feed/opml" method="post" on-rf-api-response="{{ onDiscoverFeedResponse }}" on-rf-api-error="{{ onDiscoverFeedError }}"></rf-api>
         <rf-api user="{{ user }}" id="add-feed" method="post" pathAction="feed/add" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="feed-tags" method="post" pathAction="feed/tags/{{ taggedFeed }}" on-rf-api-response="{{ onFeedTagsResponse }}"></rf-api>
         <rf-api id="password-change" pathAction="user-settings/password" on-rf-api-response="{{ onPasswordChangeResponse }}" user="{{ user }}" method="post"></rf-api>

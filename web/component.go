@@ -3,8 +3,10 @@ package web
 import (
 	"net/http"
 
+	"github.com/urandom/readeef"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
+	"github.com/urandom/webfw/middleware"
 	"github.com/urandom/webfw/renderer"
 )
 
@@ -23,8 +25,19 @@ func NewComponent(dir, apiPattern string) Component {
 }
 
 func (con Component) Handler(c context.Context) http.HandlerFunc {
+	dispatcher := webfw.GetDispatcher(c)
+	mw, i18nFound := dispatcher.Middleware("I18N")
+
 	rnd := renderer.NewRenderer(con.dir, "raw.tmpl")
 	rnd.Delims("{%", "%}")
+
+	if i18nFound {
+		if i18n, ok := mw.(middleware.I18N); ok {
+			rnd.Funcs(i18n.TemplateFuncMap())
+		}
+	} else {
+		readeef.Debug.Println("I18N middleware not found")
+	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		params := webfw.GetParams(c, r)

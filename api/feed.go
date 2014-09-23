@@ -95,10 +95,9 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			link := r.FormValue("url")
 			var u *url.URL
 
-			/* TODO: non-fatal error */
 			if u, err = url.Parse(link); err != nil {
+				err = readeef.ErrNoAbsolute
 				break
-				/* TODO: non-fatal error */
 			} else if !u.IsAbs() {
 				u.Scheme = "http"
 				if u.Host == "" {
@@ -461,6 +460,17 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			resp["Articles"] = articles
+		}
+
+		switch err {
+		case readeef.ErrNoAbsolute:
+			resp["Error"] = true
+			resp["ErrorType"] = "error-no-absolute"
+			err = nil
+		case readeef.ErrNoFeed:
+			resp["Error"] = true
+			resp["ErrorType"] = "error-no-feed"
+			err = nil
 		}
 
 		var b []byte
