@@ -1,0 +1,120 @@
+core-list {
+    padding-top: 8px;
+    overflow: hidden;
+}
+
+core-animated-pages > section[active] {
+    position: relative;
+}
+
+.card {
+    background-color: #fff;
+    box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.16);
+    border-radius: 3px;
+    margin: 0 8px 8px;
+    padding: 8px;
+}
+.article {
+    height: {{ itemHeight }}px;
+    cursor: pointer;
+}
+
+.article.read {
+    opacity: 0.6;
+    color: #555;
+}
+
+.article .title-wrapper {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.title {
+    font-size: 16px;
+    line-height: 24px;
+}
+
+.article-detail .title {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.article-detail .title-wrapper a {
+    text-decoration: none;
+}
+
+.short-description {
+    font-size: 12px;
+    line-height: 24px;
+    padding-left: 1em;
+    font-weight: 200;
+}
+
+.publish-date {
+    font-size: 14px;
+    line-height: 24px;
+    padding-left: 0.7em;
+}
+
+.feed-origin {
+    font-size: 10px;
+    line-height: 24px;
+    font-weight: 200;
+    padding-right: 1em;
+    width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.article-content {
+    padding: 16px 94px;
+}
+core-animated-pages:not(.wide) .article-content {
+    padding: 8px;
+}
+
+@media(min-width: 1350px) {
+    core-animated-pages .article-content {
+        width: 800px;
+        margin: 0 auto;
+    }
+
+    core-animated-pages .article-detail .title-wrapper {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+}
+
+
+.article-link {
+    display: block;
+    padding-top: 16px;
+}
+
+.article-description {
+    font-size: 130%;
+}
+
+.article-description img, 
+.article-description object, 
+.article-description iframe {
+    max-width: 100%;
+    height: auto;
+}
+
+.favorite-button {
+    margin-top: -2px;
+}
+
+.favorite-button /deep/ #icon {
+    margin: 5px;
+    width: 18px;
+    height: 18px;
+}
+
+core-animated-pages:not(.wide) .article .publish-date,
+core-animated-pages:not(.wide) .article .feed-origin {
+    display: none;
+}

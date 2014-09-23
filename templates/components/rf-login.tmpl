@@ -6,37 +6,8 @@
 
 <polymer-element name="rf-login" attributes="wide user invalid">
     <template bind="{{ wide as wide }}">
-        <style>
-            .overlay {
-                background: #eee;
-            }
-            .card {
-                margin: 0 auto;
-                position: relative;
-                background-color: white;
-                padding: 20px 16px;
-                box-sizing: border-box;
-                -moz-box-sizing: border-box;
-            }
-            .wide .card {
-                max-width: 512px;
-                max-height: 512px;
-                border-radius: 2px;
-            }
-            .card-container {
-                height: 100%;
-                background: transparent;
-            }
-            .card-container:not(.wide) {
-                background: white;
-            }
-            .card-container:not(.wide) .card > .paper-shadow {
-                display: none;
-            }
-            #submit {
-                background: #259b24;
-            }
-        </style>
+        <link href="/css/rf-login.css" rel="stylesheet">
+
         <div class="overlay" fit cross-fade></div>
 
         <div class="main" fit layout vertical center slide-up-offscreen>
@@ -57,36 +28,7 @@
             </div>
         </div>
     </template>
-    <script>
-(function() {
-    "use strict";
 
-    Polymer('rf-login', {
-        invalid: false,
-
-        onKeypress: function(event) {
-            var code = event.keyCode || event.charCode, key = event.keyIdentifier;
-
-            if (key == 'Enter' || code == 13) {
-                if (event.target === this.$.login) { 
-                    this.$.password.focusAction();
-                } else if (event.target === this.$.password) {
-                    this.$.submit.asyncFire('tap');
-                }
-            }
-        },
-
-        onLogin: function() {
-            this.user = {
-                Login: this.$.login.value,
-                MD5API: CryptoJS.MD5(this.$.login.value + ":" + this.$.password.value).toString(CryptoJS.enc.Base64)
-            };
-
-            this.$.login.value = "";
-            this.$.password.value = "";
-        }
-    });
-})();
-    </script>
+    <script src="/js/rf-login.js"></script>
 </polymer-element>
 {% end %}

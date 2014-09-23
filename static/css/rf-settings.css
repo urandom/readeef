@@ -1,0 +1,86 @@
+core-animated-pages > section[active] {
+    position: relative;
+}
+
+.card {
+    background-color: #fff;
+    box-shadow: 0 2px 10px 0 rgba(0, 0, 0, 0.16);
+    border-radius: 3px;
+    margin: 16px;
+    padding: 24px;
+    max-width: 1024px;
+}
+
+#dropdown {
+    background: transparent;
+    margin-left: 24px;
+}
+
+ul {
+    padding: 0;
+}
+
+li {
+    padding: 8px;
+    list-style: none;
+}
+li paper-checkbox {
+    margin-right: 8px;
+}
+
+[name="feeds"] li span {
+    line-height: 40px;
+}
+
+.feed-favicon {
+    margin-right: 5px;
+}
+
+.theme-bubbles {
+    margin: 8px 0;
+}
+
+.theme {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    border-width: 2px;
+    border-color: transparent;
+}
+
+.theme.blue {
+    background: {{ g.color.blue.primary }};
+}
+.theme.lightBlue {
+    background: {{ g.color.lightBlue.primary }};
+}
+.theme.indigo {
+    background: {{ g.color.indigo.primary }};
+}
+.theme.green {
+    background: {{ g.color.green.primary }};
+}
+.theme.lightGreen {
+    background: {{ g.color.lightGreen.primary }};
+}
+.theme.lime {
+    background: {{ g.color.lime.primary }};
+}
+.theme.red {
+    background: {{ g.color.red.primary }};
+}
+.theme.pink {
+    background: {{ g.color.pink.primary }};
+}
+.theme.purple {
+    background: {{ g.color.purple.primary }};
+}
+.theme.amber {
+    background: {{ g.color.amber.primary }};
+}
+.theme.deepOrange {
+    background: {{ g.color.deepOrange.primary }};
+}
+.theme.grey {
+    background: {{ g.color.grey.primary }};
+}
