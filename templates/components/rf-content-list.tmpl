@@ -342,6 +342,23 @@
             }
         },
 
+        articlesChanged: function(oldValue, newValue) {
+            if (newValue && this.article && newValue.indexOf(this.article) == -1) {
+                var found = false;
+                for (var i = 0, a; a = newValue[i]; ++i) {
+                    if (a.Id == this.article.Id) {
+                        this.article = a;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    this.article = null;
+                }
+            }
+        },
+
         onArticleActivate: function(event, detail) {
             this.article = detail.data;
         },
