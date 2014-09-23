@@ -1,7 +1,6 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
-<link rel="import" href="/dist/core-animated-pages/transitions/slide-from-right.html">
 
 <link rel="import" href="/dist/paper-button/paper-button.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
@@ -33,7 +32,7 @@
             <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}" transitions="hero-transition">
 
                 <section name="general" layout vertical center>
-                    <div class="container" slide-from-left>
+                    <div class="container">
                         <div class="card" hero-id="card" hero layout vertical>
                             <p>
                                 Personalize your feed reader
@@ -66,14 +65,14 @@
                 </section>
 
                 <section name="add-feed" layout vertical center>
-                    <div class="container" slide-from-left>
+                    <div class="container">
                         <div class="card" hero-id="card" hero layout vertical>
                             <template if="{{ !discoveredFeeds }}">
                                 <p>
                                     Enter the address of a feed, or a website that might contain one or more feeds.
                                 </p>
 
-                                <paper-input label="URL" id="feed-url" value="{{ url }}" on-keypress="{{ onAddFeedUrlKeypress }}" floatingLabel tabindex="1" data-error-no-feed="No feeds were found" data-error-no-absolute="The value is not a valid absolute URL" data-error-internal="There was an error processing the request"></paper-input>
+                                <paper-input label="URL" id="feed-url" value="{{ url }}" on-keypress="{{ onAddFeedUrlKeypress }}" floatingLabel tabindex="1" data-error-no-feed="{% __ "No feeds were found" .base.lang %}" data-error-no-absolute="{% __ "The value is not a valid absolute URL" .base.lang %}" data-error-internal="{% __ "There was an error processing the request" .base.lang %}"></paper-input>
 
                                 <p>
                                     Alternatively, you may provide an OPML file that contains a list of feeds.
@@ -108,7 +107,7 @@
                 </section>
 
                 <section name="feeds" layout vertical center>
-                    <div class="container" slide-from-left>
+                    <div class="container">
                         <div class="card" hero-id="card" hero layout vertical>
                             <ul cross-fade>
                                 <template repeat="{{ feed in feeds }}">
@@ -146,7 +145,7 @@
 
                 <template if="{{ user.Admin }}">
                     <section name="admin" layout vertical center>
-                        <div class="container" slide-from-left>
+                        <div class="container">
                             <div class="card" hero-id="card" hero layout vertical>
                                 <template if="{{ users.length }}">
                                 <ul cross-fade>

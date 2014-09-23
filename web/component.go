@@ -12,23 +12,22 @@ import (
 
 type Component struct {
 	webfw.BaseController
-	dir        string
+	dispatcher *webfw.Dispatcher
 	apiPattern string
 }
 
-func NewComponent(dir, apiPattern string) Component {
+func NewComponent(dispatcher *webfw.Dispatcher, apiPattern string) Component {
 	return Component{
 		BaseController: webfw.NewBaseController("/component/:name", webfw.MethodAll, ""),
-		dir:            dir,
+		dispatcher:     dispatcher,
 		apiPattern:     apiPattern,
 	}
 }
 
 func (con Component) Handler(c context.Context) http.HandlerFunc {
-	dispatcher := webfw.GetDispatcher(c)
-	mw, i18nFound := dispatcher.Middleware("I18N")
+	mw, i18nFound := con.dispatcher.Middleware("I18N")
 
-	rnd := renderer.NewRenderer(con.dir, "raw.tmpl")
+	rnd := renderer.NewRenderer(con.dispatcher.Config.Renderer.Dir, "raw.tmpl")
 	rnd.Delims("{%", "%}")
 
 	if i18nFound {

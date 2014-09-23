@@ -7,13 +7,13 @@ import (
 )
 
 func RegisterControllers(dispatcher *webfw.Dispatcher, apiPattern string) {
-	dispatcher.Handle(NewApp())
-	dispatcher.Handle(NewComponent(dispatcher.Config.Renderer.Dir, apiPattern))
-
 	dispatcher.Renderer = renderer.NewRenderer(dispatcher.Config.Renderer.Dir,
 		dispatcher.Config.Renderer.Base)
 
 	dispatcher.Renderer.Delims("{%", "%}")
 
 	middleware.InitializeDefault(dispatcher)
+
+	dispatcher.Handle(NewApp())
+	dispatcher.Handle(NewComponent(dispatcher, apiPattern))
 }

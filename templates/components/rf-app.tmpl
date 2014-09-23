@@ -6,7 +6,6 @@
 
 <link rel="import" href="/dist/core-collapse/core-collapse.html">
 <link rel="import" href="/dist/core-localstorage/core-localstorage.html">
-<link rel="import" href="/dist/core-overlay/core-overlay.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
 <link rel="import" href="/dist/core-animated-pages/transitions/slide-up.html">
 <link rel="import" href="/dist/core-animated-pages/transitions/scale-up.html">
@@ -27,9 +26,6 @@
         <link href="/css/rf-app.css" rel="stylesheet">
 
         <core-animated-pages selected="{{ selected }}" transitions="cross-fade cross-fade-delayed scale-up slide-up slide-up-offscreen slide-down tile-cascade hero-transition" fit class="{{ {wide: wide} | tokenList }}">
-            <core-overlay name="loading" opened?="{{ selected == 'loading' }}" style="background-color: #e2e2e2;" transition="core-transition-top">
-            </core-overlay>
-
             <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feed="{{ currentFeed }}" article="{{ currentArticle }}" display="{{ display }}" updateAvailable="{{ updateAvailable }}">
                 <div fit class="drawer-title bottom">Feeds</div>
 
