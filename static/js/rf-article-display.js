@@ -2,8 +2,24 @@
     "use strict";
 
     Polymer('rf-article-display', {
+        swiping: false,
+
+        hasTransform: true,
+        hasWillChange: true,
+
         observe: {
           'articles template': 'initialize'
+        },
+
+        eventDelegates: {
+            trackstart: 'trackStart',
+            trackx: 'trackx',
+            trackend: 'trackEnd'
+        },
+
+        created: function() {
+            this.hasTransform = 'transform' in this.style;
+            this.hasWillChange = 'willChange' in this.style;
         },
 
         attached: function() {
@@ -182,6 +198,88 @@
         openCurrentArticle: function() {
             if (this.templates[1] && this.templates[1]._element) {
                 this.templates[1]._element.querySelector('.article-link').openInBackground();
+            }
+        },
+
+        swipingChanged: function() {
+            if (this.swiping) {
+                this.$.viewport.setAttribute('swipe', '');
+            } else {
+                this.$.viewport.removeAttribute('swipe');
+            }
+        },
+
+        trackStart: function(event) {
+            if (this.wide) {
+                return;
+            }
+
+            this.swiping = true;
+
+            this.articleWidth = this.templates[1]._element.offsetWidth;
+
+            event.preventTap();
+        },
+
+        trackEnd: function(event) {
+            if (this.swiping) {
+                this.swiping = false;
+                this.moveArticles(null);
+
+                if (Math.abs(event.dx) > this.articleWidth / 2) {
+                    if (event.xDirection > 0) {
+                        this.fire('core-signal', {name: 'rf-previous-article'});
+                    } else {
+                        this.fire('core-signal', {name: 'rf-next-article'});
+                    }
+                }
+            }
+        },
+
+        trackx: function(event) {
+            if (this.swiping) {
+                if (!this._physicalArticles[1 - event.xDirection].Id) {
+                    return;
+                }
+
+                this.moveArticles(event.dx);
+            }
+        },
+
+        transformForTranslateX: function (translateX) {
+            if (translateX === null) {
+                return '';
+            }
+
+            return this.hasWillChange ? 'translateX(' + translateX + 'px)' : 'translate3d(' + translateX + 'px, 0, 0)';
+        },
+
+        moveArticles: function(translateX) {
+            var prop = this.hasTransform ? 'transform' : 'webkitTransform',
+                moveIndex = 0, resetIndex = 2, alterTranslateX = translateX - this.articleWidth;
+
+            this.templates[1]._element.style[prop] = this.transformForTranslateX(translateX);
+
+            if (translateX < 0) {
+                moveIndex = 2;
+                resetIndex = 0;
+                alterTranslateX = this.articleWidth + translateX;
+            }
+
+            if (translateX === null) {
+                alterTranslateX = null;
+            }
+
+            this.templates[moveIndex]._element.style[prop] = this.transformForTranslateX(alterTranslateX);
+            this.templates[resetIndex]._element.style[prop] = '';
+
+            this.templates[resetIndex]._element.removeAttribute('swipe');
+            if (translateX === null) {
+                this.templates[moveIndex]._element.removeAttribute('swipe');
+                this.templates[1]._element.removeAttribute('swipe');
+            } else {
+                this.templates[moveIndex]._element.setAttribute('swipe', '');
+                this.templates[1]._element.setAttribute('swipe', '');
             }
         }
     });

@@ -71,11 +71,12 @@
     display: none;
 }
 
-.article-display-viewport[animate] {
+.article-display-viewport[animate], .article-display-viewport[swipe] {
     overflow: hidden;
 }
 
-.article-display-viewport[animate] > * {
+.article-display-viewport[animate] > *,
+.article-display-viewport[swipe] > * {
     width: 100%;
 }
 
@@ -85,16 +86,18 @@
     transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.article-display-viewport:not(.wide) .article-detail {
+.article-display-viewport:not(.wide) .article-detail,
+.article-detail[swipe] {
     -webkit-transition-duration: 0;
     transition-duration: 0;
 }
 
-.article-detail.selected, .article-detail[animate] {
+.article-detail.selected, .article-detail[animate], .article-detail[swipe] {
     display: block;
 }
 
-.article-detail[animate]:not(.selected) {
+.article-detail[animate]:not(.selected),
+.article-detail[swipe]:not(.selected) {
     position: absolute;
     top: 0;
 }

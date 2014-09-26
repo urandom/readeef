@@ -5,7 +5,7 @@
     <template>
         <link rel="stylesheet" href="/css/rf-article-display.css">
         <link rel="stylesheet" href="/css/rf-content-list.css">
-        <div id="viewport" class="article-display-viewport {{ {wide: wide} | tokenList }}"></div>
+        <div id="viewport" class="article-display-viewport {{ {wide: wide} | tokenList }}" touch-action="pan-y"></div>
         <content></content>
     </template>
     <script src="/js/rf-article-display.js"></script>
