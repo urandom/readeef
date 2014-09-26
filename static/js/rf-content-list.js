@@ -140,10 +140,6 @@
             this.article = detail.data;
         },
 
-        onPagesTransitionEnd: function(event) {
-            document.querySelector('rf-app').$.scaffolding.$['content-panel'].scroller.scrollTop = 0;
-        },
-
         onFavoriteToggle: function(event) {
             event.stopPropagation();
             event.preventDefault();

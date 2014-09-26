@@ -15,7 +15,7 @@
     <template bind="{{ wide as wide }}">
         <link href="/css/rf-content-list.css" rel="stylesheet">
 
-        <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="list" transitions="{{ wide ? 'slide-down' : ''}}" on-core-animated-pages-transition-end="{{ onPagesTransitionEnd }}" on-keypress="{{ onContentKeypress }}">
+        <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="list" transitions="{{ wide ? 'slide-down' : ''}}" on-keypress="{{ onContentKeypress }}">
 
             <section name="list">
                 <core-list data="{{ articles }}" height="{{ itemHeight }}" id="articles-list" on-core-activate="{{ onArticleActivate }}">
