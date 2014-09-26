@@ -99,37 +99,6 @@
                     this.listPosition = scroller.scrollTop;
                 }
 
-                var description = this.$.pages.querySelector('.article-description'),
-                    imageStyler = function() {
-                        if (image.width < 300) {
-                            image.style.float = "right";
-                            if (image.parentNode) {
-                                image.parentNode.style.clear = "both";
-                            } else {
-                                description.style.clear = "both";
-                            }
-                        }
-                    }, image;
-
-                description.innerHTML = newValue.Description;
-                image = description.querySelector('img');
-
-                if (image) {
-                    if (image.complete) {
-                        imageStyler();
-                    } else {
-                        image.addEventListener('load', imageStyler);
-                    }
-                }
-
-                Array.prototype.forEach.call(
-                    description.querySelectorAll('img'),
-                    function(element) {
-                        element.style.width = 'auto';
-                        element.style.height = 'auto';
-                    }
-                );
-
                 this.$.pages.selected = 'detail';
 
                 if (!newValue.Read) {

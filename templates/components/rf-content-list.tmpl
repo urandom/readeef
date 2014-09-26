@@ -2,32 +2,34 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-list/core-list.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
+<link rel="import" href="/dist/core-animated-pages/transitions/slide-down.html">
 <link rel="import" href="/dist/core-signals/core-signals.html">
 
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 
 <link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-button-link">
+<link rel="import" href="/component/rf-article-display">
 
 <polymer-element name="rf-content-list" attributes="wide user feed feeds article">
     <template bind="{{ wide as wide }}">
         <link href="/css/rf-content-list.css" rel="stylesheet">
 
-        <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="list" transitions="hero-transition" on-core-animated-pages-transition-end="{{ onPagesTransitionEnd }}" on-keypress="{{ onContentKeypress }}">
+        <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="list" transitions="{{ wide ? 'slide-down' : ''}}" on-core-animated-pages-transition-end="{{ onPagesTransitionEnd }}" on-keypress="{{ onContentKeypress }}">
 
             <section name="list">
                 <core-list data="{{ articles }}" height="{{ itemHeight }}" id="articles-list" on-core-activate="{{ onArticleActivate }}">
                     <template>
                         <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}">
-                            <div class="card" layout vertical hero-id="article-card-{{ Id }}" hero?="{{ selected }}">
+                            <div class="card" layout vertical slide-down?="{{ selected }}">
                                 <div layout horizontal>
                                     <paper-icon-button class="favorite-button" icon="{{ {'bookmark-outline': !Favorite, bookmark: Favorite} | tokenList }}" on-tap="{{ onFavoriteToggle }}" data-article-id="{{ Id }}" data-feed-id="{{ FeedId }}"></paper-icon-button>
-                                    <span class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}" hero-id="article-feed-origin-{{ Id }}" hero>{{ FeedOrigin }}</span>
+                                    <span class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</span>
                                     <span flex class="title-wrapper">
-                                        <span class="title" title="{{ Title }}" hero-id="article-title-{{ Id }}" hero>{{ Title }}</span>
+                                        <span class="title" title="{{ Title }}">{{ Title }}</span>
                                         <span class="short-description">{{ ShortDescription }}</span>
                                     </span>
-                                    <span class="publish-date" hero-id="article-publish-date-{{ Id }}" hero>{{ RelativeDate }}</span>
+                                    <span class="publish-date">{{ RelativeDate }}</span>
                                 </div>
                             </div>
                         </div>
@@ -36,29 +38,33 @@
             </section>
 
             <section name="detail" hidden?="{{ !article }}">
-                <div class="article-detail">
-                    <div class="card" layout vertical hero-id="article-card-{{ article.Id }}" hero>
-                        <div layout horizontal>
-                            <paper-icon-button class="favorite-button" icon="{{ {'bookmark-outline': !article.Favorite, bookmark: article.Favorite} | tokenList }}" on-tap="{{ onFavoriteArticleToggle }}" data-article-id="{{ Id }}"></paper-icon-button>
-                            <span class="feed-origin" title="{{ article.FeedOrigin }}" hidden?="{{ !wide || !article.FeedOrigin }}" style="float: left" hero-id="article-feed-origin-{{ article.Id }}" hero>{{ article.FeedOrigin }}</span>
-                            <span flex class="title-wrapper" layout vertical>
-                                <a href="{{ article.Link }}" target="feed-article">
-                                    <span class="title" title="{{ article.Title }}" hero-id="article-title-{{ article.Id }}" hero>{{ article.Title }}</span>
-                                </a>
-                                <span layout horizontal hidden?="{{ wide }}">
-                                    <span class="feed-origin" title="{{ article.FeedOrigin }}" hidden?="{{ !article.FeedOrigin }}" style="float: left" hero-id="article-feed-origin-{{ article.Id }}" hero>{{ article.FeedOrigin }}</span>
-                                    <span class="publish-date" hero-id="article-publish-date-{{ article.Id }}" hero>{{ article.RelativeDate }}</span>
-                                </span>
-                            </span>
-                            <span class="publish-date" hidden?="{{ !wide }}" hero-id="article-publish-date-{{ article.Id }}" hero>{{article.RelativeDate}}</span>
-                        </div>
-                        <div class="article-content">
-                            <div class="article-description"></div>
+                <rf-article-display id="article-display" articles="{{ articles }}" article="{{ article }}" wide="{{ wide }}">
+                    <template>
+                        <div class="article-detail">
+                            <div class="card" layout vertical  slide-down?="{{ selected }}">
+                                <div layout horizontal class="article-header">
+                                    <paper-icon-button class="favorite-button" icon="{{ {'bookmark-outline': !Favorite, bookmark: Favorite} | tokenList }}" on-tap="{{ onFavoriteArticleToggle }}" data-article-id="{{ Id }}"></paper-icon-button>
+                                    <span class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}" style="float: left">{{ FeedOrigin }}</span>
+                                    <span flex class="title-wrapper" layout vertical>
+                                        <a href="{{ Link }}" target="feed-article">
+                                            <span class="title" title="{{ Title }}">{{ Title }}</span>
+                                        </a>
+                                        <span layout horizontal class="article-narrow-header-details">
+                                            <span class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}" style="float: left">{{ FeedOrigin }}</span>
+                                            <span class="publish-date">{{ RelativeDate }}</span>
+                                        </span>
+                                    </span>
+                                    <span class="publish-date">{{RelativeDate}}</span>
+                                </div>
+                                <div class="article-content">
+                                    <div class="article-description"></div>
 
-                            <rf-button-link href="{{ article.Link }}" target="feed-article" class="article-link" label="View the article"></rf-button-link>
+                                    <rf-button-link href="{{ Link }}" target="feed-article" class="article-link" label="View the article"></rf-button-link>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </template>
+                </rf-article-display>
             </section>
 
         </core-animated-pages>

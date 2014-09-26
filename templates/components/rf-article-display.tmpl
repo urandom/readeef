@@ -1,0 +1,13 @@
+{% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+
+<polymer-element name="rf-article-display" attributes="articles article wide">
+    <template>
+        <link rel="stylesheet" href="/css/rf-article-display.css">
+        <link rel="stylesheet" href="/css/rf-content-list.css">
+        <div id="viewport" class="article-display-viewport {{ {wide: wide} | tokenList }}"></div>
+        <content></content>
+    </template>
+    <script src="/js/rf-article-display.js"></script>
+</polymer-element>
+{% end %}

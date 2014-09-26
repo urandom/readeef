@@ -1,0 +1,68 @@
+:host {
+  display: block;
+  overflow: auto;
+}
+
+.article-display-viewport > * {
+  overflow: hidden;
+  /* display: inline-block; */
+}
+
+.article-detail .title {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.article-detail .title-wrapper a {
+    text-decoration: none;
+}
+
+.article-content {
+    padding: 16px 94px;
+}
+.article-display-viewport:not(.wide) .article-content {
+    padding: 8px;
+}
+
+.article-description {
+    font-size: 130%;
+}
+
+.article-link {
+    display: block;
+    padding-top: 16px;
+}
+
+@media(min-width: 1350px) {
+    core-animated-pages .article-content {
+        width: 800px;
+        margin: 0 auto;
+    }
+
+    core-animated-pages .article-detail .title-wrapper {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+}
+
+.article-description img {
+    max-width: 100%;
+    height: auto;
+}
+
+.article-display-viewport:not(.wide) .article-description object,
+.article-display-viewport:not(.wide) .article-description iframe {
+    max-width: 100%;
+    width: auto;
+    height: auto;
+}
+
+.article-display-viewport:not(.wide) .article-header > .publish-date,
+.article-display-viewport:not(.wide) .article-header > .feed-origin {
+    display: none;
+}
+
+.article-display-viewport.wide .article-narrow-header-details > .publish-date,
+.article-display-viewport.wide .article-narrow-header-details > .feed-origin {
+    display: none;
+}
