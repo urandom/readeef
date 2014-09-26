@@ -1,5 +1,4 @@
 * Parallelize feed discovery and adding
-* Sliding between articles
 * More tests
 * I18N
 * Non-fatal API errors
