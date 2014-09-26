@@ -79,7 +79,6 @@
                 this.updateItem(virtual - 1, 0);
 
                 this.templates.unshift(this.templates.pop());
-                this.templates[0].model = this._physicalArticles[0];
                 this.cleanTemplateElement(this.templates[0]);
             } else if (physical == 2) {
                 this._physicalArticles.shift();
@@ -87,25 +86,26 @@
                 this.updateItem(virtual + 1, 2);
 
                 this.templates.push(this.templates.shift());
-                this.templates[2].model = this._physicalArticles[2];
                 this.cleanTemplateElement(this.templates[2]);
             } else if (physical == -1) {
                 for (var i = virtual - middle, j = 0; j < 3; ++i, ++j) {
                     this.updateItem(i, j);
-                    this.templates[j].model = this._physicalArticles[j];
                     this.cleanTemplateElement(this.templates[j]);
                 }
             }
 
             for (var i = 0, t; t = this.templates[i]; ++i) {
                 if (!t._element) {
+                    var model = this._physicalArticles[i];
+
                     if (this.$.viewport.children[i]) {
-                        this.$.viewport.insertBefore(t.createInstance(t.model), this.$.viewport.children[i]);
+                        this.$.viewport.insertBefore(t.createInstance(model), this.$.viewport.children[i]);
                     } else {
-                        this.$.viewport.appendChild(t.createInstance(t.model));
+                        this.$.viewport.appendChild(t.createInstance(model));
                     }
+
                     t._element = this.$.viewport.children[i];
-                    this.initializeElement(t._element, t.model);
+                    this.initializeElement(t._element, model);
                 }
 
                 t._element.style.display = i == middle ? '' : 'none';
@@ -122,6 +122,10 @@
         },
 
         initializeElement: function(item, model) {
+            if (!model.Description) {
+                return;
+            }
+
             var description = item.querySelector('.article-description'),
                 imageStyler = function() {
                     if (image.width < 300) {
