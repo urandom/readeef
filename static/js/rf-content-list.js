@@ -187,7 +187,7 @@
                 this.article = null;
             } else if (key == "U+0056" || code == 118 || code == 86) { // v
                 if (this.article) {
-                    this.$.pages.querySelector('.article-link').openInBackground();
+                    this.$['article-display'].openCurrentArticle();
                 }
             } else if (key == "U+0052" || code == 114 || code == 82) { // r
                 this.fire('core-signal', {name: "rf-feed-refresh"});

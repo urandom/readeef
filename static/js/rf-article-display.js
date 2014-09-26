@@ -148,6 +148,12 @@
                     element.style.height = 'auto';
                 }
             );
+        },
+
+        openCurrentArticle: function() {
+            if (this.templates[1] && this.templates[1]._element) {
+                this.templates[1]._element.querySelector('.article-link').openInBackground();
+            }
         }
     });
 })();

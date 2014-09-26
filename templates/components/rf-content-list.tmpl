@@ -46,7 +46,7 @@
                                     <paper-icon-button class="favorite-button" icon="{{ {'bookmark-outline': !Favorite, bookmark: Favorite} | tokenList }}" on-tap="{{ onFavoriteArticleToggle }}" data-article-id="{{ Id }}"></paper-icon-button>
                                     <span class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}" style="float: left">{{ FeedOrigin }}</span>
                                     <span flex class="title-wrapper" layout vertical>
-                                        <a href="{{ Link }}" target="feed-article">
+                                        <a href="{{ Link }}" target="feed-article-{{ Id }}">
                                             <span class="title" title="{{ Title }}">{{ Title }}</span>
                                         </a>
                                         <span layout horizontal class="article-narrow-header-details">
@@ -59,7 +59,7 @@
                                 <div class="article-content">
                                     <div class="article-description"></div>
 
-                                    <rf-button-link href="{{ Link }}" target="feed-article" class="article-link" label="View the article"></rf-button-link>
+                                    <rf-button-link href="{{ Link }}" target="feed-article-{{ Id }}" class="article-link" label="View the article"></rf-button-link>
                                 </div>
                             </div>
                         </div>
