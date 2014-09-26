@@ -19,6 +19,15 @@
                 this.template.parentNode.insertBefore(template, this.template);
                 this.templates[index] = template;
             }.bind(this));
+
+            this.addEventListener('transitionend', function() {
+                this.$.viewport.removeAttribute('animate');
+                for (var i = 0, t; t = this.templates[i]; ++i) {
+                    if (t._element) {
+                        t._element.removeAttribute('animate');
+                    }
+                }
+            }.bind(this), false);
         },
 
         initialize: function() {
@@ -95,8 +104,14 @@
                 }
             }
 
+            Platform.flush();
+
+            this.$.viewport.setAttribute('animate', '');
+
             for (var i = 0, t; t = this.templates[i]; ++i) {
-                if (!t._element) {
+                if (t._element) {
+                    t._element.setAttribute('animate', '');
+                } else {
                     var model = this._physicalArticles[i];
 
                     if (this.$.viewport.children[i]) {
@@ -108,8 +123,17 @@
                     t._element = this.$.viewport.children[i];
                     this.initializeElement(t._element, model);
                 }
+            }
 
-                t._element.style.display = i == middle ? '' : 'none';
+            // Force layout
+            this.templates[0]._element.offsetTop;
+
+            for (var i = 0, t; t = this.templates[i]; ++i) {
+                if (i == middle) {
+                    t._element.classList.add('selected');
+                } else {
+                    t._element.classList.remove('selected');
+                }
             }
         },
 
