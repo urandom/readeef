@@ -31,6 +31,7 @@
             for (var i = 0; i < 3; ++i) {
                 this._physicalArticles[i] = {};
                 this.updateItem(i, i);
+                this.cleanTemplateElement(this.templates[i]);
             }
         },
 
