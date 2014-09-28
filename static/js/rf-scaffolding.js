@@ -16,6 +16,10 @@
             });
         },
 
+        articleChanged: function() {
+            this.$['drawer-panel'].disableSwipe = !!this.article;
+        },
+
         onRefresh: function() {
             this.fire('core-signal', {name: "rf-feed-refresh"});
         },

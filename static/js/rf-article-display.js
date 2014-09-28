@@ -215,6 +215,7 @@
             }
 
             this.swiping = true;
+            this.swipeStart = new Date().getTime();
 
             this.articleWidth = this.templates[1]._element.offsetWidth;
 
@@ -226,8 +227,11 @@
                 this.swiping = false;
                 this.moveArticles(null);
 
-                if (Math.abs(event.dx) > this.articleWidth / 2) {
-                    if (event.xDirection > 0) {
+                var absDx = Math.abs(event.dx),
+                    speed = absDx / (new Date().getTime() - this.swipeStart);
+
+                if ((absDx > this.articleWidth / 2) || (speed > 0.5 && absDx > 40)) {
+                    if (event.dx > 0) {
                         this.fire('core-signal', {name: 'rf-previous-article'});
                     } else {
                         this.fire('core-signal', {name: 'rf-next-article'});
@@ -238,7 +242,8 @@
 
         trackx: function(event) {
             if (this.swiping) {
-                if (!this._physicalArticles[1 - event.xDirection].Id) {
+                if ((!this._physicalArticles[2].Id && event.dx < 0)
+                    || (!this._physicalArticles[0].Id && event.dx > 0)) {
                     return;
                 }
 
@@ -258,8 +263,6 @@
             var prop = this.hasTransform ? 'transform' : 'webkitTransform',
                 moveIndex = 0, resetIndex = 2, alterTranslateX = translateX - this.articleWidth;
 
-            this.templates[1]._element.style[prop] = this.transformForTranslateX(translateX);
-
             if (translateX < 0) {
                 moveIndex = 2;
                 resetIndex = 0;
@@ -270,9 +273,6 @@
                 alterTranslateX = null;
             }
 
-            this.templates[moveIndex]._element.style[prop] = this.transformForTranslateX(alterTranslateX);
-            this.templates[resetIndex]._element.style[prop] = '';
-
             this.templates[resetIndex]._element.removeAttribute('swipe');
             if (translateX === null) {
                 this.templates[moveIndex]._element.removeAttribute('swipe');
@@ -281,6 +281,10 @@
                 this.templates[moveIndex]._element.setAttribute('swipe', '');
                 this.templates[1]._element.setAttribute('swipe', '');
             }
+
+            this.templates[moveIndex]._element.style[prop] = this.transformForTranslateX(alterTranslateX);
+            this.templates[1]._element.style[prop] = this.transformForTranslateX(translateX);
+            this.templates[resetIndex]._element.style[prop] = '';
         }
     });
 })();
