@@ -131,9 +131,9 @@
                     var model = this._physicalArticles[i];
 
                     if (this.$.viewport.children[i]) {
-                        this.$.viewport.insertBefore(t.createInstance(model), this.$.viewport.children[i]);
+                        this.$.viewport.insertBefore(t.createInstance(model, new PolymerExpressions()), this.$.viewport.children[i]);
                     } else {
-                        this.$.viewport.appendChild(t.createInstance(model));
+                        this.$.viewport.appendChild(t.createInstance(model, new PolymerExpressions()));
                     }
 
                     t._element = this.$.viewport.children[i];
