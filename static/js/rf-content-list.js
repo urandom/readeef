@@ -191,6 +191,10 @@
                 if (this.article) {
                     this.$['article-display'].openCurrentArticle();
                 }
+            } else if (key == "U+004D" || code == 109 || code == 77) { // m
+                if (this.article) {
+                    this.onReadArticleToggle();
+                }
             } else if (key == "U+0052" || code == 114 || code == 82) { // r
                 this.fire('core-signal', {name: "rf-feed-refresh"});
             }
