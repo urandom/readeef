@@ -9,6 +9,10 @@ core-drawer-panel:not(.wide) [main]::shadow #mainContainer {
     background-color: #f8f8f8;
 }
 
+#mainheader paper-icon-button {
+    margin: 0;
+}
+
 core-drawer-panel.wide #mainheader #navicon,
 core-drawer-panel.wide #mainheader #back-menu,
 core-drawer-panel.wide #mainheader #refresh-menu {
