@@ -33,6 +33,7 @@
                 template.setAttribute('ref', 'article-template');
 
                 this.template.parentNode.insertBefore(template, this.template);
+                HTMLTemplateElement.decorate(template);
                 this.templates[index] = template;
             }.bind(this));
 
@@ -128,12 +129,14 @@
                 if (t._element) {
                     t._element.setAttribute('animate', '');
                 } else {
-                    var model = this._physicalArticles[i];
+                    var model = this._physicalArticles[i],
+                        syntax = this.template.bindingDelegate || this.templateInstance.model.element.syntax,
+                        dom = t.createInstance(model, syntax);
 
                     if (this.$.viewport.children[i]) {
-                        this.$.viewport.insertBefore(t.createInstance(model, new PolymerExpressions()), this.$.viewport.children[i]);
+                        this.$.viewport.insertBefore(dom, this.$.viewport.children[i]);
                     } else {
-                        this.$.viewport.appendChild(t.createInstance(model, new PolymerExpressions()));
+                        this.$.viewport.appendChild(dom);
                     }
 
                     t._element = this.$.viewport.children[i];
@@ -150,6 +153,15 @@
                 } else {
                     t._element.classList.remove('selected');
                 }
+            }
+        },
+
+        onFavoriteArticleToggle: function() {
+            if ('onFavoriteArticleToggle' in this.templateInstance.model) {
+                this.templateInstance.model.onFavoriteArticleToggle.apply(
+                    this.templateInstance.model, arguments);
+
+                this.updateItem(this._physicalArticles[1]._virtualIndex, 1);
             }
         },
 
