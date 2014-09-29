@@ -72,6 +72,7 @@
         <rf-api id="article-read" method="post" pathAction="article/read/{{ article.FeedId }}/{{ article.Id }}/{{ article.Read }}" on-rf-api-response="{{ onArticleReadResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="article-favorite" method="post" pathAction="article/favorite/{{ article.FeedId }}/{{ article.Id }}/{{ article.Favorite }}" on-rf-api-response="{{ onArticleFavoriteResponse }}" user="{{ user }}"></rf-api>
 
+        <core-signals on-core-signal-rf-read-article-toggle="{{ onReadArticleToggle }}"></core-signals>
         <core-signals on-core-signal-rf-next-article="{{ nextArticle }}"></core-signals>
         <core-signals on-core-signal-rf-previous-article="{{ previousArticle }}"></core-signals>
     </template>

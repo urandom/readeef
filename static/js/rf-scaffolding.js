@@ -37,6 +37,10 @@
             }
         },
 
+        onArticleReadToggle: function() {
+            this.fire('core-signal', {name: 'rf-read-article-toggle'});
+        },
+
         onArticlePrevious: function() {
             this.fire('core-signal', {name: 'rf-previous-article'});
         },

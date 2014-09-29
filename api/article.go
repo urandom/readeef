@@ -40,7 +40,12 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 			article, err = db.GetFeedArticle(feedId, params["article-id"], user)
 		}
 
+		resp := make(map[string]interface{})
+
 		if err == nil {
+			resp["Id"] = feedId
+			resp["ArticleId"] = article.Id
+
 			switch action {
 			case "read":
 				read := params["value"] == "true"
@@ -54,20 +59,8 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 					}
 				}
 
-				type response struct {
-					Success bool
-					Read    bool
-				}
-
-				resp := response{Success: previouslyRead != read, Read: read}
-
-				var b []byte
-				b, err = json.Marshal(resp)
-				if err != nil {
-					break
-				}
-
-				w.Write(b)
+				resp["Success"] = previouslyRead != read
+				resp["Read"] = read
 			case "favorite":
 				favorite := params["value"] == "true"
 				previouslyFavorite := article.Favorite
@@ -80,24 +73,19 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 					}
 				}
 
-				type response struct {
-					Success  bool
-					Favorite bool
-				}
-
-				resp := response{Success: previouslyFavorite != favorite, Favorite: favorite}
-
-				var b []byte
-				b, err = json.Marshal(resp)
-				if err != nil {
-					break
-				}
-
-				w.Write(b)
+				resp["Success"] = previouslyFavorite != favorite
+				resp["Favorite"] = favorite
 			}
 		}
 
-		if err != nil {
+		var b []byte
+		if err == nil {
+			b, err = json.Marshal(resp)
+		}
+
+		if err == nil {
+			w.Write(b)
+		} else {
 			webfw.GetLogger(c).Print(err)
 
 			w.WriteHeader(http.StatusInternalServerError)

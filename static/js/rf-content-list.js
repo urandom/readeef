@@ -168,6 +168,12 @@
             this.$['articles-list'].refresh(true);
         },
 
+        onReadArticleToggle: function() {
+            this.article.Read = !this.article.Read;
+            this.$['article-read'].go();
+            this.$['articles-list'].refresh(true);
+        },
+
         onContentKeypress: function(event) {
             if (this.$.pages.offsetWidth == 0 && this.$.pages.offsetHeight == 0) {
                 return;

@@ -27,6 +27,7 @@
         </template>
 
         <template id="article-navigation-menu-items">
+            <paper-icon-button icon="{{ {'check-circle': article.Read, 'check-circle-outline-blank': !article.Read} | tokenList }}" class="title-icon" on-tap="{{ onArticleReadToggle }}" hidden?="{{ !article || display != 'feed' }}"></paper-icon-button>
             <paper-icon-button icon="hardware:keyboard-arrow-left" class="title-icon" style="opacity: {{ article && !article.First ? 100 : 0 }}" on-tap="{{ onArticlePrevious }}" hidden?="{{ !article || display != 'feed' }}"></paper-icon-button>
             <paper-icon-button icon="hardware:keyboard-arrow-right" class="title-icon" style="opacity: {{ article && !article.Last ? 100 : 0 }}" on-tap="{{ onArticleNext }}" hidden?="{{ !article || display != 'feed' }}"></paper-icon-button>
         </template>
