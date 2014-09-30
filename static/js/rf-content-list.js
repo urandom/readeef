@@ -98,6 +98,7 @@
                 if (!oldValue) {
                     this.listPosition = scroller.scrollTop;
                 }
+                scroller.scrollTop = 0;
 
                 this.$.pages.selected = 'detail';
 
