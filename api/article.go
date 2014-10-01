@@ -2,7 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/urandom/readeef"
@@ -12,21 +14,30 @@ import (
 
 type Article struct {
 	webfw.BaseController
+	config readeef.Config
 }
 
-func NewArticle() Article {
+func NewArticle(config readeef.Config) Article {
 	return Article{
 		webfw.NewBaseController("", webfw.MethodAll, ""),
+		config,
 	}
 }
 
 func (con Article) Patterns() map[string]webfw.MethodIdentifierTuple {
 	prefix := "/v:version/article/"
+	identifier := ":feed-id/:article-id"
 
-	return map[string]webfw.MethodIdentifierTuple{
-		prefix + "read/:feed-id/:article-id/:value":     webfw.MethodIdentifierTuple{webfw.MethodPost, "read"},
-		prefix + "favorite/:feed-id/:article-id/:value": webfw.MethodIdentifierTuple{webfw.MethodPost, "favorite"},
+	patterns := map[string]webfw.MethodIdentifierTuple{
+		prefix + "read/" + identifier + "/:value":     webfw.MethodIdentifierTuple{webfw.MethodPost, "read"},
+		prefix + "favorite/" + identifier + "/:value": webfw.MethodIdentifierTuple{webfw.MethodPost, "favorite"},
 	}
+
+	if con.config.ArticleFormatter.ReadabilityKey != "" {
+		patterns[prefix+"formatter/"+identifier] = webfw.MethodIdentifierTuple{webfw.MethodGet, "formatter"}
+	}
+
+	return patterns
 }
 
 func (con Article) Handler(c context.Context) http.HandlerFunc {
@@ -84,6 +95,20 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 
 				resp["Success"] = previouslyFavorite != favorite
 				resp["Favorite"] = favorite
+			case "formatter":
+				if con.config.ArticleFormatter.ReadabilityKey != "" {
+
+					url := fmt.Sprintf("http://readability.com/api/content/v1/parser?url=%s&token=%s",
+						url.QueryEscape(article.Link), con.config.ArticleFormatter.ReadabilityKey,
+					)
+
+					/*var resp *http.Response
+					resp*/_, err = http.Get(url)
+
+					if err != nil {
+						break
+					}
+				}
 			}
 		}
 

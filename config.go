@@ -45,6 +45,9 @@ type Config struct {
 			Interval time.Duration
 		}
 	}
+	ArticleFormatter struct {
+		ReadabilityKey string `gcfg:"readability-key"`
+	} `gcfg:"article-formatter"`
 }
 
 func ReadConfig(path ...string) (Config, error) {
