@@ -16,7 +16,16 @@ type Article struct {
 
 func NewArticle() Article {
 	return Article{
-		webfw.NewBaseController("/v:version/article/:action/:feed-id/:article-id/:value", webfw.MethodAll, ""),
+		webfw.NewBaseController("", webfw.MethodAll, ""),
+	}
+}
+
+func (con Article) Patterns() map[string]webfw.MethodIdentifierTuple {
+	prefix := "/v:version/article/"
+
+	return map[string]webfw.MethodIdentifierTuple{
+		prefix + "read/:feed-id/:article-id/:value":     webfw.MethodIdentifierTuple{webfw.MethodPost, "read"},
+		prefix + "favorite/:feed-id/:article-id/:value": webfw.MethodIdentifierTuple{webfw.MethodPost, "favorite"},
 	}
 }
 
@@ -28,7 +37,7 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 		user := readeef.GetUser(c, r)
 
 		params := webfw.GetParams(c, r)
-		action := params["action"]
+		action := webfw.GetMultiPatternIdentifier(c, r)
 
 		readeef.Debug.Printf("Invoking Article controller with action '%s', feed id '%s' and article id '%s'\n", action, params["feed-id"], params["article-id"])
 
