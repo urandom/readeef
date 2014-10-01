@@ -24,6 +24,10 @@ func NewArticle(config readeef.Config) Article {
 	}
 }
 
+type Readability struct {
+	Content string
+}
+
 func (con Article) Patterns() map[string]webfw.MethodIdentifierTuple {
 	prefix := "/v:version/article/"
 	identifier := ":feed-id/:article-id"
@@ -102,12 +106,24 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 						url.QueryEscape(article.Link), con.config.ArticleFormatter.ReadabilityKey,
 					)
 
-					/*var resp *http.Response
-					resp*/_, err = http.Get(url)
+					var response *http.Response
+					var r Readability
+
+					response, err = http.Get(url)
 
 					if err != nil {
 						break
 					}
+
+					defer response.Body.Close()
+					dec := json.NewDecoder(response.Body)
+
+					err = dec.Decode(&r)
+					if err != nil {
+						break
+					}
+
+					resp["Content"] = r.Content
 				}
 			}
 		}
