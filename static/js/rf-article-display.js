@@ -72,6 +72,7 @@
                 return;
             }
 
+            dest.formatted = false;
             dest.selected = physicalIndex == middle;
             dest.wide = this.wide;
             for (var i = 0, p; p = this._originalArticleProperties[i]; ++i) {
@@ -306,7 +307,8 @@
         },
 
         onArticleFormat: function() {
-            if (this.$.viewport.getAttribute('data-formatter-readability') != 'false') {
+            if (this.$.viewport.getAttribute('data-formatter-readability') != 'false'
+                && !this._physicalArticles[1].formatted) {
                 this.formatting = true;
                 this.$['article-format'].go();
             }
@@ -317,6 +319,7 @@
                 && data.response.Id == this.article.FeedId) {
 
                 this._physicalArticles[1].Description = data.response.Content;
+                this._physicalArticles[1].formatted = true;
                 this.initializeElement(this.templates[1]._element, this._physicalArticles[1]);
             }
             this.formatting = false;
