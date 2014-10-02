@@ -38,7 +38,7 @@
             </section>
 
             <section name="detail" hidden?="{{ !article }}">
-                <rf-article-display id="article-display" articles="{{ articles }}" article="{{ article }}" wide="{{ wide }}">
+                <rf-article-display id="article-display" articles="{{ articles }}" article="{{ article }}" wide="{{ wide }}" user="{{ user }}">
                     <template>
                         <div class="article-detail">
                             <div class="card" layout vertical  slide-down?="{{ selected }}">

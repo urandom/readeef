@@ -196,6 +196,10 @@
                 if (this.article) {
                     this.onReadArticleToggle();
                 }
+            } else if (key == "U+0043" || code == 99 || code == 67) { // c
+                if (this.article) {
+                    this.fire('core-signal', {name: "rf-article-format"});
+                }
             } else if (key == "U+0052" || code == 114 || code == 82) { // r
                 this.fire('core-signal', {name: "rf-feed-refresh"});
             }

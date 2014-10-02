@@ -86,6 +86,7 @@ func ReadConfig(path ...string) (Config, error) {
 	} else {
 		c.Updater.Converted.Interval = 30 * time.Minute
 	}
+
 	return c, nil
 }
 

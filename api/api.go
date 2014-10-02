@@ -8,6 +8,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/webfw"
+	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/middleware"
 	"github.com/urandom/webfw/renderer"
 )
@@ -63,6 +64,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	dispatcher.RegisterMiddleware(readeef.Auth{DB: db, Pattern: dispatcher.Pattern, Nonce: nonce, IgnoreURLPrefix: config.Auth.IgnoreURLPrefix})
 
 	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
+	dispatcher.Context.SetGlobal(context.BaseCtxKey("readeefConfig"), config)
 	dispatcher.Context.SetGlobal(readeef.CtxKey("db"), db)
 
 	dispatcher.Renderer = renderer.NewRenderer(dispatcher.Config.Renderer.Dir,

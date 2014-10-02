@@ -3,6 +3,7 @@
 
     Polymer('rf-article-display', {
         swiping: false,
+        formatting: false,
 
         hasTransform: true,
         hasWillChange: true,
@@ -297,6 +298,23 @@
             this.templates[moveIndex]._element.style[prop] = this.transformForTranslateX(alterTranslateX);
             this.templates[1]._element.style[prop] = this.transformForTranslateX(translateX);
             this.templates[resetIndex]._element.style[prop] = '';
+        },
+
+        onArticleFormat: function() {
+            if (this.$.viewport.getAttribute('data-formatter-readability') != 'false') {
+                this.formatting = true;
+                this.$['article-format'].go();
+            }
+        },
+
+        onArticleFormatResponse: function(event, data) {
+            if (data.response && data.response.ArticleId == this.article.Id
+                && data.response.Id == this.article.FeedId) {
+
+                this._physicalArticles[1].Description = data.response.Content;
+                this.initializeElement(this.templates[1]._element, this._physicalArticles[1]);
+            }
+            this.formatting = false;
         }
     });
 })();
