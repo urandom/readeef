@@ -44,3 +44,17 @@ The standalone server may take two config files. The first is the readeef config
 In order for the web interface to actually work, the client-side libraries will need to be fetched. This is best done with bower. Make sure the _.bowerrc_ file, provided with the sources, is in the same directory that contains the 'static' directory. In there, just run the following:
 
 > bower update
+
+
+"But I just want to try it"
+===========================
+
+    git clone https://github.com/urandom/readeef.git
+    cd readeef
+    bower update
+    go build -tags sqlite3 ./bin/readeef-user-admin
+    ./readeef-user-admin add user password
+    go build -tags sqlite3 ./bin/readeef-server
+    ./readeef-server
+    
+The server will run on port 8080, and you may login using the user 'user' and password 'password'
