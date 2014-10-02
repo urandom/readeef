@@ -3,11 +3,9 @@
 
     Polymer('rf-article-display', {
         swiping: false,
-        formatting: false,
 
         hasTransform: true,
         hasWillChange: true,
-        holdCounter: 0,
 
         observe: {
           'articles template': 'initialize'
@@ -16,8 +14,6 @@
         eventDelegates: {
             trackstart: 'trackStart',
             trackx: 'trackx',
-            holdpulse: 'holdpulse',
-            release: 'release',
             trackend: 'trackEnd'
         },
 
@@ -74,6 +70,7 @@
                 return;
             }
 
+            dest.formatting = false;
             dest.formatted = false;
             dest.selected = physicalIndex == middle;
             dest.wide = this.wide;
@@ -304,21 +301,10 @@
             this.templates[resetIndex]._element.style[prop] = '';
         },
 
-        holdpulse: function(event) {
-            if (++this.holdCounter > 7) {
-                this.fire('core-signal', {name: "rf-article-format"});
-                this.holdCounter = 0;
-            }
-        },
-
-        release: function(event) {
-            this.holdCounter = 0;
-        },
-
         onArticleFormat: function() {
             if (this.$.viewport.getAttribute('data-formatter-readability') != 'false'
                 && !this._physicalArticles[1].formatted) {
-                this.formatting = true;
+                this._physicalArticles[1].formatting = true;
                 this.$['article-format'].go();
             }
         },
@@ -329,9 +315,13 @@
 
                 this._physicalArticles[1].Description = data.response.Content;
                 this._physicalArticles[1].formatted = true;
+                this._physicalArticles[1].formatting = false;
                 this.initializeElement(this.templates[1]._element, this._physicalArticles[1]);
+            } else {
+                for (var i = 0; i < 3; ++i) {
+                    this._physicalArticles[i].formatting = false;
+                }
             }
-            this.formatting = false;
         }
     });
 })();

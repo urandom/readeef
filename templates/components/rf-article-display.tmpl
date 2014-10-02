@@ -10,13 +10,7 @@
     <template>
         <link rel="stylesheet" href="/css/rf-article-display.css">
         <link rel="stylesheet" href="/css/rf-content-list.css">
-        <div id="viewport" class="article-display-viewport {{ {wide: wide} | tokenList }}" touch-action="pan-y" data-formatter-readability="{% ne .base.readeefConfig.ArticleFormatter.ReadabilityKey `` %}">
-            <template if="{{ formatting }}">
-                <div layout vertical center>
-                    <loading-wave background="transparent"></loading-wave>
-                </div>
-            </template>
-        </div>
+        <div id="viewport" class="article-display-viewport {{ {wide: wide} | tokenList }}" touch-action="pan-y"></div>
 
         <content></content>
 

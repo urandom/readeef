@@ -61,6 +61,11 @@
 
                                     <rf-button-link href="{{ Link }}" target="feed-article-{{ Id }}" class="article-link" label="View the article"></rf-button-link>
                                 </div>
+                                <template if="{{ formatting && '{% ne .base.readeefConfig.ArticleFormatter.ReadabilityKey `` %}' == 'true' }}">
+                                    <div layout vertical center>
+                                        <loading-wave background="transparent"></loading-wave>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </template>
