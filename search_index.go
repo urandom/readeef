@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/blevesearch/bleve"
 )
@@ -11,10 +13,11 @@ import (
 type SearchIndex struct {
 	index  bleve.Index
 	logger *log.Logger
+	db     DB
 }
 
 func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, error) {
-	si := SearchIndex{logger: logger}
+	si := SearchIndex{logger: logger, db: db}
 
 	_, err := os.Stat(config.SearchIndex.BlevePath)
 	if err == nil {
@@ -82,4 +85,32 @@ func (si SearchIndex) UpdateListener(original <-chan Feed) chan Feed {
 
 func (si SearchIndex) Index(a Article) error {
 	return si.index.Index(fmt.Sprintf("%d:%s", a.FeedId, a.Id), a)
+}
+
+func (si SearchIndex) Search(term string, highlight ...string) ([]Article, error) {
+	query := bleve.NewQueryStringQuery("bleve")
+	searchRequest := bleve.NewSearchRequest(query)
+	if len(highlight) > 0 {
+		searchRequest.Highlight = bleve.NewHighlightWithStyle(highlight[0])
+	}
+	searchResult, err := si.index.Search(searchRequest)
+
+	if err != nil {
+		return []Article{}, err
+	}
+
+	if len(searchResult.Hits) == 0 {
+		return []Article{}, nil
+	}
+
+	feedArticleIds := []FeedArticleIds{}
+	for _, hit := range searchResult.Hits {
+		ids := strings.SplitN(hit.ID, ":", 2)
+		feedId, err := strconv.ParseInt(ids[0], 10, 64)
+		if err == nil {
+			feedArticleIds = append(feedArticleIds, FeedArticleIds{feedId, ids[1], hit.Score})
+		}
+	}
+
+	return si.db.GetSpecificArticles(feedArticleIds...)
 }

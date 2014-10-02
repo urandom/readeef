@@ -294,6 +294,12 @@ var (
 	ErrNoFeedUser = errors.New("Feed does not have an associated user.")
 )
 
+type FeedArticleIds struct {
+	FeedId    int64
+	ArticleId string
+	Score     float64
+}
+
 func (db DB) GetFeed(id int64) (Feed, error) {
 	Debug.Printf("Getting feed for %d\n", id)
 
@@ -630,6 +636,35 @@ func (db DB) GetAllArticles() ([]Article, error) {
 	var articles []Article
 
 	if err := db.Select(&articles, db.NamedSQL("get_all_articles")); err != nil {
+		return articles, err
+	}
+
+	return articles, nil
+}
+
+func (db DB) GetSpecificArticles(idTuples ...FeedArticleIds) ([]Article, error) {
+	if len(idTuples) == 0 {
+		return []Article{}, nil
+	}
+
+	sql := db.NamedSQL("get_all_articles")
+	sql += ` WHERE `
+
+	var args []interface{}
+	index := 1
+	for i, ids := range idTuples {
+		if i != 0 {
+			sql += ` OR `
+		}
+
+		sql += fmt.Sprintf(`(a.id = $%d AND a.feed_id = $%d)`, index, index+1)
+		args = append(args, ids.ArticleId, ids.FeedId)
+		index = len(args) + 1
+	}
+
+	var articles []Article
+
+	if err := db.Select(&articles, sql, args...); err != nil {
 		return articles, err
 	}
 
