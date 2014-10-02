@@ -15,6 +15,7 @@
         eventDelegates: {
             trackstart: 'trackStart',
             trackx: 'trackx',
+            hold: 'hold',
             trackend: 'trackEnd'
         },
 
@@ -298,6 +299,10 @@
             this.templates[moveIndex]._element.style[prop] = this.transformForTranslateX(alterTranslateX);
             this.templates[1]._element.style[prop] = this.transformForTranslateX(translateX);
             this.templates[resetIndex]._element.style[prop] = '';
+        },
+
+        hold: function(event) {
+            this.fire('core-signal', {name: "rf-article-format"});
         },
 
         onArticleFormat: function() {
