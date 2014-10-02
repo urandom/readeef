@@ -48,6 +48,10 @@ type Config struct {
 	ArticleFormatter struct {
 		ReadabilityKey string `gcfg:"readability-key"`
 	} `gcfg:"article-formatter"`
+
+	SearchIndex struct {
+		BlevePath string `gcfg:"bleve-path"`
+	} `gcfg:"search-index"`
 }
 
 func ReadConfig(path ...string) (Config, error) {
@@ -115,4 +119,6 @@ var cfg string = `
 [hubbub]
 	relative-path = /hubbub
 	from = readeef
+[search-index]
+	bleve-path = ./readeef.bleve
 `

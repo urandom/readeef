@@ -220,6 +220,17 @@ LIMIT $2
 OFFSET $3
 `
 
+	get_all_articles = `
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM articles a
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+`
+
 	create_all_user_articles_read_by_date = `
 INSERT INTO users_articles_read
 	SELECT uf.user_login, a.id, uf.feed_id
@@ -344,6 +355,7 @@ func (db DB) UpdateFeed(f Feed) (Feed, bool, error) {
 		}
 	}
 
+	f.lastUpdatedArticleIds = map[string]bool{}
 	newArticles, err := db.updateFeedArticles(tx, f, f.Articles)
 	if err != nil {
 		return f, false, err
@@ -351,7 +363,11 @@ func (db DB) UpdateFeed(f Feed) (Feed, bool, error) {
 
 	tx.Commit()
 
-	return f, newArticles, nil
+	for _, a := range newArticles {
+		f.lastUpdatedArticleIds[a.Id] = true
+	}
+
+	return f, len(newArticles) > 0, nil
 }
 
 func (db DB) DeleteFeed(f Feed) error {
@@ -610,6 +626,16 @@ func (db DB) GetReadUserArticles(u User, paging ...int) ([]Article, error) {
 	return articles, nil
 }
 
+func (db DB) GetAllArticles() ([]Article, error) {
+	var articles []Article
+
+	if err := db.Select(&articles, db.NamedSQL("get_all_articles")); err != nil {
+		return articles, err
+	}
+
+	return articles, nil
+}
+
 func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error {
 	if len(articles) == 0 {
 		return nil
@@ -815,9 +841,9 @@ func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) e
 	return nil
 }
 
-func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) (bool, error) {
+func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) ([]Article, error) {
 	if len(articles) == 0 {
-		return false, nil
+		return []Article{}, nil
 	}
 
 	Debug.Println("Updating feed articles for " + f.Link)
@@ -826,18 +852,18 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) (bool, 
 
 	for _, a := range articles {
 		if err := a.Validate(); err != nil {
-			return false, err
+			return newArticles, err
 		}
 
 		stmt, err := tx.Preparex(db.NamedSQL("update_feed_article"))
 		if err != nil {
-			return false, err
+			return newArticles, err
 		}
 		defer stmt.Close()
 
 		res, err := stmt.Exec(a.Title, a.Description, a.Link, a.Date, a.Id, f.Id)
 		if err != nil {
-			return false, err
+			return newArticles, err
 		}
 
 		if num, err := res.RowsAffected(); err != nil || num == 0 {
@@ -846,7 +872,7 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) (bool, 
 	}
 
 	if len(newArticles) == 0 {
-		return false, nil
+		return newArticles, nil
 	}
 
 	sql := `INSERT INTO articles(id, feed_id, title, description, link, date) `
@@ -855,7 +881,7 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) (bool, 
 
 	for i, a := range newArticles {
 		if err := a.Validate(); err != nil {
-			return false, err
+			return newArticles, err
 		}
 
 		if i != 0 {
@@ -870,16 +896,16 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) (bool, 
 	stmt, err := tx.Preparex(sql)
 
 	if err != nil {
-		return false, err
+		return newArticles, err
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(args...)
 	if err != nil {
-		return false, err
+		return newArticles, err
 	}
 
-	return true, nil
+	return newArticles, nil
 }
 
 func (db DB) getFeedArticles(f Feed, namedSQL string, paging ...int) (Feed, error) {
@@ -962,6 +988,7 @@ func init() {
 	sql_stmt["generic:get_unread_user_articles"] = get_unread_user_articles
 	sql_stmt["generic:get_unread_user_articles_desc"] = get_unread_user_articles_desc
 	sql_stmt["generic:get_read_user_articles"] = get_read_user_articles
+	sql_stmt["generic:get_all_articles"] = get_all_articles
 	sql_stmt["generic:create_all_user_articles_read_by_date"] = create_all_user_articles_read_by_date
 	sql_stmt["generic:delete_all_user_articles_read_by_date"] = delete_all_user_articles_read_by_date
 	sql_stmt["generic:create_all_users_articles_read_by_feed_date"] = create_all_users_articles_read_by_feed_date
