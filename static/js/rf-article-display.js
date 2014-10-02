@@ -7,6 +7,7 @@
 
         hasTransform: true,
         hasWillChange: true,
+        holdCounter: 0,
 
         observe: {
           'articles template': 'initialize'
@@ -15,7 +16,8 @@
         eventDelegates: {
             trackstart: 'trackStart',
             trackx: 'trackx',
-            hold: 'hold',
+            holdpulse: 'holdpulse',
+            release: 'release',
             trackend: 'trackEnd'
         },
 
@@ -302,8 +304,15 @@
             this.templates[resetIndex]._element.style[prop] = '';
         },
 
-        hold: function(event) {
-            this.fire('core-signal', {name: "rf-article-format"});
+        holdpulse: function(event) {
+            if (++this.holdCounter > 7) {
+                this.fire('core-signal', {name: "rf-article-format"});
+                this.holdCounter = 0;
+            }
+        },
+
+        release: function(event) {
+            this.holdCounter = 0;
         },
 
         onArticleFormat: function() {
