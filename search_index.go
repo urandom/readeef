@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/search"
 )
 
 type SearchIndex struct {
@@ -16,15 +17,17 @@ type SearchIndex struct {
 	db     DB
 }
 
+var EmptySearchIndex = SearchIndex{}
+
 func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, error) {
-	si := SearchIndex{logger: logger, db: db}
+	si := SearchIndex{}
 
 	_, err := os.Stat(config.SearchIndex.BlevePath)
 	if err == nil {
 		index, err := bleve.Open(config.SearchIndex.BlevePath)
 
 		if err != nil {
-			return si, err
+			return EmptySearchIndex, err
 		}
 
 		si.index = index
@@ -33,7 +36,7 @@ func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, erro
 		index, err := bleve.New(config.SearchIndex.BlevePath, mapping)
 
 		if err != nil {
-			return si, err
+			return EmptySearchIndex, err
 		}
 
 		si.index = index
@@ -52,65 +55,74 @@ func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, erro
 			}
 		}()
 	} else {
-		return si, err
+		return EmptySearchIndex, err
 	}
+
+	si.logger = logger
+	si.db = db
 
 	return si, nil
 }
 
-func (si SearchIndex) UpdateListener(original <-chan Feed) chan Feed {
-	updateFeed := make(chan Feed)
-
-	go func() {
-		for {
-			select {
-			case feed := <-original:
-				for _, a := range feed.Articles {
-					if feed.lastUpdatedArticleIds[a.Id] {
-						if err := si.Index(a); err != nil {
-							si.logger.Printf(
-								"Error indexing article %s from feed %d: %v\n",
-								a.Id, a.FeedId, err)
-						}
-					}
-				}
-
-				updateFeed <- feed
+func (si SearchIndex) UpdateFeed(feed Feed) {
+	Debug.Printf("Updating article search index for feed '%s'\n", feed.Link)
+	for _, a := range feed.Articles {
+		if feed.lastUpdatedArticleIds[a.Id] {
+			if err := si.Index(a); err != nil {
+				si.logger.Printf(
+					"Error indexing article %s from feed %d: %v\n",
+					a.Id, a.FeedId, err)
 			}
 		}
-	}()
-
-	return updateFeed
+	}
 }
 
 func (si SearchIndex) Index(a Article) error {
 	return si.index.Index(fmt.Sprintf("%d:%s", a.FeedId, a.Id), a)
 }
 
-func (si SearchIndex) Search(term string, highlight ...string) ([]Article, error) {
-	query := bleve.NewQueryStringQuery("bleve")
+func (si SearchIndex) Delete(a Article) error {
+	return si.index.Delete(fmt.Sprintf("%d:%s", a.FeedId, a.Id))
+}
+
+func (si SearchIndex) Search(term, highlight string, paging ...int) ([]Article, search.DocumentMatchCollection, error) {
+	query := bleve.NewQueryStringQuery(term)
 	searchRequest := bleve.NewSearchRequest(query)
-	if len(highlight) > 0 {
-		searchRequest.Highlight = bleve.NewHighlightWithStyle(highlight[0])
+
+	if highlight != "" {
+		searchRequest.Highlight = bleve.NewHighlightWithStyle(highlight)
 	}
+
+	limit, offset := pagingLimit(paging)
+	searchRequest.Size = limit
+	searchRequest.From = offset
+
+	Debug.Printf("Searching for '%s'\n", query.Query)
 	searchResult, err := si.index.Search(searchRequest)
 
+	hits := []*search.DocumentMatch{}
+
 	if err != nil {
-		return []Article{}, err
+		return []Article{}, hits, err
 	}
 
 	if len(searchResult.Hits) == 0 {
-		return []Article{}, nil
+		Debug.Printf("No results found for '%s'\n", query.Query)
+		return []Article{}, hits, nil
 	}
 
 	feedArticleIds := []FeedArticleIds{}
+
 	for _, hit := range searchResult.Hits {
 		ids := strings.SplitN(hit.ID, ":", 2)
 		feedId, err := strconv.ParseInt(ids[0], 10, 64)
 		if err == nil {
-			feedArticleIds = append(feedArticleIds, FeedArticleIds{feedId, ids[1], hit.Score})
+			feedArticleIds = append(feedArticleIds, FeedArticleIds{feedId, ids[1]})
+			hits = append(hits, hit)
 		}
 	}
 
-	return si.db.GetSpecificArticles(feedArticleIds...)
+	articles, err := si.db.GetSpecificArticles(feedArticleIds...)
+
+	return articles, hits, err
 }

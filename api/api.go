@@ -33,13 +33,15 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		dispatcher.Handle(readeef.NewHubbubController(hubbub))
 	}
 
+	var si readeef.SearchIndex
 	if config.SearchIndex.BlevePath != "" {
-		si, err := readeef.NewSearchIndex(config, db, logger)
+		var err error
+		si, err = readeef.NewSearchIndex(config, db, logger)
 		if err != nil {
 			return errors.New(fmt.Sprintf("Error initializing bleve search: %v", err))
 		}
 
-		updateFeed = si.UpdateListener(updateFeed)
+		fm.SetSearchIndex(si)
 	}
 
 	fm.Start()
@@ -56,6 +58,11 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	controller = NewArticle(config)
 	dispatcher.Handle(controller)
+
+	if config.SearchIndex.BlevePath != "" {
+		controller = NewSearch(si)
+		dispatcher.Handle(controller)
+	}
 
 	controller = NewUser()
 	dispatcher.Handle(controller)

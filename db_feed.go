@@ -231,6 +231,18 @@ LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
 `
 
+	get_all_feed_articles = `
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM articles a
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+WHERE a.feed_id = $1
+`
+
 	create_all_user_articles_read_by_date = `
 INSERT INTO users_articles_read
 	SELECT uf.user_login, a.id, uf.feed_id
@@ -297,7 +309,6 @@ var (
 type FeedArticleIds struct {
 	FeedId    int64
 	ArticleId string
-	Score     float64
 }
 
 func (db DB) GetFeed(id int64) (Feed, error) {
@@ -636,6 +647,16 @@ func (db DB) GetAllArticles() ([]Article, error) {
 	var articles []Article
 
 	if err := db.Select(&articles, db.NamedSQL("get_all_articles")); err != nil {
+		return articles, err
+	}
+
+	return articles, nil
+}
+
+func (db DB) GetAllFeedArticles(f Feed) ([]Article, error) {
+	var articles []Article
+
+	if err := db.Select(&articles, db.NamedSQL("get_all_feed_articles"), f.Id); err != nil {
 		return articles, err
 	}
 
@@ -1024,6 +1045,7 @@ func init() {
 	sql_stmt["generic:get_unread_user_articles_desc"] = get_unread_user_articles_desc
 	sql_stmt["generic:get_read_user_articles"] = get_read_user_articles
 	sql_stmt["generic:get_all_articles"] = get_all_articles
+	sql_stmt["generic:get_all_feed_articles"] = get_all_feed_articles
 	sql_stmt["generic:create_all_user_articles_read_by_date"] = create_all_user_articles_read_by_date
 	sql_stmt["generic:delete_all_user_articles_read_by_date"] = delete_all_user_articles_read_by_date
 	sql_stmt["generic:create_all_users_articles_read_by_feed_date"] = create_all_users_articles_read_by_feed_date

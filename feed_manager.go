@@ -30,6 +30,7 @@ type FeedManager struct {
 	logger      *log.Logger
 	activeFeeds map[int64]bool
 	hubbub      *Hubbub
+	searchIndex SearchIndex
 }
 
 var (
@@ -52,6 +53,10 @@ func NewFeedManager(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) *Fee
 
 func (fm *FeedManager) SetHubbub(hubbub *Hubbub) {
 	fm.hubbub = hubbub
+}
+
+func (fm *FeedManager) SetSearchIndex(si SearchIndex) {
+	fm.searchIndex = si
 }
 
 func (fm *FeedManager) SetClient(c *http.Client) {
@@ -113,6 +118,12 @@ func (fm *FeedManager) AddFeedByLink(link string) (Feed, error) {
 			f, _, err = fm.db.UpdateFeed(f)
 			if err != nil {
 				return Feed{}, err
+			}
+
+			if fm.searchIndex != EmptySearchIndex {
+				go func() {
+					fm.searchIndex.UpdateFeed(f)
+				}()
 			}
 		} else {
 			return Feed{}, err
@@ -254,11 +265,23 @@ func (fm *FeedManager) stopUpdatingFeed(f Feed) {
 
 	users, err := fm.db.GetFeedUsers(f)
 	if err != nil {
-		fm.logger.Printf("Error getting users for feed '%s': %v\n", err)
+		fm.logger.Printf("Error getting users for feed '%s': %v\n", f.Link, err)
 	} else {
 		if len(users) == 0 {
 			Debug.Println("Removing orphan feed " + f.Link + " from the database")
 
+			if fm.searchIndex != EmptySearchIndex {
+				articles, err := fm.db.GetAllFeedArticles(f)
+
+				if err == nil {
+					Debug.Printf("Removing all articles from the search index for feed '%s'\n", f.Link)
+					for _, a := range articles {
+						fm.searchIndex.Delete(a)
+					}
+				} else {
+					fm.logger.Printf("Error getting articles for feed '%s': %v\n", f.Link, err)
+				}
+			}
 			fm.db.DeleteFeed(f)
 		}
 	}
@@ -305,6 +328,10 @@ func (fm *FeedManager) requestFeedContent(f Feed) Feed {
 		}
 
 		if newArticles {
+			if fm.searchIndex != EmptySearchIndex {
+				fm.searchIndex.UpdateFeed(f)
+			}
+
 			fm.updateFeed <- f
 		}
 
