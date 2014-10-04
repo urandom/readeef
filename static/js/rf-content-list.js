@@ -6,6 +6,7 @@
         listHeight: 0,
         pathObserver: null,
         listPosition: 0,
+        articleRead: false,
         
         ready: function() {
             document.addEventListener('keypress', this.onContentKeypress.bind(this), false);
@@ -103,7 +104,7 @@
                 this.$.pages.selected = 'detail';
 
                 if (!newValue.Read) {
-                    newValue.Read = true;
+                    this.articleRead = true;
                     this.$['article-read'].go();
                 }
 
@@ -170,9 +171,24 @@
         },
 
         onReadArticleToggle: function() {
-            this.article.Read = !this.article.Read;
+            this.articleRead = !this.article.Read;
             this.$['article-read'].go();
             this.$['articles-list'].refresh(true);
+        },
+
+        onArticleReadResponse: function(event, data) {
+            if (data.response && data.response.Success) {
+                if (this.article.Id == data.response.ArticleId && this.article.FeedId == data.response.Id) {
+                    this.article.Read = data.response.Read;
+                } else {
+                    for (var i = 0, a; a = this.articles[i]; ++i) {
+                        if (a.Id == data.response.ArticleId && a.FeedId == data.response.Id) {
+                            a.Read = data.response.Read;
+                            break;
+                        }
+                    }
+                }
+            }
         },
 
         onContentKeypress: function(event) {
