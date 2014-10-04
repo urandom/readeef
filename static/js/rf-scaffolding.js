@@ -18,6 +18,8 @@
             this.$['drawer-menu'].addEventListener('tap', function() {
                 drawerPanel.togglePanel();
             });
+
+            document.addEventListener('keypress', this.onContentKeypress.bind(this), false);
         },
 
         articleChanged: function() {
@@ -121,6 +123,16 @@
             case 27: //Escape
                 this.onSearchToggle();
                 break;
+            }
+        },
+
+        onContentKeypress: function(event) {
+            var code = event.keyCode || event.charCode, key = event.keyIdentifier;
+
+            if (key == "Help" || key == "U+003F" || code == 47 || code == 63) { // "/"
+                if (!this.article && !this.searchVisible) {
+                    this.onSearchToggle();
+                }
             }
         }
     });
