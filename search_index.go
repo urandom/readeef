@@ -12,56 +12,66 @@ import (
 )
 
 type SearchIndex struct {
-	index  bleve.Index
-	logger *log.Logger
-	db     DB
+	index    bleve.Index
+	logger   *log.Logger
+	db       DB
+	newIndex bool
 }
 
 var EmptySearchIndex = SearchIndex{}
 
 func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, error) {
+	var err error
+	var index bleve.Index
+
 	si := SearchIndex{}
 
-	_, err := os.Stat(config.SearchIndex.BlevePath)
+	_, err = os.Stat(config.SearchIndex.BlevePath)
 	if err == nil {
-		index, err := bleve.Open(config.SearchIndex.BlevePath)
+		Debug.Println("Opening search index " + config.SearchIndex.BlevePath)
+		index, err = bleve.Open(config.SearchIndex.BlevePath)
 
 		if err != nil {
 			return EmptySearchIndex, err
 		}
-
-		si.index = index
 	} else if os.IsNotExist(err) {
 		mapping := bleve.NewIndexMapping()
-		index, err := bleve.New(config.SearchIndex.BlevePath, mapping)
+
+		Debug.Println("Creating search index " + config.SearchIndex.BlevePath)
+		index, err = bleve.New(config.SearchIndex.BlevePath, mapping)
 
 		if err != nil {
 			return EmptySearchIndex, err
 		}
 
-		si.index = index
-
-		go func() {
-			Debug.Println("Indexing all articles")
-
-			if articles, err := db.GetAllArticles(); err == nil {
-				for _, a := range articles {
-					if err := si.Index(a); err != nil {
-						logger.Printf("Error indexing article %s from feed %d: %v\n", a.Id, a.FeedId, err)
-					}
-				}
-			} else {
-				logger.Printf("Error getting all articles: %v\n", err)
-			}
-		}()
+		si.newIndex = true
 	} else {
 		return EmptySearchIndex, err
 	}
 
 	si.logger = logger
 	si.db = db
+	si.index = index
 
 	return si, nil
+}
+
+func (si SearchIndex) IndexAllArticles() {
+	Debug.Println("Indexing all articles")
+
+	if articles, err := si.db.GetAllArticles(); err == nil {
+		for _, a := range articles {
+			if err := si.Index(a); err != nil {
+				si.logger.Printf("Error indexing article %s from feed %d: %v\n", a.Id, a.FeedId, err)
+			}
+		}
+	} else {
+		si.logger.Printf("Error getting all articles: %v\n", err)
+	}
+}
+
+func (si SearchIndex) IsNewIndex() bool {
+	return si.newIndex
 }
 
 func (si SearchIndex) UpdateFeed(feed Feed) {

@@ -15,7 +15,7 @@ import (
 func main() {
 	serverconfpath := flag.String("server-config", "", "server config path")
 	readeefconfpath := flag.String("readeef-config", "", "readeef config path")
-	host := flag.String("host", "", "server host")
+	address := flag.String("address", "", "local server network address")
 	port := flag.Int("port", 0, "server port")
 
 	flag.Parse()
@@ -26,8 +26,8 @@ func main() {
 	}
 
 	server := webfw.NewServer(*serverconfpath)
-	if *host != "" {
-		server.SetHost(*host)
+	if *address != "" {
+		server.SetAddress(*address)
 	}
 
 	if *port > 0 {

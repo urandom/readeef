@@ -43,7 +43,7 @@
         display: 'feed',
         limit: 50,
         offset: 0,
-        readUntilMilliSec: 0,
+        lastUpdateTime: 0,
         userObserver: null,
         userSettingsObserver: null,
         updateAvailable: false,
@@ -261,6 +261,7 @@
                         this.currentFeed.Articles = null;
                     }
                 }
+                this.lastUpdateTime = new Date().getTime();
             }
         },
 
@@ -291,7 +292,6 @@
         },
 
         onMarkAllAsRead: function() {
-            this.readUntilMilliSec = new Date().getTime();
             this.$['feed-read-all'].go();
         },
 

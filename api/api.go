@@ -41,6 +41,12 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 			return errors.New(fmt.Sprintf("Error initializing bleve search: %v", err))
 		}
 
+		if si.IsNewIndex() {
+			go func() {
+				si.IndexAllArticles()
+			}()
+		}
+
 		fm.SetSearchIndex(si)
 	}
 
