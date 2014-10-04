@@ -63,7 +63,7 @@
                                     <div layout horizontal class="article-buttons">
                                         <rf-button-link href="{{ Link }}" target="feed-article-{{ Id }}" label="View the article" flex></rf-button-link>
                                         {% if ne .base.readeefConfig.ArticleFormatter.ReadabilityKey `` %}
-                                            <paper-button label="Format" flex?="{{ wide }}" on-tap="{{ onArticleFormat }}"></rf-button-link>
+                                            <paper-button label="Format" flex?="{{ wide }}" on-tap="{{ onArticleFormat }}" hidden?="{{ formatted }}"></rf-button-link>
                                         {% end %}
                                     </div>
                                 </div>
