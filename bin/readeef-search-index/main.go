@@ -40,7 +40,9 @@ func main() {
 	readeef.Debug.Println("Getting all articles")
 
 	if articles, err := db.GetAllArticles(); err == nil {
-		for _, a := range articles {
+		for i, l := 0, len(articles); i < l; i++ {
+			a := articles[i]
+
 			readeef.Debug.Printf("Indexing article '%s' from feed id '%d'\n", a.Id, a.FeedId)
 			if err := si.Index(a); err != nil {
 				logger.Printf("Error indexing article %s from feed %d: %v\n", a.Id, a.FeedId, err)

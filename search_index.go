@@ -67,7 +67,9 @@ func (si SearchIndex) IndexAllArticles() {
 	Debug.Println("Indexing all articles")
 
 	if articles, err := si.db.GetAllArticles(); err == nil {
-		for _, a := range articles {
+		for i, l := 0, len(articles); i < l; i++ {
+			a := articles[i]
+
 			if err := si.Index(a); err != nil {
 				si.logger.Printf("Error indexing article %s from feed %d: %v\n", a.Id, a.FeedId, err)
 			}
