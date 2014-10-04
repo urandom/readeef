@@ -6,6 +6,7 @@
 <link rel="import" href="/dist/core-signals/core-signals.html">
 
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/dist/paper-button/paper-button.html">
 
 <link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-button-link">
@@ -59,7 +60,12 @@
                                 <div class="article-content">
                                     <div class="article-description"></div>
 
-                                    <rf-button-link href="{{ Link }}" target="feed-article-{{ Id }}" class="article-link" label="View the article"></rf-button-link>
+                                    <div layout horizontal class="article-buttons">
+                                        <rf-button-link href="{{ Link }}" target="feed-article-{{ Id }}" label="View the article" flex></rf-button-link>
+                                        {% if ne .base.readeefConfig.ArticleFormatter.ReadabilityKey `` %}
+                                            <paper-button label="Format" flex?="{{ wide }}" on-tap="{{ onArticleFormat }}"></rf-button-link>
+                                        {% end %}
+                                    </div>
                                 </div>
                                 <template if="{{ formatting && '{% ne .base.readeefConfig.ArticleFormatter.ReadabilityKey `` %}' == 'true' }}">
                                     <div layout vertical center>

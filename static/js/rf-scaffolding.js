@@ -83,10 +83,6 @@
             this.fire('core-signal', {name: 'rf-next-article'});
         },
 
-        onArticleFormat: function() {
-            this.fire('core-signal', {name: "rf-article-format"});
-        },
-
         onOlderFirst: function() {
             this.settings.newerFirst = false;
         },
