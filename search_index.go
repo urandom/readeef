@@ -1,7 +1,9 @@
 package readeef
 
 import (
+	"bytes"
 	"fmt"
+	"html"
 	"log"
 	"os"
 	"strconv"
@@ -93,6 +95,8 @@ func (si SearchIndex) UpdateFeed(feed Feed) {
 }
 
 func (si SearchIndex) Index(a Article) error {
+	a.Title = html.UnescapeString(stripTags(a.Title))
+	a.Description = html.UnescapeString(stripTags(a.Description))
 	return si.index.Index(fmt.Sprintf("%d:%s", a.FeedId, a.Id), a)
 }
 
@@ -145,4 +149,26 @@ func (si SearchIndex) Search(term, highlight string, paging ...int) ([]SearchRes
 	}
 
 	return searchResults, err
+}
+
+func stripTags(text string) string {
+	b := bytes.NewBufferString("")
+	inTag := 0
+
+	for _, r := range text {
+		switch r {
+		case '<':
+			inTag++
+		case '>':
+			if inTag > 0 {
+				inTag--
+			}
+		default:
+			if inTag < 1 {
+				b.WriteRune(r)
+			}
+		}
+	}
+
+	return b.String()
 }
