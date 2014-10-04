@@ -70,3 +70,13 @@ core-drawer-panel.wide #mainheader #refresh-menu {
     margin-top: 10px;
 }
 
+.search-container {
+    height: 60px;
+}
+
+.search-input {
+    line-height: 24px;
+    font-size: 16px;
+    margin-top: 10px;
+    padding: 0;
+}

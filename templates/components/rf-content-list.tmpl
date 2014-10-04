@@ -8,6 +8,8 @@
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-button/paper-button.html">
 
+<link rel="import" href="/dist/loading-wave/loading-wave.html">
+
 <link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-button-link">
 <link rel="import" href="/component/rf-article-display">
@@ -27,8 +29,8 @@
                                     <paper-icon-button class="favorite-button" icon="{{ {'bookmark-outline': !Favorite, bookmark: Favorite} | tokenList }}" on-tap="{{ onFavoriteToggle }}" data-article-id="{{ Id }}" data-feed-id="{{ FeedId }}"></paper-icon-button>
                                     <span class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</span>
                                     <span flex class="title-wrapper">
-                                        <span class="title" title="{{ Title }}">{{ Title }}</span>
-                                        <span class="short-description">{{ ShortDescription }}</span>
+                                        <span class="title" title="{{ Title }}">{{ Hit && Hit.fragments['Article.Title'] ? Hit.fragments['Article.Title'] : Title }}</span>
+                                        <span class="short-description">{{ Hit && Hit.fragments['Article.Description'] ? Hit.fragments['Article.Description'] : ShortDescription }}</span>
                                     </span>
                                     <span class="publish-date">{{ RelativeDate }}</span>
                                 </div>
@@ -63,15 +65,15 @@
                                     <div layout horizontal class="article-buttons">
                                         <rf-button-link href="{{ Link }}" target="feed-article-{{ Id }}" label="View the article" flex></rf-button-link>
                                         {% if ne .base.readeefConfig.ArticleFormatter.ReadabilityKey `` %}
-                                            <paper-button label="Format" flex?="{{ wide }}" on-tap="{{ onArticleFormat }}" hidden?="{{ formatted }}"></rf-button-link>
+                                            <paper-button label="Format" flex?="{{ wide }}" on-tap="{{ onArticleFormat }}" hidden?="{{ formatting || formatted }}"></paper-button>
+                                            <template if="{{ formatting }}">
+                                                <div layout vertical center flex?="{{ wide }}">
+                                                    <loading-wave background="transparent"></loading-wave>
+                                                </div>
+                                            </template>
                                         {% end %}
                                     </div>
                                 </div>
-                                <template if="{{ formatting && '{% ne .base.readeefConfig.ArticleFormatter.ReadabilityKey `` %}' == 'true' }}">
-                                    <div layout vertical center>
-                                        <loading-wave background="transparent"></loading-wave>
-                                    </div>
-                                </template>
                             </div>
                         </div>
                     </template>

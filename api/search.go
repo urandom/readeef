@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+
 	"github.com/urandom/readeef"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
@@ -32,7 +33,7 @@ func (con Search) Handler(c context.Context) http.HandlerFunc {
 		err = r.ParseForm()
 
 		if err == nil {
-			highlight := "html"
+			highlight := ""
 			if vs := r.Form["highlight"]; len(vs) > 0 {
 				highlight = vs[0]
 			}
@@ -42,7 +43,7 @@ func (con Search) Handler(c context.Context) http.HandlerFunc {
 			results, err = con.searchIndex.Search(query, highlight)
 
 			if err == nil {
-				resp["Results"] = results
+				resp["Articles"] = results
 			}
 		}
 

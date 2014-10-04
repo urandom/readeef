@@ -82,12 +82,20 @@
 
 <core-style id="rf-theme">
     .primary-color {
-        background-color: {{ g.color[g.theme].primary }};
         color: {{ g.color[g.theme].primaryText }};
+        background-color: {{ g.color[g.theme].primary }};
+    }
+    .primary-transparent-color {
+        color: {{ g.color[g.theme].primaryText }};
+        background-color: transparent;
     }
     .primary-dark-color {
-        background-color: {{ g.color[g.theme].primaryDark }};
         color: {{ g.color[g.theme].primaryDarkText }};
+        background-color: {{ g.color[g.theme].primaryDark }};
+    }
+    .primary-dark-transparent-color {
+        color: {{ g.color[g.theme].primaryDarkText }};
+        background-color: transparent;
     }
     .primary-transparent-inverted-color {
         color: {{ g.color[g.theme].primary }};

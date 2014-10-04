@@ -6,6 +6,7 @@
         articleRead: false,
         readStateJob: null,
         pathObserver: null,
+        searchVisible: false,
 
         ready: function() {
             var drawerPanel = this.$['drawer-panel'];
@@ -103,5 +104,24 @@
             this.fire('core-signal', {name: 'rf-mark-all-as-read'});
         },
 
+        onSearchToggle: function() {
+            this.searchVisible = !this.searchVisible;
+            if (this.searchVisible) {
+                this.async(function() {
+                    this.$['drawer-panel'].querySelector('.search-input').focus();
+                });
+            }
+        },
+
+        onSearchKeyPress: function(event, detail, sender) {
+            switch (event.keyCode) {
+            case 13: //Enter
+                this.fire('core-signal', {name: 'rf-feed-search', data: sender.value});
+                break;
+            case 27: //Escape
+                this.onSearchToggle();
+                break;
+            }
+        }
     });
 })();

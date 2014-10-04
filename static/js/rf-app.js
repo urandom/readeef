@@ -27,6 +27,18 @@
         }
     }
 
+    function createSearchPseudoFeed(query) {
+        // TODO: i18n
+        return {
+            Id: "search:" + query,
+            Title: "Search results for '" + query + "'",
+            Description: "",
+            Articles: null,
+            Image: {},
+            Link: "",
+        }
+    }
+
     Polymer('rf-app', {
         selected: 'loading',
         responsiveWidth: '768px',
@@ -130,6 +142,9 @@
                     this.currentFeed = createFavoritePseudoFeed();
                 } else if (newValue.indexOf("tag:") == 0) {
                     this.currentFeed = createPseudoTagFeed(newValue.substring(4));
+                } else if (newValue.indexOf("search:") == 0) {
+                    this.searchTerm = newValue.substring(7);
+                    this.currentFeed = createSearchPseudoFeed(this.searchTerm);
                 } else {
                     this.currentFeed = this.feedIdMap[newValue];
                 }
@@ -288,7 +303,13 @@
             this.offset = 0;
 
             this.loadingArticles = true;
-            this.$['feed-articles'].go();
+
+            if (this.currentFeed.Id.indexOf("search:") == 0) {
+                this.noMoreArticles = true;
+                this.$['feed-search'].go();
+            } else {
+                this.$['feed-articles'].go();
+            }
         },
 
         onMarkAllAsRead: function() {
@@ -316,6 +337,12 @@
 
         onFeedTagsChange: function() {
             this.updateTags();
+        },
+
+        onFeedSearch: function(event, detail) {
+            if (detail !== "") {
+                this.currentFeedId = "search:" + detail;
+            }
         },
 
         onFeedUpdateNotify: function(event, data) {

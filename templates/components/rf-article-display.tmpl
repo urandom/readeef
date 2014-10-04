@@ -2,14 +2,12 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-signals/core-signals.html">
 
-<link rel="import" href="/dist/loading-wave/loading-wave.html">
-
 <link rel="import" href="/component/rf-api">
 
 <polymer-element name="rf-article-display" attributes="articles article wide user">
     <template>
-        <link rel="stylesheet" href="/css/rf-article-display.css">
-        <link rel="stylesheet" href="/css/rf-content-list.css">
+        <link rel="stylesheet" href="/css/rf-article-display.css" shim-shadowdom>
+        <link rel="stylesheet" href="/css/rf-content-list.css" shim-shadowdom>
         <div id="viewport" class="article-display-viewport {{ {wide: wide} | tokenList }}" touch-action="pan-y"></div>
 
         <content></content>

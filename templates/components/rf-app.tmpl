@@ -69,6 +69,9 @@
         <rf-api id="user-settings" on-rf-api-response="{{ onUserSettingsResponse }}" user="{{ user }}" method="post"></rf-api>
         <rf-api id="feed-update-notifier" pathAction="feed-update-notifier" on-rf-api-response="{{ onFeedUpdateNotify }}" on-rf-api-complete="{{ onFeedUpdateNotifyComplete }}" user="{{ user }}"></rf-api>
 
+        <!-- TODO: Enable the html highlight when polymer gets save template binding -->
+        <rf-api id="feed-search" pathAction="search/{{ searchTerm }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}" params='{"highlight": ""}'></rf-api>
+
         <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
 
         <core-media-query query="min-width: {{responsiveWidth}}" queryMatches="{{wide}}"></core-media-query>
@@ -79,6 +82,7 @@
         <core-signals on-core-signal-rf-feeds-removed="{{ onFeedsChanged }}"></core-signals>
         <core-signals on-core-signal-rf-mark-all-as-read="{{ onMarkAllAsRead }}"></core-signals>
         <core-signals on-core-signal-rf-feed-tags-changed="{{ onFeedTagsChange }}"></core-signals>
+        <core-signals on-core-signal-rf-feed-search="{{ onFeedSearch }}"></core-signals>
 
     </template>
 
