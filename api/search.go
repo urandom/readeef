@@ -3,8 +3,6 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-
-	"github.com/blevesearch/bleve/search"
 	"github.com/urandom/readeef"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
@@ -39,14 +37,12 @@ func (con Search) Handler(c context.Context) http.HandlerFunc {
 				highlight = vs[0]
 			}
 
-			var articles []readeef.Article
-			var hits search.DocumentMatchCollection
+			var results []readeef.SearchResult
 
-			articles, hits, err = con.searchIndex.Search(query, highlight)
+			results, err = con.searchIndex.Search(query, highlight)
 
 			if err == nil {
-				resp["Articles"] = articles
-				resp["Hits"] = hits
+				resp["Results"] = results
 			}
 		}
 

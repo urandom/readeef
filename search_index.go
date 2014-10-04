@@ -18,6 +18,11 @@ type SearchIndex struct {
 	newIndex bool
 }
 
+type SearchResult struct {
+	Article
+	Hit search.DocumentMatch
+}
+
 var EmptySearchIndex = SearchIndex{}
 
 func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, error) {
@@ -95,7 +100,7 @@ func (si SearchIndex) Delete(a Article) error {
 	return si.index.Delete(fmt.Sprintf("%d:%s", a.FeedId, a.Id))
 }
 
-func (si SearchIndex) Search(term, highlight string, paging ...int) ([]Article, search.DocumentMatchCollection, error) {
+func (si SearchIndex) Search(term, highlight string, paging ...int) ([]SearchResult, error) {
 	query := bleve.NewQueryStringQuery(term)
 	searchRequest := bleve.NewSearchRequest(query)
 
@@ -110,29 +115,34 @@ func (si SearchIndex) Search(term, highlight string, paging ...int) ([]Article, 
 	Debug.Printf("Searching for '%s'\n", query.Query)
 	searchResult, err := si.index.Search(searchRequest)
 
-	hits := []*search.DocumentMatch{}
-
 	if err != nil {
-		return []Article{}, hits, err
+		return []SearchResult{}, err
 	}
 
 	if len(searchResult.Hits) == 0 {
 		Debug.Printf("No results found for '%s'\n", query.Query)
-		return []Article{}, hits, nil
+		return []SearchResult{}, nil
 	}
 
 	feedArticleIds := []FeedArticleIds{}
+	hitMap := map[string]*search.DocumentMatch{}
 
 	for _, hit := range searchResult.Hits {
 		ids := strings.SplitN(hit.ID, ":", 2)
 		feedId, err := strconv.ParseInt(ids[0], 10, 64)
 		if err == nil {
 			feedArticleIds = append(feedArticleIds, FeedArticleIds{feedId, ids[1]})
-			hits = append(hits, hit)
+			hitMap[hit.ID] = hit
 		}
 	}
 
 	articles, err := si.db.GetSpecificArticles(feedArticleIds...)
 
-	return articles, hits, err
+	searchResults := make([]SearchResult, len(articles))
+	for i, article := range articles {
+		hit := hitMap[fmt.Sprintf("%d:%s", article.FeedId, article.Id)]
+		searchResults[i] = SearchResult{article, *hit}
+	}
+
+	return searchResults, err
 }
