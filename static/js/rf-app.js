@@ -308,7 +308,7 @@
 
             this.loadingArticles = true;
 
-            if (this.currentFeed.Id.indexOf("search:") == 0) {
+            if (this.currentFeed.Id.toString().indexOf("search:") == 0) {
                 this.noMoreArticles = true;
                 this.$['feed-search'].go();
             } else {
