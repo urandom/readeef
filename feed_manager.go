@@ -271,15 +271,10 @@ func (fm *FeedManager) stopUpdatingFeed(f Feed) {
 			Debug.Println("Removing orphan feed " + f.Link + " from the database")
 
 			if fm.searchIndex != EmptySearchIndex {
-				articles, err := fm.db.GetAllFeedArticles(f)
-
-				if err == nil {
-					Debug.Printf("Removing all articles from the search index for feed '%s'\n", f.Link)
-					for _, a := range articles {
-						fm.searchIndex.Delete(a)
-					}
-				} else {
-					fm.logger.Printf("Error getting articles for feed '%s': %v\n", f.Link, err)
+				if err := fm.searchIndex.DeleteFeed(f); err != nil {
+					fm.logger.Printf(
+						"Error deleting articles for feed '%s' from the search index: %v\n",
+						f.Link, err)
 				}
 			}
 			fm.db.DeleteFeed(f)

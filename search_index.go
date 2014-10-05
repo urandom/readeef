@@ -8,21 +8,33 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/search"
 )
 
 type SearchIndex struct {
-	index    bleve.Index
-	logger   *log.Logger
-	db       DB
-	newIndex bool
+	index     bleve.Index
+	logger    *log.Logger
+	db        DB
+	newIndex  bool
+	batchSize int64
+	verbose   int
 }
 
 type SearchResult struct {
 	Article
 	Hit search.DocumentMatch
+}
+
+type indexArticle struct {
+	Id          string
+	FeedId      string
+	Title       string
+	Description string
+	Link        string
+	Date        time.Time
 }
 
 var EmptySearchIndex = SearchIndex{}
@@ -59,24 +71,25 @@ func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, erro
 	si.logger = logger
 	si.db = db
 	si.index = index
+	si.batchSize = config.SearchIndex.BatchSize
 
 	return si, nil
 }
 
-func (si SearchIndex) IndexAllArticles() {
+func (si *SearchIndex) SetVerbose(verbose int) {
+	si.verbose = verbose
+}
+
+func (si SearchIndex) IndexAllArticles() error {
 	Debug.Println("Indexing all articles")
 
 	if articles, err := si.db.GetAllArticles(); err == nil {
-		for i, l := 0, len(articles); i < l; i++ {
-			a := articles[i]
-
-			if err := si.Index(a); err != nil {
-				si.logger.Printf("Error indexing article %s from feed %d: %v\n", a.Id, a.FeedId, err)
-			}
-		}
+		si.batchIndex(articles)
 	} else {
-		si.logger.Printf("Error getting all articles: %v\n", err)
+		return err
 	}
+
+	return nil
 }
 
 func (si SearchIndex) IsNewIndex() bool {
@@ -85,25 +98,96 @@ func (si SearchIndex) IsNewIndex() bool {
 
 func (si SearchIndex) UpdateFeed(feed Feed) {
 	Debug.Printf("Updating article search index for feed '%s'\n", feed.Link)
+
+	var articles []Article
 	for _, a := range feed.Articles {
 		if feed.lastUpdatedArticleIds[a.Id] {
-			if err := si.Index(a); err != nil {
-				si.logger.Printf(
-					"Error indexing article %s from feed %d: %v\n",
-					a.Id, a.FeedId, err)
+			articles = append(articles, a)
+		}
+	}
+
+	si.batchIndex(articles)
+}
+
+func (si SearchIndex) DeleteFeed(feed Feed) error {
+	articles, err := si.db.GetAllFeedArticles(feed)
+
+	if err == nil {
+		Debug.Printf("Removing all articles from the search index for feed '%s'\n", feed.Link)
+
+		si.batchDelete(articles)
+	} else {
+		return err
+	}
+	return nil
+}
+
+func (si SearchIndex) batchIndex(articles []Article) {
+	if len(articles) == 0 {
+		return
+	}
+
+	batch := bleve.NewBatch()
+	count := int64(0)
+
+	for i, l := 0, len(articles); i < l; i++ {
+		a := articles[i]
+
+		if si.verbose > 0 {
+			Debug.Printf("Indexing article '%s' from feed id '%d'\n", a.Id, a.FeedId)
+		}
+
+		batch.Index(prepareArticle(a))
+		count++
+
+		if count >= si.batchSize {
+			if err := si.index.Batch(batch); err != nil {
+				si.logger.Printf("Error indexing article batch: %v\n", err)
 			}
+			batch = bleve.NewBatch()
+			count = 0
+		}
+	}
+
+	if count > 0 {
+		if err := si.index.Batch(batch); err != nil {
+			si.logger.Printf("Error indexing article batch: %v\n", err)
 		}
 	}
 }
 
-func (si SearchIndex) Index(a Article) error {
-	a.Title = html.UnescapeString(stripTags(a.Title))
-	a.Description = html.UnescapeString(stripTags(a.Description))
-	return si.index.Index(fmt.Sprintf("%d:%s", a.FeedId, a.Id), a)
-}
+func (si SearchIndex) batchDelete(articles []Article) {
+	if len(articles) == 0 {
+		return
+	}
 
-func (si SearchIndex) Delete(a Article) error {
-	return si.index.Delete(fmt.Sprintf("%d:%s", a.FeedId, a.Id))
+	batch := bleve.NewBatch()
+	count := int64(0)
+
+	for i, l := 0, len(articles); i < l; i++ {
+		a := articles[i]
+
+		if si.verbose > 0 {
+			Debug.Printf("Indexing article '%s' from feed id '%d'\n", a.Id, a.FeedId)
+		}
+
+		batch.Delete(indexId(a))
+		count++
+
+		if count >= si.batchSize {
+			if err := si.index.Batch(batch); err != nil {
+				si.logger.Printf("Error indexing article batch: %v\n", err)
+			}
+			batch = bleve.NewBatch()
+			count = 0
+		}
+	}
+
+	if count > 0 {
+		if err := si.index.Batch(batch); err != nil {
+			si.logger.Printf("Error indexing article batch: %v\n", err)
+		}
+	}
 }
 
 func (si SearchIndex) Search(term, highlight string, paging ...int) ([]SearchResult, error) {
@@ -151,6 +235,20 @@ func (si SearchIndex) Search(term, highlight string, paging ...int) ([]SearchRes
 	}
 
 	return searchResults, err
+}
+
+func prepareArticle(a Article) (string, indexArticle) {
+	ia := indexArticle{Id: a.Id, FeedId: strconv.FormatInt(a.FeedId, 10),
+		Title:       html.UnescapeString(stripTags(a.Title)),
+		Description: html.UnescapeString(stripTags(a.Description)),
+		Link:        a.Link, Date: a.Date,
+	}
+
+	return indexId(a), ia
+}
+
+func indexId(a Article) string {
+	return fmt.Sprintf("%d:%s", a.FeedId, a.Id)
 }
 
 func stripTags(text string) string {

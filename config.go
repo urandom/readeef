@@ -51,6 +51,7 @@ type Config struct {
 
 	SearchIndex struct {
 		BlevePath string `gcfg:"bleve-path"`
+		BatchSize int64  `gcfg:"batch-size"`
 	} `gcfg:"search-index"`
 }
 
@@ -121,4 +122,5 @@ var cfg string = `
 	from = readeef
 [search-index]
 	bleve-path = ./readeef.bleve
+	batch-size = 100
 `

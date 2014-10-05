@@ -11,6 +11,7 @@ import (
 
 func main() {
 	confpath := flag.String("config", "", "readeef config path")
+	verbose := flag.Int("verbose", 1, "verbose level")
 
 	flag.Parse()
 
@@ -39,17 +40,9 @@ func main() {
 
 	readeef.Debug.Println("Getting all articles")
 
-	if articles, err := db.GetAllArticles(); err == nil {
-		for i, l := 0, len(articles); i < l; i++ {
-			a := articles[i]
-
-			readeef.Debug.Printf("Indexing article '%s' from feed id '%d'\n", a.Id, a.FeedId)
-			if err := si.Index(a); err != nil {
-				logger.Printf("Error indexing article %s from feed %d: %v\n", a.Id, a.FeedId, err)
-			}
-		}
-	} else {
-		exitWithError(fmt.Sprintf("Error getting all articles: %v", err))
+	si.SetVerbose(*verbose)
+	if err := si.IndexAllArticles(); err != nil {
+		exitWithError(fmt.Sprintf("Error indexing all articles: %v", err))
 	}
 }
 

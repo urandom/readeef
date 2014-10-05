@@ -29,8 +29,8 @@
                                     <paper-icon-button class="favorite-button" icon="{{ {'bookmark-outline': !Favorite, bookmark: Favorite} | tokenList }}" on-tap="{{ onFavoriteToggle }}" data-article-id="{{ Id }}" data-feed-id="{{ FeedId }}"></paper-icon-button>
                                     <span class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</span>
                                     <span flex class="title-wrapper">
-                                        <span class="title" title="{{ Title }}">{{ Hit && Hit.fragments['Article.Title'] ? Hit.fragments['Article.Title'] : Title }}</span>
-                                        <span class="short-description">{{ Hit && Hit.fragments['Article.Description'] ? Hit.fragments['Article.Description'] : ShortDescription }}</span>
+                                        <span class="title" title="{{ Title }}">{{ Hit && Hit.fragments.Title ? Hit.fragments.Title : Title }}</span>
+                                        <span class="short-description">{{ Hit && Hit.fragments.Description ? Hit.fragments.Description : ShortDescription }}</span>
                                     </span>
                                     <span class="publish-date">{{ RelativeDate }}</span>
                                 </div>
