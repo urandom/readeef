@@ -115,7 +115,7 @@
             }
         },
 
-        onSearchKeyPress: function(event, detail, sender) {
+        onSearchKeyUp: function(event, detail, sender) {
             switch (event.keyCode) {
             case 13: //Enter
                 this.fire('core-signal', {name: 'rf-feed-search', data: sender.value});
@@ -124,6 +124,10 @@
                 this.onSearchToggle();
                 break;
             }
+        },
+
+        onSearchKeyPress: function(event, detail, sender) {
+            event.stopPropagation();
         },
 
         onContentKeypress: function(event) {
