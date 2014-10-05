@@ -6,6 +6,7 @@
 <link rel="import" href="/dist/core-drawer-panel/core-drawer-panel.html">
 <link rel="import" href="/dist/core-icons/core-icons.html">
 <link rel="import" href="/dist/core-icons/hardware-icons.html">
+<link rel="import" href="/dist/core-icons/social-icons.html">
 <link rel="import" href="/dist/core-style/core-style.html">
 
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
@@ -34,6 +35,9 @@
             <paper-icon-button icon="{{ articleRead ? 'check-circle': 'check-circle-outline-blank' }}" class="title-icon" on-tap="{{ onArticleReadToggle }}" hidden?="{{ !article || display != 'feed' }}"></paper-icon-button>
             <paper-icon-button icon="hardware:keyboard-arrow-left" class="title-icon" style="opacity: {{ article && !article.First ? 100 : 0 }}" on-tap="{{ onArticlePrevious }}" hidden?="{{ !article || display != 'feed' }}"></paper-icon-button>
             <paper-icon-button icon="hardware:keyboard-arrow-right" class="title-icon" style="opacity: {{ article && !article.Last ? 100 : 0 }}" on-tap="{{ onArticleNext }}" hidden?="{{ !article || display != 'feed' }}"></paper-icon-button>
+            <template if="{{ socialServices.length }}">
+                <paper-icon-button icon="social:share-alt" class="title-icon" hidden?="{{ !article || display != 'feed' }}"></paper-icon-button>
+            </template>
         </template>
 
         <template id="search-controls">
