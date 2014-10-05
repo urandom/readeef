@@ -37,7 +37,7 @@
         </template>
 
         <template id="search-controls">
-            <paper-icon-button icon="close" class="title-icon" on-tap="{{ onSearchToggle }}" hidden?="{{ article || display != 'feed' }}"></paper-icon-button>
+            <paper-icon-button icon="close" class="title-icon search-close" on-tap="{{ onSearchToggle }}" hidden?="{{ article || display != 'feed' }}"></paper-icon-button>
             <div flex class="search-container">
                 <paper-input label="Search" class="search-input {{ header ? 'primary-transparent-color' : 'primary-dark-transparent-inverted-color' }}" tabindex="1" on-keyup="{{ onSearchKeyUp }}" on-keypress="{{ onSearchKeyPress }}" value=""></paper-input>
             </div>

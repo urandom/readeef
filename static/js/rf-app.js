@@ -145,6 +145,10 @@
                 } else if (newValue.indexOf("search:") == 0) {
                     this.searchTerm = newValue.substring(7);
                     this.currentFeed = createSearchPseudoFeed(this.searchTerm);
+
+                    if (oldValue.indexOf("search:") != 0) {
+                        this.userSettings.preSearchFeedId = oldValue;
+                    }
                 } else {
                     this.currentFeed = this.feedIdMap[newValue];
                 }
@@ -340,7 +344,9 @@
         },
 
         onFeedSearch: function(event, detail) {
-            if (detail !== "") {
+            if (detail === "") {
+                this.currentFeedId = this.userSettings.preSearchFeedId || 'tag:__all__';
+            } else {
                 this.currentFeedId = "search:" + detail;
             }
         },

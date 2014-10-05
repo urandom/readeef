@@ -106,12 +106,16 @@
             this.fire('core-signal', {name: 'rf-mark-all-as-read'});
         },
 
-        onSearchToggle: function() {
+        onSearchToggle: function(event, detail, sender) {
             this.searchVisible = !this.searchVisible;
             if (this.searchVisible) {
                 this.async(function() {
                     this.$['drawer-panel'].querySelector('.search-input').focus();
                 });
+            } else {
+                if (sender && sender.classList.contains('search-close')) {
+                    this.fire('core-signal', {name: 'rf-feed-search', data: ''});
+                }
             }
         },
 
