@@ -210,7 +210,6 @@ func (si SearchIndex) Search(term, highlight string, feedIds []int64, paging ...
 
 		disjunct := bleve.NewDisjunctionQuery(queries)
 
-		query = disjunct
 		conjunct[0] = query
 		conjunct[1] = disjunct
 

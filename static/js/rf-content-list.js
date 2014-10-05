@@ -64,14 +64,17 @@
             var processArticles = (function processArticles() {
                 if (this.feed.Articles && this.feed.Articles.length) {
                     var worker = new Worker('/js/content-articles-worker.js'),
-                        data = {current: this.feed};
+                        data = {current: this.feed},
+                        feedId = this.feed.Id.toString();
 
                     worker.addEventListener('message', function(event) {
                         this.articles = event.data.articles;
                     }.bind(this));
-                    if (this.feed.Id.toString().indexOf("tag:") == 0) {
+
+                    if (feedId.indexOf("tag:") == 0 || feedId.indexOf("search:") == 0) {
                         data.feeds = this.feeds;
                     }
+
                     worker.postMessage(data);
                 } else if (this.articles.length) {
                     this.articles = [];

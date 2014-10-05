@@ -123,6 +123,7 @@
             switch (event.keyCode) {
             case 13: //Enter
                 this.fire('core-signal', {name: 'rf-feed-search', data: sender.value});
+                this.onSearchToggle();
                 break;
             case 27: //Escape
                 this.onSearchToggle();
