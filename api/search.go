@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/webfw"
@@ -34,13 +36,41 @@ func (con Search) Handler(c context.Context) http.HandlerFunc {
 
 		if err == nil {
 			highlight := ""
+			feedId := ""
+
 			if vs := r.Form["highlight"]; len(vs) > 0 {
 				highlight = vs[0]
 			}
 
+			if vs := r.Form["id"]; len(vs) > 0 {
+				if vs[0] != "tag:__all__" && vs[0] != "__favorite__" {
+					feedId = vs[0]
+				}
+			}
+
+			var ids []int64
+			if strings.HasPrefix(feedId, "tag:") {
+				db := readeef.GetDB(c)
+				user := readeef.GetUser(c, r)
+
+				var feeds []readeef.Feed
+
+				feeds, err = db.GetUserTagFeeds(user, feedId[4:])
+
+				if err == nil {
+					for _, feed := range feeds {
+						ids = append(ids, feed.Id)
+					}
+				}
+			} else {
+				if id, err := strconv.ParseInt(feedId, 10, 64); err == nil {
+					ids = append(ids, id)
+				}
+			}
+
 			var results []readeef.SearchResult
 
-			results, err = con.searchIndex.Search(query, highlight)
+			results, err = con.searchIndex.Search(query, highlight, ids)
 
 			if err == nil {
 				resp["Articles"] = results

@@ -55,6 +55,11 @@ func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, erro
 		}
 	} else if os.IsNotExist(err) {
 		mapping := bleve.NewIndexMapping()
+		documentMapping := bleve.NewDocumentMapping()
+		numericFieldMapping := bleve.NewNumericFieldMapping()
+
+		documentMapping.AddFieldMappingsAt("FeedId", numericFieldMapping)
+		mapping.AddDocumentMapping(mapping.DefaultField, documentMapping)
 
 		Debug.Println("Creating search index " + config.SearchIndex.BlevePath)
 		index, err = bleve.New(config.SearchIndex.BlevePath, mapping)
@@ -190,8 +195,29 @@ func (si SearchIndex) batchDelete(articles []Article) {
 	}
 }
 
-func (si SearchIndex) Search(term, highlight string, paging ...int) ([]SearchResult, error) {
-	query := bleve.NewQueryStringQuery(term)
+func (si SearchIndex) Search(term, highlight string, feedIds []int64, paging ...int) ([]SearchResult, error) {
+	var query bleve.Query
+
+	query = bleve.NewQueryStringQuery(term)
+
+	if len(feedIds) > 0 {
+		queries := make([]bleve.Query, len(feedIds))
+		conjunct := make([]bleve.Query, 2)
+
+		for i, id := range feedIds {
+			queries[i] = bleve.NewPhraseQuery([]string{strconv.FormatInt(id, 10)}, "FeedId")
+		}
+
+		disjunct := bleve.NewDisjunctionQuery(queries)
+
+		query = disjunct
+		conjunct[0] = query
+		conjunct[1] = disjunct
+
+		Debug.Printf("Constructing query for term '%s' and feed ids [%v]\n", term, feedIds)
+		query = bleve.NewConjunctionQuery(conjunct)
+	}
+
 	searchRequest := bleve.NewSearchRequest(query)
 
 	if highlight != "" {
@@ -202,7 +228,7 @@ func (si SearchIndex) Search(term, highlight string, paging ...int) ([]SearchRes
 	searchRequest.Size = limit
 	searchRequest.From = offset
 
-	Debug.Printf("Searching for '%s'\n", query.Query)
+	Debug.Printf("Searching for '%s'\n", term)
 	searchResult, err := si.index.Search(searchRequest)
 
 	if err != nil {
@@ -210,7 +236,7 @@ func (si SearchIndex) Search(term, highlight string, paging ...int) ([]SearchRes
 	}
 
 	if len(searchResult.Hits) == 0 {
-		Debug.Printf("No results found for '%s'\n", query.Query)
+		Debug.Printf("No results found for '%s'\n", term)
 		return []SearchResult{}, nil
 	}
 
