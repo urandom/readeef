@@ -158,13 +158,11 @@
             }
         },
 
-        onFavoriteArticleToggle: function() {
-            if ('onFavoriteArticleToggle' in this.templateInstance.model) {
-                this.templateInstance.model.onFavoriteArticleToggle.apply(
-                    this.templateInstance.model, arguments);
+        onArticleFavorite: function() {
+            this.article.Favorite = !this.article.Favorite;
+            this.$['article-favorite'].go();
 
-                this.updateItem(this._physicalArticles[1]._virtualIndex, 1);
-            }
+            this.updateItem(this._physicalArticles[1]._virtualIndex, 1);
         },
 
         cleanTemplateElement: function(template) {

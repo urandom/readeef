@@ -13,8 +13,10 @@
         <content></content>
 
         <rf-api id="article-format" method="get" pathAction="article/formatter/{{ article.FeedId }}/{{ article.Id }}" on-rf-api-response="{{ onArticleFormatResponse }}" user="{{ user }}"></rf-api>
+        <rf-api id="article-favorite" method="post" pathAction="article/favorite/{{ article.FeedId }}/{{ article.Id }}/{{ article.Favorite }}" on-rf-api-response="{{ onArticleFavoriteResponse }}" user="{{ user }}"></rf-api>
 
         <core-signals on-core-signal-rf-article-format="{{ onArticleFormat }}"></core-signals>
+        <core-signals on-core-signal-rf-article-favorite="{{ onArticleFavorite }}"></core-signals>
     </template>
     <script src="/js/rf-article-display.js"></script>
 </polymer-element>

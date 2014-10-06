@@ -154,23 +154,18 @@
                 if (a.Id == articleId) {
                     a.Favorite = !a.Favorite;
 
-                    var clone = this.$['article-favorite'].cloneNode(true);
-                    clone.pathAction = "article/favorite/" + a.FeedId + "/" + a.Id + "/" + a.Favorite;
-                    clone.user = this.user;
+                    var fav = new RfAPI();
+                    fav.pathAction = "article/favorite/" + a.FeedId + "/" + a.Id + "/" + a.Favorite;
+                    fav.user = this.user;
+                    fav.method = "post";
 
-                    clone.go()
+                    fav.go()
 
                     this.$['articles-list'].refresh(true);
 
                     break;
                 }
             }
-        },
-
-        onFavoriteArticleToggle: function() {
-            this.article.Favorite = !this.article.Favorite;
-            this.$['article-favorite'].go();
-            this.$['articles-list'].refresh(true);
         },
 
         onReadArticleToggle: function() {
@@ -221,6 +216,10 @@
                 }
             } else if (key == "U+0052" || code == 114 || code == 82) { // r
                 this.fire('core-signal', {name: "rf-feed-refresh"});
+            } else if (key == "U+0046" || code == 102 || code == 70) { // f
+                if (this.article) {
+                    this.fire('core-signal', {name: "rf-article-favorite"});
+                }
             }
         }
     });
