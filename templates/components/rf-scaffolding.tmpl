@@ -14,7 +14,7 @@
 <link rel="import" href="/dist/paper-menu-button/paper-menu-button.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
 
-<polymer-element name="rf-scaffolding" attributes="wide user settings feed article display updateAvailable">
+<polymer-element name="rf-scaffolding" attributes="wide user settings feed article display updateAvailable searchEnabled" searchEnabled="{% ne .base.readeefConfig.SearchIndex.BlevePath `` %}">
     <template>
         <link href="/css/rf-scaffolding.css" rel="stylesheet">
 

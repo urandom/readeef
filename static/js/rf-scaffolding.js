@@ -11,6 +11,8 @@
         ready: function() {
             var drawerPanel = this.$['drawer-panel'];
 
+            this.searchEnabled = this.searchEnabled == "true";
+
             this.$.navicon.addEventListener('click', function() {
                 drawerPanel.togglePanel();
             });
@@ -138,7 +140,7 @@
         onContentKeypress: function(event) {
             var code = event.keyCode || event.charCode, key = event.keyIdentifier;
 
-            if (key == "Help" || key == "U+003F" || code == 47 || code == 63) { // "/"
+            if (this.searchEnabled && (key == "Help" || key == "U+003F" || code == 47 || code == 63)) { // "/"
                 if (!this.article && !this.searchVisible) {
                     this.onSearchToggle();
                 }
