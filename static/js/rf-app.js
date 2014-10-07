@@ -50,7 +50,6 @@
         currentArticle: null,
         loadingArticles: false,
         loadingMoreArticles: false,
-        feedIdMap: {},
         noMoreArticles: false,
         display: 'feed',
         limit: 50,
@@ -64,6 +63,8 @@
         created: function() {
             this.feeds = [];
             this.tags = [];
+            this.feedIdMap = {};
+            this.shareServices = [];
         },
 
         userChanged: function(oldValue, newValue) {
@@ -125,10 +126,28 @@
                         CoreStyle.g.theme = amalgamation.theme;
                     }
 
+                    if ('shareServices' in amalgamation) {
+                        var shareServices = [];
+
+                        for (var i = 0, s; s = (this.userSettings.shareServices || [])[i]; ++i) {
+                            shareServices.push(this.$[s]);
+                        }
+
+                        this.shareServices = shareServices;
+                    }
+
                     this.$['user-settings'].body = JSON.stringify(this.userSettings);
                     this.$['user-settings'].pathAction = "user-settings/ProfileData";
                     this.$['user-settings'].go();
                 }.bind(this));
+
+                var shareServices = [];
+
+                for (var i = 0, s; s = (this.userSettings.shareServices || [])[i]; ++i) {
+                    shareServices.push(this.$[s]);
+                }
+
+                this.shareServices = shareServices;
             }
         },
 
@@ -179,6 +198,10 @@
             urlParser.href = value;
 
             return urlParser.host;
+        },
+
+        encodeURIComponent: function(value) {
+            return encodeURIComponent(value);
         },
 
         onAuthCheckComplete: function(event, response) {

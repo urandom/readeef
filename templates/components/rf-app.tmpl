@@ -16,6 +16,7 @@
 <link rel="import" href="/dist/loading-wave/loading-wave.html">
 
 <link rel="import" href="/component/rf-api">
+<link rel="import" href="/component/rf-share-service">
 <link rel="import" href="/component/rf-scaffolding">
 <link rel="import" href="/component/rf-login">
 <link rel="import" href="/component/rf-content-list">
@@ -26,7 +27,7 @@
         <link href="/css/rf-app.css" rel="stylesheet">
 
         <core-animated-pages selected="{{ selected }}" transitions="cross-fade cross-fade-delayed scale-up slide-up slide-up-offscreen slide-down tile-cascade hero-transition" fit class="{{ {wide: wide} | tokenList }}">
-            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feed="{{ currentFeed }}" article="{{ currentArticle }}" display="{{ display }}" updateAvailable="{{ updateAvailable }}">
+            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feed="{{ currentFeed }}" article="{{ currentArticle }}" display="{{ display }}" updateAvailable="{{ updateAvailable }}" shareServices="{{ shareServices }}">
                 <div fit class="drawer-title bottom">Feeds</div>
 
                 <template if="{{ feeds.length > 0 }}">
@@ -71,6 +72,14 @@
 
         <!-- TODO: Enable the html highlight when polymer gets save template binding -->
         <rf-api id="feed-search" pathAction="search/{{ searchTerm }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}" params='{"highlight": "", "id": "{{ userSettings.preSearchFeedId }}"}'></rf-api>
+
+        <rf-share-service id="evernote" title="Evernote" url="https://www.evernote.com/clip.action?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
+        <rf-share-service id="instapaper" title="Instapaper" url="http://www.instapaper.com/hello2?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
+        <rf-share-service id="pocket" title="Pocket" url="https://getpocket.com/save?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
+
+        <rf-share-service id="googlep" title="Google+" url="https://plus.google.com/share?url={{ currentArticle.Link | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
+        <rf-share-service id="facebook" title="Facebook" url="http://www.facebook.com/sharer.php?u={{ currentArticle.Link | encodeURIComponent }}&t={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
+        <rf-share-service id="twitter" title="Twitter" url="https://twitter.com/intent/tweet?url={{ currentArticle.Link | encodeURIComponent }}&text={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
 
         <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
 
