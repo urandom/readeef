@@ -55,11 +55,6 @@ func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, erro
 		}
 	} else if os.IsNotExist(err) {
 		mapping := bleve.NewIndexMapping()
-		documentMapping := bleve.NewDocumentMapping()
-		numericFieldMapping := bleve.NewNumericFieldMapping()
-
-		documentMapping.AddFieldMappingsAt("FeedId", numericFieldMapping)
-		mapping.AddDocumentMapping(mapping.DefaultField, documentMapping)
 
 		Debug.Println("Creating search index " + config.SearchIndex.BlevePath)
 		index, err = bleve.New(config.SearchIndex.BlevePath, mapping)
@@ -205,7 +200,10 @@ func (si SearchIndex) Search(term, highlight string, feedIds []int64, paging ...
 		conjunct := make([]bleve.Query, 2)
 
 		for i, id := range feedIds {
-			queries[i] = bleve.NewPhraseQuery([]string{strconv.FormatInt(id, 10)}, "FeedId")
+			q := bleve.NewTermQuery(strconv.FormatInt(id, 10))
+			q.SetField("FeedId")
+
+			queries[i] = q
 		}
 
 		disjunct := bleve.NewDisjunctionQuery(queries)
