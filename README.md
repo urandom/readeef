@@ -12,11 +12,11 @@ Quick start
 readeef is written in Go, and as of September 2014, requires at least version 1.3 of the language. It also uses build tags to specify which database support is to be built in. The currently supported databases are PostgreSQL ('postgres' tag), and SQLite ('sqlite3' tag). The later is not recommended, as locking problems will occur. 
 Two binaries may be built from the sources. The first is a user administration script, which has to be used to add the first user to the system. It may be built using the following command:
 
-> go build -tags postgres github.com/urandom/readeef/bin/readeef-user-admin
+> go build -tags postgres github.com/urandom/readeef/cmd/readeef-user-admin
 
 The second binary is the standalone server. Unless readeef is being added to an existing golang server setup, it should be built as well.
 
-> go build -tags postgres github.com/urandom/readeef/bin/readeef-server
+> go build -tags postgres github.com/urandom/readeef/cmd/readeef-server
 
 Unless you are using SQLite, readeef will need to be configured as well. A minimal configuration file might be something like this:
 
@@ -52,9 +52,9 @@ In order for the web interface to actually work, the client-side libraries will 
     git clone https://github.com/urandom/readeef.git
     cd readeef
     bower update
-    go build -tags sqlite3 ./bin/readeef-user-admin
+    go build -tags sqlite3 ./cmd/readeef-user-admin
     ./readeef-user-admin add user password
-    go build -tags sqlite3 ./bin/readeef-server
+    go build -tags sqlite3 ./cmd/readeef-server
     ./readeef-server
     
 The server will run on port 8080, and you may login using the user 'user' and password 'password'
