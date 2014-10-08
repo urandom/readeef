@@ -77,9 +77,9 @@
         <rf-share-service id="instapaper" title="Instapaper" url="http://www.instapaper.com/hello2?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
         <rf-share-service id="pocket" title="Pocket" url="https://getpocket.com/save?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
 
-        <rf-share-service id="googlep" title="Google+" url="https://plus.google.com/share?url={{ currentArticle.Link | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
-        <rf-share-service id="facebook" title="Facebook" url="http://www.facebook.com/sharer.php?u={{ currentArticle.Link | encodeURIComponent }}&t={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
-        <rf-share-service id="twitter" title="Twitter" url="https://twitter.com/intent/tweet?url={{ currentArticle.Link | encodeURIComponent }}&text={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
+        <rf-share-service id="googlep" title="Google+" url="https://plus.google.com/share?url={{ currentArticle.Link | encodeURIComponent }}" article="{{ currentArticle }}"></rf-share-service>
+        <rf-share-service id="facebook" title="Facebook" url="http://www.facebook.com/sharer.php?u={{ currentArticle.Link | encodeURIComponent }}&t={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}"></rf-share-service>
+        <rf-share-service id="twitter" title="Twitter" url="https://twitter.com/intent/tweet?url={{ currentArticle.Link | encodeURIComponent }}&text={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}"></rf-share-service>
 
         <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
 
