@@ -83,3 +83,7 @@ li paper-checkbox {
 .theme.grey {
     background: {{ g.color.grey.primary }};
 }
+
+.share-service-title {
+    margin: 5px 20px 5px 0;
+}

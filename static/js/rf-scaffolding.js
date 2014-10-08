@@ -145,6 +145,19 @@
                     this.onSearchToggle();
                 }
             }
+        },
+
+        onShareArticle: function(event, detail, sender) {
+            var id = sender.getAttribute('data-service-id'),
+                service = this.shareServices.filter(function(service) {
+                    return service.id == id;
+                })[0];
+
+            if (!service) {
+                return;
+            }
+
+            service.go();
         }
     });
 })();

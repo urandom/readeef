@@ -65,6 +65,19 @@
             this.tags = [];
             this.feedIdMap = {};
             this.shareServices = [];
+            this.allShareServices = [];
+        },
+
+        attached: function() {
+            var shareServices = [];
+
+            for (var element in this.$) {
+                if (this.$[element].tagName.toLowerCase() == "rf-share-service") {
+                    shareServices.push(this.$[element]);
+                }
+            }
+
+            this.allShareServices = shareServices;
         },
 
         userChanged: function(oldValue, newValue) {
@@ -115,6 +128,18 @@
                 this.display = newValue.display || 'feed';
                 CoreStyle.g.theme = newValue.theme || 'blue';
 
+                var updateShareServices = function() {
+                    var shareServices = [];
+
+                    for (var i = 0, s; s = (this.userSettings.shareServices || [])[i]; ++i) {
+                        if (this.$[s]) {
+                            shareServices.push(this.$[s]);
+                        }
+                    }
+
+                    this.shareServices = shareServices;
+                }.bind(this);
+
                 this.userSettingsObserver = new ObjectObserver(this.userSettings);
                 this.userSettingsObserver.open(function (added, removed, changed, getOldValueFn) {
                     var amalgamation = Polymer.extend(Polymer.extend(Polymer.extend({}, added), removed), changed);
@@ -127,13 +152,7 @@
                     }
 
                     if ('shareServices' in amalgamation) {
-                        var shareServices = [];
-
-                        for (var i = 0, s; s = (this.userSettings.shareServices || [])[i]; ++i) {
-                            shareServices.push(this.$[s]);
-                        }
-
-                        this.shareServices = shareServices;
+                        updateShareServices();
                     }
 
                     this.$['user-settings'].body = JSON.stringify(this.userSettings);
@@ -141,13 +160,7 @@
                     this.$['user-settings'].go();
                 }.bind(this));
 
-                var shareServices = [];
-
-                for (var i = 0, s; s = (this.userSettings.shareServices || [])[i]; ++i) {
-                    shareServices.push(this.$[s]);
-                }
-
-                this.shareServices = shareServices;
+                updateShareServices();
             }
         },
 

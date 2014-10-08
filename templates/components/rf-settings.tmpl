@@ -5,6 +5,7 @@
 <link rel="import" href="/dist/paper-button/paper-button.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="/dist/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
 <link rel="import" href="/dist/paper-dropdown-menu/paper-dropdown-menu.html">
@@ -16,7 +17,7 @@
 
 <link rel="import" href="/component/rf-api">
 
-<polymer-element name="rf-settings" attributes="wide user settings feeds display" layout horizontal center-justified>
+<polymer-element name="rf-settings" attributes="wide user settings feeds display shareServices" layout horizontal center-justified>
     <template>
         <link href="/css/rf-settings.css" rel="stylesheet">
 
@@ -25,6 +26,8 @@
                 <paper-item name="general" label="General"></paper-item>
                 <paper-item name="add-feed" label="Add Feed"></paper-item>
                 <paper-item name="feeds" label="Manage Feeds"></paper-item>
+                <paper-item name="share-services" label="Share services"></paper-item>
+
                 <template if="{{ user.Admin }}">
                     <paper-item name="admin" label="Admin"></paper-item>
                 </template>
@@ -136,6 +139,21 @@
                                         <paper-icon-button icon="remove" on-tap="{{ onRemoveFeed }}"></paper-icon-button>
                                     </div>
                                     </template>
+                                </li>
+                                </template>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <section name="share-services" id="share-services" layout vertical center>
+                    <div class="container">
+                        <div class="card" hero-id="card" hero layout vertical>
+                            <ul cross-fade>
+                                <template repeat="{{ service in shareServices }}">
+                                <li title="{{ service.title }}" layout horizontal>
+                                    <div flex class="share-service-title">{{ service.title }}</div>
+                                    <paper-toggle-button checked?="{{ service.id | shareServiceEnabled }}" on-change="{{ onShareServiceCheckChange }}" data-service-id="{{ service.id }}"></paper-toggle-button>
                                 </li>
                                 </template>
                             </ul>

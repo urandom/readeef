@@ -352,6 +352,24 @@
             div.innerHTML = html;
 
             return div.textContent || "";
+        },
+
+        shareServiceEnabled: function(id) {
+            if (!this.settings || !this.settings.shareServices) {
+                return false;
+            }
+
+            return this.settings.shareServices.indexOf(id) != -1;
+        },
+
+        onShareServiceCheckChange: function() {
+            this.settings.shareServices = this.$['share-services'].querySelectorAll(
+                'paper-toggle-button[data-service-id]'
+            ).array().filter(function(e) {
+                return e.checked;
+            }).map(function(e) {
+                return e.getAttribute('data-service-id');
+            });
         }
     });
 })();

@@ -35,8 +35,15 @@
             <paper-icon-button icon="{{ articleRead ? 'check-circle': 'check-circle-outline-blank' }}" class="title-icon" on-tap="{{ onArticleReadToggle }}" hidden?="{{ !article || display != 'feed' }}"></paper-icon-button>
             <paper-icon-button icon="hardware:keyboard-arrow-left" class="title-icon" style="opacity: {{ article && !article.First ? 100 : 0 }}" on-tap="{{ onArticlePrevious }}" hidden?="{{ !article || display != 'feed' }}"></paper-icon-button>
             <paper-icon-button icon="hardware:keyboard-arrow-right" class="title-icon" style="opacity: {{ article && !article.Last ? 100 : 0 }}" on-tap="{{ onArticleNext }}" hidden?="{{ !article || display != 'feed' }}"></paper-icon-button>
-            <template if="{{ shareServices.length }}">
-                <paper-icon-button icon="social:share-alt" class="title-icon" hidden?="{{ !article || display != 'feed' }}"></paper-icon-button>
+            <template if="{{ shareServices.length == 1 }}">
+                <paper-icon-button icon="social:share-alt" class="title-icon" hidden?="{{ !article || display != 'feed' }}" data-service-id="{{ shareServices[0].id }}" on-tap="{{ onShareArticle }}"></paper-icon-button>
+            </template>
+            <template if="{{ shareServices.length > 1 }}">
+                <paper-menu-button icon="social:share-alt" halign="right" class="title-icon" hidden?="{{ !article || display != 'feed' }}">
+                    <template repeat="{{ shareServices }}">
+                        <paper-item label="{{ title }}" on-tap="{{ onShareArticle }}" data-service-id="{{ id }}"></paper-item>
+                    </template>
+                </paper-menu-button>
             </template>
         </template>
 
