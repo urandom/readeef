@@ -150,12 +150,12 @@
                     <div class="container">
                         <div class="card" hero-id="card" hero layout vertical>
                             <ul cross-fade>
-                                <template repeat="{{ category in shareServicesList(shareServices) }}">
+                                <template repeat="{{ category in shareServiceList }}">
                                 <li>
                                     <h4>{{ category.name }}</h4>
                                     <ul>
                                         <template repeat="{{ service in category.services }}">
-                                            <li title="{{ shareServices[service].title }}" layout horizontal>
+                                            <li title="{{ service.title }}" layout horizontal>
                                                 <div flex class="share-service-title">
                                                     <template if="{{ service.link }}">
                                                         <a href="{{ service.link }}">{{ service.title }}</a>
