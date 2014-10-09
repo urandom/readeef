@@ -354,12 +354,39 @@
             return div.textContent || "";
         },
 
-        shareServiceEnabled: function(id) {
-            if (!this.settings || !this.settings.shareServices) {
-                return false;
+        shareServicesList: function(value) {
+            var services = [], serviceCategories = [];
+
+            for (var service in value) {
+                services.push(value[service]);
             }
 
-            return this.settings.shareServices.indexOf(id) != -1;
+            services.sort(function(a, b) {
+                if (a.category && !b.category) {
+                    return -1;
+                } else if (!a.category && b.category) {
+                    return 1;
+                }
+
+                var cat = a.category.localeCompare(b.category);
+
+                if (cat == 0) {
+                    return a.title.localeCompare(b.title)
+                } else {
+                    return cat;
+                }
+            });
+
+            for (var i = 0, s, c; s = services[i]; ++i) {
+                if (c != s.category) {
+                    c = s.category;
+                    serviceCategories.push({name: c, services: []});
+                }
+
+                serviceCategories[serviceCategories.length - 1].services.push(s);
+            }
+
+            return serviceCategories;
         },
 
         onShareServiceCheckChange: function() {

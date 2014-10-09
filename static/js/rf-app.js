@@ -64,20 +64,19 @@
             this.feeds = [];
             this.tags = [];
             this.feedIdMap = {};
-            this.shareServices = [];
-            this.allShareServices = [];
+            this.shareServices = {};
         },
 
         attached: function() {
-            var shareServices = [];
+            var shareServices = {};
 
             for (var element in this.$) {
                 if (this.$[element].tagName.toLowerCase() == "rf-share-service") {
-                    shareServices.push(this.$[element]);
+                    shareServices[element] = this.$[element];
                 }
             }
 
-            this.allShareServices = shareServices;
+            this.shareServices = shareServices;
         },
 
         userChanged: function(oldValue, newValue) {
@@ -129,11 +128,15 @@
                 CoreStyle.g.theme = newValue.theme || 'blue';
 
                 var updateShareServices = function() {
-                    var shareServices = [];
+                    var shareServices = Polymer.mixin({}, this.shareServices);
+
+                    for (var service in shareServices) {
+                        shareServices[service].enabled = false;
+                    }
 
                     for (var i = 0, s; s = (this.userSettings.shareServices || [])[i]; ++i) {
-                        if (this.$[s]) {
-                            shareServices.push(this.$[s]);
+                        if (shareServices[s]) {
+                            shareServices[s].enabled = !!this.$[s];
                         }
                     }
 
@@ -142,7 +145,7 @@
 
                 this.userSettingsObserver = new ObjectObserver(this.userSettings);
                 this.userSettingsObserver.open(function (added, removed, changed, getOldValueFn) {
-                    var amalgamation = Polymer.extend(Polymer.extend(Polymer.extend({}, added), removed), changed);
+                    var amalgamation = Polymer.mixin({}, added, removed, changed);
                     if ('newerFirst' in amalgamation || 'unreadOnly' in amalgamation) {
                         this.updateFeedArticles();
                     }

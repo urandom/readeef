@@ -150,10 +150,24 @@
                     <div class="container">
                         <div class="card" hero-id="card" hero layout vertical>
                             <ul cross-fade>
-                                <template repeat="{{ service in shareServices }}">
-                                <li title="{{ service.title }}" layout horizontal>
-                                    <div flex class="share-service-title">{{ service.title }}</div>
-                                    <paper-toggle-button checked?="{{ service.id | shareServiceEnabled }}" on-change="{{ onShareServiceCheckChange }}" data-service-id="{{ service.id }}"></paper-toggle-button>
+                                <template repeat="{{ category in shareServicesList(shareServices) }}">
+                                <li>
+                                    <h4>{{ category.name }}</h4>
+                                    <ul>
+                                        <template repeat="{{ service in category.services }}">
+                                            <li title="{{ shareServices[service].title }}" layout horizontal>
+                                                <div flex class="share-service-title">
+                                                    <template if="{{ service.link }}">
+                                                        <a href="{{ service.link }}">{{ service.title }}</a>
+                                                    </template>
+                                                    <template if="{{ !service.link }}">
+                                                        {{ service.title }}
+                                                    </template>
+                                                </div>
+                                                <paper-toggle-button checked?="{{ service.enabled }}" on-change="{{ onShareServiceCheckChange }}" data-service-id="{{ service.id }}"></paper-toggle-button>
+                                            </li>
+                                        </template>
+                                    </ul>
                                 </li>
                                 </template>
                             </ul>

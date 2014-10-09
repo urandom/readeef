@@ -147,11 +147,37 @@
             }
         },
 
+        enabledShareServices: function(value) {
+            var services = [];
+
+            for (var service in value) {
+                if (value[service].enabled) {
+                    services.push(value[service]);
+                }
+            }
+
+            services.sort(function(a, b) {
+                if (a.category && !b.category) {
+                    return -1;
+                } else if (!a.category && b.category) {
+                    return 1;
+                }
+
+                var cat = a.category.localeCompare(b.category);
+
+                if (cat == 0) {
+                    return a.title.localeCompare(b.title)
+                } else {
+                    return cat;
+                }
+            });
+
+            return services;
+        },
+
         onShareArticle: function(event, detail, sender) {
             var id = sender.getAttribute('data-service-id'),
-                service = this.shareServices.filter(function(service) {
-                    return service.id == id;
-                })[0];
+                service = this.shareServices[id];
 
             if (!service) {
                 return;

@@ -1,7 +1,7 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 
-<polymer-element name="rf-share-service" attributes="article url id title" constructor="RfSocialService" hidden>
+<polymer-element name="rf-share-service" attributes="article url link id category title enabled" constructor="RfSocialService" hidden>
     <template>
         <a href="{{ url }}" target="_blank" id="link">{{ title }}</a>
     </template>

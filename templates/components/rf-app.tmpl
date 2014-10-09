@@ -51,7 +51,7 @@
 
                 <div class="main-content">
                     <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" hidden?="{{ display != 'feed' || loadingArticles }}"></rf-content-list>
-                    <rf-settings id="settings" wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feeds="{{ feeds }}" hidden?="{{ display == 'feed' }}" display="{{ display }}" shareServices="{{ allShareServices }}"></rf-settings>
+                    <rf-settings id="settings" wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feeds="{{ feeds }}" hidden?="{{ display == 'feed' }}" display="{{ display }}" shareServices="{{ shareServices }}"></rf-settings>
                     <template if="{{ loadingArticles || loadingMoreArticles }}">
                         <div layout vertical center>
                             <loading-wave background="transparent"></loading-wave>
@@ -73,13 +73,21 @@
         <!-- TODO: Enable the html highlight when polymer gets save template binding -->
         <rf-api id="feed-search" pathAction="search/{{ searchTerm }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}" params='{"highlight": "", "id": "{{ userSettings.preSearchFeedId }}"}'></rf-api>
 
-        <rf-share-service id="share-evernote" title="Evernote" url="https://www.evernote.com/clip.action?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
-        <rf-share-service id="share-instapaper" title="Instapaper" url="http://www.instapaper.com/hello2?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
-        <rf-share-service id="share-pocket" title="Pocket" url="https://getpocket.com/save?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
+        <rf-share-service id="share-evernote" title="Evernote" category="Read-it-later" url="https://www.evernote.com/clip.action?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" link="https://www.evernote.com" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
+        <rf-share-service id="share-instapaper" title="Instapaper" category="Read-it-later" url="http://www.instapaper.com/hello2?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" link="http://www.instapaper.com" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
+        <rf-share-service id="share-readability" title="Readability" category="Read-it-later" url="https://www.readability.com/save?url={{ currentArticle.Link | encodeURIComponent }}" link="https://www.readability.com" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
+        <rf-share-service id="share-pocket" title="Pocket" category="Read-it-later" url="https://getpocket.com/save?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" link="https://getpocket.com" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
 
-        <rf-share-service id="share-googlep" title="Google+" url="https://plus.google.com/share?url={{ currentArticle.Link | encodeURIComponent }}" article="{{ currentArticle }}"></rf-share-service>
-        <rf-share-service id="share-facebook" title="Facebook" url="http://www.facebook.com/sharer.php?u={{ currentArticle.Link | encodeURIComponent }}&t={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}"></rf-share-service>
-        <rf-share-service id="share-twitter" title="Twitter" url="https://twitter.com/intent/tweet?url={{ currentArticle.Link | encodeURIComponent }}&text={{ currentArticle.Title | encodeURIComponent }}" article="{{ currentArticle }}"></rf-share-service>
+        <rf-share-service id="share-googlep" title="Google+" category="Social network" url="https://plus.google.com/share?url={{ currentArticle.Link | encodeURIComponent }}" link="https://plus.google.com" article="{{ currentArticle }}"></rf-share-service>
+        <rf-share-service id="share-facebook" title="Facebook" category="Social network" url="http://www.facebook.com/sharer.php?u={{ currentArticle.Link | encodeURIComponent }}&t={{ currentArticle.Title | encodeURIComponent }}" link="http://www.facebook.com" article="{{ currentArticle }}"></rf-share-service>
+        <rf-share-service id="share-twitter" title="Twitter" category="Social network" url="https://twitter.com/intent/tweet?url={{ currentArticle.Link | encodeURIComponent }}&text={{ currentArticle.Title | encodeURIComponent }}" link="https://twitter.com" article="{{ currentArticle }}"></rf-share-service>
+        <rf-share-service id="share-pinterest" title="Pinterest" category="Social network" url="http://pinterest.com/pin/find/?url={{ currentArticle.Link | encodeURIComponent  }}" link="http://pinterest.com" article="{{ currentArticle }}"></rf-share-service>
+
+        <rf-share-service id="share-tumblr" title="Tumblr" category="Blogging" url="http://www.tumblr.com/share?v=3&u={{ currentArticle.Link | encodeURIComponent }}&t={{ currentArticle.Title | encodeURIComponent }}" link="http://www.tumblr.com" article="{{ currentArticle }}"></rf-share-service>
+        <rf-share-service id="share-flipboard" title="Flipboard" category="Blogging" url="https://share.flipboard.com/bookmarklet/popout?v=2&url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" link="https://www.flipboard.com" article="{{ currentArticle }}"></rf-share-service>
+
+        <rf-share-service id="share-email" title="Email" category="Email" url="mailto:?subject={{ currentArticle.Title | encodeURIComponent }}&body={{ currentArticle.Link | encodeURIComponent }}" article="{{ currentArticle }}"></rf-share-service>
+        <rf-share-service id="share-gmail" title="Gmail" category="Email" url="https://mail.google.com/mail/?view=cm&su={{ currentArticle.Title | encodeURIComponent }}&body={{ currentArticle.Link | encodeURIComponent }}" link="https://mail.google.com" article="{{ currentArticle }}"></rf-share-service>
 
         <core-localstorage name="user" id="user-storage" value="{{user}}" on-core-localstorage-load="{{ onUserLoad }}"></core-localstorage>
 
