@@ -30,7 +30,7 @@ type Readability struct {
 
 func (con Article) Patterns() map[string]webfw.MethodIdentifierTuple {
 	prefix := "/v:version/article/"
-	identifier := ":feed-id/:article-id"
+	identifier := ":article-id"
 
 	patterns := map[string]webfw.MethodIdentifierTuple{
 		prefix + "read/" + identifier + "/:value":     webfw.MethodIdentifierTuple{webfw.MethodPost, "read"},
@@ -54,24 +54,20 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 		params := webfw.GetParams(c, r)
 		action := webfw.GetMultiPatternIdentifier(c, r)
 
-		readeef.Debug.Printf("Invoking Article controller with action '%s', feed id '%s' and article id '%s'\n", action, params["feed-id"], params["article-id"])
+		readeef.Debug.Printf("Invoking Article controller with action '%s', article id '%s'\n", action, params["article-id"])
 
-		var feedId, articleId int64
-		feedId, err = strconv.ParseInt(params["feed-id"], 10, 64)
-
+		var articleId int64
 		var article readeef.Article
-		if err == nil {
-			articleId, err = strconv.ParseInt(params["article-id"], 10, 64)
 
-			if err == nil {
-				article, err = db.GetFeedArticle(feedId, articleId, user)
-			}
+		articleId, err = strconv.ParseInt(params["article-id"], 10, 64)
+
+		if err == nil {
+			article, err = db.GetFeedArticle(articleId, user)
 		}
 
 		resp := make(map[string]interface{})
 
 		if err == nil {
-			resp["Id"] = feedId
 			resp["ArticleId"] = article.Id
 
 			switch action {

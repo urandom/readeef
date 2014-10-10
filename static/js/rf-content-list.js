@@ -155,7 +155,7 @@
                     a.Favorite = !a.Favorite;
 
                     var fav = new RfAPI();
-                    fav.pathAction = "article/favorite/" + a.FeedId + "/" + a.Id + "/" + a.Favorite;
+                    fav.pathAction = "article/favorite/" + a.Id + "/" + a.Favorite;
                     fav.user = this.user;
                     fav.method = "post";
 

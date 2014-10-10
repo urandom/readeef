@@ -52,8 +52,8 @@ SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_id = a.feed_id AND uf.feed_id = $1 AND a.Id = $2
-	AND uf.user_login = $3
+	ON uf.feed_id = a.feed_id AND a.Id = $1
+	AND uf.user_login = $2
 LEFT OUTER JOIN users_articles_read ar
 	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
@@ -545,11 +545,11 @@ func (db DB) GetUserFeeds(u User) ([]Feed, error) {
 	return feeds, nil
 }
 
-func (db DB) GetFeedArticle(feedId int64, articleId int64, user User) (Article, error) {
-	Debug.Printf("Getting feed article for %d - %d\n", feedId, articleId)
+func (db DB) GetFeedArticle(articleId int64, user User) (Article, error) {
+	Debug.Printf("Getting feed article %d\n", articleId)
 
 	var a Article
-	if err := db.Get(&a, db.NamedSQL("get_feed_article"), feedId, articleId, user.Login); err != nil {
+	if err := db.Get(&a, db.NamedSQL("get_feed_article"), articleId, user.Login); err != nil {
 		return a, err
 	}
 
