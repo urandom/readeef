@@ -21,6 +21,8 @@ SELECT u.login, u.first_name, u.last_name, u.email, u.admin, u.active,
 FROM users u, users_feeds uf
 WHERE u.login = uf.user_login AND uf.feed_id = $1
 `
+
+	get_user_by_md5api = `SELECT login, first_name, last_name, email, admin, active, profile_data, hash_type, salt, hash FROM users WHERE md5_api = $1`
 )
 
 func (db DB) GetUser(login string) (User, error) {
@@ -30,6 +32,21 @@ func (db DB) GetUser(login string) (User, error) {
 	}
 
 	u.Login = login
+	users, err := initUsers([]User{u})
+	if err != nil {
+		return u, err
+	}
+
+	return users[0], nil
+}
+
+func (db DB) GetUserByMD5Api(md5 []byte) (User, error) {
+	var u User
+	if err := db.Get(&u, db.NamedSQL("get_user_by_md5api"), md5); err != nil {
+		return u, err
+	}
+
+	u.MD5API = md5
 	users, err := initUsers([]User{u})
 	if err != nil {
 		return u, err
@@ -158,4 +175,5 @@ func init() {
 	sql_stmt["generic:delete_user"] = delete_user
 	sql_stmt["generic:get_users"] = get_users
 	sql_stmt["generic:get_feed_users"] = get_feed_users
+	sql_stmt["generic:get_user_by_md5api"] = get_user_by_md5api
 }

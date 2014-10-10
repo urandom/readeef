@@ -15,6 +15,7 @@ type Config struct {
 	}
 	API struct {
 		Version int
+		Fever   bool
 	}
 	Timeout struct {
 		Connect   string

@@ -82,6 +82,11 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	controller = NewNonce(nonce)
 	dispatcher.Handle(controller)
 
+	if config.API.Fever {
+		controller = NewFever(fm)
+		dispatcher.Handle(controller)
+	}
+
 	middleware.InitializeDefault(dispatcher)
 	dispatcher.RegisterMiddleware(readeef.Auth{DB: db, Pattern: dispatcher.Pattern, Nonce: nonce, IgnoreURLPrefix: config.Auth.IgnoreURLPrefix})
 
