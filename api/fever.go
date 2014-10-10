@@ -12,6 +12,7 @@ import (
 	"github.com/urandom/readeef"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
+	"github.com/urandom/webfw/util"
 )
 
 type Fever struct {
@@ -36,6 +37,18 @@ type feverGroup struct {
 type feverFeedsGroup struct {
 	GroupId int64  `json:"group_id"`
 	FeedIds string `json:"feed_ids"`
+}
+
+type feverItem struct {
+	Id            int64  `json:"id"`
+	FeedId        int64  `json:"feed_id"`
+	Title         string `json:"title"`
+	Author        string `json:"author"`
+	Html          string `json:"html"`
+	Url           string `json:"url"`
+	IsSaved       int    `json:"is_saved"`
+	IsRead        int    `json:"is_read"`
+	CreatedOnTime int64  `json:"created_on_time"`
 }
 
 func NewFever(fm *readeef.FeedManager) Fever {
@@ -64,7 +77,7 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 			user = getUser(db, r.FormValue("api_key"), webfw.GetLogger(c))
 		}
 
-		resp := map[string]interface{}{"api_version": 1}
+		resp := map[string]interface{}{"api_version": 2}
 
 		switch {
 		default:
@@ -128,6 +141,97 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 
 				resp["feeds"] = feverFeeds
 				resp["feeds_groups"] = getFeedsGroups(feeds)
+			}
+
+			if _, ok := r.Form["unread_item_ids"]; ok {
+				var ids []int64
+
+				ids, err = db.GetAllUnreadUserArticleIds(user)
+				if err != nil {
+					break
+				}
+
+				buf := util.BufferPool.GetBuffer()
+				defer util.BufferPool.Put(buf)
+
+				for i, id := range ids {
+					if i != 0 {
+						buf.WriteString(",")
+					}
+
+					buf.WriteString(strconv.FormatInt(id, 10))
+				}
+
+				resp["unread_item_ids"] = buf.String()
+			}
+
+			if _, ok := r.Form["items"]; ok {
+				var count, since, max int64
+
+				count, err = db.GetUserArticleCount(user)
+				if err != nil {
+					break
+				}
+
+				items := []feverItem{}
+				if count > 0 {
+					if val, ok := r.Form["since_id"]; ok {
+						since, err = strconv.ParseInt(val[0], 10, 64)
+						if err != nil {
+							err = nil
+							since = 0
+						}
+					}
+
+					if val, ok := r.Form["max_id"]; ok {
+						max, err = strconv.ParseInt(val[0], 10, 64)
+						if err != nil {
+							err = nil
+							since = 0
+						}
+					}
+
+					var articles []readeef.Article
+					if withIds, ok := r.Form["with_ids"]; ok {
+						stringIds := strings.Split(withIds[0], ",")
+						ids := make([]int64, len(stringIds))
+
+						for i, stringId := range stringIds {
+							stringId = strings.TrimSpace(stringId)
+
+							if id, err := strconv.ParseInt(stringId, 10, 64); err == nil {
+								ids[i] = id
+							}
+						}
+
+						articles, err = db.GetSpecificUserArticles(user, ids...)
+					} else if max > 0 {
+						articles, err = db.GetUnorderedUserArticlesDesc(user, max, 50, 0)
+					} else {
+						articles, err = db.GetUnorderedUserArticles(user, since, 50, 0)
+					}
+
+					if err != nil {
+						break
+					}
+
+					for _, a := range articles {
+						item := feverItem{
+							Id: a.Id, FeedId: a.FeedId, Title: a.Title, Html: a.Description,
+							Url: a.Link, CreatedOnTime: a.Date.Unix(),
+						}
+						if a.Read {
+							item.IsRead = 1
+						}
+						if a.Favorite {
+							item.IsSaved = 1
+						}
+						items = append(items, item)
+					}
+				}
+
+				resp["total_items"] = count
+				resp["items"] = items
 			}
 		}
 

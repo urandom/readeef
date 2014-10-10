@@ -142,6 +142,44 @@ LIMIT $3
 OFFSET $4
 `
 
+	get_unordered_user_articles = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND uf.user_login = af.user_login
+WHERE a.id > $2
+ORDER BY a.id
+LIMIT $3
+OFFSET $4
+`
+
+	get_unordered_user_articles_desc = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND uf.user_login = af.user_login
+WHERE a.id < $2
+ORDER BY a.id DESC
+LIMIT $3
+OFFSET $4
+`
+
+	get_user_article_count = `
+SELECT count(a.id)
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+`
+
 	get_user_articles = `
 SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
@@ -241,6 +279,15 @@ FROM articles a
 SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date
 FROM articles a
 WHERE a.feed_id = $1
+`
+
+	get_all_unread_user_article_ids = `
+SELECT a.id
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
+WHERE ar.article_id IS NULL
 `
 
 	create_all_user_articles_read_by_date = `
@@ -620,6 +667,44 @@ func (db DB) GetReadFeedArticles(f Feed, paging ...int) (Feed, error) {
 	return f, nil
 }
 
+func (db DB) GetUserArticleCount(u User) (int64, error) {
+	var count int64 = -1
+
+	Debug.Println("Getting user article count")
+
+	if err := db.Get(&count, db.NamedSQL("get_user_article_count"), u.Login); err != nil {
+		return count, err
+	}
+
+	return count, nil
+}
+
+func (db DB) GetUnorderedUserArticles(u User, since int64, paging ...int) ([]Article, error) {
+	var articles []Article
+
+	limit, offset := pagingLimit(paging)
+
+	Debug.Printf("Getting user articles since id %d\n", since)
+
+	if err := db.Select(&articles, db.NamedSQL("get_unordered_user_articles"), u.Login, since, limit, offset); err != nil {
+		return articles, err
+	}
+
+	return articles, nil
+}
+
+func (db DB) GetUnorderedUserArticlesDesc(u User, max int64, paging ...int) ([]Article, error) {
+	var articles []Article
+
+	limit, offset := pagingLimit(paging)
+
+	if err := db.Select(&articles, db.NamedSQL("get_unordered_user_articles_desc"), u.Login, max, limit, offset); err != nil {
+		return articles, err
+	}
+
+	return articles, nil
+}
+
 func (db DB) GetUserArticles(u User, paging ...int) ([]Article, error) {
 	return db.getUserArticles(u, "get_user_articles", paging...)
 }
@@ -695,6 +780,16 @@ func (db DB) GetSpecificUserArticles(u User, ids ...int64) ([]Article, error) {
 	}
 
 	return articles, nil
+}
+
+func (db DB) GetAllUnreadUserArticleIds(u User) ([]int64, error) {
+	var ids []int64
+
+	if err := db.Select(&ids, db.NamedSQL("get_all_unread_user_article_ids"), u.Login); err != nil {
+		return ids, err
+	}
+
+	return ids, nil
 }
 
 func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error {
@@ -1106,6 +1201,9 @@ func init() {
 	sql_stmt["generic:get_unread_feed_articles"] = get_unread_feed_articles
 	sql_stmt["generic:get_unread_feed_articles_desc"] = get_unread_feed_articles_desc
 	sql_stmt["generic:get_read_feed_articles"] = get_read_feed_articles
+	sql_stmt["generic:get_unordered_user_articles"] = get_unordered_user_articles
+	sql_stmt["generic:get_unordered_user_articles_desc"] = get_unordered_user_articles_desc
+	sql_stmt["generic:get_user_article_count"] = get_user_article_count
 	sql_stmt["generic:get_user_articles"] = get_user_articles
 	sql_stmt["generic:get_user_articles_desc"] = get_user_articles_desc
 	sql_stmt["generic:get_unread_user_articles"] = get_unread_user_articles
@@ -1114,6 +1212,7 @@ func init() {
 	sql_stmt["generic:get_all_user_articles"] = get_all_user_articles
 	sql_stmt["generic:get_all_articles"] = get_all_articles
 	sql_stmt["generic:get_all_feed_articles"] = get_all_feed_articles
+	sql_stmt["generic:get_all_unread_user_article_ids"] = get_all_unread_user_article_ids
 	sql_stmt["generic:create_all_user_articles_read_by_date"] = create_all_user_articles_read_by_date
 	sql_stmt["generic:delete_all_user_articles_read_by_date"] = delete_all_user_articles_read_by_date
 	sql_stmt["generic:create_all_users_articles_read_by_feed_date"] = create_all_users_articles_read_by_feed_date
