@@ -176,11 +176,11 @@
 
         onArticleReadResponse: function(event, data) {
             if (data.response && data.response.Success) {
-                if (this.article.Id == data.response.ArticleId && this.article.FeedId == data.response.Id) {
+                if (this.article.Id == data.response.ArticleId) {
                     this.article.Read = data.response.Read;
                 } else {
                     for (var i = 0, a; a = this.articles[i]; ++i) {
-                        if (a.Id == data.response.ArticleId && a.FeedId == data.response.Id) {
+                        if (a.Id == data.response.ArticleId) {
                             a.Read = data.response.Read;
                             break;
                         }

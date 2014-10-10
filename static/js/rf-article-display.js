@@ -308,8 +308,7 @@
         },
 
         onArticleFormatResponse: function(event, data) {
-            if (data.response && data.response.ArticleId == this.article.Id
-                && data.response.Id == this.article.FeedId) {
+            if (data.response && data.response.ArticleId == this.article.Id) {
 
                 this._physicalArticles[1].Description = data.response.Content;
                 this._physicalArticles[1].formatted = true;
