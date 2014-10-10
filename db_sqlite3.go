@@ -62,14 +62,14 @@ CREATE TABLE IF NOT EXISTS feed_images (
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS articles (
-	id TEXT,
+	id INTEGER PRIMARY KEY,
 	feed_id INTEGER,
+	link TEXT,
 	title TEXT,
 	description TEXT,
-	link TEXT,
 	date TIMESTAMP,
 
-	PRIMARY KEY(id, feed_id),
+	UNIQUE(feed_id, link),
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_feeds (
@@ -90,21 +90,19 @@ CREATE TABLE IF NOT EXISTS users_feeds_tags (
 )`, `
 CREATE TABLE IF NOT EXISTS users_articles_read (
 	user_login TEXT,
-	article_id TEXT,
-	article_feed_id INTEGER,
+	article_id INTEGER,
 
-	PRIMARY KEY(user_login, article_id, article_feed_id),
+	PRIMARY KEY(user_login, article_id),
 	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
-	FOREIGN KEY(article_id, article_feed_id) REFERENCES articles(id, feed_id) ON DELETE CASCADE
+	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_articles_fav (
 	user_login TEXT,
-	article_id TEXT,
-	article_feed_id INTEGER,
+	article_id INTEGER,
 
-	PRIMARY KEY(user_login, article_id, article_feed_id),
+	PRIMARY KEY(user_login, article_id),
 	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
-	FOREIGN KEY(article_id, article_feed_id) REFERENCES articles(id, feed_id) ON DELETE CASCADE
+	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 	feed_id INTEGER,

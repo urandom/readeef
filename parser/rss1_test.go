@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"strings"
 	"testing"
 	"time"
@@ -121,11 +119,6 @@ func TestRss1Parse(t *testing.T) {
 	}
 
 	a := f.Articles[0]
-	hash := sha1.New()
-	hash.Write([]byte("http://xml.com/pub/2000/08/09/xslt/xslt.html"))
-	if a.Id != hex.EncodeToString(hash.Sum(nil)) {
-		t.Fatalf("Unexpected article id: '%v'\n", a.Id)
-	}
 
 	if a.Title != "Processing Inclusions with XSLT" {
 		t.Fatalf("Unexpected article title: '%v'\n", a.Title)
@@ -141,12 +134,6 @@ func TestRss1Parse(t *testing.T) {
 
 	if !a.Date.Equal(time.Time{}) {
 		t.Fatalf("Unexpected article date: '%s'\n", a.Date)
-	}
-
-	hash = sha1.New()
-	hash.Write([]byte("http://xml.com/pub/2000/08/09/rdfdb/index.html"))
-	if f.Articles[1].Id != hex.EncodeToString(hash.Sum(nil)) {
-		t.Fatalf("Unexpected article id: '%v'\n", f.Articles[1].Id)
 	}
 
 	expectedDuration := 30 * time.Minute

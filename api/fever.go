@@ -24,6 +24,7 @@ type feverFeed struct {
 	Title      string `json:"title"`
 	Url        string `json:"url"`
 	SiteUrl    string `json:"site_url"`
+	IsSpark    int    `json:"is_spark"`
 	UpdateTime int64  `json:"last_updated_on_time"`
 }
 
@@ -44,6 +45,12 @@ func NewFever(fm *readeef.FeedManager) Fever {
 	}
 }
 
+var (
+	counter  int64 = 0
+	tagIdMap       = map[string]int64{}
+	idTagMap       = map[int64]string{}
+)
+
 func (con Fever) Handler(c context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var err error
@@ -59,9 +66,13 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 
 		resp := map[string]interface{}{"api_version": 1}
 
-		if user.Login == "" {
-			resp["auth"] = 0
-		} else {
+		switch {
+		default:
+			if user.Login == "" {
+				resp["auth"] = 0
+				break
+			}
+
 			now := time.Now().Unix()
 
 			resp["auth"] = 1
@@ -70,23 +81,29 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 			if _, ok := r.Form["groups"]; ok {
 				readeef.Debug.Println("Fetching fever groups")
 
-				resp["groups"] = []feverGroup{
-					feverGroup{Id: 1, Title: "All"},
+				var tags []string
+
+				tags, err = db.GetUserTags(user)
+
+				if err != nil {
+					break
 				}
+
+				groups := []feverGroup{}
+				for _, tag := range tags {
+					groups = append(groups, tagToGroup(tag))
+				}
+
+				resp["groups"] = groups
 
 				var feeds []readeef.Feed
 
-				feeds, err = db.GetUserFeeds(user)
-				if err == nil {
-					ids := []string{}
-					for _, f := range feeds {
-						ids = append(ids, strconv.FormatInt(f.Id, 10))
-					}
-
-					resp["feeds_groups"] = []feverFeedsGroup{
-						feverFeedsGroup{GroupId: 1, FeedIds: strings.Join(ids, ",")},
-					}
+				feeds, err = db.GetUserTagsFeeds(user)
+				if err != nil {
+					break
 				}
+
+				resp["feeds_groups"] = getFeedsGroups(feeds)
 			}
 
 			if _, ok := r.Form["feeds"]; ok {
@@ -95,28 +112,22 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 				var feeds []readeef.Feed
 				var feverFeeds []feverFeed
 
-				feeds, err = db.GetUserFeeds(user)
+				feeds, err = db.GetUserTagsFeeds(user)
 
-				if err == nil {
-					for _, f := range feeds {
-						feed := feverFeed{
-							Id: f.Id, Title: f.Title, Url: f.Link, SiteUrl: f.SiteLink, UpdateTime: now,
-						}
-
-						feverFeeds = append(feverFeeds, feed)
-					}
-
-					resp["feeds"] = feverFeeds
-
-					ids := []string{}
-					for _, f := range feeds {
-						ids = append(ids, strconv.FormatInt(f.Id, 10))
-					}
-
-					resp["feeds_groups"] = []feverFeedsGroup{
-						feverFeedsGroup{GroupId: 1, FeedIds: strings.Join(ids, ",")},
-					}
+				if err != nil {
+					break
 				}
+
+				for _, f := range feeds {
+					feed := feverFeed{
+						Id: f.Id, Title: f.Title, Url: f.Link, SiteUrl: f.SiteLink, UpdateTime: now,
+					}
+
+					feverFeeds = append(feverFeeds, feed)
+				}
+
+				resp["feeds"] = feverFeeds
+				resp["feeds_groups"] = getFeedsGroups(feeds)
 			}
 		}
 
@@ -149,4 +160,35 @@ func getUser(db readeef.DB, md5hex string, log *log.Logger) readeef.User {
 		log.Printf("Error getting user by md5api field: %v\n", err)
 	}
 	return user
+}
+
+func tagToGroup(tag string) feverGroup {
+	if id, ok := tagIdMap[tag]; ok {
+		return feverGroup{Id: id, Title: tag}
+	} else {
+		counter++
+		idTagMap[counter] = tag
+		tagIdMap[tag] = counter
+
+		return feverGroup{Id: id, Title: tag}
+	}
+}
+
+func getFeedsGroups(feeds []readeef.Feed) []feverFeedsGroup {
+	feedGroupMap := map[int64][]string{}
+
+	for _, f := range feeds {
+		for _, tag := range f.Tags {
+			id := tagIdMap[tag]
+			feedGroupMap[id] = append(feedGroupMap[id], strconv.FormatInt(f.Id, 10))
+		}
+	}
+
+	feedsGroups := []feverFeedsGroup{}
+	for group, feeds := range feedGroupMap {
+		feedsGroups = append(feedsGroups,
+			feverFeedsGroup{GroupId: group, FeedIds: strings.Join(feeds, ",")})
+	}
+
+	return feedsGroups
 }

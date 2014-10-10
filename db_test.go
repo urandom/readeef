@@ -303,8 +303,8 @@ func TestDBFeeds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	a1 := Article{Article: parser.Article{Id: "1", Title: "Test 1"}, FeedId: f2.Id}
-	a2 := Article{Article: parser.Article{Id: "2", Title: "Test 2", Date: t1}, FeedId: f2.Id}
+	a1 := Article{Article: parser.Article{Title: "Test 1", Link: "example.com/1"}, FeedId: f2.Id}
+	a2 := Article{Article: parser.Article{Title: "Test 2", Link: "example.com/2", Date: t1}, FeedId: f2.Id}
 
 	if f, err := db.CreateFeedArticles(f2, []Article{a1, a2}); err == nil {
 		expectedInt = 2
@@ -320,10 +320,6 @@ func TestDBFeeds(t *testing.T) {
 		expectedInt = 2
 		if len(f.Articles) != expectedInt {
 			t.Fatalf("Expected %d feed articles, got %d\n", expectedInt, len(f.Articles))
-		}
-		expectedStr = "1"
-		if f.Articles[0].Id != expectedStr {
-			t.Fatalf("Expected '%s' for article id, got '%s'\n", expectedStr, f.Articles[0].Id)
 		}
 		expectedStr = "Test 2"
 		if f.Articles[1].Title != expectedStr {
@@ -381,11 +377,10 @@ func TestDBFeeds(t *testing.T) {
 		}
 	}
 
-	a3 := Article{Article: parser.Article{Id: "3", Title: "Test 3", Date: time.Now().Add(time.Minute)}, FeedId: f2.Id}
+	a3 := Article{Article: parser.Article{Title: "Test 3", Link: "example.com/3", Date: time.Now().Add(time.Minute)}, FeedId: f2.Id}
 
-	f2.Articles = append(f2.Articles, a3)
-	if f, err := db.CreateFeedArticles(f2, []Article{a3}); err == nil {
-		a1, a2, a3 = f.Articles[0], f.Articles[1], f.Articles[2]
+	if f2, err = db.CreateFeedArticles(f2, []Article{a3}); err == nil {
+		a1, a2, a3 = f2.Articles[0], f2.Articles[1], f2.Articles[2]
 	} else {
 		t.Fatal(err)
 	}

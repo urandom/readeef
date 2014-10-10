@@ -15,7 +15,6 @@ type Feed struct {
 }
 
 type Article struct {
-	Id          string
 	Title       string
 	Description string
 	Link        string

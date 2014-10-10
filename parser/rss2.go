@@ -2,8 +2,6 @@ package parser
 
 import (
 	"bytes"
-	"crypto/sha1"
-	"encoding/hex"
 	"encoding/xml"
 	"strings"
 	"time"
@@ -62,16 +60,6 @@ func ParseRss2(b []byte) (Feed, error) {
 
 	for _, i := range rss.Channel.Items {
 		article := Article{Title: i.Title, Link: i.Link}
-
-		if i.Id == "" {
-			article.Id = i.Link
-		} else {
-			article.Id = i.Id
-		}
-
-		hash := sha1.New()
-		hash.Write([]byte(article.Id))
-		article.Id = hex.EncodeToString(hash.Sum(nil))
 
 		article.Description = getLargerContent(i.Content, i.Description)
 

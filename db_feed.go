@@ -55,13 +55,13 @@ FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.feed_id = $1 AND a.Id = $2
 	AND uf.user_login = $3
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 `
 
 	update_feed_article = `
-UPDATE articles SET title = $1, description = $2, link = $3, date = $4 WHERE id = $5 AND feed_id = $6
+UPDATE articles SET title = $1, description = $2, date = $3 WHERE feed_id = $4 AND link = $5
 `
 
 	get_feed_articles = `
@@ -71,9 +71,9 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.feed_id = $1 AND uf.user_login = $2
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 ORDER BY read, a.date
 LIMIT $3
 OFFSET $4
@@ -86,9 +86,9 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.feed_id = $1 AND uf.user_login = $2
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 ORDER BY read ASC, a.date DESC
 LIMIT $3
 OFFSET $4
@@ -101,9 +101,9 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.feed_id = $1 AND uf.user_login = $2
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 WHERE ar.article_id IS NULL
 ORDER BY a.date
 LIMIT $3
@@ -117,9 +117,9 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.feed_id = $1 AND uf.user_login = $2
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 WHERE ar.article_id IS NULL
 ORDER BY a.date DESC
 LIMIT $3
@@ -133,9 +133,9 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.feed_id = $1 AND uf.user_login = $2
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 WHERE ar.article_id IS NOT NULL
 ORDER BY a.date
 LIMIT $3
@@ -149,9 +149,9 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 ORDER BY read, a.date
 LIMIT $2
 OFFSET $3
@@ -164,9 +164,9 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 ORDER BY read ASC, a.date DESC
 LIMIT $2
 OFFSET $3
@@ -179,9 +179,9 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 WHERE ar.article_id IS NULL
 ORDER BY a.date
 LIMIT $2
@@ -195,9 +195,9 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 WHERE ar.article_id IS NULL
 ORDER BY a.date DESC
 LIMIT $2
@@ -211,41 +211,41 @@ CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 WHERE ar.article_id IS NOT NULL
 ORDER BY a.date
 LIMIT $2
 OFFSET $3
 `
 
-	get_all_articles = `
+	get_all_user_articles = `
 SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
-FROM articles a
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
+`
+
+	get_all_articles = `
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date
+FROM articles a
 `
 
 	get_all_feed_articles = `
-SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date,
-CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
-CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date
 FROM articles a
-LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
-LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
 WHERE a.feed_id = $1
 `
 
 	create_all_user_articles_read_by_date = `
 INSERT INTO users_articles_read
-	SELECT uf.user_login, a.id, uf.feed_id
+	SELECT uf.user_login, a.id
 	FROM users_feeds uf INNER JOIN articles a
 		ON uf.feed_id = a.feed_id AND uf.user_login = $1
 		AND a.id IN (SELECT id FROM articles WHERE date IS NULL OR date < $2)
@@ -259,15 +259,15 @@ DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
 
 	create_all_users_articles_read_by_feed_date = `
 INSERT INTO users_articles_read
-	SELECT uf.user_login, a.id, uf.feed_id
+	SELECT uf.user_login, a.id
 	FROM users_feeds uf INNER JOIN articles a
 		ON uf.feed_id = a.feed_id AND uf.user_login = $1 AND uf.feed_id = $2
 		AND a.id IN (SELECT id FROM articles WHERE date IS NULL OR date < $3)
 `
 
 	delete_all_users_articles_read_by_feed_date = `
-DELETE FROM users_articles_read WHERE user_login = $1 AND article_feed_id = $2 AND article_id IN (
-	SELECT id FROM articles WHERE date IS NULL OR date < $3
+DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
+	SELECT id FROM articles WHERE feed_id = $2 AND (date IS NULL OR date < $3)
 )
 `
 
@@ -278,9 +278,9 @@ CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
 INNER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 ORDER BY a.date
 LIMIT $2
 OFFSET $3
@@ -293,9 +293,9 @@ CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
 INNER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 ORDER BY a.date DESC
 LIMIT $2
 OFFSET $3
@@ -305,11 +305,6 @@ OFFSET $3
 var (
 	ErrNoFeedUser = errors.New("Feed does not have an associated user.")
 )
-
-type FeedArticleIds struct {
-	FeedId    int64
-	ArticleId string
-}
 
 func (db DB) GetFeed(id int64) (Feed, error) {
 	Debug.Printf("Getting feed for %d\n", id)
@@ -372,7 +367,7 @@ func (db DB) UpdateFeed(f Feed) (Feed, bool, error) {
 		}
 	}
 
-	f.lastUpdatedArticleIds = map[string]bool{}
+	f.lastUpdatedArticleLinks = map[string]bool{}
 	newArticles, err := db.updateFeedArticles(tx, f, f.Articles)
 	if err != nil {
 		return f, false, err
@@ -381,7 +376,13 @@ func (db DB) UpdateFeed(f Feed) (Feed, bool, error) {
 	tx.Commit()
 
 	for _, a := range newArticles {
-		f.lastUpdatedArticleIds[a.Id] = true
+		f.lastUpdatedArticleLinks[a.Link] = true
+	}
+
+	if articles, err := db.populateArticleIds(f.Articles); err == nil {
+		f.Articles = articles
+	} else {
+		return f, false, err
 	}
 
 	return f, len(newArticles) > 0, nil
@@ -574,9 +575,13 @@ func (db DB) CreateFeedArticles(f Feed, articles []Article) (Feed, error) {
 		a.FeedId = f.Id
 	}
 
-	f.Articles = append(f.Articles, articles...)
-
 	tx.Commit()
+
+	if articles, err := db.populateArticleIds(articles); err == nil {
+		f.Articles = append(f.Articles, articles...)
+	} else {
+		return f, err
+	}
 
 	return f, nil
 }
@@ -663,23 +668,23 @@ func (db DB) GetAllFeedArticles(f Feed) ([]Article, error) {
 	return articles, nil
 }
 
-func (db DB) GetSpecificArticles(idTuples ...FeedArticleIds) ([]Article, error) {
-	if len(idTuples) == 0 {
+func (db DB) GetSpecificUserArticles(u User, ids ...int64) ([]Article, error) {
+	if len(ids) == 0 {
 		return []Article{}, nil
 	}
 
-	sql := db.NamedSQL("get_all_articles")
+	sql := db.NamedSQL("get_all_user_articles")
 	sql += ` WHERE `
 
-	var args []interface{}
-	index := 1
-	for i, ids := range idTuples {
+	args := []interface{}{u.Login}
+	index := 2
+	for i, id := range ids {
 		if i != 0 {
 			sql += ` OR `
 		}
 
-		sql += fmt.Sprintf(`(a.id = $%d AND a.feed_id = $%d)`, index, index+1)
-		args = append(args, ids.ArticleId, ids.FeedId)
+		sql += fmt.Sprintf(`a.id = $%d`, index)
+		args = append(args, id)
 		index = len(args) + 1
 	}
 
@@ -701,7 +706,7 @@ func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error
 	var args []interface{}
 
 	if read {
-		sql = `INSERT INTO users_articles_read(user_login, article_id, article_feed_id) `
+		sql = `INSERT INTO users_articles_read(user_login, article_id) `
 	} else {
 		sql = `DELETE FROM users_articles_read WHERE `
 	}
@@ -712,20 +717,24 @@ func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error
 			return err
 		}
 
+		if a.Id == 0 {
+			return ValidationError{errors.New("Article has no id")}
+		}
+
 		if read {
 			if i != 0 {
 				sql += ` UNION `
 			}
 
-			sql += fmt.Sprintf(`SELECT $%d, $%d, $%d EXCEPT SELECT user_login, article_id, article_feed_id FROM users_articles_read WHERE user_login = $%d AND article_id = $%d AND article_feed_id = $%d`, index, index+1, index+2, index, index+1, index+2)
-			args = append(args, u.Login, a.Id, a.FeedId)
+			sql += fmt.Sprintf(`SELECT $%d, $%d EXCEPT SELECT user_login, article_id FROM users_articles_read WHERE user_login = $%d AND article_id = $%d`, index, index+1, index, index+1)
+			args = append(args, u.Login, a.Id)
 		} else {
 			if i != 0 {
 				sql += `OR `
 			}
 
-			sql += fmt.Sprintf(`(user_login = $%d AND article_id = $%d AND article_feed_id = $%d)`, index, index+1, index+2)
-			args = append(args, u.Login, a.Id, a.FeedId)
+			sql += fmt.Sprintf(`(user_login = $%d AND article_id = $%d)`, index, index+1)
+			args = append(args, u.Login, a.Id)
 		}
 		index = len(args) + 1
 	}
@@ -845,7 +854,7 @@ func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) e
 	var args []interface{}
 
 	if read {
-		sql = `INSERT INTO users_articles_fav(user_login, article_id, article_feed_id) `
+		sql = `INSERT INTO users_articles_fav(user_login, article_id) `
 	} else {
 		sql = `DELETE FROM users_articles_fav WHERE `
 	}
@@ -856,20 +865,24 @@ func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) e
 			return err
 		}
 
+		if a.Id == 0 {
+			return ValidationError{errors.New("Article has no id")}
+		}
+
 		if read {
 			if i != 0 {
 				sql += ` UNION `
 			}
 
-			sql += fmt.Sprintf(`SELECT $%d, $%d, $%d EXCEPT SELECT user_login, article_id, article_feed_id FROM users_articles_fav WHERE user_login = $%d AND article_id = $%d AND article_feed_id = $%d`, index, index+1, index+2, index, index+1, index+2)
-			args = append(args, u.Login, a.Id, a.FeedId)
+			sql += fmt.Sprintf(`SELECT $%d, $%d EXCEPT SELECT user_login, article_id FROM users_articles_fav WHERE user_login = $%d AND article_id = $%d`, index, index+1, index, index+1)
+			args = append(args, u.Login, a.Id)
 		} else {
 			if i != 0 {
 				sql += `OR `
 			}
 
-			sql += fmt.Sprintf(`(user_login = $%d AND article_id = $%d AND article_feed_id = $%d)`, index, index+1, index+2)
-			args = append(args, u.Login, a.Id, a.FeedId)
+			sql += fmt.Sprintf(`(user_login = $%d AND article_id = $%d)`, index, index+1)
+			args = append(args, u.Login, a.Id)
 		}
 		index = len(args) + 1
 	}
@@ -917,7 +930,7 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) ([]Arti
 		}
 		defer stmt.Close()
 
-		res, err := stmt.Exec(a.Title, a.Description, a.Link, a.Date, a.Id, f.Id)
+		res, err := stmt.Exec(a.Title, a.Description, a.Date, f.Id, a.Link)
 		if err != nil {
 			return newArticles, err
 		}
@@ -931,7 +944,7 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) ([]Arti
 		return newArticles, nil
 	}
 
-	sql := `INSERT INTO articles(id, feed_id, title, description, link, date) `
+	sql := `INSERT INTO articles(feed_id, link, title, description, date) `
 	args := []interface{}{}
 	index := 1
 
@@ -944,8 +957,8 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) ([]Arti
 			sql += ` UNION `
 		}
 
-		sql += fmt.Sprintf(`SELECT $%d, $%d, $%d, $%d ,$%d, $%d EXCEPT SELECT id, feed_id, title, description, link, date FROM articles WHERE id = $%d AND feed_id = $%d`, index, index+1, index+2, index+3, index+4, index+5, index, index+1)
-		args = append(args, a.Id, f.Id, a.Title, a.Description, a.Link, a.Date)
+		sql += fmt.Sprintf(`SELECT $%d, $%d, $%d ,$%d, $%d EXCEPT SELECT feed_id, link, title, description, date FROM articles WHERE feed_id = $%d AND link = $%d`, index, index+1, index+2, index+3, index+4, index, index+1)
+		args = append(args, f.Id, a.Link, a.Title, a.Description, a.Date)
 		index = len(args) + 1
 	}
 
@@ -1006,6 +1019,60 @@ func (db DB) getUserFavoriteArticles(u User, namedSQL string, paging ...int) ([]
 	return articles, nil
 }
 
+func (db DB) populateArticleIds(articles []Article) ([]Article, error) {
+	if len(articles) == 0 {
+		return articles, nil
+	}
+
+	temp := []Article{}
+	sql := `
+SELECT a.feed_id, a.id, a.link
+FROM articles a
+WHERE `
+
+	args := []interface{}{}
+	index := 1
+
+	for i, a := range articles {
+		if err := a.Validate(); err != nil {
+			return articles, err
+		}
+
+		if a.Id != 0 {
+			continue
+		}
+
+		if i != 0 {
+			sql += ` OR `
+		}
+
+		sql += fmt.Sprintf(`(feed_id = $%d AND link = $%d)`, index, index+1)
+		args = append(args, a.FeedId, a.Link)
+		index = len(args) + 1
+	}
+
+	if index == 1 {
+		return articles, nil
+	}
+
+	if err := db.Select(&temp, sql, args...); err != nil {
+		return articles, err
+	}
+
+	articleMap := map[string]int{}
+	for i, a := range articles {
+		articleMap[fmt.Sprintf("%d:%s", a.FeedId, a.Link)] = i
+	}
+
+	for _, a := range temp {
+		if i, ok := articleMap[fmt.Sprintf("%d:%s", a.FeedId, a.Link)]; ok {
+			articles[i].Id = a.Id
+		}
+	}
+
+	return articles, nil
+}
+
 func pagingLimit(paging []int) (int, int) {
 	limit := 50
 	offset := 0
@@ -1044,6 +1111,7 @@ func init() {
 	sql_stmt["generic:get_unread_user_articles"] = get_unread_user_articles
 	sql_stmt["generic:get_unread_user_articles_desc"] = get_unread_user_articles_desc
 	sql_stmt["generic:get_read_user_articles"] = get_read_user_articles
+	sql_stmt["generic:get_all_user_articles"] = get_all_user_articles
 	sql_stmt["generic:get_all_articles"] = get_all_articles
 	sql_stmt["generic:get_all_feed_articles"] = get_all_feed_articles
 	sql_stmt["generic:create_all_user_articles_read_by_date"] = create_all_user_articles_read_by_date

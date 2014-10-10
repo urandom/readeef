@@ -36,9 +36,9 @@ FROM users_feeds uf INNER JOIN articles a
 INNER JOIN users_feeds_tags uft
 	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login AND uft.tag = $2
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 ORDER BY read, a.date
 LIMIT $3
 OFFSET $4
@@ -53,9 +53,9 @@ FROM users_feeds uf INNER JOIN articles a
 INNER JOIN users_feeds_tags uft
 	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login AND uft.tag = $2
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 ORDER BY read ASC, a.date DESC
 LIMIT $3
 OFFSET $4
@@ -70,9 +70,9 @@ FROM users_feeds uf INNER JOIN articles a
 INNER JOIN users_feeds_tags uft
 	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login AND uft.tag = $2
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 WHERE ar.article_id IS NULL
 ORDER BY a.date
 LIMIT $3
@@ -88,9 +88,9 @@ FROM users_feeds uf INNER JOIN articles a
 INNER JOIN users_feeds_tags uft
 	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login AND uft.tag = $2
 LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND a.feed_id = ar.article_feed_id
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND a.feed_id = af.article_feed_id
+	ON a.id = af.article_id AND uf.user_login = af.user_login
 WHERE ar.article_id IS NULL
 ORDER BY a.date DESC
 LIMIT $3

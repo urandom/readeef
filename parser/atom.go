@@ -2,8 +2,6 @@ package parser
 
 import (
 	"bytes"
-	"crypto/sha1"
-	"encoding/hex"
 	"encoding/xml"
 )
 
@@ -52,11 +50,8 @@ func ParseAtom(b []byte) (Feed, error) {
 	}
 
 	for _, i := range rss.Items {
-		article := Article{Id: i.Id, Title: i.Title, Link: i.Link.Href}
+		article := Article{Title: i.Title, Link: i.Link.Href}
 
-		hash := sha1.New()
-		hash.Write([]byte(article.Id))
-		article.Id = hex.EncodeToString(hash.Sum(nil))
 		article.Description = getLargerContent(i.Content, i.Description)
 
 		var err error

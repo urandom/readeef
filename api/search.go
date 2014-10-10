@@ -29,6 +29,7 @@ func (con Search) Handler(c context.Context) http.HandlerFunc {
 
 		params := webfw.GetParams(c, r)
 		query := params["query"]
+		user := readeef.GetUser(c, r)
 
 		resp := make(map[string]interface{})
 
@@ -51,7 +52,6 @@ func (con Search) Handler(c context.Context) http.HandlerFunc {
 			var ids []int64
 			if strings.HasPrefix(feedId, "tag:") {
 				db := readeef.GetDB(c)
-				user := readeef.GetUser(c, r)
 
 				var feeds []readeef.Feed
 
@@ -70,7 +70,7 @@ func (con Search) Handler(c context.Context) http.HandlerFunc {
 
 			var results []readeef.SearchResult
 
-			results, err = con.searchIndex.Search(query, highlight, ids)
+			results, err = con.searchIndex.Search(user, query, highlight, ids)
 
 			if err == nil {
 				resp["Articles"] = results

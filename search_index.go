@@ -29,7 +29,6 @@ type SearchResult struct {
 }
 
 type indexArticle struct {
-	Id          string
 	FeedId      string
 	Title       string
 	Description string
@@ -101,7 +100,7 @@ func (si SearchIndex) UpdateFeed(feed Feed) {
 
 	var articles []Article
 	for _, a := range feed.Articles {
-		if feed.lastUpdatedArticleIds[a.Id] {
+		if feed.lastUpdatedArticleLinks[a.Link] {
 			articles = append(articles, a)
 		}
 	}
@@ -134,7 +133,7 @@ func (si SearchIndex) batchIndex(articles []Article) {
 		a := articles[i]
 
 		if si.verbose > 0 {
-			Debug.Printf("Indexing article '%s' from feed id '%d'\n", a.Id, a.FeedId)
+			Debug.Printf("Indexing article '%d' from feed id '%d'\n", a.Id, a.FeedId)
 		}
 
 		batch.Index(prepareArticle(a))
@@ -168,7 +167,7 @@ func (si SearchIndex) batchDelete(articles []Article) {
 		a := articles[i]
 
 		if si.verbose > 0 {
-			Debug.Printf("Indexing article '%s' from feed id '%d'\n", a.Id, a.FeedId)
+			Debug.Printf("Indexing article '%d' from feed id '%d'\n", a.Id, a.FeedId)
 		}
 
 		batch.Delete(indexId(a))
@@ -190,7 +189,7 @@ func (si SearchIndex) batchDelete(articles []Article) {
 	}
 }
 
-func (si SearchIndex) Search(term, highlight string, feedIds []int64, paging ...int) ([]SearchResult, error) {
+func (si SearchIndex) Search(u User, term, highlight string, feedIds []int64, paging ...int) ([]SearchResult, error) {
 	var query bleve.Query
 
 	query = bleve.NewQueryStringQuery(term)
@@ -237,31 +236,30 @@ func (si SearchIndex) Search(term, highlight string, feedIds []int64, paging ...
 		return []SearchResult{}, nil
 	}
 
-	feedArticleIds := []FeedArticleIds{}
+	articleIds := []int64{}
 	hitMap := map[string]*search.DocumentMatch{}
 
 	for _, hit := range searchResult.Hits {
 		ids := strings.SplitN(hit.ID, ":", 2)
-		feedId, err := strconv.ParseInt(ids[0], 10, 64)
-		if err == nil {
-			feedArticleIds = append(feedArticleIds, FeedArticleIds{feedId, ids[1]})
+		if articleId, err := strconv.ParseInt(ids[1], 10, 64); err == nil {
+			articleIds = append(articleIds, articleId)
 			hitMap[hit.ID] = hit
 		}
 	}
 
-	articles, err := si.db.GetSpecificArticles(feedArticleIds...)
+	articles, err := si.db.GetSpecificUserArticles(u, articleIds...)
 
-	searchResults := make([]SearchResult, len(articles))
-	for i, article := range articles {
-		hit := hitMap[fmt.Sprintf("%d:%s", article.FeedId, article.Id)]
-		searchResults[i] = SearchResult{article, *hit}
+	searchResults := []SearchResult{}
+	for _, article := range articles {
+		hit := hitMap[fmt.Sprintf("%d:%d", article.FeedId, article.Id)]
+		searchResults = append(searchResults, SearchResult{article, *hit})
 	}
 
 	return searchResults, err
 }
 
 func prepareArticle(a Article) (string, indexArticle) {
-	ia := indexArticle{Id: a.Id, FeedId: strconv.FormatInt(a.FeedId, 10),
+	ia := indexArticle{FeedId: strconv.FormatInt(a.FeedId, 10),
 		Title:       html.UnescapeString(stripTags(a.Title)),
 		Description: html.UnescapeString(stripTags(a.Description)),
 		Link:        a.Link, Date: a.Date,
@@ -271,7 +269,7 @@ func prepareArticle(a Article) (string, indexArticle) {
 }
 
 func indexId(a Article) string {
-	return fmt.Sprintf("%d:%s", a.FeedId, a.Id)
+	return fmt.Sprintf("%d:%d", a.FeedId, a.Id)
 }
 
 func stripTags(text string) string {

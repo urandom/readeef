@@ -1,10 +1,6 @@
 package parser
 
-import (
-	"crypto/sha1"
-	"encoding/hex"
-	"testing"
-)
+import "testing"
 
 var atomXml = `` +
 	`<feed xmlns="http://www.w3.org/2005/Atom" updated="2003-12-13T18:30:02Z">` +
@@ -58,12 +54,6 @@ func TestAtomParse(t *testing.T) {
 	}
 
 	a := f.Articles[0]
-	hash := sha1.New()
-	hash.Write([]byte("urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a"))
-
-	if a.Id != hex.EncodeToString(hash.Sum(nil)) {
-		t.Fatalf("Unexpected article id: '%v'\n", a.Id)
-	}
 
 	if a.Title != "Atom-Powered Robots Run Amok" {
 		t.Fatalf("Unexpected article title: '%v'\n", a.Title)
