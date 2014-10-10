@@ -176,7 +176,7 @@
 
         onArticleReadResponse: function(event, data) {
             if (data.response && data.response.Success) {
-                if (this.article.Id == data.response.ArticleId) {
+                if (this.article && this.article.Id == data.response.ArticleId) {
                     this.article.Read = data.response.Read;
                 } else {
                     for (var i = 0, a; a = this.articles[i]; ++i) {
