@@ -56,12 +56,16 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 
 		readeef.Debug.Printf("Invoking Article controller with action '%s', feed id '%s' and article id '%s'\n", action, params["feed-id"], params["article-id"])
 
-		var feedId int64
+		var feedId, articleId int64
 		feedId, err = strconv.ParseInt(params["feed-id"], 10, 64)
 
 		var article readeef.Article
 		if err == nil {
-			article, err = db.GetFeedArticle(feedId, params["article-id"], user)
+			articleId, err = strconv.ParseInt(params["article-id"], 10, 64)
+
+			if err == nil {
+				article, err = db.GetFeedArticle(feedId, articleId, user)
+			}
 		}
 
 		resp := make(map[string]interface{})

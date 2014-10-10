@@ -545,8 +545,8 @@ func (db DB) GetUserFeeds(u User) ([]Feed, error) {
 	return feeds, nil
 }
 
-func (db DB) GetFeedArticle(feedId int64, articleId string, user User) (Article, error) {
-	Debug.Printf("Getting feed article for %d - %s\n", feedId, articleId)
+func (db DB) GetFeedArticle(feedId int64, articleId int64, user User) (Article, error) {
+	Debug.Printf("Getting feed article for %d - %d\n", feedId, articleId)
 
 	var a Article
 	if err := db.Get(&a, db.NamedSQL("get_feed_article"), feedId, articleId, user.Login); err != nil {
