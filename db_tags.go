@@ -3,7 +3,7 @@ package readeef
 import "time"
 
 const (
-	get_user_tags      = `SELECT tag FROM users_feeds_tags WHERE user_login = $1`
+	get_user_tags      = `SELECT DISTINCT tag FROM users_feeds_tags WHERE user_login = $1`
 	get_user_feed_tags = `SELECT tag FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2`
 
 	create_user_feed_tag = `

@@ -290,6 +290,15 @@ LEFT OUTER JOIN users_articles_read ar
 WHERE ar.article_id IS NULL
 `
 
+	get_all_favorite_user_article_ids = `
+SELECT a.id
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND uf.user_login = af.user_login
+WHERE af.article_id IS NOT NULL
+`
+
 	create_all_user_articles_read_by_date = `
 INSERT INTO users_articles_read
 	SELECT uf.user_login, a.id
@@ -301,6 +310,12 @@ INSERT INTO users_articles_read
 	delete_all_user_articles_read_by_date = `
 DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
 	SELECT id FROM articles WHERE date IS NULL OR date < $2
+)
+`
+
+	delete_newer_user_articles_read_by_date = `
+DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
+	SELECT id FROM articles WHERE date > $2
 )
 `
 
@@ -792,6 +807,16 @@ func (db DB) GetAllUnreadUserArticleIds(u User) ([]int64, error) {
 	return ids, nil
 }
 
+func (db DB) GetAllFavoriteUserArticleIds(u User) ([]int64, error) {
+	var ids []int64
+
+	if err := db.Select(&ids, db.NamedSQL("get_all_favorite_user_article_ids"), u.Login); err != nil {
+		return ids, err
+	}
+
+	return ids, nil
+}
+
 func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error {
 	if len(articles) == 0 {
 		return nil
@@ -889,6 +914,28 @@ func (db DB) MarkUserArticlesByDateAsRead(u User, d time.Time, read bool) error 
 	}
 
 	tx.Commit()
+
+	return nil
+}
+
+func (db DB) MarkNewerUserArticlesByDateAsUnread(u User, d time.Time, read bool) error {
+	tx, err := db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Preparex(db.NamedSQL("delete_newer_user_articles_read_by_date"))
+
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(u.Login, d)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -1213,8 +1260,10 @@ func init() {
 	sql_stmt["generic:get_all_articles"] = get_all_articles
 	sql_stmt["generic:get_all_feed_articles"] = get_all_feed_articles
 	sql_stmt["generic:get_all_unread_user_article_ids"] = get_all_unread_user_article_ids
+	sql_stmt["generic:get_all_favorite_user_article_ids"] = get_all_favorite_user_article_ids
 	sql_stmt["generic:create_all_user_articles_read_by_date"] = create_all_user_articles_read_by_date
 	sql_stmt["generic:delete_all_user_articles_read_by_date"] = delete_all_user_articles_read_by_date
+	sql_stmt["generic:delete_newer_user_articles_read_by_date"] = delete_newer_user_articles_read_by_date
 	sql_stmt["generic:create_all_users_articles_read_by_feed_date"] = create_all_users_articles_read_by_feed_date
 	sql_stmt["generic:delete_all_users_articles_read_by_feed_date"] = delete_all_users_articles_read_by_feed_date
 	sql_stmt["generic:get_user_favorite_articles"] = get_user_favorite_articles

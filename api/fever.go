@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -94,24 +96,13 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 			if _, ok := r.Form["groups"]; ok {
 				readeef.Debug.Println("Fetching fever groups")
 
-				var tags []string
-
-				tags, err = db.GetUserTags(user)
-
-				if err != nil {
-					break
-				}
-
-				groups := []feverGroup{}
-				for _, tag := range tags {
-					groups = append(groups, tagToGroup(tag))
-				}
+				groups := []feverGroup{feverGroup{Id: 1, Title: "All"}}
 
 				resp["groups"] = groups
 
 				var feeds []readeef.Feed
 
-				feeds, err = db.GetUserTagsFeeds(user)
+				feeds, err = db.GetUserFeeds(user)
 				if err != nil {
 					break
 				}
@@ -125,7 +116,7 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 				var feeds []readeef.Feed
 				var feverFeeds []feverFeed
 
-				feeds, err = db.GetUserTagsFeeds(user)
+				feeds, err = db.GetUserFeeds(user)
 
 				if err != nil {
 					break
@@ -144,6 +135,8 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			if _, ok := r.Form["unread_item_ids"]; ok {
+				readeef.Debug.Println("Fetching unread fever item ids")
+
 				var ids []int64
 
 				ids, err = db.GetAllUnreadUserArticleIds(user)
@@ -165,7 +158,33 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 				resp["unread_item_ids"] = buf.String()
 			}
 
+			if _, ok := r.Form["saved_item_ids"]; ok {
+				readeef.Debug.Println("Fetching saved fever item ids")
+
+				var ids []int64
+
+				ids, err = db.GetAllFavoriteUserArticleIds(user)
+				if err != nil {
+					break
+				}
+
+				buf := util.BufferPool.GetBuffer()
+				defer util.BufferPool.Put(buf)
+
+				for i, id := range ids {
+					if i != 0 {
+						buf.WriteString(",")
+					}
+
+					buf.WriteString(strconv.FormatInt(id, 10))
+				}
+
+				resp["saved_item_ids"] = buf.String()
+			}
+
 			if _, ok := r.Form["items"]; ok {
+				readeef.Debug.Println("Fetching fever items")
+
 				var count, since, max int64
 
 				count, err = db.GetUserArticleCount(user)
@@ -233,6 +252,82 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 				resp["total_items"] = count
 				resp["items"] = items
 			}
+
+			if val := r.PostFormValue("unread_recently_read"); val == "1" {
+				readeef.Debug.Println("Marking recently read fever items as unread")
+
+				t := time.Now().Add(-24 * time.Hour)
+				err = db.MarkNewerUserArticlesByDateAsUnread(user, t, true)
+				if err != nil {
+					break
+				}
+			}
+
+			if val := r.PostFormValue("mark"); val != "" {
+				if val == "item" {
+					readeef.Debug.Printf("Marking fever item '%s' as '%s'\n", r.PostFormValue("id"), r.PostFormValue("as"))
+
+					var id int64
+					var article readeef.Article
+
+					id, err = strconv.ParseInt(r.PostFormValue("id"), 10, 64)
+					if err != nil {
+						break
+					}
+
+					article, err = db.GetFeedArticle(id, user)
+					if err != nil {
+						break
+					}
+
+					switch r.PostFormValue("as") {
+					case "read":
+						err = db.MarkUserArticlesAsRead(user, []readeef.Article{article}, true)
+					case "saved":
+						err = db.MarkUserArticlesAsFavorite(user, []readeef.Article{article}, true)
+					case "unsaved":
+						err = db.MarkUserArticlesAsFavorite(user, []readeef.Article{article}, false)
+					default:
+						err = errors.New("Unknown 'as' action")
+					}
+				} else if val == "feed" || val == "group" {
+					readeef.Debug.Printf("Marking fever %s '%s' as '%s'\n", val, r.PostFormValue("id"), r.PostFormValue("as"))
+					if r.PostFormValue("as") != "read" {
+						err = errors.New("Unknown 'as' action")
+						break
+					}
+
+					var id, timestamp int64
+
+					id, err = strconv.ParseInt(r.PostFormValue("id"), 10, 64)
+					if err != nil {
+						break
+					}
+
+					timestamp, err = strconv.ParseInt(r.PostFormValue("before"), 10, 64)
+					if err != nil {
+						break
+					}
+
+					t := time.Unix(timestamp, 0)
+
+					if val == "feed" {
+						var feed readeef.Feed
+
+						feed, err = db.GetUserFeed(id, user)
+						if err != nil {
+							break
+						}
+
+						err = db.MarkFeedArticlesByDateAsRead(feed, t, true)
+					} else if val == "group" {
+						if id == 1 {
+						} else {
+							err = errors.New(fmt.Sprintf("Unknown group %d\n", id))
+						}
+					}
+				}
+			}
 		}
 
 		var b []byte
@@ -266,33 +361,17 @@ func getUser(db readeef.DB, md5hex string, log *log.Logger) readeef.User {
 	return user
 }
 
-func tagToGroup(tag string) feverGroup {
-	if id, ok := tagIdMap[tag]; ok {
-		return feverGroup{Id: id, Title: tag}
-	} else {
-		counter++
-		idTagMap[counter] = tag
-		tagIdMap[tag] = counter
-
-		return feverGroup{Id: id, Title: tag}
-	}
-}
-
 func getFeedsGroups(feeds []readeef.Feed) []feverFeedsGroup {
-	feedGroupMap := map[int64][]string{}
+	buf := util.BufferPool.GetBuffer()
+	defer util.BufferPool.Put(buf)
 
-	for _, f := range feeds {
-		for _, tag := range f.Tags {
-			id := tagIdMap[tag]
-			feedGroupMap[id] = append(feedGroupMap[id], strconv.FormatInt(f.Id, 10))
+	for i, f := range feeds {
+		if i != 0 {
+			buf.WriteString(",")
 		}
+
+		buf.WriteString(strconv.FormatInt(f.Id, 10))
 	}
 
-	feedsGroups := []feverFeedsGroup{}
-	for group, feeds := range feedGroupMap {
-		feedsGroups = append(feedsGroups,
-			feverFeedsGroup{GroupId: group, FeedIds: strings.Join(feeds, ",")})
-	}
-
-	return feedsGroups
+	return []feverFeedsGroup{feverFeedsGroup{GroupId: 1, FeedIds: buf.String()}}
 }

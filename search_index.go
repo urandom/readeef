@@ -30,6 +30,7 @@ type SearchResult struct {
 
 type indexArticle struct {
 	FeedId      string
+	ArticleId   string
 	Title       string
 	Description string
 	Link        string
@@ -260,6 +261,7 @@ func (si SearchIndex) Search(u User, term, highlight string, feedIds []int64, pa
 
 func prepareArticle(a Article) (string, indexArticle) {
 	ia := indexArticle{FeedId: strconv.FormatInt(a.FeedId, 10),
+		ArticleId:   strconv.FormatInt(a.Id, 10),
 		Title:       html.UnescapeString(stripTags(a.Title)),
 		Description: html.UnescapeString(stripTags(a.Description)),
 		Link:        a.Link, Date: a.Date,
