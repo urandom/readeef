@@ -321,7 +321,8 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 
 						err = db.MarkFeedArticlesByDateAsRead(feed, t, true)
 					} else if val == "group" {
-						if id == 1 {
+						if id == 1 || id == 0 {
+							err = db.MarkUserArticlesByDateAsRead(user, t, true)
 						} else {
 							err = errors.New(fmt.Sprintf("Unknown group %d\n", id))
 						}
