@@ -18,6 +18,7 @@ type Article struct {
 	Title       string
 	Description string
 	Link        string
+	Guid        string
 	Date        time.Time
 }
 

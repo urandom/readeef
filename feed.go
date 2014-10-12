@@ -1,6 +1,7 @@
 package readeef
 
 import (
+	"database/sql"
 	"errors"
 	"net/url"
 
@@ -27,6 +28,7 @@ type Article struct {
 	parser.Article
 
 	Id       int64
+	Guid     sql.NullString
 	FeedId   int64 `db:"feed_id"`
 	Read     bool
 	Favorite bool
@@ -42,6 +44,12 @@ func (f Feed) UpdateFromParsed(pf parser.Feed) Feed {
 	for i, pa := range pf.Articles {
 		a := Article{Article: pa}
 		a.FeedId = f.Id
+
+		if pa.Guid != "" {
+			a.Guid.Valid = true
+			a.Guid.String = pa.Guid
+		}
+
 		newArticles[i] = a
 	}
 

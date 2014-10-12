@@ -66,11 +66,13 @@ CREATE TABLE IF NOT EXISTS articles (
 	id BIGSERIAL PRIMARY KEY,
 	feed_id INTEGER,
 	link TEXT,
+	guid TEXT,
 	title TEXT,
 	description TEXT,
 	date TIMESTAMP WITH TIME ZONE,
 
 	UNIQUE(feed_id, link),
+	UNIQUE(feed_id, guid),
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_feeds (

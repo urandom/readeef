@@ -50,7 +50,7 @@ func ParseAtom(b []byte) (Feed, error) {
 	}
 
 	for _, i := range rss.Items {
-		article := Article{Title: i.Title, Link: i.Link.Href}
+		article := Article{Title: i.Title, Link: i.Link.Href, Guid: i.Id}
 
 		article.Description = getLargerContent(i.Content, i.Description)
 

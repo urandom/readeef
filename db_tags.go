@@ -28,7 +28,7 @@ ORDER BY LOWER(f.title)
 	get_user_feed_ids_tags = `SELECT feed_id, tag FROM users_feeds_tags WHERE user_login = $1 ORDER BY feed_id`
 
 	get_user_tag_articles = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -45,7 +45,7 @@ OFFSET $4
 `
 
 	get_user_tag_articles_desc = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -62,7 +62,7 @@ OFFSET $4
 `
 
 	get_unread_user_tag_articles = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -80,7 +80,7 @@ OFFSET $4
 `
 
 	get_unread_user_tag_articles_desc = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a

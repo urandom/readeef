@@ -48,7 +48,7 @@ ORDER BY LOWER(f.title)
 `
 
 	get_feed_article = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -64,8 +64,12 @@ LEFT OUTER JOIN users_articles_fav af
 UPDATE articles SET title = $1, description = $2, date = $3 WHERE feed_id = $4 AND link = $5
 `
 
+	update_feed_article_with_guid = `
+UPDATE articles SET title = $1, description = $2, date = $3 WHERE feed_id = $4 AND guid = $5
+`
+
 	get_feed_articles = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -80,7 +84,7 @@ OFFSET $4
 `
 
 	get_feed_articles_desc = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -95,7 +99,7 @@ OFFSET $4
 `
 
 	get_unread_feed_articles = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -111,7 +115,7 @@ OFFSET $4
 `
 
 	get_unread_feed_articles_desc = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -127,7 +131,7 @@ OFFSET $4
 `
 
 	get_read_feed_articles = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -143,7 +147,7 @@ OFFSET $4
 `
 
 	get_unordered_user_articles = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -159,7 +163,7 @@ OFFSET $4
 `
 
 	get_unordered_user_articles_desc = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -181,7 +185,7 @@ FROM users_feeds uf INNER JOIN articles a
 `
 
 	get_user_articles = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -196,7 +200,7 @@ OFFSET $3
 `
 
 	get_user_articles_desc = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -211,7 +215,7 @@ OFFSET $3
 `
 
 	get_unread_user_articles = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -227,7 +231,7 @@ OFFSET $3
 `
 
 	get_unread_user_articles_desc = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -243,7 +247,7 @@ OFFSET $3
 `
 
 	get_read_user_articles = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -259,7 +263,7 @@ OFFSET $3
 `
 
 	get_all_user_articles = `
-SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -271,12 +275,12 @@ LEFT OUTER JOIN users_articles_fav af
 `
 
 	get_all_articles = `
-SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.guid, a.date
 FROM articles a
 `
 
 	get_all_feed_articles = `
-SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.guid, a.date
 FROM articles a
 WHERE a.feed_id = $1
 `
@@ -334,7 +338,7 @@ DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
 `
 
 	get_user_favorite_articles = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 1 AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -349,7 +353,7 @@ OFFSET $3
 `
 
 	get_user_favorite_articles_desc = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date,
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 1 AS favorite
 FROM users_feeds uf INNER JOIN articles a
@@ -1066,13 +1070,24 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) ([]Arti
 			return newArticles, err
 		}
 
-		stmt, err := tx.Preparex(db.NamedSQL("update_feed_article"))
+		var sql string
+		args := []interface{}{a.Title, a.Description, a.Date, f.Id}
+
+		if a.Guid.Valid {
+			sql = db.NamedSQL("update_feed_article_with_guid")
+			args = append(args, a.Guid)
+		} else {
+			sql = db.NamedSQL("update_feed_article")
+			args = append(args, a.Link)
+		}
+
+		stmt, err := tx.Preparex(sql)
 		if err != nil {
 			return newArticles, err
 		}
 		defer stmt.Close()
 
-		res, err := stmt.Exec(a.Title, a.Description, a.Date, f.Id, a.Link)
+		res, err := stmt.Exec(args...)
 		if err != nil {
 			return newArticles, err
 		}
@@ -1086,7 +1101,7 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) ([]Arti
 		return newArticles, nil
 	}
 
-	sql := `INSERT INTO articles(feed_id, link, title, description, date) `
+	sql := `INSERT INTO articles(feed_id, link, guid, title, description, date) `
 	args := []interface{}{}
 	index := 1
 
@@ -1099,8 +1114,10 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) ([]Arti
 			sql += ` UNION `
 		}
 
-		sql += fmt.Sprintf(`SELECT $%d, $%d, $%d ,$%d, $%d EXCEPT SELECT feed_id, link, title, description, date FROM articles WHERE feed_id = $%d AND link = $%d`, index, index+1, index+2, index+3, index+4, index, index+1)
-		args = append(args, f.Id, a.Link, a.Title, a.Description, a.Date)
+		sql += fmt.Sprintf(
+			`SELECT $%d, $%d, $%d ,$%d, $%d, $%d EXCEPT SELECT feed_id, link, guid, title, description, date FROM articles WHERE feed_id = $%d AND link = $%d`,
+			index, index+1, index+2, index+3, index+4, index+5, index, index+1)
+		args = append(args, f.Id, a.Link, a.Guid, a.Title, a.Description, a.Date)
 		index = len(args) + 1
 	}
 
@@ -1243,6 +1260,7 @@ func init() {
 	sql_stmt["generic:get_user_feeds"] = get_user_feeds
 	sql_stmt["generic:get_feed_article"] = get_feed_article
 	sql_stmt["generic:update_feed_article"] = update_feed_article
+	sql_stmt["generic:update_feed_article_with_guid"] = update_feed_article_with_guid
 	sql_stmt["generic:get_feed_articles"] = get_feed_articles
 	sql_stmt["generic:get_feed_articles_desc"] = get_feed_articles_desc
 	sql_stmt["generic:get_unread_feed_articles"] = get_unread_feed_articles

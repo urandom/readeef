@@ -59,7 +59,7 @@ func ParseRss2(b []byte) (Feed, error) {
 	}
 
 	for _, i := range rss.Channel.Items {
-		article := Article{Title: i.Title, Link: i.Link}
+		article := Article{Title: i.Title, Link: i.Link, Guid: i.Id}
 
 		article.Description = getLargerContent(i.Content, i.Description)
 
