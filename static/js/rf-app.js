@@ -40,7 +40,7 @@
     }
 
     Polymer('rf-app', {
-        selected: 'loading',
+        selected: 'splash',
         responsiveWidth: '768px',
         userTTL: 1000 * 60 * 60 * 24 * 15,
         user: null,
@@ -237,7 +237,7 @@
             this.user.LastName = data.response.User.LastName;
             this.userSettings = data.response.ProfileData;
 
-            if (this.selected == 'login' || this.selected == 'loading') {
+            if (this.selected == 'login' || this.selected == 'splash') {
                 this.selected = 'scaffolding';
             }
 

@@ -8,8 +8,6 @@
 <link rel="import" href="/dist/core-localstorage/core-localstorage.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
 <link rel="import" href="/dist/core-animated-pages/transitions/slide-up.html">
-<link rel="import" href="/dist/core-animated-pages/transitions/scale-up.html">
-<link rel="import" href="/dist/core-animated-pages/transitions/tile-cascade.html">
 <link rel="import" href="/dist/core-transition/core-transition-css.html">
 <link rel="import" href="/dist/core-signals/core-signals.html">
 
@@ -26,41 +24,51 @@
     <template>
         <link href="/css/rf-app.css" rel="stylesheet">
 
-        <core-animated-pages selected="{{ selected }}" transitions="cross-fade cross-fade-delayed scale-up slide-up slide-up-offscreen slide-down tile-cascade hero-transition" fit class="{{ {wide: wide} | tokenList }}">
-            <rf-scaffolding name="scaffolding" id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feed="{{ currentFeed }}" article="{{ currentArticle }}" display="{{ display }}" updateAvailable="{{ updateAvailable }}" shareServices="{{ shareServices }}">
-                <div fit class="drawer-title bottom">Feeds</div>
-
-                <template if="{{ feeds.length > 0 }}">
-                    <paper-item label="Favorite" class="drawer-content" on-tap="{{ onFeedTap }}" name="__favorite__" selectable></paper-item>
-                    <hr class="drawer-content">
-                </template>
-                <template repeat="{{ tag in tags }}" hidden?="{{ !feeds.length }}">
-                    <div class="drawer-content collapser" layout horizontal center>
-                        <paper-icon-button icon="more-horiz" fill on-tap="{{ onTagCollapseToggle }}" data-tag="{{ tag.name }}"></paper-icon-button>
-                        <paper-item label="{{ tag.name == '__all__' ? 'All' : tag.name }}" on-tap="{{ onFeedTap }}" name="tag:{{ tag.name }}" selectable flex></paper-item>
-                    </div>
-                    <core-collapse class="drawer-content" data-tag="{{ tag.name }}">
-                        <template repeat="{{ feed in tag.feeds }}">
-                            <paper-item label="{{ feed.Title }}" iconSrc="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" on-tap="{{ onFeedTap }}" title="{{ feed.Description }}" name="{{ feed.Id }}" selectable></paper-item>
-                        </template>
-                    </core-collapse>
-                </template>
-                <hr class="drawer-content">
-                <paper-item label="Settings" class="drawer-content" on-tap="{{ onDisplaySettings }}"></paper-item>
-                <paper-item label="Sign Out" class="drawer-content" on-tap="{{ onSignOut }}"></paper-item>
-
-                <div class="main-content">
-                    <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" hidden?="{{ display != 'feed' || loadingArticles }}"></rf-content-list>
-                    <rf-settings id="settings" wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feeds="{{ feeds }}" hidden?="{{ display == 'feed' }}" display="{{ display }}" shareServices="{{ shareServices }}"></rf-settings>
-                    <template if="{{ loadingArticles || loadingMoreArticles }}">
-                        <div layout vertical center>
-                            <loading-wave background="transparent"></loading-wave>
-                        </div>
-                    </template>
+        <core-animated-pages selected="{{ selected }}" transitions="cross-fade slide-up slide-up-offscreen" fit class="{{ {wide: wide} | tokenList }}">
+            <section name="splash">
+                <div slide-up fit layout horizontal center center-justified>
+                    <img src="/images/readeef.png" cross-fade>
                 </div>
-            </rf-scaffolding>
+            </section>
 
-            <rf-login name="login" id="login" layout wide="{{ wide }}" user="{{ user }}"></rf-login>
+            <section name="scaffolding">
+                <rf-scaffolding id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feed="{{ currentFeed }}" article="{{ currentArticle }}" display="{{ display }}" updateAvailable="{{ updateAvailable }}" shareServices="{{ shareServices }}">
+                    <div fit class="drawer-title bottom">Feeds</div>
+
+                    <template if="{{ feeds.length > 0 }}">
+                        <paper-item label="Favorite" class="drawer-content" on-tap="{{ onFeedTap }}" name="__favorite__" selectable></paper-item>
+                        <hr class="drawer-content">
+                    </template>
+                    <template repeat="{{ tag in tags }}" hidden?="{{ !feeds.length }}">
+                        <div class="drawer-content collapser" layout horizontal center>
+                            <paper-icon-button icon="more-horiz" fill on-tap="{{ onTagCollapseToggle }}" data-tag="{{ tag.name }}"></paper-icon-button>
+                            <paper-item label="{{ tag.name == '__all__' ? 'All' : tag.name }}" on-tap="{{ onFeedTap }}" name="tag:{{ tag.name }}" selectable flex></paper-item>
+                        </div>
+                        <core-collapse class="drawer-content" data-tag="{{ tag.name }}">
+                            <template repeat="{{ feed in tag.feeds }}">
+                                <paper-item label="{{ feed.Title }}" iconSrc="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" on-tap="{{ onFeedTap }}" title="{{ feed.Description }}" name="{{ feed.Id }}" selectable></paper-item>
+                            </template>
+                        </core-collapse>
+                    </template>
+                    <hr class="drawer-content">
+                    <paper-item label="Settings" class="drawer-content" on-tap="{{ onDisplaySettings }}"></paper-item>
+                    <paper-item label="Sign Out" class="drawer-content" on-tap="{{ onSignOut }}"></paper-item>
+
+                    <div class="main-content">
+                        <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" hidden?="{{ display != 'feed' || loadingArticles }}"></rf-content-list>
+                        <rf-settings id="settings" wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feeds="{{ feeds }}" hidden?="{{ display == 'feed' }}" display="{{ display }}" shareServices="{{ shareServices }}"></rf-settings>
+                        <template if="{{ loadingArticles || loadingMoreArticles }}">
+                            <div layout vertical center>
+                                <loading-wave background="transparent"></loading-wave>
+                            </div>
+                        </template>
+                    </div>
+                </rf-scaffolding>
+            </section>
+
+            <section name="login">
+                <rf-login id="login" layout wide="{{ wide }}" user="{{ user }}"></rf-login>
+            </section>
         </core-animated-pages>
 
         <rf-api id="auth-check" pathAction="auth" on-rf-api-response="{{ onAuthCheckResponse }}" on-rf-api-complete="{{ onAuthCheckComplete }}" user="{{ user }}"></rf-api>
