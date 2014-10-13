@@ -4,3 +4,4 @@
 * Non-fatal API errors
 * TinyRSS API emulation
 * Start a separate https server for the API, if configured
+* Build an article score based on how much the link has been shared (http://stackoverflow.com/questions/5699270/how-to-get-share-counts-using-graph-api)
