@@ -54,6 +54,10 @@ func TestAtomParse(t *testing.T) {
 	}
 
 	a := f.Articles[0]
+	expectedStr := "urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a"
+	if a.Guid != expectedStr {
+		t.Fatalf("Expected %s as id, got '%s'\n", expectedStr, a.Guid)
+	}
 
 	if a.Title != "Atom-Powered Robots Run Amok" {
 		t.Fatalf("Unexpected article title: '%v'\n", a.Title)
