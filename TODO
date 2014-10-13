@@ -3,3 +3,4 @@
 * I18N
 * Non-fatal API errors
 * TinyRSS API emulation
+* Start a separate https server for the API, if configured

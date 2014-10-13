@@ -14,7 +14,7 @@
 <link rel="import" href="/component/rf-button-link">
 <link rel="import" href="/component/rf-article-display">
 
-<polymer-element name="rf-content-list" attributes="wide user feed feeds article">
+<polymer-element name="rf-content-list" attributes="wide user feed feeds article formattingEnabled" formattingEnabled="{% ne .base.readeefConfig.ArticleFormatter.ReadabilityKey `` %}">
     <template bind="{{ wide as wide }}">
         <link href="/css/rf-content-list.css" rel="stylesheet">
 
