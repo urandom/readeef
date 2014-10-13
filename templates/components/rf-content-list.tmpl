@@ -23,16 +23,16 @@
             <section name="list">
                 <core-list data="{{ articles }}" height="{{ itemHeight }}" id="articles-list" on-core-activate="{{ onArticleActivate }}">
                     <template>
-                        <div class="article {{ {selected: selected, read: Read, favorite: Favorite} | tokenList }}" id="{{ Id }}">
+                        <div class="article {{ {selected: selected, read: model.Read, favorite: model.Favorite} | tokenList }}" id="{{ model.Id }}">
                             <div class="card" layout vertical slide-down?="{{ selected }}">
-                                <div layout horizontal>
-                                    <paper-icon-button class="favorite-button" icon="{{ {'bookmark-outline': !Favorite, bookmark: Favorite} | tokenList }}" on-tap="{{ onFavoriteToggle }}" data-article-id="{{ Id }}" data-feed-id="{{ FeedId }}"></paper-icon-button>
-                                    <span class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}">{{ FeedOrigin }}</span>
+                                <div class="list-wrapper" layout horizontal>
+                                    <paper-icon-button class="favorite-button" icon="{{ {'bookmark-outline': !model.Favorite, bookmark: model.Favorite} | tokenList }}" on-tap="{{ onFavoriteToggle }}" data-article-id="{{ model.Id }}" data-feed-id="{{ model.FeedId }}"></paper-icon-button>
+                                    <span class="feed-origin" title="{{ model.FeedOrigin }}" hidden?="{{ !model.FeedOrigin }}">{{ model.FeedOrigin }}</span>
                                     <span flex class="title-wrapper">
-                                        <span class="title" title="{{ Title }}">{{ Hit && Hit.fragments.Title ? Hit.fragments.Title : Title }}</span>
-                                        <span class="short-description">{{ Hit && Hit.fragments.Description ? Hit.fragments.Description : ShortDescription }}</span>
+                                        <span class="title" title="{{ model.Title }}">{{ model.Hit && model.Hit.fragments.Title ? model.Hit.fragments.Title : model.Title }}</span>
+                                        <span class="short-description">{{ model.Hit && model.Hit.fragments.Description ? model.Hit.fragments.Description : model.ShortDescription }}</span>
                                     </span>
-                                    <span class="publish-date">{{ RelativeDate }}</span>
+                                    <span class="publish-date">{{ model.RelativeDate }}</span>
                                 </div>
                             </div>
                         </div>
@@ -46,24 +46,24 @@
                         <div class="article-detail">
                             <div class="card" layout vertical  slide-down?="{{ selected }}">
                                 <div layout horizontal class="article-header">
-                                    <paper-icon-button class="favorite-button" icon="{{ {'bookmark-outline': !Favorite, bookmark: Favorite} | tokenList }}" on-tap="{{ onArticleFavorite }}" data-article-id="{{ Id }}"></paper-icon-button>
-                                    <span class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}" style="float: left">{{ FeedOrigin }}</span>
+                                    <paper-icon-button class="favorite-button" icon="{{ {'bookmark-outline': !model.Favorite, bookmark: model.Favorite} | tokenList }}" on-tap="{{ onArticleFavorite }}" data-article-id="{{ model.Id }}"></paper-icon-button>
+                                    <span class="feed-origin" title="{{ model.FeedOrigin }}" hidden?="{{ !model.FeedOrigin }}" style="float: left">{{ model.FeedOrigin }}</span>
                                     <span flex class="title-wrapper" layout vertical>
-                                        <a href="{{ Link }}" target="feed-article-{{ Id }}">
-                                            <span class="title" title="{{ Title }}">{{ Title }}</span>
+                                        <a href="{{ model.Link }}" target="feed-article-{{ model.Id }}">
+                                            <span class="title" title="{{ model.Title }}">{{ model.Title }}</span>
                                         </a>
                                         <span layout horizontal class="article-narrow-header-details">
-                                            <span class="feed-origin" title="{{ FeedOrigin }}" hidden?="{{ !FeedOrigin }}" style="float: left">{{ FeedOrigin }}</span>
-                                            <span class="publish-date">{{ RelativeDate }}</span>
+                                            <span class="feed-origin" title="{{ model.FeedOrigin }}" hidden?="{{ !model.FeedOrigin }}" style="float: left">{{ model.FeedOrigin }}</span>
+                                            <span class="publish-date">{{ model.RelativeDate }}</span>
                                         </span>
                                     </span>
-                                    <span class="publish-date">{{RelativeDate}}</span>
+                                    <span class="publish-date">{{model.RelativeDate}}</span>
                                 </div>
                                 <div class="article-content">
                                     <div class="article-description"></div>
 
                                     <div layout horizontal class="article-buttons">
-                                        <rf-button-link href="{{ Link }}" target="feed-article-{{ Id }}" label="View the article" flex class="article-link"></rf-button-link>
+                                        <rf-button-link href="{{ model.Link }}" target="feed-article-{{ model.Id }}" label="View the article" flex class="article-link"></rf-button-link>
                                         {% if ne .base.readeefConfig.ArticleFormatter.ReadabilityKey `` %}
                                             <paper-button label="Format" flex?="{{ wide }}" on-tap="{{ onArticleFormat }}" hidden?="{{ formatting || formatted }}"></paper-button>
                                             <template if="{{ formatting }}">

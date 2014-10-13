@@ -52,7 +52,6 @@
                 return;
             }
 
-            this._originalArticleProperties = Object.getOwnPropertyNames(this.articles[0] || {});
             this._physicalArticles = [];
             for (var i = 0; i < 3; ++i) {
                 this._physicalArticles[i] = {};
@@ -74,9 +73,7 @@
             dest.formatted = false;
             dest.selected = physicalIndex == middle;
             dest.wide = this.wide;
-            for (var i = 0, p; p = this._originalArticleProperties[i]; ++i) {
-                dest[p] = src[p];
-            }
+            dest.model = src;
 
             dest._physicalIndex = physicalIndex;
             dest._virtualIndex = virtualIndex;
@@ -96,7 +93,7 @@
 
             for (var i = 0, a; a = this._physicalArticles[i]; ++i) {
                 a.selected = false;
-                if (a.Id == this.article.Id) {
+                if (a.model && a.model.Id == this.article.Id) {
                     a.selected = true;
                     physical = i;
                 }
@@ -161,8 +158,6 @@
         onArticleFavorite: function() {
             this.article.Favorite = !this.article.Favorite;
             this.$['article-favorite'].go();
-
-            this.updateItem(this._physicalArticles[1]._virtualIndex, 1);
         },
 
         cleanTemplateElement: function(template) {
@@ -174,8 +169,8 @@
             }
         },
 
-        initializeElement: function(item, model) {
-            if (!model.Description) {
+        initializeElement: function(item, data) {
+            if (!data.model) {
                 return;
             }
 
@@ -187,7 +182,7 @@
                     }
                 }, image;
 
-            description.innerHTML = model.Description;
+            description.innerHTML = data.formattedDescription || data.model.Description;
             image = description.querySelector('img');
 
             if (image) {
@@ -254,8 +249,8 @@
 
         trackx: function(event) {
             if (this.swiping) {
-                if ((!this._physicalArticles[2].Id && event.dx < 0)
-                    || (!this._physicalArticles[0].Id && event.dx > 0)) {
+                if ((!this._physicalArticles[2].model && event.dx < 0)
+                    || (!this._physicalArticles[0].model && event.dx > 0)) {
                     return;
                 }
 
@@ -310,7 +305,7 @@
         onArticleFormatResponse: function(event, data) {
             if (data.response && data.response.ArticleId == this.article.Id) {
 
-                this._physicalArticles[1].Description = data.response.Content;
+                this._physicalArticles[1].formattedDescription = data.response.Content;
                 this._physicalArticles[1].formatted = true;
                 this._physicalArticles[1].formatting = false;
                 this.initializeElement(this.templates[1]._element, this._physicalArticles[1]);

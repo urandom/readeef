@@ -14,6 +14,10 @@ core-animated-pages > section[active] {
     margin: 0 8px 8px;
     padding: 8px;
 }
+.card > .list-wrapper {
+    height: 24px;
+}
+
 .article {
     height: {{ itemHeight }}px;
     cursor: pointer;
@@ -61,7 +65,7 @@ core-animated-pages > section[active] {
 
 
 .favorite-button {
-    margin-top: -2px;
+    margin-top: -10px;
 }
 
 .favorite-button /deep/ #icon {
