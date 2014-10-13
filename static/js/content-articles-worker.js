@@ -24,7 +24,7 @@ self.addEventListener('message', function(event) {
 
         a.RelativeDate = moment(a.Date).fromNow();
 
-        if (current.Id.toString().indexOf("tag:") == 0 || current.Id.toString().indexOf("search:") == 0) {
+        if (feeds && feeds.length) {
             if (!feedMap) {
                 feedMap = {};
                 for (var j = 0, f; f = feeds[j]; ++j) {

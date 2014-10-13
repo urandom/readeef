@@ -71,7 +71,7 @@
                         this.articles = event.data.articles;
                     }.bind(this));
 
-                    if (feedId.indexOf("tag:") == 0 || feedId.indexOf("search:") == 0) {
+                    if (feedId.indexOf("tag:") == 0 || feedId.indexOf("search:") == 0 || feedId == '__favorite__') {
                         data.feeds = this.feeds;
                     }
 
