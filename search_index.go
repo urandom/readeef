@@ -2,12 +2,10 @@ package readeef
 
 import (
 	"bytes"
-	"fmt"
 	"html"
 	"log"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/blevesearch/bleve"
@@ -171,7 +169,7 @@ func (si SearchIndex) batchDelete(articles []Article) {
 			Debug.Printf("Indexing article '%d' from feed id '%d'\n", a.Id, a.FeedId)
 		}
 
-		batch.Delete(indexId(a))
+		batch.Delete(strconv.FormatInt(a.Id, 10))
 		count++
 
 		if count >= si.batchSize {
@@ -241,8 +239,7 @@ func (si SearchIndex) Search(u User, term, highlight string, feedIds []int64, pa
 	hitMap := map[string]*search.DocumentMatch{}
 
 	for _, hit := range searchResult.Hits {
-		ids := strings.SplitN(hit.ID, ":", 2)
-		if articleId, err := strconv.ParseInt(ids[1], 10, 64); err == nil {
+		if articleId, err := strconv.ParseInt(hit.ID, 10, 64); err == nil {
 			articleIds = append(articleIds, articleId)
 			hitMap[hit.ID] = hit
 		}
@@ -252,7 +249,7 @@ func (si SearchIndex) Search(u User, term, highlight string, feedIds []int64, pa
 
 	searchResults := []SearchResult{}
 	for _, article := range articles {
-		hit := hitMap[fmt.Sprintf("%d:%d", article.FeedId, article.Id)]
+		hit := hitMap[strconv.FormatInt(article.Id, 10)]
 		searchResults = append(searchResults, SearchResult{article, *hit})
 	}
 
@@ -267,11 +264,7 @@ func prepareArticle(a Article) (string, indexArticle) {
 		Link:        a.Link, Date: a.Date,
 	}
 
-	return indexId(a), ia
-}
-
-func indexId(a Article) string {
-	return fmt.Sprintf("%d:%d", a.FeedId, a.Id)
+	return strconv.FormatInt(a.Id, 10), ia
 }
 
 func stripTags(text string) string {
