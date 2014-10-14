@@ -3,13 +3,6 @@
         href: '',
         target: '',
 
-        upAction: function(event) {
-            this.super(event);
-            if (!event.defaultPrevented) {
-                this.$.link.click();
-            }
-        },
-
         openInBackground: function() {
             if (navigator.userAgent.toLowerCase().indexOf('webkit') > -1) {
                 var event = document.createEvent("MouseEvents");

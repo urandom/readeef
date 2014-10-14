@@ -63,9 +63,9 @@
                                     <div class="article-description"></div>
 
                                     <div layout horizontal class="article-buttons">
-                                        <rf-button-link href="{{ model.Link }}" target="feed-article-{{ model.Id }}" label="View the article" flex class="article-link"></rf-button-link>
+                                        <rf-button-link href="{{ model.Link }}" target="feed-article-{{ model.Id }}" flex class="article-link">View the article</rf-button-link>
                                         {% if ne .base.readeefConfig.ArticleFormatter.ReadabilityKey `` %}
-                                            <paper-button label="Format" flex?="{{ wide }}" on-tap="{{ onArticleFormat }}" hidden?="{{ formatting || formatted }}"></paper-button>
+                                            <paper-button flex?="{{ wide }}" on-tap="{{ onArticleFormat }}" hidden?="{{ formatting || formatted }}">Format</paper-button>
                                             <template if="{{ formatting }}">
                                                 <div layout vertical center flex?="{{ wide }}">
                                                     <loading-wave background="transparent"></loading-wave>

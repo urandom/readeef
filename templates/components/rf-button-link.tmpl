@@ -4,8 +4,7 @@
 
 <polymer-element name="rf-button-link" extends="paper-button" attributes="href target" role="link">
     <template>
-        <shadow></shadow>
-        <a href="{{ href }}" target="{{ target }}" hidden id="link"></a>
+        <a href="{{ href }}" target="{{ target }}" id="link"><shadow></shadow></a>
     </template>
     <script src="/js/rf-button-link.js"></script>
 </polymer-element>

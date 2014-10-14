@@ -62,7 +62,7 @@
                                 </template>
                             </div>
 
-                            <paper-button label="Change password" on-tap="{{ onChangePassword }}" self-end></paper-button>
+                            <paper-button on-tap="{{ onChangePassword }}" self-end>Change password</paper-button>
                         </div>
                     </div>
                 </section>
@@ -102,8 +102,8 @@
                             </template>
 
                             <div layout horizontal end-justified>
-                                <paper-button label="Find" on-tap="{{ onFindFeed }}" id="find-feeds" autofocus hidden?="{{ discoveredFeeds }}"></paper-button>
-                                <paper-button label="Add" on-tap="{{ onAddFeed }}" id="add-feeds" autofocus hidden?="{{ !discoveredFeeds || !discoveredFeeds.length }}"></paper-button>
+                                <paper-button on-tap="{{ onFindFeed }}" id="find-feeds" autofocus hidden?="{{ discoveredFeeds }}">Find</paper-button>
+                                <paper-button on-tap="{{ onAddFeed }}" id="add-feeds" autofocus hidden?="{{ !discoveredFeeds || !discoveredFeeds.length }}">Add</paper-button>
                             </div>
                         </div>
                     </div>
@@ -195,7 +195,7 @@
                                 <h3>There are no other users</h3>
                                 </template>
 
-                                <paper-button label="Create user" on-tap="{{ onCreateUser }}" self-end></paper-button>
+                                <paper-button on-tap="{{ onCreateUser }}" self-end>Create user</paper-button>
 
                             </div>
                         </div>
@@ -211,16 +211,16 @@
             <paper-input label="New password" id="new-password" type="password" floatingLabel tabindex="5"></paper-input>
             <paper-input label="Confirm new password" id="confirm-new-password" type="password" floatingLabel tabindex="6"></paper-input>
 
-            <paper-button label="Cancel" affirmative></paper-button>
-            <paper-button label="Apply" id="apply-password-change" on-tap="{{ onApplyPasswordChange }}" affirmative autofocus transient></paper-button>
+            <paper-button affirmative>Cancel</paper-button>
+            <paper-button id="apply-password-change" on-tap="{{ onApplyPasswordChange }}" affirmative autofocus transient>Apply</paper-button>
         </paper-dialog>
 
         <paper-dialog id="add-user-dialog" heading="Add a new user" transition="paper-dialog-transition-bottom" closeSelector="[dismissive],[affirmative]:not([transient])" on-core-overlay-open="{{ cleanFields }}" on-keypress="{{ onNewUserDialogKeypress }}">
             <paper-input label="Login" id="add-user-login" floatingLabel tabindex="7"></paper-input>
             <paper-input label="Password" id="add-user-password" type="password" floatingLabel tabindex="8"></paper-input>
 
-            <paper-button label="Cancel" affirmative></paper-button>
-            <paper-button label="Apply" id="add-user-apply" on-tap="{{ onApplyCreateUser }}" affirmative autofocus transient></paper-button>
+            <paper-button affirmative>Cancel</paper-button>
+            <paper-button id="add-user-apply" on-tap="{{ onApplyCreateUser }}" affirmative autofocus transient>Apply</paper-button>
         </paper-dialog>
 
         <rf-api user="{{ user }}" id="remove-feed" method="post" pathAction="feed/remove/{{ removedFeed }}" on-rf-api-response="{{ onRemoveFeedResponse }}"></rf-api>
