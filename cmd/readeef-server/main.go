@@ -27,11 +27,11 @@ func main() {
 
 	server := webfw.NewServer(*serverconfpath)
 	if *address != "" {
-		server.SetAddress(*address)
+		server.Address = *address
 	}
 
 	if *port > 0 {
-		server.SetPort(*port)
+		server.Port = *port
 	}
 
 	dispatcher := server.Dispatcher("/api/")
