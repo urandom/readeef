@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"encoding/xml"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -10,7 +11,7 @@ import (
 type rss1Feed struct {
 	XMLName xml.Name    `xml:"RDF"`
 	Channel rss1Channel `xml:"channel"`
-	Items   []rssItem   `xml:"item"`
+	Items   []rss1Item  `xml:"item"`
 	Image   rssImage    `xml:"image"`
 }
 
@@ -23,6 +24,12 @@ type rss1Channel struct {
 	TTL         int      `xml:"ttl"`
 	SkipHours   []int    `xml:"skipHours>hour"`
 	SkipDays    []string `xml:"skipDays>day"`
+}
+
+type rss1Item struct {
+	rssItem
+
+	Id string `xml:"about,attr"`
 }
 
 func ParseRss1(b []byte) (Feed, error) {
@@ -64,8 +71,9 @@ func ParseRss1(b []byte) (Feed, error) {
 		f.SkipDays[strings.Title(v)] = true
 	}
 
+	fmt.Printf("%#v\n", rss.Items[0])
 	for _, i := range rss.Items {
-		article := Article{Title: i.Title, Link: i.Link}
+		article := Article{Title: i.Title, Link: i.Link, Guid: i.Id}
 		article.Description = getLargerContent(i.Content, i.Description)
 
 		var err error

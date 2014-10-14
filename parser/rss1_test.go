@@ -119,6 +119,10 @@ func TestRss1Parse(t *testing.T) {
 	}
 
 	a := f.Articles[0]
+	expectedStr := "http://xml.com/pub/2000/08/09/xslt/xslt.html"
+	if a.Guid != expectedStr {
+		t.Fatalf("Expected %s as id, got '%s'\n", expectedStr, a.Guid)
+	}
 
 	if a.Title != "Processing Inclusions with XSLT" {
 		t.Fatalf("Unexpected article title: '%v'\n", a.Title)

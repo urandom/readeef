@@ -83,6 +83,10 @@ func TestRss2Parse(t *testing.T) {
 	}
 
 	a := f.Articles[0]
+	expectedStr := "http://liftoff.msfc.nasa.gov/2003/06/03.html#item573"
+	if a.Guid != expectedStr {
+		t.Fatalf("Expected %s as id, got '%s'\n", expectedStr, a.Guid)
+	}
 
 	if a.Title != "Star City" {
 		t.Fatalf("Unexpected article title: '%v'\n", a.Title)
@@ -100,6 +104,11 @@ func TestRss2Parse(t *testing.T) {
 
 	if !a.Date.Equal(d) {
 		t.Fatalf("Unexpected article date: '%s'\n", a.Date)
+	}
+
+	expectedStr = "http://liftoff.msfc.nasa.gov/2003/05/30.html#item572"
+	if f.Articles[1].Guid != expectedStr {
+		t.Fatalf("Expected %s as id, got '%s'\n", expectedStr, f.Articles[1].Guid)
 	}
 
 	expectedDuration := 30 * time.Minute
@@ -123,7 +132,7 @@ func TestRss2Parse(t *testing.T) {
 		t.Fatalf("Expected '%d' number of skipDays, got '%d'\n", expectedInt, len(f.SkipDays))
 	}
 
-	for _, expectedStr := range []string{"Monday", "Saturday"} {
+	for _, expectedStr = range []string{"Monday", "Saturday"} {
 		if !f.SkipDays[expectedStr] {
 			t.Fatalf("Expected '%s' skipDay\n", expectedStr)
 		}
