@@ -53,6 +53,14 @@ func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, erro
 		}
 	} else if os.IsNotExist(err) {
 		mapping := bleve.NewIndexMapping()
+		docMapping := bleve.NewDocumentMapping()
+
+		idfieldmapping := bleve.NewTextFieldMapping()
+		idfieldmapping.IncludeInAll = false
+		docMapping.AddFieldMappingsAt("FeedId", idfieldmapping)
+		docMapping.AddFieldMappingsAt("ArticleId", idfieldmapping)
+
+		mapping.AddDocumentMapping(mapping.DefaultType, docMapping)
 
 		Debug.Println("Creating search index " + config.SearchIndex.BlevePath)
 		index, err = bleve.New(config.SearchIndex.BlevePath, mapping)
