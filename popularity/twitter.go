@@ -22,6 +22,7 @@ func (t Twitter) Score(link string) (int, error) {
 	if err != nil {
 		return score, err
 	}
+	defer r.Body.Close()
 
 	dec := json.NewDecoder(r.Body)
 
@@ -33,4 +34,8 @@ func (t Twitter) Score(link string) (int, error) {
 	score = result.Count
 
 	return score, nil
+}
+
+func (t Twitter) String() string {
+	return "Twitter score provider"
 }

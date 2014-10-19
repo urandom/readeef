@@ -22,6 +22,7 @@ func (l Linkedin) Score(link string) (int, error) {
 	if err != nil {
 		return score, err
 	}
+	defer r.Body.Close()
 
 	dec := json.NewDecoder(r.Body)
 
@@ -33,4 +34,8 @@ func (l Linkedin) Score(link string) (int, error) {
 	score = result.Count
 
 	return score, nil
+}
+
+func (l Linkedin) String() string {
+	return "Linkedin score provider"
 }

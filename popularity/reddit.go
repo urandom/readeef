@@ -29,6 +29,7 @@ func (r Reddit) Score(link string) (int, error) {
 	if err != nil {
 		return score, err
 	}
+	defer resp.Body.Close()
 
 	dec := json.NewDecoder(resp.Body)
 
@@ -44,4 +45,8 @@ func (r Reddit) Score(link string) (int, error) {
 	}
 
 	return score, nil
+}
+
+func (re Reddit) String() string {
+	return "Reddit score provider"
 }

@@ -73,6 +73,10 @@ func (db DB) NamedSQL(name string) string {
 		stmt = sql_stmt["generic:"+name]
 	}
 
+	if stmt == "" {
+		panic("No statement for name " + name)
+	}
+
 	return stmt
 }
 

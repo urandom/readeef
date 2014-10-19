@@ -323,7 +323,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			switch {
 			case feedId == "tag:__all__":
 				err = db.MarkUserArticlesByDateAsRead(user, t, true)
-			case feedId == "__favorite__":
+			case feedId == "__favorite__" || feedId == "__popular__":
 				// Favorites are assumbed to have been read already
 			case strings.HasPrefix(feedId, "tag:"):
 				tag := feedId[4:]
@@ -381,6 +381,15 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 					articles, err = db.GetUserFavoriteArticlesDesc(user, limit, offset)
 				} else {
 					articles, err = db.GetUserFavoriteArticles(user, limit, offset)
+				}
+				if err != nil {
+					break
+				}
+			} else if feedId == "__popular__" {
+				if newerFirst {
+					articles, err = db.GetScoredUserArticlesDesc(user, limit, offset)
+				} else {
+					articles, err = db.GetScoredUserArticles(user, limit, offset)
 				}
 				if err != nil {
 					break

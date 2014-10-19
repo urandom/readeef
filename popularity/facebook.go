@@ -24,6 +24,7 @@ func (f Facebook) Score(link string) (int, error) {
 	if err != nil {
 		return score, err
 	}
+	defer r.Body.Close()
 
 	dec := json.NewDecoder(r.Body)
 
@@ -39,4 +40,8 @@ func (f Facebook) Score(link string) (int, error) {
 	}
 
 	return score, nil
+}
+
+func (f Facebook) String() string {
+	return "Facebook score provider"
 }

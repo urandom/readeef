@@ -37,6 +37,7 @@
 
                     <template if="{{ feeds.length > 0 }}">
                         <paper-item label="Favorite" class="drawer-content" on-tap="{{ onFeedTap }}" name="__favorite__" selectable></paper-item>
+                        <paper-item label="Popular" class="drawer-content" on-tap="{{ onFeedTap }}" name="__popular__" selectable></paper-item>
                         <hr class="drawer-content">
                     </template>
                     <template repeat="{{ tag in tags }}" hidden?="{{ !feeds.length }}">

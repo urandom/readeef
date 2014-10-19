@@ -27,6 +27,18 @@
         }
     }
 
+    function createPopularPseudoFeed() {
+        // TODO: i18n
+        return {
+            Id: "__popular__",
+            Title: "Popular feed articles",
+            Description: "",
+            Articles: null,
+            Image: {},
+            Link: "",
+        }
+    }
+
     function createSearchPseudoFeed(query) {
         // TODO: i18n
         return {
@@ -175,6 +187,8 @@
             if (this.feeds && this.feeds.length) {
                 if (newValue == "__favorite__") {
                     this.currentFeed = createFavoritePseudoFeed();
+                } else if (newValue == "__popular__") {
+                    this.currentFeed = createPopularPseudoFeed();
                 } else if (newValue.indexOf("tag:") == 0) {
                     this.currentFeed = createPseudoTagFeed(newValue.substring(4));
                 } else if (newValue.indexOf("search:") == 0) {

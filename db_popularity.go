@@ -17,13 +17,14 @@ CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-INNER JOIN articles_scores asc
-	ON a.id = asc.article_id
+INNER JOIN articles_scores asco
+	ON a.id = asco.article_id
 LEFT OUTER JOIN users_articles_read ar
 	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id AND uf.user_login = af.user_login
-ORDER BY read, asc.score DESC, a.date
+WHERE a.date > NOW() - INTERVAL '5 days'
+ORDER BY read, asco.score, a.date
 LIMIT $2
 OFFSET $3
 `
@@ -34,21 +35,22 @@ CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-INNER JOIN articles_scores asc
-	ON a.id = asc.article_id
+INNER JOIN articles_scores asco
+	ON a.id = asco.article_id
 LEFT OUTER JOIN users_articles_read ar
 	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id AND uf.user_login = af.user_login
-ORDER BY read ASC, asc.score ASC, a.date DESC
+WHERE a.date > NOW() - INTERVAL '5 days'
+ORDER BY read ASC, asco.score DESC, a.date DESC
 LIMIT $2
 OFFSET $3
 `
 
 	get_article_scores = `
-SELECT asc.score, asc.score1, asc.score2, asc.score3, asc.score4, asc.score5
-FROM articles_scores asc
-WHERE asc.article_id = $1
+SELECT asco.score, asco.score1, asco.score2, asco.score3, asco.score4, asco.score5
+FROM articles_scores asco
+WHERE asco.article_id = $1
 `
 
 	create_article_scores = `
@@ -138,7 +140,8 @@ func (db DB) UpdateArticleScores(asc ArticleScores) error {
 
 func init() {
 	sql_stmt["generic:get_latest_feed_articles"] = get_latest_feed_articles
-	sql_stmt["generic:get_scored_user_articles"] = get_latest_feed_articles
+	sql_stmt["generic:get_scored_user_articles"] = get_scored_user_articles
+	sql_stmt["generic:get_scored_user_articles_desc"] = get_scored_user_articles_desc
 	sql_stmt["generic:get_article_scores"] = get_article_scores
 	sql_stmt["generic:create_article_scores"] = create_article_scores
 	sql_stmt["generic:update_article_scores"] = update_article_scores

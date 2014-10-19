@@ -23,7 +23,43 @@ ORDER BY f.title COLLATE NOCASE
 	sqlite3_get_latest_feed_articles = `
 SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid
 FROM articles a
-WHERE a.feed_id = $1 AND a.date > date('now', '-5 days')
+WHERE a.feed_id = $1 AND a.date > DATE('NOW', '-5 days')
+`
+
+	sqlite3_get_scored_user_articles = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+INNER JOIN articles_scores asc
+	ON a.id = asc.article_id
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND uf.user_login = af.user_login
+WHERE a.date > DATE('NOW', '-5 days')
+ORDER BY read, asc.score, a.date
+LIMIT $2
+OFFSET $3
+`
+
+	sqlite3_get_scored_user_articles_desc = `
+SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
+CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+INNER JOIN articles_scores asc
+	ON a.id = asc.article_id
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
+LEFT OUTER JOIN users_articles_fav af
+	ON a.id = af.article_id AND uf.user_login = af.user_login
+WHERE a.date > DATE('NOW', '-5 days')
+ORDER BY read ASC, asc.score DESC, a.date DESC
+LIMIT $2
+OFFSET $3
 `
 )
 
@@ -142,4 +178,6 @@ func init() {
 	sql_stmt["sqlite3:get_user_feeds"] = sqlite3_get_user_feeds
 	sql_stmt["sqlite3:get_user_tag_feeds"] = sqlite3_get_user_tag_feeds
 	sql_stmt["sqlite3:get_latest_feed_articles"] = sqlite3_get_latest_feed_articles
+	sql_stmt["sqlite3:get_scored_user_articles"] = sqlite3_get_scored_user_articles
+	sql_stmt["sqlite3:get_scored_user_articles_desc"] = sqlite3_get_scored_user_articles_desc
 }

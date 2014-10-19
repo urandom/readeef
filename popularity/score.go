@@ -29,7 +29,7 @@ func Score(link, text string) (int, error) {
 	response := make(chan scoreResponse)
 
 	var wg sync.WaitGroup
-	numProviders := runtime.NumCPU() * 2
+	numProviders := runtime.NumCPU()
 
 	wg.Add(numProviders)
 	for i := 0; i < numProviders; i++ {
