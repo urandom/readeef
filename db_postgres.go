@@ -107,6 +107,18 @@ CREATE TABLE IF NOT EXISTS users_articles_fav (
 	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
 	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
 )`, `
+CREATE TABLE IF NOT EXISTS articles_scores (
+	article_id BIGINT,
+	score  INTEGER,
+	score1 INTEGER,
+	score2 INTEGER,
+	score3 INTEGER,
+	score4 INTEGER,
+	score5 INTEGER,
+
+	PRIMARY KEY(article_id),
+	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
+)`, `
 CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 	feed_id INTEGER,
 	link TEXT,

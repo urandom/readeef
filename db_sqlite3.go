@@ -19,6 +19,12 @@ WHERE f.id = uft.feed_id
 	AND uft.user_login = $1 AND uft.tag = $2
 ORDER BY f.title COLLATE NOCASE
 `
+
+	sqlite3_get_latest_feed_articles = `
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid
+FROM articles a
+WHERE a.feed_id = $1 AND a.date > date('now', '-5 days')
+`
 )
 
 var (
@@ -106,6 +112,18 @@ CREATE TABLE IF NOT EXISTS users_articles_fav (
 	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
 	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
 )`, `
+CREATE TABLE IF NOT EXISTS articles_scores (
+	article_id BIGINT,
+	score  INTEGER,
+	score1 INTEGER,
+	score2 INTEGER,
+	score3 INTEGER,
+	score4 INTEGER,
+	score5 INTEGER,
+
+	PRIMARY KEY(article_id),
+	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
+)`, `
 CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 	feed_id INTEGER,
 	link TEXT,
@@ -123,4 +141,5 @@ func init() {
 	init_sql["sqlite3"] = init_sql_sqlite3
 	sql_stmt["sqlite3:get_user_feeds"] = sqlite3_get_user_feeds
 	sql_stmt["sqlite3:get_user_tag_feeds"] = sqlite3_get_user_tag_feeds
+	sql_stmt["sqlite3:get_latest_feed_articles"] = sqlite3_get_latest_feed_articles
 }

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/urandom/readeef/parser"
+	"github.com/urandom/readeef/popularity"
 	"github.com/urandom/webfw/util"
 )
 import (
@@ -229,7 +230,10 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 	go func() {
 		fm.requestFeedContent(f)
 
+		go fm.scoreFeedContent(f)
+
 		ticker := time.After(d)
+		scoreTicker := time.After(30 * time.Minute)
 
 		Debug.Printf("Starting feed scheduler for %s and duration %d\n", f.Link, d)
 	TICKER:
@@ -251,6 +255,15 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 				} else {
 					ticker = time.After(d)
 				}
+			case <-scoreTicker:
+				if !fm.activeFeeds[f.Id] {
+					break TICKER
+				}
+
+				go func() {
+					fm.scoreFeedContent(f)
+					scoreTicker = time.After(30 * time.Minute)
+				}()
 			case <-fm.done:
 				fm.stopUpdatingFeed(f)
 				return
@@ -334,6 +347,62 @@ func (fm *FeedManager) requestFeedContent(f Feed) Feed {
 	}
 }
 
+func (fm *FeedManager) scoreFeedContent(f Feed) {
+	Debug.Println("Scoring feed content for " + f.Link)
+
+	articles, err := fm.db.GetLatestFeedArticles(f)
+	if err != nil {
+		fm.logger.Printf("Error getting latest feed articles: %v\n", err)
+		return
+	}
+
+	for i := 0; i < len(articles); i++ {
+		a := articles[i]
+		ascc := make(chan ArticleScores)
+
+		go func() {
+			asc, err := fm.db.GetArticleScores(a)
+
+			if err != nil {
+				fm.logger.Printf("Error getting article scores: %v\n", err)
+				ascc <- EmptyArticleScores
+			} else {
+				ascc <- asc
+			}
+		}()
+
+		score, err := popularity.Score(a.Link, a.Description)
+		if err != nil {
+			fm.logger.Printf("Error getting article popularity: %v\n", err)
+			continue
+		}
+
+		asc := <-ascc
+
+		if asc != EmptyArticleScores {
+			switch ageInDays(a.Date) {
+			case 0:
+				asc.Score1 = score
+			case 1:
+				asc.Score2 = score - asc.Score1
+			case 2:
+				asc.Score3 = score - asc.Score1 - asc.Score2
+			case 3:
+				asc.Score4 = score - asc.Score1 - asc.Score2 - asc.Score3
+			default:
+				asc.Score5 = score - asc.Score1 - asc.Score2 - asc.Score3 - asc.Score4
+			}
+
+			asc.CalculateScore()
+
+			err := fm.db.UpdateArticleScores(asc)
+			if err != nil {
+				fm.logger.Printf("Error updating article scores: %v\n", err)
+			}
+		}
+	}
+}
+
 func (fm *FeedManager) scheduleFeeds() {
 	feeds, err := fm.db.GetUnsubscribedFeed()
 	if err != nil {
@@ -410,4 +479,10 @@ func discoverParserFeeds(link string) ([]Feed, error) {
 	}
 
 	return []Feed{}, ErrNoFeed
+}
+
+func ageInDays(published time.Time) int {
+	now := time.Now()
+	sub := now.Sub(published)
+	return int(sub / (24 * time.Hour))
 }

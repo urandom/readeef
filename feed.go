@@ -34,6 +34,20 @@ type Article struct {
 	Favorite bool
 }
 
+type ArticleScores struct {
+	ArticleId int64
+	Score     int
+	Score1    int
+	Score2    int
+	Score3    int
+	Score4    int
+	Score5    int
+}
+
+var (
+	EmptyArticleScores = ArticleScores{}
+)
+
 func (f Feed) UpdateFromParsed(pf parser.Feed) Feed {
 	f.Feed = pf
 	f.HubLink = pf.HubLink
@@ -72,4 +86,16 @@ func (a Article) Validate() error {
 	}
 
 	return nil
+}
+
+func (asc ArticleScores) Validate() error {
+	if asc.ArticleId == 0 {
+		return ValidationError{errors.New("Article scores has no article id")}
+	}
+
+	return nil
+}
+
+func (asc *ArticleScores) CalculateScore() {
+	asc.Score = asc.Score1 + int(0.5*float32(asc.Score2)) + int(0.2*float32(asc.Score3)) + int(0.05*float32(asc.Score4)) + int(0.01*float32(asc.Score5))
 }
