@@ -24,7 +24,7 @@ LEFT OUTER JOIN users_articles_read ar
 LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id AND uf.user_login = af.user_login
 WHERE a.date > NOW() - INTERVAL '5 days'
-ORDER BY read, asco.score, a.date
+ORDER BY asco.score, a.date
 LIMIT $2
 OFFSET $3
 `
@@ -42,7 +42,7 @@ LEFT OUTER JOIN users_articles_read ar
 LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id AND uf.user_login = af.user_login
 WHERE a.date > NOW() - INTERVAL '5 days'
-ORDER BY read ASC, asco.score DESC, a.date DESC
+ORDER BY asco.score DESC, a.date DESC
 LIMIT $2
 OFFSET $3
 `
