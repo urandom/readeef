@@ -27,76 +27,6 @@ ORDER BY LOWER(f.title)
 
 	get_user_feed_ids_tags = `SELECT feed_id, tag FROM users_feeds_tags WHERE user_login = $1 ORDER BY feed_id`
 
-	get_user_tag_articles = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
-CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
-CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
-FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-INNER JOIN users_feeds_tags uft
-	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login AND uft.tag = $2
-LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND uf.user_login = ar.user_login
-LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND uf.user_login = af.user_login
-ORDER BY read, a.date
-LIMIT $3
-OFFSET $4
-`
-
-	get_user_tag_articles_desc = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
-CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
-CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
-FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-INNER JOIN users_feeds_tags uft
-	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login AND uft.tag = $2
-LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND uf.user_login = ar.user_login
-LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND uf.user_login = af.user_login
-ORDER BY read ASC, a.date DESC
-LIMIT $3
-OFFSET $4
-`
-
-	get_unread_user_tag_articles = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
-CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
-CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
-FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-INNER JOIN users_feeds_tags uft
-	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login AND uft.tag = $2
-LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND uf.user_login = ar.user_login
-LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND uf.user_login = af.user_login
-WHERE ar.article_id IS NULL
-ORDER BY a.date
-LIMIT $3
-OFFSET $4
-`
-
-	get_unread_user_tag_articles_desc = `
-SELECT uf.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
-CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
-CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
-FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-INNER JOIN users_feeds_tags uft
-	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login AND uft.tag = $2
-LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND uf.user_login = ar.user_login
-LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND uf.user_login = af.user_login
-WHERE ar.article_id IS NULL
-ORDER BY a.date DESC
-LIMIT $3
-OFFSET $4
-`
-
 	create_all_user_tag_articles_read_by_date = `
 INSERT INTO users_articles_read
 	SELECT uf.user_login, a.id, uf.feed_id
@@ -266,31 +196,27 @@ func (db DB) GetUserTagsFeeds(u User) ([]Feed, error) {
 }
 
 func (db DB) GetUserTagArticles(u User, tag string, paging ...int) ([]Article, error) {
-	return db.getUserTagArticles(u, tag, "get_user_tag_articles", paging...)
+	return db.getArticles(u, "",
+		"INNER JOIN users_feeds_tags uft ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login",
+		"uft.tag = $2", "read, a.date", []interface{}{tag}, paging...)
 }
 
 func (db DB) GetUserTagArticlesDesc(u User, tag string, paging ...int) ([]Article, error) {
-	return db.getUserTagArticles(u, tag, "get_user_tag_articles_desc", paging...)
+	return db.getArticles(u, "",
+		"INNER JOIN users_feeds_tags uft ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login",
+		"uft.tag = $2", "read ASC, a.date DESC", []interface{}{tag}, paging...)
 }
 
 func (db DB) GetUnreadUserTagArticles(u User, tag string, paging ...int) ([]Article, error) {
-	return db.getUserTagArticles(u, tag, "get_unread_user_tag_articles", paging...)
+	return db.getArticles(u, "",
+		"INNER JOIN users_feeds_tags uft ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login",
+		"uft.tag = $2 AND ar.article_id IS NULL", "a.date", []interface{}{tag}, paging...)
 }
 
 func (db DB) GetUnreadUserTagArticlesDesc(u User, tag string, paging ...int) ([]Article, error) {
-	return db.getUserTagArticles(u, tag, "get_unread_user_tag_articles_desc", paging...)
-}
-
-func (db DB) getUserTagArticles(u User, tag, namedSQL string, paging ...int) ([]Article, error) {
-	var articles []Article
-
-	limit, offset := pagingLimit(paging)
-
-	if err := db.Select(&articles, db.NamedSQL(namedSQL), u.Login, tag, limit, offset); err != nil {
-		return articles, err
-	}
-
-	return articles, nil
+	return db.getArticles(u, "",
+		"INNER JOIN users_feeds_tags uft ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login",
+		"uft.tag = $2 AND ar.article_id IS NULL", "a.date DESC", []interface{}{tag}, paging...)
 }
 
 func (db DB) MarkUserTagArticlesByDateAsRead(u User, tag string, d time.Time, read bool) error {
@@ -336,10 +262,6 @@ func init() {
 	sql_stmt["generic:delete_user_feed_tag"] = delete_user_feed_tag
 	sql_stmt["generic:get_user_tag_feeds"] = get_user_tag_feeds
 	sql_stmt["generic:get_user_feed_ids_tags"] = get_user_feed_ids_tags
-	sql_stmt["generic:get_user_tag_articles"] = get_user_tag_articles
-	sql_stmt["generic:get_user_tag_articles_desc"] = get_user_tag_articles_desc
-	sql_stmt["generic:get_unread_user_tag_articles"] = get_unread_user_tag_articles
-	sql_stmt["generic:get_unread_user_tag_articles_desc"] = get_unread_user_tag_articles_desc
 	sql_stmt["generic:create_all_user_tag_articles_read_by_date"] = create_all_user_tag_articles_read_by_date
 	sql_stmt["generic:delete_all_user_tag_articles_read_by_date"] = delete_all_user_tag_articles_read_by_date
 }

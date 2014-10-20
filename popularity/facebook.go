@@ -35,7 +35,7 @@ func (f Facebook) Score(link string) (int, error) {
 
 	score = 0
 	for _, d := range results {
-		score += d.Likes + d.Shares + d.Comments
+		score += int(float32(d.Likes)*0.01) + d.Shares + d.Comments
 
 	}
 
