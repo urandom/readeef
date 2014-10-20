@@ -21,11 +21,11 @@
         <core-style ref="rf-theme"></core-style>
 
         <template id="article-list-menu-items">
-            <paper-item label="Older first" hidden?="{{ !settings.newerFirst }}" on-tap="{{ onOlderFirst }}"></paper-item>
-            <paper-item label="Newer first" hidden?="{{ settings.newerFirst }}" on-tap="{{ onNewerFirst }}"></paper-item>
+            <paper-item label="{{ feed.Id == '__popular__' ? 'Less popular first' : 'Older first' }}" hidden?="{{ !settings.newerFirst }}" on-tap="{{ onOlderFirst }}"></paper-item>
+            <paper-item label="{{ feed.Id == '__popular__' ? 'More popular first' : 'Newer first' }}" hidden?="{{ settings.newerFirst }}" on-tap="{{ onNewerFirst }}"></paper-item>
             <paper-item label="Unread only" hidden?="{{ settings.unreadOnly }}" on-tap="{{ onUnreadOnly }}"></paper-item>
             <paper-item label="Read and unread" hidden?="{{ !settings.unreadOnly }}" on-tap="{{ onReadAndUnread }}"></paper-item>
-            <paper-item label="Mark all as read" on-tap="{{ onMarkAllAsRead }}"></paper-item>
+            <paper-item label="Mark all as read" on-tap="{{ onMarkAllAsRead }}" hidden?="{{ feed.Id == '__favorite__' || feed.Id == '__popular__' }}"></paper-item>
         </template>
 
         <template id="article-navigation-menu-items">
