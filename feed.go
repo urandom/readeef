@@ -97,5 +97,5 @@ func (asc ArticleScores) Validate() error {
 }
 
 func (asc *ArticleScores) CalculateScore() {
-	asc.Score = asc.Score1 + int(0.5*float32(asc.Score2)) + int(0.2*float32(asc.Score3)) + int(0.05*float32(asc.Score4)) + int(0.01*float32(asc.Score5))
+	asc.Score = asc.Score1 + int(0.1*float32(asc.Score2)) + int(0.01*float32(asc.Score3)) + int(0.002*float32(asc.Score4)) + int(0.001*float32(asc.Score5))
 }
