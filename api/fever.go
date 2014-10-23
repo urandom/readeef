@@ -274,9 +274,15 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 					rng = 7
 				}
 
-				page, e := strconv.ParseInt(r.FormValue("page"), 10, 64)
+				page := int64(1)
+				page, err = strconv.ParseInt(r.FormValue("page"), 10, 64)
 				if e != nil {
-					page = 1
+					break
+				}
+
+				if page > 3 {
+					resp["links"] = []feverLink{}
+					break
 				}
 
 				var articles []readeef.Article
