@@ -53,6 +53,19 @@ type feverItem struct {
 	CreatedOnTime int64  `json:"created_on_time"`
 }
 
+type feverLink struct {
+	Id          int64   `json:"id"`
+	FeedId      int64   `json:"feed_id"`
+	ItemId      int64   `json:"item_id"`
+	Temperature float64 `json:"temperature"`
+	IsItem      int     `json:"is_item"`
+	IsLocal     int     `json:"is_local"`
+	IsSaved     int     `json:"is_saved"`
+	Title       string  `json:"title"`
+	Url         string  `json:"url"`
+	ItemIds     string  `json:"item_ids"`
+}
+
 func NewFever(fm *readeef.FeedManager) Fever {
 	return Fever{
 		webfw.NewBaseController("/v:version/fever/", webfw.MethodPost, ""),
@@ -251,6 +264,43 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 
 				resp["total_items"] = count
 				resp["items"] = items
+			}
+
+			if _, ok := r.Form["links"]; ok {
+				//offset, _ := strconv.ParseInt(r.FormValue("offset"), 10, 64)
+
+				rng, e := strconv.ParseInt(r.FormValue("range"), 10, 64)
+				if e != nil {
+					rng = 7
+				}
+
+				page, e := strconv.ParseInt(r.FormValue("page"), 10, 64)
+				if e != nil {
+					page = 1
+				}
+
+				var articles []readeef.Article
+				articles, err = db.GetScoredUserArticles(user, time.Now().AddDate(0, 0, int(-1*rng)), 50, 50*int(page-1))
+				if err != nil {
+					break
+				}
+
+				links := make([]feverLink, len(articles))
+				for i, a := range articles {
+					asc, _ := db.GetArticleScores(a)
+
+					link := feverLink{
+						Id: a.Id, FeedId: a.FeedId, ItemId: a.Id, Temperature: float64(asc.Score),
+						IsItem: 1, IsLocal: 1, Title: a.Title, Url: a.Link, ItemIds: fmt.Sprintf("%d", a.Id),
+					}
+
+					if a.Favorite {
+						link.IsSaved = 1
+					}
+
+					links[i] = link
+				}
+				resp["links"] = links
 			}
 
 			if val := r.PostFormValue("unread_recently_read"); val == "1" {
