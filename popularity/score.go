@@ -6,7 +6,7 @@ import (
 )
 
 type scoreProvider interface {
-	Score(link string) (int, error)
+	Score(link string) (int64, error)
 }
 
 type scoreRequest struct {
@@ -15,13 +15,13 @@ type scoreRequest struct {
 }
 
 type scoreResponse struct {
-	score int
+	score int64
 	err   error
 }
 
-var scoreProviders = []scoreProvider{Facebook{}, Linkedin{}, Twitter{}, Reddit{}}
+var scoreProviders = []scoreProvider{Facebook{}, GoogleP{}, Linkedin{}, Reddit{}, StumbleUpon{}, Twitter{}}
 
-func Score(link, text string) (int, error) {
+func Score(link, text string) (int64, error) {
 	done := make(chan struct{})
 	defer close(done)
 
@@ -44,7 +44,7 @@ func Score(link, text string) (int, error) {
 		close(response)
 	}()
 
-	score := -1
+	score := int64(-1)
 	var err error
 	for resp := range response {
 		if resp.err == nil {

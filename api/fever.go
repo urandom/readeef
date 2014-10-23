@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -286,7 +287,7 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 				}
 
 				var articles []readeef.Article
-				articles, err = db.GetScoredUserArticles(user, time.Now().AddDate(0, 0, int(-1*rng)), 50, 50*int(page-1))
+				articles, err = db.GetScoredUserArticlesDesc(user, time.Now().AddDate(0, 0, int(-1*rng)), 50, 50*int(page-1))
 				if err != nil {
 					break
 				}
@@ -296,7 +297,7 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 					asc, _ := db.GetArticleScores(a)
 
 					link := feverLink{
-						Id: a.Id, FeedId: a.FeedId, ItemId: a.Id, Temperature: float64(asc.Score),
+						Id: a.Id, FeedId: a.FeedId, ItemId: a.Id, Temperature: math.Log10(float64(asc.Score)) / math.Log10(1.1),
 						IsItem: 1, IsLocal: 1, Title: a.Title, Url: a.Link, ItemIds: fmt.Sprintf("%d", a.Id),
 					}
 

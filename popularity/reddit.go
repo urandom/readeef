@@ -12,15 +12,15 @@ type redditResult struct {
 	Data struct {
 		Children []struct {
 			Data struct {
-				Score    int `json:"score"`
-				Comments int `json:"num_comments"`
+				Score    int64 `json:"score"`
+				Comments int64 `json:"num_comments"`
 			} `json:"data"`
 		} `json:"children"`
 	} `json:"data"`
 }
 
-func (r Reddit) Score(link string) (int, error) {
-	var score int = -1
+func (r Reddit) Score(link string) (int64, error) {
+	var score int64 = -1
 
 	link = url.QueryEscape(link)
 

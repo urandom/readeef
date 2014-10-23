@@ -9,13 +9,13 @@ import (
 type Facebook struct{}
 
 type facebookResult struct {
-	Shares   int `json:"share_count"`
-	Likes    int `json:"like_count"`
-	Comments int `json:"comment_count"`
+	Shares   int64 `json:"share_count"`
+	Likes    int64 `json:"like_count"`
+	Comments int64 `json:"comment_count"`
 }
 
-func (f Facebook) Score(link string) (int, error) {
-	var score int = -1
+func (f Facebook) Score(link string) (int64, error) {
+	var score int64 = -1
 
 	link = url.QueryEscape(link)
 
@@ -35,7 +35,7 @@ func (f Facebook) Score(link string) (int, error) {
 
 	score = 0
 	for _, d := range results {
-		score += int(float32(d.Likes)*0.01) + d.Shares + d.Comments
+		score += int64(float64(d.Likes)*0.01) + d.Shares + d.Comments
 
 	}
 

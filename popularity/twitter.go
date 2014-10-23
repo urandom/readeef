@@ -9,11 +9,11 @@ import (
 type Twitter struct{}
 
 type twitterResult struct {
-	Count int `json:"count"`
+	Count int64 `json:"count"`
 }
 
-func (t Twitter) Score(link string) (int, error) {
-	var score int = -1
+func (t Twitter) Score(link string) (int64, error) {
+	var score int64 = -1
 
 	link = url.QueryEscape(link)
 

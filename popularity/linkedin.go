@@ -9,11 +9,11 @@ import (
 type Linkedin struct{}
 
 type linkedinResult struct {
-	Count int `json:"count"`
+	Count int64 `json:"count"`
 }
 
-func (l Linkedin) Score(link string) (int, error) {
-	var score int = -1
+func (l Linkedin) Score(link string) (int64, error) {
+	var score int64 = -1
 
 	link = url.QueryEscape(link)
 

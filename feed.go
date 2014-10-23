@@ -36,12 +36,12 @@ type Article struct {
 
 type ArticleScores struct {
 	ArticleId int64
-	Score     int
-	Score1    int
-	Score2    int
-	Score3    int
-	Score4    int
-	Score5    int
+	Score     int64
+	Score1    int64
+	Score2    int64
+	Score3    int64
+	Score4    int64
+	Score5    int64
 }
 
 var (
@@ -96,6 +96,6 @@ func (asc ArticleScores) Validate() error {
 	return nil
 }
 
-func (asc *ArticleScores) CalculateScore() {
-	asc.Score = asc.Score1 + int(0.1*float32(asc.Score2)) + int(0.01*float32(asc.Score3)) + int(0.001*float32(asc.Score4)) + int(0.0001*float32(asc.Score5))
+func (asc ArticleScores) CalculateScore() int64 {
+	return asc.Score1 + int64(0.1*float64(asc.Score2)) + int64(0.01*float64(asc.Score3)) + int64(0.001*float64(asc.Score4)) + int64(0.0001*float64(asc.Score5))
 }
