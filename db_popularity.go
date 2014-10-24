@@ -36,12 +36,12 @@ func (db DB) GetLatestFeedArticles(f Feed) ([]Article, error) {
 }
 
 func (db DB) GetScoredUserArticles(u User, since time.Time, paging ...int) ([]Article, error) {
-	return db.getArticles(u, "", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
+	return db.getArticles(u, "asco.score", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
 		"a.date > $2", "asco.score, a.date", []interface{}{since}, paging...)
 }
 
 func (db DB) GetScoredUserArticlesDesc(u User, since time.Time, paging ...int) ([]Article, error) {
-	return db.getArticles(u, "", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
+	return db.getArticles(u, "asco.score", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
 		"a.date > $2", "asco.score DESC, a.date DESC", []interface{}{since}, paging...)
 }
 

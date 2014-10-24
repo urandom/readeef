@@ -294,10 +294,8 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 
 				links := make([]feverLink, len(articles))
 				for i, a := range articles {
-					asc, _ := db.GetArticleScores(a)
-
 					link := feverLink{
-						Id: a.Id, FeedId: a.FeedId, ItemId: a.Id, Temperature: math.Log10(float64(asc.Score)) / math.Log10(1.1),
+						Id: a.Id, FeedId: a.FeedId, ItemId: a.Id, Temperature: math.Log10(float64(a.Score)) / math.Log10(1.1),
 						IsItem: 1, IsLocal: 1, Title: a.Title, Url: a.Link, ItemIds: fmt.Sprintf("%d", a.Id),
 					}
 

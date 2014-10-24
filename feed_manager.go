@@ -380,27 +380,28 @@ func (fm *FeedManager) scoreFeedContent(f Feed) {
 		asc := <-ascc
 
 		if asc != EmptyArticleScores {
-			penalty := int64(1)
-			switch ageInDays(a.Date) {
+			age := ageInDays(a.Date)
+			switch age {
 			case 0:
 				asc.Score1 = score
 			case 1:
-				penalty = 10
 				asc.Score2 = score - asc.Score1
 			case 2:
-				penalty = 50
 				asc.Score3 = score - asc.Score1 - asc.Score2
 			case 3:
-				penalty = 100
 				asc.Score4 = score - asc.Score1 - asc.Score2 - asc.Score3
 			default:
-				penalty = 500
 				asc.Score5 = score - asc.Score1 - asc.Score2 - asc.Score3 - asc.Score4
 			}
 
 			score := asc.CalculateScore()
+			penalty := float64(time.Now().Unix()-a.Date.Unix()) / (60 * 60) * float64(age)
 
-			asc.Score = int64(score / penalty)
+			if penalty > 0 {
+				asc.Score = int64(float64(score) / penalty)
+			} else {
+				asc.Score = score
+			}
 
 			err := fm.db.UpdateArticleScores(asc)
 			if err != nil {
