@@ -386,11 +386,11 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 					break
 				}
 			} else if feedId == "__popular__" {
-				earlier := time.Now().AddDate(0, 0, -5)
+				timeRange := readeef.TimeRange{time.Now().AddDate(0, 0, -5), time.Now()}
 				if newerFirst {
-					articles, err = db.GetScoredUserArticlesDesc(user, earlier, limit, offset)
+					articles, err = db.GetScoredUserArticlesDesc(user, timeRange, limit, offset)
 				} else {
-					articles, err = db.GetScoredUserArticles(user, earlier, limit, offset)
+					articles, err = db.GetScoredUserArticles(user, timeRange, limit, offset)
 				}
 				if err != nil {
 					break

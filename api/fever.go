@@ -269,7 +269,7 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 
 			if _, ok := r.Form["links"]; ok {
 				readeef.Debug.Println("Fetching fever links")
-				//offset, _ := strconv.ParseInt(r.FormValue("offset"), 10, 64)
+				offset, _ := strconv.ParseInt(r.FormValue("offset"), 10, 64)
 
 				rng, e := strconv.ParseInt(r.FormValue("range"), 10, 64)
 				if e != nil {
@@ -288,7 +288,19 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 				}
 
 				var articles []readeef.Article
-				articles, err = db.GetScoredUserArticlesDesc(user, time.Now().AddDate(0, 0, int(-1*rng)), 50, 50*int(page-1))
+				var from, to time.Time
+
+				if offset == 0 {
+					from = time.Now().AddDate(0, 0, int(-1*rng))
+					to = time.Now()
+				} else {
+					from = time.Now().AddDate(0, 0, int(-1*rng-offset))
+					to = time.Now().AddDate(0, 0, int(-1*offset))
+				}
+
+				timeRange := readeef.TimeRange{From: from, To: to}
+
+				articles, err = db.GetScoredUserArticlesDesc(user, timeRange, 50, 50*int(page-1))
 				if err != nil {
 					break
 				}

@@ -25,6 +25,11 @@ INSERT INTO articles_scores(article_id, score, score1, score2, score3, score4, s
 	update_article_scores = `UPDATE articles_scores SET score = $1, score1 = $2, score2 = $3, score3 = $4, score4 = $5, score5 = $6 WHERE article_id = $7`
 )
 
+type TimeRange struct {
+	From time.Time
+	To   time.Time
+}
+
 func (db DB) GetLatestFeedArticles(f Feed) ([]Article, error) {
 	var articles []Article
 
@@ -35,14 +40,16 @@ func (db DB) GetLatestFeedArticles(f Feed) ([]Article, error) {
 	return articles, nil
 }
 
-func (db DB) GetScoredUserArticles(u User, since time.Time, paging ...int) ([]Article, error) {
+func (db DB) GetScoredUserArticles(u User, timeRange TimeRange, paging ...int) ([]Article, error) {
 	return db.getArticles(u, "asco.score", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
-		"a.date > $2", "asco.score, a.date", []interface{}{since}, paging...)
+		"a.date > $2 AND a.date <= $3", "asco.score, a.date",
+		[]interface{}{timeRange.From, timeRange.To}, paging...)
 }
 
-func (db DB) GetScoredUserArticlesDesc(u User, since time.Time, paging ...int) ([]Article, error) {
+func (db DB) GetScoredUserArticlesDesc(u User, timeRange TimeRange, paging ...int) ([]Article, error) {
 	return db.getArticles(u, "asco.score", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
-		"a.date > $2", "asco.score DESC, a.date DESC", []interface{}{since}, paging...)
+		"a.date > $2 AND a.date <= $3", "asco.score DESC, a.date DESC",
+		[]interface{}{timeRange.From, timeRange.To}, paging...)
 }
 
 func (db DB) GetArticleScores(a Article) (ArticleScores, error) {
