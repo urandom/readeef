@@ -52,6 +52,49 @@ func (db DB) GetScoredUserArticlesDesc(u User, timeRange TimeRange, paging ...in
 		[]interface{}{timeRange.From, timeRange.To}, paging...)
 }
 
+func (db DB) GetScoredUserTagArticles(u User, tag string, timeRange TimeRange, paging ...int) ([]Article, error) {
+	return db.getArticles(u, "asco.score", `INNER JOIN articles_scores asco ON a.id = asco.article_id
+	INNER JOIN users_feeds_tags uft ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login`,
+		"uft.tag = $2 AND a.date > $3 AND a.date <= $4", "asco.score, a.date",
+		[]interface{}{tag, timeRange.From, timeRange.To}, paging...)
+}
+
+func (db DB) GetScoredUserTagArticlesDesc(u User, tag string, timeRange TimeRange, paging ...int) ([]Article, error) {
+	return db.getArticles(u, "asco.score", `INNER JOIN articles_scores asco ON a.id = asco.article_id
+	INNER JOIN users_feeds_tags uft ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login`,
+		"uft.tag = $2 AND a.date > $3 AND a.date <= $4", "asco.score DESC, a.date DESC",
+		[]interface{}{tag, timeRange.From, timeRange.To}, paging...)
+}
+
+func (db DB) GetScoredFeedArticles(f Feed, timeRange TimeRange, paging ...int) (Feed, error) {
+	return db.getScoredFeedArticles(f, "asco.score, a.date", timeRange, paging...)
+}
+
+func (db DB) GetScoredFeedArticlesDesc(f Feed, timeRange TimeRange, paging ...int) (Feed, error) {
+	return db.getScoredFeedArticles(f, "asco.score DESC, a.date DESC", timeRange, paging...)
+}
+
+func (db DB) getScoredFeedArticles(f Feed, order string, timeRange TimeRange, paging ...int) (Feed, error) {
+	if f.User.Login == "" {
+		return f, ErrNoFeedUser
+	}
+
+	var articles []Article
+
+	where := "uf.feed_id = $2 AND a.date > $3 AND a.date <= $4"
+
+	articles, err := db.getArticles(f.User, "asco.score",
+		"INNER JOIN articles_scores asco ON a.id = asco.article_id",
+		where, order, []interface{}{f.Id, timeRange.From, timeRange.To}, paging...)
+	if err != nil {
+		return f, err
+	}
+
+	f.Articles = articles
+
+	return f, nil
+}
+
 func (db DB) GetArticleScores(a Article) (ArticleScores, error) {
 	var asc ArticleScores
 	if err := db.Get(&asc, db.NamedSQL("get_article_scores"), a.Id); err != nil && err != sql.ErrNoRows {

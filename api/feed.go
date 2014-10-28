@@ -323,7 +323,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 			switch {
 			case feedId == "tag:__all__":
 				err = db.MarkUserArticlesByDateAsRead(user, t, true)
-			case feedId == "__favorite__" || feedId == "__popular__":
+			case feedId == "__favorite__" || strings.HasPrefix(feedId, "popular:"):
 				// Favorites are assumbed to have been read already
 			case strings.HasPrefix(feedId, "tag:"):
 				tag := feedId[4:]
@@ -385,7 +385,7 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				if err != nil {
 					break
 				}
-			} else if feedId == "__popular__" {
+			} else if feedId == "popular:__all__" {
 				timeRange := readeef.TimeRange{time.Now().AddDate(0, 0, -5), time.Now()}
 				if newerFirst {
 					articles, err = db.GetScoredUserArticlesDesc(user, timeRange, limit, offset)
@@ -411,6 +411,51 @@ func (con Feed) Handler(c context.Context) http.HandlerFunc {
 				}
 				if err != nil {
 					break
+				}
+			} else if strings.HasPrefix(feedId, "popular:") {
+				timeRange := readeef.TimeRange{time.Now().AddDate(0, 0, -5), time.Now()}
+
+				if strings.HasPrefix(feedId, "popular:tag:") {
+					tag := feedId[12:]
+
+					if newerFirst {
+						articles, err = db.GetScoredUserTagArticlesDesc(user, tag, timeRange, limit, offset)
+					} else {
+						articles, err = db.GetScoredUserTagArticles(user, tag, timeRange, limit, offset)
+					}
+					if err != nil {
+						break
+					}
+				} else {
+					var f readeef.Feed
+
+					var id int64
+					id, err = strconv.ParseInt(feedId[8:], 10, 64)
+
+					if err != nil {
+						err = errors.New("Unknown feed id " + feedId)
+						break
+					}
+
+					f, err = db.GetFeed(id)
+					/* TODO: non-fatal error */
+					if err != nil {
+						break
+					}
+
+					f.User = user
+
+					if newerFirst {
+						f, err = db.GetScoredFeedArticlesDesc(f, timeRange, limit, offset)
+					} else {
+						f, err = db.GetScoredFeedArticles(f, timeRange, limit, offset)
+					}
+
+					if err != nil {
+						break
+					}
+
+					articles = f.Articles
 				}
 			} else if strings.HasPrefix(feedId, "tag:") {
 				tag := feedId[4:]

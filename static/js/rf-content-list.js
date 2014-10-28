@@ -73,7 +73,7 @@
                         this.articles = event.data.articles;
                     }.bind(this));
 
-                    if (feedId.indexOf("tag:") == 0 || feedId.indexOf("search:") == 0 || feedId == '__favorite__' || feedId == '__popular__') {
+                    if (feedId.indexOf("tag:") == 0 || feedId.indexOf("search:") == 0 || feedId.indexOf("popular:") == 0 || feedId == '__favorite__') {
                         data.feeds = this.feeds;
                     }
 
