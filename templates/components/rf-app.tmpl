@@ -44,7 +44,7 @@
                         <core-collapse class="drawer-content" data-tag="popular:">
                             <template repeat="{{ tag in tags }}">
                                 <template if="{{ tag.name != '__all__' }}">
-                                    <paper-item label="{{ tag.name }}" on-tap="{{ onFeedTap }}" name="popular:tag:{{ tag.name }}" selectable></paper-item>
+                                    <paper-item label="{{ tag.name }}" icon="icons:tab" on-tap="{{ onFeedTap }}" name="popular:tag:{{ tag.name }}" selectable></paper-item>
                                 </template>
                             </template>
                             <template repeat="{{ feed in feeds }}">
