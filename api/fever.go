@@ -268,7 +268,8 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 			}
 
 			if _, ok := r.Form["links"]; ok {
-				//offset, _ := strconv.ParseInt(r.FormValue("offset"), 10, 64)
+				readeef.Debug.Println("Fetching fever links")
+				offset, _ := strconv.ParseInt(r.FormValue("offset"), 10, 64)
 
 				rng, e := strconv.ParseInt(r.FormValue("range"), 10, 64)
 				if e != nil {
@@ -287,17 +288,27 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 				}
 
 				var articles []readeef.Article
-				articles, err = db.GetScoredUserArticlesDesc(user, time.Now().AddDate(0, 0, int(-1*rng)), 50, 50*int(page-1))
+				var from, to time.Time
+
+				if offset == 0 {
+					from = time.Now().AddDate(0, 0, int(-1*rng))
+					to = time.Now()
+				} else {
+					from = time.Now().AddDate(0, 0, int(-1*rng-offset))
+					to = time.Now().AddDate(0, 0, int(-1*offset))
+				}
+
+				timeRange := readeef.TimeRange{From: from, To: to}
+
+				articles, err = db.GetScoredUserArticlesDesc(user, timeRange, 50, 50*int(page-1))
 				if err != nil {
 					break
 				}
 
 				links := make([]feverLink, len(articles))
 				for i, a := range articles {
-					asc, _ := db.GetArticleScores(a)
-
 					link := feverLink{
-						Id: a.Id, FeedId: a.FeedId, ItemId: a.Id, Temperature: math.Log10(float64(asc.Score)) / math.Log10(1.1),
+						Id: a.Id, FeedId: a.FeedId, ItemId: a.Id, Temperature: math.Log10(float64(a.Score)) / math.Log10(1.1),
 						IsItem: 1, IsLocal: 1, Title: a.Title, Url: a.Link, ItemIds: fmt.Sprintf("%d", a.Id),
 					}
 

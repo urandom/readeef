@@ -109,12 +109,12 @@ CREATE TABLE IF NOT EXISTS users_articles_fav (
 )`, `
 CREATE TABLE IF NOT EXISTS articles_scores (
 	article_id BIGINT,
-	score  INTEGER,
-	score1 INTEGER,
-	score2 INTEGER,
-	score3 INTEGER,
-	score4 INTEGER,
-	score5 INTEGER,
+	score  BIGINT,
+	score1 BIGINT,
+	score2 BIGINT,
+	score3 BIGINT,
+	score4 BIGINT,
+	score5 BIGINT,
 
 	PRIMARY KEY(article_id),
 	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE

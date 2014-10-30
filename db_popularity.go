@@ -25,6 +25,11 @@ INSERT INTO articles_scores(article_id, score, score1, score2, score3, score4, s
 	update_article_scores = `UPDATE articles_scores SET score = $1, score1 = $2, score2 = $3, score3 = $4, score4 = $5, score5 = $6 WHERE article_id = $7`
 )
 
+type TimeRange struct {
+	From time.Time
+	To   time.Time
+}
+
 func (db DB) GetLatestFeedArticles(f Feed) ([]Article, error) {
 	var articles []Article
 
@@ -35,14 +40,59 @@ func (db DB) GetLatestFeedArticles(f Feed) ([]Article, error) {
 	return articles, nil
 }
 
-func (db DB) GetScoredUserArticles(u User, since time.Time, paging ...int) ([]Article, error) {
-	return db.getArticles(u, "", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
-		"a.date > $2", "asco.score, a.date", []interface{}{since}, paging...)
+func (db DB) GetScoredUserArticles(u User, timeRange TimeRange, paging ...int) ([]Article, error) {
+	return db.getArticles(u, "asco.score", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
+		"a.date > $2 AND a.date <= $3", "asco.score, a.date",
+		[]interface{}{timeRange.From, timeRange.To}, paging...)
 }
 
-func (db DB) GetScoredUserArticlesDesc(u User, since time.Time, paging ...int) ([]Article, error) {
-	return db.getArticles(u, "", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
-		"a.date > $2", "asco.score DESC, a.date DESC", []interface{}{since}, paging...)
+func (db DB) GetScoredUserArticlesDesc(u User, timeRange TimeRange, paging ...int) ([]Article, error) {
+	return db.getArticles(u, "asco.score", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
+		"a.date > $2 AND a.date <= $3", "asco.score DESC, a.date DESC",
+		[]interface{}{timeRange.From, timeRange.To}, paging...)
+}
+
+func (db DB) GetScoredUserTagArticles(u User, tag string, timeRange TimeRange, paging ...int) ([]Article, error) {
+	return db.getArticles(u, "asco.score", `INNER JOIN articles_scores asco ON a.id = asco.article_id
+	INNER JOIN users_feeds_tags uft ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login`,
+		"uft.tag = $2 AND a.date > $3 AND a.date <= $4", "asco.score, a.date",
+		[]interface{}{tag, timeRange.From, timeRange.To}, paging...)
+}
+
+func (db DB) GetScoredUserTagArticlesDesc(u User, tag string, timeRange TimeRange, paging ...int) ([]Article, error) {
+	return db.getArticles(u, "asco.score", `INNER JOIN articles_scores asco ON a.id = asco.article_id
+	INNER JOIN users_feeds_tags uft ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login`,
+		"uft.tag = $2 AND a.date > $3 AND a.date <= $4", "asco.score DESC, a.date DESC",
+		[]interface{}{tag, timeRange.From, timeRange.To}, paging...)
+}
+
+func (db DB) GetScoredFeedArticles(f Feed, timeRange TimeRange, paging ...int) (Feed, error) {
+	return db.getScoredFeedArticles(f, "asco.score, a.date", timeRange, paging...)
+}
+
+func (db DB) GetScoredFeedArticlesDesc(f Feed, timeRange TimeRange, paging ...int) (Feed, error) {
+	return db.getScoredFeedArticles(f, "asco.score DESC, a.date DESC", timeRange, paging...)
+}
+
+func (db DB) getScoredFeedArticles(f Feed, order string, timeRange TimeRange, paging ...int) (Feed, error) {
+	if f.User.Login == "" {
+		return f, ErrNoFeedUser
+	}
+
+	var articles []Article
+
+	where := "uf.feed_id = $2 AND a.date > $3 AND a.date <= $4"
+
+	articles, err := db.getArticles(f.User, "asco.score",
+		"INNER JOIN articles_scores asco ON a.id = asco.article_id",
+		where, order, []interface{}{f.Id, timeRange.From, timeRange.To}, paging...)
+	if err != nil {
+		return f, err
+	}
+
+	f.Articles = articles
+
+	return f, nil
 }
 
 func (db DB) GetArticleScores(a Article) (ArticleScores, error) {

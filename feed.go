@@ -32,6 +32,7 @@ type Article struct {
 	FeedId   int64 `db:"feed_id"`
 	Read     bool
 	Favorite bool
+	Score    int64
 }
 
 type ArticleScores struct {

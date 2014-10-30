@@ -24,6 +24,13 @@
             document.addEventListener('keypress', this.onContentKeypress.bind(this), false);
         },
 
+        startsWith: function(value, expected) {
+            if (value == undefined) {
+                return false;
+            }
+            return value.toString().indexOf(expected) == 0;
+        },
+
         articleChanged: function() {
             var processArticleState = (function processArticleState(newArticle) {
                 if (this.readStateJob) {

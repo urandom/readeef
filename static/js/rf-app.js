@@ -27,10 +27,10 @@
         }
     }
 
-    function createPopularPseudoFeed() {
+    function createPopularPseudoFeed(tag) {
         // TODO: i18n
         return {
-            Id: "__popular__",
+            Id: "popular:" + tag,
             Title: "Popular feed articles",
             Description: "",
             Articles: null,
@@ -187,8 +187,8 @@
             if (this.feeds && this.feeds.length) {
                 if (newValue == "__favorite__") {
                     this.currentFeed = createFavoritePseudoFeed();
-                } else if (newValue == "__popular__") {
-                    this.currentFeed = createPopularPseudoFeed();
+                } else if (newValue.indexOf("popular:") == 0) {
+                    this.currentFeed = createPopularPseudoFeed(newValue.substring(8));
                 } else if (newValue.indexOf("tag:") == 0) {
                     this.currentFeed = createPseudoTagFeed(newValue.substring(4));
                 } else if (newValue.indexOf("search:") == 0) {
