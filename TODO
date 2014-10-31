@@ -3,5 +3,4 @@
 * I18N
 * Non-fatal API errors
 * TinyRSS API emulation
-* Use https://github.com/advancedlogic/GoOse by default to extract the article content
 * Consider porting https://github.com/xiaoxu193/PyTeaser to go for article summaries

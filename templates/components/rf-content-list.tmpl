@@ -14,7 +14,7 @@
 <link rel="import" href="/component/rf-button-link">
 <link rel="import" href="/component/rf-article-display">
 
-<polymer-element name="rf-content-list" attributes="wide user feed feeds article formattingEnabled" formattingEnabled="{% ne .base.readeefConfig.ArticleFormatter.ReadabilityKey `` %}">
+<polymer-element name="rf-content-list" attributes="wide user feed feeds article">
     <template bind="{{ wide as wide }}">
         <link href="/css/rf-content-list.css" rel="stylesheet">
 
@@ -64,14 +64,12 @@
 
                                     <div layout horizontal class="article-buttons">
                                         <rf-button-link href="{{ model.Link }}" target="feed-article-{{ model.Id }}" flex class="article-link">View the article</rf-button-link>
-                                        {% if ne .base.readeefConfig.ArticleFormatter.ReadabilityKey `` %}
-                                            <paper-button flex?="{{ wide }}" on-tap="{{ onArticleFormat }}" hidden?="{{ formatting || formatted }}">Format</paper-button>
-                                            <template if="{{ formatting }}">
-                                                <div layout vertical center flex?="{{ wide }}">
-                                                    <loading-wave background="transparent"></loading-wave>
-                                                </div>
-                                            </template>
-                                        {% end %}
+                                        <paper-button flex?="{{ wide }}" on-tap="{{ onArticleFormat }}" hidden?="{{ formatting || formatted }}">Format</paper-button>
+                                        <template if="{{ formatting }}">
+                                            <div layout vertical center flex?="{{ wide }}">
+                                                <loading-wave background="transparent"></loading-wave>
+                                            </div>
+                                        </template>
                                     </div>
                                 </div>
                             </div>

@@ -1,0 +1,10 @@
+{% define "content" %}
+<div class="article-content">
+    <div style="text-align: center">
+        <img src="{% .topImage %}">
+    </div>
+    {% range .paragraphs %}
+        <p>{% . %} </p>
+    {% end %}
+</div>
+{% end %}

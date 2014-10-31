@@ -9,8 +9,6 @@
         articleRead: false,
         
         ready: function() {
-            this.formattingEnabled = this.formattingEnabled == "true";
-
             document.addEventListener('keypress', this.onContentKeypress.bind(this), false);
         },
 
@@ -213,9 +211,7 @@
                     this.onReadArticleToggle();
                 }
             } else if (key == "U+0043" || code == 99 || code == 67) { // c
-                if (this.article && this.formattingEnabled) {
-                    this.fire('core-signal', {name: "rf-article-format"});
-                }
+                this.fire('core-signal', {name: "rf-article-format"});
             } else if (key == "U+0052" || code == 114 || code == 82) { // r
                 this.fire('core-signal', {name: "rf-feed-refresh"});
             } else if (key == "U+0046" || code == 102 || code == 70) { // f

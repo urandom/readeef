@@ -2,9 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 
 	"github.com/urandom/readeef"
@@ -35,10 +33,7 @@ func (con Article) Patterns() map[string]webfw.MethodIdentifierTuple {
 	patterns := map[string]webfw.MethodIdentifierTuple{
 		prefix + "read/" + identifier + "/:value":     webfw.MethodIdentifierTuple{webfw.MethodPost, "read"},
 		prefix + "favorite/" + identifier + "/:value": webfw.MethodIdentifierTuple{webfw.MethodPost, "favorite"},
-	}
-
-	if con.config.ArticleFormatter.ReadabilityKey != "" {
-		patterns[prefix+"formatter/"+identifier] = webfw.MethodIdentifierTuple{webfw.MethodGet, "formatter"}
+		prefix + "formatter/" + identifier:            webfw.MethodIdentifierTuple{webfw.MethodGet, "formatter"},
 	}
 
 	return patterns
@@ -100,31 +95,14 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 				resp["Success"] = previouslyFavorite != favorite
 				resp["Favorite"] = favorite
 			case "formatter":
-				if con.config.ArticleFormatter.ReadabilityKey != "" {
+				var content, topImage string
 
-					url := fmt.Sprintf("http://readability.com/api/content/v1/parser?url=%s&token=%s",
-						url.QueryEscape(article.Link), con.config.ArticleFormatter.ReadabilityKey,
-					)
-
-					var response *http.Response
-					var r Readability
-
-					response, err = http.Get(url)
-
-					if err != nil {
-						break
-					}
-
-					defer response.Body.Close()
-					dec := json.NewDecoder(response.Body)
-
-					err = dec.Decode(&r)
-					if err != nil {
-						break
-					}
-
-					resp["Content"] = r.Content
+				content, topImage, err = readeef.ArticleFormatter(webfw.GetConfig(c), con.config, article)
+				if err != nil {
+					break
 				}
+				resp["Content"] = content
+				resp["TopImage"] = topImage
 			}
 		}
 
