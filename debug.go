@@ -2,8 +2,10 @@ package readeef
 
 import (
 	"log"
+	"net/http"
 	"runtime"
 	"strconv"
+	"time"
 )
 
 type debug interface {
@@ -29,8 +31,9 @@ func InitDebug(logger *log.Logger, config Config) {
 func (d realDebug) Printf(format string, v ...interface{}) {
 	if d.config.Readeef.Debug {
 		_, file, line, ok := runtime.Caller(2)
+		timestamp := time.Now().Format(http.TimeFormat)
 		if ok {
-			d.logger.Println(file + ": " + strconv.Itoa(line))
+			d.logger.Println(file + ":" + strconv.Itoa(line) + " (" + timestamp + ")")
 		}
 		d.logger.Printf(format, v...)
 	}
@@ -39,8 +42,9 @@ func (d realDebug) Printf(format string, v ...interface{}) {
 func (d realDebug) Println(v ...interface{}) {
 	if d.config.Readeef.Debug {
 		_, file, line, ok := runtime.Caller(2)
+		timestamp := time.Now().Format(http.TimeFormat)
 		if ok {
-			d.logger.Println(file + ": " + strconv.Itoa(line))
+			d.logger.Println(file + ":" + strconv.Itoa(line) + " (" + timestamp + ")")
 		}
 		d.logger.Println(v...)
 	}
