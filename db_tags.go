@@ -179,7 +179,7 @@ func (db DB) GetUserTagsFeeds(u User) ([]Feed, error) {
 	if feeds, err := db.GetUserFeeds(u); err == nil {
 		feedMap := make(map[int64]int)
 
-		for i := 0; i < len(feeds); i++ {
+		for i := range feeds {
 			feedMap[feeds[i].Id] = i
 		}
 

@@ -203,7 +203,7 @@ func (db DB) UpdateFeed(f Feed) (Feed, bool, error) {
 
 		f.Id = id
 
-		for i := 0; i < len(f.Articles); i++ {
+		for i := range f.Articles {
 			f.Articles[i].FeedId = id
 		}
 	}
@@ -516,8 +516,8 @@ func (db DB) GetSpecificUserArticles(u User, ids ...int64) ([]Article, error) {
 
 	args := []interface{}{}
 	index := 1
-	for i, id := range ids {
-		if i != 0 {
+	for _, id := range ids {
+		if index > 1 {
 			where += ` OR `
 		}
 
@@ -566,7 +566,7 @@ func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error
 	}
 
 	index := 1
-	for i, a := range articles {
+	for _, a := range articles {
 		if err := a.Validate(); err != nil {
 			return err
 		}
@@ -576,14 +576,14 @@ func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error
 		}
 
 		if read {
-			if i != 0 {
+			if index > 1 {
 				sql += ` UNION `
 			}
 
 			sql += fmt.Sprintf(`SELECT $%d, $%d EXCEPT SELECT user_login, article_id FROM users_articles_read WHERE user_login = $%d AND article_id = $%d`, index, index+1, index, index+1)
 			args = append(args, u.Login, a.Id)
 		} else {
-			if i != 0 {
+			if index > 1 {
 				sql += `OR `
 			}
 
@@ -736,7 +736,7 @@ func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) e
 	}
 
 	index := 1
-	for i, a := range articles {
+	for _, a := range articles {
 		if err := a.Validate(); err != nil {
 			return err
 		}
@@ -746,14 +746,14 @@ func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) e
 		}
 
 		if read {
-			if i != 0 {
+			if index > 1 {
 				sql += ` UNION `
 			}
 
 			sql += fmt.Sprintf(`SELECT $%d, $%d EXCEPT SELECT user_login, article_id FROM users_articles_fav WHERE user_login = $%d AND article_id = $%d`, index, index+1, index, index+1)
 			args = append(args, u.Login, a.Id)
 		} else {
-			if i != 0 {
+			if index > 1 {
 				sql += `OR `
 			}
 
@@ -835,12 +835,12 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) ([]Arti
 	args := []interface{}{}
 	index := 1
 
-	for i, a := range newArticles {
+	for _, a := range newArticles {
 		if err := a.Validate(); err != nil {
 			return newArticles, err
 		}
 
-		if i != 0 {
+		if index > 1 {
 			sql += ` UNION `
 		}
 
@@ -942,7 +942,7 @@ WHERE `
 	args := []interface{}{}
 	index := 1
 
-	for i, a := range articles {
+	for _, a := range articles {
 		if err := a.Validate(); err != nil {
 			return articles, err
 		}
@@ -951,7 +951,7 @@ WHERE `
 			continue
 		}
 
-		if i != 0 {
+		if index > 1 {
 			sql += ` OR `
 		}
 

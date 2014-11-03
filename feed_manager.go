@@ -340,7 +340,10 @@ func (fm *FeedManager) requestFeedContent(f Feed) Feed {
 				fm.searchIndex.UpdateFeed(f)
 			}
 
+			Debug.Println("New articles notification for " + f.Link)
 			fm.updateFeed <- f
+		} else {
+			Debug.Println("No new articles for " + f.Link)
 		}
 
 		return f
