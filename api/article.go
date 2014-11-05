@@ -2,10 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"html"
 	"net/http"
 	"strconv"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/text-summary/summarize"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 )
@@ -95,14 +97,25 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 				resp["Success"] = previouslyFavorite != favorite
 				resp["Favorite"] = favorite
 			case "formatter":
-				var content, topImage string
+				var formatting readeef.ArticleFormatting
 
-				content, topImage, err = readeef.ArticleFormatter(webfw.GetConfig(c), con.config, article)
+				formatting, err = readeef.ArticleFormatter(webfw.GetConfig(c), con.config, article)
 				if err != nil {
 					break
 				}
-				resp["Content"] = content
-				resp["TopImage"] = topImage
+
+				s := summarize.NewFromString(formatting.Title, readeef.StripTags(formatting.Content))
+
+				s.Language = formatting.Language
+				keyPoints := s.KeyPoints()
+
+				for i := range keyPoints {
+					keyPoints[i] = html.UnescapeString(keyPoints[i])
+				}
+
+				resp["KeyPoints"] = keyPoints
+				resp["Content"] = formatting.Content
+				resp["TopImage"] = formatting.TopImage
 			}
 		}
 

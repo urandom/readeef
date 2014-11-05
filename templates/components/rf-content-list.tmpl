@@ -60,10 +60,29 @@
                                     <span class="publish-date">{{model.RelativeDate}}</span>
                                 </div>
                                 <div class="article-content">
-                                    <div class="article-description"></div>
+                                    <div class="article-description" hidden?="{{ summarized }}"></div>
+
+                                    <template if="{{ summarized }}">
+                                        <template if="{{ topImage }}">
+                                            <div class="article-top-image">
+                                                <img src="{{ topImage }}">
+                                            </div>
+                                        </template>
+                                        <ul class="article-summary">
+                                            <template repeat="{{ point in keyPoints }}">
+                                                <li> {{ point }}</li>
+                                            </template>
+                                        </ul>
+                                    </template>
 
                                     <div layout horizontal class="article-buttons">
-                                        <rf-button-link href="{{ model.Link }}" target="feed-article-{{ model.Id }}" flex class="article-link">View the article</rf-button-link>
+                                        <rf-button-link href="{{ model.Link }}" target="feed-article-{{ model.Id }}" flex class="article-link">{{ wide ? 'View the article' : 'View' }}</rf-button-link>
+                                        <paper-button flex?="{{ wide }}" on-tap="{{ onArticleSummarize }}" hidden?="{{ summarizing || summarized }}">Summarize</paper-button>
+                                        <template if="{{ summarizing }}">
+                                            <div layout vertical center flex?="{{ wide }}">
+                                                <loading-wave background="transparent"></loading-wave>
+                                            </div>
+                                        </template>
                                         <paper-button flex?="{{ wide }}" on-tap="{{ onArticleFormat }}" hidden?="{{ formatting || formatted }}">Format</paper-button>
                                         <template if="{{ formatting }}">
                                             <div layout vertical center flex?="{{ wide }}">
