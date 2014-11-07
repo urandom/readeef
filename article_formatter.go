@@ -2,6 +2,7 @@ package readeef
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -14,8 +15,16 @@ import (
 	"github.com/urandom/webfw/util"
 )
 
-type Readability struct {
+type ArticleFormatting struct {
+	Content  string
+	Title    string
+	TopImage string
+	Language string
+}
+
+type readability struct {
 	Content   string
+	Title     string
 	LeadImage string `json:"lead_image_url"`
 }
 
@@ -24,34 +33,44 @@ var (
 	rendererInitialized bool
 )
 
-func ArticleFormatter(webfwConfig webfw.Config, readeefConfig Config, a Article) (string, string, error) {
+func ArticleFormatter(webfwConfig webfw.Config, readeefConfig Config, a Article) (ArticleFormatting, error) {
+	var f ArticleFormatting
+	var err error
+
 	if readeefConfig.ArticleFormatter.ReadabilityKey != "" {
 
 		url := fmt.Sprintf("http://readability.com/api/content/v1/parser?url=%s&token=%s",
 			url.QueryEscape(a.Link), readeefConfig.ArticleFormatter.ReadabilityKey,
 		)
 
-		var r Readability
+		var r readability
+		var resp *http.Response
 
-		response, err := http.Get(url)
+		resp, err = http.Get(url)
 
 		if err != nil {
-			return "", "", err
+			return f, err
 		}
 
-		defer response.Body.Close()
-		dec := json.NewDecoder(response.Body)
+		defer resp.Body.Close()
+		dec := json.NewDecoder(resp.Body)
 
 		err = dec.Decode(&r)
 		if err != nil {
-			return "", "", err
+			return f, err
 		}
 
-		return r.Content, r.LeadImage, nil
+		f.Title = r.Title
+		f.Content = r.Content
+		f.TopImage = r.LeadImage
+		f.Language = "en"
+
+		return f, nil
 	}
 
 	defer func() {
 		if r := recover(); r != nil {
+			err = errors.New(fmt.Sprintf("%v", r))
 		}
 	}()
 
@@ -78,7 +97,12 @@ func ArticleFormatter(webfwConfig webfw.Config, readeefConfig Config, a Article)
 		renderer.RenderData{"paragraphs": html, "topImage": formatted.TopImage},
 		nil, "goose-format-result.tmpl")
 
-	return buf.String(), formatted.TopImage, nil
+	f.Content = buf.String()
+	f.Title = formatted.Title
+	f.TopImage = formatted.TopImage
+	f.Language = formatted.MetaLang
+
+	return f, nil
 }
 
 func initRenderer(webfwConfig webfw.Config) {

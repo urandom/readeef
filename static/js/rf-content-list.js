@@ -212,6 +212,8 @@
                 }
             } else if (key == "U+0043" || code == 99 || code == 67) { // c
                 this.fire('core-signal', {name: "rf-article-format"});
+            } else if (key == "U+0053" || code == 115 || code == 83) { // s
+                this.fire('core-signal', {name: "rf-article-summarize"});
             } else if (key == "U+0052" || code == 114 || code == 82) { // r
                 this.fire('core-signal', {name: "rf-feed-refresh"});
             } else if (key == "U+0046" || code == 102 || code == 70) { // f

@@ -71,6 +71,11 @@
 
             dest.formatting = false;
             dest.formatted = false;
+            dest.summarizing = false;
+            dest.summarized = false;
+            dest.formattedDescription = null;
+            dest.topImage = null;
+            dest.keyPoints = null;
             dest.selected = physicalIndex == middle;
             dest.wide = this.wide;
             dest.model = src;
@@ -170,7 +175,7 @@
         },
 
         initializeElement: function(item, data) {
-            if (!data.model) {
+            if (!data.model || data.summarized) {
                 return;
             }
 
@@ -182,7 +187,7 @@
                     }
                 }, image;
 
-            description.innerHTML = data.formattedDescription || data.model.Description;
+            description.innerHTML = data.formatted ? data.formattedDescription : data.model.Description;
             image = description.querySelector('img');
 
             if (image) {
@@ -295,9 +300,31 @@
         },
 
         onArticleFormat: function() {
-            if (this.$.viewport.getAttribute('data-formatter-readability') != 'false'
-                && !this._physicalArticles[1].formatted) {
+            this._physicalArticles[1].summarized = false;
+
+            if (this._physicalArticles[1].formatted || this._physicalArticles[1].formattedDescription) {
+                this._physicalArticles[1].formatted = !this._physicalArticles[1].formatted;
+                this.initializeElement(this.templates[1]._element, this._physicalArticles[1]);
+                return;
+            }
+
+            if (!this._physicalArticles[1].formatted) {
                 this._physicalArticles[1].formatting = true;
+                this.$['article-format'].go();
+            }
+        },
+
+        onArticleSummarize: function() {
+            this._physicalArticles[1].formatted = false;
+
+            if (this._physicalArticles[1].summarized || this._physicalArticles[1].keyPoints) {
+                this._physicalArticles[1].summarized = !this._physicalArticles[1].summarized;
+                this.initializeElement(this.templates[1]._element, this._physicalArticles[1]);
+                return;
+            }
+
+            if (!this._physicalArticles[1].summarized) {
+                this._physicalArticles[1].summarizing = true;
                 this.$['article-format'].go();
             }
         },
@@ -306,12 +333,20 @@
             if (data.response && data.response.ArticleId == this.article.Id) {
 
                 this._physicalArticles[1].formattedDescription = data.response.Content;
-                this._physicalArticles[1].formatted = true;
-                this._physicalArticles[1].formatting = false;
+                this._physicalArticles[1].keyPoints = data.response.KeyPoints;
+                this._physicalArticles[1].topImage = data.response.TopImage;
+                if (this._physicalArticles[1].formatting) {
+                    this._physicalArticles[1].formatted = true;
+                    this._physicalArticles[1].formatting = false;
+                } else if (this._physicalArticles[1].summarizing) {
+                    this._physicalArticles[1].summarized = true;
+                    this._physicalArticles[1].summarizing = false;
+                }
                 this.initializeElement(this.templates[1]._element, this._physicalArticles[1]);
             } else {
                 for (var i = 0; i < 3; ++i) {
                     this._physicalArticles[i].formatting = false;
+                    this._physicalArticles[i].summarizing = false;
                 }
             }
         }
