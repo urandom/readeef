@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"net/http"
 	"strconv"
@@ -415,7 +414,7 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 	}
 }
 
-func getUser(db readeef.DB, md5hex string, log *log.Logger) readeef.User {
+func getUser(db readeef.DB, md5hex string, log webfw.Logger) readeef.User {
 	md5, err := hex.DecodeString(md5hex)
 
 	if err != nil {

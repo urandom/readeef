@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -44,7 +43,8 @@ type Auth struct {
 	IgnoreURLPrefix []string
 }
 
-func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.Handler {
+func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
+	logger := webfw.GetLogger(c)
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		for _, prefix := range mw.IgnoreURLPrefix {
 			if prefix[0] == '/' {
@@ -90,7 +90,7 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 							validUser = true
 							sess.Set(authkey, u)
 						} else if _, ok := err.(ValidationError); !ok {
-							l.Print(err)
+							logger.Print(err)
 						}
 					}
 				}
@@ -139,14 +139,14 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 
 					u, err = mw.DB.GetUser(login)
 					if err != nil {
-						l.Printf("Error getting db user '%s': %v\n", login, err)
+						logger.Printf("Error getting db user '%s': %v\n", login, err)
 						break
 					}
 
 					var decoded []byte
 					decoded, err = base64.StdEncoding.DecodeString(parts[1])
 					if err != nil {
-						l.Printf("Error decoding auth header: %v\n", err)
+						logger.Printf("Error decoding auth header: %v\n", err)
 						break
 					}
 
@@ -170,7 +170,7 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 
 					bodyHash := md5.New()
 					if _, err := bodyHash.Write(buf.Bytes()); err != nil {
-						l.Printf("Error generating the hash for the request body: %v\n", err)
+						logger.Printf("Error generating the hash for the request body: %v\n", err)
 						break
 					}
 
@@ -185,12 +185,12 @@ func (mw Auth) Handler(ph http.Handler, c context.Context, l *log.Logger) http.H
 
 					hm := hmac.New(sha256.New, b)
 					if _, err := hm.Write([]byte(message)); err != nil {
-						l.Printf("Error generating the hashed message: %v\n", err)
+						logger.Printf("Error generating the hashed message: %v\n", err)
 						break
 					}
 
 					if !hmac.Equal(hm.Sum(nil), decoded) {
-						l.Printf("Error matching the supplied auth message to the generated one.\n")
+						logger.Printf("Error matching the supplied auth message to the generated one.\n")
 						break
 					}
 
