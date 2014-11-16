@@ -1,30 +1,35 @@
 {% define "content" %}
+<link rel="import" href="/dist/core-input/core-input.html">
+
 <link rel="import" href="/dist/polymer/polymer.html">
-<link rel="import" href="/dist/paper-input/paper-input.html">
+<link rel="import" href="/dist/paper-input-decorator/paper-input-decorator.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-shadow/paper-shadow.html">
 
 <polymer-element name="rf-login" attributes="wide user invalid">
-    <template bind="{{ wide as wide }}">
+    <template>
         <link href="/css/rf-login.css" rel="stylesheet">
 
         <div class="overlay" fit cross-fade></div>
 
         <div class="main" fit layout vertical center slide-up-offscreen>
             <div class="card-container {{ {wide: wide} | tokenList }}" layout horizontal center fit?="{{ !wide }}" on-keypress="{{ onKeypress }}">
-                <div class="card" layout vertical>
-                    <div layout vertical>
-                    <paper-input label="Login" id="login" invalid="{{ invalid }}" error="The login credentials are incorrect" tabindex="1" floatingLabel></paper-input>
-                        <paper-input label="Password" id="password" type="password" tabindex="2" floatingLabel></paper-input>
+                <paper-shadow z="1" hidden?="{{ !wide }}">
+                    <div class="card" layout vertical>
+                        <div layout vertical>
+                            <paper-input-decorator label="Login" isInvalid="{{ invalid }}" error="The login credentials are incorrect" floatingLabel>
+                                <input is="core-input" id="login" tabindex="1">
+                            </paper-input-decorator>
+                            <paper-input-decorator label="Password" floatingLabel>
+                                <input is="core-input" id="password" type="password" tabindex="2">
+                            </paper-input-decorator>
+                        </div>
+                        <div horizontal center layout>
+                            <div flex></div>
+                            <paper-fab id="submit" icon="arrow-forward" on-tap="{{onLogin}}"></paper-fab>
+                        </div>
                     </div>
-                    <div horizontal center layout>
-                        <div flex></div>
-                        <paper-fab id="submit" icon="arrow-forward" on-tap="{{onLogin}}"></paper-fab>
-                    </div>
-                    <template if="{{ wide }}">
-                        <paper-shadow z="1"></paper-shadow>
-                    </template>
-                </div>
+                </paper-shadow>
             </div>
         </div>
     </template>

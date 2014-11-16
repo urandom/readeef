@@ -9,7 +9,7 @@
 
             if (key == 'Enter' || code == 13) {
                 if (event.target === this.$.login) { 
-                    this.$.password.focusAction();
+                    this.$.password.focus();
                 } else if (event.target === this.$.password) {
                     this.$.submit.asyncFire('tap');
                 }

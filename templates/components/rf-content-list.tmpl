@@ -15,7 +15,7 @@
 <link rel="import" href="/component/rf-article-display">
 
 <polymer-element name="rf-content-list" attributes="wide user feed feeds article">
-    <template bind="{{ wide as wide }}">
+    <template>
         <link href="/css/rf-content-list.css" rel="stylesheet">
 
         <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="list" transitions="{{ wide ? 'slide-down' : ''}}" on-keypress="{{ onContentKeypress }}">
