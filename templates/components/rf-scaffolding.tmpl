@@ -21,11 +21,11 @@
         <core-style ref="rf-theme"></core-style>
 
         <template id="article-list-menu-items">
-            <paper-item label="{{ startsWith(feed.Id, 'popular:') ? 'Less popular first' : 'Older first' }}" hidden?="{{ !settings.newerFirst }}" on-tap="{{ onOlderFirst }}"></paper-item>
-            <paper-item label="{{ startsWith(feed.Id, 'popular:') ? 'More popular first' : 'Newer first' }}" hidden?="{{ settings.newerFirst }}" on-tap="{{ onNewerFirst }}"></paper-item>
-            <paper-item label="Unread only" hidden?="{{ settings.unreadOnly }}" on-tap="{{ onUnreadOnly }}"></paper-item>
-            <paper-item label="Read and unread" hidden?="{{ !settings.unreadOnly }}" on-tap="{{ onReadAndUnread }}"></paper-item>
-            <paper-item label="Mark all as read" on-tap="{{ onMarkAllAsRead }}" hidden?="{{ feed.Id == '__favorite__' || startsWith(feed.Id, 'popular:') }}"></paper-item>
+            <paper-item hidden?="{{ !settings.newerFirst }}" on-tap="{{ onOlderFirst }}">{{ startsWith(feed.Id, 'popular:') ? 'Less popular first' : 'Older first' }}</paper-item>
+            <paper-item hidden?="{{ settings.newerFirst }}" on-tap="{{ onNewerFirst }}">{{ startsWith(feed.Id, 'popular:') ? 'More popular first' : 'Newer first' }}</paper-item>
+            <paper-item hidden?="{{ settings.unreadOnly }}" on-tap="{{ onUnreadOnly }}">Unread only</paper-item>
+            <paper-item hidden?="{{ !settings.unreadOnly }}" on-tap="{{ onReadAndUnread }}">Read and unread</paper-item>
+            <paper-item on-tap="{{ onMarkAllAsRead }}" hidden?="{{ feed.Id == '__favorite__' || startsWith(feed.Id, 'popular:') }}">Mark all as read</paper-item>
         </template>
 
         <template id="article-navigation-menu-items">
@@ -38,7 +38,7 @@
             <template if="{{ enabledShareServices(shareServices).length }}">
                 <paper-menu-button icon="social:share-alt" halign="right" class="title-icon" hidden?="{{ !article || display != 'feed' }}">
                     <template repeat="{{ shareServices | enabledShareServices }}">
-                        <paper-item label="{{ title }}" on-tap="{{ onShareArticle }}" data-service-id="{{ id }}"></paper-item>
+                        <paper-item on-tap="{{ onShareArticle }}" data-service-id="{{ id }}">{{ title }}</paper-item>
                     </template>
                 </paper-menu-button>
             </template>

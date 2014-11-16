@@ -23,13 +23,13 @@
 
         <div layout vertical flex start>
             <paper-dropdown-menu id="dropdown" selected="{{ selectedTab }}">
-                <paper-item name="general" label="General"></paper-item>
-                <paper-item name="add-feed" label="Add Feed"></paper-item>
-                <paper-item name="feeds" label="Manage Feeds"></paper-item>
-                <paper-item name="share-services" label="Share services"></paper-item>
+                <paper-item name="general" >General</paper-item>
+                <paper-item name="add-feed" >Add Feed</paper-item>
+                <paper-item name="feeds" >Manage Feeds</paper-item>
+                <paper-item name="share-services" >Share services</paper-item>
 
                 <template if="{{ user.Admin }}">
-                    <paper-item name="admin" label="Admin"></paper-item>
+                    <paper-item name="admin" >Admin</paper-item>
                 </template>
             </paper-dropdown-menu>
             <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}" transitions="hero-transition">
