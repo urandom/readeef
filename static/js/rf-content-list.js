@@ -12,27 +12,71 @@
             document.addEventListener('keypress', this.onContentKeypress.bind(this), false);
         },
 
-        nextArticle: function() {
+        nextArticle: function(unread) {
             if (this.article) {
-                var index = this.articles.indexOf(this.article);
+                var index = this.articles.indexOf(this.article),
+                    article;
 
-                if (index < this.articles.length - 1) {
-                    this.article = this.articles[index + 1];
+                if (unread) {
+                    while (article = this.articles[++index]) {
+                        if (!article.Read) {
+                            break;
+                        }
+                    }
+                } else {
+                    article = this.articles[index + 1];
+                }
+
+                if (article) {
+                    this.article = article;
                 }
             } else {
-                this.article = this.articles[0];
+                if (unread) {
+                    var article, index = -1;
+                    while (article = this.articles[++index]) {
+                        if (!article.Read) {
+                            break;
+                        }
+                    }
+
+                    this.article = article;
+                } else {
+                    this.article = this.articles[0];
+                }
             }
         },
 
-        previousArticle: function() {
+        previousArticle: function(unread) {
             if (this.article) {
-                var index = this.articles.indexOf(this.article);
+                var index = this.articles.indexOf(this.article),
+                    article;
 
-                if (index) {
-                    this.article = this.articles[index - 1];
+                if (unread) {
+                    while (article = this.articles[--index]) {
+                        if (!article.Read) {
+                            break;
+                        }
+                    }
+                } else if (index > 0) {
+                    article = this.articles[index - 1];
+                }
+
+                if (article) {
+                    this.article = article;
                 }
             } else {
-                this.article = this.articles[this.articles.length - 1];
+                if (unread) {
+                    var article, index = this.articles.length;
+                    while (article = this.articles[--index]) {
+                        if (!article.Read) {
+                            break;
+                        }
+                    }
+
+                    this.article = article;
+                } else {
+                    this.article = this.articles[this.articles.length - 1];
+                }
             }
         },
 
@@ -197,9 +241,9 @@
             var code = event.keyCode || event.charCode, key = event.keyIdentifier;
 
             if (key == "U+004A" || code == 106 || code == 74) { // j
-                this.nextArticle();
+                this.nextArticle(event.shiftKey);
             } else if (key == "U+004B" || code == 107 || code == 75) { // k
-                this.previousArticle();
+                this.previousArticle(event.shiftKey);
             } else if (key == "U+0048" || code == 104 || code == 72) { // h
                 this.article = null;
             } else if (key == "U+0056" || code == 118 || code == 86) { // v
