@@ -85,9 +85,8 @@
         },
 
         domReady: function() {
-            var contentPanel = document.querySelector('rf-app').$.scaffolding.$['content-panel'];
-
-            this.$['articles-list'].scrollTarget = contentPanel;
+            this.$['articles-list'].scrollTarget =
+                document.querySelector('rf-app').$.scaffolding.$['content-panel'].$.mainContainer;
         },
 
         feedChanged: function(oldValue, newValue) {
