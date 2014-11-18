@@ -7,7 +7,7 @@
 <link rel="import" href="/dist/paper-button/paper-button.html">
 <link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="/dist/paper-dialog/paper-dialog-transition.html">
-<link rel="import" href="/dist/paper-dialog/paper-dialog.html">
+<link rel="import" href="/dist/paper-dialog/paper-action-dialog.html">
 <link rel="import" href="/dist/paper-dropdown-menu/paper-dropdown-menu.html">
 <link rel="import" href="/dist/paper-dropdown/paper-dropdown.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
@@ -224,7 +224,7 @@
             </core-animated-pages>
         </div>
 
-        <paper-dialog id="set-password-dialog" heading="Change your password" transition="paper-dialog-transition-bottom" closeSelector="[dismissive],[affirmative]:not([transient])" on-core-overlay-open="{{ cleanFields }}" on-keypress="{{ onPasswordDialogKeypress }}">
+        <paper-action-dialog id="set-password-dialog" heading="Change your password" transition="paper-dialog-transition-bottom" closeSelector="[dismissive],[affirmative]:not([transient])" on-core-overlay-open="{{ cleanFields }}" on-keypress="{{ onPasswordDialogKeypress }}">
             <small>A successfull change will force a re-log</small>
             <paper-input-decorator label="Current password" floatingLabel>
                 <input is="core-input" id="password" type="password" tabindex="4">
@@ -240,9 +240,9 @@
 
             <paper-button affirmative>Cancel</paper-button>
             <paper-button id="apply-password-change" on-tap="{{ onApplyPasswordChange }}" affirmative autofocus transient>Apply</paper-button>
-        </paper-dialog>
+        </paper-action-dialog>
 
-        <paper-dialog id="add-user-dialog" heading="Add a new user" transition="paper-dialog-transition-bottom" closeSelector="[dismissive],[affirmative]:not([transient])" on-core-overlay-open="{{ cleanFields }}" on-keypress="{{ onNewUserDialogKeypress }}">
+        <paper-action-dialog id="add-user-dialog" heading="Add a new user" transition="paper-dialog-transition-bottom" closeSelector="[dismissive],[affirmative]:not([transient])" on-core-overlay-open="{{ cleanFields }}" on-keypress="{{ onNewUserDialogKeypress }}">
             <paper-input-decorator label="Login" floatingLabel>
                 <input is="core-input" id="add-user-login" tabindex="7">
             </paper-input-decorator>
@@ -253,7 +253,7 @@
 
             <paper-button affirmative>Cancel</paper-button>
             <paper-button id="add-user-apply" on-tap="{{ onApplyCreateUser }}" affirmative autofocus transient>Apply</paper-button>
-        </paper-dialog>
+        </paper-action-dialog>
 
         <rf-api user="{{ user }}" id="remove-feed" method="post" pathAction="feed/remove/{{ removedFeed }}" on-rf-api-response="{{ onRemoveFeedResponse }}"></rf-api>
 
