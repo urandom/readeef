@@ -10,7 +10,7 @@ core-animated-pages > section[active] {
     padding: 24px;
 }
 
-#dropdown {
+paper-dropdown-menu {
     background: transparent;
     margin-left: 24px;
 }

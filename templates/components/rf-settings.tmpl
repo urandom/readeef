@@ -1,17 +1,19 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
+<link rel="import" href="/dist/core-menu/core-menu.html">
 
 <link rel="import" href="/dist/paper-button/paper-button.html">
-<link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
-<link rel="import" href="/dist/paper-toggle-button/paper-toggle-button.html">
-<link rel="import" href="/dist/paper-fab/paper-fab.html">
-<link rel="import" href="/dist/paper-input/paper-input.html">
-<link rel="import" href="/dist/paper-dropdown-menu/paper-dropdown-menu.html">
-<link rel="import" href="/dist/paper-dialog/paper-dialog.html">
 <link rel="import" href="/dist/paper-dialog/paper-dialog-transition.html">
+<link rel="import" href="/dist/paper-dialog/paper-dialog.html">
+<link rel="import" href="/dist/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="/dist/paper-dropdown/paper-dropdown.html">
+<link rel="import" href="/dist/paper-fab/paper-fab.html">
+<link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/dist/paper-input/paper-input.html">
 <link rel="import" href="/dist/paper-toast/paper-toast.html">
+<link rel="import" href="/dist/paper-toggle-button/paper-toggle-button.html">
 
 <link rel="import" href="/dist/loading-wave/loading-wave.html">
 
@@ -22,15 +24,19 @@
         <link href="/css/rf-settings.css" rel="stylesheet">
 
         <div layout vertical flex start>
-            <paper-dropdown-menu id="dropdown" selected="{{ selectedTab }}">
-                <paper-item name="general" >General</paper-item>
-                <paper-item name="add-feed" >Add Feed</paper-item>
-                <paper-item name="feeds" >Manage Feeds</paper-item>
-                <paper-item name="share-services" >Share services</paper-item>
+            <paper-dropdown-menu>
+                <paper-dropdown class="dropdown">
+                    <core-menu selected="{{ selectedTab }}">
+                        <paper-item name="general" >General</paper-item>
+                        <paper-item name="add-feed" >Add Feed</paper-item>
+                        <paper-item name="feeds" >Manage Feeds</paper-item>
+                        <paper-item name="share-services" >Share services</paper-item>
 
-                <template if="{{ user.Admin }}">
-                    <paper-item name="admin" >Admin</paper-item>
-                </template>
+                        <template if="{{ user.Admin }}">
+                            <paper-item name="admin" >Admin</paper-item>
+                        </template>
+                    </core-menu>
+                </paper-dropdown>
             </paper-dropdown-menu>
             <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}" transitions="hero-transition">
 
