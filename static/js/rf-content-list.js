@@ -189,6 +189,14 @@
             this.article = detail.data;
         },
 
+        onArticleNext: function(event) {
+            this.nextArticle();
+        },
+
+        onArticlePrevious: function(event) {
+            this.previousArticle();
+        },
+
         onFavoriteToggle: function(event) {
             event.stopPropagation();
             event.preventDefault();

@@ -102,8 +102,8 @@
         <rf-api id="article-read" method="post" pathAction="article/read/{{ article.Id }}/{{ articleRead }}" on-rf-api-response="{{ onArticleReadResponse }}" user="{{ user }}"></rf-api>
 
         <core-signals on-core-signal-rf-read-article-toggle="{{ onReadArticleToggle }}"></core-signals>
-        <core-signals on-core-signal-rf-next-article="{{ nextArticle }}"></core-signals>
-        <core-signals on-core-signal-rf-previous-article="{{ previousArticle }}"></core-signals>
+        <core-signals on-core-signal-rf-next-article="{{ onArticleNext }}"></core-signals>
+        <core-signals on-core-signal-rf-previous-article="{{ onArticlePrevious }}"></core-signals>
     </template>
 
     <script src="/js/rf-content-list.js"></script>
