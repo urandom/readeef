@@ -1,6 +1,7 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-animated-pages/core-animated-pages.html">
+<link rel="import" href="/dist/core-input/core-input.html">
 <link rel="import" href="/dist/core-menu/core-menu.html">
 
 <link rel="import" href="/dist/paper-button/paper-button.html">
@@ -11,7 +12,7 @@
 <link rel="import" href="/dist/paper-dropdown/paper-dropdown.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="/dist/paper-input/paper-input.html">
+<link rel="import" href="/dist/paper-input/paper-input-decorator.html">
 <link rel="import" href="/dist/paper-toast/paper-toast.html">
 <link rel="import" href="/dist/paper-toggle-button/paper-toggle-button.html">
 
@@ -46,9 +47,17 @@
                             <p>
                                 Personalize your feed reader
                             </p>
-                            <paper-input label="First name" id="first-name" value="{{ user.FirstName }}" floatingLabel tabindex="1"></paper-input>
-                            <paper-input label="Last name" id="last-name" value="{{ user.LastName }}" floatingLabel tabindex="2"></paper-input>
-                            <paper-input label="Email" id="email" type="email" value="{{ user.Email }}" floatingLabel tabindex="3"></paper-input>
+                            <paper-input-decorator label="First name" floatingLabel>
+                                <input is="core-input" id="first-name" value="{{ user.FirstName }}" tabindex="1">
+                            </paper-input-decorator>
+
+                            <paper-input-decorator label="Last name" floatingLabel>
+                                <input is="core-input" id="last-name" value="{{ user.LastName }}" tabindex="2">
+                            </paper-input-decorator>
+
+                            <paper-input-decorator label="Email" floatingLabel>
+                                <input is="core-input" id="email" type="email" value="{{ user.Email }}" tabindex="3">
+                            </paper-input-decorator>
                             <p>
                                 Pick your style
                             </p>
@@ -81,7 +90,9 @@
                                     Enter the address of a feed, or a website that might contain one or more feeds.
                                 </p>
 
-                                <paper-input label="URL" id="feed-url" value="{{ url }}" on-keypress="{{ onAddFeedUrlKeypress }}" floatingLabel tabindex="1" data-error-no-feed="{% __ "No feeds were found" .base.lang %}" data-error-no-absolute="{% __ "The value is not a valid absolute URL" .base.lang %}" data-error-internal="{% __ "There was an error processing the request" .base.lang %}"></paper-input>
+                                <paper-input-decorator label="URL" floatingLabel>
+                                    <input is="core-input" id="feed-url" value="{{ url }}" on-keypress="{{ onAddFeedUrlKeypress }}" tabindex="1" data-error-no-feed="{% __ "No feeds were found" .base.lang %}" data-error-no-absolute="{% __ "The value is not a valid absolute URL" .base.lang %}" data-error-internal="{% __ "There was an error processing the request" .base.lang %}">
+                                </paper-input-decorator>
 
                                 <p>
                                     Alternatively, you may provide an OPML file that contains a list of feeds.
@@ -131,7 +142,7 @@
                                                 <paper-toast text="{{ feed.UpdateError + '\n' + feed.SubscribeError }}"></paper-toast>
                                             </template>
                                         </span>
-                                        <paper-input value="{{ feed.Tags }}" on-change="{{ onFeedTagsChange }}" placeholder="Comma-separated tag list"></paper-input>
+                                        <input is="core-input" value="{{ feed.Tags }}" on-change="{{ onFeedTagsChange }}" placeholder="Comma-separated tag list">
                                         <paper-icon-button icon="remove" on-tap="{{ onRemoveFeed }}"></paper-icon-button>
                                     </div>
                                     </template>
@@ -141,7 +152,9 @@
                                         <span flex>{{ feed.Title }}</span>
                                     </div>
                                     <div layout horizontal center>
-                                        <paper-input value="{{ feed.Tags }}" on-change="{{ onFeedTagsChange }}" flex placeholder="Comma-separated tag list"></paper-input>
+                                        <paper-input-decorator>
+                                            <input is="core-input" value="{{ feed.Tags }}" on-change="{{ onFeedTagsChange }}" flex placeholder="Comma-separated tag list">
+                                        </paper-input-decorator>
                                         <paper-icon-button icon="remove" on-tap="{{ onRemoveFeed }}"></paper-icon-button>
                                     </div>
                                     </template>
@@ -213,17 +226,30 @@
 
         <paper-dialog id="set-password-dialog" heading="Change your password" transition="paper-dialog-transition-bottom" closeSelector="[dismissive],[affirmative]:not([transient])" on-core-overlay-open="{{ cleanFields }}" on-keypress="{{ onPasswordDialogKeypress }}">
             <small>A successfull change will force a re-log</small>
-            <paper-input label="Current password" id="password" type="password" floatingLabel tabindex="4"></paper-input>
-            <paper-input label="New password" id="new-password" type="password" floatingLabel tabindex="5"></paper-input>
-            <paper-input label="Confirm new password" id="confirm-new-password" type="password" floatingLabel tabindex="6"></paper-input>
+            <paper-input-decorator label="Current password" floatingLabel>
+                <input is="core-input" id="password" type="password" tabindex="4">
+            </paper-input-decorator>
+
+            <paper-input-decorator label="New password" floatingLabel>
+                <input is="core-input" id="new-password" type="password" tabindex="5">
+            </paper-input-decorator>
+
+            <paper-input-decorator label="Confirm new password" floatingLabel>
+                <input is="core-input" id="confirm-new-password" type="password" tabindex="6">
+            </paper-input-decorator>
 
             <paper-button affirmative>Cancel</paper-button>
             <paper-button id="apply-password-change" on-tap="{{ onApplyPasswordChange }}" affirmative autofocus transient>Apply</paper-button>
         </paper-dialog>
 
         <paper-dialog id="add-user-dialog" heading="Add a new user" transition="paper-dialog-transition-bottom" closeSelector="[dismissive],[affirmative]:not([transient])" on-core-overlay-open="{{ cleanFields }}" on-keypress="{{ onNewUserDialogKeypress }}">
-            <paper-input label="Login" id="add-user-login" floatingLabel tabindex="7"></paper-input>
-            <paper-input label="Password" id="add-user-password" type="password" floatingLabel tabindex="8"></paper-input>
+            <paper-input-decorator label="Login" floatingLabel>
+                <input is="core-input" id="add-user-login" tabindex="7">
+            </paper-input-decorator>
+
+            <paper-input-decorator label="Password" floatingLabel>
+                <input is="core-input" id="add-user-password" type="password" tabindex="8">
+            </paper-input-decorator>
 
             <paper-button affirmative>Cancel</paper-button>
             <paper-button id="add-user-apply" on-tap="{{ onApplyCreateUser }}" affirmative autofocus transient>Apply</paper-button>

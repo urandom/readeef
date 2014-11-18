@@ -45,6 +45,7 @@ li paper-checkbox {
     border-radius: 50%;
     border-width: 2px;
     border-color: transparent;
+    margin: 8px;
 }
 
 .theme.blue {
