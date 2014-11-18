@@ -74,7 +74,7 @@ core-drawer-panel.wide #mainheader #refresh-menu {
     height: 60px;
 }
 
-.search-input {
+.search-decorator {
     line-height: 24px;
     font-size: 16px;
     margin-top: 10px;

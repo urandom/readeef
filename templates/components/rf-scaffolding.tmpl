@@ -1,5 +1,7 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/core-icon/core-icon.html">
+<link rel="import" href="/dist/core-input/core-input.html">
 <link rel="import" href="/dist/core-toolbar/core-toolbar.html">
 <link rel="import" href="/dist/core-menu/core-menu.html">
 <link rel="import" href="/dist/core-header-panel/core-header-panel.html">
@@ -10,9 +12,10 @@
 <link rel="import" href="/dist/core-style/core-style.html">
 
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
+<link rel="import" href="/dist/paper-dropdown/paper-dropdown.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-menu-button/paper-menu-button.html">
-<link rel="import" href="/dist/paper-input/paper-input.html">
+<link rel="import" href="/dist/paper-input/paper-input-decorator.html">
 
 <polymer-element name="rf-scaffolding" attributes="wide user settings feed article display updateAvailable searchEnabled shareServices" searchEnabled="{% ne .base.readeefConfig.SearchIndex.BlevePath `` %}">
     <template>
@@ -36,10 +39,15 @@
             <paper-icon-button icon="hardware:keyboard-arrow-left" class="title-icon" style="opacity: {{ article && !article.First ? 100 : 0 }}" on-tap="{{ onArticlePrevious }}" hidden?="{{ !article || display != 'feed' }}"></paper-icon-button>
             <paper-icon-button icon="hardware:keyboard-arrow-right" class="title-icon" style="opacity: {{ article && !article.Last ? 100 : 0 }}" on-tap="{{ onArticleNext }}" hidden?="{{ !article || display != 'feed' }}"></paper-icon-button>
             <template if="{{ enabledShareServices(shareServices).length }}">
-                <paper-menu-button icon="social:share-alt" halign="right" class="title-icon" hidden?="{{ !article || display != 'feed' }}">
-                    <template repeat="{{ shareServices | enabledShareServices }}">
-                        <paper-item on-tap="{{ onShareArticle }}" data-service-id="{{ id }}">{{ title }}</paper-item>
-                    </template>
+                <paper-menu-button halign="right" class="title-icon" hidden?="{{ !article || display != 'feed' }}">
+                    <paper-icon-button icon="social:share-alt"></paper-icon-button>
+                    <paper-dropdown>
+                        <core-menu>
+                            <template repeat="{{ shareServices | enabledShareServices }}">
+                                <paper-item on-tap="{{ onShareArticle }}" data-service-id="{{ id }}">{{ title }}</paper-item>
+                            </template>
+                        </core-menu>
+                    </paper-dropdown>
                 </paper-menu-button>
             </template>
         </template>
@@ -47,7 +55,9 @@
         <template id="search-controls">
             <paper-icon-button icon="close" class="title-icon search-close" on-tap="{{ onSearchToggle }}" hidden?="{{ article || display != 'feed' }}"></paper-icon-button>
             <div flex class="search-container">
-                <paper-input label="Search" class="search-input {{ header ? 'primary-transparent-color' : 'primary-dark-transparent-inverted-color' }}" tabindex="1" on-keyup="{{ onSearchKeyUp }}" on-keypress="{{ onSearchKeyPress }}" value=""></paper-input>
+                <paper-input-decorator label="Search" class="search-decorator">
+                    <input is="core-input" class="search-input {{ header ? 'primary-transparent-color' : 'primary-dark-transparent-inverted-color' }}" tabindex="1" on-keyup="{{ onSearchKeyUp }}" on-keypress="{{ onSearchKeyPress }}" value="">
+                </paper-input>
             </div>
         </template>
 
@@ -70,8 +80,13 @@
                         <template bind ref="article-navigation-menu-items" if="{{ !searchVisible }}"></template>
                         <paper-icon-button id="refresh-menu" icon="refresh" class="{{ {'primary-dark-color': updateAvailable} | tokenList }}" on-tap="{{ onRefresh }}" hidden?="{{ display != 'feed' || article }}"></paper-icon-button>
 
-                        <paper-menu-button icon="more-vert" halign="right" hidden?="{{ display != 'feed' || article }}">
-                            <template bind ref="article-list-menu-items"></template>
+                        <paper-menu-button halign="right" hidden?="{{ display != 'feed' || article }}">
+                            <paper-icon-button icon="more-vert"></paper-icon-button>
+                            <paper-dropdown>
+                                <core-menu>
+                                    <template bind ref="article-list-menu-items"></template>
+                                </core-menu>
+                            </paper-dropdown>
                         </paper-menu-button>
                     </template>
                     <template if="{{ searchVisible && !wide }}" ref="search-controls" bind="{{ true as header }}"></template>
@@ -99,8 +114,13 @@
                         <template if="{{ searchVisible && wide }}" ref="search-controls" bind="{{ false as header }}"></template>
 
                         <template bind ref="article-navigation-menu-items" if="{{ !searchVisible }}"></template>
-                        <paper-menu-button icon="more-vert" halign="right" hidden?="{{ display != 'feed' || article }}" class="title-icon">
-                            <template bind ref="article-list-menu-items"></template>
+                        <paper-menu-button halign="right" hidden?="{{ display != 'feed' || article }}" class="title-icon">
+                            <paper-icon-button icon="more-vert"></paper-icon-button>
+                            <paper-dropdown>
+                                <core-menu>
+                                    <template bind ref="article-list-menu-items"></template>
+                                </core-menu>
+                            </paper-dropdown>
                         </paper-menu-button>
                     </div>
                     <content select=".main-content"></content>
