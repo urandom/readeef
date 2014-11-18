@@ -154,6 +154,11 @@
             }
         },
 
+        onScrollThresholdTrigger: function(event) {
+            this.asyncFire('core-signal', {name: 'rf-scroll-threshold-trigger'});
+            this.$['scroll-threshold'].clearLower();
+        },
+
         enabledShareServices: function(value) {
             var services = [];
 

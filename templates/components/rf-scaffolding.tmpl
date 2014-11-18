@@ -10,6 +10,7 @@
 <link rel="import" href="/dist/core-icons/core-icons.html">
 <link rel="import" href="/dist/core-icons/hardware-icons.html">
 <link rel="import" href="/dist/core-icons/social-icons.html">
+<link rel="import" href="/dist/core-scroll-threshold/core-scroll-threshold.html">
 <link rel="import" href="/dist/core-style/core-style.html">
 
 <link rel="import" href="/dist/paper-dropdown/paper-dropdown.html">
@@ -72,6 +73,7 @@
                 </core-menu>
             </core-header-panel>
 
+            <core-scroll-threshold id="scroll-threshold" scrollTarget="{{ $['content-panel'].$.mainContainer }}" lowerThreshold="50" on-lower-trigger="{{ onScrollThresholdTrigger }}"></core-scroll-threshold>
             <core-header-panel main mode="{{ {'cover': wide } | tokenList }}" shadow id="content-panel">
                 <core-toolbar id="mainheader" class="primary-color">
                     <paper-icon-button id="navicon" icon="menu" hidden?="{{ display != 'feed' || article }}"></paper-icon-button>

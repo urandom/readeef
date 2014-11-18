@@ -88,16 +88,6 @@
             var contentPanel = document.querySelector('rf-app').$.scaffolding.$['content-panel'];
 
             this.$['articles-list'].scrollTarget = contentPanel;
-
-            contentPanel.addEventListener('scroll', function(event) {
-                if (!this.articles.length || this.$.pages.selected == "detail") {
-                    return;
-                }
-
-                if (contentPanel.scroller.offsetHeight + contentPanel.scroller.scrollTop + 50 > contentPanel.scroller.scrollHeight) {
-                    this.asyncFire('core-signal', {name: 'rf-request-articles'});
-                }
-            }.bind(this));
         },
 
         feedChanged: function(oldValue, newValue) {
@@ -195,6 +185,14 @@
 
         onArticlePrevious: function(event) {
             this.previousArticle();
+        },
+
+        onScrollThresholdTrigger: function(event) {
+            if (!this.articles.length || this.$.pages.selected == "detail") {
+                return;
+            }
+
+            this.asyncFire('core-signal', {name: 'rf-request-articles'});
         },
 
         onFavoriteToggle: function(event) {
