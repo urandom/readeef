@@ -24,8 +24,7 @@ core-animated-pages > section[active] {
 }
 
 .article.read {
-    opacity: 0.6;
-    color: #555;
+    color: #999;
 }
 
 .article .title-wrapper {
