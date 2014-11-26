@@ -34,3 +34,19 @@ paper-item.drawer-content::shadow #icon > div {
 loading-wave {
     margin: 20px;
 }
+
+.feed-title {
+    padding-left: 24px;
+    background-position: left center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    height: 30px;
+    line-height: 30px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.feed-item {
+    height: 40px;
+}

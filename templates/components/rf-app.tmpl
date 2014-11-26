@@ -48,7 +48,11 @@
                                 </template>
                             </template>
                             <template repeat="{{ feed in feeds }}">
-                                <paper-item iconSrc="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" on-tap="{{ onFeedTap }}" title="{{ feed.Description }}" name="popular:{{ feed.Id }}" selectable>{{ feed.Title }}</paper-item>
+                                <paper-item class="feed-item" on-tap="{{ onFeedTap }}" title="{{ feed.Title }}" name="popular:{{ feed.Id }}" selectable>
+                                    <div fit class="feed-title" style="background-image: url('http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}')">
+                                        {{ feed.Title }}
+                                    </div>
+                                </paper-item>
                             </template>
                         </core-collapse>
                         <hr class="drawer-content">
@@ -60,7 +64,11 @@
                         </div>
                         <core-collapse class="drawer-content" data-tag="{{ tag.name }}">
                             <template repeat="{{ feed in tag.feeds }}">
-                                <paper-item iconSrc="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" on-tap="{{ onFeedTap }}" title="{{ feed.Description }}" name="{{ feed.Id }}" selectable>{{ feed.Title }}</paper-item>
+                                <paper-item class="feed-item" on-tap="{{ onFeedTap }}" title="{{ feed.Title }}" name="{{ feed.Id }}" selectable>
+                                    <div fit class="feed-title" style="background-image: url('http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}')">
+                                        {{ feed.Title }}
+                                    </div>
+                                </paper-item>
                             </template>
                         </core-collapse>
                     </template>

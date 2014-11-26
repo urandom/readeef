@@ -297,12 +297,12 @@
             }
         },
 
-        onFeedTap: function(event) {
+        onFeedTap: function(event, detail, sender) {
             if (this.display != 'feed') {
                 this.display = 'feed';
             }
 
-            this.currentFeedId = event.target.getAttribute('name');
+            this.currentFeedId = sender.getAttribute('name');
         },
 
         onFeedRefresh: function(event, detail, sender) {
