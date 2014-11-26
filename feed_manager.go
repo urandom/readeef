@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"log"
-	"math/rand"
 	"regexp"
 	"strconv"
 	"strings"
@@ -241,6 +240,7 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 			select {
 			case now := <-ticker:
 				if !fm.activeFeeds[f.Id] {
+					Debug.Printf("Feed '%s' no longer active\n", f.Link)
 					break TICKER
 				}
 
@@ -248,15 +248,11 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 					f = fm.requestFeedContent(f)
 				}
 
-				if f.UpdateError != "" && !strings.HasPrefix(f.UpdateError, httpStatusPrefix) {
-					rand.Seed(time.Now().Unix())
-					secs := rand.Intn(45-15) + 15
-					ticker = time.After(time.Duration(secs) * time.Second)
-				} else {
-					ticker = time.After(d)
-				}
+				ticker = time.After(d)
+				Debug.Printf("New feed ticker for '%s' after %d\n", f.Link, d)
 			case <-scoreTicker:
 				if !fm.activeFeeds[f.Id] {
+					Debug.Printf("Feed '%s' no longer active for scoring\n", f.Link)
 					break TICKER
 				}
 

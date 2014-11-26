@@ -1,6 +1,7 @@
 package readeef
 
 import (
+	dsql "database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -45,6 +46,13 @@ FROM feeds f, users_feeds uf
 WHERE f.id = uf.feed_id
 	AND uf.user_login = $1
 ORDER BY LOWER(f.title)
+`
+
+	create_feed_article = `
+INSERT INTO articles(feed_id, link, guid, title, description, date)
+	SELECT $1, $2, $3, $4, $5, $6 EXCEPT
+		SELECT feed_id, link, guid, title, description, date
+		FROM articles WHERE feed_id = $1 AND link = $2
 `
 
 	update_feed_article = `
@@ -97,6 +105,20 @@ FROM users_feeds uf INNER JOIN articles a
 LEFT OUTER JOIN users_articles_read ar
 	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 WHERE ar.article_id IS NULL
+`
+
+	create_user_article_read = `
+INSERT INTO users_articles_read(user_login, article_id)
+	SELECT $1, $2 EXCEPT
+		SELECT user_login, article_id
+		FROM users_articles_read WHERE user_login = $1 AND article_id = $2
+`
+
+	create_user_article_favorite = `
+INSERT INTO users_articles_fav(user_login, article_id)
+	SELECT $1, $2 EXCEPT
+		SELECT user_login, article_id
+		FROM users_articles_fav WHERE user_login = $1 AND article_id = $2
 `
 
 	get_all_favorite_user_article_ids = `
@@ -209,7 +231,7 @@ func (db DB) UpdateFeed(f Feed) (Feed, bool, error) {
 	}
 
 	f.lastUpdatedArticleLinks = map[string]bool{}
-	newArticles, err := db.updateFeedArticles(tx, f, f.Articles)
+	articles, newArticles, err := db.updateFeedArticles(tx, f, f.Articles)
 	if err != nil {
 		return f, false, err
 	}
@@ -220,11 +242,7 @@ func (db DB) UpdateFeed(f Feed) (Feed, bool, error) {
 		f.lastUpdatedArticleLinks[a.Link] = true
 	}
 
-	if articles, err := db.populateArticleIds(f.Articles); err == nil {
-		f.Articles = articles
-	} else {
-		return f, false, err
-	}
+	f.Articles = articles
 
 	return f, len(newArticles) > 0, nil
 }
@@ -408,23 +426,18 @@ func (db DB) CreateFeedArticles(f Feed, articles []Article) (Feed, error) {
 	}
 	defer tx.Rollback()
 
-	if _, err := db.updateFeedArticles(tx, f, articles); err != nil {
-		return f, err
-	}
+	if articles, _, err := db.updateFeedArticles(tx, f, articles); err == nil {
+		for i := range articles {
+			articles[i].FeedId = f.Id
+		}
+		tx.Commit()
 
-	for _, a := range articles {
-		a.FeedId = f.Id
-	}
-
-	tx.Commit()
-
-	if articles, err := db.populateArticleIds(articles); err == nil {
 		f.Articles = append(f.Articles, articles...)
+
+		return f, nil
 	} else {
 		return f, err
 	}
-
-	return f, nil
 }
 
 func (db DB) GetFeedArticles(f Feed, paging ...int) (Feed, error) {
@@ -559,38 +572,8 @@ func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error
 	var sql string
 	var args []interface{}
 
-	if read {
-		sql = `INSERT INTO users_articles_read(user_login, article_id) `
-	} else {
+	if !read {
 		sql = `DELETE FROM users_articles_read WHERE `
-	}
-
-	index := 1
-	for _, a := range articles {
-		if err := a.Validate(); err != nil {
-			return err
-		}
-
-		if a.Id == 0 {
-			return ValidationError{errors.New("Article has no id")}
-		}
-
-		if read {
-			if index > 1 {
-				sql += ` UNION `
-			}
-
-			sql += fmt.Sprintf(`SELECT $%d, $%d EXCEPT SELECT user_login, article_id FROM users_articles_read WHERE user_login = $%d AND article_id = $%d`, index, index+1, index, index+1)
-			args = append(args, u.Login, a.Id)
-		} else {
-			if index > 1 {
-				sql += `OR `
-			}
-
-			sql += fmt.Sprintf(`(user_login = $%d AND article_id = $%d)`, index, index+1)
-			args = append(args, u.Login, a.Id)
-		}
-		index = len(args) + 1
 	}
 
 	tx, err := db.Beginx()
@@ -599,16 +582,50 @@ func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(sql)
+	index := 1
+	for i := range articles {
+		if err := articles[i].Validate(); err != nil {
+			return err
+		}
 
-	if err != nil {
-		return err
+		if articles[i].Id == 0 {
+			return ValidationError{errors.New("Article has no id")}
+		}
+
+		if read {
+			stmt, err := tx.Preparex(db.NamedSQL("create_user_article_read"))
+			if err != nil {
+				return err
+			}
+			defer stmt.Close()
+
+			_, err = stmt.Exec(u.Login, articles[i].Id)
+			if err != nil {
+				return err
+			}
+		} else {
+			if i > 0 {
+				sql += ` OR `
+			}
+
+			sql += fmt.Sprintf(`(user_login = $%d AND article_id = $%d)`, index, index+1)
+			args = append(args, u.Login, articles[i].Id)
+			index = len(args) + 1
+		}
 	}
-	defer stmt.Close()
 
-	_, err = stmt.Exec(args...)
-	if err != nil {
-		return err
+	if !read {
+		stmt, err := tx.Preparex(sql)
+
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(args...)
+		if err != nil {
+			return err
+		}
 	}
 
 	tx.Commit()
@@ -729,38 +746,8 @@ func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) e
 	var sql string
 	var args []interface{}
 
-	if read {
-		sql = `INSERT INTO users_articles_fav(user_login, article_id) `
-	} else {
+	if !read {
 		sql = `DELETE FROM users_articles_fav WHERE `
-	}
-
-	index := 1
-	for _, a := range articles {
-		if err := a.Validate(); err != nil {
-			return err
-		}
-
-		if a.Id == 0 {
-			return ValidationError{errors.New("Article has no id")}
-		}
-
-		if read {
-			if index > 1 {
-				sql += ` UNION `
-			}
-
-			sql += fmt.Sprintf(`SELECT $%d, $%d EXCEPT SELECT user_login, article_id FROM users_articles_fav WHERE user_login = $%d AND article_id = $%d`, index, index+1, index, index+1)
-			args = append(args, u.Login, a.Id)
-		} else {
-			if index > 1 {
-				sql += `OR `
-			}
-
-			sql += fmt.Sprintf(`(user_login = $%d AND article_id = $%d)`, index, index+1)
-			args = append(args, u.Login, a.Id)
-		}
-		index = len(args) + 1
 	}
 
 	tx, err := db.Beginx()
@@ -769,16 +756,50 @@ func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) e
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(sql)
+	index := 1
+	for i := range articles {
+		if err := articles[i].Validate(); err != nil {
+			return err
+		}
 
-	if err != nil {
-		return err
+		if articles[i].Id == 0 {
+			return ValidationError{errors.New("Article has no id")}
+		}
+
+		if read {
+			stmt, err := tx.Preparex(db.NamedSQL("create_user_article_favorite"))
+			if err != nil {
+				return err
+			}
+			defer stmt.Close()
+
+			_, err = stmt.Exec(u.Login, articles[i].Id)
+			if err != nil {
+				return err
+			}
+		} else {
+			if i > 0 {
+				sql += `OR `
+			}
+
+			sql += fmt.Sprintf(`(user_login = $%d AND article_id = $%d)`, index, index+1)
+			args = append(args, u.Login, articles[i].Id)
+			index = len(args) + 1
+		}
 	}
-	defer stmt.Close()
 
-	_, err = stmt.Exec(args...)
-	if err != nil {
-		return err
+	if !read {
+		stmt, err := tx.Preparex(sql)
+
+		if err != nil {
+			return err
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(args...)
+		if err != nil {
+			return err
+		}
 	}
 
 	tx.Commit()
@@ -786,84 +807,63 @@ func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) e
 	return nil
 }
 
-func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) ([]Article, error) {
+func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) ([]Article, []Article, error) {
 	if len(articles) == 0 {
-		return []Article{}, nil
+		return articles, []Article{}, nil
 	}
 
 	Debug.Println("Updating feed articles for " + f.Link)
 
 	newArticles := []Article{}
 
-	for _, a := range articles {
-		if err := a.Validate(); err != nil {
-			return newArticles, err
+	for i := range articles {
+		if err := articles[i].Validate(); err != nil {
+			return articles, newArticles, err
 		}
 
 		var sql string
-		args := []interface{}{a.Title, a.Description, a.Date, f.Id}
+		args := []interface{}{articles[i].Title, articles[i].Description,
+			articles[i].Date, f.Id}
 
-		if a.Guid.Valid {
+		if articles[i].Guid.Valid {
 			sql = db.NamedSQL("update_feed_article_with_guid")
-			args = append(args, a.Guid)
+			args = append(args, articles[i].Guid)
 		} else {
 			sql = db.NamedSQL("update_feed_article")
-			args = append(args, a.Link)
+			args = append(args, articles[i].Link)
 		}
 
 		stmt, err := tx.Preparex(sql)
 		if err != nil {
-			return newArticles, err
+			return articles, newArticles, err
 		}
 		defer stmt.Close()
 
 		res, err := stmt.Exec(args...)
 		if err != nil {
-			return newArticles, err
+			return articles, newArticles, err
 		}
 
-		if num, err := res.RowsAffected(); err != nil || num == 0 {
-			newArticles = append(newArticles, a)
+		if num, err := res.RowsAffected(); err != nil && err == dsql.ErrNoRows || num == 0 {
+			newArticles = append(newArticles, articles[i])
+
+			stmt, err := tx.Preparex(db.NamedSQL("create_feed_article"))
+			if err != nil {
+				return articles, newArticles, err
+			}
+			defer stmt.Close()
+
+			id, err := db.CreateWithId(stmt, f.Id, articles[i].Link, articles[i].Guid,
+				articles[i].Title, articles[i].Description, articles[i].Date)
+			articles[i].Id = id
+
+			if err != nil {
+				return articles, newArticles, err
+			}
 		}
 	}
 
-	if len(newArticles) == 0 {
-		return newArticles, nil
-	}
-
-	sql := `INSERT INTO articles(feed_id, link, guid, title, description, date) `
-	args := []interface{}{}
-	index := 1
-
-	for _, a := range newArticles {
-		if err := a.Validate(); err != nil {
-			return newArticles, err
-		}
-
-		if index > 1 {
-			sql += ` UNION `
-		}
-
-		sql += fmt.Sprintf(
-			`SELECT $%d, $%d, $%d ,$%d, $%d, $%d EXCEPT SELECT feed_id, link, guid, title, description, date FROM articles WHERE feed_id = $%d AND link = $%d`,
-			index, index+1, index+2, index+3, index+4, index+5, index, index+1)
-		args = append(args, f.Id, a.Link, a.Guid, a.Title, a.Description, a.Date)
-		index = len(args) + 1
-	}
-
-	stmt, err := tx.Preparex(sql)
-
-	if err != nil {
-		return newArticles, err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(args...)
-	if err != nil {
-		return newArticles, err
-	}
-
-	return newArticles, nil
+	return articles, newArticles, nil
 }
 
 func (db DB) getFeedArticles(f Feed, where, order string, paging ...int) (Feed, error) {
@@ -928,60 +928,6 @@ func (db DB) getArticles(u User, columns, join, where, order string, args []inte
 	return articles, nil
 }
 
-func (db DB) populateArticleIds(articles []Article) ([]Article, error) {
-	if len(articles) == 0 {
-		return articles, nil
-	}
-
-	temp := []Article{}
-	sql := `
-SELECT a.feed_id, a.id, a.link
-FROM articles a
-WHERE `
-
-	args := []interface{}{}
-	index := 1
-
-	for _, a := range articles {
-		if err := a.Validate(); err != nil {
-			return articles, err
-		}
-
-		if a.Id != 0 {
-			continue
-		}
-
-		if index > 1 {
-			sql += ` OR `
-		}
-
-		sql += fmt.Sprintf(`(feed_id = $%d AND link = $%d)`, index, index+1)
-		args = append(args, a.FeedId, a.Link)
-		index = len(args) + 1
-	}
-
-	if index == 1 {
-		return articles, nil
-	}
-
-	if err := db.Select(&temp, sql, args...); err != nil {
-		return articles, err
-	}
-
-	articleMap := map[string]int{}
-	for i, a := range articles {
-		articleMap[fmt.Sprintf("%d:%s", a.FeedId, a.Link)] = i
-	}
-
-	for _, a := range temp {
-		if i, ok := articleMap[fmt.Sprintf("%d:%s", a.FeedId, a.Link)]; ok {
-			articles[i].Id = a.Id
-		}
-	}
-
-	return articles, nil
-}
-
 func pagingLimit(paging []int) (int, int) {
 	limit := 50
 	offset := 0
@@ -1008,6 +954,7 @@ func init() {
 	sql_stmt["generic:create_user_feed"] = create_user_feed
 	sql_stmt["generic:delete_user_feed"] = delete_user_feed
 	sql_stmt["generic:get_user_feeds"] = get_user_feeds
+	sql_stmt["generic:create_feed_article"] = create_feed_article
 	sql_stmt["generic:update_feed_article"] = update_feed_article
 	sql_stmt["generic:update_feed_article_with_guid"] = update_feed_article_with_guid
 	sql_stmt["generic:get_article_columns"] = get_article_columns
@@ -1017,6 +964,8 @@ func init() {
 	sql_stmt["generic:get_all_articles"] = get_all_articles
 	sql_stmt["generic:get_all_feed_articles"] = get_all_feed_articles
 	sql_stmt["generic:get_all_unread_user_article_ids"] = get_all_unread_user_article_ids
+	sql_stmt["generic:create_user_article_read"] = create_user_article_read
+	sql_stmt["generic:create_user_article_favorite"] = create_user_article_favorite
 	sql_stmt["generic:get_all_favorite_user_article_ids"] = get_all_favorite_user_article_ids
 	sql_stmt["generic:create_all_user_articles_read_by_date"] = create_all_user_articles_read_by_date
 	sql_stmt["generic:delete_all_user_articles_read_by_date"] = delete_all_user_articles_read_by_date

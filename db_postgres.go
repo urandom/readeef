@@ -15,6 +15,13 @@ WHERE f.id = uf.feed_id
 	AND uf.user_login = $1
 ORDER BY f.title COLLATE "default"
 `
+	postgres_create_feed_article = `
+INSERT INTO articles(feed_id, link, guid, title, description, date)
+	SELECT $1, $2, $3, $4, $5, $6 EXCEPT
+		SELECT feed_id, link, guid, title, description, date
+		FROM articles WHERE feed_id = $1 AND link = $2
+RETURNING id
+`
 	postgres_get_user_tag_feeds = `
 SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
 FROM feeds f, users_feeds_tags uft
@@ -137,4 +144,5 @@ func init() {
 	sql_stmt["postgres:create_feed"] = postgres_create_feed
 	sql_stmt["postgres:get_user_feeds"] = postgres_get_user_feeds
 	sql_stmt["postgres:get_user_tag_feeds"] = postgres_get_user_tag_feeds
+	sql_stmt["postgres:create_feed_article"] = postgres_create_feed_article
 }
