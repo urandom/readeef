@@ -295,13 +295,14 @@ func (fm *FeedManager) requestFeedContent(f Feed) Feed {
 	Debug.Println("Requesting feed content for " + f.Link)
 
 	resp, err := fm.client.Get(f.Link)
-	defer resp.Body.Close()
 
 	if err != nil {
 		f.UpdateError = err.Error()
 	} else if resp.StatusCode != http.StatusOK {
+		defer resp.Body.Close()
 		f.UpdateError = httpStatusPrefix + strconv.Itoa(resp.StatusCode)
 	} else {
+		defer resp.Body.Close()
 		f.UpdateError = ""
 
 		buf := util.BufferPool.GetBuffer()
