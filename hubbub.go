@@ -204,8 +204,6 @@ func NewHubbubController(h *Hubbub) HubbubController {
 
 func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-
 		params := r.URL.Query()
 		pathParams := webfw.GetParams(c, r)
 		feedId, err := strconv.ParseInt(pathParams["feed-id"], 10, 64)

@@ -110,10 +110,11 @@ func TestHubbub(t *testing.T) {
 
 	go func() {
 		buf := bytes.NewBufferString(strings.Replace(atomXml, "{{ .FeedLink }}", f.Link, -1))
-		_, err = http.Post(callbackURL, "text/xml", buf)
+		resp, err := http.Post(callbackURL, "text/xml", buf)
 		if err != nil {
 			t.Fatal(err)
 		}
+		resp.Body.Close()
 	}()
 
 	<-done // subscription feed update
@@ -174,6 +175,7 @@ func (con hublink_con) Handler(c context.Context) http.HandlerFunc {
 
 		go func() {
 			res, err := http.Get(con.callbackURL + "?hub.mode=subscribe&hub.challenge=secret")
+			defer res.Body.Close()
 			defer func() { con.done <- true }()
 			if err != nil {
 				panic(err)

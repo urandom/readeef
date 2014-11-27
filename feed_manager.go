@@ -295,6 +295,7 @@ func (fm *FeedManager) requestFeedContent(f Feed) Feed {
 	Debug.Println("Requesting feed content for " + f.Link)
 
 	resp, err := fm.client.Get(f.Link)
+	defer resp.Body.Close()
 
 	if err != nil {
 		f.UpdateError = err.Error()
@@ -429,6 +430,7 @@ func discoverParserFeeds(link string) ([]Feed, error) {
 	if err != nil {
 		return []Feed{}, err
 	}
+	defer resp.Body.Close()
 
 	buf := util.BufferPool.GetBuffer()
 	defer util.BufferPool.Put(buf)
