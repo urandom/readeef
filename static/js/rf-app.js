@@ -315,9 +315,11 @@
                     var worker = new Worker('/js/append-articles-worker.js');
 
                     worker.addEventListener('message', function(event) {
-                        this.currentFeed.Articles = event.data.articles;
-                        this.loadingArticles = false;
-                        this.loadingMoreArticles = false;
+                        window.requestAnimationFrame(function() {
+                            this.currentFeed.Articles = event.data.articles;
+                            this.loadingArticles = false;
+                            this.loadingMoreArticles = false;
+                        }.bind(this));
                     }.bind(this));
 
                     worker.postMessage({
@@ -330,7 +332,9 @@
                     this.loadingMoreArticles = false;
 
                     if (!this.offset) {
-                        this.currentFeed.Articles = null;
+                        window.requestAnimationFrame(function() {
+                            this.currentFeed.Articles = null;
+                        }.bind(this));
                     }
                 }
                 this.lastUpdateTime = new Date().getTime();
@@ -353,7 +357,9 @@
             }
 
             this.currentArticle = null;
-            this.currentFeed.Articles = null;
+            window.requestAnimationFrame(function() {
+                this.currentFeed.Articles = null;
+            }.bind(this));
 
             this.updateAvailable = false;
             this.noMoreArticles = false;
