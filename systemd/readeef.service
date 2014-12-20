@@ -1,0 +1,13 @@
+[Unit]
+Description=readeef Feed Reader
+After=network.target
+
+[Service]
+User=readeef
+Type=simple
+WorkingDirectory=/home/readeef/readeef
+ExecStart=/home/readeef/readeef/start.sh
+ExecStop=/usr/bin/killall readeef-server
+
+[Install]
+WantedBy=multi-user.target
