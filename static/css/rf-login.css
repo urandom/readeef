@@ -8,22 +8,17 @@
     padding: 20px 16px;
     box-sizing: border-box;
     -moz-box-sizing: border-box;
-}
-.wide .card {
     max-width: 512px;
     max-height: 512px;
+    min-width: 288px;
     border-radius: 2px;
 }
+
 .card-container {
     height: 100%;
     background: transparent;
 }
-.card-container:not(.wide) {
-    background: white;
-}
-.card-container:not(.wide) .card > .paper-shadow {
-    display: none;
-}
+
 #submit {
     background: #259b24;
 }
