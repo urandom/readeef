@@ -54,6 +54,15 @@ type Config struct {
 		BlevePath string `gcfg:"bleve-path"`
 		BatchSize int64  `gcfg:"batch-size"`
 	} `gcfg:"search-index"`
+
+	Popularity struct {
+		Delay     string
+		Providers []string
+
+		Converted struct {
+			Delay time.Duration
+		}
+	}
 }
 
 func ReadConfig(path ...string) (Config, error) {
@@ -93,6 +102,12 @@ func ReadConfig(path ...string) (Config, error) {
 		c.Updater.Converted.Interval = 30 * time.Minute
 	}
 
+	if d, err := time.ParseDuration(c.Popularity.Delay); err == nil {
+		c.Popularity.Converted.Delay = d
+	} else {
+		c.Popularity.Converted.Delay = 5 * time.Second
+	}
+
 	return c, nil
 }
 
@@ -124,4 +139,13 @@ var cfg string = `
 [search-index]
 	bleve-path = ./readeef.bleve
 	batch-size = 100
+[popularity]
+	delay = 5s
+	providers
+	providers = Facebook
+	providers = GoogleP
+	providers = Twitter
+	providers = Reddit
+	providers = Linkedin
+	providers = StumbleUpon
 `

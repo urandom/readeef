@@ -19,13 +19,29 @@ type scoreResponse struct {
 	err   error
 }
 
-var scoreProviders = []scoreProvider{Facebook{}, GoogleP{}, Linkedin{}, Reddit{}, StumbleUpon{}, Twitter{}}
-
-func Score(link, text string) (int64, error) {
+func Score(link, text string, providers []string) (int64, error) {
 	done := make(chan struct{})
 	defer close(done)
 
-	requests := generateRequests(realLink(link, text))
+	scoreProviders := []scoreProvider{}
+	for _, p := range providers {
+		switch p {
+		case "Facebook":
+			scoreProviders = append(scoreProviders, Facebook{})
+		case "GoogleP":
+			scoreProviders = append(scoreProviders, GoogleP{})
+		case "Linkedin":
+			scoreProviders = append(scoreProviders, Linkedin{})
+		case "Reddint":
+			scoreProviders = append(scoreProviders, Reddit{})
+		case "StumbleUpon":
+			scoreProviders = append(scoreProviders, StumbleUpon{})
+		case "Twitter":
+			scoreProviders = append(scoreProviders, Twitter{})
+		}
+	}
+
+	requests := generateRequests(realLink(link, text), scoreProviders)
 	response := make(chan scoreResponse)
 
 	var wg sync.WaitGroup
@@ -61,7 +77,7 @@ func Score(link, text string) (int64, error) {
 	return score + 1, nil
 }
 
-func generateRequests(link string) <-chan scoreRequest {
+func generateRequests(link string, scoreProviders []scoreProvider) <-chan scoreRequest {
 	providers := make(chan scoreRequest)
 
 	go func() {

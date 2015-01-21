@@ -19,18 +19,19 @@ import (
 )
 
 type FeedManager struct {
-	config      Config
-	db          DB
-	feeds       []Feed
-	addFeed     chan Feed
-	removeFeed  chan Feed
-	updateFeed  chan<- Feed
-	done        chan bool
-	client      *http.Client
-	logger      *log.Logger
-	activeFeeds map[int64]bool
-	hubbub      *Hubbub
-	searchIndex SearchIndex
+	config       Config
+	db           DB
+	feeds        []Feed
+	addFeed      chan Feed
+	removeFeed   chan Feed
+	updateFeed   chan<- Feed
+	scoreArticle chan Article
+	done         chan bool
+	client       *http.Client
+	logger       *log.Logger
+	activeFeeds  map[int64]bool
+	hubbub       *Hubbub
+	searchIndex  SearchIndex
 }
 
 var (
@@ -46,7 +47,8 @@ var (
 func NewFeedManager(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) *FeedManager {
 	return &FeedManager{
 		db: db, config: c, logger: l, updateFeed: updateFeed,
-		addFeed: make(chan Feed, 2), removeFeed: make(chan Feed, 2), done: make(chan bool),
+		addFeed: make(chan Feed, 2), removeFeed: make(chan Feed, 2),
+		scoreArticle: make(chan Article), done: make(chan bool),
 		activeFeeds: map[int64]bool{},
 		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
@@ -69,6 +71,8 @@ func (fm FeedManager) Start() {
 	go fm.reactToChanges()
 
 	go fm.scheduleFeeds()
+
+	go fm.scoreArticles()
 }
 
 func (fm *FeedManager) Stop() {
@@ -229,7 +233,7 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 	go func() {
 		fm.requestFeedContent(f)
 
-		go fm.scoreFeedContent(f)
+		fm.scoreFeedContent(f)
 
 		ticker := time.After(d)
 		scoreTicker := time.After(30 * time.Minute)
@@ -256,10 +260,8 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 					break TICKER
 				}
 
-				go func() {
-					fm.scoreFeedContent(f)
-					scoreTicker = time.After(30 * time.Minute)
-				}()
+				fm.scoreFeedContent(f)
+				scoreTicker = time.After(30 * time.Minute)
 			case <-fm.done:
 				fm.stopUpdatingFeed(f)
 				return
@@ -357,57 +359,70 @@ func (fm *FeedManager) scoreFeedContent(f Feed) {
 		return
 	}
 
-	for i := 0; i < len(articles); i++ {
-		a := articles[i]
-		ascc := make(chan ArticleScores)
+	for i := range articles {
+		fm.scoreArticle <- articles[i]
+	}
+}
 
-		go func() {
-			asc, err := fm.db.GetArticleScores(a)
+func (fm *FeedManager) scoreArticles() {
+	for {
+		select {
+		case a := <-fm.scoreArticle:
+			time.Sleep(fm.config.Popularity.Converted.Delay)
 
+			ascc := make(chan ArticleScores)
+
+			go func() {
+				asc, err := fm.db.GetArticleScores(a)
+
+				if err != nil {
+					fm.logger.Printf("Error getting article scores: %v\n", err)
+					ascc <- EmptyArticleScores
+				} else {
+					ascc <- asc
+				}
+			}()
+
+			Debug.Printf("Scoring '%s' using %+v\n", a.Link, fm.config.Popularity.Providers)
+			score, err := popularity.Score(a.Link, a.Description, fm.config.Popularity.Providers)
 			if err != nil {
-				fm.logger.Printf("Error getting article scores: %v\n", err)
-				ascc <- EmptyArticleScores
-			} else {
-				ascc <- asc
-			}
-		}()
-
-		score, err := popularity.Score(a.Link, a.Description)
-		if err != nil {
-			fm.logger.Printf("Error getting article popularity: %v\n", err)
-			continue
-		}
-
-		asc := <-ascc
-
-		if asc != EmptyArticleScores {
-			age := ageInDays(a.Date)
-			switch age {
-			case 0:
-				asc.Score1 = score
-			case 1:
-				asc.Score2 = score - asc.Score1
-			case 2:
-				asc.Score3 = score - asc.Score1 - asc.Score2
-			case 3:
-				asc.Score4 = score - asc.Score1 - asc.Score2 - asc.Score3
-			default:
-				asc.Score5 = score - asc.Score1 - asc.Score2 - asc.Score3 - asc.Score4
+				fm.logger.Printf("Error getting article popularity: %v\n", err)
+				continue
 			}
 
-			score := asc.CalculateScore()
-			penalty := float64(time.Now().Unix()-a.Date.Unix()) / (60 * 60) * float64(age)
+			asc := <-ascc
 
-			if penalty > 0 {
-				asc.Score = int64(float64(score) / penalty)
-			} else {
-				asc.Score = score
-			}
+			if asc != EmptyArticleScores {
+				age := ageInDays(a.Date)
+				switch age {
+				case 0:
+					asc.Score1 = score
+				case 1:
+					asc.Score2 = score - asc.Score1
+				case 2:
+					asc.Score3 = score - asc.Score1 - asc.Score2
+				case 3:
+					asc.Score4 = score - asc.Score1 - asc.Score2 - asc.Score3
+				default:
+					asc.Score5 = score - asc.Score1 - asc.Score2 - asc.Score3 - asc.Score4
+				}
 
-			err := fm.db.UpdateArticleScores(asc)
-			if err != nil {
-				fm.logger.Printf("Error updating article scores: %v\n", err)
+				score := asc.CalculateScore()
+				penalty := float64(time.Now().Unix()-a.Date.Unix()) / (60 * 60) * float64(age)
+
+				if penalty > 0 {
+					asc.Score = int64(float64(score) / penalty)
+				} else {
+					asc.Score = score
+				}
+
+				err := fm.db.UpdateArticleScores(asc)
+				if err != nil {
+					fm.logger.Printf("Error updating article scores: %v\n", err)
+				}
 			}
+		case <-fm.done:
+			return
 		}
 	}
 }
