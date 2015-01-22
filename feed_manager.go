@@ -233,10 +233,7 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 	go func() {
 		fm.requestFeedContent(f)
 
-		fm.scoreFeedContent(f)
-
 		ticker := time.After(d)
-		scoreTicker := time.After(30 * time.Minute)
 
 		Debug.Printf("Starting feed scheduler for %s and duration %d\n", f.Link, d)
 	TICKER:
@@ -254,20 +251,14 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 
 				ticker = time.After(d)
 				Debug.Printf("New feed ticker for '%s' after %d\n", f.Link, d)
-			case <-scoreTicker:
-				if !fm.activeFeeds[f.Id] {
-					Debug.Printf("Feed '%s' no longer active for scoring\n", f.Link)
-					break TICKER
-				}
-
-				fm.scoreFeedContent(f)
-				scoreTicker = time.After(30 * time.Minute)
 			case <-fm.done:
 				fm.stopUpdatingFeed(f)
 				return
 			}
 		}
 	}()
+
+	go fm.scoreFeedContent(f)
 }
 
 func (fm *FeedManager) stopUpdatingFeed(f Feed) {
@@ -351,6 +342,11 @@ func (fm *FeedManager) requestFeedContent(f Feed) Feed {
 }
 
 func (fm *FeedManager) scoreFeedContent(f Feed) {
+	if !fm.activeFeeds[f.Id] {
+		Debug.Printf("Feed '%s' no longer active for scoring\n", f.Link)
+		return
+	}
+
 	Debug.Println("Scoring feed content for " + f.Link)
 
 	articles, err := fm.db.GetLatestFeedArticles(f)
@@ -361,6 +357,15 @@ func (fm *FeedManager) scoreFeedContent(f Feed) {
 
 	for i := range articles {
 		fm.scoreArticle <- articles[i]
+	}
+
+	Debug.Println("Done scoring feed content for " + f.Link)
+
+	select {
+	case <-time.After(30 * time.Minute):
+		go fm.scoreFeedContent(f)
+	case <-fm.done:
+		return
 	}
 }
 
