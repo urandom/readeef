@@ -117,24 +117,28 @@
                     return;
                 }
 
-                if (window.google && google.feeds) {
+                if (window.google && google.feeds && !/https?:\/\//.test(this.url)) {
                     google.feeds.findFeeds(this.url, function(response) {
                         if (response.status.code == 200) {
-                            var feeds = [], urls = {};
+                            if (response.entries.length) {
+                                var feeds = [], urls = {};
 
-                            for (var i = 0, e; e = response.entries[i]; ++i) {
-                                if (!urls[e.url]) {
-                                    feeds.push({
-                                        Link: e.url,
-                                        Title: this.stripTags(e.title),
-                                        Description: this.stripTags(e.contentSnippet)
-                                    });
-                                    urls[e.url] = true;
+                                for (var i = 0, e; e = response.entries[i]; ++i) {
+                                    if (!urls[e.url]) {
+                                        feeds.push({
+                                            Link: e.url,
+                                            Title: this.stripTags(e.title),
+                                            Description: this.stripTags(e.contentSnippet)
+                                        });
+                                        urls[e.url] = true;
+                                    }
                                 }
-                            }
 
-                            feeds[0].selected = true;
-                            this.onDiscoverFeedResponse(null, {response: {Feeds: feeds, skipSelection: true}});
+                                feeds[0].selected = true;
+                                this.onDiscoverFeedResponse(null, {response: {Feeds: feeds, skipSelection: true}});
+                            } else {
+                                this.onDiscoverFeedError();
+                            }
                         } else {
                             this.onDiscoverFeedError();
                         }
