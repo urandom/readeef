@@ -73,7 +73,7 @@ func TestHubbub(t *testing.T) {
 	conf.Timeout.Converted.ReadWrite = time.Second
 	h = NewHubbub(db, conf, log.New(os.Stderr, "", 0), "/callback/", addFeed, removeFeed, updateFeed)
 
-	dispatcher.Handle(hublink_con{webfw.NewBaseController("/hublink", webfw.MethodAll, ""), callbackURL, ts.URL + "/link", done})
+	dispatcher.Handle(hublink_con{webfw.NewBasePatternController("/hublink", webfw.MethodAll, ""), callbackURL, ts.URL + "/link", done})
 
 	hc := NewHubbubController(h)
 	dispatcher.Handle(hc)
@@ -145,7 +145,7 @@ func TestHubbub(t *testing.T) {
 }
 
 type hublink_con struct {
-	webfw.BaseController
+	webfw.BasePatternController
 	callbackURL string
 	feedLink    string
 	done        chan bool

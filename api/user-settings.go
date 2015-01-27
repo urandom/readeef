@@ -12,12 +12,12 @@ import (
 )
 
 type UserSettings struct {
-	webfw.BaseController
+	webfw.BasePatternController
 }
 
 func NewUserSettings() UserSettings {
 	return UserSettings{
-		webfw.NewBaseController("/v:version/user-settings/:attribute", webfw.MethodGet|webfw.MethodPost, ""),
+		webfw.NewBasePatternController("/v:version/user-settings/:attribute", webfw.MethodGet|webfw.MethodPost, ""),
 	}
 }
 

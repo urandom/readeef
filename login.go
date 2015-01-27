@@ -9,11 +9,11 @@ import (
 )
 
 type Login struct {
-	webfw.BaseController
+	webfw.BasePatternController
 }
 
 func NewLogin(pattern string) Login {
-	return Login{webfw.NewBaseController(pattern, webfw.MethodGet|webfw.MethodPost, "auth-login")}
+	return Login{webfw.NewBasePatternController(pattern, webfw.MethodGet|webfw.MethodPost, "auth-login")}
 }
 
 func (con Login) Handler(c context.Context) http.HandlerFunc {

@@ -42,7 +42,7 @@ type HubbubSubscription struct {
 }
 
 type HubbubController struct {
-	webfw.BaseController
+	webfw.BasePatternController
 	hubbub *Hubbub
 }
 
@@ -198,7 +198,7 @@ func (s *HubbubSubscription) subscription(subscribe bool) error {
 
 func NewHubbubController(h *Hubbub) HubbubController {
 	return HubbubController{
-		webfw.NewBaseController(h.config.Hubbub.RelativePath+"/:feed-id", webfw.MethodGet|webfw.MethodPost, "hubbub-callback"),
+		webfw.NewBasePatternController(h.config.Hubbub.RelativePath+"/:feed-id", webfw.MethodGet|webfw.MethodPost, "hubbub-callback"),
 		h}
 }
 

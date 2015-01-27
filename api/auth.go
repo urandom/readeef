@@ -10,12 +10,12 @@ import (
 )
 
 type Auth struct {
-	webfw.BaseController
+	webfw.BasePatternController
 }
 
 func NewAuth() Auth {
 	return Auth{
-		webfw.NewBaseController("/v:version/auth", webfw.MethodAll, ""),
+		webfw.NewBasePatternController("/v:version/auth", webfw.MethodAll, ""),
 	}
 }
 

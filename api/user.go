@@ -12,14 +12,10 @@ import (
 	"github.com/urandom/webfw/util"
 )
 
-type User struct {
-	webfw.BaseController
-}
+type User struct{}
 
 func NewUser() User {
-	return User{
-		webfw.NewBaseController("", webfw.MethodGet, ""),
-	}
+	return User{}
 }
 
 func (con User) Patterns() map[string]webfw.MethodIdentifierTuple {

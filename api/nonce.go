@@ -10,13 +10,13 @@ import (
 )
 
 type Nonce struct {
-	webfw.BaseController
+	webfw.BasePatternController
 	nonce *readeef.Nonce
 }
 
 func NewNonce(nonce *readeef.Nonce) Nonce {
 	return Nonce{
-		webfw.NewBaseController("/v:version/nonce", webfw.MethodAll, ""),
+		webfw.NewBasePatternController("/v:version/nonce", webfw.MethodAll, ""),
 		nonce,
 	}
 }

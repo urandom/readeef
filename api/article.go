@@ -13,15 +13,11 @@ import (
 )
 
 type Article struct {
-	webfw.BaseController
 	config readeef.Config
 }
 
 func NewArticle(config readeef.Config) Article {
-	return Article{
-		webfw.NewBaseController("", webfw.MethodAll, ""),
-		config,
-	}
+	return Article{config}
 }
 
 type Readability struct {

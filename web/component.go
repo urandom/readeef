@@ -11,16 +11,16 @@ import (
 )
 
 type Component struct {
-	webfw.BaseController
+	webfw.BasePatternController
 	dispatcher *webfw.Dispatcher
 	apiPattern string
 }
 
 func NewComponent(dispatcher *webfw.Dispatcher, apiPattern string) Component {
 	return Component{
-		BaseController: webfw.NewBaseController("/component/:name", webfw.MethodAll, ""),
-		dispatcher:     dispatcher,
-		apiPattern:     apiPattern,
+		BasePatternController: webfw.NewBasePatternController("/component/:name", webfw.MethodAll, ""),
+		dispatcher:            dispatcher,
+		apiPattern:            apiPattern,
 	}
 }
 

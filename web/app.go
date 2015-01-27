@@ -8,12 +8,12 @@ import (
 )
 
 type App struct {
-	webfw.BaseController
+	webfw.BasePatternController
 }
 
 func NewApp() App {
 	return App{
-		webfw.NewBaseController("/", webfw.MethodAll, ""),
+		webfw.NewBasePatternController("/", webfw.MethodAll, ""),
 	}
 }
 

@@ -12,13 +12,13 @@ import (
 )
 
 type Search struct {
-	webfw.BaseController
+	webfw.BasePatternController
 	searchIndex readeef.SearchIndex
 }
 
 func NewSearch(searchIndex readeef.SearchIndex) Search {
 	return Search{
-		webfw.NewBaseController("/v:version/search/:query", webfw.MethodGet, ""),
+		webfw.NewBasePatternController("/v:version/search/:query", webfw.MethodGet, ""),
 		searchIndex,
 	}
 }

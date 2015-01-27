@@ -54,37 +54,38 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	nonce := readeef.NewNonce()
 
-	var controller webfw.Controller
+	var patternController webfw.PatternController
+	var multiPatternController webfw.MultiPatternController
 
-	controller = NewAuth()
-	dispatcher.Handle(controller)
+	patternController = NewAuth()
+	dispatcher.Handle(patternController)
 
-	controller = NewFeed(fm)
-	dispatcher.Handle(controller)
+	multiPatternController = NewFeed(fm)
+	dispatcher.HandleMultiPattern(multiPatternController)
 
-	controller = NewArticle(config)
-	dispatcher.Handle(controller)
+	multiPatternController = NewArticle(config)
+	dispatcher.HandleMultiPattern(multiPatternController)
 
 	if config.SearchIndex.BlevePath != "" {
-		controller = NewSearch(si)
-		dispatcher.Handle(controller)
+		patternController = NewSearch(si)
+		dispatcher.Handle(patternController)
 	}
 
-	controller = NewUser()
-	dispatcher.Handle(controller)
+	multiPatternController = NewUser()
+	dispatcher.HandleMultiPattern(multiPatternController)
 
-	controller = NewUserSettings()
-	dispatcher.Handle(controller)
+	patternController = NewUserSettings()
+	dispatcher.Handle(patternController)
 
-	controller = NewFeedUpdateNotificator(updateFeed)
-	dispatcher.Handle(controller)
+	patternController = NewFeedUpdateNotificator(updateFeed)
+	dispatcher.Handle(patternController)
 
-	controller = NewNonce(nonce)
-	dispatcher.Handle(controller)
+	patternController = NewNonce(nonce)
+	dispatcher.Handle(patternController)
 
 	if config.API.Fever {
-		controller = NewFever(fm)
-		dispatcher.Handle(controller)
+		patternController = NewFever(fm)
+		dispatcher.Handle(patternController)
 	}
 
 	middleware.InitializeDefault(dispatcher)

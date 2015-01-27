@@ -18,7 +18,7 @@ import (
 )
 
 type Fever struct {
-	webfw.BaseController
+	webfw.BasePatternController
 	fm *readeef.FeedManager
 }
 
@@ -68,7 +68,7 @@ type feverLink struct {
 
 func NewFever(fm *readeef.FeedManager) Fever {
 	return Fever{
-		webfw.NewBaseController("/v:version/fever/", webfw.MethodPost, ""),
+		webfw.NewBasePatternController("/v:version/fever/", webfw.MethodPost, ""),
 		fm,
 	}
 }

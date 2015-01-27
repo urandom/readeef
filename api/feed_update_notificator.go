@@ -11,14 +11,14 @@ import (
 )
 
 type FeedUpdateNotificator struct {
-	webfw.BaseController
+	webfw.BasePatternController
 	updateFeed <-chan readeef.Feed
 }
 
 func NewFeedUpdateNotificator(updateFeed <-chan readeef.Feed) FeedUpdateNotificator {
 	return FeedUpdateNotificator{
-		BaseController: webfw.NewBaseController("/v:version/feed-update-notifier", webfw.MethodGet, ""),
-		updateFeed:     updateFeed,
+		BasePatternController: webfw.NewBasePatternController("/v:version/feed-update-notifier", webfw.MethodGet, ""),
+		updateFeed:            updateFeed,
 	}
 }
 

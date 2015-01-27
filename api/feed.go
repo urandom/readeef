@@ -17,15 +17,11 @@ import (
 )
 
 type Feed struct {
-	webfw.BaseController
 	fm *readeef.FeedManager
 }
 
 func NewFeed(fm *readeef.FeedManager) Feed {
-	return Feed{
-		webfw.NewBaseController("", webfw.MethodGet, ""),
-		fm,
-	}
+	return Feed{fm}
 }
 
 type feed struct {
