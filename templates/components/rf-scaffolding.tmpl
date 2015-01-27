@@ -46,7 +46,7 @@
                     <paper-dropdown halign="right" class="dropdown" layered>
                         <core-menu>
                             <template repeat="{{ shareServices | enabledShareServices }}">
-                                <paper-item on-tap="{{ onShareArticle }}" data-service-id="{{ id }}">{{ title }}</paper-item>
+                                <paper-item on-tap="{{ onShareArticle }}" data-service-id="{{ id }}">{{ description }}</paper-item>
                             </template>
                         </core-menu>
                     </paper-dropdown>
