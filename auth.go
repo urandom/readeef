@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -123,20 +124,13 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 			var u User
 			var err error
 
-			auth := r.Header.Get("Authorization")
+			login, signature, date, t := authData(r)
+
 			validUser := false
 
-			if auth != "" {
+			if login != "" && signature != "" && !t.IsZero() {
 				switch {
 				default:
-					if !strings.HasPrefix(auth, "Readeef ") {
-						break
-					}
-					auth = auth[len("Readeef "):]
-
-					parts := strings.SplitN(auth, ":", 2)
-					login := parts[0]
-
 					u, err = mw.DB.GetUser(login)
 					if err != nil {
 						logger.Printf("Error getting db user '%s': %v\n", login, err)
@@ -144,15 +138,13 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 					}
 
 					var decoded []byte
-					decoded, err = base64.StdEncoding.DecodeString(parts[1])
+					decoded, err = base64.StdEncoding.DecodeString(signature)
 					if err != nil {
 						logger.Printf("Error decoding auth header: %v\n", err)
 						break
 					}
 
-					date := r.Header.Get("X-Date")
-					t, err := time.Parse(http.TimeFormat, date)
-					if err != nil || t.Add(30*time.Second).Before(time.Now()) {
+					if t.Add(30 * time.Second).Before(time.Now()) {
 						break
 					}
 
@@ -215,4 +207,42 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 	}
 
 	return http.HandlerFunc(handler)
+}
+
+func authData(r *http.Request) (string, string, string, time.Time) {
+	var login, signature string
+	var t time.Time
+
+	auth := r.Header.Get("Authorization")
+
+	if auth == "" {
+		login = r.FormValue("login")
+		signature = r.FormValue("signature")
+	} else {
+		if strings.HasPrefix(auth, "Readeef ") {
+			auth = auth[len("Readeef "):]
+
+			parts := strings.SplitN(auth, ":", 2)
+			login, signature = parts[0], parts[1]
+		}
+	}
+
+	date := r.Header.Get("Date")
+
+	if date == "" {
+		date = r.Header.Get("X-Date")
+	}
+
+	if date == "" {
+		date = r.FormValue("timestamp")
+	}
+
+	dateInt, err := strconv.ParseInt(date, 10, 64)
+	if err == nil {
+		t = time.Unix(dateInt, 0)
+	} else {
+		t, _ = time.Parse(http.TimeFormat, date)
+	}
+
+	return login, signature, date, t
 }
