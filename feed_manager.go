@@ -19,12 +19,12 @@ import (
 )
 
 type FeedManager struct {
+	UpdateFeedReceiverManager
 	config       Config
 	db           DB
 	feeds        []Feed
 	addFeed      chan Feed
 	removeFeed   chan Feed
-	updateFeed   chan<- Feed
 	scoreArticle chan Article
 	done         chan bool
 	client       *http.Client
@@ -44,9 +44,10 @@ var (
 	httpStatusPrefix = "HTTP Status: "
 )
 
-func NewFeedManager(db DB, c Config, l *log.Logger, updateFeed chan<- Feed) *FeedManager {
+func NewFeedManager(db DB, c Config, l *log.Logger) *FeedManager {
 	return &FeedManager{
-		db: db, config: c, logger: l, updateFeed: updateFeed,
+		UpdateFeedReceiverManager: UpdateFeedReceiverManager{},
+		db: db, config: c, logger: l,
 		addFeed: make(chan Feed, 2), removeFeed: make(chan Feed, 2),
 		scoreArticle: make(chan Article), done: make(chan bool),
 		activeFeeds: map[int64]bool{},
@@ -332,7 +333,8 @@ func (fm *FeedManager) requestFeedContent(f Feed) Feed {
 			}
 
 			Debug.Println("New articles notification for " + f.Link)
-			fm.updateFeed <- f
+
+			fm.NotifyReceivers(f)
 		} else {
 			Debug.Println("No new articles for " + f.Link)
 		}

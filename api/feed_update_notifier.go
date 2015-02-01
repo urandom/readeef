@@ -11,15 +11,15 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-type FeedUpdateNotificator struct {
+type FeedUpdateNotifier struct {
 	webfw.BasePatternController
-	updateFeed <-chan readeef.Feed
+	updateFeed chan readeef.Feed
 }
 
-func NewFeedUpdateNotificator(updateFeed <-chan readeef.Feed) FeedUpdateNotificator {
-	return FeedUpdateNotificator{
+func NewFeedUpdateNotifier() FeedUpdateNotifier {
+	return FeedUpdateNotifier{
 		BasePatternController: webfw.NewBasePatternController("/v:version/feed-update-notifier", webfw.MethodGet, ""),
-		updateFeed:            updateFeed,
+		updateFeed:            make(chan readeef.Feed),
 	}
 }
 
@@ -32,7 +32,11 @@ type message struct {
 	Message string
 }
 
-func (con FeedUpdateNotificator) Handler(c context.Context) http.Handler {
+func (con FeedUpdateNotifier) UpdateFeedChannel() chan<- readeef.Feed {
+	return con.updateFeed
+}
+
+func (con FeedUpdateNotifier) Handler(c context.Context) http.Handler {
 	var mutex sync.RWMutex
 
 	receivers := make(map[chan readeef.Feed]bool)
@@ -64,6 +68,7 @@ func (con FeedUpdateNotificator) Handler(c context.Context) http.Handler {
 		mutex.Unlock()
 		defer func() {
 			mutex.Lock()
+			close(receiver)
 			delete(receivers, receiver)
 			mutex.Unlock()
 		}()
@@ -72,25 +77,27 @@ func (con FeedUpdateNotificator) Handler(c context.Context) http.Handler {
 		defer close(done)
 
 		go func() {
-			select {
-			case f := <-receiver:
-				readeef.Debug.Println("Received notification for feed update of" + f.Link)
+			for {
+				select {
+				case f := <-receiver:
+					readeef.Debug.Println("Received notification for feed update of" + f.Link)
 
-				if currentFeeds[f.Id] {
-					resp := map[string]interface{}{"Feed": feed{
-						Id: f.Id, Title: f.Title, Description: f.Description,
-						Link: f.Link, Image: f.Image,
-					}}
+					if currentFeeds[f.Id] {
+						resp := map[string]interface{}{"Feed": feed{
+							Id: f.Id, Title: f.Title, Description: f.Description,
+							Link: f.Link, Image: f.Image,
+						}}
 
-					err = websocket.JSON.Send(ws, resp)
-					if err != nil {
-						webfw.GetLogger(c).Print(err)
+						err = websocket.JSON.Send(ws, resp)
+						if err != nil {
+							webfw.GetLogger(c).Print(err)
 
-						websocket.JSON.Send(ws, message{Success: false, Message: err.Error()})
+							websocket.JSON.Send(ws, message{Success: false, Message: err.Error()})
+						}
 					}
+				case <-done:
+					return
 				}
-			case <-done:
-				return
 			}
 		}()
 
@@ -112,9 +119,11 @@ func (con FeedUpdateNotificator) Handler(c context.Context) http.Handler {
 				currentFeeds[id] = true
 			}
 		}
+
+		readeef.Debug.Println("Closing web socket")
 	})
 }
 
-func (con FeedUpdateNotificator) AuthRequired(c context.Context, r *http.Request) bool {
+func (con FeedUpdateNotifier) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
 }

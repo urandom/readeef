@@ -19,17 +19,20 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		return errors.New(fmt.Sprintf("Error connecting to database: %v", err))
 	}
 
-	updateFeed := make(chan readeef.Feed)
+	fm := readeef.NewFeedManager(db, config, logger)
 
-	fm := readeef.NewFeedManager(db, config, logger, updateFeed)
+	feedUpdateNotifier := NewFeedUpdateNotifier()
+	dispatcher.Handle(feedUpdateNotifier)
+	fm.AddUpdateReceiver(feedUpdateNotifier)
 
 	if config.Hubbub.CallbackURL != "" {
-		hubbub := readeef.NewHubbub(db, config, logger, dispatcher.Pattern, fm.RemoveFeedChannel(), fm.AddFeedChannel(), updateFeed)
+		hubbub := readeef.NewHubbub(db, config, logger, dispatcher.Pattern, fm.RemoveFeedChannel(), fm.AddFeedChannel())
 		if err := hubbub.InitSubscriptions(); err != nil {
 			return errors.New(fmt.Sprintf("Error initializing hubbub subscriptions: %v", err))
 		}
 
 		fm.SetHubbub(hubbub)
+		hubbub.AddUpdateReceiver(feedUpdateNotifier)
 		dispatcher.Handle(readeef.NewHubbubController(hubbub))
 	}
 
@@ -75,9 +78,6 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	dispatcher.HandleMultiPattern(multiPatternController)
 
 	patternController = NewUserSettings()
-	dispatcher.Handle(patternController)
-
-	patternController = NewFeedUpdateNotificator(updateFeed)
 	dispatcher.Handle(patternController)
 
 	patternController = NewNonce(nonce)

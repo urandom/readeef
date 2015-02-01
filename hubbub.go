@@ -16,12 +16,12 @@ import (
 )
 
 type Hubbub struct {
+	UpdateFeedReceiverManager
 	config     Config
 	db         DB
 	pattern    string
 	addFeed    chan<- Feed
 	removeFeed chan<- Feed
-	updateFeed chan<- Feed
 	client     *http.Client
 	logger     *log.Logger
 }
@@ -52,9 +52,11 @@ var (
 	ErrSubscribed    = errors.New("Feed already subscribed")
 )
 
-func NewHubbub(db DB, c Config, l *log.Logger, pattern string, addFeed chan<- Feed, removeFeed chan<- Feed, updateFeed chan<- Feed) *Hubbub {
-	return &Hubbub{db: db, config: c, logger: l, pattern: pattern,
-		addFeed: addFeed, removeFeed: removeFeed, updateFeed: updateFeed,
+func NewHubbub(db DB, c Config, l *log.Logger, pattern string, addFeed chan<- Feed, removeFeed chan<- Feed) *Hubbub {
+	return &Hubbub{
+		UpdateFeedReceiverManager: UpdateFeedReceiverManager{},
+		db: db, config: c, logger: l, pattern: pattern,
+		addFeed: addFeed, removeFeed: removeFeed,
 		client: NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 
@@ -268,7 +270,7 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 			}
 
 			if newArticles {
-				con.hubbub.updateFeed <- f
+				con.hubbub.NotifyReceivers(f)
 			}
 
 			return

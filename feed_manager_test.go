@@ -16,7 +16,7 @@ func TestFeedManager(t *testing.T) {
 	var ts *httptest.Server
 
 	done := make(chan bool)
-	updateFeed := make(chan Feed)
+	rec := updateReceiver{updateFeed: make(chan Feed)}
 
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() { done <- true }()
@@ -37,7 +37,8 @@ func TestFeedManager(t *testing.T) {
 	}
 
 	conf.Updater.Converted.Interval = 100 * time.Millisecond
-	fm := NewFeedManager(db, conf, log.New(os.Stderr, "", 0), updateFeed)
+	fm := NewFeedManager(db, conf, log.New(os.Stderr, "", 0))
+	fm.AddUpdateReceiver(rec)
 
 	fm.Start()
 
@@ -51,7 +52,7 @@ func TestFeedManager(t *testing.T) {
 
 	<-done // First update request
 
-	f2 := <-updateFeed // Feed gets updated
+	f2 := <-rec.updateFeed // Feed gets updated
 
 	f, err = db.GetFeed(f.Id)
 	if err != nil {
@@ -133,4 +134,12 @@ func TestFeedManagerDetection(t *testing.T) {
 	if pf[0].Link != expectedStr {
 		t.Fatalf("Expected '%s' for a url, got '%s'\n", expectedStr, pf[0].Link)
 	}
+}
+
+type updateReceiver struct {
+	updateFeed chan Feed
+}
+
+func (r updateReceiver) UpdateFeedChannel() chan<- Feed {
+	return r.updateFeed
 }
