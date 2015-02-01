@@ -94,7 +94,7 @@
         </core-animated-pages>
 
         <rf-api id="auth-check" pathAction="auth" on-rf-api-response="{{ onAuthCheckResponse }}" on-rf-api-complete="{{ onAuthCheckComplete }}" user="{{ user }}"></rf-api>
-        <rf-api id="list-feeds" pathAction="feed/list" on-rf-api-response="{{ onAllFeedsResponse }}" user="{{ user }}"></rf-api>
+        <rf-api id="list-feeds" pathAction="feed/" on-rf-api-response="{{ onAllFeedsResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="feed-articles" pathAction="feed/articles/{{ currentFeedId }}/{{ limit }}/{{ offset }}/{{ userSettings.newerFirst || false }}/{{ userSettings.unreadOnly || false }}?test=1" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="feed-read-all" pathAction="feed/read/{{ currentFeedId }}/{{ lastUpdateTime }}" on-rf-api-response="{{ onFeedReadAllResponse }}" user="{{ user }}" method="post"></rf-api>
         <rf-api id="user-settings" on-rf-api-response="{{ onUserSettingsResponse }}" user="{{ user }}" method="post"></rf-api>

@@ -22,7 +22,7 @@ func (con User) Patterns() map[string]webfw.MethodIdentifierTuple {
 	prefix := "/v:version/user/"
 
 	return map[string]webfw.MethodIdentifierTuple{
-		prefix + "list":                 webfw.MethodIdentifierTuple{webfw.MethodGet, "list"},
+		prefix:                          webfw.MethodIdentifierTuple{webfw.MethodGet, "list"},
 		prefix + "add/:login":           webfw.MethodIdentifierTuple{webfw.MethodPost, "add"},
 		prefix + "remove/:login":        webfw.MethodIdentifierTuple{webfw.MethodPost, "remove"},
 		prefix + "active/:login/:state": webfw.MethodIdentifierTuple{webfw.MethodPost, "active"},

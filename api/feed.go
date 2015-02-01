@@ -40,7 +40,7 @@ func (con Feed) Patterns() map[string]webfw.MethodIdentifierTuple {
 	prefix := "/v:version/feed/"
 
 	return map[string]webfw.MethodIdentifierTuple{
-		prefix + "list":            webfw.MethodIdentifierTuple{webfw.MethodGet, "list"},
+		prefix:                     webfw.MethodIdentifierTuple{webfw.MethodGet, "list"},
 		prefix + "discover":        webfw.MethodIdentifierTuple{webfw.MethodGet, "discover"},
 		prefix + "opml":            webfw.MethodIdentifierTuple{webfw.MethodPost, "opml"},
 		prefix + "add":             webfw.MethodIdentifierTuple{webfw.MethodPost, "add"},

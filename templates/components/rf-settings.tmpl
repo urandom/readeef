@@ -263,7 +263,7 @@
         <rf-api user="{{ user }}" id="feed-tags" method="post" pathAction="feed/tags/{{ taggedFeed }}" on-rf-api-response="{{ onFeedTagsResponse }}"></rf-api>
         <rf-api id="password-change" pathAction="user-settings/password" on-rf-api-response="{{ onPasswordChangeResponse }}" user="{{ user }}" method="post"></rf-api>
 
-        <rf-api user="{{ user }}" id="user-list" pathAction="user/list" on-rf-api-response="{{ onUserListResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="user-list" pathAction="user/" on-rf-api-response="{{ onUserListResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="user-add" pathAction="user/add/{{ addedUser }}" method="post" on-rf-api-response="{{ onUserAddResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="user-remove" pathAction="user/remove/{{ removedUser }}" method="post" on-rf-api-response="{{ onUserRemoveResponse }}"></rf-api>
         <rf-api user="{{ user }}" id="user-toggle-active" pathAction="user/active/{{ toggleActiveUser }}/{{ toggleActiveUserState }}" method="post" on-rf-api-response="{{ onUserToggleActiveResponse }}"></rf-api>
