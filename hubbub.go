@@ -16,7 +16,7 @@ import (
 )
 
 type Hubbub struct {
-	UpdateFeedReceiverManager
+	*UpdateFeedReceiverManager
 	config     Config
 	db         DB
 	pattern    string
@@ -52,7 +52,7 @@ var (
 	ErrSubscribed    = errors.New("Feed already subscribed")
 )
 
-func NewHubbub(db DB, c Config, l *log.Logger, pattern string, addFeed chan<- Feed, removeFeed chan<- Feed, um UpdateFeedReceiverManager) *Hubbub {
+func NewHubbub(db DB, c Config, l *log.Logger, pattern string, addFeed chan<- Feed, removeFeed chan<- Feed, um *UpdateFeedReceiverManager) *Hubbub {
 	return &Hubbub{
 		UpdateFeedReceiverManager: um,
 		db: db, config: c, logger: l, pattern: pattern,

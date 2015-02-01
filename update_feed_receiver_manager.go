@@ -32,6 +32,7 @@ func (u *UpdateFeedReceiverManager) RemoveUpdateReceiver(r UpdateFeedReceiver) {
 }
 
 func (u UpdateFeedReceiverManager) NotifyReceivers(f Feed) {
+	Debug.Printf("Notifying %d receivers of a feed update\n", len(u.updateReceivers))
 	for i := range u.updateReceivers {
 		u.updateReceivers[i] <- f
 	}

@@ -19,7 +19,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		return errors.New(fmt.Sprintf("Error connecting to database: %v", err))
 	}
 
-	um := readeef.UpdateFeedReceiverManager{}
+	um := &readeef.UpdateFeedReceiverManager{}
 
 	fm := readeef.NewFeedManager(db, config, logger, um)
 

@@ -19,7 +19,7 @@ import (
 )
 
 type FeedManager struct {
-	UpdateFeedReceiverManager
+	*UpdateFeedReceiverManager
 	config       Config
 	db           DB
 	feeds        []Feed
@@ -44,7 +44,7 @@ var (
 	httpStatusPrefix = "HTTP Status: "
 )
 
-func NewFeedManager(db DB, c Config, l *log.Logger, um UpdateFeedReceiverManager) *FeedManager {
+func NewFeedManager(db DB, c Config, l *log.Logger, um *UpdateFeedReceiverManager) *FeedManager {
 	return &FeedManager{
 		UpdateFeedReceiverManager: um,
 		db: db, config: c, logger: l,
