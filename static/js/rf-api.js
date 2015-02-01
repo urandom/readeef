@@ -120,7 +120,7 @@
 
                             if (xhr.isBodyMethod(method) && !args.body) {
                                 args.body = params;
-                            } else if (params && method == 'GET') {
+                            } else if (params && (!method || method == 'GET')) {
                                 args.url = urlQuery(args.url, params);
 
                                 delete args.params;
