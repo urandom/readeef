@@ -24,7 +24,7 @@ func NewComponent(dispatcher *webfw.Dispatcher, apiPattern string) Component {
 	}
 }
 
-func (con Component) Handler(c context.Context) http.HandlerFunc {
+func (con Component) Handler(c context.Context) http.Handler {
 	mw, i18nFound := con.dispatcher.Middleware("I18N")
 
 	rnd := renderer.NewRenderer(con.dispatcher.Config.Renderer.Dir, "raw.tmpl")
@@ -38,7 +38,7 @@ func (con Component) Handler(c context.Context) http.HandlerFunc {
 		readeef.Debug.Println("I18N middleware not found")
 	}
 
-	return func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		params := webfw.GetParams(c, r)
 
 		err := rnd.Render(w, renderer.RenderData{"apiPattern": con.apiPattern},
@@ -47,5 +47,5 @@ func (con Component) Handler(c context.Context) http.HandlerFunc {
 		if err != nil {
 			webfw.GetLogger(c).Print(err)
 		}
-	}
+	})
 }

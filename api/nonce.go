@@ -21,8 +21,8 @@ func NewNonce(nonce *readeef.Nonce) Nonce {
 	}
 }
 
-func (con Nonce) Handler(c context.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (con Nonce) Handler(c context.Context) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		nonce := con.nonce.Generate()
 		type response struct {
 			Nonce string
@@ -40,7 +40,7 @@ func (con Nonce) Handler(c context.Context) http.HandlerFunc {
 		w.Write(b)
 
 		con.nonce.Set(nonce)
-	}
+	})
 }
 
 func (con Nonce) AuthRequired(c context.Context, r *http.Request) bool {

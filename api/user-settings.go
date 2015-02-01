@@ -21,8 +21,8 @@ func NewUserSettings() UserSettings {
 	}
 }
 
-func (con UserSettings) Handler(c context.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (con UserSettings) Handler(c context.Context) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
 
 		db := readeef.GetDB(c)
@@ -100,7 +100,7 @@ func (con UserSettings) Handler(c context.Context) http.HandlerFunc {
 		}
 
 		w.Write(b)
-	}
+	})
 }
 
 func (con UserSettings) AuthRequired(c context.Context, r *http.Request) bool {

@@ -151,8 +151,8 @@ type hublink_con struct {
 	done        chan bool
 }
 
-func (con hublink_con) Handler(c context.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (con hublink_con) Handler(c context.Context) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			panic(err)
 		}
@@ -192,7 +192,7 @@ func (con hublink_con) Handler(c context.Context) http.HandlerFunc {
 				panic(fmt.Sprintf("Expected challenge '%s', got '%s'\n", challengeStr, expectedStr))
 			}
 		}()
-	}
+	})
 }
 
 var atomXml = `` +

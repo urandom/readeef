@@ -79,8 +79,8 @@ var (
 	idTagMap       = map[int64]string{}
 )
 
-func (con Fever) Handler(c context.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (con Fever) Handler(c context.Context) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
 		var user readeef.User
 
@@ -411,7 +411,7 @@ func (con Fever) Handler(c context.Context) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 
-	}
+	})
 }
 
 func getUser(db readeef.DB, md5hex string, log webfw.Logger) readeef.User {

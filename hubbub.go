@@ -202,8 +202,8 @@ func NewHubbubController(h *Hubbub) HubbubController {
 		h}
 }
 
-func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (con HubbubController) Handler(c context.Context) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		params := r.URL.Query()
 		pathParams := webfw.GetParams(c, r)
 		feedId, err := strconv.ParseInt(pathParams["feed-id"], 10, 64)
@@ -291,7 +291,7 @@ func (con HubbubController) Handler(c context.Context) http.HandlerFunc {
 		} else {
 			con.hubbub.addFeed <- f
 		}
-	}
+	})
 }
 
 func callbackURL(c Config, pattern string, feedId int64) string {

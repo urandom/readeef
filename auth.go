@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -43,6 +44,13 @@ type Auth struct {
 	Pattern         string
 	IgnoreURLPrefix []string
 }
+
+var (
+	loginRegexp     = regexp.MustCompile(`\blogin=.*?(?:&|$)`)
+	signatureRegexp = regexp.MustCompile(`\bsignature=.*?(?:&|$)`)
+	dateRegexp      = regexp.MustCompile(`\bdate=.*?(?:&|$)`)
+	nonceRegexp     = regexp.MustCompile(`\bnonce=.*?(?:&|$)`)
+)
 
 func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 	logger := webfw.GetLogger(c)
@@ -124,7 +132,7 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 			var u User
 			var err error
 
-			login, signature, date, t := authData(r)
+			url, login, signature, nonce, date, t := authData(r)
 
 			validUser := false
 
@@ -148,7 +156,6 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 						break
 					}
 
-					nonce := r.Header.Get("X-Nonce")
 					if !mw.Nonce.Check(nonce) {
 						break
 					}
@@ -169,7 +176,7 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 					contentMD5 := base64.StdEncoding.EncodeToString(bodyHash.Sum(nil))
 
 					message := fmt.Sprintf("%s\n%s\n%s\n%s\n%s\n%s\n",
-						r.RequestURI, r.Method, contentMD5, r.Header.Get("Content-Type"),
+						url, r.Method, contentMD5, r.Header.Get("Content-Type"),
 						date, nonce)
 
 					b := make([]byte, base64.StdEncoding.EncodedLen(len(u.MD5API)))
@@ -209,15 +216,19 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 	return http.HandlerFunc(handler)
 }
 
-func authData(r *http.Request) (string, string, string, time.Time) {
+func authData(r *http.Request) (string, string, string, string, string, time.Time) {
 	var login, signature string
 	var t time.Time
 
 	auth := r.Header.Get("Authorization")
+	url := r.RequestURI
 
 	if auth == "" {
 		login = r.FormValue("login")
 		signature = r.FormValue("signature")
+
+		url = loginRegexp.ReplaceAllString(url, "")
+		url = signatureRegexp.ReplaceAllString(url, "")
 	} else {
 		if strings.HasPrefix(auth, "Readeef ") {
 			auth = auth[len("Readeef "):]
@@ -227,6 +238,13 @@ func authData(r *http.Request) (string, string, string, time.Time) {
 		}
 	}
 
+	nonce := r.Header.Get("X-Nonce")
+	if nonce == "" {
+		nonce = r.FormValue("nonce")
+
+		url = nonceRegexp.ReplaceAllString(url, "")
+	}
+
 	date := r.Header.Get("Date")
 
 	if date == "" {
@@ -234,7 +252,9 @@ func authData(r *http.Request) (string, string, string, time.Time) {
 	}
 
 	if date == "" {
-		date = r.FormValue("timestamp")
+		date = r.FormValue("date")
+
+		url = dateRegexp.ReplaceAllString(url, "")
 	}
 
 	dateInt, err := strconv.ParseInt(date, 10, 64)
@@ -244,5 +264,11 @@ func authData(r *http.Request) (string, string, string, time.Time) {
 		t, _ = time.Parse(http.TimeFormat, date)
 	}
 
-	return login, signature, date, t
+	if url != r.RequestURI {
+		if strings.HasSuffix(url, "?") || strings.HasSuffix(url, "&") {
+			url = url[:len(url)-1]
+		}
+	}
+
+	return url, login, signature, nonce, date, t
 }

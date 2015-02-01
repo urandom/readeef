@@ -37,8 +37,8 @@ func (con Article) Patterns() map[string]webfw.MethodIdentifierTuple {
 	return patterns
 }
 
-func (con Article) Handler(c context.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (con Article) Handler(c context.Context) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
 
 		db := readeef.GetDB(c)
@@ -127,7 +127,7 @@ func (con Article) Handler(c context.Context) http.HandlerFunc {
 
 			w.WriteHeader(http.StatusInternalServerError)
 		}
-	}
+	})
 }
 
 func (con Article) AuthRequired(c context.Context, r *http.Request) bool {

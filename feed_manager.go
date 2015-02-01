@@ -342,6 +342,11 @@ func (fm *FeedManager) requestFeedContent(f Feed) Feed {
 }
 
 func (fm *FeedManager) scoreFeedContent(f Feed) {
+	if len(fm.config.Popularity.Providers) == 0 {
+		Debug.Println("No popularity providers configured")
+		return
+	}
+
 	if !fm.activeFeeds[f.Id] {
 		Debug.Printf("Feed '%s' no longer active for scoring\n", f.Link)
 		return

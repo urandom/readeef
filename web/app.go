@@ -17,13 +17,13 @@ func NewApp() App {
 	}
 }
 
-func (con App) Handler(c context.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (con App) Handler(c context.Context) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rnd := webfw.GetRenderer(c)
 
 		err := rnd.Render(w, nil, c.GetAll(r), "app.tmpl")
 		if err != nil {
 			webfw.GetLogger(c).Print(err)
 		}
-	}
+	})
 }

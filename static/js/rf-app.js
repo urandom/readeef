@@ -208,6 +208,24 @@
 
         currentFeedChanged: function(oldValue, newValue) {
             this.updateFeedArticles();
+
+            if (!this.currentFeed) {
+                return;
+            }
+
+
+            var feedIds = [];
+            if (this.currentFeedId.toString().indexOf("tag:") == 0) {
+                var currentTag = this.currentFeedId.substring(4);
+
+                feedIds = this.getTag(currentTag).feeds.map(function(feed) {
+                    return feed.Id 
+                });
+            } else if (!isNaN(parseInt(this.currentFeedId))) {
+                feedIds = [parseInt(this.currentFeedId)];
+            }
+
+            this.$['feed-update-notifier'].send({FeedIds: feedIds});
         },
 
         feedsChanged: function(oldValue, newValue) {
@@ -258,7 +276,6 @@
             this.$['user-storage'].save();
 
             this.$['list-feeds'].go();
-            this.$['feed-update-notifier'].go();
         },
 
         onUserLoad: function(event, detail, sender) {
@@ -415,37 +432,17 @@
                 return;
             }
 
-            if (data.response && data.response.Feed) {
+            if (data && data.Feed) {
                 if (this.currentFeedId.toString().indexOf("tag:") == 0) {
-                    var currentTag = this.currentFeedId.substring(4);
+                    var tag = this.getTag(this.currentFeedId.substring(4));
 
-                    for (var i = 0, tag; tag = this.tags[i]; ++i) {
-                        if (tag.name == currentTag) {
-                            for (var j = 0, feed; feed = tag.feeds[j]; ++j) {
-                                if (feed.Id == data.response.Feed.Id) {
-                                    this.updateAvailable = true;
-                                    break;
-                                }
-                            }
-                            break;
-                        }
+                    if (tag.feeds.some(function(feed) { return feed.Id == data.Feed.Id })) {
+                        this.updateAvailable = true;
                     }
-
-                } else if (this.currentFeedId == data.response.Feed.Id) {
+                } else if (this.currentFeedId == data.Feed.Id) {
                     this.updateAvailable = true;
                 }
             }
-        },
-
-        onFeedUpdateNotifyComplete: function() {
-            if (this.lastUpdateNotifyStart) {
-                if (new Date().getTime() - this.lastUpdateNotifyStart < 1000) {
-                    this.job('update-notifier', this.onFeedUpdateNotifyComplete);
-                    return;
-                }
-            }
-            this.$['feed-update-notifier'].go();
-            this.lastUpdateNotifyStart = new Date().getTime();
         },
 
         updateTags: function() {
@@ -468,6 +465,14 @@
             });
 
             this.tags = tagList;
+        },
+
+        getTag: function(name) {
+            for (var i = 0, t; t = this.tags[i]; ++i) {
+                if (t.name == name) {
+                    return t;
+                }
+            }
         }
 
     });

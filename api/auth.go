@@ -19,8 +19,8 @@ func NewAuth() Auth {
 	}
 }
 
-func (con Auth) Handler(c context.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (con Auth) Handler(c context.Context) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := readeef.GetUser(c, r)
 
 		type User struct {
@@ -57,7 +57,7 @@ func (con Auth) Handler(c context.Context) http.HandlerFunc {
 		}
 
 		w.Write(b)
-	}
+	})
 }
 
 func (con Auth) AuthRequired(c context.Context, r *http.Request) bool {

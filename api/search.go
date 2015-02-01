@@ -23,8 +23,8 @@ func NewSearch(searchIndex readeef.SearchIndex) Search {
 	}
 }
 
-func (con Search) Handler(c context.Context) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (con Search) Handler(c context.Context) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
 
 		params := webfw.GetParams(c, r)
@@ -89,7 +89,7 @@ func (con Search) Handler(c context.Context) http.HandlerFunc {
 		}
 
 		w.Write(b)
-	}
+	})
 }
 
 func (con Search) AuthRequired(c context.Context, r *http.Request) bool {
