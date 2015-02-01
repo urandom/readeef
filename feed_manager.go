@@ -44,9 +44,9 @@ var (
 	httpStatusPrefix = "HTTP Status: "
 )
 
-func NewFeedManager(db DB, c Config, l *log.Logger) *FeedManager {
+func NewFeedManager(db DB, c Config, l *log.Logger, um UpdateFeedReceiverManager) *FeedManager {
 	return &FeedManager{
-		UpdateFeedReceiverManager: UpdateFeedReceiverManager{},
+		UpdateFeedReceiverManager: um,
 		db: db, config: c, logger: l,
 		addFeed: make(chan Feed, 2), removeFeed: make(chan Feed, 2),
 		scoreArticle: make(chan Article), done: make(chan bool),

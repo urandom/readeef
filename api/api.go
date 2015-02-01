@@ -19,20 +19,17 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		return errors.New(fmt.Sprintf("Error connecting to database: %v", err))
 	}
 
-	fm := readeef.NewFeedManager(db, config, logger)
+	um := readeef.UpdateFeedReceiverManager{}
 
-	feedUpdateNotifier := NewFeedUpdateNotifier()
-	dispatcher.Handle(feedUpdateNotifier)
-	fm.AddUpdateReceiver(feedUpdateNotifier)
+	fm := readeef.NewFeedManager(db, config, logger, um)
 
 	if config.Hubbub.CallbackURL != "" {
-		hubbub := readeef.NewHubbub(db, config, logger, dispatcher.Pattern, fm.RemoveFeedChannel(), fm.AddFeedChannel())
+		hubbub := readeef.NewHubbub(db, config, logger, dispatcher.Pattern, fm.RemoveFeedChannel(), fm.AddFeedChannel(), um)
 		if err := hubbub.InitSubscriptions(); err != nil {
 			return errors.New(fmt.Sprintf("Error initializing hubbub subscriptions: %v", err))
 		}
 
 		fm.SetHubbub(hubbub)
-		hubbub.AddUpdateReceiver(feedUpdateNotifier)
 		dispatcher.Handle(readeef.NewHubbubController(hubbub))
 	}
 
@@ -87,6 +84,10 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		patternController = NewFever(fm)
 		dispatcher.Handle(patternController)
 	}
+
+	feedUpdateNotifier := NewFeedUpdateNotifier()
+	dispatcher.Handle(feedUpdateNotifier)
+	um.AddUpdateReceiver(feedUpdateNotifier)
 
 	middleware.InitializeDefault(dispatcher)
 	dispatcher.RegisterMiddleware(readeef.Auth{DB: db, Pattern: dispatcher.Pattern, Nonce: nonce, IgnoreURLPrefix: config.Auth.IgnoreURLPrefix})

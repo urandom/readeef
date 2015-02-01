@@ -52,9 +52,9 @@ var (
 	ErrSubscribed    = errors.New("Feed already subscribed")
 )
 
-func NewHubbub(db DB, c Config, l *log.Logger, pattern string, addFeed chan<- Feed, removeFeed chan<- Feed) *Hubbub {
+func NewHubbub(db DB, c Config, l *log.Logger, pattern string, addFeed chan<- Feed, removeFeed chan<- Feed, um UpdateFeedReceiverManager) *Hubbub {
 	return &Hubbub{
-		UpdateFeedReceiverManager: UpdateFeedReceiverManager{},
+		UpdateFeedReceiverManager: um,
 		db: db, config: c, logger: l, pattern: pattern,
 		addFeed: addFeed, removeFeed: removeFeed,
 		client: NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
