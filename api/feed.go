@@ -37,20 +37,19 @@ type feed struct {
 	Tags           []string
 }
 
-func (con Feed) Patterns() map[string]webfw.MethodIdentifierTuple {
+func (con Feed) Patterns() []webfw.MethodIdentifierTuple {
 	prefix := "/v:version/feed/"
 
-	return map[string]webfw.MethodIdentifierTuple{
-		prefix:                     webfw.MethodIdentifierTuple{webfw.MethodGet, "list"},
-		prefix + "discover":        webfw.MethodIdentifierTuple{webfw.MethodGet, "discover"},
-		prefix + "opml":            webfw.MethodIdentifierTuple{webfw.MethodPost, "opml"},
-		prefix + "add":             webfw.MethodIdentifierTuple{webfw.MethodPost, "add"},
-		prefix + "remove/:feed-id": webfw.MethodIdentifierTuple{webfw.MethodPost, "remove"},
-		prefix + "tags/:feed-id":   webfw.MethodIdentifierTuple{webfw.MethodGet | webfw.MethodPost, "tags"},
+	return []webfw.MethodIdentifierTuple{
+		webfw.MethodIdentifierTuple{prefix, webfw.MethodGet, "list"},
+		webfw.MethodIdentifierTuple{prefix, webfw.MethodPost, "add"},
+		webfw.MethodIdentifierTuple{prefix + ":feed-id", webfw.MethodDelete, "remove"},
+		webfw.MethodIdentifierTuple{prefix + ":feed-id/tags", webfw.MethodGet | webfw.MethodPost, "tags"},
+		webfw.MethodIdentifierTuple{prefix + ":feed-id/read/:timestamp", webfw.MethodPost, "read"},
+		webfw.MethodIdentifierTuple{prefix + ":feed-id/articles/:limit/:offset/:newer-first/:unread-only", webfw.MethodGet, "articles"},
 
-		prefix + "read/:feed-id/:timestamp": webfw.MethodIdentifierTuple{webfw.MethodPost, "read"},
-
-		prefix + "articles/:feed-id/:limit/:offset/:newer-first/:unread-only": webfw.MethodIdentifierTuple{webfw.MethodGet, "articles"},
+		webfw.MethodIdentifierTuple{prefix + "discover", webfw.MethodGet, "discover"},
+		webfw.MethodIdentifierTuple{prefix + "opml", webfw.MethodPost, "opml"},
 	}
 }
 
@@ -109,7 +108,6 @@ func (con Feed) Handler(c context.Context) http.Handler {
 			}
 		}
 
-		resp.err = r.Body.Close()
 		switch resp.err {
 		case readeef.ErrNoAbsolute:
 			resp.val["Error"] = true
@@ -366,7 +364,7 @@ func setFeedTags(db readeef.DB, user readeef.User, id int64, data io.Reader) (re
 	decoder := json.NewDecoder(data)
 
 	tags = []string{}
-	if resp.err = decoder.Decode(&tags); resp.err != nil {
+	if resp.err = decoder.Decode(&tags); resp.err != nil && resp.err != io.EOF {
 		return
 	}
 

@@ -89,7 +89,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 		err = r.ParseForm()
 
 		if err == nil {
-			user = getUser(db, r.FormValue("api_key"), webfw.GetLogger(c))
+			user = getReadeefUser(db, r.FormValue("api_key"), webfw.GetLogger(c))
 		}
 
 		resp := map[string]interface{}{"api_version": 2}
@@ -414,7 +414,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 	})
 }
 
-func getUser(db readeef.DB, md5hex string, log webfw.Logger) readeef.User {
+func getReadeefUser(db readeef.DB, md5hex string, log webfw.Logger) readeef.User {
 	md5, err := hex.DecodeString(md5hex)
 
 	if err != nil {

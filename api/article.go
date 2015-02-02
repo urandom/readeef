@@ -24,17 +24,14 @@ type Readability struct {
 	Content string
 }
 
-func (con Article) Patterns() map[string]webfw.MethodIdentifierTuple {
-	prefix := "/v:version/article/"
-	identifier := ":article-id"
+func (con Article) Patterns() []webfw.MethodIdentifierTuple {
+	prefix := "/v:version/article/:article-id/"
 
-	patterns := map[string]webfw.MethodIdentifierTuple{
-		prefix + "read/" + identifier + "/:value":     webfw.MethodIdentifierTuple{webfw.MethodPost, "read"},
-		prefix + "favorite/" + identifier + "/:value": webfw.MethodIdentifierTuple{webfw.MethodPost, "favorite"},
-		prefix + "formatter/" + identifier:            webfw.MethodIdentifierTuple{webfw.MethodGet, "formatter"},
+	return []webfw.MethodIdentifierTuple{
+		webfw.MethodIdentifierTuple{prefix + "read/:value", webfw.MethodPost, "read"},
+		webfw.MethodIdentifierTuple{prefix + "favorite/:value", webfw.MethodPost, "favorite"},
+		webfw.MethodIdentifierTuple{prefix + "formatter", webfw.MethodGet, "formatter"},
 	}
-
-	return patterns
 }
 
 func (con Article) Handler(c context.Context) http.Handler {
