@@ -39,8 +39,6 @@ func (con Article) Patterns() map[string]webfw.MethodIdentifierTuple {
 
 func (con Article) Handler(c context.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var err error
-
 		db := readeef.GetDB(c)
 		user := readeef.GetUser(c, r)
 
@@ -51,79 +49,34 @@ func (con Article) Handler(c context.Context) http.Handler {
 
 		var articleId int64
 		var article readeef.Article
+		var resp responseError
 
-		articleId, err = strconv.ParseInt(params["article-id"], 10, 64)
+		articleId, resp.err = strconv.ParseInt(params["article-id"], 10, 64)
 
-		if err == nil {
-			article, err = db.GetFeedArticle(articleId, user)
+		if resp.err == nil {
+			article, resp.err = db.GetFeedArticle(articleId, user)
 		}
 
-		resp := make(map[string]interface{})
-
-		if err == nil {
-			resp["ArticleId"] = article.Id
-
+		if resp.err == nil {
 			switch action {
 			case "read":
-				read := params["value"] == "true"
-				previouslyRead := article.Read
-
-				if previouslyRead != read {
-					err = db.MarkUserArticlesAsRead(user, []readeef.Article{article}, read)
-
-					if err != nil {
-						break
-					}
-				}
-
-				resp["Success"] = previouslyRead != read
-				resp["Read"] = read
+				resp = markArticleAsRead(db, user, article, params["value"] == "true")
 			case "favorite":
-				favorite := params["value"] == "true"
-				previouslyFavorite := article.Favorite
-
-				if previouslyFavorite != favorite {
-					err = db.MarkUserArticlesAsFavorite(user, []readeef.Article{article}, favorite)
-
-					if err != nil {
-						break
-					}
-				}
-
-				resp["Success"] = previouslyFavorite != favorite
-				resp["Favorite"] = favorite
+				resp = markArticleAsFavorite(db, user, article, params["value"] == "true")
 			case "formatter":
-				var formatting readeef.ArticleFormatting
-
-				formatting, err = readeef.ArticleFormatter(webfw.GetConfig(c), con.config, article)
-				if err != nil {
-					break
-				}
-
-				s := summarize.NewFromString(formatting.Title, readeef.StripTags(formatting.Content))
-
-				s.Language = formatting.Language
-				keyPoints := s.KeyPoints()
-
-				for i := range keyPoints {
-					keyPoints[i] = html.UnescapeString(keyPoints[i])
-				}
-
-				resp["KeyPoints"] = keyPoints
-				resp["Content"] = formatting.Content
-				resp["TopImage"] = formatting.TopImage
+				resp = formatArticle(db, user, article, webfw.GetConfig(c), con.config)
 			}
 		}
 
 		var b []byte
-		if err == nil {
-			b, err = json.Marshal(resp)
+		if resp.err == nil {
+			b, resp.err = json.Marshal(resp.val)
 		}
 
-		if err == nil {
+		if resp.err == nil {
 			w.Write(b)
 		} else {
-			webfw.GetLogger(c).Print(err)
+			webfw.GetLogger(c).Print(resp.err)
 
 			w.WriteHeader(http.StatusInternalServerError)
 		}
@@ -132,4 +85,62 @@ func (con Article) Handler(c context.Context) http.Handler {
 
 func (con Article) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
+}
+
+func markArticleAsRead(db readeef.DB, user readeef.User, article readeef.Article, read bool) (resp responseError) {
+	resp = newResponse()
+
+	previouslyRead := article.Read
+
+	if previouslyRead != read {
+		if resp.err = db.MarkUserArticlesAsRead(user, []readeef.Article{article}, read); resp.err != nil {
+			return
+		}
+	}
+
+	resp.val["Success"] = previouslyRead != read
+	resp.val["Read"] = read
+	resp.val["ArticleId"] = article.Id
+	return
+}
+
+func markArticleAsFavorite(db readeef.DB, user readeef.User, article readeef.Article, favorite bool) (resp responseError) {
+	resp = newResponse()
+	previouslyFavorite := article.Favorite
+
+	if previouslyFavorite != favorite {
+		if resp.err = db.MarkUserArticlesAsFavorite(user, []readeef.Article{article}, favorite); resp.err != nil {
+			return
+		}
+	}
+
+	resp.val["Success"] = previouslyFavorite != favorite
+	resp.val["Favorite"] = favorite
+	resp.val["ArticleId"] = article.Id
+	return
+}
+
+func formatArticle(db readeef.DB, user readeef.User, article readeef.Article, webfwConfig webfw.Config, readeefConfig readeef.Config) (resp responseError) {
+	resp = newResponse()
+
+	var formatting readeef.ArticleFormatting
+
+	if formatting, resp.err = readeef.ArticleFormatter(webfwConfig, readeefConfig, article); resp.err != nil {
+		return
+	}
+
+	s := summarize.NewFromString(formatting.Title, readeef.StripTags(formatting.Content))
+
+	s.Language = formatting.Language
+	keyPoints := s.KeyPoints()
+
+	for i := range keyPoints {
+		keyPoints[i] = html.UnescapeString(keyPoints[i])
+	}
+
+	resp.val["KeyPoints"] = keyPoints
+	resp.val["Content"] = formatting.Content
+	resp.val["TopImage"] = formatting.TopImage
+	resp.val["ArticleId"] = article.Id
+	return
 }

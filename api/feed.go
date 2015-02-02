@@ -141,14 +141,12 @@ func (con Feed) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
 }
 
-func listFeeds(db readeef.DB, user readeef.User) responseError {
-	resp := newResponse()
+func listFeeds(db readeef.DB, user readeef.User) (resp responseError) {
+	resp = newResponse()
 
-	feeds, err := db.GetUserTagsFeeds(user)
-
-	if err != nil {
-		resp.err = err
-		return resp
+	var feeds []readeef.Feed
+	if feeds, resp.err = db.GetUserTagsFeeds(user); resp.err != nil {
+		return
 	}
 
 	respFeeds := []feed{}
@@ -162,15 +160,15 @@ func listFeeds(db readeef.DB, user readeef.User) responseError {
 	}
 
 	resp.val["Feeds"] = respFeeds
-	return resp
+	return
 }
 
-func discoverFeeds(db readeef.DB, user readeef.User, fm *readeef.FeedManager, link string) responseError {
-	resp := newResponse()
+func discoverFeeds(db readeef.DB, user readeef.User, fm *readeef.FeedManager, link string) (resp responseError) {
+	resp = newResponse()
 
 	if u, err := url.Parse(link); err != nil {
 		resp.err = readeef.ErrNoAbsolute
-		return resp
+		return
 	} else if !u.IsAbs() {
 		u.Scheme = "http"
 		if u.Host == "" {
@@ -188,13 +186,12 @@ func discoverFeeds(db readeef.DB, user readeef.User, fm *readeef.FeedManager, li
 	feeds, err := fm.DiscoverFeeds(link)
 	if err != nil {
 		resp.val["Feeds"] = []feed{}
-		return resp
+		return
 	}
 
-	userFeeds, err := db.GetUserFeeds(user)
-	if err != nil {
-		resp.err = err
-		return resp
+	var userFeeds []readeef.Feed
+	if userFeeds, resp.err = db.GetUserFeeds(user); resp.err != nil {
+		return
 	}
 
 	userFeedIdMap := make(map[int64]bool)
@@ -221,27 +218,25 @@ func discoverFeeds(db readeef.DB, user readeef.User, fm *readeef.FeedManager, li
 	}
 
 	resp.val["Feeds"] = respFeeds
-	return resp
+	return
 }
 
-func parseOpml(db readeef.DB, user readeef.User, fm *readeef.FeedManager, data io.Reader) responseError {
-	resp := newResponse()
+func parseOpml(db readeef.DB, user readeef.User, fm *readeef.FeedManager, data io.Reader) (resp responseError) {
+	resp = newResponse()
 
 	buf := util.BufferPool.GetBuffer()
 	defer util.BufferPool.Put(buf)
 
 	buf.ReadFrom(data)
 
-	opml, err := parser.ParseOpml(buf.Bytes())
-	if err != nil {
-		resp.err = err
-		return resp
+	var opml parser.Opml
+	if opml, resp.err = parser.ParseOpml(buf.Bytes()); resp.err != nil {
+		return
 	}
 
-	userFeeds, err := db.GetUserFeeds(user)
-	if err != nil {
-		resp.err = err
-		return resp
+	var userFeeds []readeef.Feed
+	if userFeeds, resp.err = db.GetUserFeeds(user); resp.err != nil {
+		return
 	}
 
 	userFeedMap := make(map[int64]bool)
@@ -275,41 +270,38 @@ func parseOpml(db readeef.DB, user readeef.User, fm *readeef.FeedManager, data i
 		})
 	}
 	resp.val["Feeds"] = respFeeds
-	return resp
+	return
 }
 
-func addFeed(db readeef.DB, user readeef.User, fm *readeef.FeedManager, links []string) responseError {
-	resp := newResponse()
+func addFeed(db readeef.DB, user readeef.User, fm *readeef.FeedManager, links []string) (resp responseError) {
+	resp = newResponse()
 
 	success := false
 
 	for _, link := range links {
-		if u, err := url.Parse(link); err != nil {
+		var u *url.URL
+		if u, resp.err = url.Parse(link); resp.err != nil {
 			/* TODO: non-fatal error */
-			resp.err = err
-			return resp
+			return
 		} else if !u.IsAbs() {
 			/* TODO: non-fatal error */
 			resp.err = errors.New("Feed has no link")
-			return resp
+			return
 		} else {
-
-			f, err := fm.AddFeedByLink(link)
-			if err != nil {
-				resp.err = err
-				return resp
+			var f readeef.Feed
+			if f, resp.err = fm.AddFeedByLink(link); resp.err != nil {
+				return
 			}
 
-			f, err = db.CreateUserFeed(user, f)
-			if err != nil {
-				resp.err = err
-				return resp
+			if f, resp.err = db.CreateUserFeed(user, f); resp.err != nil {
+				return
 			}
 
 			tags := strings.SplitN(u.Fragment, ",", -1)
 			if u.Fragment != "" && len(tags) > 0 {
-				resp.err = db.CreateUserFeedTag(f, tags...)
-				return resp
+				if resp.err = db.CreateUserFeedTag(f, tags...); resp.err != nil {
+					return
+				}
 			}
 
 			success = true
@@ -317,122 +309,117 @@ func addFeed(db readeef.DB, user readeef.User, fm *readeef.FeedManager, links []
 	}
 
 	resp.val["Success"] = success
-	return resp
+	return
 }
 
-func removeFeed(db readeef.DB, user readeef.User, fm *readeef.FeedManager, id int64) responseError {
-	resp := newResponse()
+func removeFeed(db readeef.DB, user readeef.User, fm *readeef.FeedManager, id int64) (resp responseError) {
+	resp = newResponse()
 
-	feed, err := db.GetUserFeed(id, user)
-	/* TODO: non-fatal error */
-	if err != nil {
-		resp.err = err
-		return resp
+	var feed readeef.Feed
+	if feed, resp.err = db.GetUserFeed(id, user); resp.err != nil {
+		/* TODO: non-fatal error */
+		return
 	}
 
 	if resp.err = db.DeleteUserFeed(feed); resp.err != nil {
 		/* TODO: non-fatal error */
-		return resp
+		return
 	}
 
 	fm.RemoveFeed(feed)
 
 	resp.val["Success"] = true
-	return resp
+	return
 }
 
-func getFeedTags(db readeef.DB, user readeef.User, id int64) responseError {
-	resp := newResponse()
+func getFeedTags(db readeef.DB, user readeef.User, id int64) (resp responseError) {
+	resp = newResponse()
 
-	feed, err := db.GetUserFeed(id, user)
-	if err != nil {
+	var feed readeef.Feed
+	if feed, resp.err = db.GetUserFeed(id, user); resp.err != nil {
 		/* TODO: non-fatal error */
-		resp.err = err
-		return resp
+		return
 	}
 
 	resp.val["Tags"] = feed.Tags
-
-	return resp
+	return
 }
 
-func setFeedTags(db readeef.DB, user readeef.User, id int64, data io.Reader) responseError {
-	resp := newResponse()
+func setFeedTags(db readeef.DB, user readeef.User, id int64, data io.Reader) (resp responseError) {
+	resp = newResponse()
 
-	feed, err := db.GetUserFeed(id, user)
-	if err != nil {
+	var feed readeef.Feed
+	if feed, resp.err = db.GetUserFeed(id, user); resp.err != nil {
 		/* TODO: non-fatal error */
-		resp.err = err
-		return resp
+		return
 	}
 
-	tags, err := db.GetUserFeedTags(user, feed)
-	if err != nil {
-		resp.err = err
-		return resp
+	var tags []string
+	if tags, resp.err = db.GetUserFeedTags(user, feed); resp.err != nil {
+		return
 	}
 
 	if resp.err = db.DeleteUserFeedTag(feed, tags...); resp.err != nil {
-		return resp
+		return
 	}
 
 	decoder := json.NewDecoder(data)
 
 	tags = []string{}
 	if resp.err = decoder.Decode(&tags); resp.err != nil {
-		return resp
+		return
 	}
 
 	if resp.err = db.CreateUserFeedTag(feed, tags...); resp.err != nil {
-		return resp
+		return
 	}
 
 	resp.val["Success"] = true
 	resp.val["Id"] = feed.Id
-
-	return resp
+	return
 }
 
-func markFeedAsRead(db readeef.DB, user readeef.User, id string, timestamp int64) responseError {
-	resp := newResponse()
+func markFeedAsRead(db readeef.DB, user readeef.User, id string, timestamp int64) (resp responseError) {
+	resp = newResponse()
 
 	t := time.Unix(timestamp/1000, 0)
 
 	switch {
 	case id == "tag:__all__":
-		resp.err = db.MarkUserArticlesByDateAsRead(user, t, true)
+		if resp.err = db.MarkUserArticlesByDateAsRead(user, t, true); resp.err != nil {
+			return
+		}
 	case id == "__favorite__" || strings.HasPrefix(id, "popular:"):
 		// Favorites are assumbed to have been read already
 	case strings.HasPrefix(id, "tag:"):
 		tag := id[4:]
-		resp.err = db.MarkUserTagArticlesByDateAsRead(user, tag, t, true)
+		if resp.err = db.MarkUserTagArticlesByDateAsRead(user, tag, t, true); resp.err != nil {
+			return
+		}
 	default:
-		id, err := strconv.ParseInt(id, 10, 64)
-		if err != nil {
+		var feedId int64
+		if feedId, resp.err = strconv.ParseInt(id, 10, 64); resp.err != nil {
 			/* TODO: non-fatal error */
-			resp.err = err
-			return resp
+			return
 		}
 
-		feed, err := db.GetUserFeed(id, user)
-		/* TODO: non-fatal error */
-		if err != nil {
-			resp.err = err
-			return resp
+		var feed readeef.Feed
+		if feed, resp.err = db.GetUserFeed(feedId, user); resp.err != nil {
+			/* TODO: non-fatal error */
+			return
 		}
 
-		resp.err = db.MarkFeedArticlesByDateAsRead(feed, t, true)
+		if resp.err = db.MarkFeedArticlesByDateAsRead(feed, t, true); resp.err != nil {
+			return
+		}
 	}
 
-	if resp.err == nil {
-		resp.val["Success"] = true
-	}
-
-	return resp
+	resp.val["Success"] = true
+	return
 }
 
-func getFeedArticles(db readeef.DB, user readeef.User, id string, limit int, offset int, newerFirst bool, unreadOnly bool) responseError {
-	resp := newResponse()
+func getFeedArticles(db readeef.DB, user readeef.User, id string, limit int, offset int, newerFirst bool, unreadOnly bool) (resp responseError) {
+	resp = newResponse()
 	var articles []readeef.Article
 
 	if limit > 50 {
@@ -485,13 +472,13 @@ func getFeedArticles(db readeef.DB, user readeef.User, id string, limit int, off
 
 			if resp.err != nil {
 				resp.err = errors.New("Unknown feed id " + id)
-				return resp
+				return
 			}
 
 			f, resp.err = db.GetFeed(feedId)
 			if resp.err != nil {
 				/* TODO: non-fatal error */
-				return resp
+				return
 			}
 
 			f.User = user
@@ -503,7 +490,7 @@ func getFeedArticles(db readeef.DB, user readeef.User, id string, limit int, off
 			}
 
 			if resp.err != nil {
-				return resp
+				return
 			}
 
 			articles = f.Articles
@@ -531,13 +518,13 @@ func getFeedArticles(db readeef.DB, user readeef.User, id string, limit int, off
 
 		if resp.err != nil {
 			resp.err = errors.New("Unknown feed id " + id)
-			return resp
+			return
 		}
 
 		f, resp.err = db.GetFeed(feedId)
 		if resp.err != nil {
 			/* TODO: non-fatal error */
-			return resp
+			return
 		}
 
 		f.User = user
@@ -556,7 +543,7 @@ func getFeedArticles(db readeef.DB, user readeef.User, id string, limit int, off
 			}
 		}
 		if resp.err != nil {
-			return resp
+			return
 		}
 
 		articles = f.Articles
@@ -565,5 +552,5 @@ func getFeedArticles(db readeef.DB, user readeef.User, id string, limit int, off
 	if resp.err == nil {
 		resp.val["Articles"] = articles
 	}
-	return resp
+	return
 }

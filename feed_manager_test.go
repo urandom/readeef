@@ -37,7 +37,7 @@ func TestFeedManager(t *testing.T) {
 	}
 
 	conf.Updater.Converted.Interval = 100 * time.Millisecond
-	fm := NewFeedManager(db, conf, log.New(os.Stderr, "", 0))
+	fm := NewFeedManager(db, conf, log.New(os.Stderr, "", 0), &UpdateFeedReceiverManager{})
 	fm.AddUpdateReceiver(rec)
 
 	fm.Start()
