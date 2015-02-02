@@ -148,7 +148,7 @@
             var code = event.keyCode || event.charCode, key = event.keyIdentifier;
 
             if (this.searchEnabled && (key == "Help" || key == "U+003F" || code == 47 || code == 63)) { // "/"
-                if (!this.article && !this.searchVisible) {
+                if (this.display == "feed" && !this.article && !this.searchVisible) {
                     this.onSearchToggle();
                 }
             }
