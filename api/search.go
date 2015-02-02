@@ -25,17 +25,14 @@ func NewSearch(searchIndex readeef.SearchIndex) Search {
 
 func (con Search) Handler(c context.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var err error
-
+		db := readeef.GetDB(c)
+		user := readeef.GetUser(c, r)
 		params := webfw.GetParams(c, r)
 		query := params["query"]
-		user := readeef.GetUser(c, r)
 
-		resp := make(map[string]interface{})
+		var resp responseError
 
-		err = r.ParseForm()
-
-		if err == nil {
+		if resp.err = r.ParseForm(); resp.err == nil {
 			highlight := ""
 			feedId := ""
 
@@ -49,40 +46,15 @@ func (con Search) Handler(c context.Context) http.Handler {
 				}
 			}
 
-			var ids []int64
-			if strings.HasPrefix(feedId, "tag:") {
-				db := readeef.GetDB(c)
-
-				var feeds []readeef.Feed
-
-				feeds, err = db.GetUserTagFeeds(user, feedId[4:])
-
-				if err == nil {
-					for _, feed := range feeds {
-						ids = append(ids, feed.Id)
-					}
-				}
-			} else {
-				if id, err := strconv.ParseInt(feedId, 10, 64); err == nil {
-					ids = append(ids, id)
-				}
-			}
-
-			var results []readeef.SearchResult
-
-			results, err = con.searchIndex.Search(user, query, highlight, ids)
-
-			if err == nil {
-				resp["Articles"] = results
-			}
+			resp = search(db, user, con.searchIndex, query, highlight, feedId)
 		}
 
 		var b []byte
-		if err == nil {
-			b, err = json.Marshal(resp)
+		if resp.err == nil {
+			b, resp.err = json.Marshal(resp.val)
 		}
-		if err != nil {
-			webfw.GetLogger(c).Print(err)
+		if resp.err != nil {
+			webfw.GetLogger(c).Print(resp.err)
 
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -94,4 +66,37 @@ func (con Search) Handler(c context.Context) http.Handler {
 
 func (con Search) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
+}
+
+func search(db readeef.DB, user readeef.User, searchIndex readeef.SearchIndex, query, highlight, feedId string) (resp responseError) {
+	resp = newResponse()
+	var ids []int64
+
+	if feedId != "" {
+		if strings.HasPrefix(feedId, "tag:") {
+			var feeds []readeef.Feed
+			if feeds, resp.err = db.GetUserTagFeeds(user, feedId[4:]); resp.err != nil {
+				return
+			}
+
+			for _, feed := range feeds {
+				ids = append(ids, feed.Id)
+			}
+		} else {
+			var id int64
+			if id, resp.err = strconv.ParseInt(feedId, 10, 64); resp.err != nil {
+				return
+			}
+
+			ids = append(ids, id)
+		}
+	}
+
+	var results []readeef.SearchResult
+	if results, resp.err = searchIndex.Search(user, query, highlight, ids); resp.err != nil {
+		return
+	}
+
+	resp.val["Articles"] = results
+	return
 }
