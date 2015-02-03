@@ -14,8 +14,9 @@ import (
 )
 
 type responseError struct {
-	val map[string]interface{}
-	err error
+	val     map[string]interface{}
+	err     error
+	errType string
 }
 
 func newResponse() responseError {

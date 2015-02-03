@@ -30,7 +30,7 @@ func (con Article) Patterns() []webfw.MethodIdentifierTuple {
 	return []webfw.MethodIdentifierTuple{
 		webfw.MethodIdentifierTuple{prefix + "read/:value", webfw.MethodPost, "read"},
 		webfw.MethodIdentifierTuple{prefix + "favorite/:value", webfw.MethodPost, "favorite"},
-		webfw.MethodIdentifierTuple{prefix + "formatter", webfw.MethodGet, "formatter"},
+		webfw.MethodIdentifierTuple{prefix + "format", webfw.MethodGet, "format"},
 	}
 }
 
@@ -45,23 +45,18 @@ func (con Article) Handler(c context.Context) http.Handler {
 		readeef.Debug.Printf("Invoking Article controller with action '%s', article id '%s'\n", action, params["article-id"])
 
 		var articleId int64
-		var article readeef.Article
 		var resp responseError
 
 		articleId, resp.err = strconv.ParseInt(params["article-id"], 10, 64)
 
 		if resp.err == nil {
-			article, resp.err = db.GetFeedArticle(articleId, user)
-		}
-
-		if resp.err == nil {
 			switch action {
 			case "read":
-				resp = markArticleAsRead(db, user, article, params["value"] == "true")
+				resp = markArticleAsRead(db, user, articleId, params["value"] == "true")
 			case "favorite":
-				resp = markArticleAsFavorite(db, user, article, params["value"] == "true")
-			case "formatter":
-				resp = formatArticle(db, user, article, webfw.GetConfig(c), con.config)
+				resp = markArticleAsFavorite(db, user, articleId, params["value"] == "true")
+			case "format":
+				resp = formatArticle(db, user, articleId, webfw.GetConfig(c), con.config)
 			}
 		}
 
@@ -84,8 +79,18 @@ func (con Article) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
 }
 
-func markArticleAsRead(db readeef.DB, user readeef.User, article readeef.Article, read bool) (resp responseError) {
+func getArticle(db readeef.DB, user readeef.User, id int64) (article readeef.Article, err error) {
+	article, err = db.GetFeedArticle(id, user)
+	return
+}
+
+func markArticleAsRead(db readeef.DB, user readeef.User, id int64, read bool) (resp responseError) {
 	resp = newResponse()
+
+	var article readeef.Article
+	if article, resp.err = getArticle(db, user, id); resp.err != nil {
+		return
+	}
 
 	previouslyRead := article.Read
 
@@ -101,8 +106,14 @@ func markArticleAsRead(db readeef.DB, user readeef.User, article readeef.Article
 	return
 }
 
-func markArticleAsFavorite(db readeef.DB, user readeef.User, article readeef.Article, favorite bool) (resp responseError) {
+func markArticleAsFavorite(db readeef.DB, user readeef.User, id int64, favorite bool) (resp responseError) {
 	resp = newResponse()
+
+	var article readeef.Article
+	if article, resp.err = getArticle(db, user, id); resp.err != nil {
+		return
+	}
+
 	previouslyFavorite := article.Favorite
 
 	if previouslyFavorite != favorite {
@@ -117,8 +128,13 @@ func markArticleAsFavorite(db readeef.DB, user readeef.User, article readeef.Art
 	return
 }
 
-func formatArticle(db readeef.DB, user readeef.User, article readeef.Article, webfwConfig webfw.Config, readeefConfig readeef.Config) (resp responseError) {
+func formatArticle(db readeef.DB, user readeef.User, id int64, webfwConfig webfw.Config, readeefConfig readeef.Config) (resp responseError) {
 	resp = newResponse()
+
+	var article readeef.Article
+	if article, resp.err = getArticle(db, user, id); resp.err != nil {
+		return
+	}
 
 	var formatting readeef.ArticleFormatting
 

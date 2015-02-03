@@ -37,6 +37,11 @@ type feed struct {
 	Tags           []string
 }
 
+var (
+	errTypeNoAbsolute = "error-no-absolute"
+	errTypeNoFeed     = "error-no-feed"
+)
+
 func (con Feed) Patterns() []webfw.MethodIdentifierTuple {
 	prefix := "/v:version/feed/"
 
@@ -87,7 +92,15 @@ func (con Feed) Handler(c context.Context) http.Handler {
 					if r.Method == "GET" {
 						resp = getFeedTags(db, user, feedId)
 					} else if r.Method == "POST" {
-						resp = setFeedTags(db, user, feedId, r.Body)
+						decoder := json.NewDecoder(r.Body)
+
+						tags := []string{}
+						if resp.err = decoder.Decode(&tags); resp.err != nil && resp.err != io.EOF {
+							break
+						}
+
+						resp.err = nil
+						resp = setFeedTags(db, user, feedId, tags)
 					}
 				}
 			case "read":
@@ -111,11 +124,11 @@ func (con Feed) Handler(c context.Context) http.Handler {
 		switch resp.err {
 		case readeef.ErrNoAbsolute:
 			resp.val["Error"] = true
-			resp.val["ErrorType"] = "error-no-absolute"
+			resp.val["ErrorType"] = errTypeNoAbsolute
 			resp.err = nil
 		case readeef.ErrNoFeed:
 			resp.val["Error"] = true
-			resp.val["ErrorType"] = "error-no-feed"
+			resp.val["ErrorType"] = errTypeNoFeed
 			resp.err = nil
 		}
 
@@ -166,6 +179,7 @@ func discoverFeeds(db readeef.DB, user readeef.User, fm *readeef.FeedManager, li
 
 	if u, err := url.Parse(link); err != nil {
 		resp.err = readeef.ErrNoAbsolute
+		resp.errType = errTypeNoAbsolute
 		return
 	} else if !u.IsAbs() {
 		u.Scheme = "http"
@@ -343,7 +357,7 @@ func getFeedTags(db readeef.DB, user readeef.User, id int64) (resp responseError
 	return
 }
 
-func setFeedTags(db readeef.DB, user readeef.User, id int64, data io.Reader) (resp responseError) {
+func setFeedTags(db readeef.DB, user readeef.User, id int64, tags []string) (resp responseError) {
 	resp = newResponse()
 
 	var feed readeef.Feed
@@ -352,19 +366,12 @@ func setFeedTags(db readeef.DB, user readeef.User, id int64, data io.Reader) (re
 		return
 	}
 
-	var tags []string
-	if tags, resp.err = db.GetUserFeedTags(user, feed); resp.err != nil {
+	var current []string
+	if current, resp.err = db.GetUserFeedTags(user, feed); resp.err != nil {
 		return
 	}
 
-	if resp.err = db.DeleteUserFeedTag(feed, tags...); resp.err != nil {
-		return
-	}
-
-	decoder := json.NewDecoder(data)
-
-	tags = []string{}
-	if resp.err = decoder.Decode(&tags); resp.err != nil && resp.err != io.EOF {
+	if resp.err = db.DeleteUserFeedTag(feed, current...); resp.err != nil {
 		return
 	}
 

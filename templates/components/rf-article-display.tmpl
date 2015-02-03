@@ -12,7 +12,7 @@
 
         <content></content>
 
-        <rf-api id="article-format" method="get" pathAction="article/{{ article.Id }}/formatter" on-rf-api-response="{{ onArticleFormatResponse }}" user="{{ user }}"></rf-api>
+        <rf-api id="article-format" method="get" pathAction="article/{{ article.Id }}/format" on-rf-api-response="{{ onArticleFormatResponse }}" user="{{ user }}"></rf-api>
         <rf-api id="article-favorite" method="post" pathAction="article/{{ article.Id }}/favorite/{{ article.Favorite }}" on-rf-api-response="{{ onArticleFavoriteResponse }}" user="{{ user }}"></rf-api>
 
         <core-signals on-core-signal-rf-article-format="{{ onArticleFormat }}"></core-signals>

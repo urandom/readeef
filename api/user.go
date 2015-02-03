@@ -20,6 +20,9 @@ var (
 	errForbidden   = errors.New("Forbidden")
 	errUserExists  = errors.New("User exists")
 	errCurrentUser = errors.New("Current user")
+
+	errTypeUserExists  = "error-user-exists"
+	errTypeCurrentUser = "error-current-user"
 )
 
 func NewUser() User {
@@ -63,11 +66,11 @@ func (con User) Handler(c context.Context) http.Handler {
 			return
 		case errUserExists:
 			resp.val["Error"] = true
-			resp.val["ErrorType"] = "error-user-exists"
+			resp.val["ErrorType"] = resp.errType
 			resp.err = nil
 		case errCurrentUser:
 			resp.val["Error"] = true
-			resp.val["ErrorType"] = "error-current-user"
+			resp.val["ErrorType"] = resp.errType
 			resp.err = nil
 		}
 
@@ -141,6 +144,7 @@ func addUser(db readeef.DB, user readeef.User, login string, data io.Reader) (re
 	if resp.err == nil {
 		/* TODO: non-fatal error */
 		resp.err = errUserExists
+		resp.errType = errTypeUserExists
 		return
 	} else if resp.err != sql.ErrNoRows {
 		return
@@ -179,6 +183,7 @@ func removeUser(db readeef.DB, user readeef.User, login string) (resp responseEr
 
 	if user.Login == login {
 		resp.err = errCurrentUser
+		resp.errType = errTypeCurrentUser
 		return
 	}
 
@@ -204,6 +209,7 @@ func setUserAdminAttribute(db readeef.DB, user readeef.User, login, attr, value 
 
 	if user.Login == login {
 		resp.err = errCurrentUser
+		resp.errType = errTypeCurrentUser
 		return
 	}
 
