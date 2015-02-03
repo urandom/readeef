@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/webfw"
@@ -110,8 +109,8 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 							r.errType = errTypeInvalidArgValue
 						}
 					case "parse-opml":
-						if data, ok := data.Arguments["opml"].(string); ok {
-							r = parseOpml(db, user, con.fm, strings.NewReader(data))
+						if opml, ok := data.Arguments["opml"].(string); ok {
+							r = parseOpml(db, user, con.fm, []byte(opml))
 						} else {
 							r.err = errInvalidArgValue
 							r.errType = errTypeInvalidArgValue
@@ -222,7 +221,7 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 						}
 
 						if ok {
-							r = setUserAttribute(db, user, attr, strings.NewReader(value))
+							r = setUserAttribute(db, user, attr, value)
 						} else {
 							r.err = errInvalidArgValue
 							r.errType = errTypeInvalidArgValue
@@ -238,7 +237,7 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 						}
 
 						if ok {
-							r = addUser(db, user, login, strings.NewReader(userData))
+							r = addUser(db, user, login, userData)
 						} else {
 							r.err = errInvalidArgValue
 							r.errType = errTypeInvalidArgValue

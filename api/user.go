@@ -4,9 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
-	"strings"
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/webfw"
@@ -53,7 +51,12 @@ func (con User) Handler(c context.Context) http.Handler {
 		case "list":
 			resp = listUsers(db, user)
 		case "add":
-			resp = addUser(db, user, params["login"], r.Body)
+			buf := util.BufferPool.GetBuffer()
+			defer util.BufferPool.Put(buf)
+
+			buf.ReadFrom(r.Body)
+
+			resp = addUser(db, user, params["login"], buf.String())
 		case "remove":
 			resp = removeUser(db, user, params["login"])
 		case "setAttr":
@@ -131,7 +134,7 @@ func listUsers(db readeef.DB, user readeef.User) (resp responseError) {
 	return
 }
 
-func addUser(db readeef.DB, user readeef.User, login string, data io.Reader) (resp responseError) {
+func addUser(db readeef.DB, user readeef.User, login, password string) (resp responseError) {
 	resp = newResponse()
 	resp.val["Login"] = login
 
@@ -152,14 +155,9 @@ func addUser(db readeef.DB, user readeef.User, login string, data io.Reader) (re
 
 	resp.err = nil
 
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
-
-	buf.ReadFrom(data)
-
 	u := readeef.User{Login: login}
 
-	if resp.err = u.SetPassword(buf.String()); resp.err != nil {
+	if resp.err = u.SetPassword(password); resp.err != nil {
 		return
 	}
 
@@ -219,6 +217,6 @@ func setUserAdminAttribute(db readeef.DB, user readeef.User, login, attr, value 
 		return
 	}
 
-	resp = setUserAttribute(db, u, attr, strings.NewReader(value))
+	resp = setUserAttribute(db, u, attr, value)
 	return
 }

@@ -3,7 +3,6 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 
 	"github.com/urandom/readeef"
@@ -34,7 +33,12 @@ func (con UserSettings) Handler(c context.Context) http.Handler {
 		if r.Method == "GET" {
 			resp = getUserAttribute(db, user, attr)
 		} else if r.Method == "POST" {
-			resp = setUserAttribute(db, user, attr, r.Body)
+			buf := util.BufferPool.GetBuffer()
+			defer util.BufferPool.Put(buf)
+
+			buf.ReadFrom(r.Body)
+
+			resp = setUserAttribute(db, user, attr, buf.String())
 		}
 
 		var b []byte
@@ -78,37 +82,32 @@ func getUserAttribute(db readeef.DB, user readeef.User, attr string) (resp respo
 	return
 }
 
-func setUserAttribute(db readeef.DB, user readeef.User, attr string, data io.Reader) (resp responseError) {
+func setUserAttribute(db readeef.DB, user readeef.User, attr string, data string) (resp responseError) {
 	resp = newResponse()
 	resp.val["Login"] = user.Login
 
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
-
-	buf.ReadFrom(data)
-
 	switch attr {
 	case "FirstName":
-		user.FirstName = buf.String()
+		user.FirstName = data
 	case "LastName":
-		user.LastName = buf.String()
+		user.LastName = data
 	case "Email":
-		user.Email = buf.String()
+		user.Email = data
 	case "ProfileData":
-		resp.err = json.Unmarshal(buf.Bytes(), &user.ProfileData)
+		resp.err = json.Unmarshal([]byte(data), &user.ProfileData)
 	case "Active":
-		resp.err = json.Unmarshal(buf.Bytes(), &user.Active)
+		resp.err = json.Unmarshal([]byte(data), &user.Active)
 	case "password":
-		data := struct {
+		passwd := struct {
 			Current string
 			New     string
 		}{}
-		if resp.err = json.Unmarshal(buf.Bytes(), &data); resp.err != nil {
+		if resp.err = json.Unmarshal([]byte(data), &passwd); resp.err != nil {
 			/* TODO: non-fatal error */
 			return
 		}
-		if user.Authenticate(data.Current) {
-			resp.err = user.SetPassword(data.New)
+		if user.Authenticate(passwd.Current) {
+			resp.err = user.SetPassword(passwd.New)
 		} else {
 			resp.err = errors.New("Error change user password: current password is invalid")
 		}

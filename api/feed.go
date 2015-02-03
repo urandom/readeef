@@ -79,7 +79,12 @@ func (con Feed) Handler(c context.Context) http.Handler {
 				link := r.FormValue("url")
 				resp = discoverFeeds(db, user, con.fm, link)
 			case "opml":
-				resp = parseOpml(db, user, con.fm, r.Body)
+				buf := util.BufferPool.GetBuffer()
+				defer util.BufferPool.Put(buf)
+
+				buf.ReadFrom(r.Body)
+
+				resp = parseOpml(db, user, con.fm, buf.Bytes())
 			case "add":
 				links := r.Form["url"]
 				resp = addFeed(db, user, con.fm, links)
@@ -233,16 +238,11 @@ func discoverFeeds(db readeef.DB, user readeef.User, fm *readeef.FeedManager, li
 	return
 }
 
-func parseOpml(db readeef.DB, user readeef.User, fm *readeef.FeedManager, data io.Reader) (resp responseError) {
+func parseOpml(db readeef.DB, user readeef.User, fm *readeef.FeedManager, data []byte) (resp responseError) {
 	resp = newResponse()
 
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
-
-	buf.ReadFrom(data)
-
 	var opml parser.Opml
-	if opml, resp.err = parser.ParseOpml(buf.Bytes()); resp.err != nil {
+	if opml, resp.err = parser.ParseOpml(data); resp.err != nil {
 		return
 	}
 
