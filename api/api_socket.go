@@ -15,6 +15,7 @@ import (
 type ApiSocket struct {
 	webfw.BasePatternController
 	fm *readeef.FeedManager
+	si readeef.SearchIndex
 }
 
 type apiRequest struct {
@@ -43,10 +44,11 @@ var (
 	errInternal           = errors.New("Internal server error")
 )
 
-func NewApiSocket(fm *readeef.FeedManager) ApiSocket {
+func NewApiSocket(fm *readeef.FeedManager, si readeef.SearchIndex) ApiSocket {
 	return ApiSocket{
 		BasePatternController: webfw.NewBasePatternController("/v:version/", webfw.MethodGet, ""),
 		fm: fm,
+		si: si,
 	}
 }
 
@@ -184,6 +186,82 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 
 						if ok {
 							r = getFeedArticles(db, user, id, int(limit), int(offset), newerFirst, unreadOnly)
+						} else {
+							r.err = errInvalidArgValue
+							r.errType = errTypeInvalidArgValue
+						}
+					case "search":
+						var ok bool
+						var query, highlight, feedId string
+
+						if query, ok = data.Arguments["query"].(string); ok {
+							if highlight, ok = data.Arguments["query"].(string); ok {
+								feedId, ok = data.Arguments["id"].(string)
+							}
+						}
+
+						if ok {
+							r = search(db, user, con.si, query, highlight, feedId)
+						} else {
+							r.err = errInvalidArgValue
+							r.errType = errTypeInvalidArgValue
+						}
+					case "get-user-attribute":
+						if attr, ok := data.Arguments["attribute"].(string); ok {
+							r = getUserAttribute(db, user, attr)
+						} else {
+							r.err = errInvalidArgValue
+							r.errType = errTypeInvalidArgValue
+						}
+					case "set-user-attribute":
+						var ok bool
+						var attr, value string
+
+						if attr, ok = data.Arguments["attribute"].(string); ok {
+							value, ok = data.Arguments["value"].(string)
+						}
+
+						if ok {
+							r = setUserAttribute(db, user, attr, strings.NewReader(value))
+						} else {
+							r.err = errInvalidArgValue
+							r.errType = errTypeInvalidArgValue
+						}
+					case "list-users":
+						r = listUsers(db, user)
+					case "add-user":
+						var ok bool
+						var login, userData string
+
+						if login, ok = data.Arguments["login"].(string); ok {
+							userData, ok = data.Arguments["userData"].(string)
+						}
+
+						if ok {
+							r = addUser(db, user, login, strings.NewReader(userData))
+						} else {
+							r.err = errInvalidArgValue
+							r.errType = errTypeInvalidArgValue
+						}
+					case "remove-user":
+						if login, ok := data.Arguments["login"].(string); ok {
+							r = removeUser(db, user, login)
+						} else {
+							r.err = errInvalidArgValue
+							r.errType = errTypeInvalidArgValue
+						}
+					case "set-attribute-for-user":
+						var ok bool
+						var login, attr, value string
+
+						if login, ok = data.Arguments["login"].(string); ok {
+							if attr, ok = data.Arguments["attribute"].(string); ok {
+								value, ok = data.Arguments["value"].(string)
+							}
+						}
+
+						if ok {
+							r = setUserAdminAttribute(db, user, login, attr, value)
 						} else {
 							r.err = errInvalidArgValue
 							r.errType = errTypeInvalidArgValue
