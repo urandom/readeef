@@ -103,7 +103,7 @@
 
         <rf-api id="user-settings" method="set-user-attribute" tag="current-user" user="{{ user }}"></rf-api>
 
-        <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="{{ onFeedUpdateNotify }}" user="{{ user }}"></rf-api>
+        <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="{{ onFeedUpdateNotify }}" user="{{ user }}" receiver="true"></rf-api>
 
         <!-- TODO: Enable the html highlight when polymer gets safe template binding -->
         <rf-api id="feed-search" method="search" arguments='{"query": "{{ searchTerm }}", "highlight": "", "id": "{{ userSettings.preSearchFeedId }}"}' on-rf-api-message="{{ onFeedArticlesMessage }}" user="{{ user }}"></rf-api>
