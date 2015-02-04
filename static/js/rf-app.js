@@ -170,7 +170,7 @@
 
                     this.$['user-settings'].send({
                         attribute: "ProfileData",
-                        value: JSON.stringify(this.userSettings)
+                        value: this.userSettings
                     });
                 }.bind(this));
 

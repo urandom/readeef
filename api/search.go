@@ -16,6 +16,16 @@ type Search struct {
 	searchIndex readeef.SearchIndex
 }
 
+type searchProcessor struct {
+	Query     string `json:"query"`
+	Highlight string `json:"highlight"`
+	Id        string `json:"id"`
+
+	db   readeef.DB
+	user readeef.User
+	si   readeef.SearchIndex
+}
+
 func NewSearch(searchIndex readeef.SearchIndex) Search {
 	return Search{
 		webfw.NewBasePatternController("/v:version/search/:query", webfw.MethodGet, ""),
@@ -66,6 +76,10 @@ func (con Search) Handler(c context.Context) http.Handler {
 
 func (con Search) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
+}
+
+func (p searchProcessor) Process() responseError {
+	return search(p.db, p.user, p.si, p.Query, p.Highlight, p.Id)
 }
 
 func search(db readeef.DB, user readeef.User, searchIndex readeef.SearchIndex, query, highlight, feedId string) (resp responseError) {

@@ -14,6 +14,37 @@ import (
 
 type User struct{}
 
+type listUsersProcessor struct {
+	Attribute string `json:"attribute"`
+
+	db   readeef.DB
+	user readeef.User
+}
+
+type addUserProcessor struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+
+	db   readeef.DB
+	user readeef.User
+}
+
+type removeUserProcessor struct {
+	Login string `json:"login"`
+
+	db   readeef.DB
+	user readeef.User
+}
+
+type setAttributeForUserProcessor struct {
+	Login     string          `json:"login"`
+	Attribute string          `json:"attribute"`
+	Value     json.RawMessage `json:"value"`
+
+	db   readeef.DB
+	user readeef.User
+}
+
 var (
 	errUserExists  = errors.New("User exists")
 	errCurrentUser = errors.New("Current user")
@@ -61,7 +92,7 @@ func (con User) Handler(c context.Context) http.Handler {
 		case "remove":
 			resp = removeUser(db, user, params["login"])
 		case "setAttr":
-			resp = setAttributeForUser(db, user, params["login"], params["attr"], params["value"])
+			resp = setAttributeForUser(db, user, params["login"], params["attr"], []byte(params["value"]))
 		}
 
 		switch resp.err {
@@ -95,6 +126,22 @@ func (con User) Handler(c context.Context) http.Handler {
 
 func (con User) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
+}
+
+func (p listUsersProcessor) Process() responseError {
+	return listUsers(p.db, p.user)
+}
+
+func (p addUserProcessor) Process() responseError {
+	return addUser(p.db, p.user, p.Login, p.Password)
+}
+
+func (p removeUserProcessor) Process() responseError {
+	return removeUser(p.db, p.user, p.Login)
+}
+
+func (p setAttributeForUserProcessor) Process() responseError {
+	return setAttributeForUser(p.db, p.user, p.Login, p.Attribute, p.Value)
 }
 
 func listUsers(db readeef.DB, user readeef.User) (resp responseError) {
@@ -203,7 +250,7 @@ func removeUser(db readeef.DB, user readeef.User, login string) (resp responseEr
 	return
 }
 
-func setAttributeForUser(db readeef.DB, user readeef.User, login, attr, value string) (resp responseError) {
+func setAttributeForUser(db readeef.DB, user readeef.User, login, attr string, value []byte) (resp responseError) {
 	if !user.Admin {
 		resp.err = errForbidden
 		resp.errType = errTypeForbidden

@@ -214,10 +214,10 @@
 
             this.$['password-change'].send({
                 attribute: "Password",
-                value: JSON.stringify({
+                value: {
                     "Current": this.$.password.value,
                     "New": this.$["new-password"].value
-                })
+                }
             });
         },
 

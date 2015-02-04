@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -20,9 +21,9 @@ type ApiSocket struct {
 }
 
 type apiRequest struct {
-	Method    string                 `json:"method"`
-	Tag       string                 `json:"tag"`
-	Arguments map[string]interface{} `json:"arguments"`
+	Method    string          `json:"method"`
+	Tag       string          `json:"tag"`
+	Arguments json.RawMessage `json:"arguments"`
 }
 
 type apiResponse struct {
@@ -32,6 +33,10 @@ type apiResponse struct {
 	Method    string                 `json:"method"`
 	Tag       string                 `json:"tag"`
 	Arguments map[string]interface{} `json:"arguments"`
+}
+
+type Processor interface {
+	Process() responseError
 }
 
 var (
@@ -111,209 +116,28 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 
 				select {
 				case data := <-msg:
-					switch data.Method {
-					case "get-auth-data":
-						r = getAuthData(user)
-					case "mark-article-as-read", "mark-article-as-favorite", "format-article":
-						if articleId, ok := data.Arguments["id"].(float64); ok {
-							switch data.Method {
-							case "mark-article-as-read":
-								if value, ok := data.Arguments["value"].(bool); ok {
-									r = markArticleAsRead(db, user, int64(articleId), value)
-								} else {
-									r.err = errInvalidArgValue
-									r.errType = errTypeInvalidArgValue
-								}
-							case "mark-article-as-favorite":
-								if value, ok := data.Arguments["value"].(bool); ok {
-									r = markArticleAsFavorite(db, user, int64(articleId), value)
-								} else {
-									r.err = errInvalidArgValue
-									r.errType = errTypeInvalidArgValue
-								}
-							case "format-article":
-								r = formatArticle(db, user, int64(articleId), webfw.GetConfig(c), readeef.GetConfig(c))
+					var err error
+					var processor Processor
+
+					if processor, err = data.processor(c, db, user, con.fm, con.si); err == nil {
+						if len(data.Arguments) > 0 {
+							err = json.Unmarshal([]byte(data.Arguments), processor)
+						}
+
+						if err == nil {
+							r = processor.Process()
+						}
+					}
+
+					if err != nil {
+						r.err = err
+						switch err.(type) {
+						case *json.UnmarshalTypeError:
+							r.errType = errTypeInvalidArgValue
+						default:
+							if err == errInvalidMethodValue {
+								r.errType = errTypeInvalidMethodValue
 							}
-						} else {
-							r.err = errNoId
-							r.errType = errTypeNoId
-						}
-					case "list-feeds":
-						r = listFeeds(db, user)
-					case "discover-feeds":
-						if link, ok := data.Arguments["link"].(string); ok {
-							r = discoverFeeds(db, user, con.fm, link)
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
-						}
-					case "parse-opml":
-						if opml, ok := data.Arguments["opml"].(string); ok {
-							r = parseOpml(db, user, con.fm, []byte(opml))
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
-						}
-					case "add-feed":
-						var ok bool
-						var slice []interface{}
-						var links []string
-
-						if slice, ok = data.Arguments["links"].([]interface{}); ok {
-							links, ok = interfaceSliceToString(slice)
-						}
-
-						if ok {
-							r = addFeed(db, user, con.fm, links)
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
-						}
-					case "remove-feed":
-						if id, ok := data.Arguments["id"].(float64); ok {
-							r = removeFeed(db, user, con.fm, int64(id))
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
-						}
-					case "get-feed-tags":
-						if id, ok := data.Arguments["id"].(float64); ok {
-							r = getFeedTags(db, user, int64(id))
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
-						}
-					case "set-feed-tags":
-						var ok bool
-						var id float64
-						var slice []interface{}
-						var tags []string
-
-						if id, ok = data.Arguments["id"].(float64); ok {
-							if slice, ok = data.Arguments["tags"].([]interface{}); ok {
-								tags, ok = interfaceSliceToString(slice)
-							}
-						}
-
-						if ok {
-							r = setFeedTags(db, user, int64(id), tags)
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
-						}
-					case "mark-feed-as-read":
-						var ok bool
-						var id string
-						var timestamp float64
-
-						if id, ok = data.Arguments["id"].(string); ok {
-							timestamp, ok = data.Arguments["timestamp"].(float64)
-						}
-
-						if ok {
-							r = markFeedAsRead(db, user, id, int64(timestamp))
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
-						}
-					case "get-feed-articles":
-						var ok bool
-						var id string
-						var limit, offset float64
-						var newerFirst, unreadOnly bool
-
-						if id, ok = data.Arguments["id"].(string); ok {
-							if limit, ok = data.Arguments["limit"].(float64); ok {
-								if offset, ok = data.Arguments["offset"].(float64); ok {
-									if newerFirst, ok = data.Arguments["newerFirst"].(bool); ok {
-										if unreadOnly, ok = data.Arguments["unreadOnly"].(bool); ok {
-										}
-									}
-								}
-							}
-						}
-
-						if ok {
-							r = getFeedArticles(db, user, id, int(limit), int(offset), newerFirst, unreadOnly)
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
-						}
-					case "search":
-						var ok bool
-						var query, highlight, feedId string
-
-						if query, ok = data.Arguments["query"].(string); ok {
-							if highlight, ok = data.Arguments["highlight"].(string); ok {
-								feedId, ok = data.Arguments["id"].(string)
-							}
-						}
-
-						if ok {
-							r = search(db, user, con.si, query, highlight, feedId)
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
-						}
-					case "get-user-attribute":
-						if attr, ok := data.Arguments["attribute"].(string); ok {
-							r = getUserAttribute(db, user, attr)
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
-						}
-					case "set-user-attribute":
-						var ok bool
-						var attr, value string
-
-						if attr, ok = data.Arguments["attribute"].(string); ok {
-							value, ok = data.Arguments["value"].(string)
-						}
-
-						if ok {
-							r = setUserAttribute(db, user, attr, value)
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
-						}
-					case "list-users":
-						r = listUsers(db, user)
-					case "add-user":
-						var ok bool
-						var login, password string
-
-						if login, ok = data.Arguments["login"].(string); ok {
-							password, ok = data.Arguments["password"].(string)
-						}
-
-						if ok {
-							r = addUser(db, user, login, password)
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
-						}
-					case "remove-user":
-						if login, ok := data.Arguments["login"].(string); ok {
-							r = removeUser(db, user, login)
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
-						}
-					case "set-attribute-for-user":
-						var ok bool
-						var login, attr, value string
-
-						if login, ok = data.Arguments["login"].(string); ok {
-							if attr, ok = data.Arguments["attribute"].(string); ok {
-								value, ok = data.Arguments["value"].(string)
-							}
-						}
-
-						if ok {
-							r = setAttributeForUser(db, user, login, attr, value)
-						} else {
-							r.err = errInvalidArgValue
-							r.errType = errTypeInvalidArgValue
 						}
 					}
 
@@ -388,6 +212,64 @@ func (con ApiSocket) AuthReject(c context.Context, r *http.Request) {
 	c.Set(r, readeef.CtxKey("forbidden"), true)
 }
 
+func (a apiRequest) processor(
+	c context.Context,
+	db readeef.DB,
+	user readeef.User,
+	fm *readeef.FeedManager,
+	si readeef.SearchIndex,
+) (Processor, error) {
+
+	switch a.Method {
+	case "get-auth-data":
+		return &getAuthDataProcessor{user: user}, nil
+	case "mark-article-as-read":
+		return &markArticleAsReadProcessor{db: db, user: user}, nil
+	case "mark-article-as-favorite":
+		return &markArticleAsFavoriteProcessor{db: db, user: user}, nil
+	case "format-article":
+		return &formatArticleProcessor{
+			db: db, user: user,
+			webfwConfig:   webfw.GetConfig(c),
+			readeefConfig: readeef.GetConfig(c),
+		}, nil
+	case "list-feeds":
+		return &listFeedsProcessor{db: db, user: user}, nil
+	case "discover-feeds":
+		return &discoverFeedsProcessor{db: db, user: user, fm: fm}, nil
+	case "parse-opml":
+		return &parseOpmlProcessor{db: db, user: user, fm: fm}, nil
+	case "add-feed":
+		return &addFeedProcessor{db: db, user: user, fm: fm}, nil
+	case "remove-feed":
+		return &removeFeedProcessor{db: db, user: user, fm: fm}, nil
+	case "get-feed-tags":
+		return &getFeedTagsProcessor{db: db, user: user}, nil
+	case "set-feed-tags":
+		return &setFeedTagsProcessor{db: db, user: user}, nil
+	case "mark-feed-as-read":
+		return &markFeedAsReadProcessor{db: db, user: user}, nil
+	case "get-feed-articles":
+		return &getFeedArticlesProcessor{db: db, user: user}, nil
+	case "search":
+		return &searchProcessor{db: db, user: user, si: si}, nil
+	case "get-user-attribute":
+		return &getUserAttributeProcessor{db: db, user: user}, nil
+	case "set-user-attribute":
+		return &setUserAttributeProcessor{db: db, user: user}, nil
+	case "list-users":
+		return &listUsersProcessor{db: db, user: user}, nil
+	case "add-user":
+		return &addUserProcessor{db: db, user: user}, nil
+	case "remove-user":
+		return &removeUserProcessor{db: db, user: user}, nil
+	case "set-attribute-for-user":
+		return &setAttributeForUserProcessor{db: db, user: user}, nil
+	default:
+		return nil, errInvalidMethodValue
+	}
+}
+
 func forbidden(c context.Context, r *http.Request) bool {
 	if v, ok := c.Get(r, readeef.CtxKey("forbidden")); ok {
 		if f, ok := v.(bool); ok {
@@ -396,17 +278,4 @@ func forbidden(c context.Context, r *http.Request) bool {
 	}
 
 	return false
-}
-
-func interfaceSliceToString(data []interface{}) (ret []string, ok bool) {
-	ok = true
-	ret = make([]string, len(data))
-
-	for i := range data {
-		if ret[i], ok = data[i].(string); !ok {
-			return
-		}
-	}
-
-	return
 }

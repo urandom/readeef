@@ -15,6 +15,21 @@ type UserSettings struct {
 	webfw.BasePatternController
 }
 
+type getUserAttributeProcessor struct {
+	Attribute string `json:"attribute"`
+
+	db   readeef.DB
+	user readeef.User
+}
+
+type setUserAttributeProcessor struct {
+	Attribute string          `json:"attribute"`
+	Value     json.RawMessage `json:"value"`
+
+	db   readeef.DB
+	user readeef.User
+}
+
 func NewUserSettings() UserSettings {
 	return UserSettings{
 		webfw.NewBasePatternController("/v:version/user-settings/:attribute", webfw.MethodGet|webfw.MethodPost, ""),
@@ -38,7 +53,7 @@ func (con UserSettings) Handler(c context.Context) http.Handler {
 
 			buf.ReadFrom(r.Body)
 
-			resp = setUserAttribute(db, user, attr, buf.String())
+			resp = setUserAttribute(db, user, attr, buf.Bytes())
 		}
 
 		var b []byte
@@ -59,6 +74,14 @@ func (con UserSettings) Handler(c context.Context) http.Handler {
 
 func (con UserSettings) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
+}
+
+func (p getUserAttributeProcessor) Process() responseError {
+	return getUserAttribute(p.db, p.user, p.Attribute)
+}
+
+func (p setUserAttributeProcessor) Process() responseError {
+	return setUserAttribute(p.db, p.user, p.Attribute, p.Value)
 }
 
 func getUserAttribute(db readeef.DB, user readeef.User, attr string) (resp responseError) {
@@ -82,27 +105,27 @@ func getUserAttribute(db readeef.DB, user readeef.User, attr string) (resp respo
 	return
 }
 
-func setUserAttribute(db readeef.DB, user readeef.User, attr string, data string) (resp responseError) {
+func setUserAttribute(db readeef.DB, user readeef.User, attr string, data []byte) (resp responseError) {
 	resp = newResponse()
 	resp.val["Login"] = user.Login
 
 	switch attr {
 	case "FirstName":
-		user.FirstName = data
+		user.FirstName = string(data)
 	case "LastName":
-		user.LastName = data
+		user.LastName = string(data)
 	case "Email":
-		user.Email = data
+		user.Email = string(data)
 	case "ProfileData":
-		resp.err = json.Unmarshal([]byte(data), &user.ProfileData)
+		resp.err = json.Unmarshal(data, &user.ProfileData)
 	case "Active":
-		user.Active = data == "true"
+		user.Active = string(data) == "true"
 	case "Password":
 		passwd := struct {
 			Current string
 			New     string
 		}{}
-		if resp.err = json.Unmarshal([]byte(data), &passwd); resp.err != nil {
+		if resp.err = json.Unmarshal(data, &passwd); resp.err != nil {
 			/* TODO: non-fatal error */
 			return
 		}

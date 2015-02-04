@@ -37,6 +37,77 @@ type feed struct {
 	Tags           []string
 }
 
+type listFeedsProcessor struct {
+	db   readeef.DB
+	user readeef.User
+}
+
+type discoverFeedsProcessor struct {
+	Link string `json:"link"`
+
+	fm   *readeef.FeedManager
+	db   readeef.DB
+	user readeef.User
+}
+
+type parseOpmlProcessor struct {
+	Opml string `json:"opml"`
+
+	fm   *readeef.FeedManager
+	db   readeef.DB
+	user readeef.User
+}
+
+type addFeedProcessor struct {
+	Links []string `json:"links"`
+
+	fm   *readeef.FeedManager
+	db   readeef.DB
+	user readeef.User
+}
+
+type removeFeedProcessor struct {
+	Id int64 `json:"id"`
+
+	fm   *readeef.FeedManager
+	db   readeef.DB
+	user readeef.User
+}
+
+type getFeedTagsProcessor struct {
+	Id int64 `json:"id"`
+
+	db   readeef.DB
+	user readeef.User
+}
+
+type setFeedTagsProcessor struct {
+	Id   int64    `json:"id"`
+	Tags []string `json:"tags"`
+
+	db   readeef.DB
+	user readeef.User
+}
+
+type markFeedAsReadProcessor struct {
+	Id        string `json:"id"`
+	Timestamp int64  `json:"timestamp"`
+
+	db   readeef.DB
+	user readeef.User
+}
+
+type getFeedArticlesProcessor struct {
+	Id         string `json:"id"`
+	Limit      int    `json:"limit"`
+	Offset     int    `json:"offset"`
+	NewerFirst bool   `json:"newerFirst"`
+	UnreadOnly bool   `json:"unreadOnly"`
+
+	db   readeef.DB
+	user readeef.User
+}
+
 var (
 	errTypeNoAbsolute = "error-no-absolute"
 	errTypeNoFeed     = "error-no-feed"
@@ -155,6 +226,42 @@ func (con Feed) Handler(c context.Context) http.Handler {
 
 func (con Feed) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
+}
+
+func (p listFeedsProcessor) Process() responseError {
+	return listFeeds(p.db, p.user)
+}
+
+func (p discoverFeedsProcessor) Process() responseError {
+	return discoverFeeds(p.db, p.user, p.fm, p.Link)
+}
+
+func (p parseOpmlProcessor) Process() responseError {
+	return parseOpml(p.db, p.user, p.fm, []byte(p.Opml))
+}
+
+func (p addFeedProcessor) Process() responseError {
+	return addFeed(p.db, p.user, p.fm, p.Links)
+}
+
+func (p removeFeedProcessor) Process() responseError {
+	return removeFeed(p.db, p.user, p.fm, p.Id)
+}
+
+func (p getFeedTagsProcessor) Process() responseError {
+	return getFeedTags(p.db, p.user, p.Id)
+}
+
+func (p setFeedTagsProcessor) Process() responseError {
+	return setFeedTags(p.db, p.user, p.Id, p.Tags)
+}
+
+func (p markFeedAsReadProcessor) Process() responseError {
+	return markFeedAsRead(p.db, p.user, p.Id, p.Timestamp)
+}
+
+func (p getFeedArticlesProcessor) Process() responseError {
+	return getFeedArticles(p.db, p.user, p.Id, p.Limit, p.Offset, p.NewerFirst, p.UnreadOnly)
 }
 
 func listFeeds(db readeef.DB, user readeef.User) (resp responseError) {

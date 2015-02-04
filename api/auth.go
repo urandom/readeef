@@ -13,6 +13,10 @@ type Auth struct {
 	webfw.BasePatternController
 }
 
+type getAuthDataProcessor struct {
+	user readeef.User
+}
+
 func NewAuth() Auth {
 	return Auth{
 		webfw.NewBasePatternController("/v:version/auth", webfw.MethodAll, ""),
@@ -39,6 +43,10 @@ func (con Auth) Handler(c context.Context) http.Handler {
 
 func (con Auth) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
+}
+
+func (p getAuthDataProcessor) Process() responseError {
+	return getAuthData(p.user)
 }
 
 func getAuthData(user readeef.User) (resp responseError) {

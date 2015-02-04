@@ -24,6 +24,31 @@ type Readability struct {
 	Content string
 }
 
+type markArticleAsReadProcessor struct {
+	Id    int64 `json:"id"`
+	Value bool  `json:"value"`
+
+	db   readeef.DB
+	user readeef.User
+}
+
+type markArticleAsFavoriteProcessor struct {
+	Id    int64 `json:"id"`
+	Value bool  `json:"value"`
+
+	db   readeef.DB
+	user readeef.User
+}
+
+type formatArticleProcessor struct {
+	Id int64 `json:"id"`
+
+	db            readeef.DB
+	user          readeef.User
+	webfwConfig   webfw.Config
+	readeefConfig readeef.Config
+}
+
 func (con Article) Patterns() []webfw.MethodIdentifierTuple {
 	prefix := "/v:version/article/:article-id/"
 
@@ -77,6 +102,18 @@ func (con Article) Handler(c context.Context) http.Handler {
 
 func (con Article) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
+}
+
+func (p markArticleAsReadProcessor) Process() responseError {
+	return markArticleAsRead(p.db, p.user, p.Id, p.Value)
+}
+
+func (p markArticleAsFavoriteProcessor) Process() responseError {
+	return markArticleAsFavorite(p.db, p.user, p.Id, p.Value)
+}
+
+func (p formatArticleProcessor) Process() responseError {
+	return formatArticle(p.db, p.user, p.Id, p.webfwConfig, p.readeefConfig)
 }
 
 func getArticle(db readeef.DB, user readeef.User, id int64) (article readeef.Article, err error) {
