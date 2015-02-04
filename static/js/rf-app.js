@@ -416,6 +416,15 @@
             }
         },
 
+        onApiError: function(event, data) {
+            if (this.$.error.opened) {
+                this.$.error.dismiss();
+            }
+
+            this.$.error.text = "Error: " + data.error + ", type: " + data.errorType
+            this.$.error.show()
+        },
+
         updateTags: function() {
             var tagList = [{name: '__all__', feeds: this.feeds}], tags = {};
 

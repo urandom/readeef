@@ -28,7 +28,7 @@ type apiRequest struct {
 
 type apiResponse struct {
 	Success   bool                   `json:"success"`
-	ErrorType string                 `json:"error-type"`
+	ErrorType string                 `json:"errorType"`
 	Error     error                  `json:"error"`
 	Method    string                 `json:"method"`
 	Tag       string                 `json:"tag"`

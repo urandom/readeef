@@ -3,6 +3,7 @@
 
 <link rel="import" href="/dist/paper-item/paper-item.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/dist/paper-toast/paper-toast.html">
 
 <link rel="import" href="/dist/core-collapse/core-collapse.html">
 <link rel="import" href="/dist/core-localstorage/core-localstorage.html">
@@ -93,6 +94,8 @@
             </section>
         </core-animated-pages>
 
+        <paper-toast id="error"></paper-toast>
+
         <rf-api id="auth-check" method="get-auth-data" on-rf-api-message="{{ onAuthCheckMessage }}" user="{{ user }}"></rf-api>
 
         <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="{{ onAllFeedsMessage }}" user="{{ user }}"></rf-api>
@@ -136,6 +139,7 @@
         <core-signals on-core-signal-rf-mark-all-as-read="{{ onMarkAllAsRead }}"></core-signals>
         <core-signals on-core-signal-rf-feed-tags-changed="{{ onFeedTagsChange }}"></core-signals>
         <core-signals on-core-signal-rf-feed-search="{{ onFeedSearch }}"></core-signals>
+        <core-signals on-core-signal-rf-api-error="{{ onApiError }}"></core-signals>
 
     </template>
 

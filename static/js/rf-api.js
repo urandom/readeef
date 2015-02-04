@@ -24,7 +24,11 @@
                 if (data.errorType == "error-unauthorized") {
                     r.instance.asyncFire('core-signal', {name: 'rf-connection-unauthorized'});
                 } else {
-                    r.instance.fire('rf-api-error', data);
+                    if (r.instance.hasAttribute('on-rf-api-error')) {
+                        r.instance.fire('rf-api-error', data);
+                    } else {
+                        r.instance.asyncFire('core-signal', {name: 'rf-api-error', data: data});
+                    }
                 }
             } else {
                 r.instance.fire('rf-api-message', data);
