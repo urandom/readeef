@@ -29,6 +29,10 @@ type ApiAuthController interface {
 	AuthRequired(context.Context, *http.Request) bool
 }
 
+type AuthRejectHandler interface {
+	AuthReject(context.Context, *http.Request)
+}
+
 // The Auth middleware checks whether the session contains a valid user or
 // login. If it only contains the later, it tries to load the actual user
 // object from the database. If a valid user hasn't been loaded, it redirects
@@ -202,15 +206,19 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 				}
 			}
 
-			if !validUser {
-				w.WriteHeader(http.StatusForbidden)
-				return
+			if validUser {
+				c.Set(r, context.BaseCtxKey("user"), u)
+			} else {
+				if rej, ok := ac.(AuthRejectHandler); ok {
+					rej.AuthReject(c, r)
+				} else {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
 			}
 
-			c.Set(r, context.BaseCtxKey("user"), u)
+			ph.ServeHTTP(w, r)
 		}
-
-		ph.ServeHTTP(w, r)
 	}
 
 	return http.HandlerFunc(handler)

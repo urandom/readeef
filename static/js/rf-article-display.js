@@ -162,7 +162,7 @@
 
         onArticleFavorite: function() {
             this.article.Favorite = !this.article.Favorite;
-            this.$['article-favorite'].go();
+            this.$['article-favorite'].send();
         },
 
         cleanTemplateElement: function(template) {
@@ -310,7 +310,7 @@
 
             if (!this._physicalArticles[1].formatted) {
                 this._physicalArticles[1].formatting = true;
-                this.$['article-format'].go();
+                this.$['article-format'].send();
             }
         },
 
@@ -325,16 +325,16 @@
 
             if (!this._physicalArticles[1].summarized) {
                 this._physicalArticles[1].summarizing = true;
-                this.$['article-format'].go();
+                this.$['article-format'].send();
             }
         },
 
-        onArticleFormatResponse: function(event, data) {
-            if (data.response && data.response.ArticleId == this.article.Id) {
+        onArticleFormatMessage: function(event, data) {
+            if (data.arguments.Id == this.article.Id) {
 
-                this._physicalArticles[1].formattedDescription = data.response.Content;
-                this._physicalArticles[1].keyPoints = data.response.KeyPoints;
-                this._physicalArticles[1].topImage = data.response.TopImage;
+                this._physicalArticles[1].formattedDescription = data.arguments.Content;
+                this._physicalArticles[1].keyPoints = data.arguments.KeyPoints;
+                this._physicalArticles[1].topImage = data.arguments.TopImage;
                 if (this._physicalArticles[1].formatting) {
                     this._physicalArticles[1].formatted = true;
                     this._physicalArticles[1].formatting = false;

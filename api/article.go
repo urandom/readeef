@@ -102,7 +102,7 @@ func markArticleAsRead(db readeef.DB, user readeef.User, id int64, read bool) (r
 
 	resp.val["Success"] = previouslyRead != read
 	resp.val["Read"] = read
-	resp.val["ArticleId"] = article.Id
+	resp.val["Id"] = article.Id
 	return
 }
 
@@ -124,7 +124,7 @@ func markArticleAsFavorite(db readeef.DB, user readeef.User, id int64, favorite 
 
 	resp.val["Success"] = previouslyFavorite != favorite
 	resp.val["Favorite"] = favorite
-	resp.val["ArticleId"] = article.Id
+	resp.val["Id"] = article.Id
 	return
 }
 
@@ -154,6 +154,6 @@ func formatArticle(db readeef.DB, user readeef.User, id int64, webfwConfig webfw
 	resp.val["KeyPoints"] = keyPoints
 	resp.val["Content"] = formatting.Content
 	resp.val["TopImage"] = formatting.TopImage
-	resp.val["ArticleId"] = article.Id
+	resp.val["Id"] = article.Id
 	return
 }

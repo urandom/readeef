@@ -1,4 +1,6 @@
 (function() {
+    var webSocket = null, messagePool = [], requestPool = [], receivers = [], initializing = false;
+
     function generateSignature(uri, method, body, contentType, date, nonce, secret) {
         var message, bodyHash;
 
@@ -16,48 +18,48 @@
         return CryptoJS.HmacSHA256(message, secret).toString(CryptoJS.enc.Base64);
     }
 
-    function toQueryString(params) {
-        var r = [];
-        for (var n in params) {
-            var v = params[n];
-            n = encodeURIComponent(n);
-            if (Array.isArray(v)) {
-                v.forEach(function(val) {
-                    r.push(val == null ? n : (n + '=' + encodeURIComponent(val)));
-                });
+    function dispatchData(r, data) {
+        if (r.method == data.method && r.tag == data.tag) {
+            if (data.error) {
+                if (data.errorType == "error-unauthorized") {
+                    r.instance.asyncFire('core-signal', {name: 'rf-connection-unauthorized'});
+                } else {
+                    r.instance.fire('rf-api-error', data);
+                }
             } else {
-                r.push(v == null ? n : (n + '=' + encodeURIComponent(v)));
+                r.instance.fire('rf-api-message', data);
             }
+            return true;
         }
-        return r.join('&');
-    }
 
-    function urlQuery(url, params) {
-        /* Make sure the order of the parameters is
-         * consistent with that's in the message, don't
-         * let the xhr do it */
-        if (params == "") {
-            return url;
-        }
-        url += (url.indexOf('?') > 0 ? '&' : '?') + params;
-
-        return url
+        return false;
     }
 
     Polymer('rf-api', {
         version: 1,
-        pathAction: '',
-        webSocket: null,
-        messagePool: [],
+        retryTimeout: 10,
+        tag: "",
 
         ready: function() {
-            this.$.request.xhr.toQueryString = toQueryString;
+            if (this.receiver) {
+                receivers.push({instance: this, method: this.method, tag: this.tag});
+            }
         },
 
-        go: function() {
-            if (!this.user) {
+        initialize: function() {
+            if (!this.user || initializing) {
                 return;
             }
+
+            if (webSocket != null && webSocket.readyState == WebSocket.OPEN) {
+                return;
+            }
+
+            if (webSocket != null) {
+                webSocket.close();
+            }
+
+            initializing = true;
 
             var self = this;
 
@@ -66,118 +68,89 @@
                 this.response = response;
 
                 if (!self.url) {
-                    self.url = self.getAttribute('data-api-pattern') + "v" + self.version + "/" + self.pathAction
+                    self.url = self.getAttribute('data-api-pattern') + "v" + self.version + "/";
                 }
 
-                if (self.socket) {
-                    var params = toQueryString(self.$.request.getParams((self.xhrArgs || {}).params)),
-                        date = new Date().getTime(),
-                        nonce = response.Nonce,
-                        url = urlQuery(self.url, params), urlParts;
+                var date = new Date().getTime(),
+                    nonce = response.Nonce;
 
-                    if (self.webSocket != null) {
-                        self.webSocket.close();
+                signature = generateSignature(encodeURI(self.url), 'GET', null,
+                    "", date, nonce, self.user.MD5API || "");
+
+                webSocket = new WebSocket(
+                    "ws://" + location.host + self.url +
+                    "?login=" + encodeURIComponent(self.user.Login) +
+                    "&signature=" + encodeURIComponent(signature) +
+                    "&date=" + encodeURIComponent(date) +
+                    "&nonce=" + encodeURIComponent(nonce));
+
+                webSocket.onopen = function() {
+                    initializing = false;
+                    while (messagePool.length) {
+                        var m = messagePool.shift();
+
+                        m.instance.send(m.data);
+                    }
+                };
+
+                webSocket.onmessage = function(event) {
+                    var data = event.data;
+                    try {
+                        data = JSON.parse(data)
+                    } catch(e) {}
+
+                    for (var i = 0, r; r = receivers[i]; ++i) {
+                        if (dispatchData(r, data)) {
+                            return;
+                        }
                     }
 
-                    urlParts = url.split("?", 2);
-                    urlParts[0] = encodeURI(urlParts[0]);
-
-                    signature = generateSignature(urlParts.join("?"), 'GET', null,
-                        "", date, nonce, self.user.MD5API || "");
-
-                    self.webSocket = new WebSocket(
-                        urlQuery("ws://" + location.host + url,
-                            "login=" + encodeURIComponent(self.user.Login) +
-                            "&signature=" + encodeURIComponent(signature) +
-                            "&date=" + encodeURIComponent(date) +
-                            "&nonce=" + encodeURIComponent(nonce)));
-
-                    self.webSocket.onopen = function() {
-                        while (self.messagePool.length) {
-                            var m = self.messagePool.shift();
-
-                            self.send(m);
+                    for (var i = 0, r; r = requestPool[i]; ++i) {
+                        if (dispatchData(r, data)) {
+                            requestPool.splice(i, 1)
+                            return;
                         }
-                    };
+                    }
+                };
 
-                    self.webSocket.onmessage = function(event) {
-                        var data = event.data;
-                        try {
-                            data = JSON.parse(data)
-                        } catch(e) {}
-
-                        self.fire('rf-api-message', data);
-                    };
-                } else {
-                    xhr = self.$.request.xhr;
-
-                    self.$.request.url = self.url;
-                    self.$.request.xhr = {
-                        request: function(args) {
-                            var method = args.method.toUpperCase(),
-                                params = xhr.toQueryString(args.params),
-                                signature, urlParts;
-
-                            if (xhr.isBodyMethod(method) && !args.body) {
-                                args.body = params;
-                            } else if (params && (!method || method == 'GET')) {
-                                args.url = urlQuery(args.url, params);
-
-                                delete args.params;
-                            }
-
-                            if (method == 'POST' && args.headers['Content-Type'].indexOf('charset=') == -1) {
-                                args.headers['Content-Type'] += "; charset=UTF-8";
-                            }
-
-                            args.headers['X-Date'] = new Date().toUTCString();
-                            args.headers['X-Nonce'] = response.Nonce;
-
-                            urlParts = args.url.split("?", 2);
-                            urlParts[0] = encodeURI(urlParts[0]);
-
-                            signature = generateSignature(urlParts.join("?"), method, args.body,
-                                args.headers['Content-Type'],
-                                args.headers['X-Date'],
-                                args.headers['X-Nonce'],
-                                self.user.MD5API || ""
-                            );
-
-                            args.headers['Authorization'] = "Readeef " + self.user.Login + ":" + signature;
-
-                            xhr.request(args);
-                        }
-                    };
-                    self.$.request.go();
-                    self.$.request.xhr = xhr;
-                }
+                webSocket.onclose = function(event) {
+                    initializing = false;
+                    setTimeout(function() {
+                        self.initialize();
+                    }, self.retryTimeout * 1000)
+                };
             }
 
             return this.$.nonce.go();
         },
 
         send: function(data) {
-            if (!this.webSocket || this.webSocket.readyState != WebSocket.OPEN) {
-                this.messagePool.push(data);
+            if (!webSocket || webSocket.readyState != WebSocket.OPEN) {
+                messagePool.push({instance: this, data: data});
 
-                this.go();
+                this.initialize();
                 return;
             }
 
-            data = JSON.stringify(data);
-            this.webSocket.send(data);
-        },
+            requestPool.push({instance: this, method: this.method, tag: this.tag});
 
-        onRequestResponse: function(event, detail) {
-            this.fire('rf-api-response', detail);
+            var payload = {method: this.method, tag: this.tag};
+
+            if (!data && this.arguments) {
+                data = this.arguments;
+                try {
+                    data = JSON.parse(this.arguments);
+                } catch (e) {}
+            }
+            if (data) {
+                payload.arguments = data;
+            }
+
+            webSocket.send(JSON.stringify(payload));
         },
 
         onRequestError: function(event, detail) {
             this.fire('rf-api-error', detail);
         },
-
-        onRequestComplete: function(event, detail) {
-            this.fire('rf-api-complete', detail);
-        }
     });
 })();

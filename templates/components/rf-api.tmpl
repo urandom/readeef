@@ -2,10 +2,9 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/core-ajax/core-ajax.html">
 
-<polymer-element name="rf-api" attributes="user pathAction version url params method body contentType socket" constructor="RfAPI" hidden data-api-pattern="{% .apiPattern %}">
+<polymer-element name="rf-api" attributes="user version url method arguments receiver tag" constructor="RfAPI" hidden data-api-pattern="{% .apiPattern %}">
     <template>
         <content></content>
-        <core-ajax id="request" url="{% .apiPattern %}v{{version}}/{{pathAction}}" handleAs="json" params="{{params}}" method="{{ method }}" body="{{ body }}" contentType="{{ contentType }}" on-core-response="{{ onRequestResponse }}" on-core-complete="{{ onRequestComplete }}" on-core-error="{{ onRequestError }}"></core-ajax>
         <core-ajax id="nonce" url="{% .apiPattern %}v{{version}}/nonce" handleAs="json" on-core-error="{{ onRequestError }}"></core-ajax>
     </template>
     <script src="/dist/cryptojs/rollups/md5.js"></script>

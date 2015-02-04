@@ -255,18 +255,19 @@
             <paper-button id="add-user-apply" on-tap="{{ onApplyCreateUser }}" affirmative autofocus transient>Apply</paper-button>
         </paper-action-dialog>
 
-        <rf-api user="{{ user }}" id="add-feed" method="post" pathAction="feed/" on-rf-api-response="{{ onAddFeedResponse }}"></rf-api>
-        <rf-api user="{{ user }}" id="remove-feed" method="delete" pathAction="feed/{{ removedFeed }}" on-rf-api-response="{{ onRemoveFeedResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="add-feed" method="add-feed" on-rf-api-message="{{ onAddFeedMessage }}"></rf-api>
+        <rf-api user="{{ user }}" id="remove-feed" method="remove-feed" on-rf-api-message="{{ onRemoveFeedMessage }}"></rf-api>
 
-        <rf-api user="{{ user }}" id="discover-feed" pathAction="feed/discover" on-rf-api-response="{{ onDiscoverFeedResponse }}" on-rf-api-error="{{ onDiscoverFeedError }}"></rf-api>
-        <rf-api user="{{ user }}" id="discover-opml" pathAction="feed/opml" method="post" on-rf-api-response="{{ onDiscoverFeedResponse }}" on-rf-api-error="{{ onDiscoverFeedError }}"></rf-api>
-        <rf-api user="{{ user }}" id="feed-tags" method="post" pathAction="feed/{{ taggedFeed }}/tags" on-rf-api-response="{{ onFeedTagsResponse }}"></rf-api>
-        <rf-api id="password-change" pathAction="user-settings/password" on-rf-api-response="{{ onPasswordChangeResponse }}" user="{{ user }}" method="post"></rf-api>
+        <rf-api user="{{ user }}" id="discover-feeds" method="discover-feeds" on-rf-api-message="{{ onDiscoverFeedsMessage }}" on-rf-api-error="{{ onDiscoverFeedsError }}"></rf-api>
+        <rf-api user="{{ user }}" id="parse-opml" method="parse-opml" on-rf-api-message="{{ onDiscoverFeedsMessage }}" on-rf-api-error="{{ onDiscoverFeedsError }}"></rf-api>
 
-        <rf-api user="{{ user }}" id="user-list" pathAction="user/" on-rf-api-response="{{ onUserListResponse }}"></rf-api>
-        <rf-api user="{{ user }}" id="user-add" pathAction="user/{{ addedUser }}" method="post" on-rf-api-response="{{ onUserAddResponse }}"></rf-api>
-        <rf-api user="{{ user }}" id="user-remove" pathAction="user/{{ removedUser }}" method="delete" on-rf-api-response="{{ onUserRemoveResponse }}"></rf-api>
-        <rf-api user="{{ user }}" id="user-toggle-active" pathAction="user/{{ toggleActiveUser }}/Active/{{ toggleActiveUserState }}" method="post" on-rf-api-response="{{ onUserToggleActiveResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="set-feed-tags" method="set-feed-tags" on-rf-api-message="{{ onSetFeedTagsMessage }}"></rf-api>
+        <rf-api id="password-change" method="set-user-attribute" tag="password-change" on-rf-api-message="{{ onPasswordChangeMessage }}" user="{{ user }}"></rf-api>
+
+        <rf-api user="{{ user }}" id="list-users" method="list-users" on-rf-api-message="{{ onListUsersMessage }}"></rf-api>
+        <rf-api user="{{ user }}" id="add-user" method="add-user" on-rf-api-message="{{ onAddUserMessage }}"></rf-api>
+        <rf-api user="{{ user }}" id="remove-user" method="remove-user" on-rf-api-response="{{ onUserRemoveResponse }}"></rf-api>
+        <rf-api user="{{ user }}" id="user-toggle-active" method="set-attribute-for-user" tag="active" on-rf-api-response="{{ onUserToggleActiveResponse }}"></rf-api>
         
     </template>
 

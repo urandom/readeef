@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"sync"
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/webfw"
@@ -13,12 +14,14 @@ import (
 
 type ApiSocket struct {
 	webfw.BasePatternController
-	fm *readeef.FeedManager
-	si readeef.SearchIndex
+	fm         *readeef.FeedManager
+	si         readeef.SearchIndex
+	updateFeed chan readeef.Feed
 }
 
 type apiRequest struct {
 	Method    string                 `json:"method"`
+	Tag       string                 `json:"tag"`
 	Arguments map[string]interface{} `json:"arguments"`
 }
 
@@ -27,6 +30,7 @@ type apiResponse struct {
 	ErrorType string                 `json:"error-type"`
 	Error     error                  `json:"error"`
 	Method    string                 `json:"method"`
+	Tag       string                 `json:"tag"`
 	Arguments map[string]interface{} `json:"arguments"`
 }
 
@@ -36,22 +40,49 @@ var (
 	errTypeNoId               = "error-no-id"
 	errTypeInvalidMethodValue = "error-invalid-method-value"
 	errTypeInvalidArgValue    = "error-invalid-arg-value"
+	errTypeUnauthorized       = "error-unauthorized"
 
 	errNoId               = errors.New("No Id given")
 	errInvalidMethodValue = errors.New("Invalid method")
 	errInvalidArgValue    = errors.New("Invalid argument value")
 	errInternal           = errors.New("Internal server error")
+	errUnauthorized       = errors.New("Unauthorized")
 )
 
 func NewApiSocket(fm *readeef.FeedManager, si readeef.SearchIndex) ApiSocket {
 	return ApiSocket{
 		BasePatternController: webfw.NewBasePatternController("/v:version/", webfw.MethodGet, ""),
-		fm: fm,
-		si: si,
+		fm:         fm,
+		si:         si,
+		updateFeed: make(chan readeef.Feed),
 	}
 }
 
+func (con ApiSocket) UpdateFeedChannel() chan<- readeef.Feed {
+	return con.updateFeed
+}
+
 func (con ApiSocket) Handler(c context.Context) http.Handler {
+	var mutex sync.RWMutex
+
+	receivers := make(map[chan readeef.Feed]bool)
+
+	go func() {
+		for {
+			select {
+			case feed := <-con.updateFeed:
+				mutex.RLock()
+
+				readeef.Debug.Printf("Feed %s updated. Notifying %d receivers.", feed.Link, len(receivers))
+				for receiver, _ := range receivers {
+					receiver <- feed
+				}
+
+				mutex.RUnlock()
+			}
+		}
+	}()
+
 	return websocket.Handler(func(ws *websocket.Conn) {
 		db := readeef.GetDB(c)
 		user := readeef.GetUser(c, ws.Request())
@@ -62,6 +93,18 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 		done := make(chan bool)
 		defer close(done)
 
+		receiver := make(chan readeef.Feed)
+
+		mutex.Lock()
+		receivers[receiver] = true
+		mutex.Unlock()
+		defer func() {
+			mutex.Lock()
+			close(receiver)
+			delete(receivers, receiver)
+			mutex.Unlock()
+		}()
+
 		go func() {
 			for {
 				var r responseError
@@ -71,12 +114,8 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 					switch data.Method {
 					case "get-auth-data":
 						r = getAuthData(user)
-						resp <- apiResponse{
-							Success: r.err == nil, Error: r.err, Method: data.Method, Arguments: r.val,
-						}
 					case "mark-article-as-read", "mark-article-as-favorite", "format-article":
 						if articleId, ok := data.Arguments["id"].(float64); ok {
-							var r responseError
 							switch data.Method {
 							case "mark-article-as-read":
 								if value, ok := data.Arguments["value"].(bool); ok {
@@ -116,7 +155,15 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 							r.errType = errTypeInvalidArgValue
 						}
 					case "add-feed":
-						if links, ok := data.Arguments["links"].([]string); ok {
+						var ok bool
+						var slice []interface{}
+						var links []string
+
+						if slice, ok = data.Arguments["links"].([]interface{}); ok {
+							links, ok = interfaceSliceToString(slice)
+						}
+
+						if ok {
 							r = addFeed(db, user, con.fm, links)
 						} else {
 							r.err = errInvalidArgValue
@@ -139,10 +186,13 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 					case "set-feed-tags":
 						var ok bool
 						var id float64
+						var slice []interface{}
 						var tags []string
 
 						if id, ok = data.Arguments["id"].(float64); ok {
-							tags, ok = data.Arguments["tags"].([]string)
+							if slice, ok = data.Arguments["tags"].([]interface{}); ok {
+								tags, ok = interfaceSliceToString(slice)
+							}
 						}
 
 						if ok {
@@ -157,7 +207,7 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 						var timestamp float64
 
 						if id, ok = data.Arguments["id"].(string); ok {
-							timestamp, ok = data.Arguments["float64"].(float64)
+							timestamp, ok = data.Arguments["timestamp"].(float64)
 						}
 
 						if ok {
@@ -194,7 +244,7 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 						var query, highlight, feedId string
 
 						if query, ok = data.Arguments["query"].(string); ok {
-							if highlight, ok = data.Arguments["query"].(string); ok {
+							if highlight, ok = data.Arguments["highlight"].(string); ok {
 								feedId, ok = data.Arguments["id"].(string)
 							}
 						}
@@ -230,14 +280,14 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 						r = listUsers(db, user)
 					case "add-user":
 						var ok bool
-						var login, userData string
+						var login, password string
 
 						if login, ok = data.Arguments["login"].(string); ok {
-							userData, ok = data.Arguments["userData"].(string)
+							password, ok = data.Arguments["password"].(string)
 						}
 
 						if ok {
-							r = addUser(db, user, login, userData)
+							r = addUser(db, user, login, password)
 						} else {
 							r.err = errInvalidArgValue
 							r.errType = errTypeInvalidArgValue
@@ -260,7 +310,7 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 						}
 
 						if ok {
-							r = setUserAdminAttribute(db, user, login, attr, value)
+							r = setAttributeForUser(db, user, login, attr, value)
 						} else {
 							r.err = errInvalidArgValue
 							r.errType = errTypeInvalidArgValue
@@ -269,9 +319,32 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 
 					go func() {
 						resp <- apiResponse{
-							Success: r.err == nil, Error: r.err, ErrorType: r.errType, Method: data.Method, Arguments: r.val,
+							Success: r.err == nil, Error: r.err, ErrorType: r.errType,
+							Method: data.Method, Tag: data.Tag, Arguments: r.val,
 						}
 					}()
+				case f := <-receiver:
+					readeef.Debug.Println("Received notification for feed update of" + f.Link)
+
+					r := newResponse()
+
+					uf, _ := db.GetUserFeed(f.Id, user)
+
+					if uf.Id > 0 {
+						r.val["Feed"] = feed{
+							Id: f.Id, Title: f.Title, Description: f.Description,
+							Link: f.Link, Image: f.Image,
+						}
+
+						go func() {
+							resp <- apiResponse{
+								Success: r.err == nil, Error: r.err, ErrorType: r.errType,
+								Method: "feed-update-notifier", Tag: "", Arguments: r.val,
+							}
+						}()
+					}
+				case r := <-resp:
+					websocket.JSON.Send(ws, r)
 				case <-done:
 					return
 				}
@@ -282,6 +355,7 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 			var data apiRequest
 			if err := websocket.JSON.Receive(ws, &data); err != nil {
 				if err == io.EOF {
+					// Websocket was closed
 					break
 				} else {
 					websocket.JSON.Send(ws, apiResponse{
@@ -291,9 +365,48 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 				}
 			}
 
+			if forbidden(c, ws.Request()) {
+				websocket.JSON.Send(ws, apiResponse{
+					Success: false, ErrorType: errTypeUnauthorized,
+					Error: errUnauthorized, Method: data.Method,
+				})
+				break
+			}
+
 			msg <- data
 		}
 
 		readeef.Debug.Println("Closing web socket")
 	})
+}
+
+func (con ApiSocket) AuthRequired(c context.Context, r *http.Request) bool {
+	return true
+}
+
+func (con ApiSocket) AuthReject(c context.Context, r *http.Request) {
+	c.Set(r, readeef.CtxKey("forbidden"), true)
+}
+
+func forbidden(c context.Context, r *http.Request) bool {
+	if v, ok := c.Get(r, readeef.CtxKey("forbidden")); ok {
+		if f, ok := v.(bool); ok {
+			return f
+		}
+	}
+
+	return false
+}
+
+func interfaceSliceToString(data []interface{}) (ret []string, ok bool) {
+	ok = true
+	ret = make([]string, len(data))
+
+	for i := range data {
+		if ret[i], ok = data[i].(string); !ok {
+			return
+		}
+	}
+
+	return
 }

@@ -41,12 +41,6 @@
     Polymer('rf-settings', {
         selectedTab: 'general',
         loading: false,
-        removedFeed: null,
-        taggedFeed: null,
-        removedUser: null,
-        addedUser: null,
-        toggleActiveUser: null,
-        toggleActiveUserState: false,
         users: null,
 
         g: CoreStyle.g,
@@ -60,7 +54,7 @@
         displayChanged: function(oldValue, newValue) {
             if (newValue == 'settings') {
                 if (this.user.Admin) {
-                    this.$['user-list'].go();
+                    this.$['list-users'].send();
                 }
             } else {
                 this.cleanFields();
@@ -105,10 +99,7 @@
                 fileReader.onload = function(event) {
                     var contents = event.target.result;
 
-                    this.$['discover-opml'].body = contents;
-                    this.$['discover-opml'].contentType = file.type;
-
-                    this.$['discover-opml'].go();
+                    this.$['parse-opml'].send({opml: contents});
                 }.bind(this);
 
                 fileReader.readAsText(file);
@@ -135,82 +126,66 @@
                                 }
 
                                 feeds[0].selected = true;
-                                this.onDiscoverFeedResponse(null, {response: {Feeds: feeds, skipSelection: true}});
+                                this.onDiscoverFeedsMessage(null, {success: true, arguments: {Feeds: feeds, SkipSelection: true}});
                             } else {
-                                this.onDiscoverFeedError();
+                                this.onDiscoverFeedsError();
                             }
                         } else {
-                            this.onDiscoverFeedError();
+                            this.onDiscoverFeedsError();
                         }
                     }.bind(this));
                 } else {
-                    this.$['discover-feed'].params = JSON.stringify({"url": this.url});
-                    this.$['discover-feed'].go();
+                    this.$['discover-feeds'].send({link: this.url});
                 }
             }
             this.loading = true;
         },
 
         onAddFeed: function() {
-            var params = {url: []};
+            var links = [];
             for (var i = 0, f; f = this.discoveredFeeds[i]; ++i) {
                 if (f.selected) {
-                    params.url.push(f.Link);
+                    links.push(f.Link);
                 }
             }
 
-            if (!params.url.length) {
+            if (!links.length) {
                 /* TODO: show that nothing was selected */
                 return;
             }
 
-            this.$['add-feed'].params = JSON.stringify(params)
-            this.$['add-feed'].go();
+            this.$['add-feed'].send({links: links});
             this.loading = true;
         },
 
-        onDiscoverFeedResponse: function(event, data) {
-            if (data.response) {
-                if (data.response.Feeds) {
-                    if (!data.response.skipSelection) {
-                        data.response.Feeds.forEach(function(f) {
-                            f.selected = true;
-                        });
-                    }
-                } else if (data.response.Error) {
-                    this.$['feed-url'].error = this.$['feed-url'].getAttribute("data-" + data.response.ErrorType);
-                    this.$['feed-url'].invalid = true;
-                }
-                this.discoveredFeeds = data.response.Feeds;
-            } else {
-                this.discoveredFeeds = [];
+        onDiscoverFeedsMessage: function(event, data) {
+            if (!data.arguments.SkipSelection) {
+                data.arguments.Feeds.forEach(function(f) {
+                    f.selected = true;
+                });
             }
+            this.discoveredFeeds = data.arguments.Feeds;
             this.loading = false;
         },
 
-        onDiscoverFeedError: function(event) {
-            this.$['feed-url'].error = this.$['feed-url'].getAttribute("data-error-internal");
+        onDiscoverFeedsError: function(event, data) {
+            this.$['feed-url'].error = this.$['feed-url'].getAttribute("data-" + data.arguments.ErrorType);
             this.$['feed-url'].invalid = true;
             this.loading = false;
         },
 
-        onAddFeedResponse: function(event, data) {
-            if (data.response && data.response.Success) {
-                this.fire('core-signal', {name: 'rf-feeds-added'});
-            }
+        onAddFeedMessage: function(event, data) {
+            this.fire('core-signal', {name: 'rf-feeds-added'});
 
             this.cleanFields();
         },
 
         onRemoveFeed: function(event, detail, sender) {
-            this.removedFeed = sender.templateInstance.model.feed.Id;
-            this.$['remove-feed'].go();
+            this.$['remove-feed'].send({id: sender.templateInstance.model.feed.Id});
         },
 
-        onRemoveFeedResponse: function(event, data) {
-            if (data.response && data.response.Success) {
-                this.fire('core-signal', {name: 'rf-feeds-removed'});
-            }
+        onRemoveFeedMessage: function(event, data) {
+            this.fire('core-signal', {name: 'rf-feeds-removed'});
         },
 
         onChangePassword: function() {
@@ -237,17 +212,17 @@
                 return;
             }
 
-            this.$['password-change'].body = JSON.stringify({
-                "Current": this.$.password.value,
-                "New": this.$["new-password"].value
+            this.$['password-change'].send({
+                attribute: "Password",
+                value: JSON.stringify({
+                    "Current": this.$.password.value,
+                    "New": this.$["new-password"].value
+                })
             });
-            this.$['password-change'].go();
         },
 
-        onPasswordChangeResponse: function(event, data) {
-            if (data.response && data.response.Success) {
-                this.user = null;
-            }
+        onPasswordChangeMessage: function(event, data) {
+            this.user = null;
         },
 
         onPasswordDialogKeypress: function(event) {
@@ -283,12 +258,10 @@
             }.bind(this));
         },
 
-        onUserListResponse: function(event, data) {
-            if (data.response && data.response.Users) {
-                this.users = data.response.Users.filter(function(user) {
-                    return user.Login != this.user.Login;
-                }.bind(this));
-            }
+        onListUsersMessage: function(event, data) {
+            this.users = data.arguments.Users.filter(function(user) {
+                return user.Login != this.user.Login;
+            }.bind(this));
         },
 
         onCreateUser: function() {
@@ -321,47 +294,43 @@
                 return;
             }
 
-            this.addedUser = this.$['add-user-login'].value;
-            this.$['user-add'].body = this.$['add-user-password'].value;
-            this.$['user-add'].go();
+            this.$['add-user'].send({
+                login: this.$['add-user-login'].value,
+                password: this.$['add-user-password'].value
+            });
         },
 
-        onUserAddResponse: function(event, data) {
-            if (data.response && data.response.Success) {
-                this.$['user-list'].go();
-            }
+        onAddUserMessage: function(event, data) {
+            this.$['list-users'].send();
 
             this.$['add-user-dialog'].toggle();
         },
 
         onRemoveUser: function(event, detail, sender) {
-            this.removedUser = sender.templateInstance.model.user.Login;
-            this.$['user-remove'].go();
+            this.$['remove-user'].send({login: sender.templateInstance.model.user.Login});
         },
 
         onUserRemoveResponse: function(event, data) {
-            if (data.response && data.response.Success) {
-                this.users = this.users.filter(function(user) {
-                    return user.Login != data.response.Login;
-                });
-            }
+            this.users = this.users.filter(function(user) {
+                return user.Login != data.arguments.Login;
+            });
         },
 
         onToggleActiveUser: function(event, detail, sender) {
-            this.toggleActiveUser = sender.templateInstance.model.user.Login;
-            this.toggleActiveUserState = sender.checked;
-            this.$['user-toggle-active'].go();
+            this.$['user-toggle-active'].send({
+                login: sender.templateInstance.model.user.Login,
+                attribute: "Active",
+                value: sender.checked.toString()
+            });
         },
 
         onUserToggleActiveResponse: function(event, data) {
-            if (!data.response.Success) {
-                this.users = this.users.map(function(user) {
-                    if (user.Login == data.response.Login) {
-                        user.Active = !user.Active;
-                    }
-                    return user;
-                });
-            }
+            this.users = this.users.map(function(user) {
+                if (user.Login == data.arguments.Login) {
+                    user.Active = !user.Active;
+                }
+                return user;
+            });
         },
 
         onFeedTagsChange: function(event, detail, sender) {
@@ -373,20 +342,16 @@
 
             sender.templateInstance.model.feed.Tags = tags;
 
-            this.taggedFeed = sender.templateInstance.model.feed.Id;
-            this.$['feed-tags'].body = JSON.stringify(tags)
-            this.$['feed-tags'].go();
+            this.$['set-feed-tags'].send({id: sender.templateInstance.model.feed.Id, tags: tags});
         },
 
-        onFeedTagsResponse: function(event, data) {
-            if (data.response && data.response.Success) {
-                var feed = this.feeds.filter(function(feed) {
-                    if (feed.Id == data.response.Id) {
-                        return feed;
-                    }
-                });
-                this.fire('core-signal', {name: 'rf-feed-tags-changed', data: feed});
-            }
+        onSetFeedTagsMessage: function(event, data) {
+            var feed = this.feeds.filter(function(feed) {
+                if (feed.Id == data.arguments.Id) {
+                    return feed;
+                }
+            });
+            this.fire('core-signal', {name: 'rf-feed-tags-changed', data: feed});
         },
 
         onDisplayFeedErrors: function(event, detail, sender) {

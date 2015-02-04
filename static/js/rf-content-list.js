@@ -141,7 +141,7 @@
 
                 if (!newValue.Read) {
                     this.articleRead = true;
-                    this.$['article-read'].go();
+                    this.$['article-read'].send();
                 }
 
                 if (newValue.Last) {
@@ -203,13 +203,7 @@
                 if (a.Id == articleId) {
                     a.Favorite = !a.Favorite;
 
-                    var fav = new RfAPI();
-                    fav.pathAction = "article/" + a.Id + "/favorite/" + a.Favorite;
-                    fav.user = this.user;
-                    fav.method = "post";
-
-                    fav.go()
-
+                    this.$['article-favorite'].send({id: a.Id, value: a.Favorite});
                     this.$['articles-list'].refresh(true);
 
                     break;
@@ -219,20 +213,18 @@
 
         onReadArticleToggle: function() {
             this.articleRead = !this.article.Read;
-            this.$['article-read'].go();
+            this.$['article-read'].send();
             this.$['articles-list'].refresh(true);
         },
 
-        onArticleReadResponse: function(event, data) {
-            if (data.response && data.response.Success) {
-                if (this.article && this.article.Id == data.response.ArticleId) {
-                    this.article.Read = data.response.Read;
-                } else {
-                    for (var i = 0, a; a = this.articles[i]; ++i) {
-                        if (a.Id == data.response.ArticleId) {
-                            a.Read = data.response.Read;
-                            break;
-                        }
+        onArticleReadMessage: function(event, data) {
+            if (this.article && this.article.Id == data.arguments.Id) {
+                this.article.Read = data.arguments.Read;
+            } else {
+                for (var i = 0, a; a = this.articles[i]; ++i) {
+                    if (a.Id == data.arguments.Id) {
+                        a.Read = data.arguments.Read;
+                        break;
                     }
                 }
             }

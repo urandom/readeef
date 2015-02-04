@@ -15,12 +15,13 @@ import (
 type User struct{}
 
 var (
-	errForbidden   = errors.New("Forbidden")
 	errUserExists  = errors.New("User exists")
 	errCurrentUser = errors.New("Current user")
+	errForbidden   = errors.New("Forbidden")
 
 	errTypeUserExists  = "error-user-exists"
 	errTypeCurrentUser = "error-current-user"
+	errTypeForbidden   = "error-forbidden"
 )
 
 func NewUser() User {
@@ -60,7 +61,7 @@ func (con User) Handler(c context.Context) http.Handler {
 		case "remove":
 			resp = removeUser(db, user, params["login"])
 		case "setAttr":
-			resp = setUserAdminAttribute(db, user, params["login"], params["attr"], params["value"])
+			resp = setAttributeForUser(db, user, params["login"], params["attr"], params["value"])
 		}
 
 		switch resp.err {
@@ -101,6 +102,7 @@ func listUsers(db readeef.DB, user readeef.User) (resp responseError) {
 
 	if !user.Admin {
 		resp.err = errForbidden
+		resp.errType = errTypeForbidden
 		return
 	}
 
@@ -140,6 +142,7 @@ func addUser(db readeef.DB, user readeef.User, login, password string) (resp res
 
 	if !user.Admin {
 		resp.err = errForbidden
+		resp.errType = errTypeForbidden
 		return
 	}
 
@@ -176,6 +179,7 @@ func removeUser(db readeef.DB, user readeef.User, login string) (resp responseEr
 
 	if !user.Admin {
 		resp.err = errForbidden
+		resp.errType = errTypeForbidden
 		return
 	}
 
@@ -199,9 +203,10 @@ func removeUser(db readeef.DB, user readeef.User, login string) (resp responseEr
 	return
 }
 
-func setUserAdminAttribute(db readeef.DB, user readeef.User, login, attr, value string) (resp responseError) {
+func setAttributeForUser(db readeef.DB, user readeef.User, login, attr, value string) (resp responseError) {
 	if !user.Admin {
 		resp.err = errForbidden
+		resp.errType = errTypeForbidden
 		return
 	}
 

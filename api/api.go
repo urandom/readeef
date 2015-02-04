@@ -95,9 +95,9 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		dispatcher.Handle(patternController)
 	}
 
-	feedUpdateNotifier := NewFeedUpdateNotifier()
-	dispatcher.Handle(feedUpdateNotifier)
-	um.AddUpdateReceiver(feedUpdateNotifier)
+	apiSocket := NewApiSocket(fm, si)
+	dispatcher.Handle(apiSocket)
+	um.AddUpdateReceiver(apiSocket)
 
 	middleware.InitializeDefault(dispatcher)
 	dispatcher.RegisterMiddleware(readeef.Auth{DB: db, Pattern: dispatcher.Pattern, Nonce: nonce, IgnoreURLPrefix: config.Auth.IgnoreURLPrefix})

@@ -93,15 +93,20 @@
             </section>
         </core-animated-pages>
 
-        <rf-api id="auth-check" pathAction="auth" on-rf-api-response="{{ onAuthCheckResponse }}" on-rf-api-complete="{{ onAuthCheckComplete }}" user="{{ user }}"></rf-api>
-        <rf-api id="list-feeds" pathAction="feed/" on-rf-api-response="{{ onAllFeedsResponse }}" user="{{ user }}"></rf-api>
-        <rf-api id="feed-articles" pathAction="feed/{{ currentFeedId }}/articles/{{ limit }}/{{ offset }}/{{ userSettings.newerFirst || false }}/{{ userSettings.unreadOnly || false }}?test=1" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}"></rf-api>
-        <rf-api id="feed-read-all" pathAction="feed/{{ currentFeedId }}/read/{{ lastUpdateTime }}" on-rf-api-response="{{ onFeedReadAllResponse }}" user="{{ user }}" method="post"></rf-api>
-        <rf-api id="user-settings" on-rf-api-response="{{ onUserSettingsResponse }}" user="{{ user }}" method="post"></rf-api>
-        <rf-api id="feed-update-notifier" pathAction="feed-update-notifier" on-rf-api-message="{{ onFeedUpdateNotify }}" user="{{ user }}" socket="true"></rf-api>
+        <rf-api id="auth-check" method="get-auth-data" on-rf-api-message="{{ onAuthCheckMessage }}" user="{{ user }}"></rf-api>
 
-        <!-- TODO: Enable the html highlight when polymer gets save template binding -->
-        <rf-api id="feed-search" pathAction="search/{{ searchTerm }}" on-rf-api-response="{{ onFeedArticlesResponse }}" user="{{ user }}" params='{"highlight": "", "id": "{{ userSettings.preSearchFeedId }}"}'></rf-api>
+        <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="{{ onAllFeedsMessage }}" user="{{ user }}"></rf-api>
+
+        <rf-api id="feed-articles" method="get-feed-articles" arguments='{"id": "{{ currentFeedId }}", "limit": {{ limit }}, "offset": {{ offset }}, "newerFirst": {{ userSettings.newerFirst || false }}, "unreadOnly": {{ userSettings.unreadOnly || false }}}' on-rf-api-message="{{ onFeedArticlesMessage }}" user="{{ user }}"></rf-api>
+
+        <rf-api id="feed-read-all" method="mark-feed-as-read" arguments='{"id": "{{ currentFeedId }}", "timestamp": {{ lastUpdateTime }}}' on-rf-api-message="{{ onFeedReadAllMessage }}" user="{{ user }}"></rf-api>
+
+        <rf-api id="user-settings" method="set-user-attribute" tag="current-user" user="{{ user }}"></rf-api>
+
+        <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="{{ onFeedUpdateNotify }}" user="{{ user }}"></rf-api>
+
+        <!-- TODO: Enable the html highlight when polymer gets safe template binding -->
+        <rf-api id="feed-search" method="search" arguments='{"query": "{{ searchTerm }}", "highlight": "", "id": "{{ userSettings.preSearchFeedId }}"}' on-rf-api-message="{{ onFeedArticlesMessage }}" user="{{ user }}"></rf-api>
 
         <rf-share-service id="share-evernote" description="Evernote" category="Read-it-later" url="https://www.evernote.com/clip.action?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" link="https://www.evernote.com" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
         <rf-share-service id="share-instapaper" description="Instapaper" category="Read-it-later" url="http://www.instapaper.com/hello2?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" link="http://www.instapaper.com" article="{{ currentArticle }}" settings="{{ userSettings }}"></rf-share-service>
@@ -123,6 +128,7 @@
 
         <core-media-query query="min-width: {{responsiveWidth}}" queryMatches="{{wide}}"></core-media-query>
 
+        <core-signals on-core-signal-rf-connection-unauthorized="{{ onConnectionUnauthorized }}"></core-signals>
         <core-signals on-core-signal-rf-request-articles="{{ onRequestArticles }}"></core-signals>
         <core-signals on-core-signal-rf-feed-refresh="{{ onFeedRefresh }}"></core-signals>
         <core-signals on-core-signal-rf-feeds-added="{{ onFeedsChanged }}"></core-signals>

@@ -106,20 +106,18 @@
                     if (!oldValue
                         || oldValue.Login != newValue.Login
                         || oldValue.MD5API != newValue.MD5API) {
-                        this.$['auth-check'].go();
+                        this.$['auth-check'].send();
                     }
 
                     this.userObserver = new ObjectObserver(this.user);
                     this.userObserver.open(function (added, removed, changed, getOldValueFn) {
-                        var ajax = this.$['user-settings'];
+                        var api = this.$['user-settings'];
                         Object.keys(changed).forEach(function(attribute) {
                             switch (attribute) {
                             case "FirstName":
                             case "LastName":
                             case "Email":
-                                ajax.body = changed[attribute];
-                                ajax.pathAction = "user-settings/" + attribute;
-                                ajax.go();
+                                api.send({attribute: attribute, value: changed[attribute]})
                                 break;
                             }
                         });
@@ -170,9 +168,10 @@
                         updateShareServices();
                     }
 
-                    this.$['user-settings'].body = JSON.stringify(this.userSettings);
-                    this.$['user-settings'].pathAction = "user-settings/ProfileData";
-                    this.$['user-settings'].go();
+                    this.$['user-settings'].send({
+                        attribute: "ProfileData",
+                        value: JSON.stringify(this.userSettings)
+                    });
                 }.bind(this));
 
                 updateShareServices();
@@ -208,24 +207,6 @@
 
         currentFeedChanged: function(oldValue, newValue) {
             this.updateFeedArticles();
-
-            if (!this.currentFeed) {
-                return;
-            }
-
-
-            var feedIds = [];
-            if (this.currentFeedId.toString().indexOf("tag:") == 0) {
-                var currentTag = this.currentFeedId.substring(4);
-
-                feedIds = this.getTag(currentTag).feeds.map(function(feed) {
-                    return feed.Id 
-                });
-            } else if (!isNaN(parseInt(this.currentFeedId))) {
-                feedIds = [parseInt(this.currentFeedId)];
-            }
-
-            this.$['feed-update-notifier'].send({FeedIds: feedIds});
         },
 
         feedsChanged: function(oldValue, newValue) {
@@ -252,22 +233,20 @@
             return encodeURIComponent(value);
         },
 
-        onAuthCheckComplete: function(event, response) {
-            if (response.response == 403) {
-                if (this.selected == 'login') {
-                    this.$.login.invalid = true;
-                }
-                this.user = null;
+        onConnectionUnauthorized: function(event, data) {
+            if (this.selected == 'login') {
+                this.$.login.invalid = true;
             }
+            this.user = null;
         },
 
-        onAuthCheckResponse: function(event, data) {
+        onAuthCheckMessage: function(event, data) {
             this.user.authTime = new Date().getTime();
-            this.user.Admin = data.response.User.Admin;
-            this.user.Email = data.response.User.Email;
-            this.user.FirstName = data.response.User.FirstName;
-            this.user.LastName = data.response.User.LastName;
-            this.userSettings = data.response.ProfileData;
+            this.user.Admin = data.arguments.User.Admin;
+            this.user.Email = data.arguments.User.Email;
+            this.user.FirstName = data.arguments.User.FirstName;
+            this.user.LastName = data.arguments.User.LastName;
+            this.userSettings = data.arguments.ProfileData;
 
             if (this.selected == 'login' || this.selected == 'splash') {
                 this.selected = 'scaffolding';
@@ -275,7 +254,7 @@
 
             this.$['user-storage'].save();
 
-            this.$['list-feeds'].go();
+            this.$['list-feeds'].send();
         },
 
         onUserLoad: function(event, detail, sender) {
@@ -303,15 +282,13 @@
         },
 
         onFeedsChanged: function() {
-            this.$['list-feeds'].go();
+            this.$['list-feeds'].send();
         },
 
-        onAllFeedsResponse: function(event, data) {
-            if (data.response) {
-                this.feeds = data.response.Feeds;
+        onAllFeedsMessage: function(event, data) {
+            this.feeds = data.arguments.Feeds;
 
-                this.updateTags();
-            }
+            this.updateTags();
         },
 
         onFeedTap: function(event, detail, sender) {
@@ -326,36 +303,34 @@
             this.updateFeedArticles();
         },
 
-        onFeedArticlesResponse: function(event, data) {
-            if (data.response) {
-                if (data.response.Articles && data.response.Articles.length) {
-                    var worker = new Worker('/js/append-articles-worker.js');
+        onFeedArticlesMessage: function(event, data) {
+            if (data.arguments.Articles && data.arguments.Articles.length) {
+                var worker = new Worker('/js/append-articles-worker.js');
 
-                    worker.addEventListener('message', function(event) {
-                        window.requestAnimationFrame(function() {
-                            this.currentFeed.Articles = event.data.articles;
-                            this.loadingArticles = false;
-                            this.loadingMoreArticles = false;
-                        }.bind(this));
+                worker.addEventListener('message', function(event) {
+                    window.requestAnimationFrame(function() {
+                        this.currentFeed.Articles = event.data.articles;
+                        this.loadingArticles = false;
+                        this.loadingMoreArticles = false;
                     }.bind(this));
+                }.bind(this));
 
-                    worker.postMessage({
-                        current: this.currentFeed.Articles,
-                        newArticles: data.response.Articles
-                    });
-                } else {
-                    this.noMoreArticles = true;
-                    this.loadingArticles = false;
-                    this.loadingMoreArticles = false;
+                worker.postMessage({
+                    current: this.currentFeed.Articles,
+                    newArticles: data.arguments.Articles
+                });
+            } else {
+                this.noMoreArticles = true;
+                this.loadingArticles = false;
+                this.loadingMoreArticles = false;
 
-                    if (!this.offset) {
-                        window.requestAnimationFrame(function() {
-                            this.currentFeed.Articles = null;
-                        }.bind(this));
-                    }
+                if (!this.offset) {
+                    window.requestAnimationFrame(function() {
+                        this.currentFeed.Articles = null;
+                    }.bind(this));
                 }
-                this.lastUpdateTime = new Date().getTime();
             }
+            this.lastUpdateTime = new Date().getTime();
         },
 
         onRequestArticles: function(event) {
@@ -365,7 +340,7 @@
 
             this.loadingMoreArticles = true;
             this.offset += this.limit;
-            this.$['feed-articles'].go();
+            this.$['feed-articles'].send();
         },
 
         updateFeedArticles: function() {
@@ -386,20 +361,18 @@
 
             if (this.currentFeed.Id.toString().indexOf("search:") == 0) {
                 this.noMoreArticles = true;
-                this.$['feed-search'].go();
+                this.$['feed-search'].send();
             } else {
-                this.$['feed-articles'].go();
+                this.$['feed-articles'].send();
             }
         },
 
         onMarkAllAsRead: function() {
-            this.$['feed-read-all'].go();
+            this.$['feed-read-all'].send();
         },
 
-        onFeedReadAllResponse: function(event, data) {
-            if (data.response && data.response.Success) {
-                this.updateFeedArticles();
-            }
+        onFeedReadAllMessage: function(event, data) {
+            this.updateFeedArticles();
         },
 
         onTagCollapseToggle: function(event, detail, sender) {
@@ -432,16 +405,14 @@
                 return;
             }
 
-            if (data && data.Feed) {
-                if (this.currentFeedId.toString().indexOf("tag:") == 0) {
-                    var tag = this.getTag(this.currentFeedId.substring(4));
+            if (this.currentFeedId.toString().indexOf("tag:") == 0) {
+                var tag = this.getTag(this.currentFeedId.substring(4));
 
-                    if (tag.feeds.some(function(feed) { return feed.Id == data.Feed.Id })) {
-                        this.updateAvailable = true;
-                    }
-                } else if (this.currentFeedId == data.Feed.Id) {
+                if (tag.feeds.some(function(feed) { return feed.Id == data.arguments.Feed.Id })) {
                     this.updateAvailable = true;
                 }
+            } else if (this.currentFeedId == data.arguments.Feed.Id) {
+                this.updateAvailable = true;
             }
         },
 

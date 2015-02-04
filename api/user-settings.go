@@ -96,8 +96,8 @@ func setUserAttribute(db readeef.DB, user readeef.User, attr string, data string
 	case "ProfileData":
 		resp.err = json.Unmarshal([]byte(data), &user.ProfileData)
 	case "Active":
-		resp.err = json.Unmarshal([]byte(data), &user.Active)
-	case "password":
+		user.Active = data == "true"
+	case "Password":
 		passwd := struct {
 			Current string
 			New     string
