@@ -216,9 +216,9 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 					return
 				}
 			}
-
-			ph.ServeHTTP(w, r)
 		}
+
+		ph.ServeHTTP(w, r)
 	}
 
 	return http.HandlerFunc(handler)
