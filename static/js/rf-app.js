@@ -126,8 +126,21 @@
 
                             this.requestArticle = !isNaN(id) ? { Id: id } : null;
                             if (this.currentFeedId == match[1]) {
-                                if (!displayChanged) {
-                                    this.updateFeedArticles();
+                                if (this.requestArticle) {
+                                    if (this.currentFeed && this.currentFeed.Articles) {
+                                        for (var i = 0, a; a = this.currentFeed.Articles[i]; ++i) {
+                                            if (a.Id == this.requestArticle.Id) {
+                                                this.currentArticle = a;
+                                                this.requestArticle = null;
+                                                return;
+                                            }
+                                        }
+                                    }
+                                    if (!displayChanged) {
+                                        this.updateFeedArticles();
+                                    }
+                                } else {
+                                    this.currentArticle = null;
                                 }
                             } else {
                                 this.currentFeedId = match[1];
