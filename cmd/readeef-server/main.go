@@ -4,7 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
+	"runtime"
+	"time"
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api"
@@ -54,4 +57,9 @@ func main() {
 func exitWithError(err string) {
 	fmt.Fprintf(os.Stderr, err+"\n")
 	os.Exit(1)
+}
+
+func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	rand.Seed(time.Now().UnixNano())
 }

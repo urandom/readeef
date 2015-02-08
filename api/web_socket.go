@@ -13,7 +13,7 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-type ApiSocket struct {
+type WebSocket struct {
 	webfw.BasePatternController
 	fm         *readeef.FeedManager
 	si         readeef.SearchIndex
@@ -29,7 +29,7 @@ type apiRequest struct {
 type apiResponse struct {
 	Success   bool                   `json:"success"`
 	ErrorType string                 `json:"errorType"`
-	Error     error                  `json:"error"`
+	Error     string                 `json:"error"`
 	Method    string                 `json:"method"`
 	Tag       string                 `json:"tag"`
 	Arguments map[string]interface{} `json:"arguments"`
@@ -54,8 +54,8 @@ var (
 	errUnauthorized       = errors.New("Unauthorized")
 )
 
-func NewApiSocket(fm *readeef.FeedManager, si readeef.SearchIndex) ApiSocket {
-	return ApiSocket{
+func NewWebSocket(fm *readeef.FeedManager, si readeef.SearchIndex) WebSocket {
+	return WebSocket{
 		BasePatternController: webfw.NewBasePatternController("/v:version/", webfw.MethodGet, ""),
 		fm:         fm,
 		si:         si,
@@ -63,11 +63,11 @@ func NewApiSocket(fm *readeef.FeedManager, si readeef.SearchIndex) ApiSocket {
 	}
 }
 
-func (con ApiSocket) UpdateFeedChannel() chan<- readeef.Feed {
+func (con WebSocket) UpdateFeedChannel() chan<- readeef.Feed {
 	return con.updateFeed
 }
 
-func (con ApiSocket) Handler(c context.Context) http.Handler {
+func (con WebSocket) Handler(c context.Context) http.Handler {
 	var mutex sync.RWMutex
 
 	receivers := make(map[chan readeef.Feed]bool)
@@ -142,8 +142,12 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 					}
 
 					go func() {
+						var err string
+						if r.err != nil {
+							err = r.err.Error()
+						}
 						resp <- apiResponse{
-							Success: r.err == nil, Error: r.err, ErrorType: r.errType,
+							Success: r.err == nil, Error: err, ErrorType: r.errType,
 							Method: data.Method, Tag: data.Tag, Arguments: r.val,
 						}
 					}()
@@ -161,8 +165,12 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 						}
 
 						go func() {
+							var err string
+							if r.err != nil {
+								err = r.err.Error()
+							}
 							resp <- apiResponse{
-								Success: r.err == nil, Error: r.err, ErrorType: r.errType,
+								Success: r.err == nil, Error: err, ErrorType: r.errType,
 								Method: "feed-update-notifier", Tag: "", Arguments: r.val,
 							}
 						}()
@@ -184,7 +192,7 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 				} else {
 					websocket.JSON.Send(ws, apiResponse{
 						Success: false, ErrorType: errTypeMessageParse,
-						Error: err, Method: data.Method,
+						Error: err.Error(), Method: data.Method,
 					})
 				}
 			}
@@ -192,7 +200,7 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 			if forbidden(c, ws.Request()) {
 				websocket.JSON.Send(ws, apiResponse{
 					Success: false, ErrorType: errTypeUnauthorized,
-					Error: errUnauthorized, Method: data.Method,
+					Error: errUnauthorized.Error(), Method: data.Method,
 				})
 				break
 			}
@@ -204,11 +212,11 @@ func (con ApiSocket) Handler(c context.Context) http.Handler {
 	})
 }
 
-func (con ApiSocket) AuthRequired(c context.Context, r *http.Request) bool {
+func (con WebSocket) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
 }
 
-func (con ApiSocket) AuthReject(c context.Context, r *http.Request) {
+func (con WebSocket) AuthReject(c context.Context, r *http.Request) {
 	c.Set(r, readeef.CtxKey("forbidden"), true)
 }
 
@@ -233,6 +241,8 @@ func (a apiRequest) processor(
 			webfwConfig:   webfw.GetConfig(c),
 			readeefConfig: readeef.GetConfig(c),
 		}, nil
+	case "get-article":
+		return &getArticleProcessor{db: db, user: user}, nil
 	case "list-feeds":
 		return &listFeedsProcessor{db: db, user: user}, nil
 	case "discover-feeds":

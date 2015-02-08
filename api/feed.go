@@ -497,11 +497,11 @@ func markFeedAsRead(db readeef.DB, user readeef.User, id string, timestamp int64
 	t := time.Unix(timestamp/1000, 0)
 
 	switch {
-	case id == "tag:__all__":
+	case id == "all":
 		if resp.err = db.MarkUserArticlesByDateAsRead(user, t, true); resp.err != nil {
 			return
 		}
-	case id == "__favorite__" || strings.HasPrefix(id, "popular:"):
+	case id == "favorite" || strings.HasPrefix(id, "popular:"):
 		// Favorites are assumbed to have been read already
 	case strings.HasPrefix(id, "tag:"):
 		tag := id[4:]
@@ -538,20 +538,20 @@ func getFeedArticles(db readeef.DB, user readeef.User, id string, limit int, off
 		limit = 50
 	}
 
-	if id == "__favorite__" {
+	if id == "favorite" {
 		if newerFirst {
 			articles, resp.err = db.GetUserFavoriteArticlesDesc(user, limit, offset)
 		} else {
 			articles, resp.err = db.GetUserFavoriteArticles(user, limit, offset)
 		}
-	} else if id == "popular:__all__" {
+	} else if id == "popular:all" {
 		timeRange := readeef.TimeRange{time.Now().AddDate(0, 0, -5), time.Now()}
 		if newerFirst {
 			articles, resp.err = db.GetScoredUserArticlesDesc(user, timeRange, limit, offset)
 		} else {
 			articles, resp.err = db.GetScoredUserArticles(user, timeRange, limit, offset)
 		}
-	} else if id == "tag:__all__" {
+	} else if id == "all" {
 		if newerFirst {
 			if unreadOnly {
 				articles, resp.err = db.GetUnreadUserArticlesDesc(user, limit, offset)

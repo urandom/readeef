@@ -51,7 +51,7 @@ func (con Search) Handler(c context.Context) http.Handler {
 			}
 
 			if vs := r.Form["id"]; len(vs) > 0 {
-				if vs[0] != "tag:__all__" && vs[0] != "__favorite__" {
+				if vs[0] != "all" && vs[0] != "favorite" {
 					feedId = vs[0]
 				}
 			}
@@ -97,12 +97,9 @@ func search(db readeef.DB, user readeef.User, searchIndex readeef.SearchIndex, q
 				ids = append(ids, feed.Id)
 			}
 		} else {
-			var id int64
-			if id, resp.err = strconv.ParseInt(feedId, 10, 64); resp.err != nil {
-				return
+			if id, err := strconv.ParseInt(feedId, 10, 64); err == nil {
+				ids = append(ids, id)
 			}
-
-			ids = append(ids, id)
 		}
 	}
 

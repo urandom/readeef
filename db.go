@@ -1,6 +1,7 @@
 package readeef
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 
@@ -8,9 +9,10 @@ import (
 )
 
 var (
-	db_version = 1
-	init_sql   = make(map[string][]string)
-	sql_stmt   = make(map[string]string)
+	db_version   = 1
+	init_sql     = make(map[string][]string)
+	sql_stmt     = make(map[string]string)
+	upgrade_func = make(map[string]func(db DB, old, new int) error)
 )
 
 type Validator interface {
@@ -52,6 +54,29 @@ func (db DB) init() error {
 		}
 	} else {
 		return errors.New(fmt.Sprintf("No init sql for driver '%s'", db.driver))
+	}
+
+	var version int
+	if err := db.Get(&version, "SELECT db_version FROM readeef"); err != nil {
+		if err == sql.ErrNoRows {
+			version = db_version
+		} else {
+			return errors.New(fmt.Sprintf("Error getting the current db_version: %v\n", err))
+		}
+	}
+
+	if version > db_version {
+		panic(fmt.Sprintf("The db version '%d' is newer than the expected '%d'", version, db_version))
+	}
+
+	if version < db_version {
+		Debug.Printf("Database version mismatch: current is %d, expected %d\n", version, db_version)
+		if upgrade, ok := upgrade_func[db.driver]; ok {
+			Debug.Printf("Running upgrade function for %s driver\n", db.driver)
+			if err := upgrade(db, version, db_version); err != nil {
+				return errors.New(fmt.Sprintf("Error running upgrade function for %s driver: %v\n", db.driver, err))
+			}
+		}
 	}
 
 	_, err := db.Exec(`DELETE FROM readeef`)

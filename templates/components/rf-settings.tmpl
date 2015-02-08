@@ -20,14 +20,14 @@
 
 <link rel="import" href="/component/rf-api">
 
-<polymer-element name="rf-settings" attributes="wide user settings feeds display shareServices" layout horizontal center-justified>
+<polymer-element name="rf-settings" attributes="wide user settings feeds display shareServices settingsTab" layout horizontal center-justified>
     <template>
         <link href="/css/rf-settings.css" rel="stylesheet">
 
         <div layout vertical flex start>
             <paper-dropdown-menu>
                 <paper-dropdown class="dropdown">
-                    <core-menu selected="{{ selectedTab }}">
+                    <core-menu selected="{{ settingsTab }}">
                         <paper-item name="general" >General</paper-item>
                         <paper-item name="add-feed" >Add Feed</paper-item>
                         <paper-item name="feeds" >Manage Feeds</paper-item>
@@ -39,7 +39,7 @@
                     </core-menu>
                 </paper-dropdown>
             </paper-dropdown-menu>
-            <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ selectedTab }}" transitions="hero-transition">
+            <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ settingsTab }}" transitions="hero-transition">
 
                 <section name="general" layout vertical center>
                     <div class="container">

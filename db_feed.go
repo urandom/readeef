@@ -889,9 +889,7 @@ func (db DB) getFeedArticles(f Feed, where, order string, paging ...int) (Feed, 
 	return f, nil
 }
 
-func (db DB) getArticles(u User, columns, join, where, order string, args []interface{}, paging ...int) ([]Article, error) {
-	var articles []Article
-
+func (db DB) getArticles(u User, columns, join, where, order string, args []interface{}, paging ...int) (articles []Article, err error) {
 	sql := db.NamedSQL("get_article_columns")
 	if columns != "" {
 		sql += ", " + columns
@@ -921,11 +919,11 @@ func (db DB) getArticles(u User, columns, join, where, order string, args []inte
 		args = append(args, limit, offset)
 	}
 
-	if err := db.Select(&articles, sql, args...); err != nil {
-		return articles, err
+	if err = db.Select(&articles, sql, args...); err != nil {
+		err = errors.New(fmt.Sprintf("Error selecting articles for user %s :%v", u.Login, err))
 	}
 
-	return articles, nil
+	return
 }
 
 func pagingLimit(paging []int) (int, int) {

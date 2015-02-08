@@ -49,10 +49,18 @@ type formatArticleProcessor struct {
 	readeefConfig readeef.Config
 }
 
+type getArticleProcessor struct {
+	Id int64 `json:"id"`
+
+	db   readeef.DB
+	user readeef.User
+}
+
 func (con Article) Patterns() []webfw.MethodIdentifierTuple {
 	prefix := "/v:version/article/:article-id/"
 
 	return []webfw.MethodIdentifierTuple{
+		webfw.MethodIdentifierTuple{"", webfw.MethodGet, "fetch"},
 		webfw.MethodIdentifierTuple{prefix + "read/:value", webfw.MethodPost, "read"},
 		webfw.MethodIdentifierTuple{prefix + "favorite/:value", webfw.MethodPost, "favorite"},
 		webfw.MethodIdentifierTuple{prefix + "format", webfw.MethodGet, "format"},
@@ -76,6 +84,8 @@ func (con Article) Handler(c context.Context) http.Handler {
 
 		if resp.err == nil {
 			switch action {
+			case "fetch":
+				resp = fetchArticle(db, user, articleId)
 			case "read":
 				resp = markArticleAsRead(db, user, articleId, params["value"] == "true")
 			case "favorite":
@@ -116,8 +126,24 @@ func (p formatArticleProcessor) Process() responseError {
 	return formatArticle(p.db, p.user, p.Id, p.webfwConfig, p.readeefConfig)
 }
 
+func (p getArticleProcessor) Process() responseError {
+	return fetchArticle(p.db, p.user, p.Id)
+}
+
 func getArticle(db readeef.DB, user readeef.User, id int64) (article readeef.Article, err error) {
 	article, err = db.GetFeedArticle(id, user)
+	return
+}
+
+func fetchArticle(db readeef.DB, user readeef.User, id int64) (resp responseError) {
+	resp = newResponse()
+
+	var article readeef.Article
+	if article, resp.err = getArticle(db, user, id); resp.err != nil {
+		return
+	}
+
+	resp.val["Article"] = article
 	return
 }
 

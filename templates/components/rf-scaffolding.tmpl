@@ -30,7 +30,7 @@
             <paper-item hidden?="{{ settings.newerFirst }}" on-tap="{{ onNewerFirst }}">{{ startsWith(feed.Id, 'popular:') ? 'More popular first' : 'Newer first' }}</paper-item>
             <paper-item hidden?="{{ settings.unreadOnly }}" on-tap="{{ onUnreadOnly }}">Unread only</paper-item>
             <paper-item hidden?="{{ !settings.unreadOnly }}" on-tap="{{ onReadAndUnread }}">Read and unread</paper-item>
-            <paper-item on-tap="{{ onMarkAllAsRead }}" hidden?="{{ feed.Id == '__favorite__' || startsWith(feed.Id, 'popular:') }}">Mark all as read</paper-item>
+            <paper-item on-tap="{{ onMarkAllAsRead }}" hidden?="{{ feed.Id == 'favorite' || startsWith(feed.Id, 'popular:') }}">Mark all as read</paper-item>
         </template>
 
         <template id="article-navigation-menu-items">

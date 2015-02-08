@@ -139,7 +139,12 @@ CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 
 func init() {
 	init_sql["sqlite3"] = init_sql_sqlite3
+	upgrade_func["sqlite3"] = sqlite3Upgrade
 	sql_stmt["sqlite3:get_user_feeds"] = sqlite3_get_user_feeds
 	sql_stmt["sqlite3:get_user_tag_feeds"] = sqlite3_get_user_tag_feeds
 	sql_stmt["sqlite3:get_latest_feed_articles"] = sqlite3_get_latest_feed_articles
+}
+
+func sqlite3Upgrade(db DB, old, new int) error {
+	return nil
 }

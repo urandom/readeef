@@ -37,16 +37,14 @@
                     <div fit class="drawer-title bottom">Feeds</div>
 
                     <template if="{{ feeds.length > 0 }}">
-                        <paper-item class="drawer-content" on-tap="{{ onFeedTap }}" name="__favorite__" selectable>Favorite</paper-item>
+                        <paper-item class="drawer-content" on-tap="{{ onFeedTap }}" name="favorite" selectable>Favorite</paper-item>
                         <div class="drawer-content collapser" layout horizontal center>
                             <paper-icon-button icon="more-horiz" fill on-tap="{{ onTagCollapseToggle }}" data-tag="popular:"></paper-icon-button>
-                            <paper-item on-tap="{{ onFeedTap }}" name="popular:__all__" selectable flex>Popular</paper-item>
+                            <paper-item on-tap="{{ onFeedTap }}" name="popular:all" selectable flex>Popular</paper-item>
                         </div>
                         <core-collapse class="drawer-content" data-tag="popular:">
                             <template repeat="{{ tag in tags }}">
-                                <template if="{{ tag.name != '__all__' }}">
-                                    <paper-item icon="icons:tab" on-tap="{{ onFeedTap }}" name="popular:tag:{{ tag.name }}" selectable>{{ tag.name }}</paper-item>
-                                </template>
+                                <paper-item icon="icons:tab" on-tap="{{ onFeedTap }}" name="popular:tag:{{ tag.name }}" selectable>{{ tag.name }}</paper-item>
                             </template>
                             <template repeat="{{ feed in feeds }}">
                                 <paper-item class="feed-item" on-tap="{{ onFeedTap }}" title="{{ feed.Title }}" name="popular:{{ feed.Id }}" selectable>
@@ -58,12 +56,25 @@
                         </core-collapse>
                         <hr class="drawer-content">
                     </template>
+                    <div class="drawer-content collapser" layout horizontal center>
+                        <paper-icon-button icon="more-horiz" fill on-tap="{{ onTagCollapseToggle }}" data-tag="all"></paper-icon-button>
+                        <paper-item on-tap="{{ onFeedTap }}" name="all" selectable flex>All</paper-item>
+                    </div>
+                    <core-collapse class="drawer-content" data-tag="all">
+                        <template repeat="{{ feed in feeds }}">
+                            <paper-item class="feed-item" on-tap="{{ onFeedTap }}" title="{{ feed.Title }}" name="{{ feed.Id }}" selectable>
+                                <div fit class="feed-title" style="background-image: url('http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}')">
+                                    {{ feed.Title }}
+                                </div>
+                            </paper-item>
+                        </template>
+                    </core-collapse>
                     <template repeat="{{ tag in tags }}" hidden?="{{ !feeds.length }}">
                         <div class="drawer-content collapser" layout horizontal center>
-                            <paper-icon-button icon="more-horiz" fill on-tap="{{ onTagCollapseToggle }}" data-tag="{{ tag.name }}"></paper-icon-button>
-                            <paper-item on-tap="{{ onFeedTap }}" name="tag:{{ tag.name }}" selectable flex>{{ tag.name == '__all__' ? 'All' : tag.name }}</paper-item>
+                            <paper-icon-button icon="more-horiz" fill on-tap="{{ onTagCollapseToggle }}" data-tag="tag:{{ tag.name }}"></paper-icon-button>
+                            <paper-item on-tap="{{ onFeedTap }}" name="tag:{{ tag.name }}" selectable flex>{{ tag.name }}</paper-item>
                         </div>
-                        <core-collapse class="drawer-content" data-tag="{{ tag.name }}">
+                        <core-collapse class="drawer-content" data-tag="tag:{{ tag.name }}">
                             <template repeat="{{ feed in tag.feeds }}">
                                 <paper-item class="feed-item" on-tap="{{ onFeedTap }}" title="{{ feed.Title }}" name="{{ feed.Id }}" selectable>
                                     <div fit class="feed-title" style="background-image: url('http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}')">
@@ -79,7 +90,7 @@
 
                     <div class="main-content">
                         <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" hidden?="{{ display != 'feed' || loadingArticles }}"></rf-content-list>
-                        <rf-settings id="settings" wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feeds="{{ feeds }}" hidden?="{{ display == 'feed' }}" display="{{ display }}" shareServices="{{ shareServices }}"></rf-settings>
+                        <rf-settings id="settings" wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feeds="{{ feeds }}" hidden?="{{ display == 'feed' }}" display="{{ display }}" shareServices="{{ shareServices }}" settingsTab="{{ settingsTab }}"></rf-settings>
                         <template if="{{ loadingArticles || loadingMoreArticles }}">
                             <div layout vertical center>
                                 <loading-wave background="transparent"></loading-wave>

@@ -7,7 +7,19 @@
         // TODO: i18n
         return {
             Id: "tag:" + tag,
-            Title: tag == '__all__' ? 'All feed articles' : 'Articles from ' + tag,
+            Title: 'Articles from ' + tag,
+            Description: "",
+            Articles: null,
+            Image: {},
+            Link: "",
+        }
+    }
+
+    function createAllPseudoFeed() {
+        // TODO: i18n
+        return {
+            Id: "all",
+            Title: "All feed articles",
             Description: "",
             Articles: null,
             Image: {},
@@ -18,7 +30,7 @@
     function createFavoritePseudoFeed() {
         // TODO: i18n
         return {
-            Id: "__favorite__",
+            Id: "favorite",
             Title: "Favorite feed articles",
             Description: "",
             Articles: null,
@@ -53,6 +65,7 @@
 
     Polymer('rf-app', {
         selected: 'splash',
+        settingsTab: 'general',
         responsiveWidth: '768px',
         userTTL: 1000 * 60 * 60 * 24 * 15,
         user: null,
@@ -71,6 +84,7 @@
         userSettingsObserver: null,
         updateAvailable: false,
         lastUpdateNotifyStart: 0,
+        requestArticle: null,
 
         created: function() {
             this.feeds = [];
@@ -89,6 +103,39 @@
             }
 
             this.shareServices = shareServices;
+
+            window.addEventListener("popstate", function(event) {
+                var path = location.pathname;
+                if (path.indexOf("/web/login") == 0)  {
+                    this.user = null;
+                } else if (path.indexOf("/web/") == 0) {
+                    if (path.indexOf("/web/settings/") == 0) {
+                        this.display = "settings";
+                        this.settingsTab = path.substring("/web/settings/".length);
+                    } else {
+                        var displayChanged = false,
+                            match = path.match(/^\/web\/feed\/([^\/]+)(?:\/article\/([^\/]+))?/);
+
+                        if (this.display != "feed") {
+                            this.display = "feed";
+                            displayChanged = true;
+                        }
+
+                        if (match) {
+                            var id = parseInt(match[2]);
+
+                            this.requestArticle = !isNaN(id) ? { Id: id } : null;
+                            if (this.currentFeedId == match[1]) {
+                                if (!displayChanged) {
+                                    this.updateFeedArticles();
+                                }
+                            } else {
+                                this.currentFeedId = match[1];
+                            }
+                        }
+                    }
+                }
+            }.bind(this));
         },
 
         userChanged: function(oldValue, newValue) {
@@ -102,6 +149,9 @@
                     this.feeds = [];
                     this.tags = [];
                     this.userSettings = null;
+                    if ("/web/login" != location.pathname) {
+                        history.pushState(null, null, "/web/login")
+                    }
                 } else {
                     if (!oldValue
                         || oldValue.Login != newValue.Login
@@ -133,8 +183,8 @@
             }
 
             if (newValue) {
-                this.currentFeedId = newValue.currentFeedId;
                 this.display = newValue.display || 'feed';
+                this.currentFeedId = newValue.currentFeedId;
                 CoreStyle.g.theme = newValue.theme || 'blue';
 
                 var updateShareServices = function() {
@@ -180,12 +230,20 @@
 
         displayChanged: function(oldValue, newValue) {
             this.userSettings.display = newValue;
+            if (newValue == "feed") {
+                this.updateFeedArticles();
+                if ("/web/feed/" + this.currentFeedId != location.pathname) {
+                    history.pushState(null, null, "/web/feed/" + this.currentFeedId);
+                }
+            }
         },
 
         currentFeedIdChanged: function(oldValue, newValue) {
             if (this.feeds && this.feeds.length) {
-                if (newValue == "__favorite__") {
+                if (newValue == "favorite") {
                     this.currentFeed = createFavoritePseudoFeed();
+                } else if (newValue == "all") {
+                    this.currentFeed = createAllPseudoFeed();
                 } else if (newValue.indexOf("popular:") == 0) {
                     this.currentFeed = createPopularPseudoFeed(newValue.substring(8));
                 } else if (newValue.indexOf("tag:") == 0) {
@@ -206,7 +264,24 @@
         },
 
         currentFeedChanged: function(oldValue, newValue) {
-            this.updateFeedArticles();
+            if (this.display == "feed") {
+                this.updateFeedArticles();
+                if ("/web/feed/" + this.currentFeedId != location.pathname) {
+                    history.pushState(null, null, "/web/feed/" + this.currentFeedId);
+                }
+            }
+        },
+
+        currentArticleChanged: function(oldValue, newValue) {
+            if (newValue) {
+                if ("/web/feed/" + this.currentFeedId + "/article/" + newValue.Id != location.pathname) {
+                    history.pushState(null, null, "/web/feed/" + this.currentFeedId + "/article/" + newValue.Id);
+                }
+            } else {
+                if ("/web/feed/" + this.currentFeedId != location.pathname) {
+                    history.pushState(null, null, "/web/feed/" + this.currentFeedId);
+                }
+            }
         },
 
         feedsChanged: function(oldValue, newValue) {
@@ -241,12 +316,45 @@
         },
 
         onAuthCheckMessage: function(event, data) {
+            var path = location.pathname;
+            if (path.indexOf("/web/login") == 0) {
+                if (location.search.indexOf("uri=") > -1) {
+                    var match = location.search.match(/\buri=([^&]+)/), uri;
+
+                    if (match) {
+                        path = decodeURIComponent(match[1]);
+                    } else {
+                        path = "";
+                    }
+                } else {
+                    path = "";
+                }
+            }
+
+            var profileData = data.arguments.ProfileData;
+            if (path.indexOf("/web/") == 0) {
+                if (path.indexOf("/web/settings/") == 0) {
+                    profileData.display = "settings";
+                    this.settingsTab = path.substring("/web/settings/".length);
+                } else {
+                    profileData.display = "feed";
+
+                    var match = path.match(/^\/web\/feed\/([^\/]+)(?:\/article\/([^\/]+))?/);
+                    if (match) {
+                        profileData.currentFeedId = match[1];
+                        var id = parseInt(match[2]);
+
+                        this.requestArticle = !isNaN(id) ? { Id: id } : null;
+                    }
+                }
+            }
+
             this.user.authTime = new Date().getTime();
             this.user.Admin = data.arguments.User.Admin;
             this.user.Email = data.arguments.User.Email;
             this.user.FirstName = data.arguments.User.FirstName;
             this.user.LastName = data.arguments.User.LastName;
-            this.userSettings = data.arguments.ProfileData;
+            this.userSettings = profileData;
 
             if (this.selected == 'login' || this.selected == 'splash') {
                 this.selected = 'scaffolding';
@@ -266,6 +374,15 @@
 
             if (!sender.value) {
                 this.selected = 'login';
+
+                var query = "";
+                if (location.pathname) {
+                    query += "?uri=" + encodeURIComponent(location.pathname);
+                }
+
+                if ("/web/login" + query != location.pathname) {
+                    history.pushState(null, null, "/web/login" + query)
+                }
             }
         },
 
@@ -349,9 +466,6 @@
             }
 
             this.currentArticle = null;
-            window.requestAnimationFrame(function() {
-                this.currentFeed.Articles = null;
-            }.bind(this));
 
             this.updateAvailable = false;
             this.noMoreArticles = false;
@@ -359,12 +473,77 @@
 
             this.loadingArticles = true;
 
-            if (this.currentFeed.Id.toString().indexOf("search:") == 0) {
-                this.noMoreArticles = true;
-                this.$['feed-search'].send();
+            if (this.requestArticle) {
+                var api = new RfAPI();
+
+                api.addEventListener('rf-api-message', function(event) {
+                    var article = event.detail.arguments.Article,
+                        feedId = this.currentFeed.Id,
+                        valid = true;
+
+                    article.First = true;
+                    article.Last = true;
+
+                    if (feedId != "all" && (!isNaN(feedId) || feedId.indexOf("popular:") == -1 && feedId.indexOf("search:") == -1)) {
+                        if (feedId == "favorite") {
+                            if (!article.Favorite) {
+                                valid = false;
+                            }
+                        } else if (!isNaN(feedId)) {
+                            if (feedId != article.FeedId) {
+                                valid = false;
+                            }
+                        } else if (feedId.indexOf("tag:") == 0) {
+                            var tag = feedId.substring(4), found = false;
+                            for (var i = 0, t; t = this.tags[i]; ++i) {
+                                if (t.name == tag) {
+                                    for (var j = 0, f; f = t.feeds[j]; ++j) {
+                                        if (f.Id == article.FeedId) {
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+
+                            if (!found) {
+                                valid = false;
+                            }
+                        }
+                    }
+
+                    if (valid) {
+                        this.currentFeed.Articles = [article];
+                        this.currentArticle = article;
+                    }
+
+                    if (this.currentFeed.Id.toString().indexOf("search:") == 0) {
+                        this.noMoreArticles = true;
+                        this.$['feed-search'].send();
+                    } else {
+                        this.$['feed-articles'].send();
+                    }
+
+                }.bind(this));
+
+                api.method = "get-article";
+                api.send({id: this.requestArticle.Id});
+
+                this.appendChild(api);
             } else {
-                this.$['feed-articles'].send();
+                if (this.currentFeed.Id.toString().indexOf("search:") == 0) {
+                    this.noMoreArticles = true;
+                    this.$['feed-search'].send();
+                } else {
+                    this.$['feed-articles'].send();
+                }
+
+                window.requestAnimationFrame(function() {
+                    this.currentFeed.Articles = null;
+                }.bind(this));
             }
+
         },
 
         onMarkAllAsRead: function() {
@@ -394,7 +573,7 @@
 
         onFeedSearch: function(event, detail) {
             if (detail === "") {
-                this.currentFeedId = this.userSettings.preSearchFeedId || 'tag:__all__';
+                this.currentFeedId = this.userSettings.preSearchFeedId || 'all';
             } else {
                 this.currentFeedId = "search:" + detail;
             }
@@ -411,7 +590,7 @@
                 if (tag.feeds.some(function(feed) { return feed.Id == data.arguments.Feed.Id })) {
                     this.updateAvailable = true;
                 }
-            } else if (this.currentFeedId == data.arguments.Feed.Id) {
+            } else if (this.currentFeedId == 'all' && this.currentFeedId == data.arguments.Feed.Id) {
                 this.updateAvailable = true;
             }
         },
@@ -421,12 +600,12 @@
                 this.$.error.dismiss();
             }
 
-            this.$.error.text = "Error: " + data.error + ", type: " + data.errorType
+            this.$.error.text = "Error: " + JSON.stringify(data.error) + ", type: " + data.errorType
             this.$.error.show()
         },
 
         updateTags: function() {
-            var tagList = [{name: '__all__', feeds: this.feeds}], tags = {};
+            var tagList = [], tags = {};
 
             this.feeds.forEach(function(feed) {
                 if (feed.Tags && feed.Tags.length) {

@@ -39,7 +39,6 @@
     }
 
     Polymer('rf-settings', {
-        selectedTab: 'general',
         loading: false,
         users: null,
 
@@ -56,8 +55,17 @@
                 if (this.user.Admin) {
                     this.$['list-users'].send();
                 }
+                if ("/web/settings/" + this.settingsTab != location.pathname) {
+                    history.pushState(null, null, "/web/settings/" + this.settingsTab);
+                }
             } else {
                 this.cleanFields();
+            }
+        },
+
+        settingsTabChanged: function(oldValue, newValue) {
+            if (oldValue && newValue && "/web/settings/" + this.settingsTab != location.pathname) {
+                history.pushState(null, null, "/web/settings/" + this.settingsTab);
             }
         },
 
