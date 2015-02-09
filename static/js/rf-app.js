@@ -603,7 +603,7 @@
                 if (tag.feeds.some(function(feed) { return feed.Id == data.arguments.Feed.Id })) {
                     this.updateAvailable = true;
                 }
-            } else if (this.currentFeedId == 'all' && this.currentFeedId == data.arguments.Feed.Id) {
+            } else if (this.currentFeedId == 'all' || this.currentFeedId == data.arguments.Feed.Id) {
                 this.updateAvailable = true;
             }
         },
