@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Sirupsen/logrus"
-	"github.com/natefinch/lumberjack"
 	"github.com/urandom/readeef"
 )
 
@@ -24,21 +22,7 @@ func main() {
 		exitWithError("No bleve-path in search-index section of the config")
 	}
 
-	logger := logrus.New()
-	logger.Out = &lumberjack.Logger{
-		Dir:        ".",
-		NameFormat: cfg.Logger.File,
-		MaxSize:    10000000,
-		MaxBackups: 5,
-		MaxAge:     28,
-	}
-
-	switch cfg.Logger.Level {
-	case "info":
-		logger.Level = logrus.InfoLevel
-	case "debug":
-		logger.Level = logrus.DebugLevel
-	}
+	logger := readeef.NewLogger(cfg)
 
 	db := readeef.NewDB(cfg.DB.Driver, cfg.DB.Connect, logger)
 	if err := db.Connect(); err != nil {

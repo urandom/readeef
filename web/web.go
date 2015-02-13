@@ -17,6 +17,6 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, ap
 
 	middleware.InitializeDefault(dispatcher)
 
-	dispatcher.HandleMultiPattern(NewApp())
+	dispatcher.Handle(NewApp())
 	dispatcher.Handle(NewComponent(dispatcher, apiPattern))
 }

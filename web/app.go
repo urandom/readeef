@@ -8,9 +8,7 @@ import (
 	"github.com/urandom/webfw/renderer"
 )
 
-type App struct {
-	webfw.BasePatternController
-}
+type App struct{}
 
 func NewApp() App {
 	return App{}

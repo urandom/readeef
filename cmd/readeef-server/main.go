@@ -8,12 +8,12 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/natefinch/lumberjack"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api"
 	"github.com/urandom/readeef/web"
 	"github.com/urandom/webfw"
+	"github.com/urandom/webfw/middleware"
 )
 
 func main() {
@@ -29,21 +29,7 @@ func main() {
 		exitWithError(fmt.Sprintf("Error reading config from path '%s': %v", *readeefconfpath, err))
 	}
 
-	logger := logrus.New()
-	logger.Out = &lumberjack.Logger{
-		Dir:        ".",
-		NameFormat: cfg.Logger.File,
-		MaxSize:    10000000,
-		MaxBackups: 5,
-		MaxAge:     28,
-	}
-
-	switch cfg.Logger.Level {
-	case "info":
-		logger.Level = logrus.InfoLevel
-	case "debug":
-		logger.Level = logrus.DebugLevel
-	}
+	logger := readeef.NewLogger(cfg)
 
 	server := webfw.NewServer(*serverconfpath)
 	if *address != "" {
@@ -54,8 +40,17 @@ func main() {
 		server.Port = *port
 	}
 
+	accessLogger := webfw.NewStandardLogger(&lumberjack.Logger{
+		Dir:        ".",
+		NameFormat: cfg.Logger.AccessFile,
+		MaxSize:    10000000,
+		MaxBackups: 5,
+		MaxAge:     28,
+	}, "", 0)
+
 	dispatcher := server.Dispatcher("/api/")
 	dispatcher.Logger = logger
+	dispatcher.RegisterMiddleware(middleware.Logger{AccessLogger: accessLogger})
 
 	if err := api.RegisterControllers(cfg, dispatcher, logger); err != nil {
 		exitWithError(err.Error())
@@ -63,6 +58,8 @@ func main() {
 
 	dispatcher = server.Dispatcher("/")
 	dispatcher.Logger = logger
+	dispatcher.RegisterMiddleware(middleware.Logger{AccessLogger: accessLogger})
+
 	web.RegisterControllers(cfg, dispatcher, "/api/")
 
 	if err := server.ListenAndServe(); err != nil {

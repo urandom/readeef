@@ -11,8 +11,10 @@ var apiversion = 1
 
 type Config struct {
 	Logger struct {
-		Level string
-		File  string
+		Level      string
+		File       string
+		AccessFile string `gcfg:"access-file"`
+		Formatter  string
 	}
 	API struct {
 		Version int
@@ -127,8 +129,10 @@ func defaultConfig() (Config, error) {
 
 var cfg string = `
 [logger]
-	level = error
+	level = error # error, info, debug
 	file = error.log
+	formatter = text # text, json
+	access-file = access.log
 [db]
 	driver = sqlite3
 	connect = file:./readeef.sqlite3?cache=shared&mode=rwc

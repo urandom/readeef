@@ -408,7 +408,7 @@ func (db DB) GetFeedArticle(articleId int64, user User) (Article, error) {
 	db.logger.Infof("Getting feed article %d\n", articleId)
 
 	articles, err := db.getArticles(user, "", "", "a.id = $2", "", []interface{}{articleId})
-	if err == nil {
+	if err == nil && len(articles) > 0 {
 		return articles[0], nil
 	} else {
 		return Article{}, err
