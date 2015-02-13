@@ -71,6 +71,8 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 	var mutex sync.RWMutex
 
 	receivers := make(map[chan readeef.Feed]bool)
+	logger := webfw.GetLogger(c)
+
 	go func() {
 		for {
 			select {
@@ -88,7 +90,6 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 
 	return websocket.Handler(func(ws *websocket.Conn) {
 		db := readeef.GetDB(c)
-		logger := webfw.GetLogger(c)
 		user := readeef.GetUser(c, ws.Request())
 
 		msg := make(chan apiRequest)

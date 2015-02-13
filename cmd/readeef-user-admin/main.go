@@ -24,7 +24,7 @@ func main() {
 	logger := logrus.New()
 	logger.Out = &lumberjack.Logger{
 		Dir:        ".",
-		NameFormat: "error-2006-01-02.000.log",
+		NameFormat: cfg.Logger.File,
 		MaxSize:    10000000,
 		MaxBackups: 5,
 		MaxAge:     28,

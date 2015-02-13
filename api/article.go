@@ -68,8 +68,8 @@ func (con Article) Patterns() []webfw.MethodIdentifierTuple {
 }
 
 func (con Article) Handler(c context.Context) http.Handler {
+	logger := webfw.GetLogger(c)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := webfw.GetLogger(c)
 		db := readeef.GetDB(c)
 		user := readeef.GetUser(c, r)
 
