@@ -3,7 +3,6 @@ package readeef
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -23,7 +22,7 @@ type Hubbub struct {
 	addFeed    chan<- Feed
 	removeFeed chan<- Feed
 	client     *http.Client
-	logger     *log.Logger
+	logger     webfw.Logger
 }
 
 type SubscriptionError struct {
@@ -52,7 +51,7 @@ var (
 	ErrSubscribed    = errors.New("Feed already subscribed")
 )
 
-func NewHubbub(db DB, c Config, l *log.Logger, pattern string, addFeed chan<- Feed, removeFeed chan<- Feed, um *UpdateFeedReceiverManager) *Hubbub {
+func NewHubbub(db DB, c Config, l webfw.Logger, pattern string, addFeed chan<- Feed, removeFeed chan<- Feed, um *UpdateFeedReceiverManager) *Hubbub {
 	return &Hubbub{
 		UpdateFeedReceiverManager: um,
 		db: db, config: c, logger: l, pattern: pattern,
@@ -82,7 +81,7 @@ func (h *Hubbub) Subscribe(f Feed) error {
 	}
 
 	if _, err := h.db.GetHubbubSubscription(f.Id); err == nil {
-		Debug.Println("Already subscribed to " + f.HubLink)
+		h.logger.Infoln("Already subscribed to " + f.HubLink)
 		return ErrSubscribed
 	}
 
@@ -109,7 +108,7 @@ func (h *Hubbub) InitSubscriptions() error {
 		return err
 	}
 
-	Debug.Printf("Initializing %d hubbub subscriptions", len(subscriptions))
+	h.logger.Infof("Initializing %d hubbub subscriptions", len(subscriptions))
 
 	go func() {
 		for _, s := range subscriptions {
@@ -171,10 +170,10 @@ func (s *HubbubSubscription) subscription(subscribe bool) error {
 	body := url.Values{}
 	body.Set("hub.callback", u)
 	if subscribe {
-		Debug.Println("Subscribing to hubbub for " + feed.Link + " with url " + u)
+		s.hubbub.logger.Infoln("Subscribing to hubbub for " + feed.Link + " with url " + u)
 		body.Set("hub.mode", "subscribe")
 	} else {
-		Debug.Println("Unsubscribing to hubbub for " + feed.Link + " with url " + u)
+		s.hubbub.logger.Infoln("Unsubscribing to hubbub for " + feed.Link + " with url " + u)
 		body.Set("hub.mode", "unsubscribe")
 	}
 	body.Set("hub.topic", feed.Link)
@@ -208,6 +207,7 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		params := r.URL.Query()
 		pathParams := webfw.GetParams(c, r)
+		logger := webfw.GetLogger(c)
 		feedId, err := strconv.ParseInt(pathParams["feed-id"], 10, 64)
 
 		if err != nil {
@@ -228,7 +228,7 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 			return
 		}
 
-		Debug.Println("Receiving hubbub event " + params.Get("hub.mode") + " for " + f.Link)
+		logger.Infoln("Receiving hubbub event " + params.Get("hub.mode") + " for " + f.Link)
 
 		switch params.Get("hub.mode") {
 		case "subscribe":

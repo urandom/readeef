@@ -81,10 +81,11 @@ var (
 
 func (con Fever) Handler(c context.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		db := readeef.GetDB(c)
+		logger := webfw.GetLogger(c)
+
 		var err error
 		var user readeef.User
-
-		db := readeef.GetDB(c)
 
 		err = r.ParseForm()
 
@@ -107,7 +108,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			resp["last_refreshed_on_time"] = now
 
 			if _, ok := r.Form["groups"]; ok {
-				readeef.Debug.Println("Fetching fever groups")
+				logger.Infoln("Fetching fever groups")
 
 				groups := []feverGroup{feverGroup{Id: 1, Title: "All"}}
 
@@ -124,7 +125,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			}
 
 			if _, ok := r.Form["feeds"]; ok {
-				readeef.Debug.Println("Fetching fever feeds")
+				logger.Infoln("Fetching fever feeds")
 
 				var feeds []readeef.Feed
 				var feverFeeds []feverFeed
@@ -148,7 +149,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			}
 
 			if _, ok := r.Form["unread_item_ids"]; ok {
-				readeef.Debug.Println("Fetching unread fever item ids")
+				logger.Infoln("Fetching unread fever item ids")
 
 				var ids []int64
 
@@ -172,7 +173,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			}
 
 			if _, ok := r.Form["saved_item_ids"]; ok {
-				readeef.Debug.Println("Fetching saved fever item ids")
+				logger.Infoln("Fetching saved fever item ids")
 
 				var ids []int64
 
@@ -196,7 +197,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			}
 
 			if _, ok := r.Form["items"]; ok {
-				readeef.Debug.Println("Fetching fever items")
+				logger.Infoln("Fetching fever items")
 
 				var count, since, max int64
 
@@ -267,7 +268,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			}
 
 			if _, ok := r.Form["links"]; ok {
-				readeef.Debug.Println("Fetching fever links")
+				logger.Infoln("Fetching fever links")
 				offset, _ := strconv.ParseInt(r.FormValue("offset"), 10, 64)
 
 				rng, e := strconv.ParseInt(r.FormValue("range"), 10, 64)
@@ -321,7 +322,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			}
 
 			if val := r.PostFormValue("unread_recently_read"); val == "1" {
-				readeef.Debug.Println("Marking recently read fever items as unread")
+				logger.Infoln("Marking recently read fever items as unread")
 
 				t := time.Now().Add(-24 * time.Hour)
 				err = db.MarkNewerUserArticlesByDateAsUnread(user, t, true)
@@ -332,7 +333,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 
 			if val := r.PostFormValue("mark"); val != "" {
 				if val == "item" {
-					readeef.Debug.Printf("Marking fever item '%s' as '%s'\n", r.PostFormValue("id"), r.PostFormValue("as"))
+					logger.Infof("Marking fever item '%s' as '%s'\n", r.PostFormValue("id"), r.PostFormValue("as"))
 
 					var id int64
 					var article readeef.Article
@@ -358,7 +359,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 						err = errors.New("Unknown 'as' action")
 					}
 				} else if val == "feed" || val == "group" {
-					readeef.Debug.Printf("Marking fever %s '%s' as '%s'\n", val, r.PostFormValue("id"), r.PostFormValue("as"))
+					logger.Infof("Marking fever %s '%s' as '%s'\n", val, r.PostFormValue("id"), r.PostFormValue("as"))
 					if r.PostFormValue("as") != "read" {
 						err = errors.New("Unknown 'as' action")
 						break

@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"math/rand"
 	"os"
 	"runtime"
 	"time"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/natefinch/lumberjack"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api"
 	"github.com/urandom/readeef/web"
@@ -28,6 +29,22 @@ func main() {
 		exitWithError(fmt.Sprintf("Error reading config from path '%s': %v", *readeefconfpath, err))
 	}
 
+	logger := logrus.New()
+	logger.Out = &lumberjack.Logger{
+		Dir:        ".",
+		NameFormat: "error-2006-01-02.000.log",
+		MaxSize:    10000000,
+		MaxBackups: 5,
+		MaxAge:     28,
+	}
+
+	switch cfg.Logger.Level {
+	case "info":
+		logger.Level = logrus.InfoLevel
+	case "debug":
+		logger.Level = logrus.DebugLevel
+	}
+
 	server := webfw.NewServer(*serverconfpath)
 	if *address != "" {
 		server.Address = *address
@@ -38,15 +55,14 @@ func main() {
 	}
 
 	dispatcher := server.Dispatcher("/api/")
-
-	logger := log.New(os.Stderr, "", 0)
-	readeef.InitDebug(logger, cfg)
+	dispatcher.Logger = logger
 
 	if err := api.RegisterControllers(cfg, dispatcher, logger); err != nil {
 		exitWithError(err.Error())
 	}
 
 	dispatcher = server.Dispatcher("/")
+	dispatcher.Logger = logger
 	web.RegisterControllers(cfg, dispatcher, "/api/")
 
 	if err := server.ListenAndServe(); err != nil {

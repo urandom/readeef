@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/urandom/webfw"
 )
 
 var (
@@ -21,6 +22,7 @@ type Validator interface {
 
 type DB struct {
 	*sqlx.DB
+	logger        webfw.Logger
 	driver        string
 	connectString string
 }
@@ -29,8 +31,8 @@ type ValidationError struct {
 	error
 }
 
-func NewDB(driver, conn string) DB {
-	return DB{driver: driver, connectString: conn}
+func NewDB(driver, conn string, logger webfw.Logger) DB {
+	return DB{driver: driver, connectString: conn, logger: logger}
 }
 
 func (db *DB) Connect() error {
@@ -70,9 +72,9 @@ func (db DB) init() error {
 	}
 
 	if version < db_version {
-		Debug.Printf("Database version mismatch: current is %d, expected %d\n", version, db_version)
+		db.logger.Infof("Database version mismatch: current is %d, expected %d\n", version, db_version)
 		if upgrade, ok := upgrade_func[db.driver]; ok {
-			Debug.Printf("Running upgrade function for %s driver\n", db.driver)
+			db.logger.Infof("Running upgrade function for %s driver\n", db.driver)
 			if err := upgrade(db, version, db_version); err != nil {
 				return errors.New(fmt.Sprintf("Error running upgrade function for %s driver: %v\n", db.driver, err))
 			}

@@ -2,7 +2,11 @@
 
 package readeef
 
-import "os"
+import (
+	"os"
+
+	"github.com/urandom/webfw"
+)
 
 func init() {
 	file := "readeef-test.sqlite"
@@ -10,7 +14,7 @@ func init() {
 
 	os.Remove(file)
 
-	db = NewDB("sqlite3", conn)
+	db = NewDB("sqlite3", conn, webfw.NewStandardLogger(os.Stderr, "", 0))
 	if err := db.Connect(); err != nil {
 		panic(err)
 	}

@@ -170,7 +170,7 @@ var (
 )
 
 func (db DB) GetFeed(id int64) (Feed, error) {
-	Debug.Printf("Getting feed for %d\n", id)
+	db.logger.Infof("Getting feed for %d\n", id)
 
 	var f Feed
 	if err := db.Get(&f, db.NamedSQL("get_feed"), id); err != nil {
@@ -198,7 +198,7 @@ func (db DB) UpdateFeed(f Feed) (Feed, bool, error) {
 	}
 	defer tx.Rollback()
 
-	Debug.Println("Updading feed " + f.Link)
+	db.logger.Infoln("Updading feed " + f.Link)
 
 	ustmt, err := tx.Preparex(db.NamedSQL("update_feed"))
 	if err != nil {
@@ -276,7 +276,7 @@ func (db DB) DeleteFeed(f Feed) error {
 }
 
 func (db DB) GetFeedByLink(link string) (Feed, error) {
-	Debug.Println("Getting feed " + link)
+	db.logger.Infoln("Getting feed " + link)
 
 	var f Feed
 	if err := db.Get(&f, db.NamedSQL("get_feed_by_link"), link); err != nil {
@@ -405,7 +405,7 @@ func (db DB) GetUserFeeds(u User) ([]Feed, error) {
 }
 
 func (db DB) GetFeedArticle(articleId int64, user User) (Article, error) {
-	Debug.Printf("Getting feed article %d\n", articleId)
+	db.logger.Infof("Getting feed article %d\n", articleId)
 
 	articles, err := db.getArticles(user, "", "", "a.id = $2", "", []interface{}{articleId})
 	if err == nil {
@@ -463,7 +463,7 @@ func (db DB) GetReadFeedArticles(f Feed, paging ...int) (Feed, error) {
 func (db DB) GetUserArticleCount(u User) (int64, error) {
 	var count int64 = -1
 
-	Debug.Println("Getting user article count")
+	db.logger.Infoln("Getting user article count")
 
 	if err := db.Get(&count, db.NamedSQL("get_user_article_count"), u.Login); err != nil {
 		return count, err
@@ -812,7 +812,7 @@ func (db DB) updateFeedArticles(tx *sqlx.Tx, f Feed, articles []Article) ([]Arti
 		return articles, []Article{}, nil
 	}
 
-	Debug.Println("Updating feed articles for " + f.Link)
+	db.logger.Infoln("Updating feed articles for " + f.Link)
 
 	newArticles := []Article{}
 

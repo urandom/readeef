@@ -110,7 +110,7 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 			}
 
 			if validUser && !u.Active {
-				Debug.Println("User " + u.Login + " is inactive")
+				logger.Infoln("User " + u.Login + " is inactive")
 				validUser = false
 			}
 
@@ -198,7 +198,7 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 					}
 
 					if !u.Active {
-						Debug.Println("User " + u.Login + " is inactive")
+						logger.Println("User " + u.Login + " is inactive")
 						break
 					}
 

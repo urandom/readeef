@@ -3,22 +3,21 @@ package readeef
 import (
 	"bytes"
 	"html"
-	"log"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/search"
+	"github.com/urandom/webfw"
 )
 
 type SearchIndex struct {
 	index     bleve.Index
-	logger    *log.Logger
+	logger    webfw.Logger
 	db        DB
 	newIndex  bool
 	batchSize int64
-	verbose   int
 }
 
 type SearchResult struct {
@@ -37,7 +36,7 @@ type indexArticle struct {
 
 var EmptySearchIndex = SearchIndex{}
 
-func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, error) {
+func NewSearchIndex(config Config, db DB, logger webfw.Logger) (SearchIndex, error) {
 	var err error
 	var index bleve.Index
 
@@ -45,7 +44,7 @@ func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, erro
 
 	_, err = os.Stat(config.SearchIndex.BlevePath)
 	if err == nil {
-		Debug.Println("Opening search index " + config.SearchIndex.BlevePath)
+		logger.Infoln("Opening search index " + config.SearchIndex.BlevePath)
 		index, err = bleve.Open(config.SearchIndex.BlevePath)
 
 		if err != nil {
@@ -62,7 +61,7 @@ func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, erro
 
 		mapping.AddDocumentMapping(mapping.DefaultType, docMapping)
 
-		Debug.Println("Creating search index " + config.SearchIndex.BlevePath)
+		logger.Infoln("Creating search index " + config.SearchIndex.BlevePath)
 		index, err = bleve.New(config.SearchIndex.BlevePath, mapping)
 
 		if err != nil {
@@ -82,12 +81,8 @@ func NewSearchIndex(config Config, db DB, logger *log.Logger) (SearchIndex, erro
 	return si, nil
 }
 
-func (si *SearchIndex) SetVerbose(verbose int) {
-	si.verbose = verbose
-}
-
 func (si SearchIndex) IndexAllArticles() error {
-	Debug.Println("Indexing all articles")
+	si.logger.Infoln("Indexing all articles")
 
 	if articles, err := si.db.GetAllArticles(); err == nil {
 		si.batchIndex(articles)
@@ -103,7 +98,7 @@ func (si SearchIndex) IsNewIndex() bool {
 }
 
 func (si SearchIndex) UpdateFeed(feed Feed) {
-	Debug.Printf("Updating article search index for feed '%s'\n", feed.Link)
+	si.logger.Infof("Updating article search index for feed '%s'\n", feed.Link)
 
 	var articles []Article
 	for _, a := range feed.Articles {
@@ -119,7 +114,7 @@ func (si SearchIndex) DeleteFeed(feed Feed) error {
 	articles, err := si.db.GetAllFeedArticles(feed)
 
 	if err == nil {
-		Debug.Printf("Removing all articles from the search index for feed '%s'\n", feed.Link)
+		si.logger.Infof("Removing all articles from the search index for feed '%s'\n", feed.Link)
 
 		si.batchDelete(articles)
 	} else {
@@ -139,9 +134,7 @@ func (si SearchIndex) batchIndex(articles []Article) {
 	for i, l := 0, len(articles); i < l; i++ {
 		a := articles[i]
 
-		if si.verbose > 0 {
-			Debug.Printf("Indexing article '%d' from feed id '%d'\n", a.Id, a.FeedId)
-		}
+		si.logger.Debugf("Indexing article '%d' from feed id '%d'\n", a.Id, a.FeedId)
 
 		batch.Index(prepareArticle(a))
 		count++
@@ -173,9 +166,7 @@ func (si SearchIndex) batchDelete(articles []Article) {
 	for i, l := 0, len(articles); i < l; i++ {
 		a := articles[i]
 
-		if si.verbose > 0 {
-			Debug.Printf("Indexing article '%d' from feed id '%d'\n", a.Id, a.FeedId)
-		}
+		si.logger.Debugf("Indexing article '%d' from feed id '%d'\n", a.Id, a.FeedId)
 
 		batch.Delete(strconv.FormatInt(a.Id, 10))
 		count++
@@ -217,7 +208,7 @@ func (si SearchIndex) Search(u User, term, highlight string, feedIds []int64, pa
 		conjunct[0] = query
 		conjunct[1] = disjunct
 
-		Debug.Printf("Constructing query for term '%s' and feed ids [%v]\n", term, feedIds)
+		si.logger.Infof("Constructing query for term '%s' and feed ids [%v]\n", term, feedIds)
 		query = bleve.NewConjunctionQuery(conjunct)
 	}
 
@@ -231,7 +222,7 @@ func (si SearchIndex) Search(u User, term, highlight string, feedIds []int64, pa
 	searchRequest.Size = limit
 	searchRequest.From = offset
 
-	Debug.Printf("Searching for '%s'\n", term)
+	si.logger.Infof("Searching for '%s'\n", term)
 	searchResult, err := si.index.Search(searchRequest)
 
 	if err != nil {
@@ -239,7 +230,7 @@ func (si SearchIndex) Search(u User, term, highlight string, feedIds []int64, pa
 	}
 
 	if len(searchResult.Hits) == 0 {
-		Debug.Printf("No results found for '%s'\n", term)
+		si.logger.Infof("No results found for '%s'\n", term)
 		return []SearchResult{}, nil
 	}
 

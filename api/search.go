@@ -36,6 +36,7 @@ func NewSearch(searchIndex readeef.SearchIndex) Search {
 func (con Search) Handler(c context.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		db := readeef.GetDB(c)
+
 		user := readeef.GetUser(c, r)
 		params := webfw.GetParams(c, r)
 		query := params["query"]

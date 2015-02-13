@@ -2,7 +2,9 @@ package readeef
 
 import (
 	"net/http"
+	"os"
 
+	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 )
 
@@ -23,7 +25,7 @@ func GetDB(c context.Context) DB {
 
 	conf := GetConfig(c)
 
-	db := NewDB(conf.DB.Driver, conf.DB.Connect)
+	db := NewDB(conf.DB.Driver, conf.DB.Connect, webfw.NewStandardLogger(os.Stderr, "", 0))
 
 	if err := db.Connect(); err != nil {
 		panic(err)

@@ -131,8 +131,8 @@ func (con Feed) Patterns() []webfw.MethodIdentifierTuple {
 
 func (con Feed) Handler(c context.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		action := webfw.GetMultiPatternIdentifier(c, r)
 		db := readeef.GetDB(c)
+		action := webfw.GetMultiPatternIdentifier(c, r)
 		user := readeef.GetUser(c, r)
 
 		r.ParseForm()

@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/urandom/readeef"
@@ -23,8 +22,8 @@ func newResponse() responseError {
 	return responseError{val: make(map[string]interface{})}
 }
 
-func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, logger *log.Logger) error {
-	db := readeef.NewDB(config.DB.Driver, config.DB.Connect)
+func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, logger webfw.Logger) error {
+	db := readeef.NewDB(config.DB.Driver, config.DB.Connect, logger)
 	if err := db.Connect(); err != nil {
 		return errors.New(fmt.Sprintf("Error connecting to database: %v", err))
 	}

@@ -69,13 +69,14 @@ func (con Article) Patterns() []webfw.MethodIdentifierTuple {
 
 func (con Article) Handler(c context.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger := webfw.GetLogger(c)
 		db := readeef.GetDB(c)
 		user := readeef.GetUser(c, r)
 
 		params := webfw.GetParams(c, r)
 		action := webfw.GetMultiPatternIdentifier(c, r)
 
-		readeef.Debug.Printf("Invoking Article controller with action '%s', article id '%s'\n", action, params["article-id"])
+		logger.Infof("Invoking Article controller with action '%s', article id '%s'\n", action, params["article-id"])
 
 		var articleId int64
 		var resp responseError

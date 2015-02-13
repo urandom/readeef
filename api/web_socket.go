@@ -71,14 +71,12 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 	var mutex sync.RWMutex
 
 	receivers := make(map[chan readeef.Feed]bool)
-
 	go func() {
 		for {
 			select {
 			case feed := <-con.updateFeed:
 				mutex.RLock()
 
-				readeef.Debug.Printf("Feed %s updated. Notifying %d receivers.", feed.Link, len(receivers))
 				for receiver, _ := range receivers {
 					receiver <- feed
 				}
@@ -90,6 +88,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 
 	return websocket.Handler(func(ws *websocket.Conn) {
 		db := readeef.GetDB(c)
+		logger := webfw.GetLogger(c)
 		user := readeef.GetUser(c, ws.Request())
 
 		msg := make(chan apiRequest)
@@ -152,7 +151,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 						}
 					}()
 				case f := <-receiver:
-					readeef.Debug.Println("Received notification for feed update of" + f.Link)
+					logger.Infoln("Received notification for feed update of" + f.Link)
 
 					r := newResponse()
 
@@ -208,7 +207,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 			msg <- data
 		}
 
-		readeef.Debug.Println("Closing web socket")
+		logger.Infoln("Closing web socket")
 	})
 }
 

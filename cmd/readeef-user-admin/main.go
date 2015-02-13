@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/natefinch/lumberjack"
 	"github.com/urandom/readeef"
 )
 
@@ -19,7 +21,23 @@ func main() {
 		exitWithError(fmt.Sprintf("Error reading config from path '%s': %v", *confpath, err))
 	}
 
-	db := readeef.NewDB(cfg.DB.Driver, cfg.DB.Connect)
+	logger := logrus.New()
+	logger.Out = &lumberjack.Logger{
+		Dir:        ".",
+		NameFormat: "error-2006-01-02.000.log",
+		MaxSize:    10000000,
+		MaxBackups: 5,
+		MaxAge:     28,
+	}
+
+	switch cfg.Logger.Level {
+	case "info":
+		logger.Level = logrus.InfoLevel
+	case "debug":
+		logger.Level = logrus.DebugLevel
+	}
+
+	db := readeef.NewDB(cfg.DB.Driver, cfg.DB.Connect, logger)
 	if err := db.Connect(); err != nil {
 		exitWithError(fmt.Sprintf("Error connecting to database: %v", err))
 	}

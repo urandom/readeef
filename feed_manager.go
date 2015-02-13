@@ -3,7 +3,6 @@ package readeef
 import (
 	"database/sql"
 	"errors"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/popularity"
+	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/util"
 )
 import (
@@ -28,7 +28,7 @@ type FeedManager struct {
 	scoreArticle chan Article
 	done         chan bool
 	client       *http.Client
-	logger       *log.Logger
+	logger       webfw.Logger
 	activeFeeds  map[int64]bool
 	hubbub       *Hubbub
 	searchIndex  SearchIndex
@@ -44,7 +44,7 @@ var (
 	httpStatusPrefix = "HTTP Status: "
 )
 
-func NewFeedManager(db DB, c Config, l *log.Logger, um *UpdateFeedReceiverManager) *FeedManager {
+func NewFeedManager(db DB, c Config, l webfw.Logger, um *UpdateFeedReceiverManager) *FeedManager {
 	return &FeedManager{
 		UpdateFeedReceiverManager: um,
 		db: db, config: c, logger: l,
@@ -67,7 +67,7 @@ func (fm *FeedManager) SetClient(c *http.Client) {
 }
 
 func (fm FeedManager) Start() {
-	Debug.Println("Starting the feed manager")
+	fm.logger.Infoln("Starting the feed manager")
 
 	go fm.reactToChanges()
 
@@ -77,7 +77,7 @@ func (fm FeedManager) Start() {
 }
 
 func (fm *FeedManager) Stop() {
-	Debug.Println("Stopping the feed manager")
+	fm.logger.Infoln("Stopping the feed manager")
 
 	fm.done <- true
 }
@@ -112,7 +112,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (Feed, error) {
 	f, err := fm.db.GetFeedByLink(link)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			Debug.Println("Discovering feeds in " + link)
+			fm.logger.Infoln("Discovering feeds in " + link)
 
 			feeds, err := discoverParserFeeds(link)
 			if err != nil {
@@ -135,7 +135,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (Feed, error) {
 		}
 	}
 
-	Debug.Println("Adding feed " + f.Link + " to manager")
+	fm.logger.Infoln("Adding feed " + f.Link + " to manager")
 	fm.AddFeed(f)
 
 	return f, nil
@@ -151,7 +151,7 @@ func (fm *FeedManager) RemoveFeedByLink(link string) (Feed, error) {
 		}
 	}
 
-	Debug.Println("Removing feed " + f.Link + " from manager")
+	fm.logger.Infoln("Removing feed " + f.Link + " from manager")
 
 	fm.removeFeed <- f
 
@@ -175,7 +175,7 @@ func (fm *FeedManager) DiscoverFeeds(link string) ([]Feed, error) {
 		feeds = append(feeds, f)
 	} else {
 		if err == sql.ErrNoRows {
-			Debug.Println("Discovering feeds in " + link)
+			fm.logger.Infoln("Discovering feeds in " + link)
 
 			discovered, err := discoverParserFeeds(link)
 			if err != nil {
@@ -216,7 +216,7 @@ func (fm *FeedManager) reactToChanges() {
 
 func (fm *FeedManager) startUpdatingFeed(f Feed) {
 	if f.Id == 0 || fm.activeFeeds[f.Id] {
-		Debug.Println("Feed " + f.Link + " already active")
+		fm.logger.Infoln("Feed " + f.Link + " already active")
 		return
 	}
 
@@ -236,13 +236,13 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 
 		ticker := time.After(d)
 
-		Debug.Printf("Starting feed scheduler for %s and duration %d\n", f.Link, d)
+		fm.logger.Infof("Starting feed scheduler for %s and duration %d\n", f.Link, d)
 	TICKER:
 		for {
 			select {
 			case now := <-ticker:
 				if !fm.activeFeeds[f.Id] {
-					Debug.Printf("Feed '%s' no longer active\n", f.Link)
+					fm.logger.Infof("Feed '%s' no longer active\n", f.Link)
 					break TICKER
 				}
 
@@ -251,7 +251,7 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 				}
 
 				ticker = time.After(d)
-				Debug.Printf("New feed ticker for '%s' after %d\n", f.Link, d)
+				fm.logger.Infof("New feed ticker for '%s' after %d\n", f.Link, d)
 			case <-fm.done:
 				fm.stopUpdatingFeed(f)
 				return
@@ -263,7 +263,7 @@ func (fm *FeedManager) startUpdatingFeed(f Feed) {
 }
 
 func (fm *FeedManager) stopUpdatingFeed(f Feed) {
-	Debug.Println("Stopping feed update for " + f.Link)
+	fm.logger.Infoln("Stopping feed update for " + f.Link)
 	delete(fm.activeFeeds, f.Id)
 
 	users, err := fm.db.GetFeedUsers(f)
@@ -271,7 +271,7 @@ func (fm *FeedManager) stopUpdatingFeed(f Feed) {
 		fm.logger.Printf("Error getting users for feed '%s': %v\n", f.Link, err)
 	} else {
 		if len(users) == 0 {
-			Debug.Println("Removing orphan feed " + f.Link + " from the database")
+			fm.logger.Infoln("Removing orphan feed " + f.Link + " from the database")
 
 			if fm.searchIndex != EmptySearchIndex {
 				if err := fm.searchIndex.DeleteFeed(f); err != nil {
@@ -286,7 +286,7 @@ func (fm *FeedManager) stopUpdatingFeed(f Feed) {
 }
 
 func (fm *FeedManager) requestFeedContent(f Feed) Feed {
-	Debug.Println("Requesting feed content for " + f.Link)
+	fm.logger.Infoln("Requesting feed content for " + f.Link)
 
 	resp, err := fm.client.Get(f.Link)
 
@@ -332,11 +332,11 @@ func (fm *FeedManager) requestFeedContent(f Feed) Feed {
 				fm.searchIndex.UpdateFeed(f)
 			}
 
-			Debug.Println("New articles notification for " + f.Link)
+			fm.logger.Infoln("New articles notification for " + f.Link)
 
 			fm.NotifyReceivers(f)
 		} else {
-			Debug.Println("No new articles for " + f.Link)
+			fm.logger.Infoln("No new articles for " + f.Link)
 		}
 
 		return f
@@ -345,16 +345,16 @@ func (fm *FeedManager) requestFeedContent(f Feed) Feed {
 
 func (fm *FeedManager) scoreFeedContent(f Feed) {
 	if len(fm.config.Popularity.Providers) == 0 {
-		Debug.Println("No popularity providers configured")
+		fm.logger.Infoln("No popularity providers configured")
 		return
 	}
 
 	if !fm.activeFeeds[f.Id] {
-		Debug.Printf("Feed '%s' no longer active for scoring\n", f.Link)
+		fm.logger.Infof("Feed '%s' no longer active for scoring\n", f.Link)
 		return
 	}
 
-	Debug.Println("Scoring feed content for " + f.Link)
+	fm.logger.Infoln("Scoring feed content for " + f.Link)
 
 	articles, err := fm.db.GetLatestFeedArticles(f)
 	if err != nil {
@@ -366,7 +366,7 @@ func (fm *FeedManager) scoreFeedContent(f Feed) {
 		fm.scoreArticle <- articles[i]
 	}
 
-	Debug.Println("Done scoring feed content for " + f.Link)
+	fm.logger.Infoln("Done scoring feed content for " + f.Link)
 
 	select {
 	case <-time.After(30 * time.Minute):
@@ -395,7 +395,7 @@ func (fm *FeedManager) scoreArticles() {
 				}
 			}()
 
-			Debug.Printf("Scoring '%s' using %+v\n", a.Link, fm.config.Popularity.Providers)
+			fm.logger.Infof("Scoring '%s' using %+v\n", a.Link, fm.config.Popularity.Providers)
 			score, err := popularity.Score(a.Link, a.Description, fm.config.Popularity.Providers)
 			if err != nil {
 				fm.logger.Printf("Error getting article popularity: %v\n", err)
@@ -447,7 +447,7 @@ func (fm *FeedManager) scheduleFeeds() {
 	}
 
 	for _, f := range feeds {
-		Debug.Println("Scheduling feed " + f.Link)
+		fm.logger.Infoln("Scheduling feed " + f.Link)
 
 		fm.AddFeed(f)
 	}
@@ -497,8 +497,6 @@ func discoverParserFeeds(link string) ([]Feed, error) {
 
 						href = u.String()
 					}
-
-					Debug.Printf("Checking if '%s' is a valid feed link\n", href)
 
 					fs, err := discoverParserFeeds(href)
 					if err != nil {

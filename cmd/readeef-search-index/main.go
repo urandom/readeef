@@ -3,15 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 
+	"github.com/Sirupsen/logrus"
+	"github.com/natefinch/lumberjack"
 	"github.com/urandom/readeef"
 )
 
 func main() {
 	confpath := flag.String("config", "", "readeef config path")
-	verbose := flag.Int("verbose", 1, "verbose level")
 
 	flag.Parse()
 
@@ -24,10 +24,23 @@ func main() {
 		exitWithError("No bleve-path in search-index section of the config")
 	}
 
-	logger := log.New(os.Stderr, "", 0)
-	readeef.InitDebug(logger, cfg)
+	logger := logrus.New()
+	logger.Out = &lumberjack.Logger{
+		Dir:        ".",
+		NameFormat: "error-2006-01-02.000.log",
+		MaxSize:    10000000,
+		MaxBackups: 5,
+		MaxAge:     28,
+	}
 
-	db := readeef.NewDB(cfg.DB.Driver, cfg.DB.Connect)
+	switch cfg.Logger.Level {
+	case "info":
+		logger.Level = logrus.InfoLevel
+	case "debug":
+		logger.Level = logrus.DebugLevel
+	}
+
+	db := readeef.NewDB(cfg.DB.Driver, cfg.DB.Connect, logger)
 	if err := db.Connect(); err != nil {
 		exitWithError(fmt.Sprintf("Error connecting to database: %v", err))
 	}
@@ -38,9 +51,8 @@ func main() {
 		exitWithError(fmt.Sprintf("Error creating search index: %v", err))
 	}
 
-	readeef.Debug.Println("Getting all articles")
+	logger.Infoln("Getting all articles")
 
-	si.SetVerbose(*verbose)
 	if err := si.IndexAllArticles(); err != nil {
 		exitWithError(fmt.Sprintf("Error indexing all articles: %v", err))
 	}
