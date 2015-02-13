@@ -544,6 +544,8 @@
                 api.send({id: this.requestArticle.Id});
 
                 this.appendChild(api);
+
+                this.requestArticle = null;
             } else {
                 if (this.currentFeed.Id.toString().indexOf("search:") == 0) {
                     this.noMoreArticles = true;
