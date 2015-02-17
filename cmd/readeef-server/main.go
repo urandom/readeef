@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"time"
 
 	"github.com/natefinch/lumberjack"
@@ -30,6 +31,12 @@ func main() {
 	}
 
 	logger := readeef.NewLogger(cfg)
+	defer func() {
+		if rec := recover(); rec != nil {
+			stack := debug.Stack()
+			logger.Fatalf("Fatal error: %v\n%s\n", rec, stack)
+		}
+	}()
 
 	server := webfw.NewServer(*serverconfpath)
 	if *address != "" {
