@@ -9,12 +9,12 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/natefinch/lumberjack"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api"
 	"github.com/urandom/readeef/web"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/middleware"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func main() {
@@ -48,9 +48,8 @@ func main() {
 	}
 
 	accessLogger := webfw.NewStandardLogger(&lumberjack.Logger{
-		Dir:        ".",
-		NameFormat: cfg.Logger.AccessFile,
-		MaxSize:    10000000,
+		Filename:   cfg.Logger.AccessFile,
+		MaxSize:    20,
 		MaxBackups: 5,
 		MaxAge:     28,
 	}, "", 0)
@@ -76,7 +75,7 @@ func main() {
 
 func exitWithError(err string) {
 	fmt.Fprintf(os.Stderr, err+"\n")
-	os.Exit(1)
+	os.Exit(0)
 }
 
 func init() {

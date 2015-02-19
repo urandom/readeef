@@ -2,6 +2,8 @@ package readeef
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"html"
 	"os"
 	"strconv"
@@ -48,7 +50,7 @@ func NewSearchIndex(config Config, db DB, logger webfw.Logger) (SearchIndex, err
 		index, err = bleve.Open(config.SearchIndex.BlevePath)
 
 		if err != nil {
-			return EmptySearchIndex, err
+			return EmptySearchIndex, errors.New(fmt.Sprintf("Error opening search index: %v\n", err))
 		}
 	} else if os.IsNotExist(err) {
 		mapping := bleve.NewIndexMapping()
@@ -65,12 +67,13 @@ func NewSearchIndex(config Config, db DB, logger webfw.Logger) (SearchIndex, err
 		index, err = bleve.New(config.SearchIndex.BlevePath, mapping)
 
 		if err != nil {
-			return EmptySearchIndex, err
+			return EmptySearchIndex, errors.New(fmt.Sprintf("Error creating search index: %v\n", err))
 		}
 
 		si.newIndex = true
 	} else {
-		return EmptySearchIndex, err
+		return EmptySearchIndex, errors.New(
+			fmt.Sprintf("Error getting stat of '%s': %v\n", config.SearchIndex.BlevePath, err))
 	}
 
 	si.logger = logger
