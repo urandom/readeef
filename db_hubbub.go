@@ -132,10 +132,10 @@ func (db DB) FailHubbubSubscriptions() error {
 }
 
 func init() {
-	sql_stmt["generic:get_hubbub_subscription"] = get_hubbub_subscription
-	sql_stmt["generic:create_hubbub_subscription"] = create_hubbub_subscription
-	sql_stmt["generic:update_hubbub_subscription"] = update_hubbub_subscription
-	sql_stmt["generic:delete_hubbub_subscription"] = delete_hubbub_subscription
-	sql_stmt["generic:get_hubbub_subscriptions"] = get_hubbub_subscriptions
-	sql_stmt["generic:fail_hubbub_subscriptions"] = fail_hubbub_subscriptions
+	sqlStmt["generic:get_hubbub_subscription"] = get_hubbub_subscription
+	sqlStmt["generic:create_hubbub_subscription"] = create_hubbub_subscription
+	sqlStmt["generic:update_hubbub_subscription"] = update_hubbub_subscription
+	sqlStmt["generic:delete_hubbub_subscription"] = delete_hubbub_subscription
+	sqlStmt["generic:get_hubbub_subscriptions"] = get_hubbub_subscriptions
+	sqlStmt["generic:fail_hubbub_subscriptions"] = fail_hubbub_subscriptions
 }

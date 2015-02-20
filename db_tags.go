@@ -256,12 +256,12 @@ func (db DB) MarkUserTagArticlesByDateAsRead(u User, tag string, d time.Time, re
 }
 
 func init() {
-	sql_stmt["generic:get_user_tags"] = get_user_tags
-	sql_stmt["generic:get_user_feed_tags"] = get_user_feed_tags
-	sql_stmt["generic:create_user_feed_tag"] = create_user_feed_tag
-	sql_stmt["generic:delete_user_feed_tag"] = delete_user_feed_tag
-	sql_stmt["generic:get_user_tag_feeds"] = get_user_tag_feeds
-	sql_stmt["generic:get_user_feed_ids_tags"] = get_user_feed_ids_tags
-	sql_stmt["generic:create_all_user_tag_articles_read_by_date"] = create_all_user_tag_articles_read_by_date
-	sql_stmt["generic:delete_all_user_tag_articles_read_by_date"] = delete_all_user_tag_articles_read_by_date
+	sqlStmt["generic:get_user_tags"] = get_user_tags
+	sqlStmt["generic:get_user_feed_tags"] = get_user_feed_tags
+	sqlStmt["generic:create_user_feed_tag"] = create_user_feed_tag
+	sqlStmt["generic:delete_user_feed_tag"] = delete_user_feed_tag
+	sqlStmt["generic:get_user_tag_feeds"] = get_user_tag_feeds
+	sqlStmt["generic:get_user_feed_ids_tags"] = get_user_feed_ids_tags
+	sqlStmt["generic:create_all_user_tag_articles_read_by_date"] = create_all_user_tag_articles_read_by_date
+	sqlStmt["generic:delete_all_user_tag_articles_read_by_date"] = delete_all_user_tag_articles_read_by_date
 }

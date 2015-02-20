@@ -139,12 +139,12 @@ CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 )
 
 func init() {
-	init_sql["postgres"] = init_sql_postgres
-	upgrade_func["postgres"] = postgresUpgrade
-	sql_stmt["postgres:create_feed"] = postgres_create_feed
-	sql_stmt["postgres:get_user_feeds"] = postgres_get_user_feeds
-	sql_stmt["postgres:get_user_tag_feeds"] = postgres_get_user_tag_feeds
-	sql_stmt["postgres:create_feed_article"] = postgres_create_feed_article
+	initSql["postgres"] = init_sql_postgres
+	upgradeFunc["postgres"] = postgresUpgrade
+	sqlStmt["postgres:create_feed"] = postgres_create_feed
+	sqlStmt["postgres:get_user_feeds"] = postgres_get_user_feeds
+	sqlStmt["postgres:get_user_tag_feeds"] = postgres_get_user_tag_feeds
+	sqlStmt["postgres:create_feed_article"] = postgres_create_feed_article
 }
 
 func postgresUpgrade(db DB, old, new int) error {

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -25,8 +24,12 @@ func newResponse() responseError {
 func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, logger webfw.Logger) error {
 	db := readeef.NewDB(config.DB.Driver, config.DB.Connect, logger)
 	if err := db.Connect(); err != nil {
-		return errors.New(fmt.Sprintf("Error connecting to database: %v", err))
+		return fmt.Errorf("Error connecting to database: %v", err)
 	}
+
+	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
+	dispatcher.Context.SetGlobal(context.BaseCtxKey("readeefConfig"), config)
+	dispatcher.Context.SetGlobal(readeef.CtxKey("db"), db)
 
 	um := &readeef.UpdateFeedReceiverManager{}
 
@@ -35,7 +38,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	if config.Hubbub.CallbackURL != "" {
 		hubbub := readeef.NewHubbub(db, config, logger, dispatcher.Pattern, fm.RemoveFeedChannel(), fm.AddFeedChannel(), um)
 		if err := hubbub.InitSubscriptions(); err != nil {
-			return errors.New(fmt.Sprintf("Error initializing hubbub subscriptions: %v", err))
+			return fmt.Errorf("Error initializing hubbub subscriptions: %v", err)
 		}
 
 		fm.SetHubbub(hubbub)
@@ -47,7 +50,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		var err error
 		si, err = readeef.NewSearchIndex(config, db, logger)
 		if err != nil {
-			return errors.New(fmt.Sprintf("Error initializing bleve search: %v", err))
+			return fmt.Errorf("Error initializing bleve search: %v", err)
 		}
 
 		if si.IsNewIndex() {
@@ -100,10 +103,6 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	middleware.InitializeDefault(dispatcher)
 	dispatcher.RegisterMiddleware(readeef.Auth{DB: db, Pattern: dispatcher.Pattern, Nonce: nonce, IgnoreURLPrefix: config.Auth.IgnoreURLPrefix})
-
-	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
-	dispatcher.Context.SetGlobal(context.BaseCtxKey("readeefConfig"), config)
-	dispatcher.Context.SetGlobal(readeef.CtxKey("db"), db)
 
 	dispatcher.Renderer = renderer.NewRenderer(dispatcher.Config.Renderer.Dir,
 		dispatcher.Config.Renderer.Base)

@@ -152,8 +152,8 @@ func (db DB) UpdateArticleScores(asc ArticleScores) error {
 }
 
 func init() {
-	sql_stmt["generic:get_latest_feed_articles"] = get_latest_feed_articles
-	sql_stmt["generic:get_article_scores"] = get_article_scores
-	sql_stmt["generic:create_article_scores"] = create_article_scores
-	sql_stmt["generic:update_article_scores"] = update_article_scores
+	sqlStmt["generic:get_latest_feed_articles"] = get_latest_feed_articles
+	sqlStmt["generic:get_article_scores"] = get_article_scores
+	sqlStmt["generic:create_article_scores"] = create_article_scores
+	sqlStmt["generic:update_article_scores"] = update_article_scores
 }

@@ -169,11 +169,11 @@ func initUsers(users []User) ([]User, error) {
 }
 
 func init() {
-	sql_stmt["generic:get_user"] = get_user
-	sql_stmt["generic:create_user"] = create_user
-	sql_stmt["generic:update_user"] = update_user
-	sql_stmt["generic:delete_user"] = delete_user
-	sql_stmt["generic:get_users"] = get_users
-	sql_stmt["generic:get_feed_users"] = get_feed_users
-	sql_stmt["generic:get_user_by_md5api"] = get_user_by_md5api
+	sqlStmt["generic:get_user"] = get_user
+	sqlStmt["generic:create_user"] = create_user
+	sqlStmt["generic:update_user"] = update_user
+	sqlStmt["generic:delete_user"] = delete_user
+	sqlStmt["generic:get_users"] = get_users
+	sqlStmt["generic:get_feed_users"] = get_feed_users
+	sqlStmt["generic:get_user_by_md5api"] = get_user_by_md5api
 }

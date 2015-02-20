@@ -2,7 +2,6 @@ package readeef
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -10,10 +9,10 @@ import (
 )
 
 var (
-	db_version   = 1
-	init_sql     = make(map[string][]string)
-	sql_stmt     = make(map[string]string)
-	upgrade_func = make(map[string]func(db DB, old, new int) error)
+	dbVersion   = 1
+	initSql     = make(map[string][]string)
+	sqlStmt     = make(map[string]string)
+	upgradeFunc = make(map[string]func(db DB, old, new int) error)
 )
 
 type Validator interface {
@@ -47,36 +46,36 @@ func (db *DB) Connect() error {
 }
 
 func (db DB) init() error {
-	if init, ok := init_sql[db.driver]; ok {
+	if init, ok := initSql[db.driver]; ok {
 		for _, sql := range init {
 			_, err := db.Exec(sql)
 			if err != nil {
-				return errors.New(fmt.Sprintf("Error executing '%s': %v", sql, err))
+				return fmt.Errorf("Error executing '%s': %v", sql, err)
 			}
 		}
 	} else {
-		return errors.New(fmt.Sprintf("No init sql for driver '%s'", db.driver))
+		return fmt.Errorf("No init sql for driver '%s'", db.driver)
 	}
 
 	var version int
 	if err := db.Get(&version, "SELECT db_version FROM readeef"); err != nil {
 		if err == sql.ErrNoRows {
-			version = db_version
+			version = dbVersion
 		} else {
-			return errors.New(fmt.Sprintf("Error getting the current db_version: %v\n", err))
+			return fmt.Errorf("Error getting the current db_version: %v\n", err)
 		}
 	}
 
-	if version > db_version {
-		panic(fmt.Sprintf("The db version '%d' is newer than the expected '%d'", version, db_version))
+	if version > dbVersion {
+		panic(fmt.Sprintf("The db version '%d' is newer than the expected '%d'", version, dbVersion))
 	}
 
-	if version < db_version {
-		db.logger.Infof("Database version mismatch: current is %d, expected %d\n", version, db_version)
-		if upgrade, ok := upgrade_func[db.driver]; ok {
+	if version < dbVersion {
+		db.logger.Infof("Database version mismatch: current is %d, expected %d\n", version, dbVersion)
+		if upgrade, ok := upgradeFunc[db.driver]; ok {
 			db.logger.Infof("Running upgrade function for %s driver\n", db.driver)
-			if err := upgrade(db, version, db_version); err != nil {
-				return errors.New(fmt.Sprintf("Error running upgrade function for %s driver: %v\n", db.driver, err))
+			if err := upgrade(db, version, dbVersion); err != nil {
+				return fmt.Errorf("Error running upgrade function for %s driver: %v\n", db.driver, err)
 			}
 		}
 	}
@@ -84,10 +83,10 @@ func (db DB) init() error {
 	_, err := db.Exec(`DELETE FROM readeef`)
 	/* TODO: per-database statements */
 	if err == nil {
-		_, err = db.Exec(`INSERT INTO readeef(db_version) VALUES($1)`, db_version)
+		_, err = db.Exec(`INSERT INTO readeef(db_version) VALUES($1)`, dbVersion)
 	}
 	if err != nil {
-		return errors.New(fmt.Sprintf("Error initializing readeef utility table: %v", err))
+		return fmt.Errorf("Error initializing readeef utility table: %v", err)
 	}
 
 	return nil
@@ -96,8 +95,8 @@ func (db DB) init() error {
 func (db DB) NamedSQL(name string) string {
 	var stmt string
 
-	if stmt = sql_stmt[db.driver+":"+name]; stmt == "" {
-		stmt = sql_stmt["generic:"+name]
+	if stmt = sqlStmt[db.driver+":"+name]; stmt == "" {
+		stmt = sqlStmt["generic:"+name]
 	}
 
 	if stmt == "" {
