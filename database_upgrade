@@ -1,0 +1,176 @@
+/*
+
+package readeef
+
+type Error interface {
+	Err() error
+}
+
+*/
+
+package user
+
+type Repo interface {
+	Err() error
+
+    ByLogin(login string) User
+    ByMD5Api(md5 []byte) User
+	All() []User
+}
+
+type User interface {
+	Err() error
+
+	Set(info Info) User
+	Info() Info
+
+	Update(info Info) User
+	Delete() User
+}
+
+type Info struct { /* old readeef.User */ }
+
+// user -> package sql
+
+func NewRepo(db *sqlx.DB) Repo {
+}
+
+func New(db *sqlx.DB) User {
+}
+
+// sql -> package postgres
+// sql -> package sqlite3
+// sql -> package cznic/ql
+
+// package feed
+
+type Id int64
+
+type Repo interface {
+	Err() error
+
+	ById(id Id) Feed
+	ByLink(link string) Feed
+
+	All() []Feed
+	Unsubscribed() []Feed
+
+	ByUserAndId(user user.User, id Id) UserFeed
+
+	AllUser(user user.User) []UserFeed
+
+	AllByUser(user user.User) []TaggedFeed
+	AllByUserAndTag(user user.User, tag tag.Tag) []TaggedFeed
+
+}
+
+type Feed interface {
+	Err() error
+
+	// Returns any new articles since the previous Update
+	NewArticles() []article.Article
+
+	Set(info Info) Feed
+	Info() Info
+
+	Update(info Info) Feed
+	Delete() Feed
+
+	AllArticles() []article.Article
+	AddArticles([]article.Article) Feed
+}
+
+type UserFeed interface {
+	Feed
+
+	Users() []user.User
+
+	UserArticle(id article.Id) article.UserArticle
+	UserArticles(desc bool, paging ...int) []article.UserArticle
+	UnreadUserArticles(desc bool, paging ...int) []article.UserArticle
+	FavoriteUserArticles(desc bool, paging ...int) []article.UserArticle
+
+	ArticlesRead(articles []article.Article, read bool) UserFeed
+	ArticlesReadBefore(articles []article.Article, date time.Time, read bool) UserFeed
+	ArticlesReadAfter(articles []article.Article, date time.Time, read bool) UserFeed
+	ArticlesReadBeforeByFeed(date time.Time, read bool) UserFeed
+
+	ArticlesFavorite(articles []article.Article, favorite bool) UserFeed
+}
+
+type TaggedFeed interface {
+	UserFeed
+
+	Tags() []tag.Tag
+	AddTags(tags ...tag.Tag) TaggedFeed
+	DeleteAllTags() TaggedFeed
+
+	UserArticlesByTag(tag tag.Tag, desc bool, paging ...int) []article.UserArticle
+	UnreadUserArticlesByTag(tag tag.Tag, desc bool, paging ...int) []article.UserArticle
+
+	ArticlesReadBeforeByTag(tag tag.Tag, date time.Time, read bool) TaggedFeed
+}
+
+type Info struct { /* old readeef.Feed */ }
+
+// user -> package sql
+
+func NewRepo(db *sqlx.DB) Repo {
+}
+
+func New(db *sqlx.DB) Feed {
+}
+
+func NewUser(db *sqlx.DB) UserFeed {
+}
+
+// sql -> package postgres
+// sql -> package sqlite3
+
+// feed -> package tag
+
+type Info string
+
+type Repo interface {
+	Err() error
+
+	AllByUser(user user.User) []Tag
+}
+
+type Tag interface {
+	Err() error
+
+	Set(info Info) Tag
+	Info() Info
+}
+
+// feed -> package article
+
+type Id int64
+
+type Repo interface {
+	Err() error
+
+	All() []Article
+	UserByIds(user user.User, ids ...Id) []UserArticle
+
+	AllUserUnreadIds(user user.User) []Id
+	AllUserFavoriteIds(user user.User) []Id
+
+	UserArticles(user user.User, desc bool, paging ...int) []UserArticle
+	UnreadUserArticles(user user.User, desc bool, paging ...int) []UserArticle
+	UserArticlesOrderedById(user user.User, pivot Id, desc bool, paging ...int) []UserArticle
+}
+
+type Article interface {
+	Err() error
+
+	Set(info Info) Article
+	Info() Info
+}
+
+type UserArticle interface {
+	User() user.User
+}
+
+type Info struct { /* old readeef.Article */ }
