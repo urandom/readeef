@@ -1,20 +1,66 @@
-/*
+package db
 
-package readeef
-
-type Error interface {
-	Err() error
+type DB struct {
+	*sqlx.DB
+	logger        webfw.Logger
+	frozen *Tx
 }
 
-*/
+type Tx struct {
+	*sqlx.Tx
+	frozen bool
+}
 
-package user
+var errAlreadyFrozen = errors.New("DB already frozen")
+
+func New(logger webfw.Logger) DB
+func (db *DB) Open(driver, connect string) error
+func (db *DB) Freeze(tx *sqlx.Tx) error
+func (db *DB) Begin() (*Tx, error) {
+	if db.frozen != nil {
+		return db.Tx, nil
+	}
+
+	if t, err := db.DB.Beginx(); err == nil {
+		return &Tx{Tx: t}
+	} else {
+		return nil, err
+	}
+}
+
+func (tx *Tx) Commit() error {
+	if tx.frozen {
+		return nil
+	}
+
+	return tx.Tx.Commit()
+}
+
+func (tx *Tx) Rollback() error {
+	if tx.frozen {
+		return nil
+	}
+
+	return tx.Tx.Rollback()
+}
+
+func (tx *Tx) Thaw() {
+	tx.frozen = false
+
+	// Rollback in case the Tx wasn't completed successfully
+	tx.Tx.Rollback()
+}
+
+// package user
 
 type Repo interface {
 	Err() error
 
+	// func (db DB) GetUser(login string) (User, error) {
     ByLogin(login string) User
+	// func (db DB) GetUserByMD5Api(md5 []byte) (User, error) {
     ByMD5Api(md5 []byte) User
+	// func (db DB) GetUsers() ([]User, error) {
 	All() []User
 }
 
@@ -24,7 +70,9 @@ type User interface {
 	Set(info Info) User
 	Info() Info
 
+	// func (db DB) UpdateUser(u User) error {
 	Update(info Info) User
+	// func (db DB) DeleteUser(u User) error {
 	Delete() User
 }
 
@@ -32,10 +80,10 @@ type Info struct { /* old readeef.User */ }
 
 // user -> package sql
 
-func NewRepo(db *sqlx.DB) Repo {
+func NewRepo(db *db.DB) Repo {
 }
 
-func New(db *sqlx.DB) User {
+func New(db *sqlx.DB) UserFeed {
 }
 
 // sql -> package postgres
@@ -49,99 +97,133 @@ type Id int64
 type Repo interface {
 	Err() error
 
+	// func (db DB) GetFeed(id int64) (Feed, error) {
 	ById(id Id) Feed
+	// func (db DB) GetFeedByLink(link string) (Feed, error) {
 	ByLink(link string) Feed
 
+	// func (db DB) GetFeeds() ([]Feed, error) {
 	All() []Feed
-	Unsubscribed() []Feed
+	// func (db DB) GetUnsubscribedFeed() ([]Feed, error) {
+	AllUnsubscribed() []Feed
 
+	// func (db DB) GetUserFeed(id int64, u User) (Feed, error) {
 	ByUserAndId(user user.User, id Id) UserFeed
+	// func (db DB) CreateUserFeed(u User, f Feed) (Feed, error) {
+	AddUser(user user.User, feed Feed) UserFeed
 
-	AllUser(user user.User) []UserFeed
+	// func (db DB) GetUserFeeds(u User) ([]Feed, error) {
+	AllByUser(user user.User) []UserFeed
 
-	AllByUser(user user.User) []TaggedFeed
+	// func (db DB) GetUserTagFeeds(u User, tag string) ([]Feed, error) {
 	AllByUserAndTag(user user.User, tag tag.Tag) []TaggedFeed
 
+	// func (db DB) GetUserTagsFeeds(u User) ([]Feed, error) {
+	AllTaggedByUser(user user.User) []TaggedFeed
+}
+
+type FeedBase interface {
+	Err() error
+
+	Set(info Info) Feed
+	Info() Info
 }
 
 type Feed interface {
-	Err() error
+	FeedBase
 
 	// Returns any new articles since the previous Update
 	NewArticles() []article.Article
 
-	Set(info Info) Feed
-	Info() Info
-
+	// func (db DB) UpdateFeed(f Feed) (Feed, bool, error) {
 	Update(info Info) Feed
+	// func (db DB) DeleteFeed(f Feed) error {
 	Delete() Feed
 
+	// func (db DB) GetAllFeedArticles(f Feed) ([]Article, error) {
 	AllArticles() []article.Article
+	// func (db DB) GetLatestFeedArticles(f Feed) ([]Article, error) {
+	LatestArticles() []article.Article
+
+	// func (db DB) CreateFeedArticles(f Feed, articles []Article) (Feed, error) {
 	AddArticles([]article.Article) Feed
+
+	// func (db DB) GetHubbubSubscription(feedId int64) (*HubbubSubscription, error) {
+	Subscription() hubbub.Subscription
 }
 
 type UserFeed interface {
-	Feed
+	FeedBase
 
+	User() user.User
+
+	// func (db DB) GetFeedUsers(f Feed) ([]User, error) {
 	Users() []user.User
 
-	UserArticle(id article.Id) article.UserArticle
+	// func (db DB) DeleteUserFeed(f Feed) error {
+	Delete() UserFeed
+
+	// func (db DB) GetFeedArticles[Desc](f Feed, paging ...int) (Feed, error) {
 	UserArticles(desc bool, paging ...int) []article.UserArticle
+	// func (db DB) GetUnreadFeedArticles[Desc](f Feed, paging ...int) (Feed, error) {
 	UnreadUserArticles(desc bool, paging ...int) []article.UserArticle
-	FavoriteUserArticles(desc bool, paging ...int) []article.UserArticle
 
-	ArticlesRead(articles []article.Article, read bool) UserFeed
-	ArticlesReadBefore(articles []article.Article, date time.Time, read bool) UserFeed
-	ArticlesReadAfter(articles []article.Article, date time.Time, read bool) UserFeed
-	ArticlesReadBeforeByFeed(date time.Time, read bool) UserFeed
+	// func (db DB) MarkFeedArticlesByDateAsRead(f Feed, d time.Time, read bool) error {
+	ReadBefore(date time.Time, read bool) UserFeed
 
-	ArticlesFavorite(articles []article.Article, favorite bool) UserFeed
+	// func (db DB) GetScoredFeedArticles[Desc](f Feed, timeRange TimeRange, paging ...int) (Feed, error) {
+	ScoredArticles(from, to time.Time, paging ...int) []ScoredArticles
 }
 
 type TaggedFeed interface {
 	UserFeed
 
 	Tags() []tag.Tag
+
+	// func (db DB) CreateUserFeedTag(f Feed, tags ...string) error {
 	AddTags(tags ...tag.Tag) TaggedFeed
+	// func (db DB) DeleteUserFeedTag(f Feed, tags ...string) error {
 	DeleteAllTags() TaggedFeed
 
-	UserArticlesByTag(tag tag.Tag, desc bool, paging ...int) []article.UserArticle
-	UnreadUserArticlesByTag(tag tag.Tag, desc bool, paging ...int) []article.UserArticle
-
-	ArticlesReadBeforeByTag(tag tag.Tag, date time.Time, read bool) TaggedFeed
+	// func (db DB) GetUserFeedTags(u User, f Feed) ([]string, error) {
+	// Not implemented, its only used for removing the fetched tags
 }
 
 type Info struct { /* old readeef.Feed */ }
 
-// user -> package sql
-
-func NewRepo(db *sqlx.DB) Repo {
-}
-
-func New(db *sqlx.DB) Feed {
-}
-
-func NewUser(db *sqlx.DB) UserFeed {
-}
-
-// sql -> package postgres
-// sql -> package sqlite3
-
 // feed -> package tag
 
-type Info string
+type Info struct {
+	Value string
+	User user.User
+}
 
 type Repo interface {
 	Err() error
 
+	// func (db DB) GetUserTags(u User) ([]string, error) {
 	AllByUser(user user.User) []Tag
 }
 
 type Tag interface {
 	Err() error
 
+	User() user.User
+	Value() string
+
 	Set(info Info) Tag
 	Info() Info
+
+	// func (db DB) GetUserTagArticles[Desc](u User, tag string, paging ...int) ([]Article, error) {
+	Articles(desc bool, paging ...int) []article.UserArticle
+	// func (db DB) GetUnreadUserTagArticles(u User, tag string, paging ...int) ([]Article, error) {
+	UnreadArticles(desc bool, paging ...int) []article.UserArticle
+
+	// func (db DB) MarkUserTagArticlesByDateAsRead(u User, tag string, d time.Time, read bool) error {
+	ReadBefore(date time.Time, read bool) Tag
+
+	// func (db DB) GetScoredUserTagArticles[Desc](u User, tag string, timeRange TimeRange, paging ...int) ([]Article, error) {
+	ScoredArticles(from, to time.Time, desc bool, paging ...int) []ScoredArticle
 }
 
 // feed -> package article
@@ -151,15 +233,38 @@ type Id int64
 type Repo interface {
 	Err() error
 
-	All() []Article
-	UserByIds(user user.User, ids ...Id) []UserArticle
+	// func (db DB) GetAllArticles() ([]Article, error) {
+	// Not implemented, get all feeds, then get their articles
 
+	// func (db DB) GetSpecificUserArticles(u User, ids ...int64) ([]Article, error) {
+	AllByUserAndIds(user user.User, ids ...Id) []UserArticle
+
+	// func (db DB) GetAllUnreadUserArticleIds(u User) ([]int64, error) {
 	AllUserUnreadIds(user user.User) []Id
+	// func (db DB) GetAllFavoriteUserArticleIds(u User) ([]int64, error) {
 	AllUserFavoriteIds(user user.User) []Id
 
+	// func (db DB) GetUserArticleCount(u User) (int64, error) {
+	CountByUser(user user.User) int64
+
+	// func (db DB) GetFeedArticle(articleId int64, user User) (Article, error) {
+	UserArticle(id article.Id) article.UserArticle
+	// func (db DB) GetUserArticles[Desc](u User, paging ...int) ([]Article, error) {
 	UserArticles(user user.User, desc bool, paging ...int) []UserArticle
+	// func (db DB) GetUnreadUserArticles[Desc](u User, paging ...int) ([]Article, error) {
 	UnreadUserArticles(user user.User, desc bool, paging ...int) []UserArticle
+	// func (db DB) GetUnorderedUserArticles[Desc](u User, since int64, paging ...int) ([]Article, error) {
 	UserArticlesOrderedById(user user.User, pivot Id, desc bool, paging ...int) []UserArticle
+	// func (db DB) GetUserFavoriteArticles[Desc](u User, paging ...int) ([]Article, error) {
+	FavoriteUserArticles(user user.User, desc bool, paging ...int) []article.UserArticle
+
+	// func (db DB) MarkUserArticlesByDateAsRead(u User, d time.Time, read bool) error {
+	ReadBefore(user user.User, date time.Time, read bool) Repo
+	// func (db DB) MarkNewerUserArticlesByDateAsUnread(u User, d time.Time, read bool) error {
+	ReadAfter(user user.User, date time.Time, read bool) Repo
+
+	// func (db DB) GetScoredUserArticles[Desc](u User, timeRange TimeRange, paging ...int) ([]Article, error) {
+	ScoredArticles(user user.User, from, to time.Time, desc bool, paging ...int) []ScoredArticle
 }
 
 type Article interface {
@@ -170,7 +275,284 @@ type Article interface {
 }
 
 type UserArticle interface {
+	Article
+
 	User() user.User
+
+	// db.Freeze(tx) for more than one
+	// func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error {
+	Read(read bool) UserArticle
+	// func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) error {
+	Favorite(favorite bool) UserArticle
+}
+
+type ScoredArticle interface {
+	UserArticle
+
+	// func (db DB) UpdateArticleScores(asc ArticleScores) error {
+	SetScores(asc ArticleScores) ScoredArticle
+	// func (db DB) GetArticleScores(a Article) (ArticleScores, error) {
+	Scores() ArticleScores
 }
 
 type Info struct { /* old readeef.Article */ }
+
+// package hubbub
+
+type Repo interface {
+	// func (db DB) GetHubbubSubscriptions() ([]*HubbubSubscription, error) {
+	All() []Subscription
+}
+
+type Subscription interface {
+	Err() error
+
+	Set(info Info) Subscription
+	Info() Info
+
+	// func (db DB) UpdateHubbubSubscription(s *HubbubSubscription) error {
+	Update(info Info) Subscription
+	// func (db DB) DeleteHubbubSubscription(s *HubbubSubscription) error {
+	Delete() Subscription
+
+	// func (db DB) FailHubbubSubscriptions() error {
+	Fail(fail bool) Subscription
+}
+
+type Info struct { /* old readeef.HubbubSubscription */ }
+
+//
+// OR
+//
+
+// package repo
+
+type Err interface {
+	Err() error
+}
+
+type Repo interface {
+	Err
+
+	// func (db DB) GetUser(login string) (User, error) {
+    UserByLogin(login content.Login) content.User
+	// func (db DB) GetUserByMD5Api(md5 []byte) (User, error) {
+    UserByMD5Api(md5 []byte) content.User
+	// func (db DB) GetUsers() ([]User, error) {
+	AllUsers() []content.User
+
+	// func (db DB) GetFeed(id int64) (Feed, error) {
+	FeedById(id content.FeedId) content.Feed
+	// func (db DB) GetFeedByLink(link string) (Feed, error) {
+	FeedByLink(link string) content.Feed
+
+	// func (db DB) GetFeeds() ([]Feed, error) {
+	AllFeeds() []content.Feed
+	// func (db DB) GetUnsubscribedFeed() ([]Feed, error) {
+	AllUnsubscribedFeeds() []content.Feed
+
+	// func (db DB) GetHubbubSubscriptions() ([]*HubbubSubscription, error) {
+	AllSubscriptions() []content.Subscription
+
+	// func (db DB) GetAllArticles() ([]Article, error) {
+	// Not implemented, get all feeds, then get their articles
+}
+
+// package content
+
+type Login string
+type TagValue string
+type FeedId int64
+type ArticleId int64
+
+type User interface {
+	Err
+
+	Set(info info.User) User
+	Info() info.User
+
+	// func (db DB) UpdateUser(u User) error {
+	Update(info info.User) User
+	// func (db DB) DeleteUser(u User) error {
+	Delete() User
+
+	// func (db DB) GetUserFeed(id int64, u User) (Feed, error) {
+	Feed(id FeedId) UserFeed
+	// func (db DB) CreateUserFeed(u User, f Feed) (Feed, error) {
+	AddFeed(feed Feed) UserFeed
+
+	// func (db DB) GetUserFeeds(u User) ([]Feed, error) {
+	AllFeeds() []UserFeed
+
+	// func (db DB) GetUserTagsFeeds(u User) ([]Feed, error) {
+	AllTaggedFeeds() []TaggedFeed
+
+	// func (db DB) GetFeedArticle(articleId int64, user User) (Article, error) {
+	Article(id ArticleId) UserArticle
+
+	// func (db DB) GetSpecificUserArticles(u User, ids ...int64) ([]Article, error) {
+	ArticlesById(ids ...ArticleId) []UserArticle
+
+	// func (db DB) GetAllUnreadUserArticleIds(u User) ([]int64, error) {
+	AllUnreadArticleIds() []ArticleId
+	// func (db DB) GetAllFavoriteUserArticleIds(u User) ([]int64, error) {
+	AllFavoriteIds() []ArticleId
+
+	// func (db DB) GetUserArticleCount(u User) (int64, error) {
+	ArticleCount() int64
+
+	// func (db DB) GetUserArticles[Desc](u User, paging ...int) ([]Article, error) {
+	Articles(desc bool, paging ...int) []UserArticle
+	// func (db DB) GetUnreadUserArticles[Desc](u User, paging ...int) ([]Article, error) {
+	UnreadArticles(desc bool, paging ...int) []UserArticle
+	// func (db DB) GetUnorderedUserArticles[Desc](u User, since int64, paging ...int) ([]Article, error) {
+	ArticlesOrderedById(pivot ArticleId, desc bool, paging ...int) []UserArticle
+	// func (db DB) GetUserFavoriteArticles[Desc](u User, paging ...int) ([]Article, error) {
+	FavoriteArticles(desc bool, paging ...int) []UserArticle
+
+	// func (db DB) MarkUserArticlesByDateAsRead(u User, d time.Time, read bool) error {
+	ReadBefore(date time.Time, read bool) Repo
+	// func (db DB) MarkNewerUserArticlesByDateAsUnread(u User, d time.Time, read bool) error {
+	ReadAfter(date time.Time, read bool) Repo
+
+	// func (db DB) GetScoredUserArticles[Desc](u User, timeRange TimeRange, paging ...int) ([]Article, error) {
+	ScoredArticles(from, to time.Time, desc bool, paging ...int) []ScoredArticle
+
+	// func (db DB) GetUserTags(u User) ([]string, error) {
+	Tags() []Tag
+}
+
+type Tag interface {
+	Err
+	fmt.Stringer
+
+	Set(value TagValue) Tag
+	Value() TagValue
+
+	// func (db DB) GetUserTagFeeds(u User, tag string) ([]Feed, error) {
+	AllFeeds() []TaggedFeed
+
+	// func (db DB) GetUserTagArticles[Desc](u User, tag string, paging ...int) ([]Article, error) {
+	Articles(desc bool, paging ...int) []UserArticle
+	// func (db DB) GetUnreadUserTagArticles(u User, tag string, paging ...int) ([]Article, error) {
+	UnreadArticles(desc bool, paging ...int) []UserArticle
+
+	// func (db DB) MarkUserTagArticlesByDateAsRead(u User, tag string, d time.Time, read bool) error {
+	ReadBefore(date time.Time, read bool) Tag
+
+	// func (db DB) GetScoredUserTagArticles[Desc](u User, tag string, timeRange TimeRange, paging ...int) ([]Article, error) {
+	ScoredArticles(from, to time.Time, desc bool, paging ...int) []ScoredArticle
+}
+
+type Feed interface {
+	Err
+
+	Set(info info.Feed) Feed
+	Info() info.Feed
+
+	// Returns any new articles since the previous Update
+	NewArticles() []Article
+
+	// func (db DB) UpdateFeed(f Feed) (Feed, bool, error) {
+	Update(info info.Feed) Feed
+	// func (db DB) DeleteFeed(f Feed) error {
+	Delete() Feed
+
+	// func (db DB) GetAllFeedArticles(f Feed) ([]Article, error) {
+	AllArticles() []Article
+	// func (db DB) GetLatestFeedArticles(f Feed) ([]Article, error) {
+	LatestArticles() []Article
+
+	// func (db DB) CreateFeedArticles(f Feed, articles []Article) (Feed, error) {
+	AddArticles([]Article) Feed
+
+	// func (db DB) GetHubbubSubscription(feedId int64) (*HubbubSubscription, error) {
+	Subscription() hubbub.Subscription
+}
+
+type UserFeed interface {
+	Feed
+
+	User() User
+
+	// func (db DB) GetFeedUsers(f Feed) ([]User, error) {
+	Users() []User
+
+	// func (db DB) DeleteUserFeed(f Feed) error {
+	Delete() UserFeed
+
+	// func (db DB) GetFeedArticles[Desc](f Feed, paging ...int) (Feed, error) {
+	Articles(desc bool, paging ...int) []UserArticle
+	// func (db DB) GetUnreadFeedArticles[Desc](f Feed, paging ...int) (Feed, error) {
+	UnreadArticles(desc bool, paging ...int) []UserArticle
+
+	// func (db DB) MarkFeedArticlesByDateAsRead(f Feed, d time.Time, read bool) error {
+	ReadBefore(date time.Time, read bool) UserFeed
+
+	// func (db DB) GetScoredFeedArticles[Desc](f Feed, timeRange TimeRange, paging ...int) (Feed, error) {
+	ScoredArticles(from, to time.Time, paging ...int) []ScoredArticles
+}
+
+type TaggedFeed interface {
+	UserFeed
+
+	Tags() []Tag
+
+	// func (db DB) CreateUserFeedTag(f Feed, tags ...string) error {
+	AddTags(tags ...Tag) TaggedFeed
+	// func (db DB) DeleteUserFeedTag(f Feed, tags ...string) error {
+	DeleteAllTags() TaggedFeed
+
+	// func (db DB) GetUserFeedTags(u User, f Feed) ([]string, error) {
+	// Not implemented, its only used for removing the fetched tags
+}
+
+type Article interface {
+	Err
+
+	Set(info info.Article) Article
+	Info() info.Article
+}
+
+type UserArticle interface {
+	Article
+
+	User() user.User
+
+	// db.Freeze(tx) for more than one
+	// func (db DB) MarkUserArticlesAsRead(u User, articles []Article, read bool) error {
+	Read(read bool) UserArticle
+	// func (db DB) MarkUserArticlesAsFavorite(u User, articles []Article, read bool) error {
+	Favorite(favorite bool) UserArticle
+}
+
+type ScoredArticle interface {
+	UserArticle
+
+	// func (db DB) UpdateArticleScores(asc ArticleScores) error {
+	SetScores(asc ArticleScores) ScoredArticle
+	// func (db DB) GetArticleScores(a Article) (ArticleScores, error) {
+	Scores() ArticleScores
+}
+
+type Subscription interface {
+	Err
+
+	Set(info info.Subscription) Subscription
+	Info() info.Subscription
+
+	// func (db DB) UpdateHubbubSubscription(s *HubbubSubscription) error {
+	Update(info Info) Subscription
+	// func (db DB) DeleteHubbubSubscription(s *HubbubSubscription) error {
+	Delete() Subscription
+
+	// func (db DB) FailHubbubSubscriptions() error {
+	Fail(fail bool) Subscription
+}
+
+// package info
+
+type User struct { /* move readeef.User here */ }
+type Feed struct { /* move readeef.Feed here */ }
+type Article struct { /* move readeef.Article here */ }
+type Subscription struct { /* old readeef.HubbubSubscription */}
