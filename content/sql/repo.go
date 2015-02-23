@@ -15,8 +15,8 @@ type Repo struct {
 	db *db.DB
 }
 
-func NewRepo(db *db.DB, logger webfw.Logger) Repo {
-	r := Repo{NamedSQL: NewNamedSQL(), db: db, logger: logger}
+func NewRepo(db *db.DB, logger webfw.Logger) *Repo {
+	r := &Repo{NamedSQL: NewNamedSQL(), db: db, logger: logger}
 
 	r.init()
 

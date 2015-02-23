@@ -17,8 +17,8 @@ type User struct {
 	db *db.DB
 }
 
-func NewUser(db *db.DB, logger webfw.Logger, authSecret []byte) User {
-	u := User{NamedSQL: NewNamedSQL(), db: db, logger: logger}
+func NewUser(db *db.DB, logger webfw.Logger) *User {
+	u := &User{NamedSQL: NewNamedSQL(), db: db, logger: logger}
 
 	u.init()
 
@@ -138,7 +138,7 @@ func (u *User) Feed(id info.FeedId) (uf UserFeed) {
 	return
 }
 
-func (u *User) AddFeed(f Feed) (uf UserFeed) {
+func (u *User) AddFeed(f Feed) (uf *UserFeed) {
 	if u.Err() != nil {
 		return
 	}

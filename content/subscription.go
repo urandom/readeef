@@ -14,7 +14,7 @@ type Subscription interface {
 	Set(info info.Subscription)
 	Info() info.Subscription
 
-	Validate()
+	Validate() error
 
 	Update(info info.Subscription)
 	Delete()

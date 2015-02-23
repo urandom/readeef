@@ -16,7 +16,7 @@ type User interface {
 	Set(info info.User)
 	Info() info.User
 
-	Validate()
+	Validate() error
 
 	Password(password string, secret []byte)
 	Authenticate(password string, secret []byte) bool

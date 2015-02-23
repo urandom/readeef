@@ -1,6 +1,8 @@
 package sql
 
 import (
+	"time"
+
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/info"
@@ -13,40 +15,171 @@ type Feed struct {
 	NamedSQL
 	logger webfw.Logger
 
-	db *db.DB
+	db          *db.DB
+	newArticles []Article
 }
 
 type UserFeed struct {
 	base.UserFeed
-	Feed
+	*Feed
 }
 
 type TaggedFeed struct {
-	UserFeed
+	*UserFeed
 }
 
-func NewFeed(db *db.DB, logger webfw.Logger) Feed {
-	f := Feed{NamedSQL: NewNamedSQL(), db: db, logger: logger}
+func NewFeed(db *db.DB, logger webfw.Logger) *Feed {
+	f := &Feed{NamedSQL: NewNamedSQL(), db: db, logger: logger}
 
 	f.init()
 
 	return f
 }
 
-func NewUserFeed(db *db.DB, logger webfw.Logger, user content.User) UserFeed {
-	uf := UserFeed{Feed: NewFeed(db, logger), UserFeed: base.NewUserFeed(user)}
+func NewUserFeed(db *db.DB, logger webfw.Logger, user content.User) *UserFeed {
+	uf := &UserFeed{Feed: NewFeed(db, logger), UserFeed: base.NewUserFeed(user)}
 
 	uf.init()
 
 	return uf
 }
 
-func (f Feed) init() {
+func NewTaggedFeed(db *db.DB, logger webfw.Logger, user content.User) *TaggedFeed {
+	tf := &TaggedFeed{UserFeed: NewUserFeed(db, logger, user)}
+
+	tf.init()
+
+	return tf
 }
 
-func (uf *UserFeed) Set(info info.Feed) {
-	uf.Feed.Set(info)
+func (f Feed) NewArticles() (a []Article) {
+	if f.Err() != nil {
+		return
+	}
+
+	return f.newArticles
 }
 
-func (uf UserFeed) init() {
+func (f *Feed) Update(info info.Feed) {
+	if f.Err() != nil {
+		return
+	}
+}
+
+func (f *Feed) Delete() {
+	if f.Err() != nil {
+		return
+	}
+}
+
+func (f *Feed) AllArticles() (a []Article) {
+	if f.Err() != nil {
+		return
+	}
+
+	return
+}
+
+func (f *Feed) LatestArticles() (a []Article) {
+	if f.Err() != nil {
+		return
+	}
+
+	return
+}
+
+func (f *Feed) AddArticles([]Article) {
+	if f.Err() != nil {
+		return
+	}
+}
+
+func (f *Feed) Subscription() (s Subscription) {
+	if f.Err() != nil {
+		return
+	}
+
+	return
+}
+
+func (f *Feed) init() {
+}
+
+func (uf UserFeed) Validate() error {
+	err := uf.Feed.Validate()
+	if err == nil {
+		err = uf.UserFeed.Validate()
+	}
+
+	return err
+}
+
+func (uf *UserFeed) Users() (u []User) {
+	if uf.Err() != nil {
+		return
+	}
+
+	return
+}
+
+func (uf *UserFeed) Detach() {
+	if uf.Err() != nil {
+		return
+	}
+}
+
+func (uf *UserFeed) Articles(desc bool, paging ...int) (ua []UserArticle) {
+	if uf.Err() != nil {
+		return
+	}
+
+	return
+}
+
+func (uf *UserFeed) UnreadArticles(desc bool, paging ...int) (ua []UserArticle) {
+	if uf.Err() != nil {
+		return
+	}
+
+	return
+}
+
+func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
+	if uf.Err() != nil {
+		return
+	}
+}
+
+func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []ScoredArticle) {
+	if uf.Err() != nil {
+		return
+	}
+
+	return
+}
+
+func (uf *UserFeed) init() {
+}
+
+func (tf *TaggedFeed) Tags() (t []Tag) {
+	if tf.Err() != nil {
+		return
+	}
+
+	return
+}
+
+func (tf *TaggedFeed) AddTags(tags ...Tag) {
+	if tf.Err() != nil {
+		return
+	}
+}
+
+func (tf *TaggedFeed) DeleteAllTags() {
+	if tf.Err() != nil {
+		return
+	}
+}
+
+func (tf *TaggedFeed) init() {
 }

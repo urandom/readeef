@@ -17,9 +17,13 @@ type Feed struct {
 }
 
 type UserFeed struct {
-	Feed
+	ArticleSearch
 
 	user content.User
+}
+
+type TaggedFeed struct {
+	tags []Tag
 }
 
 func NewUserFeed(user content.User) UserFeed {
@@ -55,14 +59,13 @@ func (f UserFeed) User() content.User {
 }
 
 func (f UserFeed) Validate() error {
-	err := f.Feed.Validate()
-	if err != nil {
-		return err
-	}
-
 	if f.user.Info().Login == "" {
 		return ValidationError{errors.New("UserFeed has no user")}
 	}
 
 	return nil
+}
+
+func (tf TaggedFeed) Tags() []Tag {
+	return tf.tags
 }

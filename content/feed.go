@@ -16,7 +16,7 @@ type Feed interface {
 	Set(info info.Feed)
 	Info() info.Feed
 
-	Validate()
+	Validate() error
 
 	// Returns any new articles since the previous Update
 	NewArticles() []Article
