@@ -24,6 +24,10 @@ type ScoredArticle struct {
 	*UserArticle
 }
 
+func NewArticle() *Article {
+	return &Article{}
+}
+
 func NewUserArticle(db *db.DB, logger webfw.Logger) *UserArticle {
 	ua := &UserArticle{NamedSQL: NewNamedSQL(), db: db, logger: logger}
 

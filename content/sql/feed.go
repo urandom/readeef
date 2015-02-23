@@ -16,7 +16,7 @@ type Feed struct {
 	logger webfw.Logger
 
 	db          *db.DB
-	newArticles []Article
+	newArticles []content.Article
 }
 
 type UserFeed struct {
@@ -52,7 +52,7 @@ func NewTaggedFeed(db *db.DB, logger webfw.Logger, user content.User) *TaggedFee
 	return tf
 }
 
-func (f Feed) NewArticles() (a []Article) {
+func (f Feed) NewArticles() (a []content.Article) {
 	if f.Err() != nil {
 		return
 	}
@@ -72,7 +72,7 @@ func (f *Feed) Delete() {
 	}
 }
 
-func (f *Feed) AllArticles() (a []Article) {
+func (f *Feed) AllArticles() (a []content.Article) {
 	if f.Err() != nil {
 		return
 	}
@@ -80,7 +80,7 @@ func (f *Feed) AllArticles() (a []Article) {
 	return
 }
 
-func (f *Feed) LatestArticles() (a []Article) {
+func (f *Feed) LatestArticles() (a []content.Article) {
 	if f.Err() != nil {
 		return
 	}
@@ -88,13 +88,13 @@ func (f *Feed) LatestArticles() (a []Article) {
 	return
 }
 
-func (f *Feed) AddArticles([]Article) {
+func (f *Feed) AddArticles([]content.Article) {
 	if f.Err() != nil {
 		return
 	}
 }
 
-func (f *Feed) Subscription() (s Subscription) {
+func (f *Feed) Subscription() (s content.Subscription) {
 	if f.Err() != nil {
 		return
 	}
@@ -114,7 +114,7 @@ func (uf UserFeed) Validate() error {
 	return err
 }
 
-func (uf *UserFeed) Users() (u []User) {
+func (uf *UserFeed) Users() (u []content.User) {
 	if uf.Err() != nil {
 		return
 	}
@@ -128,7 +128,7 @@ func (uf *UserFeed) Detach() {
 	}
 }
 
-func (uf *UserFeed) Articles(desc bool, paging ...int) (ua []UserArticle) {
+func (uf *UserFeed) Articles(desc bool, paging ...int) (ua []content.UserArticle) {
 	if uf.Err() != nil {
 		return
 	}
@@ -136,7 +136,7 @@ func (uf *UserFeed) Articles(desc bool, paging ...int) (ua []UserArticle) {
 	return
 }
 
-func (uf *UserFeed) UnreadArticles(desc bool, paging ...int) (ua []UserArticle) {
+func (uf *UserFeed) UnreadArticles(desc bool, paging ...int) (ua []content.UserArticle) {
 	if uf.Err() != nil {
 		return
 	}
@@ -150,7 +150,7 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 	}
 }
 
-func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []ScoredArticle) {
+func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []content.ScoredArticle) {
 	if uf.Err() != nil {
 		return
 	}
@@ -161,7 +161,7 @@ func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []Scor
 func (uf *UserFeed) init() {
 }
 
-func (tf *TaggedFeed) Tags() (t []Tag) {
+func (tf *TaggedFeed) Tags() (t []content.Tag) {
 	if tf.Err() != nil {
 		return
 	}
@@ -169,7 +169,7 @@ func (tf *TaggedFeed) Tags() (t []Tag) {
 	return
 }
 
-func (tf *TaggedFeed) AddTags(tags ...Tag) {
+func (tf *TaggedFeed) AddTags(tags ...content.Tag) {
 	if tf.Err() != nil {
 		return
 	}

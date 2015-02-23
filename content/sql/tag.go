@@ -3,6 +3,7 @@ package sql
 import (
 	"time"
 
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/db"
 	"github.com/urandom/webfw"
@@ -24,7 +25,7 @@ func NewTag(db *db.DB, logger webfw.Logger) *Tag {
 	return t
 }
 
-func (t *Tag) AllFeeds() (tf []TaggedFeed) {
+func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
 	if t.Err() != nil {
 		return
 	}
@@ -32,7 +33,7 @@ func (t *Tag) AllFeeds() (tf []TaggedFeed) {
 	return
 }
 
-func (t *Tag) Articles(desc bool, paging ...int) (ua []UserArticle) {
+func (t *Tag) Articles(desc bool, paging ...int) (ua []content.UserArticle) {
 	if t.Err() != nil {
 		return
 	}
@@ -40,7 +41,7 @@ func (t *Tag) Articles(desc bool, paging ...int) (ua []UserArticle) {
 	return
 }
 
-func (t *Tag) UnreadArticles(desc bool, paging ...int) (ua []UserArticle) {
+func (t *Tag) UnreadArticles(desc bool, paging ...int) (ua []content.UserArticle) {
 	if t.Err() != nil {
 		return
 	}
@@ -54,7 +55,7 @@ func (t *Tag) ReadBefore(date time.Time, read bool) {
 	}
 }
 
-func (t *Tag) ScoredArticles(from, to time.Time, desc bool, paging ...int) (sa []ScoredArticle) {
+func (t *Tag) ScoredArticles(from, to time.Time, desc bool, paging ...int) (sa []content.ScoredArticle) {
 	if t.Err() != nil {
 		return
 	}

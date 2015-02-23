@@ -3,6 +3,7 @@ package sql
 import (
 	"time"
 
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/readeef/db"
@@ -119,7 +120,7 @@ func (u *User) Delete() {
 	}
 }
 
-func (u *User) Feed(id info.FeedId) (uf UserFeed) {
+func (u *User) Feed(id info.FeedId) (uf content.UserFeed) {
 	if u.Err() != nil {
 		return
 	}
@@ -138,7 +139,7 @@ func (u *User) Feed(id info.FeedId) (uf UserFeed) {
 	return
 }
 
-func (u *User) AddFeed(f Feed) (uf *UserFeed) {
+func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 	if u.Err() != nil {
 		return
 	}
@@ -182,7 +183,7 @@ func (u *User) AddFeed(f Feed) (uf *UserFeed) {
 	return
 }
 
-func (u *User) AllFeeds() (uf []UserFeed) {
+func (u *User) AllFeeds() (uf []content.UserFeed) {
 	if u.Err() != nil {
 		return
 	}
@@ -190,7 +191,7 @@ func (u *User) AllFeeds() (uf []UserFeed) {
 	return
 }
 
-func (u *User) AllTaggedFeeds() (tf []TaggedFeed) {
+func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	if u.Err() != nil {
 		return
 	}
@@ -198,7 +199,7 @@ func (u *User) AllTaggedFeeds() (tf []TaggedFeed) {
 	return
 }
 
-func (u *User) Article(id info.ArticleId) (ua UserArticle) {
+func (u *User) Article(id info.ArticleId) (ua content.UserArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -206,7 +207,7 @@ func (u *User) Article(id info.ArticleId) (ua UserArticle) {
 	return
 }
 
-func (u *User) ArticlesById(ids ...info.ArticleId) (ua []UserArticle) {
+func (u *User) ArticlesById(ids ...info.ArticleId) (ua []content.UserArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -238,7 +239,7 @@ func (u *User) ArticleCount() (c int64) {
 	return
 }
 
-func (u *User) Articles(desc bool, paging ...int) (ua []UserArticle) {
+func (u *User) Articles(desc bool, paging ...int) (ua []content.UserArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -246,7 +247,7 @@ func (u *User) Articles(desc bool, paging ...int) (ua []UserArticle) {
 	return
 }
 
-func (u *User) UnreadArticles(desc bool, paging ...int) (ua []UserArticle) {
+func (u *User) UnreadArticles(desc bool, paging ...int) (ua []content.UserArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -254,7 +255,7 @@ func (u *User) UnreadArticles(desc bool, paging ...int) (ua []UserArticle) {
 	return
 }
 
-func (u *User) ArticlesOrderedById(pivot info.ArticleId, desc bool, paging ...int) (ua []UserArticle) {
+func (u *User) ArticlesOrderedById(pivot info.ArticleId, desc bool, paging ...int) (ua []content.UserArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -262,7 +263,7 @@ func (u *User) ArticlesOrderedById(pivot info.ArticleId, desc bool, paging ...in
 	return
 }
 
-func (u *User) FavoriteArticles(desc bool, paging ...int) (ua []UserArticle) {
+func (u *User) FavoriteArticles(desc bool, paging ...int) (ua []content.UserArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -286,7 +287,7 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 	return
 }
 
-func (u *User) ScoredArticles(from, to time.Time, desc bool, paging ...int) (sa []ScoredArticle) {
+func (u *User) ScoredArticles(from, to time.Time, desc bool, paging ...int) (sa []content.ScoredArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -294,7 +295,7 @@ func (u *User) ScoredArticles(from, to time.Time, desc bool, paging ...int) (sa 
 	return
 }
 
-func (u *User) Tags() (tags []Tag) {
+func (u *User) Tags() (tags []content.Tag) {
 	if u.Err() != nil {
 		return
 	}

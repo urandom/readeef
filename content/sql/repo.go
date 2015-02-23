@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/readeef/db"
@@ -23,7 +24,7 @@ func NewRepo(db *db.DB, logger webfw.Logger) *Repo {
 	return r
 }
 
-func (r *Repo) UserByLogin(login info.Login) (u User) {
+func (r *Repo) UserByLogin(login info.Login) (u content.User) {
 	if r.Err() != nil {
 		return
 	}
@@ -46,7 +47,7 @@ func (r *Repo) UserByLogin(login info.Login) (u User) {
 	return
 }
 
-func (r *Repo) UserByMD5Api(md5 []byte) (u User) {
+func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 	if r.Err() != nil {
 		return
 	}
@@ -69,7 +70,7 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u User) {
 	return
 }
 
-func (r *Repo) AllUsers() (users []User) {
+func (r *Repo) AllUsers() (users []content.User) {
 	if r.Err() != nil {
 		return
 	}
@@ -82,7 +83,7 @@ func (r *Repo) AllUsers() (users []User) {
 		return
 	}
 
-	users = make([]User, len(info))
+	users = make([]content.User, len(info))
 
 	for i, in := range info {
 		users[i].Set(in)
@@ -95,7 +96,7 @@ func (r *Repo) AllUsers() (users []User) {
 	return
 }
 
-func (r *Repo) FeedById(id info.FeedId) (f Feed) {
+func (r *Repo) FeedById(id info.FeedId) (f content.Feed) {
 	if r.Err() != nil {
 		return
 	}
@@ -114,7 +115,7 @@ func (r *Repo) FeedById(id info.FeedId) (f Feed) {
 	return
 }
 
-func (r *Repo) FeedByLink(link string) (f Feed) {
+func (r *Repo) FeedByLink(link string) (f content.Feed) {
 	if r.Err() != nil {
 		return
 	}
@@ -133,7 +134,7 @@ func (r *Repo) FeedByLink(link string) (f Feed) {
 	return
 }
 
-func (r *Repo) AllFeeds() (feeds []Feed) {
+func (r *Repo) AllFeeds() (feeds []content.Feed) {
 	if r.Err() != nil {
 		return
 	}
@@ -146,7 +147,7 @@ func (r *Repo) AllFeeds() (feeds []Feed) {
 		return
 	}
 
-	feeds = make([]Feed, len(info))
+	feeds = make([]content.Feed, len(info))
 
 	for i, in := range info {
 		feeds[i].Set(in)
@@ -155,7 +156,7 @@ func (r *Repo) AllFeeds() (feeds []Feed) {
 	return
 }
 
-func (r *Repo) AllUnsubscribedFeeds() (feeds []Feed) {
+func (r *Repo) AllUnsubscribedFeeds() (feeds []content.Feed) {
 	if r.Err() != nil {
 		return
 	}
@@ -168,7 +169,7 @@ func (r *Repo) AllUnsubscribedFeeds() (feeds []Feed) {
 		return
 	}
 
-	feeds = make([]Feed, len(info))
+	feeds = make([]content.Feed, len(info))
 
 	for i, in := range info {
 		feeds[i].Set(in)
@@ -177,7 +178,7 @@ func (r *Repo) AllUnsubscribedFeeds() (feeds []Feed) {
 	return
 }
 
-func (r *Repo) AllSubscriptions() (s []Subscription) {
+func (r *Repo) AllSubscriptions() (s []content.Subscription) {
 	if r.Err() != nil {
 		return
 	}
@@ -190,7 +191,7 @@ func (r *Repo) AllSubscriptions() (s []Subscription) {
 		return
 	}
 
-	s = make([]Subscription, len(info))
+	s = make([]content.Subscription, len(info))
 
 	for i, in := range info {
 		s[i].Set(in)
