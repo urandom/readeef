@@ -392,11 +392,74 @@ func (u *User) ReadBefore(date time.Time, read bool) content.User {
 		return u
 	}
 
+	login := u.Info().Login
+	u.logger.Infof("Marking user %s articles before %v as read: %v\n", login, date, read)
+
+	tx, err := u.db.Begin()
+	if err != nil {
+		u.SetErr(err)
+		return u
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Preparex(u.SQL("delete_all_user_articles_read_by_date"))
+	if err != nil {
+		u.SetErr(err)
+		return u
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(login, date)
+	if err != nil {
+		u.SetErr(err)
+		return u
+	}
+
+	stmt, err = tx.Preparex(u.SQL("create_all_user_articles_read_by_date"))
+
+	if err != nil {
+		u.SetErr(err)
+		return u
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(login, date)
+	if err != nil {
+		u.SetErr(err)
+		return u
+	}
+
+	tx.Commit()
+
 	return u
 }
 
 func (u *User) ReadAfter(date time.Time, read bool) content.User {
 	if u.Err() != nil {
+		return u
+	}
+
+	login := u.Info().Login
+	u.logger.Infof("Marking user %s articles after %v as read: %v\n", login, date, read)
+
+	tx, err := u.db.Begin()
+	if err != nil {
+		u.SetErr(err)
+		return u
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Preparex(u.SQL("delete_newer_user_articles_read_by_date"))
+
+	if err != nil {
+		u.SetErr(err)
+		return u
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(login, date)
+	if err != nil {
+		u.SetErr(err)
 		return u
 	}
 
@@ -408,7 +471,12 @@ func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.S
 		return
 	}
 
-	return
+	login := u.Info().Login
+	u.logger.Infof("Getting scored articles for paging %q and user %s\n", paging, login)
+
+	return u.getArticles("asco.score", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
+		"a.date > $2 AND a.date <= $3", "asco.score",
+		[]interface{}{from, to}, paging...)
 }
 
 func (u *User) Tags() (tags []content.Tag) {
@@ -500,6 +568,9 @@ func (u *User) init() {
 	u.SetSQL("get_all_unread_user_article_ids", getAllUnreadUserArticleIds)
 	u.SetSQL("get_all_favorite_user_article_ids", getAllFavoriteUserArticleIds)
 	u.SetSQL("get_user_article_count", getUserArticleCount)
+	u.SetSQL("create_all_user_articles_read_by_date", createAllUserArticlesReadByDate)
+	u.SetSQL("delete_all_user_articles_read_by_date", deleteAllUserArticlesReadByDate)
+	u.SetSQL("delete_newer_user_articles_read_by_date", deleteNewerUserArticlesReadByDate)
 }
 
 const (
@@ -573,5 +644,22 @@ WHERE af.article_id IS NOT NULL
 SELECT count(a.id)
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+`
+	createAllUserArticlesReadByDate = `
+INSERT INTO users_articles_read
+	SELECT uf.user_login, a.id
+	FROM users_feeds uf INNER JOIN articles a
+		ON uf.feed_id = a.feed_id AND uf.user_login = $1
+		AND a.id IN (SELECT id FROM articles WHERE date IS NULL OR date < $2)
+`
+	deleteAllUserArticlesReadByDate = `
+DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
+	SELECT id FROM articles WHERE date IS NULL OR date < $2
+)
+`
+	deleteNewerUserArticlesReadByDate = `
+DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
+	SELECT id FROM articles WHERE date > $2
+)
 `
 )
