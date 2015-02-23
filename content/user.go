@@ -40,15 +40,15 @@ type User interface {
 
 	ArticleCount() int64
 
-	Articles(desc bool, paging ...int) []UserArticle
-	UnreadArticles(desc bool, paging ...int) []UserArticle
-	ArticlesOrderedById(pivot info.ArticleId, desc bool, paging ...int) []UserArticle
-	FavoriteArticles(desc bool, paging ...int) []UserArticle
+	Articles(paging ...int) []UserArticle
+	UnreadArticles(paging ...int) []UserArticle
+	ArticlesOrderedById(pivot info.ArticleId, paging ...int) []UserArticle
+	FavoriteArticles(paging ...int) []UserArticle
 
 	ReadBefore(date time.Time, read bool) User
 	ReadAfter(date time.Time, read bool) User
 
-	ScoredArticles(from, to time.Time, desc bool, paging ...int) []ScoredArticle
+	ScoredArticles(from, to time.Time, paging ...int) []ScoredArticle
 
 	Tags() []Tag
 }

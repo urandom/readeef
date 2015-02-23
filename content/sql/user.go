@@ -3,6 +3,7 @@ package sql
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/urandom/readeef/content"
@@ -336,7 +337,7 @@ func (u *User) ArticleCount() (c int64) {
 	return
 }
 
-func (u *User) Articles(desc bool, paging ...int) (ua []content.UserArticle) {
+func (u *User) Articles(paging ...int) (ua []content.UserArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -344,15 +345,12 @@ func (u *User) Articles(desc bool, paging ...int) (ua []content.UserArticle) {
 	login := u.Info().Login
 	u.logger.Infof("Getting articles for paging %q and user %s\n", paging, login)
 
-	order := "read, a.date"
-	if desc {
-		order += " DESC"
-	}
+	order := "read"
 
 	return u.getArticles("", "", "", order, nil, paging...)
 }
 
-func (u *User) UnreadArticles(desc bool, paging ...int) (ua []content.UserArticle) {
+func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -360,15 +358,10 @@ func (u *User) UnreadArticles(desc bool, paging ...int) (ua []content.UserArticl
 	login := u.Info().Login
 	u.logger.Infof("Getting unread articles for paging %q and user %s\n", paging, login)
 
-	order := "a.date"
-	if desc {
-		order += " DESC"
-	}
-
-	return u.getArticles("", "", "ar.article_id IS NULL", order, nil, paging...)
+	return u.getArticles("", "", "ar.article_id IS NULL", "", nil, paging...)
 }
 
-func (u *User) ArticlesOrderedById(pivot info.ArticleId, desc bool, paging ...int) (ua []content.UserArticle) {
+func (u *User) ArticlesOrderedById(pivot info.ArticleId, paging ...int) (ua []content.UserArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -376,15 +369,14 @@ func (u *User) ArticlesOrderedById(pivot info.ArticleId, desc bool, paging ...in
 	login := u.Info().Login
 	u.logger.Infof("Getting articles order by id for paging %q and user %s\n", paging, login)
 
-	order := "a.id"
-	if desc {
-		order += " DESC"
-	}
+	u.SortingById()
 
-	return u.getArticles("", "", "a.id > $2", order, []interface{}{pivot}, paging...)
+	ua = u.getArticles("", "", "a.id > $2", "", []interface{}{pivot}, paging...)
+
+	return
 }
 
-func (u *User) FavoriteArticles(desc bool, paging ...int) (ua []content.UserArticle) {
+func (u *User) FavoriteArticles(paging ...int) (ua []content.UserArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -392,12 +384,7 @@ func (u *User) FavoriteArticles(desc bool, paging ...int) (ua []content.UserArti
 	login := u.Info().Login
 	u.logger.Infof("Getting favorite articles for paging %q and user %s\n", paging, login)
 
-	order := "a.date"
-	if desc {
-		order += " DESC"
-	}
-
-	return u.getArticles("", "", "af.article_id IS NOT NULL", order, nil, paging...)
+	return u.getArticles("", "", "af.article_id IS NOT NULL", "", nil, paging...)
 }
 
 func (u *User) ReadBefore(date time.Time, read bool) content.User {
@@ -416,7 +403,7 @@ func (u *User) ReadAfter(date time.Time, read bool) content.User {
 	return u
 }
 
-func (u *User) ScoredArticles(from, to time.Time, desc bool, paging ...int) (sa []content.ScoredArticle) {
+func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.ScoredArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -454,8 +441,27 @@ func (u *User) getArticles(columns, join, where, order string, args []interface{
 		sql += " AND " + where
 	}
 
+	sortingField := u.User.ArticleSorting.SortingField
+	desc := u.User.ArticleSorting.ReverseSorting
+
+	fields := []string{}
 	if order != "" {
-		sql += " ORDER BY " + order
+		fields = append(fields, order)
+	}
+	switch sortingField {
+	case base.SortById:
+		fields = append(fields, "a.id")
+	case base.SortByDate:
+		fields = append(fields, "a.date")
+	}
+	if len(fields) > 0 {
+		sql += " ORDER BY "
+
+		sql += strings.Join(fields, ",")
+
+		if desc {
+			sql += " DESC"
+		}
 	}
 
 	if len(paging) > 0 {

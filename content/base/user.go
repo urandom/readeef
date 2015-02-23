@@ -141,16 +141,16 @@ func (u User) AllFavoriteIds() []info.ArticleId {
 func (u User) ArticleCount() int64 {
 	panic("Not implemented")
 }
-func (u User) Articles(desc bool, paging ...int) []content.UserArticle {
+func (u User) Articles(paging ...int) []content.UserArticle {
 	panic("Not implemented")
 }
-func (u User) UnreadArticles(desc bool, paging ...int) []content.UserArticle {
+func (u User) UnreadArticles(paging ...int) []content.UserArticle {
 	panic("Not implemented")
 }
-func (u User) ArticlesOrderedById(pivot info.ArticleId, desc bool, paging ...int) []content.UserArticle {
+func (u User) ArticlesOrderedById(pivot info.ArticleId, paging ...int) []content.UserArticle {
 	panic("Not implemented")
 }
-func (u User) FavoriteArticles(desc bool, paging ...int) []content.UserArticle {
+func (u User) FavoriteArticles(paging ...int) []content.UserArticle {
 	panic("Not implemented")
 }
 func (u User) ReadBefore(date time.Time, read bool) content.User {
@@ -159,7 +159,7 @@ func (u User) ReadBefore(date time.Time, read bool) content.User {
 func (u User) ReadAfter(date time.Time, read bool) content.User {
 	panic("Not implemented")
 }
-func (u User) ScoredArticles(from, to time.Time, desc bool, paging ...int) []content.ScoredArticle {
+func (u User) ScoredArticles(from, to time.Time, paging ...int) []content.ScoredArticle {
 	panic("Not implemented")
 }
 func (u User) Tags() []content.Tag {
