@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/readeef/db"
@@ -44,22 +45,28 @@ func NewScoredArticle(db *db.DB, logger webfw.Logger) *ScoredArticle {
 	return sa
 }
 
-func (ua *UserArticle) Read(read bool) {
+func (ua *UserArticle) Read(read bool) content.UserArticle {
 	if ua.Err() != nil {
-		return
+		return ua
 	}
+
+	return ua
 }
 
-func (ua *UserArticle) Favorite(favorite bool) {
+func (ua *UserArticle) Favorite(favorite bool) content.UserArticle {
 	if ua.Err() != nil {
-		return
+		return ua
 	}
+
+	return ua
 }
 
-func (sa *ScoredArticle) SetScores(asc info.ArticleScores) {
+func (sa *ScoredArticle) SetScores(asc info.ArticleScores) content.ScoredArticle {
 	if sa.Err() != nil {
-		return
+		return sa
 	}
+
+	return sa
 }
 
 func (sa *ScoredArticle) Scores() (i info.ArticleScores) {

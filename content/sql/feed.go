@@ -60,16 +60,20 @@ func (f Feed) NewArticles() (a []content.Article) {
 	return f.newArticles
 }
 
-func (f *Feed) Update(info info.Feed) {
+func (f *Feed) Update(info info.Feed) content.Feed {
 	if f.Err() != nil {
-		return
+		return f
 	}
+
+	return f
 }
 
-func (f *Feed) Delete() {
+func (f *Feed) Delete() content.Feed {
 	if f.Err() != nil {
-		return
+		return f
 	}
+
+	return f
 }
 
 func (f *Feed) AllArticles() (a []content.Article) {
@@ -88,10 +92,12 @@ func (f *Feed) LatestArticles() (a []content.Article) {
 	return
 }
 
-func (f *Feed) AddArticles([]content.Article) {
+func (f *Feed) AddArticles([]content.Article) content.Feed {
 	if f.Err() != nil {
-		return
+		return f
 	}
+
+	return f
 }
 
 func (f *Feed) Subscription() (s content.Subscription) {
@@ -105,13 +111,40 @@ func (f *Feed) Subscription() (s content.Subscription) {
 func (f *Feed) init() {
 }
 
-func (uf UserFeed) Validate() error {
-	err := uf.Feed.Validate()
-	if err == nil {
-		err = uf.UserFeed.Validate()
-	}
+func (uf UserFeed) Err() error {
+	return uf.Feed.Err()
+}
 
-	return err
+func (uf *UserFeed) SetErr(err error) content.Error {
+	return uf.Feed.SetErr(err)
+}
+
+func (uf *UserFeed) DefaultSorting() content.ArticleSorting {
+	return uf.Feed.DefaultSorting()
+}
+
+func (uf *UserFeed) SortingById() content.ArticleSorting {
+	return uf.Feed.SortingById()
+}
+
+func (uf *UserFeed) SortingByDate() content.ArticleSorting {
+	return uf.Feed.SortingByDate()
+}
+
+func (uf *UserFeed) Reverse() content.ArticleSorting {
+	return uf.Feed.Reverse()
+}
+
+func (uf *UserFeed) Set(info info.Feed) content.Feed {
+	return uf.Feed.Set(info)
+}
+
+func (uf UserFeed) Info() info.Feed {
+	return uf.Feed.Info()
+}
+
+func (uf UserFeed) String() string {
+	return uf.Feed.String()
 }
 
 func (uf *UserFeed) Users() (u []content.User) {
@@ -122,10 +155,12 @@ func (uf *UserFeed) Users() (u []content.User) {
 	return
 }
 
-func (uf *UserFeed) Detach() {
+func (uf *UserFeed) Detach() content.UserFeed {
 	if uf.Err() != nil {
-		return
+		return uf
 	}
+
+	return uf
 }
 
 func (uf *UserFeed) Articles(desc bool, paging ...int) (ua []content.UserArticle) {
@@ -144,10 +179,12 @@ func (uf *UserFeed) UnreadArticles(desc bool, paging ...int) (ua []content.UserA
 	return
 }
 
-func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
+func (uf *UserFeed) ReadBefore(date time.Time, read bool) content.UserFeed {
 	if uf.Err() != nil {
-		return
+		return uf
 	}
+
+	return uf
 }
 
 func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []content.ScoredArticle) {
@@ -169,16 +206,20 @@ func (tf *TaggedFeed) Tags() (t []content.Tag) {
 	return
 }
 
-func (tf *TaggedFeed) AddTags(tags ...content.Tag) {
+func (tf *TaggedFeed) AddTags(tags ...content.Tag) content.TaggedFeed {
 	if tf.Err() != nil {
-		return
+		return tf
 	}
+
+	return tf
 }
 
-func (tf *TaggedFeed) DeleteAllTags() {
+func (tf *TaggedFeed) DeleteAllTags() content.TaggedFeed {
 	if tf.Err() != nil {
-		return
+		return tf
 	}
+
+	return tf
 }
 
 func (tf *TaggedFeed) init() {

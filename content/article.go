@@ -19,7 +19,7 @@ type ArticleSorting interface {
 }
 
 type ArticleSearch interface {
-	Highlight(highlight string)
+	Highlight(highlight string) ArticleSearch
 	Query(query string) []UserArticle
 }
 
@@ -28,7 +28,7 @@ type Article interface {
 
 	fmt.Stringer
 
-	Set(info info.Article)
+	Set(info info.Article) Article
 	Info() info.Article
 
 	Validate() error
@@ -39,13 +39,13 @@ type UserArticle interface {
 
 	User() User
 
-	Read(read bool)
-	Favorite(favorite bool)
+	Read(read bool) UserArticle
+	Favorite(favorite bool) UserArticle
 }
 
 type ScoredArticle interface {
 	UserArticle
 
-	SetScores(asc info.ArticleScores)
+	SetScores(asc info.ArticleScores) ScoredArticle
 	Scores() info.ArticleScores
 }

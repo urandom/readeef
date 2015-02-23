@@ -26,9 +26,9 @@ func NewUser(db *db.DB, logger webfw.Logger) *User {
 	return u
 }
 
-func (u *User) Update() {
+func (u *User) Update() content.User {
 	if u.Err() != nil {
-		return
+		return u
 	}
 
 	i := u.Info()
@@ -37,21 +37,21 @@ func (u *User) Update() {
 	tx, err := u.db.Begin()
 	if err != nil {
 		u.SetErr(err)
-		return
+		return u
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(u.SQL("update_user"))
 	if err != nil {
 		u.SetErr(err)
-		return
+		return u
 	}
 	defer stmt.Close()
 
 	res, err := stmt.Exec(i.FirstName, i.LastName, i.Email, i.Admin, i.Active, i.ProfileJSON, i.HashType, i.Salt, i.Hash, i.MD5API, i.Login)
 	if err != nil {
 		u.SetErr(err)
-		return
+		return u
 	}
 
 	if num, err := res.RowsAffected(); err == nil && num > 0 {
@@ -59,32 +59,32 @@ func (u *User) Update() {
 			u.SetErr(err)
 		}
 
-		return
+		return u
 	}
 
 	stmt, err = tx.Preparex(u.SQL("create_user"))
 	if err != nil {
 		u.SetErr(err)
-		return
+		return u
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(i.Login, i.FirstName, i.LastName, i.Email, i.Admin, i.Active, i.ProfileJSON, i.HashType, i.Salt, i.Hash, i.MD5API)
 	if err != nil {
 		u.SetErr(err)
-		return
+		return u
 	}
 
 	if err := tx.Commit(); err != nil {
 		u.SetErr(err)
 	}
 
-	return
+	return u
 }
 
-func (u *User) Delete() {
+func (u *User) Delete() content.User {
 	if u.Err() != nil {
-		return
+		return u
 	}
 
 	i := u.Info()
@@ -92,32 +92,34 @@ func (u *User) Delete() {
 
 	if err := u.Validate(); err != nil {
 		u.SetErr(err)
-		return
+		return u
 	}
 
 	tx, err := u.db.Begin()
 	if err != nil {
 		u.SetErr(err)
-		return
+		return u
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(u.SQL("delete_user"))
 	if err != nil {
 		u.SetErr(err)
-		return
+		return u
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(i.Login)
 	if err != nil {
 		u.SetErr(err)
-		return
+		return u
 	}
 
 	if err := tx.Commit(); err != nil {
 		u.SetErr(err)
 	}
+
+	return u
 }
 
 func (u *User) Feed(id info.FeedId) (uf content.UserFeed) {
@@ -271,20 +273,20 @@ func (u *User) FavoriteArticles(desc bool, paging ...int) (ua []content.UserArti
 	return
 }
 
-func (u *User) ReadBefore(date time.Time, read bool) {
+func (u *User) ReadBefore(date time.Time, read bool) content.User {
 	if u.Err() != nil {
-		return
+		return u
 	}
 
-	return
+	return u
 }
 
-func (u *User) ReadAfter(date time.Time, read bool) {
+func (u *User) ReadAfter(date time.Time, read bool) content.User {
 	if u.Err() != nil {
-		return
+		return u
 	}
 
-	return
+	return u
 }
 
 func (u *User) ScoredArticles(from, to time.Time, desc bool, paging ...int) (sa []content.ScoredArticle) {

@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/readeef/db"
@@ -23,22 +24,28 @@ func NewSubscription(db *db.DB, logger webfw.Logger) *Subscription {
 	return s
 }
 
-func (s *Subscription) Update(info info.Subscription) {
+func (s *Subscription) Update(info info.Subscription) content.Subscription {
 	if s.Err() != nil {
-		return
+		return s
 	}
+
+	return s
 }
 
-func (s *Subscription) Delete() {
+func (s *Subscription) Delete() content.Subscription {
 	if s.Err() != nil {
-		return
+		return s
 	}
+
+	return s
 }
 
-func (s *Subscription) Fail(fail bool) {
+func (s *Subscription) Fail(fail bool) content.Subscription {
 	if s.Err() != nil {
-		return
+		return s
 	}
+
+	return s
 }
 
 func (s *Subscription) init() {

@@ -11,13 +11,13 @@ type Subscription interface {
 
 	fmt.Stringer
 
-	Set(info info.Subscription)
+	Set(info info.Subscription) Subscription
 	Info() info.Subscription
 
 	Validate() error
 
-	Update(info info.Subscription)
-	Delete()
+	Update(info info.Subscription) Subscription
+	Delete() Subscription
 
-	Fail(fail bool)
+	Fail(fail bool) Subscription
 }
