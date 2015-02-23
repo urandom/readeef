@@ -5,6 +5,7 @@ import (
 
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
+	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/readeef/db"
 	"github.com/urandom/webfw"
 )
@@ -15,6 +16,11 @@ type Tag struct {
 	logger webfw.Logger
 
 	db *db.DB
+}
+
+type feedIdTag struct {
+	FeedId   info.FeedId `db:"feed_id"`
+	TagValue info.TagValue
 }
 
 func NewTag(db *db.DB, logger webfw.Logger) *Tag {

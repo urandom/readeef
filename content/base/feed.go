@@ -132,7 +132,7 @@ func (tf TaggedFeed) Tags() []content.Tag {
 	return tf.tags
 }
 
-func (tf *TaggedFeed) SetTags(tags ...content.Tag) content.TaggedFeed {
+func (tf *TaggedFeed) SetTags(tags []content.Tag) content.TaggedFeed {
 	tf.tags = tags
 	return tf
 }

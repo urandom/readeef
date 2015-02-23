@@ -27,7 +27,7 @@ type User interface {
 	Feed(id info.FeedId) UserFeed
 	AddFeed(feed Feed) UserFeed
 
-	AllFeeds() []UserFeed
+	AllFeeds() []TaggedFeed
 
 	AllTaggedFeeds() []TaggedFeed
 

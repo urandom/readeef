@@ -25,6 +25,7 @@ type UserFeed struct {
 }
 
 type TaggedFeed struct {
+	base.TaggedFeed
 	*UserFeed
 }
 
@@ -198,14 +199,6 @@ func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []cont
 func (uf *UserFeed) init() {
 }
 
-func (tf *TaggedFeed) Tags() (t []content.Tag) {
-	if tf.Err() != nil {
-		return
-	}
-
-	return
-}
-
 func (tf *TaggedFeed) AddTags(tags ...content.Tag) content.TaggedFeed {
 	if tf.Err() != nil {
 		return tf
@@ -220,6 +213,22 @@ func (tf *TaggedFeed) DeleteAllTags() content.TaggedFeed {
 	}
 
 	return tf
+}
+
+func (tf *TaggedFeed) Highlight(highlight string) content.ArticleSearch {
+	return tf.UserFeed.Highlight(highlight)
+}
+
+func (tf *TaggedFeed) Query(query string) []content.UserArticle {
+	return tf.UserFeed.Query(query)
+}
+
+func (tf TaggedFeed) User() content.User {
+	return tf.UserFeed.User()
+}
+
+func (tf TaggedFeed) Validate() error {
+	return tf.UserFeed.Validate()
 }
 
 func (tf *TaggedFeed) init() {

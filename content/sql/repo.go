@@ -85,8 +85,8 @@ func (r *Repo) AllUsers() (users []content.User) {
 
 	users = make([]content.User, len(info))
 
-	for i, in := range info {
-		users[i].Set(in)
+	for i := range info {
+		users[i].Set(info[i])
 		if users[i].Err() != nil {
 			r.SetErr(users[i].Err())
 			return
@@ -149,8 +149,8 @@ func (r *Repo) AllFeeds() (feeds []content.Feed) {
 
 	feeds = make([]content.Feed, len(info))
 
-	for i, in := range info {
-		feeds[i].Set(in)
+	for i := range info {
+		feeds[i].Set(info[i])
 	}
 
 	return
@@ -171,8 +171,8 @@ func (r *Repo) AllUnsubscribedFeeds() (feeds []content.Feed) {
 
 	feeds = make([]content.Feed, len(info))
 
-	for i, in := range info {
-		feeds[i].Set(in)
+	for i := range info {
+		feeds[i].Set(info[i])
 	}
 
 	return
@@ -193,8 +193,8 @@ func (r *Repo) AllSubscriptions() (s []content.Subscription) {
 
 	s = make([]content.Subscription, len(info))
 
-	for i, in := range info {
-		s[i].Set(in)
+	for i := range info {
+		s[i].Set(info[i])
 	}
 
 	return
@@ -209,6 +209,20 @@ func (r *Repo) init() {
 	r.SetSQL("get_feeds", getFeeds)
 	r.SetSQL("get_unsubscribed_feeds", getUnsubscribedFeeds)
 	r.SetSQL("get_hubbub_subscriptions", getHubbubSubscriptions)
+}
+
+func pagingLimit(paging []int) (int, int) {
+	limit := 50
+	offset := 0
+
+	if len(paging) > 0 {
+		limit = paging[0]
+		if len(paging) > 1 {
+			offset = paging[1]
+		}
+	}
+
+	return limit, offset
 }
 
 const (

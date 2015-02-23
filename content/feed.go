@@ -55,6 +55,7 @@ type TaggedFeed interface {
 	UserFeed
 
 	Tags() []Tag
+	SetTags(tags []Tag) TaggedFeed
 
 	AddTags(tags ...Tag) TaggedFeed
 	DeleteAllTags() TaggedFeed

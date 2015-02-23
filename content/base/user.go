@@ -120,7 +120,7 @@ func (u User) Feed(id info.FeedId) content.UserFeed {
 func (u User) AddFeed(feed content.Feed) content.UserFeed {
 	panic("Not implemented")
 }
-func (u User) AllFeeds() []content.UserFeed {
+func (u User) AllFeeds() []content.TaggedFeed {
 	panic("Not implemented")
 }
 func (u User) AllTaggedFeeds() []content.TaggedFeed {
