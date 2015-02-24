@@ -26,6 +26,10 @@ type UserArticle struct {
 	user content.User
 }
 
+func NewUserArticle(user content.User) *UserArticle {
+	return &UserArticle{user: user}
+}
+
 func (a Article) String() string {
 	return a.info.Title + " " + strconv.FormatInt(int64(a.info.Id), 10)
 }

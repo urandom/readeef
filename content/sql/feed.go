@@ -146,6 +146,18 @@ func (f *Feed) AllArticles() (a []content.Article) {
 	id := f.Info().Id
 	f.logger.Infof("Getting all feed %d articles\n", id)
 
+	var info []info.Article
+	if err := f.db.Select(&info, db.SQL("get_all_feed_articles"), id); err != nil {
+		f.SetErr(err)
+		return
+	}
+
+	a = make([]content.Article, len(info))
+	for i := range info {
+		a[i] = NewArticle()
+		a[i].Set(info[i])
+	}
+
 	return
 }
 
@@ -157,16 +169,45 @@ func (f *Feed) LatestArticles() (a []content.Article) {
 	id := f.Info().Id
 	f.logger.Infof("Getting latest feed %d articles\n", id)
 
+	var info []info.Article
+	if err := f.db.Select(&info, db.SQL("get_latest_feed_articles"), id); err != nil {
+		f.SetErr(err)
+		return
+	}
+
+	a = make([]content.Article, len(info))
+	for i := range info {
+		a[i] = NewArticle()
+		a[i].Set(info[i])
+	}
+
 	return
 }
 
-func (f *Feed) AddArticles([]content.Article) {
+func (f *Feed) AddArticles(articles []content.Article) {
 	if f.Err() != nil {
 		return
 	}
 
 	id := f.Info().Id
 	f.logger.Infof("Adding articles to feed %d\n", id)
+
+	tx, err := f.db.Begin()
+	if err != nil {
+		f.SetErr(err)
+		return
+	}
+	defer tx.Rollback()
+
+	newArticles := f.updateFeedArticles(tx, articles)
+
+	if f.Err() != nil {
+		return
+	}
+
+	tx.Commit()
+
+	f.newArticles = newArticles
 }
 
 func (f *Feed) Subscription() (s content.Subscription) {
@@ -176,6 +217,15 @@ func (f *Feed) Subscription() (s content.Subscription) {
 
 	id := f.Info().Id
 	f.logger.Infof("Getting subcription for feed %d\n", id)
+
+	var in info.Subscription
+	if err := f.db.Get(&in, db.SQL("get_hubbub_subscription"), id); err != nil && err != dsql.ErrNoRows {
+		f.SetErr(err)
+		return
+	}
+
+	s = NewSubscription(f.db, f.logger)
+	s.Set(in)
 
 	return
 }
@@ -191,8 +241,9 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 			return
 		}
 
-		in := articles[i].Info()
 		id := f.Info().Id
+		in := articles[i].Info()
+		in.FeedId = id
 
 		var sql string
 		args := []interface{}{in.Title, in.Description, in.Date, id}
@@ -230,12 +281,14 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 
 			id, err := f.db.CreateWithId(stmt, id, in.Link, in.Guid,
 				in.Title, in.Description, in.Date)
-			in.Id = info.ArticleId(id)
 
 			if err != nil {
 				f.SetErr(err)
 				return
 			}
+
+			in.Id = info.ArticleId(id)
+			articles[i].Set(in)
 		}
 	}
 
@@ -350,6 +403,9 @@ func init() {
 	db.SetSQL("create_feed_article", createFeedArticle)
 	db.SetSQL("update_feed_article", updateFeedArticle)
 	db.SetSQL("update_feed_article_with_guid", updateFeedArticleWithGuid)
+	db.SetSQL("get_all_feed_articles", getAllFeedArticles)
+	db.SetSQL("get_latest_feed_articles", getLatestFeedArticles)
+	db.SetSQL("get_hubbub_subscription", getHubbubSubscription)
 }
 
 const (
@@ -372,4 +428,17 @@ UPDATE articles SET title = $1, description = $2, date = $3 WHERE feed_id = $4 A
 	updateFeedArticleWithGuid = `
 UPDATE articles SET title = $1, description = $2, date = $3 WHERE feed_id = $4 AND guid = $5
 `
+	getAllFeedArticles = `
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.guid, a.date
+FROM articles a
+WHERE a.feed_id = $1
+`
+	getLatestFeedArticles = `
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid
+FROM articles a
+WHERE a.feed_id = $1 AND a.date > NOW() - INTERVAL '5 days'
+`
+	getHubbubSubscription = `
+SELECT link, lease_duration, verification_time, subscription_failure
+	FROM hubbub_subscriptions WHERE feed_id = $1`
 )

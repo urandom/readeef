@@ -199,6 +199,7 @@ func (u *User) AllFeeds() (uf []content.TaggedFeed) {
 
 	uf = make([]content.TaggedFeed, len(info))
 	for i := range info {
+		uf[i] = NewTaggedFeed(u.db, u.logger, u)
 		uf[i].Set(info[i])
 	}
 
@@ -577,6 +578,7 @@ func (u *User) getArticles(columns, join, where, order string, args []interface{
 
 	ua = make([]*UserArticle, len(info))
 	for i := range info {
+		ua[i] = NewUserArticle(u.db, u.logger, u)
 		ua[i].Set(info[i])
 	}
 

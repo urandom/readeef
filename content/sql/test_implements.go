@@ -14,12 +14,12 @@ func TestImplements(t *testing.T) {
 
 	var userArticle content.UserArticle
 
-	userArticle = NewUserArticle(nil, nil)
+	userArticle = NewUserArticle(nil, nil, nil)
 	userArticle.Info()
 
 	var scoredArticle content.ScoredArticle
 
-	scoredArticle = NewScoredArticle(nil, nil)
+	scoredArticle = NewScoredArticle(nil, nil, nil)
 	scoredArticle.Info()
 
 	var feed content.Feed
