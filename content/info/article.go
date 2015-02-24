@@ -8,7 +8,7 @@ import (
 type ArticleId int64
 
 type Article struct {
-	Id     int64
+	Id     ArticleId
 	Guid   sql.NullString
 	FeedId FeedId `db:"feed_id"`
 

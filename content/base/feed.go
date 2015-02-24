@@ -7,13 +7,15 @@ import (
 
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/parser"
 )
 
 type Feed struct {
 	ArticleSorting
 	Error
 
-	info info.Feed
+	info           info.Feed
+	parsedArticles []content.Article
 }
 
 type UserFeed struct {
@@ -52,6 +54,50 @@ func (f Feed) Validate() error {
 	}
 
 	return nil
+}
+
+func (f *Feed) Refresh(pf parser.Feed) {
+	if f.Err() != nil {
+		return
+	}
+
+	in := f.Info()
+
+	in.Title = pf.Title
+	in.Description = pf.Description
+	in.SiteLink = pf.SiteLink
+	in.HubLink = pf.HubLink
+
+	newArticles := make([]Article, len(pf.Articles))
+
+	for i := range pf.Articles {
+		ai := info.Article{
+			Title:       pf.Articles[i].Title,
+			Description: pf.Articles[i].Description,
+			Link:        pf.Articles[i].Link,
+			Date:        pf.Articles[i].Date,
+		}
+		ai.FeedId = in.Id
+
+		if pf.Articles[i].Guid != "" {
+			ai.Guid.Valid = true
+			ai.Guid.String = pf.Articles[i].Guid
+		}
+
+		a := Article{info: ai}
+
+		newArticles[i] = a
+	}
+
+	f.Set(in)
+}
+
+func (f *Feed) ParsedArticles() (a []content.Article) {
+	if f.Err() != nil {
+		return
+	}
+
+	return f.parsedArticles
 }
 
 func (f UserFeed) User() content.User {

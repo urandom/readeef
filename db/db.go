@@ -61,3 +61,26 @@ func (db *DB) Begin() (*Tx, error) {
 		return nil, err
 	}
 }
+
+func (db *DB) CreateWithId(stmt *sqlx.Stmt, args ...interface{}) (int64, error) {
+	var id int64
+
+	if db.DriverName() == "postgres" {
+		err := stmt.QueryRow(args...).Scan(&id)
+		if err != nil {
+			return 0, err
+		}
+	} else {
+		res, err := stmt.Exec(args...)
+		if err != nil {
+			return 0, err
+		}
+
+		id, err = res.LastInsertId()
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	return id, nil
+}

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/parser"
 )
 
 type Feed interface {
@@ -17,6 +18,11 @@ type Feed interface {
 	Info() info.Feed
 
 	Validate() error
+
+	// Updates the in-memory feed information using the RSS data
+	Refresh(pf parser.Feed)
+	// Returns the []content.Article created from the RSS data
+	ParsedArticles() []Article
 
 	// Returns any new articles since the previous Update
 	NewArticles() []Article
