@@ -13,7 +13,7 @@ type Feed interface {
 
 	fmt.Stringer
 
-	Set(info info.Feed) Feed
+	Set(info info.Feed)
 	Info() info.Feed
 
 	Validate() error
@@ -21,13 +21,13 @@ type Feed interface {
 	// Returns any new articles since the previous Update
 	NewArticles() []Article
 
-	Update(info info.Feed) Feed
-	Delete() Feed
+	Update(info info.Feed)
+	Delete()
 
 	AllArticles() []Article
 	LatestArticles() []Article
 
-	AddArticles([]Article) Feed
+	AddArticles([]Article)
 
 	Subscription() Subscription
 }
@@ -41,12 +41,12 @@ type UserFeed interface {
 	Users() []User
 
 	// Detaches from the current user
-	Detach() UserFeed
+	Detach()
 
 	Articles(desc bool, paging ...int) []UserArticle
 	UnreadArticles(desc bool, paging ...int) []UserArticle
 
-	ReadBefore(date time.Time, read bool) UserFeed
+	ReadBefore(date time.Time, read bool)
 
 	ScoredArticles(from, to time.Time, paging ...int) []ScoredArticle
 }
@@ -55,8 +55,8 @@ type TaggedFeed interface {
 	UserFeed
 
 	Tags() []Tag
-	SetTags(tags []Tag) TaggedFeed
+	SetTags(tags []Tag)
 
-	AddTags(tags ...Tag) TaggedFeed
-	DeleteAllTags() TaggedFeed
+	AddTags(tags ...Tag)
+	DeleteAllTags()
 }

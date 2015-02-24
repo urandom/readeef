@@ -55,12 +55,10 @@ func (t *Tag) UnreadArticles(desc bool, paging ...int) (ua []content.UserArticle
 	return
 }
 
-func (t *Tag) ReadBefore(date time.Time, read bool) content.Tag {
+func (t *Tag) ReadBefore(date time.Time, read bool) {
 	if t.Err() != nil {
-		return t
+		return
 	}
-
-	return t
 }
 
 func (t *Tag) ScoredArticles(from, to time.Time, desc bool, paging ...int) (sa []content.ScoredArticle) {

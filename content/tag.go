@@ -14,7 +14,7 @@ type Tag interface {
 
 	fmt.Stringer
 
-	Set(value info.TagValue) Tag
+	Set(value info.TagValue)
 	Value() info.TagValue
 
 	AllFeeds() []TaggedFeed
@@ -22,7 +22,7 @@ type Tag interface {
 	Articles(desc bool, paging ...int) []UserArticle
 	UnreadArticles(desc bool, paging ...int) []UserArticle
 
-	ReadBefore(date time.Time, read bool) Tag
+	ReadBefore(date time.Time, read bool)
 
 	ScoredArticles(from, to time.Time, desc bool, paging ...int) []ScoredArticle
 }

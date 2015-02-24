@@ -6,10 +6,8 @@ type ArticleSearch struct {
 	HighlightStyle string
 }
 
-func (s ArticleSearch) Highlight(highlight string) content.ArticleSearch {
+func (s ArticleSearch) Highlight(highlight string) {
 	s.HighlightStyle = highlight
-
-	return s
 }
 
 func (s ArticleSearch) Query(query string) (ua []content.UserArticle) {

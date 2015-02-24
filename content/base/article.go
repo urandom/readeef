@@ -30,14 +30,12 @@ func (a Article) String() string {
 	return a.info.Title + " " + strconv.FormatInt(int64(a.info.Id), 10)
 }
 
-func (a *Article) Set(info info.Article) content.Article {
+func (a *Article) Set(info info.Article) {
 	if a.Err() != nil {
-		return a
+		return
 	}
 
 	a.info = info
-
-	return a
 }
 
 func (a Article) Info() info.Article {

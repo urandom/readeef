@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/info"
 )
 
@@ -20,14 +19,12 @@ func (s Subscription) String() string {
 	return fmt.Sprintf("Subscription for %s\n", s.info.Link)
 }
 
-func (s *Subscription) Set(info info.Subscription) content.Subscription {
+func (s *Subscription) Set(info info.Subscription) {
 	if s.Err() != nil {
-		return s
+		return
 	}
 
 	s.info = info
-
-	return s
 }
 
 func (s Subscription) Info() info.Subscription {
@@ -44,16 +41,4 @@ func (s *Subscription) Validate() error {
 	}
 
 	return nil
-}
-
-func (s Subscription) Delete() content.Subscription {
-	panic("Not implemented")
-}
-
-func (s Subscription) Fail(fail bool) content.Subscription {
-	panic("Not implemented")
-}
-
-func (s Subscription) Update(info info.Subscription) content.Subscription {
-	panic("Not implemented")
 }

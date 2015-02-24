@@ -9,9 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
-	"time"
 
-	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/info"
 )
 
@@ -30,9 +28,9 @@ func (u User) String() string {
 	}
 }
 
-func (u *User) Set(info info.User) content.User {
+func (u *User) Set(info info.User) {
 	if u.Err() != nil {
-		return u
+		return
 	}
 
 	var err error
@@ -43,7 +41,7 @@ func (u *User) Set(info info.User) content.User {
 		if len(info.ProfileJSON) != 0 {
 			if err = json.Unmarshal(info.ProfileJSON, &info.ProfileData); err != nil {
 				u.SetErr(err)
-				return u
+				return
 			}
 		}
 		if info.ProfileData == nil {
@@ -53,8 +51,6 @@ func (u *User) Set(info info.User) content.User {
 
 	u.SetErr(err)
 	u.info = info
-
-	return u
 }
 
 func (u User) Info() info.User {
@@ -74,9 +70,9 @@ func (u User) Validate() error {
 	return nil
 }
 
-func (u *User) Password(password string, secret []byte) content.User {
+func (u *User) Password(password string, secret []byte) {
 	if u.Err() != nil {
-		return u
+		return
 	}
 
 	h := md5.Sum([]byte(fmt.Sprintf("%s:%s", u.info.Login, password)))
@@ -87,15 +83,13 @@ func (u *User) Password(password string, secret []byte) content.User {
 	salt := make([]byte, c)
 	if _, err := rand.Read(salt); err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 
 	u.info.Salt = salt
 
 	u.info.HashType = "sha1"
 	u.info.Hash = u.generateHash(password, secret)
-
-	return u
 }
 
 func (u User) Authenticate(password string, secret []byte) bool {
@@ -106,62 +100,4 @@ func (u User) generateHash(password string, secret []byte) []byte {
 	hash := sha1.Sum(append(secret, append(u.info.Salt, []byte(password)...)...))
 
 	return hash[:]
-}
-
-func (u User) Update() content.User {
-	panic("Not implemented")
-}
-func (u User) Delete() content.User {
-	panic("Not implemented")
-}
-func (u User) Feed(id info.FeedId) content.UserFeed {
-	panic("Not implemented")
-}
-func (u User) AddFeed(feed content.Feed) content.UserFeed {
-	panic("Not implemented")
-}
-func (u User) AllFeeds() []content.TaggedFeed {
-	panic("Not implemented")
-}
-func (u User) AllTaggedFeeds() []content.TaggedFeed {
-	panic("Not implemented")
-}
-func (u User) Article(id info.ArticleId) content.UserArticle {
-	panic("Not implemented")
-}
-func (u User) ArticlesById(ids ...info.ArticleId) []content.UserArticle {
-	panic("Not implemented")
-}
-func (u User) AllUnreadArticleIds() []info.ArticleId {
-	panic("Not implemented")
-}
-func (u User) AllFavoriteIds() []info.ArticleId {
-	panic("Not implemented")
-}
-func (u User) ArticleCount() int64 {
-	panic("Not implemented")
-}
-func (u User) Articles(paging ...int) []content.UserArticle {
-	panic("Not implemented")
-}
-func (u User) UnreadArticles(paging ...int) []content.UserArticle {
-	panic("Not implemented")
-}
-func (u User) ArticlesOrderedById(pivot info.ArticleId, paging ...int) []content.UserArticle {
-	panic("Not implemented")
-}
-func (u User) FavoriteArticles(paging ...int) []content.UserArticle {
-	panic("Not implemented")
-}
-func (u User) ReadBefore(date time.Time, read bool) content.User {
-	panic("Not implemented")
-}
-func (u User) ReadAfter(date time.Time, read bool) content.User {
-	panic("Not implemented")
-}
-func (u User) ScoredArticles(from, to time.Time, paging ...int) []content.ScoredArticle {
-	panic("Not implemented")
-}
-func (u User) Tags() []content.Tag {
-	panic("Not implemented")
 }

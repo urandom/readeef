@@ -29,9 +29,9 @@ func NewUser(db *db.DB, logger webfw.Logger) *User {
 	return u
 }
 
-func (u *User) Update() content.User {
+func (u *User) Update() {
 	if u.Err() != nil {
-		return u
+		return
 	}
 
 	i := u.Info()
@@ -40,21 +40,21 @@ func (u *User) Update() content.User {
 	tx, err := u.db.Begin()
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(u.SQL("update_user"))
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 	defer stmt.Close()
 
 	res, err := stmt.Exec(i.FirstName, i.LastName, i.Email, i.Admin, i.Active, i.ProfileJSON, i.HashType, i.Salt, i.Hash, i.MD5API, i.Login)
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 
 	if num, err := res.RowsAffected(); err == nil && num > 0 {
@@ -62,32 +62,32 @@ func (u *User) Update() content.User {
 			u.SetErr(err)
 		}
 
-		return u
+		return
 	}
 
 	stmt, err = tx.Preparex(u.SQL("create_user"))
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(i.Login, i.FirstName, i.LastName, i.Email, i.Admin, i.Active, i.ProfileJSON, i.HashType, i.Salt, i.Hash, i.MD5API)
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 
 	if err := tx.Commit(); err != nil {
 		u.SetErr(err)
 	}
 
-	return u
+	return
 }
 
-func (u *User) Delete() content.User {
+func (u *User) Delete() {
 	if u.Err() != nil {
-		return u
+		return
 	}
 
 	i := u.Info()
@@ -95,34 +95,32 @@ func (u *User) Delete() content.User {
 
 	if err := u.Validate(); err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 
 	tx, err := u.db.Begin()
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(u.SQL("delete_user"))
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(i.Login)
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 
 	if err := tx.Commit(); err != nil {
 		u.SetErr(err)
 	}
-
-	return u
 }
 
 func (u *User) Feed(id info.FeedId) (uf content.UserFeed) {
@@ -387,9 +385,9 @@ func (u *User) FavoriteArticles(paging ...int) (ua []content.UserArticle) {
 	return u.getArticles("", "", "af.article_id IS NOT NULL", "", nil, paging...)
 }
 
-func (u *User) ReadBefore(date time.Time, read bool) content.User {
+func (u *User) ReadBefore(date time.Time, read bool) {
 	if u.Err() != nil {
-		return u
+		return
 	}
 
 	login := u.Info().Login
@@ -398,45 +396,45 @@ func (u *User) ReadBefore(date time.Time, read bool) content.User {
 	tx, err := u.db.Begin()
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(u.SQL("delete_all_user_articles_read_by_date"))
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(login, date)
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 
 	stmt, err = tx.Preparex(u.SQL("create_all_user_articles_read_by_date"))
 
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(login, date)
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 
 	tx.Commit()
 
-	return u
+	return
 }
 
-func (u *User) ReadAfter(date time.Time, read bool) content.User {
+func (u *User) ReadAfter(date time.Time, read bool) {
 	if u.Err() != nil {
-		return u
+		return
 	}
 
 	login := u.Info().Login
@@ -445,7 +443,7 @@ func (u *User) ReadAfter(date time.Time, read bool) content.User {
 	tx, err := u.db.Begin()
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 	defer tx.Rollback()
 
@@ -453,17 +451,17 @@ func (u *User) ReadAfter(date time.Time, read bool) content.User {
 
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(login, date)
 	if err != nil {
 		u.SetErr(err)
-		return u
+		return
 	}
 
-	return u
+	return
 }
 
 func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.ScoredArticle) {
@@ -474,9 +472,16 @@ func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.S
 	login := u.Info().Login
 	u.logger.Infof("Getting scored articles for paging %q and user %s\n", paging, login)
 
-	return u.getArticles("asco.score", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
+	ua := u.getArticles("asco.score", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
 		"a.date > $2 AND a.date <= $3", "asco.score",
 		[]interface{}{from, to}, paging...)
+
+	sa = make([]content.ScoredArticle, len(ua))
+	for i := range ua {
+		sa[i] = &ScoredArticle{UserArticle: ua[i]}
+	}
+
+	return sa
 }
 
 func (u *User) Tags() (tags []content.Tag) {

@@ -13,16 +13,16 @@ type User interface {
 
 	fmt.Stringer
 
-	Set(info info.User) User
+	Set(info info.User)
 	Info() info.User
 
 	Validate() error
 
-	Password(password string, secret []byte) User
+	Password(password string, secret []byte)
 	Authenticate(password string, secret []byte) bool
 
-	Update() User
-	Delete() User
+	Update()
+	Delete()
 
 	Feed(id info.FeedId) UserFeed
 	AddFeed(feed Feed) UserFeed
@@ -45,8 +45,8 @@ type User interface {
 	ArticlesOrderedById(pivot info.ArticleId, paging ...int) []UserArticle
 	FavoriteArticles(paging ...int) []UserArticle
 
-	ReadBefore(date time.Time, read bool) User
-	ReadAfter(date time.Time, read bool) User
+	ReadBefore(date time.Time, read bool)
+	ReadAfter(date time.Time, read bool)
 
 	ScoredArticles(from, to time.Time, paging ...int) []ScoredArticle
 
