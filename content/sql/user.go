@@ -15,16 +15,13 @@ import (
 
 type User struct {
 	base.User
-	NamedSQL
 	logger webfw.Logger
 
 	db *db.DB
 }
 
 func NewUser(db *db.DB, logger webfw.Logger) *User {
-	u := &User{NamedSQL: NewNamedSQL(), db: db, logger: logger}
-
-	u.init()
+	u := &User{db: db, logger: logger}
 
 	return u
 }
@@ -44,7 +41,7 @@ func (u *User) Update() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(u.SQL("update_user"))
+	stmt, err := tx.Preparex(db.SQL("update_user"))
 	if err != nil {
 		u.SetErr(err)
 		return
@@ -65,7 +62,7 @@ func (u *User) Update() {
 		return
 	}
 
-	stmt, err = tx.Preparex(u.SQL("create_user"))
+	stmt, err = tx.Preparex(db.SQL("create_user"))
 	if err != nil {
 		u.SetErr(err)
 		return
@@ -105,7 +102,7 @@ func (u *User) Delete() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(u.SQL("delete_user"))
+	stmt, err := tx.Preparex(db.SQL("delete_user"))
 	if err != nil {
 		u.SetErr(err)
 		return
@@ -132,7 +129,7 @@ func (u *User) Feed(id info.FeedId) (uf content.UserFeed) {
 	u.logger.Infof("Getting user feed for user %s and feed %d\n", login, id)
 
 	var i info.Feed
-	if err := u.db.Get(&i, u.SQL("get_user_feed"), id, login); err != nil && err != sql.ErrNoRows {
+	if err := u.db.Get(&i, db.SQL("get_user_feed"), id, login); err != nil && err != sql.ErrNoRows {
 		u.SetErr(err)
 		return
 	}
@@ -163,7 +160,7 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(u.SQL("create_user_feed"))
+	stmt, err := tx.Preparex(db.SQL("create_user_feed"))
 	if err != nil {
 		u.SetErr(err)
 		return
@@ -195,7 +192,7 @@ func (u *User) AllFeeds() (uf []content.TaggedFeed) {
 	u.logger.Infof("Getting all feeds for user %s\n", login)
 
 	var info []info.Feed
-	if err := u.db.Select(&info, u.SQL("get_user_feeds"), login); err != nil {
+	if err := u.db.Select(&info, db.SQL("get_user_feeds"), login); err != nil {
 		u.SetErr(err)
 		return
 	}
@@ -218,7 +215,7 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 
 	var feedIdTags []feedIdTag
 
-	if err := u.db.Select(&feedIdTags, u.SQL("get_user_feed_ids_tags"), login); err != nil {
+	if err := u.db.Select(&feedIdTags, db.SQL("get_user_feed_ids_tags"), login); err != nil {
 		u.SetErr(err)
 		return
 	}
@@ -284,7 +281,13 @@ func (u *User) ArticlesById(ids ...info.ArticleId) (ua []content.UserArticle) {
 
 	where += ")"
 
-	return u.getArticles("", "", where, "", args)
+	articles := u.getArticles("", "", where, "", args)
+	ua = make([]content.UserArticle, len(articles))
+	for i := range articles {
+		ua[i] = articles[i]
+	}
+
+	return
 }
 
 func (u *User) AllUnreadArticleIds() (ids []info.ArticleId) {
@@ -295,7 +298,7 @@ func (u *User) AllUnreadArticleIds() (ids []info.ArticleId) {
 	login := u.Info().Login
 	u.logger.Infof("Getting unread article ids for user %s\n", login)
 
-	if err := u.db.Select(&ids, u.SQL("get_all_unread_user_article_ids"), login); err != nil {
+	if err := u.db.Select(&ids, db.SQL("get_all_unread_user_article_ids"), login); err != nil {
 		u.SetErr(err)
 		return
 	}
@@ -311,7 +314,7 @@ func (u *User) AllFavoriteIds() (ids []info.ArticleId) {
 	login := u.Info().Login
 	u.logger.Infof("Getting favorite article ids for user %s\n", login)
 
-	if err := u.db.Select(&ids, u.SQL("get_all_favorite_user_article_ids"), login); err != nil {
+	if err := u.db.Select(&ids, db.SQL("get_all_favorite_user_article_ids"), login); err != nil {
 		u.SetErr(err)
 		return
 	}
@@ -327,7 +330,7 @@ func (u *User) ArticleCount() (c int64) {
 	login := u.Info().Login
 	u.logger.Infof("Getting article count for user %s\n", login)
 
-	if err := u.db.Get(&c, u.SQL("get_user_article_count"), login); err != nil && err != sql.ErrNoRows {
+	if err := u.db.Get(&c, db.SQL("get_user_article_count"), login); err != nil && err != sql.ErrNoRows {
 		u.SetErr(err)
 		return
 	}
@@ -345,7 +348,13 @@ func (u *User) Articles(paging ...int) (ua []content.UserArticle) {
 
 	order := "read"
 
-	return u.getArticles("", "", "", order, nil, paging...)
+	articles := u.getArticles("", "", "", order, nil, paging...)
+	ua = make([]content.UserArticle, len(articles))
+	for i := range articles {
+		ua[i] = articles[i]
+	}
+
+	return
 }
 
 func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
@@ -356,7 +365,13 @@ func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 	login := u.Info().Login
 	u.logger.Infof("Getting unread articles for paging %q and user %s\n", paging, login)
 
-	return u.getArticles("", "", "ar.article_id IS NULL", "", nil, paging...)
+	articles := u.getArticles("", "", "ar.article_id IS NULL", "", nil, paging...)
+	ua = make([]content.UserArticle, len(articles))
+	for i := range articles {
+		ua[i] = articles[i]
+	}
+
+	return
 }
 
 func (u *User) ArticlesOrderedById(pivot info.ArticleId, paging ...int) (ua []content.UserArticle) {
@@ -369,7 +384,11 @@ func (u *User) ArticlesOrderedById(pivot info.ArticleId, paging ...int) (ua []co
 
 	u.SortingById()
 
-	ua = u.getArticles("", "", "a.id > $2", "", []interface{}{pivot}, paging...)
+	articles := u.getArticles("", "", "a.id > $2", "", []interface{}{pivot}, paging...)
+	ua = make([]content.UserArticle, len(articles))
+	for i := range articles {
+		ua[i] = articles[i]
+	}
 
 	return
 }
@@ -382,7 +401,13 @@ func (u *User) FavoriteArticles(paging ...int) (ua []content.UserArticle) {
 	login := u.Info().Login
 	u.logger.Infof("Getting favorite articles for paging %q and user %s\n", paging, login)
 
-	return u.getArticles("", "", "af.article_id IS NOT NULL", "", nil, paging...)
+	articles := u.getArticles("", "", "af.article_id IS NOT NULL", "", nil, paging...)
+	ua = make([]content.UserArticle, len(articles))
+	for i := range articles {
+		ua[i] = articles[i]
+	}
+
+	return
 }
 
 func (u *User) ReadBefore(date time.Time, read bool) {
@@ -400,7 +425,7 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(u.SQL("delete_all_user_articles_read_by_date"))
+	stmt, err := tx.Preparex(db.SQL("delete_all_user_articles_read_by_date"))
 	if err != nil {
 		u.SetErr(err)
 		return
@@ -413,7 +438,7 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 		return
 	}
 
-	stmt, err = tx.Preparex(u.SQL("create_all_user_articles_read_by_date"))
+	stmt, err = tx.Preparex(db.SQL("create_all_user_articles_read_by_date"))
 
 	if err != nil {
 		u.SetErr(err)
@@ -447,7 +472,7 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(u.SQL("delete_newer_user_articles_read_by_date"))
+	stmt, err := tx.Preparex(db.SQL("delete_newer_user_articles_read_by_date"))
 
 	if err != nil {
 		u.SetErr(err)
@@ -492,22 +517,22 @@ func (u *User) Tags() (tags []content.Tag) {
 	return
 }
 
-func (u *User) getArticles(columns, join, where, order string, args []interface{}, paging ...int) (ua []content.UserArticle) {
+func (u *User) getArticles(columns, join, where, order string, args []interface{}, paging ...int) (ua []*UserArticle) {
 	if u.Err() != nil {
 		return
 	}
 
-	sql := u.SQL("get_article_columns")
+	sql := db.SQL("get_article_columns")
 	if columns != "" {
 		sql += ", " + columns
 	}
 
-	sql += u.SQL("get_article_tables")
+	sql += db.SQL("get_article_tables")
 	if join != "" {
 		sql += " " + join
 	}
 
-	sql += u.SQL("get_article_joins")
+	sql += db.SQL("get_article_joins")
 
 	args = append([]interface{}{u.Info().Login}, args...)
 	if where != "" {
@@ -550,7 +575,7 @@ func (u *User) getArticles(columns, join, where, order string, args []interface{
 		return
 	}
 
-	ua = make([]content.UserArticle, len(info))
+	ua = make([]*UserArticle, len(info))
 	for i := range info {
 		ua[i].Set(info[i])
 	}
@@ -558,24 +583,24 @@ func (u *User) getArticles(columns, join, where, order string, args []interface{
 	return
 }
 
-func (u *User) init() {
-	u.SetSQL("create_user", createUser)
-	u.SetSQL("update_user", updateUser)
-	u.SetSQL("delete_user", deleteUser)
-	u.SetSQL("get_user_feed", getUserFeed)
-	u.SetSQL("create_user_feed", createUserFeed)
-	u.SetSQL("get_user_feeds", getUserFeeds)
-	u.SetSQL("get_user_tag_feeds", getUserTagFeeds)
-	u.SetSQL("get_user_feed_ids_tags", getUserFeedIdsTags)
-	u.SetSQL("get_article_columns", getArticleColumns)
-	u.SetSQL("get_article_tables", getArticleTables)
-	u.SetSQL("get_article_joins", getArticleJoins)
-	u.SetSQL("get_all_unread_user_article_ids", getAllUnreadUserArticleIds)
-	u.SetSQL("get_all_favorite_user_article_ids", getAllFavoriteUserArticleIds)
-	u.SetSQL("get_user_article_count", getUserArticleCount)
-	u.SetSQL("create_all_user_articles_read_by_date", createAllUserArticlesReadByDate)
-	u.SetSQL("delete_all_user_articles_read_by_date", deleteAllUserArticlesReadByDate)
-	u.SetSQL("delete_newer_user_articles_read_by_date", deleteNewerUserArticlesReadByDate)
+func init() {
+	db.SetSQL("create_user", createUser)
+	db.SetSQL("update_user", updateUser)
+	db.SetSQL("delete_user", deleteUser)
+	db.SetSQL("get_user_feed", getUserFeed)
+	db.SetSQL("create_user_feed", createUserFeed)
+	db.SetSQL("get_user_feeds", getUserFeeds)
+	db.SetSQL("get_user_tag_feeds", getUserTagFeeds)
+	db.SetSQL("get_user_feed_ids_tags", getUserFeedIdsTags)
+	db.SetSQL("get_article_columns", getArticleColumns)
+	db.SetSQL("get_article_tables", getArticleTables)
+	db.SetSQL("get_article_joins", getArticleJoins)
+	db.SetSQL("get_all_unread_user_article_ids", getAllUnreadUserArticleIds)
+	db.SetSQL("get_all_favorite_user_article_ids", getAllFavoriteUserArticleIds)
+	db.SetSQL("get_user_article_count", getUserArticleCount)
+	db.SetSQL("create_all_user_articles_read_by_date", createAllUserArticlesReadByDate)
+	db.SetSQL("delete_all_user_articles_read_by_date", deleteAllUserArticlesReadByDate)
+	db.SetSQL("delete_newer_user_articles_read_by_date", deleteNewerUserArticlesReadByDate)
 }
 
 const (

@@ -10,18 +10,13 @@ import (
 
 type Repo struct {
 	base.Repo
-	NamedSQL
 	logger webfw.Logger
 
 	db *db.DB
 }
 
 func NewRepo(db *db.DB, logger webfw.Logger) *Repo {
-	r := &Repo{NamedSQL: NewNamedSQL(), db: db, logger: logger}
-
-	r.init()
-
-	return r
+	return &Repo{db: db, logger: logger}
 }
 
 func (r *Repo) UserByLogin(login info.Login) (u content.User) {
@@ -32,7 +27,7 @@ func (r *Repo) UserByLogin(login info.Login) (u content.User) {
 	r.logger.Infof("Getting user '%s'\n", login)
 
 	var info info.User
-	if err := r.db.Get(&info, r.SQL("get_user"), login); err != nil {
+	if err := r.db.Get(&info, db.SQL("get_user"), login); err != nil {
 		r.SetErr(err)
 		return
 	}
@@ -55,7 +50,7 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 	r.logger.Infof("Getting user using md5 api field '%v'\n", md5)
 
 	var info info.User
-	if err := r.db.Get(&info, r.SQL("get_user_by_md5_api"), md5); err != nil {
+	if err := r.db.Get(&info, db.SQL("get_user_by_md5_api"), md5); err != nil {
 		r.SetErr(err)
 		return
 	}
@@ -78,7 +73,7 @@ func (r *Repo) AllUsers() (users []content.User) {
 	r.logger.Infoln("Getting all users")
 
 	var info []info.User
-	if err := r.db.Select(&info, r.SQL("get_users")); err != nil {
+	if err := r.db.Select(&info, db.SQL("get_users")); err != nil {
 		r.SetErr(err)
 		return
 	}
@@ -104,7 +99,7 @@ func (r *Repo) FeedById(id info.FeedId) (f content.Feed) {
 	r.logger.Infof("Getting feed '%d'\n", id)
 
 	i := info.Feed{}
-	if err := r.db.Get(&i, r.SQL("get_feed"), id); err != nil {
+	if err := r.db.Get(&i, db.SQL("get_feed"), id); err != nil {
 		r.SetErr(err)
 		return
 	}
@@ -123,7 +118,7 @@ func (r *Repo) FeedByLink(link string) (f content.Feed) {
 	r.logger.Infof("Getting feed by link '%s'\n", link)
 
 	i := info.Feed{}
-	if err := r.db.Get(&i, r.SQL("get_feed_by_link"), link); err != nil {
+	if err := r.db.Get(&i, db.SQL("get_feed_by_link"), link); err != nil {
 		r.SetErr(err)
 		return
 	}
@@ -142,7 +137,7 @@ func (r *Repo) AllFeeds() (feeds []content.Feed) {
 	r.logger.Infoln("Getting all feeds")
 
 	var info []info.Feed
-	if err := r.db.Select(&info, r.SQL("get_feeds")); err != nil {
+	if err := r.db.Select(&info, db.SQL("get_feeds")); err != nil {
 		r.SetErr(err)
 		return
 	}
@@ -164,7 +159,7 @@ func (r *Repo) AllUnsubscribedFeeds() (feeds []content.Feed) {
 	r.logger.Infoln("Getting all unsubscribed feeds")
 
 	var info []info.Feed
-	if err := r.db.Select(&info, r.SQL("get_unsubscribed_feeds")); err != nil {
+	if err := r.db.Select(&info, db.SQL("get_unsubscribed_feeds")); err != nil {
 		r.SetErr(err)
 		return
 	}
@@ -186,7 +181,7 @@ func (r *Repo) AllSubscriptions() (s []content.Subscription) {
 	r.logger.Infoln("Getting all subscriptions")
 
 	var info []info.Subscription
-	if err := r.db.Select(&info, r.SQL("get_hubbub_subscriptions")); err != nil {
+	if err := r.db.Select(&info, db.SQL("get_hubbub_subscriptions")); err != nil {
 		r.SetErr(err)
 		return
 	}
@@ -200,15 +195,15 @@ func (r *Repo) AllSubscriptions() (s []content.Subscription) {
 	return
 }
 
-func (r *Repo) init() {
-	r.SetSQL("get_user", getUser)
-	r.SetSQL("get_user_by_md5_api", getUser)
-	r.SetSQL("get_users", getUsers)
-	r.SetSQL("get_feed", getFeed)
-	r.SetSQL("get_feed_by_link", getFeedByLink)
-	r.SetSQL("get_feeds", getFeeds)
-	r.SetSQL("get_unsubscribed_feeds", getUnsubscribedFeeds)
-	r.SetSQL("get_hubbub_subscriptions", getHubbubSubscriptions)
+func init() {
+	db.SetSQL("get_user", getUser)
+	db.SetSQL("get_user_by_md5_api", getUser)
+	db.SetSQL("get_users", getUsers)
+	db.SetSQL("get_feed", getFeed)
+	db.SetSQL("get_feed_by_link", getFeedByLink)
+	db.SetSQL("get_feeds", getFeeds)
+	db.SetSQL("get_unsubscribed_feeds", getUnsubscribedFeeds)
+	db.SetSQL("get_hubbub_subscriptions", getHubbubSubscriptions)
 }
 
 func pagingLimit(paging []int) (int, int) {

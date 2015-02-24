@@ -9,18 +9,13 @@ import (
 
 type Subscription struct {
 	base.Subscription
-	NamedSQL
 	logger webfw.Logger
 
 	db *db.DB
 }
 
 func NewSubscription(db *db.DB, logger webfw.Logger) *Subscription {
-	s := &Subscription{NamedSQL: NewNamedSQL(), db: db, logger: logger}
-
-	s.init()
-
-	return s
+	return &Subscription{db: db, logger: logger}
 }
 
 func (s *Subscription) Update(info info.Subscription) {
@@ -41,5 +36,5 @@ func (s *Subscription) Fail(fail bool) {
 	}
 }
 
-func (s *Subscription) init() {
+func init() {
 }

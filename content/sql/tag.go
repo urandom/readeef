@@ -12,7 +12,6 @@ import (
 
 type Tag struct {
 	base.Tag
-	NamedSQL
 	logger webfw.Logger
 
 	db *db.DB
@@ -24,11 +23,7 @@ type feedIdTag struct {
 }
 
 func NewTag(db *db.DB, logger webfw.Logger) *Tag {
-	t := &Tag{NamedSQL: NewNamedSQL(), db: db, logger: logger}
-
-	t.init()
-
-	return t
+	return &Tag{db: db, logger: logger}
 }
 
 func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
@@ -69,5 +64,5 @@ func (t *Tag) ScoredArticles(from, to time.Time, desc bool, paging ...int) (sa [
 	return
 }
 
-func (t *Tag) init() {
+func init() {
 }

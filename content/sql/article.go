@@ -14,7 +14,6 @@ type Article struct {
 type UserArticle struct {
 	base.UserArticle
 	Article
-	NamedSQL
 	logger webfw.Logger
 
 	db *db.DB
@@ -29,19 +28,11 @@ func NewArticle() *Article {
 }
 
 func NewUserArticle(db *db.DB, logger webfw.Logger) *UserArticle {
-	ua := &UserArticle{NamedSQL: NewNamedSQL(), db: db, logger: logger}
-
-	ua.init()
-
-	return ua
+	return &UserArticle{db: db, logger: logger}
 }
 
 func NewScoredArticle(db *db.DB, logger webfw.Logger) *ScoredArticle {
-	sa := &ScoredArticle{UserArticle: NewUserArticle(db, logger)}
-
-	sa.init()
-
-	return sa
+	return &ScoredArticle{UserArticle: NewUserArticle(db, logger)}
 }
 
 func (ua *UserArticle) Read(read bool) {
@@ -70,10 +61,6 @@ func (sa *ScoredArticle) Scores() (i info.ArticleScores) {
 	return
 }
 
-func (ua *UserArticle) init() {
-	// ua.SQL()
-}
-
-func (sa *ScoredArticle) init() {
-	// sa.UserArticle.SQL()
+func init() {
+	// db.SQL()
 }

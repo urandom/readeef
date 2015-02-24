@@ -12,7 +12,6 @@ import (
 
 type Feed struct {
 	base.Feed
-	NamedSQL
 	logger webfw.Logger
 
 	db          *db.DB
@@ -30,27 +29,15 @@ type TaggedFeed struct {
 }
 
 func NewFeed(db *db.DB, logger webfw.Logger) *Feed {
-	f := &Feed{NamedSQL: NewNamedSQL(), db: db, logger: logger}
-
-	f.init()
-
-	return f
+	return &Feed{db: db, logger: logger}
 }
 
 func NewUserFeed(db *db.DB, logger webfw.Logger, user content.User) *UserFeed {
-	uf := &UserFeed{Feed: NewFeed(db, logger), UserFeed: base.NewUserFeed(user)}
-
-	uf.init()
-
-	return uf
+	return &UserFeed{Feed: NewFeed(db, logger), UserFeed: base.NewUserFeed(user)}
 }
 
 func NewTaggedFeed(db *db.DB, logger webfw.Logger, user content.User) *TaggedFeed {
-	tf := &TaggedFeed{UserFeed: NewUserFeed(db, logger, user)}
-
-	tf.init()
-
-	return tf
+	return &TaggedFeed{UserFeed: NewUserFeed(db, logger, user)}
 }
 
 func (f Feed) NewArticles() (a []content.Article) {
@@ -101,9 +88,6 @@ func (f *Feed) Subscription() (s content.Subscription) {
 	}
 
 	return
-}
-
-func (f *Feed) init() {
 }
 
 func (uf UserFeed) Validate() error {
@@ -159,9 +143,6 @@ func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []cont
 	return
 }
 
-func (uf *UserFeed) init() {
-}
-
 func (tf *TaggedFeed) Tags() (t []content.Tag) {
 	if tf.Err() != nil {
 		return
@@ -182,5 +163,5 @@ func (tf *TaggedFeed) DeleteAllTags() {
 	}
 }
 
-func (tf *TaggedFeed) init() {
+func init() {
 }
