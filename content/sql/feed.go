@@ -21,12 +21,12 @@ type Feed struct {
 
 type UserFeed struct {
 	base.UserFeed
-	*Feed
+	Feed
 }
 
 type TaggedFeed struct {
 	base.TaggedFeed
-	*UserFeed
+	UserFeed
 }
 
 func NewFeed(db *db.DB, logger webfw.Logger) *Feed {
@@ -34,11 +34,11 @@ func NewFeed(db *db.DB, logger webfw.Logger) *Feed {
 }
 
 func NewUserFeed(db *db.DB, logger webfw.Logger, user content.User) *UserFeed {
-	return &UserFeed{Feed: NewFeed(db, logger), UserFeed: base.NewUserFeed(user)}
+	return &UserFeed{Feed: Feed{db: db, logger: logger}, UserFeed: base.NewUserFeed(user)}
 }
 
 func NewTaggedFeed(db *db.DB, logger webfw.Logger, user content.User) *TaggedFeed {
-	return &TaggedFeed{UserFeed: NewUserFeed(db, logger, user)}
+	return &TaggedFeed{UserFeed: *NewUserFeed(db, logger, user)}
 }
 
 func (f Feed) NewArticles() (a []content.Article) {
@@ -312,6 +312,23 @@ func (uf *UserFeed) Users() (u []content.User) {
 	id := uf.Info().Id
 	uf.logger.Infof("Getting users for feed %d\n", id)
 
+	var in []info.User
+	if err := uf.db.Select(&in, db.SQL("get_feed_users"), id); err != nil {
+		uf.SetErr(err)
+		return
+	}
+
+	u = make([]content.User, len(in))
+	for i := range in {
+		u[i] = NewUser(uf.db, uf.logger)
+		u[i].Set(in[i])
+
+		if u[i].Err() != nil {
+			uf.SetErr(u[i].Err())
+			return
+		}
+	}
+
 	return
 }
 
@@ -323,9 +340,31 @@ func (uf *UserFeed) Detach() {
 	id := uf.Info().Id
 	login := uf.User().Info().Login
 	uf.logger.Infof("Detaching feed %d from user %s\n", id, login)
+
+	tx, err := uf.db.Begin()
+	if err != nil {
+		uf.SetErr(err)
+		return
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Preparex(db.SQL("delete_user_feed"))
+	if err != nil {
+		uf.SetErr(err)
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(login, id)
+	if err != nil {
+		uf.SetErr(err)
+		return
+	}
+
+	tx.Commit()
 }
 
-func (uf *UserFeed) Articles(desc bool, paging ...int) (ua []content.UserArticle) {
+func (uf *UserFeed) Articles(paging ...int) (ua []content.UserArticle) {
 	if uf.Err() != nil {
 		return
 	}
@@ -333,16 +372,29 @@ func (uf *UserFeed) Articles(desc bool, paging ...int) (ua []content.UserArticle
 	id := uf.Info().Id
 	uf.logger.Infof("Getting articles for feed %d\n", id)
 
+	order := "read"
+	articles := uf.getArticles("", order, paging...)
+	ua = make([]content.UserArticle, len(articles))
+	for i := range articles {
+		ua[i] = articles[i]
+	}
+
 	return
 }
 
-func (uf *UserFeed) UnreadArticles(desc bool, paging ...int) (ua []content.UserArticle) {
+func (uf *UserFeed) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 	if uf.Err() != nil {
 		return
 	}
 
 	id := uf.Info().Id
 	uf.logger.Infof("Getting unread articles for feed %d\n", id)
+
+	articles := uf.getArticles("ar.article_id IS NULL", "", paging...)
+	ua = make([]content.UserArticle, len(articles))
+	for i := range articles {
+		ua[i] = articles[i]
+	}
 
 	return
 }
@@ -353,7 +405,43 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 	}
 
 	id := uf.Info().Id
-	uf.logger.Infof("Marking feed %d articles before %v as read: %v\n", id, date, read)
+	login := uf.User().Info().Login
+	uf.logger.Infof("Marking user %s feed %d articles before %v as read: %v\n", login, id, date, read)
+
+	tx, err := uf.db.Begin()
+	if err != nil {
+		uf.SetErr(err)
+		return
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Preparex(db.SQL("delete_all_users_articles_read_by_feed_date"))
+	if err != nil {
+		uf.SetErr(err)
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(login, id, date)
+	if err != nil {
+		uf.SetErr(err)
+		return
+	}
+
+	stmt, err = tx.Preparex(db.SQL("create_all_users_articles_read_by_feed_date"))
+	if err != nil {
+		uf.SetErr(err)
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(login, id, date)
+	if err != nil {
+		uf.SetErr(err)
+		return
+	}
+
+	tx.Commit()
 }
 
 func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []content.ScoredArticle) {
@@ -361,8 +449,45 @@ func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []cont
 		return
 	}
 
+	u := uf.User()
 	id := uf.Info().Id
-	uf.logger.Infof("Getting scored articles for feed %d between %v and %v\n", id, from, to)
+	login := u.Info().Login
+	uf.logger.Infof("Getting scored articles for user %s feed %d between %v and %v\n", login, id, from, to)
+
+	order := ""
+	if uf.Order() == info.DescendingOrder {
+		order = " DESC"
+	}
+	ua := getArticles(u, uf.db, uf.logger, uf, "asco.score",
+		"INNER JOIN articles_scores asco ON a.id = asco.article_id",
+		"uf.feed_id = $2 AND a.date > $3 AND a.date <= $4", "asco.score"+order,
+		[]interface{}{id, from, to}, paging...)
+
+	sa = make([]content.ScoredArticle, len(ua))
+	for i := range ua {
+		sa[i] = &ScoredArticle{UserArticle: *ua[i]}
+	}
+
+	return
+}
+
+func (uf *UserFeed) getArticles(where, order string, paging ...int) (ua []*UserArticle) {
+	if uf.Err() != nil {
+		return
+	}
+
+	if where == "" {
+		where = "uf.feed_id = $2"
+	} else {
+		where = "uf.feed_id = $2 AND " + where
+	}
+
+	u := uf.User()
+	ua = getArticles(u, uf.db, uf.logger, uf, "", "", where, order, []interface{}{uf.Info().Id}, paging...)
+
+	if u.Err() != nil {
+		uf.SetErr(u.Err())
+	}
 
 	return
 }
@@ -406,6 +531,10 @@ func init() {
 	db.SetSQL("get_all_feed_articles", getAllFeedArticles)
 	db.SetSQL("get_latest_feed_articles", getLatestFeedArticles)
 	db.SetSQL("get_hubbub_subscription", getHubbubSubscription)
+	db.SetSQL("get_feed_users", getFeedUsers)
+	db.SetSQL("delete_user_feed", deleteUserFeed)
+	db.SetSQL("create_all_users_articles_read_by_feed_date", createAllUsersArticlesReadByFeedDate)
+	db.SetSQL("delete_all_users_articles_read_by_feed_date", deleteAllUsersArticlesReadByFeedDate)
 }
 
 const (
@@ -441,4 +570,24 @@ WHERE a.feed_id = $1 AND a.date > NOW() - INTERVAL '5 days'
 	getHubbubSubscription = `
 SELECT link, lease_duration, verification_time, subscription_failure
 	FROM hubbub_subscriptions WHERE feed_id = $1`
+	getFeedUsers = `
+SELECT u.login, u.first_name, u.last_name, u.email, u.admin, u.active,
+	u.profile_data, u.hash_type, u.salt, u.hash, u.md5_api
+FROM users u, users_feeds uf
+WHERE u.login = uf.user_login AND uf.feed_id = $1
+`
+	deleteUserFeed                       = `DELETE FROM users_feeds WHERE user_login = $1 AND feed_id = $2`
+	createAllUsersArticlesReadByFeedDate = `
+INSERT INTO users_articles_read
+	SELECT uf.user_login, a.id
+	FROM users_feeds uf INNER JOIN articles a
+		ON uf.feed_id = a.feed_id AND uf.user_login = $1 AND uf.feed_id = $2
+		AND a.id IN (SELECT id FROM articles WHERE date IS NULL OR date < $3)
+`
+
+	deleteAllUsersArticlesReadByFeedDate = `
+DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
+	SELECT id FROM articles WHERE feed_id = $2 AND (date IS NULL OR date < $3)
+)
+`
 )

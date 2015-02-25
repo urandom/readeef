@@ -8,14 +8,6 @@ import (
 	"github.com/urandom/readeef/content/info"
 )
 
-type SortingField int
-
-const (
-	DefaultSort SortingField = iota
-	SortById
-	SortByDate
-)
-
 type Article struct {
 	Error
 

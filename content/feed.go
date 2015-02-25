@@ -49,8 +49,8 @@ type UserFeed interface {
 	// Detaches from the current user
 	Detach()
 
-	Articles(desc bool, paging ...int) []UserArticle
-	UnreadArticles(desc bool, paging ...int) []UserArticle
+	Articles(paging ...int) []UserArticle
+	UnreadArticles(paging ...int) []UserArticle
 
 	ReadBefore(date time.Time, read bool)
 

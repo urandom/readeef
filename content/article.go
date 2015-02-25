@@ -16,6 +16,12 @@ type ArticleSorting interface {
 	SortingByDate() ArticleSorting
 	// Reverse the order
 	Reverse() ArticleSorting
+
+	// Returns the current field
+	Field() info.SortingField
+
+	// Returns the order, as set by Reverse()
+	Order() info.Order
 }
 
 type ArticleSearch interface {

@@ -12,11 +12,11 @@ import (
 )
 
 type Article struct {
-	*base.Article
+	base.Article
 }
 
 type UserArticle struct {
-	*base.UserArticle
+	base.UserArticle
 	Article
 	logger webfw.Logger
 
@@ -24,7 +24,7 @@ type UserArticle struct {
 }
 
 type ScoredArticle struct {
-	*UserArticle
+	UserArticle
 }
 
 func NewArticle() *Article {
@@ -32,11 +32,11 @@ func NewArticle() *Article {
 }
 
 func NewUserArticle(db *db.DB, logger webfw.Logger, user content.User) *UserArticle {
-	return &UserArticle{UserArticle: base.NewUserArticle(user), db: db, logger: logger}
+	return &UserArticle{UserArticle: *base.NewUserArticle(user), db: db, logger: logger}
 }
 
 func NewScoredArticle(db *db.DB, logger webfw.Logger, user content.User) *ScoredArticle {
-	return &ScoredArticle{UserArticle: NewUserArticle(db, logger, user)}
+	return &ScoredArticle{UserArticle: *NewUserArticle(db, logger, user)}
 }
 
 func (ua *UserArticle) Read(read bool) {

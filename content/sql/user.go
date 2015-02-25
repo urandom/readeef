@@ -249,7 +249,7 @@ func (u *User) Article(id info.ArticleId) (ua content.UserArticle) {
 	login := u.Info().Login
 	u.logger.Infof("Getting article '%d' for user %s\n", id, login)
 
-	articles := u.getArticles("", "", "a.id = $2", "", []interface{}{id})
+	articles := getArticles(u, u.db, u.logger, u, "", "", "a.id = $2", "", []interface{}{id})
 
 	if u.Err() == nil && len(articles) > 0 {
 		return articles[0]
@@ -282,7 +282,7 @@ func (u *User) ArticlesById(ids ...info.ArticleId) (ua []content.UserArticle) {
 
 	where += ")"
 
-	articles := u.getArticles("", "", where, "", args)
+	articles := getArticles(u, u.db, u.logger, u, "", "", where, "", args)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -349,7 +349,7 @@ func (u *User) Articles(paging ...int) (ua []content.UserArticle) {
 
 	order := "read"
 
-	articles := u.getArticles("", "", "", order, nil, paging...)
+	articles := getArticles(u, u.db, u.logger, u, "", "", "", order, nil, paging...)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -366,7 +366,7 @@ func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 	login := u.Info().Login
 	u.logger.Infof("Getting unread articles for paging %q and user %s\n", paging, login)
 
-	articles := u.getArticles("", "", "ar.article_id IS NULL", "", nil, paging...)
+	articles := getArticles(u, u.db, u.logger, u, "", "", "ar.article_id IS NULL", "", nil, paging...)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -385,7 +385,7 @@ func (u *User) ArticlesOrderedById(pivot info.ArticleId, paging ...int) (ua []co
 
 	u.SortingById()
 
-	articles := u.getArticles("", "", "a.id > $2", "", []interface{}{pivot}, paging...)
+	articles := getArticles(u, u.db, u.logger, u, "", "", "a.id > $2", "", []interface{}{pivot}, paging...)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -402,7 +402,7 @@ func (u *User) FavoriteArticles(paging ...int) (ua []content.UserArticle) {
 	login := u.Info().Login
 	u.logger.Infof("Getting favorite articles for paging %q and user %s\n", paging, login)
 
-	articles := u.getArticles("", "", "af.article_id IS NOT NULL", "", nil, paging...)
+	articles := getArticles(u, u.db, u.logger, u, "", "", "af.article_id IS NOT NULL", "", nil, paging...)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -498,13 +498,14 @@ func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.S
 	login := u.Info().Login
 	u.logger.Infof("Getting scored articles for paging %q and user %s\n", paging, login)
 
-	ua := u.getArticles("asco.score", "INNER JOIN articles_scores asco ON a.id = asco.article_id",
+	ua := getArticles(u, u.db, u.logger, u, "asco.score",
+		"INNER JOIN articles_scores asco ON a.id = asco.article_id",
 		"a.date > $2 AND a.date <= $3", "asco.score",
 		[]interface{}{from, to}, paging...)
 
 	sa = make([]content.ScoredArticle, len(ua))
 	for i := range ua {
-		sa[i] = &ScoredArticle{UserArticle: ua[i]}
+		sa[i] = &ScoredArticle{UserArticle: *ua[i]}
 	}
 
 	return sa
@@ -518,7 +519,7 @@ func (u *User) Tags() (tags []content.Tag) {
 	return
 }
 
-func (u *User) getArticles(columns, join, where, order string, args []interface{}, paging ...int) (ua []*UserArticle) {
+func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting content.ArticleSorting, columns, join, where, order string, args []interface{}, paging ...int) (ua []*UserArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -540,17 +541,17 @@ func (u *User) getArticles(columns, join, where, order string, args []interface{
 		sql += " AND " + where
 	}
 
-	sortingField := u.User.ArticleSorting.SortingField
-	desc := u.User.ArticleSorting.ReverseSorting
+	sortingField := sorting.Field()
+	sortingOrder := sorting.Order()
 
 	fields := []string{}
 	if order != "" {
 		fields = append(fields, order)
 	}
 	switch sortingField {
-	case base.SortById:
+	case info.SortById:
 		fields = append(fields, "a.id")
-	case base.SortByDate:
+	case info.SortByDate:
 		fields = append(fields, "a.date")
 	}
 	if len(fields) > 0 {
@@ -558,7 +559,7 @@ func (u *User) getArticles(columns, join, where, order string, args []interface{
 
 		sql += strings.Join(fields, ",")
 
-		if desc {
+		if sortingOrder == info.DescendingOrder {
 			sql += " DESC"
 		}
 	}
@@ -571,14 +572,14 @@ func (u *User) getArticles(columns, join, where, order string, args []interface{
 	}
 
 	var info []info.Article
-	if err := u.db.Select(&info, sql, args...); err != nil {
+	if err := dbo.Select(&info, sql, args...); err != nil {
 		u.SetErr(err)
 		return
 	}
 
 	ua = make([]*UserArticle, len(info))
 	for i := range info {
-		ua[i] = NewUserArticle(u.db, u.logger, u)
+		ua[i] = NewUserArticle(dbo, logger, u)
 		ua[i].Set(info[i])
 	}
 

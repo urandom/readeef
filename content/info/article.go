@@ -6,6 +6,19 @@ import (
 )
 
 type ArticleId int64
+type SortingField int
+type Order int
+
+const (
+	DefaultSort SortingField = iota
+	SortById
+	SortByDate
+)
+
+const (
+	AscendingOrder Order = iota
+	DescendingOrder
+)
 
 type Article struct {
 	Id     ArticleId
