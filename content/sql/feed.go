@@ -494,24 +494,51 @@ func (uf *UserFeed) getArticles(where, order string, paging ...int) (ua []*UserA
 	return
 }
 
-func (tf *TaggedFeed) Tags() (t []content.Tag) {
-	if tf.Err() != nil {
-		return
-	}
-
-	id := tf.Info().Id
-	tf.logger.Infof("Getting tags for feed %d\n", id)
-
-	return
-}
-
 func (tf *TaggedFeed) AddTags(tags ...content.Tag) {
-	if tf.Err() != nil {
+	if tf.Err() != nil || len(tags) == 0 {
 		return
 	}
 
 	id := tf.Info().Id
+	login := tf.User().Info().Login
 	tf.logger.Infof("Adding tags for feed %d\n", id)
+
+	tx, err := tf.db.Begin()
+	if err != nil {
+		tf.SetErr(err)
+		return
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Preparex(db.SQL("create_user_feed_tag"))
+	if err != nil {
+		tf.SetErr(err)
+		return
+	}
+	defer stmt.Close()
+
+	existing := tf.Tags()
+	existingMap := make(map[info.TagValue]bool)
+
+	for i := range existing {
+		existingMap[existing[i].Value()] = true
+	}
+
+	for i := range tags {
+		_, err = stmt.Exec(login, id, tags[i].String())
+		if err != nil {
+			tf.SetErr(err)
+			return
+		}
+
+		if !existingMap[tags[i].Value()] {
+			existing = append(existing, tags[i])
+		}
+	}
+
+	tf.SetTags(existing)
+
+	tx.Commit()
 }
 
 func (tf *TaggedFeed) DeleteAllTags() {
@@ -520,7 +547,32 @@ func (tf *TaggedFeed) DeleteAllTags() {
 	}
 
 	id := tf.Info().Id
+	login := tf.User().Info().Login
 	tf.logger.Infof("Deleting all tags for feed %d\n", id)
+
+	tx, err := tf.db.Begin()
+	if err != nil {
+		tf.SetErr(err)
+		return
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Preparex(db.SQL("delete_user_feed_tags"))
+	if err != nil {
+		tf.SetErr(err)
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(login, id)
+	if err != nil {
+		tf.SetErr(err)
+		return
+	}
+
+	tf.SetTags([]content.Tag{})
+
+	tx.Commit()
 }
 
 func init() {
@@ -537,6 +589,8 @@ func init() {
 	db.SetSQL("delete_user_feed", deleteUserFeed)
 	db.SetSQL("create_all_users_articles_read_by_feed_date", createAllUsersArticlesReadByFeedDate)
 	db.SetSQL("delete_all_users_articles_read_by_feed_date", deleteAllUsersArticlesReadByFeedDate)
+	db.SetSQL("create_user_feed_tag", createUserFeedTag)
+	db.SetSQL("delete_user_feed_tags", deleteUserFeedTags)
 }
 
 const (
@@ -591,5 +645,14 @@ INSERT INTO users_articles_read
 DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
 	SELECT id FROM articles WHERE feed_id = $2 AND (date IS NULL OR date < $3)
 )
+`
+	createUserFeedTag = `
+INSERT INTO users_feeds_tags(user_login, feed_id, tag)
+	SELECT $1, $2, $3 EXCEPT SELECT user_login, feed_id, tag
+		FROM users_feeds_tags
+		WHERE user_login = $1 AND feed_id = $2 AND tag = $3
+`
+	deleteUserFeedTags = `
+DELETE FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2
 `
 )
