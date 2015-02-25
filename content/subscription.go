@@ -16,8 +16,6 @@ type Subscription interface {
 
 	Validate() error
 
-	Update(info info.Subscription)
+	Update()
 	Delete()
-
-	Fail(fail bool)
 }

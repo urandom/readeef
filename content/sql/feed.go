@@ -49,12 +49,13 @@ func (f Feed) NewArticles() (a []content.Article) {
 	return f.newArticles
 }
 
-func (f *Feed) Update(i info.Feed) {
+func (f *Feed) Update() {
 	if f.Err() != nil {
 		return
 	}
 
-	id := f.Info().Id
+	i := f.Info()
+	id := i.Id
 	f.logger.Infof("Updating feed %d\n", id)
 
 	tx, err := f.db.Begin()

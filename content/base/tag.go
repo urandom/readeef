@@ -1,6 +1,9 @@
 package base
 
-import "github.com/urandom/readeef/content/info"
+import (
+	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/info"
+)
 
 type Tag struct {
 	ArticleSorting
@@ -8,6 +11,11 @@ type Tag struct {
 	Error
 
 	value info.TagValue
+	user  content.User
+}
+
+func NewTag(user content.User) Tag {
+	return Tag{user: user}
 }
 
 func (t Tag) String() string {
@@ -24,4 +32,8 @@ func (t Tag) Set(value info.TagValue) {
 
 func (t Tag) Value() info.TagValue {
 	return t.value
+}
+
+func (t Tag) User() content.User {
+	return t.user
 }

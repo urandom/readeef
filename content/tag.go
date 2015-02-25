@@ -17,12 +17,14 @@ type Tag interface {
 	Set(value info.TagValue)
 	Value() info.TagValue
 
+	User() User
+
 	AllFeeds() []TaggedFeed
 
-	Articles(desc bool, paging ...int) []UserArticle
-	UnreadArticles(desc bool, paging ...int) []UserArticle
+	Articles(paging ...int) []UserArticle
+	UnreadArticles(paging ...int) []UserArticle
 
 	ReadBefore(date time.Time, read bool)
 
-	ScoredArticles(from, to time.Time, desc bool, paging ...int) []ScoredArticle
+	ScoredArticles(from, to time.Time, paging ...int) []ScoredArticle
 }

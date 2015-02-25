@@ -229,7 +229,7 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	feedMap := make(map[info.FeedId][]content.Tag)
 
 	for _, tuple := range feedIdTags {
-		tag := NewTag(u.db, u.logger)
+		tag := NewTag(u.db, u.logger, u)
 		tag.Set(tuple.TagValue)
 		feedMap[tuple.FeedId] = append(feedMap[tuple.FeedId], tag)
 	}
@@ -456,8 +456,6 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 	}
 
 	tx.Commit()
-
-	return
 }
 
 func (u *User) ReadAfter(date time.Time, read bool) {
@@ -516,9 +514,14 @@ func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.S
 	login := u.Info().Login
 	u.logger.Infof("Getting scored articles for paging %q and user %s\n", paging, login)
 
+	order := "asco.score"
+	if u.Order() == info.DescendingOrder {
+		order = "asco.score DESC"
+	}
+
 	ua := getArticles(u, u.db, u.logger, u, "asco.score",
 		"INNER JOIN articles_scores asco ON a.id = asco.article_id",
-		"a.date > $2 AND a.date <= $3", "asco.score",
+		"a.date > $2 AND a.date <= $3", order,
 		[]interface{}{from, to}, paging...)
 
 	sa = make([]content.ScoredArticle, len(ua))

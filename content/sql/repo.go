@@ -195,15 +195,17 @@ func (r *Repo) AllSubscriptions() (s []content.Subscription) {
 	return
 }
 
-func init() {
-	db.SetSQL("get_user", getUser)
-	db.SetSQL("get_user_by_md5_api", getUser)
-	db.SetSQL("get_users", getUsers)
-	db.SetSQL("get_feed", getFeed)
-	db.SetSQL("get_feed_by_link", getFeedByLink)
-	db.SetSQL("get_feeds", getFeeds)
-	db.SetSQL("get_unsubscribed_feeds", getUnsubscribedFeeds)
-	db.SetSQL("get_hubbub_subscriptions", getHubbubSubscriptions)
+func (r *Repo) FailSubscriptions() {
+	if r.Err() != nil {
+		return
+	}
+
+	r.logger.Infoln("Marking all subscriptions as failed")
+
+	if _, err := r.db.Exec(db.SQL("fail_hubbub_subscriptions")); err != nil {
+		r.SetErr(err)
+		return
+	}
 }
 
 func pagingLimit(paging []int) (int, int) {
@@ -218,6 +220,18 @@ func pagingLimit(paging []int) (int, int) {
 	}
 
 	return limit, offset
+}
+
+func init() {
+	db.SetSQL("get_user", getUser)
+	db.SetSQL("get_user_by_md5_api", getUser)
+	db.SetSQL("get_users", getUsers)
+	db.SetSQL("get_feed", getFeed)
+	db.SetSQL("get_feed_by_link", getFeedByLink)
+	db.SetSQL("get_feeds", getFeeds)
+	db.SetSQL("get_unsubscribed_feeds", getUnsubscribedFeeds)
+	db.SetSQL("get_hubbub_subscriptions", getHubbubSubscriptions)
+	db.SetSQL("fail_hubbub_subscriptions", failHubbubSubscription)
 }
 
 const (
@@ -237,4 +251,5 @@ SELECT f.id, f.link, f.title, f.description, f.hub_link, f.site_link, f.update_e
 	getHubbubSubscriptions = `
 SELECT link, feed_id, lease_duration, verification_time, subscription_failure
 	FROM hubbub_subscriptions`
+	failHubbubSubscription = `UPDATE hubbub_subscriptions SET subscription_failure = '1'`
 )

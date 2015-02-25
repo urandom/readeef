@@ -49,7 +49,7 @@ func TestImplements(t *testing.T) {
 
 	var tag content.Tag
 
-	tag = NewTag(nil, nil)
+	tag = NewTag(nil, nil, nil)
 	tag.Value()
 
 	var user content.User

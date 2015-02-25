@@ -27,7 +27,7 @@ type Feed interface {
 	// Returns any new articles since the previous Update
 	NewArticles() []Article
 
-	Update(info info.Feed)
+	Update()
 	Delete()
 
 	AllArticles() []Article
