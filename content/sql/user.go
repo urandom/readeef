@@ -439,18 +439,20 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 		return
 	}
 
-	stmt, err = tx.Preparex(db.SQL("create_all_user_articles_read_by_date"))
+	if read {
+		stmt, err = tx.Preparex(db.SQL("create_all_user_articles_read_by_date"))
 
-	if err != nil {
-		u.SetErr(err)
-		return
-	}
-	defer stmt.Close()
+		if err != nil {
+			u.SetErr(err)
+			return
+		}
+		defer stmt.Close()
 
-	_, err = stmt.Exec(login, date)
-	if err != nil {
-		u.SetErr(err)
-		return
+		_, err = stmt.Exec(login, date)
+		if err != nil {
+			u.SetErr(err)
+			return
+		}
 	}
 
 	tx.Commit()
@@ -485,6 +487,22 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 	if err != nil {
 		u.SetErr(err)
 		return
+	}
+
+	if read {
+		stmt, err = tx.Preparex(db.SQL("create_newer_user_articles_read_by_date"))
+
+		if err != nil {
+			u.SetErr(err)
+			return
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(login, date)
+		if err != nil {
+			u.SetErr(err)
+			return
+		}
 	}
 
 	return
@@ -603,6 +621,7 @@ func init() {
 	db.SetSQL("get_user_article_count", getUserArticleCount)
 	db.SetSQL("create_all_user_articles_read_by_date", createAllUserArticlesReadByDate)
 	db.SetSQL("delete_all_user_articles_read_by_date", deleteAllUserArticlesReadByDate)
+	db.SetSQL("create_newer_user_articles_read_by_date", createNewerUserArticlesReadByDate)
 	db.SetSQL("delete_newer_user_articles_read_by_date", deleteNewerUserArticlesReadByDate)
 }
 
@@ -689,6 +708,13 @@ INSERT INTO users_articles_read
 DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
 	SELECT id FROM articles WHERE date IS NULL OR date < $2
 )
+`
+	createNewerUserArticlesReadByDate = `
+INSERT INTO users_articles_read
+	SELECT uf.user_login, a.id
+	FROM users_feeds uf INNER JOIN articles a
+		ON uf.feed_id = a.feed_id AND uf.user_login = $1
+		AND a.id IN (SELECT id FROM articles WHERE date > $2)
 `
 	deleteNewerUserArticlesReadByDate = `
 DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (

@@ -428,17 +428,19 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 		return
 	}
 
-	stmt, err = tx.Preparex(db.SQL("create_all_users_articles_read_by_feed_date"))
-	if err != nil {
-		uf.SetErr(err)
-		return
-	}
-	defer stmt.Close()
+	if read {
+		stmt, err = tx.Preparex(db.SQL("create_all_users_articles_read_by_feed_date"))
+		if err != nil {
+			uf.SetErr(err)
+			return
+		}
+		defer stmt.Close()
 
-	_, err = stmt.Exec(login, id, date)
-	if err != nil {
-		uf.SetErr(err)
-		return
+		_, err = stmt.Exec(login, id, date)
+		if err != nil {
+			uf.SetErr(err)
+			return
+		}
 	}
 
 	tx.Commit()
