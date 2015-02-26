@@ -44,3 +44,10 @@ type ArticleScores struct {
 	Score4    int64
 	Score5    int64
 }
+
+type ArticleFormatting struct {
+	Content  string
+	Title    string
+	TopImage string
+	Language string
+}

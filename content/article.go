@@ -38,6 +38,8 @@ type Article interface {
 	Info(info ...info.Article) info.Article
 
 	Validate() error
+
+	Format(templateDir, readabilityKey string) info.ArticleFormatting
 }
 
 type UserArticle interface {
