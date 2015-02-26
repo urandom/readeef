@@ -53,7 +53,7 @@ func (f *Feed) Update() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(db.SQL("update_feed"))
+	stmt, err := tx.Preparex(f.db.SQL("update_feed"))
 	if err != nil {
 		f.Err(err)
 		return
@@ -67,7 +67,7 @@ func (f *Feed) Update() {
 	}
 
 	if num, err := res.RowsAffected(); err != nil || num == 0 {
-		id, err := f.db.CreateWithId(tx, db.SQL("create_feed"), i.Link, i.Title, i.Description, i.HubLink, i.SiteLink, i.UpdateError, i.SubscribeError)
+		id, err := f.db.CreateWithId(tx, "create_feed", i.Link, i.Title, i.Description, i.HubLink, i.SiteLink, i.UpdateError, i.SubscribeError)
 		if err != nil {
 			f.Err(err)
 			return
@@ -104,7 +104,7 @@ func (f *Feed) Delete() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(db.SQL("delete_feed"))
+	stmt, err := tx.Preparex(f.db.SQL("delete_feed"))
 	if err != nil {
 		f.Err(err)
 		return
@@ -129,7 +129,7 @@ func (f *Feed) AllArticles() (a []content.Article) {
 	f.logger.Infof("Getting all feed %d articles\n", id)
 
 	var info []info.Article
-	if err := f.db.Select(&info, db.SQL("get_all_feed_articles"), id); err != nil {
+	if err := f.db.Select(&info, f.db.SQL("get_all_feed_articles"), id); err != nil {
 		f.Err(err)
 		return
 	}
@@ -152,7 +152,7 @@ func (f *Feed) LatestArticles() (a []content.Article) {
 	f.logger.Infof("Getting latest feed %d articles\n", id)
 
 	var info []info.Article
-	if err := f.db.Select(&info, db.SQL("get_latest_feed_articles"), id); err != nil {
+	if err := f.db.Select(&info, f.db.SQL("get_latest_feed_articles"), id); err != nil {
 		f.Err(err)
 		return
 	}
@@ -201,7 +201,7 @@ func (f *Feed) Subscription() (s content.Subscription) {
 	f.logger.Infof("Getting subcription for feed %d\n", id)
 
 	var in info.Subscription
-	if err := f.db.Get(&in, db.SQL("get_hubbub_subscription"), id); err != nil && err != dsql.ErrNoRows {
+	if err := f.db.Get(&in, f.db.SQL("get_hubbub_subscription"), id); err != nil && err != dsql.ErrNoRows {
 		f.Err(err)
 		return
 	}
@@ -231,10 +231,10 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 		args := []interface{}{in.Title, in.Description, in.Date, id}
 
 		if in.Guid.Valid {
-			sql = db.SQL("update_feed_article_with_guid")
+			sql = f.db.SQL("update_feed_article_with_guid")
 			args = append(args, in.Guid)
 		} else {
-			sql = db.SQL("update_feed_article")
+			sql = f.db.SQL("update_feed_article")
 			args = append(args, in.Link)
 		}
 
@@ -254,7 +254,7 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 		if num, err := res.RowsAffected(); err != nil && err == dsql.ErrNoRows || num == 0 {
 			a = append(a, articles[i])
 
-			id, err := f.db.CreateWithId(tx, db.SQL("create_feed_article"), id, in.Link, in.Guid,
+			id, err := f.db.CreateWithId(tx, "create_feed_article", id, in.Link, in.Guid,
 				in.Title, in.Description, in.Date)
 
 			if err != nil {
@@ -288,7 +288,7 @@ func (uf *UserFeed) Users() (u []content.User) {
 	uf.logger.Infof("Getting users for feed %d\n", id)
 
 	var in []info.User
-	if err := uf.db.Select(&in, db.SQL("get_feed_users"), id); err != nil {
+	if err := uf.db.Select(&in, uf.db.SQL("get_feed_users"), id); err != nil {
 		uf.Err(err)
 		return
 	}
@@ -323,7 +323,7 @@ func (uf *UserFeed) Detach() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(db.SQL("delete_user_feed"))
+	stmt, err := tx.Preparex(uf.db.SQL("delete_user_feed"))
 	if err != nil {
 		uf.Err(err)
 		return
@@ -390,7 +390,7 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(db.SQL("delete_all_users_articles_read_by_feed_date"))
+	stmt, err := tx.Preparex(uf.db.SQL("delete_all_users_articles_read_by_feed_date"))
 	if err != nil {
 		uf.Err(err)
 		return
@@ -404,7 +404,7 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 	}
 
 	if read {
-		stmt, err = tx.Preparex(db.SQL("create_all_users_articles_read_by_feed_date"))
+		stmt, err = tx.Preparex(uf.db.SQL("create_all_users_articles_read_by_feed_date"))
 		if err != nil {
 			uf.Err(err)
 			return
@@ -486,7 +486,7 @@ func (tf *TaggedFeed) AddTags(tags ...content.Tag) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(db.SQL("create_user_feed_tag"))
+	stmt, err := tx.Preparex(tf.db.SQL("create_user_feed_tag"))
 	if err != nil {
 		tf.Err(err)
 		return
@@ -533,7 +533,7 @@ func (tf *TaggedFeed) DeleteAllTags() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(db.SQL("delete_user_feed_tags"))
+	stmt, err := tx.Preparex(tf.db.SQL("delete_user_feed_tags"))
 	if err != nil {
 		tf.Err(err)
 		return
@@ -550,85 +550,3 @@ func (tf *TaggedFeed) DeleteAllTags() {
 
 	tx.Commit()
 }
-
-func init() {
-	db.SetSQL("create_feed", createFeed)
-	db.SetSQL("update_feed", updateFeed)
-	db.SetSQL("delete_feed", deleteFeed)
-	db.SetSQL("create_feed_article", createFeedArticle)
-	db.SetSQL("update_feed_article", updateFeedArticle)
-	db.SetSQL("update_feed_article_with_guid", updateFeedArticleWithGuid)
-	db.SetSQL("get_all_feed_articles", getAllFeedArticles)
-	db.SetSQL("get_latest_feed_articles", getLatestFeedArticles)
-	db.SetSQL("get_hubbub_subscription", getHubbubSubscription)
-	db.SetSQL("get_feed_users", getFeedUsers)
-	db.SetSQL("delete_user_feed", deleteUserFeed)
-	db.SetSQL("create_all_users_articles_read_by_feed_date", createAllUsersArticlesReadByFeedDate)
-	db.SetSQL("delete_all_users_articles_read_by_feed_date", deleteAllUsersArticlesReadByFeedDate)
-	db.SetSQL("create_user_feed_tag", createUserFeedTag)
-	db.SetSQL("delete_user_feed_tags", deleteUserFeedTags)
-}
-
-const (
-	createFeed = `
-INSERT INTO feeds(link, title, description, hub_link, site_link, update_error, subscribe_error)
-	SELECT $1, $2, $3, $4, $5, $6, $7 EXCEPT SELECT link, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds WHERE link = $1`
-	updateFeed        = `UPDATE feeds SET link = $1, title = $2, description = $3, hub_link = $4, site_link = $5, update_error = $6, subscribe_error = $7 WHERE id = $8`
-	deleteFeed        = `DELETE FROM feeds WHERE id = $1`
-	createFeedArticle = `
-INSERT INTO articles(feed_id, link, guid, title, description, date)
-	SELECT $1, $2, $3, $4, $5, $6 EXCEPT
-		SELECT feed_id, link, guid, title, description, date
-		FROM articles WHERE feed_id = $1 AND link = $2
-`
-
-	updateFeedArticle = `
-UPDATE articles SET title = $1, description = $2, date = $3 WHERE feed_id = $4 AND link = $5
-`
-
-	updateFeedArticleWithGuid = `
-UPDATE articles SET title = $1, description = $2, date = $3 WHERE feed_id = $4 AND guid = $5
-`
-	getAllFeedArticles = `
-SELECT a.feed_id, a.id, a.title, a.description, a.link, a.guid, a.date
-FROM articles a
-WHERE a.feed_id = $1
-`
-	getLatestFeedArticles = `
-SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid
-FROM articles a
-WHERE a.feed_id = $1 AND a.date > NOW() - INTERVAL '5 days'
-`
-	getHubbubSubscription = `
-SELECT link, lease_duration, verification_time, subscription_failure
-	FROM hubbub_subscriptions WHERE feed_id = $1`
-	getFeedUsers = `
-SELECT u.login, u.first_name, u.last_name, u.email, u.admin, u.active,
-	u.profile_data, u.hash_type, u.salt, u.hash, u.md5_api
-FROM users u, users_feeds uf
-WHERE u.login = uf.user_login AND uf.feed_id = $1
-`
-	deleteUserFeed                       = `DELETE FROM users_feeds WHERE user_login = $1 AND feed_id = $2`
-	createAllUsersArticlesReadByFeedDate = `
-INSERT INTO users_articles_read
-	SELECT uf.user_login, a.id
-	FROM users_feeds uf INNER JOIN articles a
-		ON uf.feed_id = a.feed_id AND uf.user_login = $1 AND uf.feed_id = $2
-		AND a.id IN (SELECT id FROM articles WHERE date IS NULL OR date < $3)
-`
-
-	deleteAllUsersArticlesReadByFeedDate = `
-DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
-	SELECT id FROM articles WHERE feed_id = $2 AND (date IS NULL OR date < $3)
-)
-`
-	createUserFeedTag = `
-INSERT INTO users_feeds_tags(user_login, feed_id, tag)
-	SELECT $1, $2, $3 EXCEPT SELECT user_login, feed_id, tag
-		FROM users_feeds_tags
-		WHERE user_login = $1 AND feed_id = $2 AND tag = $3
-`
-	deleteUserFeedTags = `
-DELETE FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2
-`
-)

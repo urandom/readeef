@@ -44,9 +44,9 @@ func (ua *UserArticle) Read(read bool) {
 
 	var stmt *sqlx.Stmt
 	if read {
-		stmt, err = tx.Preparex(db.SQL("create_user_article_read"))
+		stmt, err = tx.Preparex(ua.db.SQL("create_user_article_read"))
 	} else {
-		stmt, err = tx.Preparex(db.SQL("delete_user_article_read"))
+		stmt, err = tx.Preparex(ua.db.SQL("delete_user_article_read"))
 	}
 
 	if err != nil {
@@ -77,9 +77,9 @@ func (ua *UserArticle) Favorite(favorite bool) {
 
 	var stmt *sqlx.Stmt
 	if favorite {
-		stmt, err = tx.Preparex(db.SQL("create_user_article_favorite"))
+		stmt, err = tx.Preparex(ua.db.SQL("create_user_article_favorite"))
 	} else {
-		stmt, err = tx.Preparex(db.SQL("delete_user_article_favorite"))
+		stmt, err = tx.Preparex(ua.db.SQL("delete_user_article_favorite"))
 	}
 
 	if err != nil {
@@ -109,7 +109,7 @@ func (sa *ScoredArticle) Scores(in ...info.ArticleScores) (i info.ArticleScores)
 		}
 		defer tx.Rollback()
 
-		stmt, err := tx.Preparex(db.SQL("update_article_scores"))
+		stmt, err := tx.Preparex(sa.db.SQL("update_article_scores"))
 		if err != nil {
 			sa.Err(err)
 			return
@@ -123,7 +123,7 @@ func (sa *ScoredArticle) Scores(in ...info.ArticleScores) (i info.ArticleScores)
 		}
 
 		if num, err := res.RowsAffected(); err != nil || num == 0 {
-			stmt, err := tx.Preparex(db.SQL("create_article_scores"))
+			stmt, err := tx.Preparex(sa.db.SQL("create_article_scores"))
 			if err != nil {
 				sa.Err(err)
 				return
@@ -141,49 +141,10 @@ func (sa *ScoredArticle) Scores(in ...info.ArticleScores) (i info.ArticleScores)
 	} else {
 		sa.logger.Infof("Getting article '%d' scores\n", id)
 
-		if err := sa.db.Get(&i, db.SQL("get_article_scores"), id); err != nil && err != sql.ErrNoRows {
+		if err := sa.db.Get(&i, sa.db.SQL("get_article_scores"), id); err != nil && err != sql.ErrNoRows {
 			sa.Err(err)
 		}
 	}
 
 	return
 }
-
-func init() {
-	db.SetSQL("create_user_article_read", createUserArticleRead)
-	db.SetSQL("delete_user_article_read", deleteUserArticleRead)
-	db.SetSQL("create_user_article_favorite", createUserArticleFavorite)
-	db.SetSQL("delete_user_article_favorite", deleteUserArticleFavorite)
-	db.SetSQL("get_article_scores", getArticleScores)
-	db.SetSQL("create_article_scores", createArticleScores)
-	db.SetSQL("update_article_scores", updateArticleScores)
-}
-
-const (
-	createUserArticleRead = `
-INSERT INTO users_articles_read(user_login, article_id)
-	SELECT $1, $2 EXCEPT
-		SELECT user_login, article_id
-		FROM users_articles_read WHERE user_login = $1 AND article_id = $2
-`
-	deleteUserArticleRead = `
-DELETE FROM users_articles_read WHERE user_login = $1 AND article_id = $2`
-	createUserArticleFavorite = `
-INSERT INTO users_articles_fav(user_login, article_id)
-	SELECT $1, $2 EXCEPT
-		SELECT user_login, article_id
-		FROM users_articles_fav WHERE user_login = $1 AND article_id = $2
-`
-	deleteUserArticleFavorite = `
-DELETE FROM users_articles_fav WHERE  user_login = $1 AND article_id = $2
-`
-	getArticleScores = `
-SELECT asco.score, asco.score1, asco.score2, asco.score3, asco.score4, asco.score5
-FROM articles_scores asco
-WHERE asco.article_id = $1
-`
-	createArticleScores = `
-INSERT INTO articles_scores(article_id, score, score1, score2, score3, score4, score5)
-	SELECT $1, $2, $3, $4, $5, $6, $7 EXCEPT SELECT article_id, score, score1, score2, score3, score4, score5 FROM articles_scores WHERE article_id = $1`
-	updateArticleScores = `UPDATE articles_scores SET score = $1, score1 = $2, score2 = $3, score3 = $4, score4 = $5, score5 = $6 WHERE article_id = $7`
-)

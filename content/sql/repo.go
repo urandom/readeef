@@ -27,7 +27,7 @@ func (r *Repo) UserByLogin(login info.Login) (u content.User) {
 	r.logger.Infof("Getting user '%s'\n", login)
 
 	var info info.User
-	if err := r.db.Get(&info, db.SQL("get_user"), login); err != nil {
+	if err := r.db.Get(&info, r.db.SQL("get_user"), login); err != nil {
 		r.Err(err)
 		return
 	}
@@ -51,7 +51,7 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 	r.logger.Infof("Getting user using md5 api field '%v'\n", md5)
 
 	var info info.User
-	if err := r.db.Get(&info, db.SQL("get_user_by_md5_api"), md5); err != nil {
+	if err := r.db.Get(&info, r.db.SQL("get_user_by_md5_api"), md5); err != nil {
 		r.Err(err)
 		return
 	}
@@ -75,7 +75,7 @@ func (r *Repo) AllUsers() (users []content.User) {
 	r.logger.Infoln("Getting all users")
 
 	var info []info.User
-	if err := r.db.Select(&info, db.SQL("get_users")); err != nil {
+	if err := r.db.Select(&info, r.db.SQL("get_users")); err != nil {
 		r.Err(err)
 		return
 	}
@@ -102,7 +102,7 @@ func (r *Repo) FeedById(id info.FeedId) (f content.Feed) {
 	r.logger.Infof("Getting feed '%d'\n", id)
 
 	i := info.Feed{}
-	if err := r.db.Get(&i, db.SQL("get_feed"), id); err != nil {
+	if err := r.db.Get(&i, r.db.SQL("get_feed"), id); err != nil {
 		r.Err(err)
 		return
 	}
@@ -122,7 +122,7 @@ func (r *Repo) FeedByLink(link string) (f content.Feed) {
 	r.logger.Infof("Getting feed by link '%s'\n", link)
 
 	i := info.Feed{}
-	if err := r.db.Get(&i, db.SQL("get_feed_by_link"), link); err != nil {
+	if err := r.db.Get(&i, r.db.SQL("get_feed_by_link"), link); err != nil {
 		r.Err(err)
 		return
 	}
@@ -142,7 +142,7 @@ func (r *Repo) AllFeeds() (feeds []content.Feed) {
 	r.logger.Infoln("Getting all feeds")
 
 	var info []info.Feed
-	if err := r.db.Select(&info, db.SQL("get_feeds")); err != nil {
+	if err := r.db.Select(&info, r.db.SQL("get_feeds")); err != nil {
 		r.Err(err)
 		return
 	}
@@ -165,7 +165,7 @@ func (r *Repo) AllUnsubscribedFeeds() (feeds []content.Feed) {
 	r.logger.Infoln("Getting all unsubscribed feeds")
 
 	var info []info.Feed
-	if err := r.db.Select(&info, db.SQL("get_unsubscribed_feeds")); err != nil {
+	if err := r.db.Select(&info, r.db.SQL("get_unsubscribed_feeds")); err != nil {
 		r.Err(err)
 		return
 	}
@@ -188,7 +188,7 @@ func (r *Repo) AllSubscriptions() (s []content.Subscription) {
 	r.logger.Infoln("Getting all subscriptions")
 
 	var info []info.Subscription
-	if err := r.db.Select(&info, db.SQL("get_hubbub_subscriptions")); err != nil {
+	if err := r.db.Select(&info, r.db.SQL("get_hubbub_subscriptions")); err != nil {
 		r.Err(err)
 		return
 	}
@@ -210,7 +210,7 @@ func (r *Repo) FailSubscriptions() {
 
 	r.logger.Infoln("Marking all subscriptions as failed")
 
-	if _, err := r.db.Exec(db.SQL("fail_hubbub_subscriptions")); err != nil {
+	if _, err := r.db.Exec(r.db.SQL("fail_hubbub_subscriptions")); err != nil {
 		r.Err(err)
 		return
 	}
@@ -229,35 +229,3 @@ func pagingLimit(paging []int) (int, int) {
 
 	return limit, offset
 }
-
-func init() {
-	db.SetSQL("get_user", getUser)
-	db.SetSQL("get_user_by_md5_api", getUser)
-	db.SetSQL("get_users", getUsers)
-	db.SetSQL("get_feed", getFeed)
-	db.SetSQL("get_feed_by_link", getFeedByLink)
-	db.SetSQL("get_feeds", getFeeds)
-	db.SetSQL("get_unsubscribed_feeds", getUnsubscribedFeeds)
-	db.SetSQL("get_hubbub_subscriptions", getHubbubSubscriptions)
-	db.SetSQL("fail_hubbub_subscriptions", failHubbubSubscription)
-}
-
-const (
-	getUser         = `SELECT first_name, last_name, email, admin, active, profile_data, hash_type, salt, hash, md5_api FROM users WHERE login = $1`
-	getUserByMD5Api = `SELECT login, first_name, last_name, email, admin, active, profile_data, hash_type, salt, hash FROM users WHERE md5_api = $1`
-	getUsers        = `SELECT login, first_name, last_name, email, admin, active, profile_data, hash_type, salt, hash, md5_api FROM users`
-
-	getFeed              = `SELECT link, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds WHERE id = $1`
-	getFeedByLink        = `SELECT id, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds WHERE link = $1`
-	getFeeds             = `SELECT id, link, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds`
-	getUnsubscribedFeeds = `
-SELECT f.id, f.link, f.title, f.description, f.hub_link, f.site_link, f.update_error, f.subscribe_error
-	FROM feeds f LEFT OUTER JOIN hubbub_subscriptions hs
-	ON f.id = hs.feed_id AND hs.subscription_failure = '1'
-	ORDER BY f.title
-`
-	getHubbubSubscriptions = `
-SELECT link, feed_id, lease_duration, verification_time, subscription_failure
-	FROM hubbub_subscriptions`
-	failHubbubSubscription = `UPDATE hubbub_subscriptions SET subscription_failure = '1'`
-)
