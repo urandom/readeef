@@ -10,6 +10,7 @@ import (
 
 type Subscription struct {
 	Error
+	RepoRelated
 
 	info           info.Subscription
 	callbackPrefix string

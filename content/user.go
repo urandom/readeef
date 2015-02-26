@@ -10,6 +10,7 @@ import (
 type User interface {
 	Error
 	ArticleSorting
+	RepoRelated
 
 	fmt.Stringer
 
@@ -50,4 +51,8 @@ type User interface {
 	ScoredArticles(from, to time.Time, paging ...int) []ScoredArticle
 
 	Tags() []Tag
+}
+
+type UserRelated interface {
+	User(u ...User) User
 }

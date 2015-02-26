@@ -29,18 +29,6 @@ type TaggedFeed struct {
 	UserFeed
 }
 
-func NewFeed(db *db.DB, logger webfw.Logger) *Feed {
-	return &Feed{db: db, logger: logger}
-}
-
-func NewUserFeed(db *db.DB, logger webfw.Logger, user content.User) *UserFeed {
-	return &UserFeed{Feed: Feed{db: db, logger: logger}, UserFeed: base.NewUserFeed(user)}
-}
-
-func NewTaggedFeed(db *db.DB, logger webfw.Logger, user content.User) *TaggedFeed {
-	return &TaggedFeed{UserFeed: *NewUserFeed(db, logger, user)}
-}
-
 func (f Feed) NewArticles() (a []content.Article) {
 	if f.Err() != nil {
 		return
@@ -155,7 +143,7 @@ func (f *Feed) AllArticles() (a []content.Article) {
 
 	a = make([]content.Article, len(info))
 	for i := range info {
-		a[i] = NewArticle()
+		a[i] = f.Repo().Article()
 		a[i].Info(info[i])
 	}
 
@@ -178,7 +166,7 @@ func (f *Feed) LatestArticles() (a []content.Article) {
 
 	a = make([]content.Article, len(info))
 	for i := range info {
-		a[i] = NewArticle()
+		a[i] = f.Repo().Article()
 		a[i].Info(info[i])
 	}
 
@@ -225,7 +213,7 @@ func (f *Feed) Subscription() (s content.Subscription) {
 		return
 	}
 
-	s = NewSubscription(f.db, f.logger)
+	s = f.Repo().Subscription()
 	s.Info(in)
 
 	return
@@ -321,7 +309,7 @@ func (uf *UserFeed) Users() (u []content.User) {
 
 	u = make([]content.User, len(in))
 	for i := range in {
-		u[i] = NewUser(uf.db, uf.logger)
+		u[i] = uf.Repo().User()
 		u[i].Info(in[i])
 
 		if u[i].Err() != nil {
@@ -468,13 +456,14 @@ func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []cont
 
 	sa = make([]content.ScoredArticle, len(ua))
 	for i := range ua {
-		sa[i] = &ScoredArticle{UserArticle: *ua[i]}
+		sa[i] = uf.Repo().ScoredArticle(uf.User())
+		sa[i].Info(ua[i].Info())
 	}
 
 	return
 }
 
-func (uf *UserFeed) getArticles(where, order string, paging ...int) (ua []*UserArticle) {
+func (uf *UserFeed) getArticles(where, order string, paging ...int) (ua []content.UserArticle) {
 	if uf.Err() != nil {
 		return
 	}
@@ -537,7 +526,7 @@ func (tf *TaggedFeed) AddTags(tags ...content.Tag) {
 		}
 	}
 
-	tf.SetTags(existing)
+	tf.Tags(existing)
 
 	tx.Commit()
 }
@@ -571,7 +560,7 @@ func (tf *TaggedFeed) DeleteAllTags() {
 		return
 	}
 
-	tf.SetTags([]content.Tag{})
+	tf.Tags([]content.Tag{})
 
 	tx.Commit()
 }

@@ -13,10 +13,6 @@ type Subscription struct {
 	db *db.DB
 }
 
-func NewSubscription(db *db.DB, logger webfw.Logger) *Subscription {
-	return &Subscription{db: db, logger: logger}
-}
-
 func (s *Subscription) Update() {
 	if s.Err() != nil {
 		return

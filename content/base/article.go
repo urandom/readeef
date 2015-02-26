@@ -4,22 +4,18 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/info"
 )
 
 type Article struct {
 	Error
+	RepoRelated
 
 	info info.Article
 }
 
 type UserArticle struct {
-	user content.User
-}
-
-func NewUserArticle(user content.User) *UserArticle {
-	return &UserArticle{user: user}
+	UserRelated
 }
 
 func (a Article) String() string {
@@ -44,8 +40,4 @@ func (a Article) Validate() error {
 	}
 
 	return nil
-}
-
-func (ua UserArticle) User() content.User {
-	return ua.user
 }

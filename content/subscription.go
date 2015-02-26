@@ -8,6 +8,7 @@ import (
 
 type Subscription interface {
 	Error
+	RepoRelated
 
 	fmt.Stringer
 

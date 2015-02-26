@@ -40,8 +40,8 @@ type Feed interface {
 type UserFeed interface {
 	Feed
 	ArticleSearch
-
-	User() User
+	UserRelated
+	RepoRelated
 
 	Users() []User
 
@@ -59,8 +59,7 @@ type UserFeed interface {
 type TaggedFeed interface {
 	UserFeed
 
-	Tags() []Tag
-	SetTags(tags []Tag)
+	Tags(tags ...[]Tag) []Tag
 
 	AddTags(tags ...Tag)
 	DeleteAllTags()

@@ -10,14 +10,20 @@ import (
 	"fmt"
 	"net/mail"
 
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/info"
 )
 
 type User struct {
 	ArticleSorting
 	Error
+	RepoRelated
 
 	info info.User
+}
+
+type UserRelated struct {
+	user content.User
 }
 
 func (u User) String() string {
@@ -101,4 +107,12 @@ func (u User) generateHash(password string, secret []byte) []byte {
 	hash := sha1.Sum(append(secret, append(u.info.Salt, []byte(password)...)...))
 
 	return hash[:]
+}
+
+func (ur *UserRelated) User(us ...content.User) content.User {
+	if len(us) > 0 {
+		ur.user = us[0]
+	}
+
+	return ur.user
 }

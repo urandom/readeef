@@ -9,51 +9,50 @@ import (
 func TestImplements(t *testing.T) {
 	var article content.Article
 
-	article = NewArticle()
+	r := NewRepo(nil, nil)
+
+	article = r.Article()
 	article.Info()
 
 	var userArticle content.UserArticle
 
-	userArticle = NewUserArticle(nil, nil, nil)
+	userArticle = r.UserArticle(nil)
 	userArticle.Info()
 
 	var scoredArticle content.ScoredArticle
 
-	scoredArticle = NewScoredArticle(nil, nil, nil)
+	scoredArticle = r.ScoredArticle(nil)
 	scoredArticle.Info()
 
 	var feed content.Feed
 
-	feed = NewFeed(nil, nil)
+	feed = r.Feed()
 	feed.Info()
 
 	var userFeed content.UserFeed
 
-	userFeed = NewUserFeed(nil, nil, nil)
+	userFeed = r.UserFeed(nil)
 	userFeed.Info()
 
 	var taggedFeed content.TaggedFeed
 
-	taggedFeed = NewTaggedFeed(nil, nil, nil)
+	taggedFeed = r.TaggedFeed(nil)
 	taggedFeed.Info()
 
-	var repo content.Repo
-
-	repo = NewRepo(nil, nil)
-	repo.Err()
+	r.Err()
 
 	var subscription content.Subscription
 
-	subscription = NewSubscription(nil, nil)
+	subscription = r.Subscription()
 	subscription.Info()
 
 	var tag content.Tag
 
-	tag = NewTag(nil, nil, nil)
+	tag = r.Tag(nil)
 	tag.Value()
 
 	var user content.User
 
-	user = NewUser(nil, nil)
+	user = r.User()
 	user.Info()
 }

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/readeef/db"
@@ -25,18 +24,6 @@ type UserArticle struct {
 
 type ScoredArticle struct {
 	UserArticle
-}
-
-func NewArticle() *Article {
-	return &Article{}
-}
-
-func NewUserArticle(db *db.DB, logger webfw.Logger, user content.User) *UserArticle {
-	return &UserArticle{UserArticle: *base.NewUserArticle(user), db: db, logger: logger}
-}
-
-func NewScoredArticle(db *db.DB, logger webfw.Logger, user content.User) *ScoredArticle {
-	return &ScoredArticle{UserArticle: *NewUserArticle(db, logger, user)}
 }
 
 func (ua *UserArticle) Read(read bool) {

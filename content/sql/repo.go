@@ -33,6 +33,7 @@ func (r *Repo) UserByLogin(login info.Login) (u content.User) {
 	}
 
 	info.Login = login
+	u = r.User()
 	u.Info(info)
 
 	if u.Err() != nil {
@@ -56,6 +57,7 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 	}
 
 	info.MD5API = md5
+	u = r.User()
 	u.Info(info)
 
 	if u.Err() != nil {
@@ -81,6 +83,7 @@ func (r *Repo) AllUsers() (users []content.User) {
 	users = make([]content.User, len(info))
 
 	for i := range info {
+		users[i] = r.User()
 		users[i].Info(info[i])
 		if users[i].Err() != nil {
 			r.Err(users[i].Err())
@@ -105,6 +108,7 @@ func (r *Repo) FeedById(id info.FeedId) (f content.Feed) {
 	}
 
 	i.Id = id
+	f = r.Feed()
 	f.Info(i)
 
 	return
@@ -124,6 +128,7 @@ func (r *Repo) FeedByLink(link string) (f content.Feed) {
 	}
 
 	i.Link = link
+	f = r.Feed()
 	f.Info(i)
 
 	return
@@ -145,6 +150,7 @@ func (r *Repo) AllFeeds() (feeds []content.Feed) {
 	feeds = make([]content.Feed, len(info))
 
 	for i := range info {
+		feeds[i] = r.Feed()
 		feeds[i].Info(info[i])
 	}
 
@@ -167,6 +173,7 @@ func (r *Repo) AllUnsubscribedFeeds() (feeds []content.Feed) {
 	feeds = make([]content.Feed, len(info))
 
 	for i := range info {
+		feeds[i] = r.Feed()
 		feeds[i].Info(info[i])
 	}
 
@@ -189,6 +196,7 @@ func (r *Repo) AllSubscriptions() (s []content.Subscription) {
 	s = make([]content.Subscription, len(info))
 
 	for i := range info {
+		s[i] = r.Subscription()
 		s[i].Info(info[i])
 	}
 

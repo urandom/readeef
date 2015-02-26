@@ -31,6 +31,7 @@ type ArticleSearch interface {
 
 type Article interface {
 	Error
+	RepoRelated
 
 	fmt.Stringer
 
@@ -41,8 +42,7 @@ type Article interface {
 
 type UserArticle interface {
 	Article
-
-	User() User
+	UserRelated
 
 	Read(read bool)
 	Favorite(favorite bool)

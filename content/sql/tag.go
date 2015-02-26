@@ -22,10 +22,6 @@ type feedIdTag struct {
 	TagValue info.TagValue
 }
 
-func NewTag(db *db.DB, logger webfw.Logger, user content.User) *Tag {
-	return &Tag{Tag: base.NewTag(user), db: db, logger: logger}
-}
-
 func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
 	if t.Err() != nil {
 		return
@@ -147,7 +143,8 @@ func (t *Tag) ScoredArticles(from, to time.Time, paging ...int) (sa []content.Sc
 
 	sa = make([]content.ScoredArticle, len(ua))
 	for i := range ua {
-		sa[i] = &ScoredArticle{UserArticle: *ua[i]}
+		sa[i] = t.Repo().ScoredArticle(t.User())
+		sa[i].Info(ua[i].Info())
 	}
 
 	return

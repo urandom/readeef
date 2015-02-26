@@ -20,12 +20,6 @@ type User struct {
 	db *db.DB
 }
 
-func NewUser(db *db.DB, logger webfw.Logger) *User {
-	u := &User{db: db, logger: logger}
-
-	return u
-}
-
 func (u *User) Update() {
 	if u.Err() != nil {
 		return
@@ -177,7 +171,7 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 		u.Err(err)
 	}
 
-	uf = NewUserFeed(u.db, u.logger, u)
+	uf = u.Repo().UserFeed(u)
 	uf.Info(i)
 
 	return
@@ -199,7 +193,7 @@ func (u *User) AllFeeds() (uf []content.TaggedFeed) {
 
 	uf = make([]content.TaggedFeed, len(info))
 	for i := range info {
-		uf[i] = NewTaggedFeed(u.db, u.logger, u)
+		uf[i] = u.Repo().TaggedFeed(u)
 		uf[i].Info(info[i])
 	}
 
@@ -229,13 +223,13 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	feedMap := make(map[info.FeedId][]content.Tag)
 
 	for _, tuple := range feedIdTags {
-		tag := NewTag(u.db, u.logger, u)
+		tag := u.Repo().Tag(u)
 		tag.Set(tuple.TagValue)
 		feedMap[tuple.FeedId] = append(feedMap[tuple.FeedId], tag)
 	}
 
 	for i := range tf {
-		tf[i].SetTags(feedMap[tf[i].Info().Id])
+		tf[i].Tags(feedMap[tf[i].Info().Id])
 	}
 
 	return
@@ -526,7 +520,8 @@ func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.S
 
 	sa = make([]content.ScoredArticle, len(ua))
 	for i := range ua {
-		sa[i] = &ScoredArticle{UserArticle: *ua[i]}
+		sa[i] = u.Repo().ScoredArticle(u)
+		sa[i].Info(ua[i].Info())
 	}
 
 	return sa
@@ -540,7 +535,7 @@ func (u *User) Tags() (tags []content.Tag) {
 	return
 }
 
-func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting content.ArticleSorting, columns, join, where, order string, args []interface{}, paging ...int) (ua []*UserArticle) {
+func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting content.ArticleSorting, columns, join, where, order string, args []interface{}, paging ...int) (ua []content.UserArticle) {
 	if u.Err() != nil {
 		return
 	}
@@ -598,9 +593,9 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting conten
 		return
 	}
 
-	ua = make([]*UserArticle, len(info))
+	ua = make([]content.UserArticle, len(info))
 	for i := range info {
-		ua[i] = NewUserArticle(dbo, logger, u)
+		ua[i] = u.Repo().UserArticle(u)
 		ua[i].Info(info[i])
 	}
 

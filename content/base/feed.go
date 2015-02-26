@@ -13,6 +13,7 @@ import (
 type Feed struct {
 	ArticleSorting
 	Error
+	RepoRelated
 
 	info           info.Feed
 	parsedArticles []content.Article
@@ -20,16 +21,11 @@ type Feed struct {
 
 type UserFeed struct {
 	ArticleSearch
-
-	user content.User
+	UserRelated
 }
 
 type TaggedFeed struct {
 	tags []content.Tag
-}
-
-func NewUserFeed(user content.User) UserFeed {
-	return UserFeed{user: user}
 }
 
 func (f Feed) String() string {
@@ -100,10 +96,6 @@ func (f *Feed) ParsedArticles() (a []content.Article) {
 	return f.parsedArticles
 }
 
-func (f UserFeed) User() content.User {
-	return f.user
-}
-
 func (f UserFeed) Validate() error {
 	if f.user.Info().Login == "" {
 		return ValidationError{errors.New("UserFeed has no user")}
@@ -112,10 +104,10 @@ func (f UserFeed) Validate() error {
 	return nil
 }
 
-func (tf TaggedFeed) Tags() []content.Tag {
-	return tf.tags
-}
+func (tf TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
+	if len(tags) > 0 {
+		tf.tags = tags[0]
+	}
 
-func (tf *TaggedFeed) SetTags(tags []content.Tag) {
-	tf.tags = tags
+	return tf.tags
 }
