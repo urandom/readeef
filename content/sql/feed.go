@@ -60,41 +60,41 @@ func (f *Feed) Update() {
 
 	tx, err := f.db.Begin()
 	if err != nil {
-		f.SetErr(err)
+		f.Err(err)
 		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(db.SQL("update_feed"))
 	if err != nil {
-		f.SetErr(err)
+		f.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	res, err := stmt.Exec(i.Link, i.Title, i.Description, i.HubLink, i.SiteLink, i.UpdateError, i.SubscribeError, id)
 	if err != nil {
-		f.SetErr(err)
+		f.Err(err)
 		return
 	}
 
 	if num, err := res.RowsAffected(); err != nil || num == 0 {
 		stmt, err := tx.Preparex(db.SQL("create_feed"))
 		if err != nil {
-			f.SetErr(err)
+			f.Err(err)
 			return
 		}
 		defer stmt.Close()
 
 		id, err := f.db.CreateWithId(stmt, i.Link, i.Title, i.Description, i.HubLink, i.SiteLink, i.UpdateError, i.SubscribeError)
 		if err != nil {
-			f.SetErr(err)
+			f.Err(err)
 			return
 		}
 
 		i.Id = info.FeedId(id)
 
-		f.Set(i)
+		f.Info(i)
 	}
 
 	articles := f.updateFeedArticles(tx, f.ParsedArticles())
@@ -118,21 +118,21 @@ func (f *Feed) Delete() {
 
 	tx, err := f.db.Begin()
 	if err != nil {
-		f.SetErr(err)
+		f.Err(err)
 		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(db.SQL("delete_feed"))
 	if err != nil {
-		f.SetErr(err)
+		f.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(id)
 	if err != nil {
-		f.SetErr(err)
+		f.Err(err)
 		return
 	}
 
@@ -149,14 +149,14 @@ func (f *Feed) AllArticles() (a []content.Article) {
 
 	var info []info.Article
 	if err := f.db.Select(&info, db.SQL("get_all_feed_articles"), id); err != nil {
-		f.SetErr(err)
+		f.Err(err)
 		return
 	}
 
 	a = make([]content.Article, len(info))
 	for i := range info {
 		a[i] = NewArticle()
-		a[i].Set(info[i])
+		a[i].Info(info[i])
 	}
 
 	return
@@ -172,14 +172,14 @@ func (f *Feed) LatestArticles() (a []content.Article) {
 
 	var info []info.Article
 	if err := f.db.Select(&info, db.SQL("get_latest_feed_articles"), id); err != nil {
-		f.SetErr(err)
+		f.Err(err)
 		return
 	}
 
 	a = make([]content.Article, len(info))
 	for i := range info {
 		a[i] = NewArticle()
-		a[i].Set(info[i])
+		a[i].Info(info[i])
 	}
 
 	return
@@ -195,7 +195,7 @@ func (f *Feed) AddArticles(articles []content.Article) {
 
 	tx, err := f.db.Begin()
 	if err != nil {
-		f.SetErr(err)
+		f.Err(err)
 		return
 	}
 	defer tx.Rollback()
@@ -221,12 +221,12 @@ func (f *Feed) Subscription() (s content.Subscription) {
 
 	var in info.Subscription
 	if err := f.db.Get(&in, db.SQL("get_hubbub_subscription"), id); err != nil && err != dsql.ErrNoRows {
-		f.SetErr(err)
+		f.Err(err)
 		return
 	}
 
 	s = NewSubscription(f.db, f.logger)
-	s.Set(in)
+	s.Info(in)
 
 	return
 }
@@ -238,7 +238,7 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 
 	for i := range articles {
 		if err := articles[i].Validate(); err != nil {
-			f.SetErr(err)
+			f.Err(err)
 			return
 		}
 
@@ -259,14 +259,14 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 
 		stmt, err := tx.Preparex(sql)
 		if err != nil {
-			f.SetErr(err)
+			f.Err(err)
 			return
 		}
 		defer stmt.Close()
 
 		res, err := stmt.Exec(args...)
 		if err != nil {
-			f.SetErr(err)
+			f.Err(err)
 			return
 		}
 
@@ -275,7 +275,7 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 
 			stmt, err := tx.Preparex(db.SQL("create_feed_article"))
 			if err != nil {
-				f.SetErr(err)
+				f.Err(err)
 				return
 			}
 			defer stmt.Close()
@@ -284,12 +284,12 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 				in.Title, in.Description, in.Date)
 
 			if err != nil {
-				f.SetErr(err)
+				f.Err(err)
 				return
 			}
 
 			in.Id = info.ArticleId(id)
-			articles[i].Set(in)
+			articles[i].Info(in)
 		}
 	}
 
@@ -315,17 +315,17 @@ func (uf *UserFeed) Users() (u []content.User) {
 
 	var in []info.User
 	if err := uf.db.Select(&in, db.SQL("get_feed_users"), id); err != nil {
-		uf.SetErr(err)
+		uf.Err(err)
 		return
 	}
 
 	u = make([]content.User, len(in))
 	for i := range in {
 		u[i] = NewUser(uf.db, uf.logger)
-		u[i].Set(in[i])
+		u[i].Info(in[i])
 
 		if u[i].Err() != nil {
-			uf.SetErr(u[i].Err())
+			uf.Err(u[i].Err())
 			return
 		}
 	}
@@ -344,21 +344,21 @@ func (uf *UserFeed) Detach() {
 
 	tx, err := uf.db.Begin()
 	if err != nil {
-		uf.SetErr(err)
+		uf.Err(err)
 		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(db.SQL("delete_user_feed"))
 	if err != nil {
-		uf.SetErr(err)
+		uf.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(login, id)
 	if err != nil {
-		uf.SetErr(err)
+		uf.Err(err)
 		return
 	}
 
@@ -411,35 +411,35 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 
 	tx, err := uf.db.Begin()
 	if err != nil {
-		uf.SetErr(err)
+		uf.Err(err)
 		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(db.SQL("delete_all_users_articles_read_by_feed_date"))
 	if err != nil {
-		uf.SetErr(err)
+		uf.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(login, id, date)
 	if err != nil {
-		uf.SetErr(err)
+		uf.Err(err)
 		return
 	}
 
 	if read {
 		stmt, err = tx.Preparex(db.SQL("create_all_users_articles_read_by_feed_date"))
 		if err != nil {
-			uf.SetErr(err)
+			uf.Err(err)
 			return
 		}
 		defer stmt.Close()
 
 		_, err = stmt.Exec(login, id, date)
 		if err != nil {
-			uf.SetErr(err)
+			uf.Err(err)
 			return
 		}
 	}
@@ -489,7 +489,7 @@ func (uf *UserFeed) getArticles(where, order string, paging ...int) (ua []*UserA
 	ua = getArticles(u, uf.db, uf.logger, uf, "", "", where, order, []interface{}{uf.Info().Id}, paging...)
 
 	if u.Err() != nil {
-		uf.SetErr(u.Err())
+		uf.Err(u.Err())
 	}
 
 	return
@@ -506,14 +506,14 @@ func (tf *TaggedFeed) AddTags(tags ...content.Tag) {
 
 	tx, err := tf.db.Begin()
 	if err != nil {
-		tf.SetErr(err)
+		tf.Err(err)
 		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(db.SQL("create_user_feed_tag"))
 	if err != nil {
-		tf.SetErr(err)
+		tf.Err(err)
 		return
 	}
 	defer stmt.Close()
@@ -528,7 +528,7 @@ func (tf *TaggedFeed) AddTags(tags ...content.Tag) {
 	for i := range tags {
 		_, err = stmt.Exec(login, id, tags[i].String())
 		if err != nil {
-			tf.SetErr(err)
+			tf.Err(err)
 			return
 		}
 
@@ -553,21 +553,21 @@ func (tf *TaggedFeed) DeleteAllTags() {
 
 	tx, err := tf.db.Begin()
 	if err != nil {
-		tf.SetErr(err)
+		tf.Err(err)
 		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(db.SQL("delete_user_feed_tags"))
 	if err != nil {
-		tf.SetErr(err)
+		tf.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(login, id)
 	if err != nil {
-		tf.SetErr(err)
+		tf.Err(err)
 		return
 	}
 

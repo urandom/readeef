@@ -19,15 +19,15 @@ func (s Subscription) String() string {
 	return fmt.Sprintf("Subscription for %s\n", s.info.Link)
 }
 
-func (s *Subscription) Set(info info.Subscription) {
+func (s *Subscription) Info(in ...info.Subscription) info.Subscription {
 	if s.Err() != nil {
-		return
+		return s.info
 	}
 
-	s.info = info
-}
+	if len(in) > 0 {
+		s.info = in[0]
+	}
 
-func (s Subscription) Info() info.Subscription {
 	return s.info
 }
 

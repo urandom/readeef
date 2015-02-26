@@ -4,10 +4,9 @@ type Error struct {
 	err error
 }
 
-func (e Error) Err() error {
+func (e Error) Err(err ...error) error {
+	if len(err) > 0 {
+		e.err = err[0]
+	}
 	return e.err
-}
-
-func (e *Error) SetErr(err error) {
-	e.err = err
 }

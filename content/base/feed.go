@@ -36,15 +36,15 @@ func (f Feed) String() string {
 	return f.info.Title + " " + strconv.FormatInt(int64(f.info.Id), 10)
 }
 
-func (f *Feed) Set(info info.Feed) {
+func (f *Feed) Info(in ...info.Feed) info.Feed {
 	if f.Err() != nil {
-		return
+		return f.info
 	}
 
-	f.info = info
-}
+	if len(in) > 0 {
+		f.info = in[0]
+	}
 
-func (f Feed) Info() info.Feed {
 	return f.info
 }
 
@@ -89,7 +89,7 @@ func (f *Feed) Refresh(pf parser.Feed) {
 		newArticles[i] = a
 	}
 
-	f.Set(in)
+	f.Info(in)
 }
 
 func (f *Feed) ParsedArticles() (a []content.Article) {

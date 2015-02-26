@@ -13,8 +13,7 @@ type User interface {
 
 	fmt.Stringer
 
-	Set(info info.User)
-	Info() info.User
+	Info(info ...info.User) info.User
 
 	Validate() error
 

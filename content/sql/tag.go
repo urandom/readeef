@@ -35,7 +35,7 @@ func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
 
 	var i []info.Feed
 	if err := t.db.Select(&i, db.SQL("get_user_tag_feeds"), t.User().Info().Login, t.String()); err != nil {
-		t.SetErr(err)
+		t.Err(err)
 		return
 	}
 
@@ -89,7 +89,7 @@ func (t *Tag) ReadBefore(date time.Time, read bool) {
 
 	tx, err := t.db.Begin()
 	if err != nil {
-		t.SetErr(err)
+		t.Err(err)
 		return
 	}
 	defer tx.Rollback()
@@ -97,14 +97,14 @@ func (t *Tag) ReadBefore(date time.Time, read bool) {
 	stmt, err := tx.Preparex(db.SQL("delete_all_user_tag_articles_read_by_date"))
 
 	if err != nil {
-		t.SetErr(err)
+		t.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(t.User().Info().Login, t.String(), date)
 	if err != nil {
-		t.SetErr(err)
+		t.Err(err)
 		return
 	}
 
@@ -112,14 +112,14 @@ func (t *Tag) ReadBefore(date time.Time, read bool) {
 		stmt, err = tx.Preparex(db.SQL("create_all_user_tag_articles_read_by_date"))
 
 		if err != nil {
-			t.SetErr(err)
+			t.Err(err)
 			return
 		}
 		defer stmt.Close()
 
 		_, err = stmt.Exec(t.User().Info().Login, t.String(), date)
 		if err != nil {
-			t.SetErr(err)
+			t.Err(err)
 			return
 		}
 	}

@@ -14,8 +14,7 @@ type Feed interface {
 
 	fmt.Stringer
 
-	Set(info info.Feed)
-	Info() info.Feed
+	Info(in ...info.Feed) info.Feed
 
 	Validate() error
 

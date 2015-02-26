@@ -36,27 +36,27 @@ func (u *User) Update() {
 
 	tx, err := u.db.Begin()
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(db.SQL("update_user"))
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	res, err := stmt.Exec(i.FirstName, i.LastName, i.Email, i.Admin, i.Active, i.ProfileJSON, i.HashType, i.Salt, i.Hash, i.MD5API, i.Login)
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
 	if num, err := res.RowsAffected(); err == nil && num > 0 {
 		if err := tx.Commit(); err != nil {
-			u.SetErr(err)
+			u.Err(err)
 		}
 
 		return
@@ -64,19 +64,19 @@ func (u *User) Update() {
 
 	stmt, err = tx.Preparex(db.SQL("create_user"))
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(i.Login, i.FirstName, i.LastName, i.Email, i.Admin, i.Active, i.ProfileJSON, i.HashType, i.Salt, i.Hash, i.MD5API)
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		u.SetErr(err)
+		u.Err(err)
 	}
 
 	return
@@ -91,32 +91,32 @@ func (u *User) Delete() {
 	u.logger.Infof("Deleting user %s\n", i.Login)
 
 	if err := u.Validate(); err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
 	tx, err := u.db.Begin()
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(db.SQL("delete_user"))
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(i.Login)
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		u.SetErr(err)
+		u.Err(err)
 	}
 }
 
@@ -130,11 +130,11 @@ func (u *User) Feed(id info.FeedId) (uf content.UserFeed) {
 
 	var i info.Feed
 	if err := u.db.Get(&i, db.SQL("get_user_feed"), id, login); err != nil && err != sql.ErrNoRows {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
-	uf.Set(i)
+	uf.Info(i)
 
 	return
 }
@@ -145,7 +145,7 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 	}
 
 	if err := f.Validate(); err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
@@ -155,30 +155,30 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 
 	tx, err := u.db.Begin()
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(db.SQL("create_user_feed"))
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(u.Info().Login, i.Id)
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		u.SetErr(err)
+		u.Err(err)
 	}
 
 	uf = NewUserFeed(u.db, u.logger, u)
-	uf.Set(i)
+	uf.Info(i)
 
 	return
 }
@@ -193,14 +193,14 @@ func (u *User) AllFeeds() (uf []content.TaggedFeed) {
 
 	var info []info.Feed
 	if err := u.db.Select(&info, db.SQL("get_user_feeds"), login); err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
 	uf = make([]content.TaggedFeed, len(info))
 	for i := range info {
 		uf[i] = NewTaggedFeed(u.db, u.logger, u)
-		uf[i].Set(info[i])
+		uf[i].Info(info[i])
 	}
 
 	return
@@ -217,7 +217,7 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	var feedIdTags []feedIdTag
 
 	if err := u.db.Select(&feedIdTags, db.SQL("get_user_feed_ids_tags"), login); err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
@@ -300,7 +300,7 @@ func (u *User) AllUnreadArticleIds() (ids []info.ArticleId) {
 	u.logger.Infof("Getting unread article ids for user %s\n", login)
 
 	if err := u.db.Select(&ids, db.SQL("get_all_unread_user_article_ids"), login); err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
@@ -316,7 +316,7 @@ func (u *User) AllFavoriteIds() (ids []info.ArticleId) {
 	u.logger.Infof("Getting favorite article ids for user %s\n", login)
 
 	if err := u.db.Select(&ids, db.SQL("get_all_favorite_user_article_ids"), login); err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
@@ -332,7 +332,7 @@ func (u *User) ArticleCount() (c int64) {
 	u.logger.Infof("Getting article count for user %s\n", login)
 
 	if err := u.db.Get(&c, db.SQL("get_user_article_count"), login); err != nil && err != sql.ErrNoRows {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
@@ -421,21 +421,21 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 
 	tx, err := u.db.Begin()
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(db.SQL("delete_all_user_articles_read_by_date"))
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(login, date)
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
@@ -443,14 +443,14 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 		stmt, err = tx.Preparex(db.SQL("create_all_user_articles_read_by_date"))
 
 		if err != nil {
-			u.SetErr(err)
+			u.Err(err)
 			return
 		}
 		defer stmt.Close()
 
 		_, err = stmt.Exec(login, date)
 		if err != nil {
-			u.SetErr(err)
+			u.Err(err)
 			return
 		}
 	}
@@ -468,7 +468,7 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 
 	tx, err := u.db.Begin()
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 	defer tx.Rollback()
@@ -476,14 +476,14 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 	stmt, err := tx.Preparex(db.SQL("delete_newer_user_articles_read_by_date"))
 
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(login, date)
 	if err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
@@ -491,14 +491,14 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 		stmt, err = tx.Preparex(db.SQL("create_newer_user_articles_read_by_date"))
 
 		if err != nil {
-			u.SetErr(err)
+			u.Err(err)
 			return
 		}
 		defer stmt.Close()
 
 		_, err = stmt.Exec(login, date)
 		if err != nil {
-			u.SetErr(err)
+			u.Err(err)
 			return
 		}
 	}
@@ -594,14 +594,14 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting conten
 
 	var info []info.Article
 	if err := dbo.Select(&info, sql, args...); err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 
 	ua = make([]*UserArticle, len(info))
 	for i := range info {
 		ua[i] = NewUserArticle(dbo, logger, u)
-		ua[i].Set(info[i])
+		ua[i].Info(info[i])
 	}
 
 	return

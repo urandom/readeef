@@ -28,15 +28,15 @@ func (r *Repo) UserByLogin(login info.Login) (u content.User) {
 
 	var info info.User
 	if err := r.db.Get(&info, db.SQL("get_user"), login); err != nil {
-		r.SetErr(err)
+		r.Err(err)
 		return
 	}
 
 	info.Login = login
-	u.Set(info)
+	u.Info(info)
 
 	if u.Err() != nil {
-		r.SetErr(u.Err())
+		r.Err(u.Err())
 	}
 
 	return
@@ -51,15 +51,15 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 
 	var info info.User
 	if err := r.db.Get(&info, db.SQL("get_user_by_md5_api"), md5); err != nil {
-		r.SetErr(err)
+		r.Err(err)
 		return
 	}
 
 	info.MD5API = md5
-	u.Set(info)
+	u.Info(info)
 
 	if u.Err() != nil {
-		r.SetErr(u.Err())
+		r.Err(u.Err())
 	}
 
 	return
@@ -74,16 +74,16 @@ func (r *Repo) AllUsers() (users []content.User) {
 
 	var info []info.User
 	if err := r.db.Select(&info, db.SQL("get_users")); err != nil {
-		r.SetErr(err)
+		r.Err(err)
 		return
 	}
 
 	users = make([]content.User, len(info))
 
 	for i := range info {
-		users[i].Set(info[i])
+		users[i].Info(info[i])
 		if users[i].Err() != nil {
-			r.SetErr(users[i].Err())
+			r.Err(users[i].Err())
 			return
 		}
 	}
@@ -100,12 +100,12 @@ func (r *Repo) FeedById(id info.FeedId) (f content.Feed) {
 
 	i := info.Feed{}
 	if err := r.db.Get(&i, db.SQL("get_feed"), id); err != nil {
-		r.SetErr(err)
+		r.Err(err)
 		return
 	}
 
 	i.Id = id
-	f.Set(i)
+	f.Info(i)
 
 	return
 }
@@ -119,12 +119,12 @@ func (r *Repo) FeedByLink(link string) (f content.Feed) {
 
 	i := info.Feed{}
 	if err := r.db.Get(&i, db.SQL("get_feed_by_link"), link); err != nil {
-		r.SetErr(err)
+		r.Err(err)
 		return
 	}
 
 	i.Link = link
-	f.Set(i)
+	f.Info(i)
 
 	return
 }
@@ -138,14 +138,14 @@ func (r *Repo) AllFeeds() (feeds []content.Feed) {
 
 	var info []info.Feed
 	if err := r.db.Select(&info, db.SQL("get_feeds")); err != nil {
-		r.SetErr(err)
+		r.Err(err)
 		return
 	}
 
 	feeds = make([]content.Feed, len(info))
 
 	for i := range info {
-		feeds[i].Set(info[i])
+		feeds[i].Info(info[i])
 	}
 
 	return
@@ -160,14 +160,14 @@ func (r *Repo) AllUnsubscribedFeeds() (feeds []content.Feed) {
 
 	var info []info.Feed
 	if err := r.db.Select(&info, db.SQL("get_unsubscribed_feeds")); err != nil {
-		r.SetErr(err)
+		r.Err(err)
 		return
 	}
 
 	feeds = make([]content.Feed, len(info))
 
 	for i := range info {
-		feeds[i].Set(info[i])
+		feeds[i].Info(info[i])
 	}
 
 	return
@@ -182,14 +182,14 @@ func (r *Repo) AllSubscriptions() (s []content.Subscription) {
 
 	var info []info.Subscription
 	if err := r.db.Select(&info, db.SQL("get_hubbub_subscriptions")); err != nil {
-		r.SetErr(err)
+		r.Err(err)
 		return
 	}
 
 	s = make([]content.Subscription, len(info))
 
 	for i := range info {
-		s[i].Set(info[i])
+		s[i].Info(info[i])
 	}
 
 	return
@@ -203,7 +203,7 @@ func (r *Repo) FailSubscriptions() {
 	r.logger.Infoln("Marking all subscriptions as failed")
 
 	if _, err := r.db.Exec(db.SQL("fail_hubbub_subscriptions")); err != nil {
-		r.SetErr(err)
+		r.Err(err)
 		return
 	}
 }

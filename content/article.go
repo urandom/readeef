@@ -34,8 +34,7 @@ type Article interface {
 
 	fmt.Stringer
 
-	Set(info info.Article)
-	Info() info.Article
+	Info(info ...info.Article) info.Article
 
 	Validate() error
 }
@@ -52,6 +51,5 @@ type UserArticle interface {
 type ScoredArticle interface {
 	UserArticle
 
-	SetScores(asc info.ArticleScores)
-	Scores() info.ArticleScores
+	Scores(asc ...info.ArticleScores) info.ArticleScores
 }

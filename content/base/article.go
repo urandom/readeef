@@ -26,15 +26,15 @@ func (a Article) String() string {
 	return a.info.Title + " " + strconv.FormatInt(int64(a.info.Id), 10)
 }
 
-func (a *Article) Set(info info.Article) {
+func (a *Article) Info(in ...info.Article) info.Article {
 	if a.Err() != nil {
-		return
+		return info.Article{}
 	}
 
-	a.info = info
-}
+	if len(in) > 0 {
+		a.info = in[0]
+	}
 
-func (a Article) Info() info.Article {
 	return a.info
 }
 

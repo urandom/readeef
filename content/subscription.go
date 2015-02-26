@@ -11,8 +11,7 @@ type Subscription interface {
 
 	fmt.Stringer
 
-	Set(info info.Subscription)
-	Info() info.Subscription
+	Info(in ...info.Subscription) info.Subscription
 
 	Validate() error
 

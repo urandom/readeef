@@ -50,7 +50,7 @@ func (ua *UserArticle) Read(read bool) {
 
 	tx, err := ua.db.Begin()
 	if err != nil {
-		ua.SetErr(err)
+		ua.Err(err)
 		return
 	}
 	defer tx.Rollback()
@@ -63,13 +63,13 @@ func (ua *UserArticle) Read(read bool) {
 	}
 
 	if err != nil {
-		ua.SetErr(err)
+		ua.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(login, id)
-	ua.SetErr(err)
+	ua.Err(err)
 }
 
 func (ua *UserArticle) Favorite(favorite bool) {
@@ -83,7 +83,7 @@ func (ua *UserArticle) Favorite(favorite bool) {
 
 	tx, err := ua.db.Begin()
 	if err != nil {
-		ua.SetErr(err)
+		ua.Err(err)
 		return
 	}
 	defer tx.Rollback()
@@ -96,71 +96,67 @@ func (ua *UserArticle) Favorite(favorite bool) {
 	}
 
 	if err != nil {
-		ua.SetErr(err)
+		ua.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(login, id)
-	ua.SetErr(err)
+	ua.Err(err)
 }
 
-func (sa *ScoredArticle) SetScores(asc info.ArticleScores) {
+func (sa *ScoredArticle) Scores(in ...info.ArticleScores) (i info.ArticleScores) {
 	if sa.Err() != nil {
 		return
 	}
 
 	id := sa.Info().Id
-	sa.logger.Infof("Setting article '%d' scores\n", id)
+	if len(in) > 0 {
+		asc := in[0]
+		sa.logger.Infof("Setting article '%d' scores\n", id)
 
-	tx, err := sa.db.Begin()
-	if err != nil {
-		sa.SetErr(err)
-		return
-	}
-	defer tx.Rollback()
-
-	stmt, err := tx.Preparex(db.SQL("update_article_scores"))
-	if err != nil {
-		sa.SetErr(err)
-		return
-	}
-	defer stmt.Close()
-
-	res, err := stmt.Exec(asc.Score, asc.Score1, asc.Score2, asc.Score3, asc.Score4, asc.Score5, id)
-	if err != nil {
-		sa.SetErr(err)
-		return
-	}
-
-	if num, err := res.RowsAffected(); err != nil || num == 0 {
-		stmt, err := tx.Preparex(db.SQL("create_article_scores"))
+		tx, err := sa.db.Begin()
 		if err != nil {
-			sa.SetErr(err)
+			sa.Err(err)
+			return
+		}
+		defer tx.Rollback()
+
+		stmt, err := tx.Preparex(db.SQL("update_article_scores"))
+		if err != nil {
+			sa.Err(err)
 			return
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(id, asc.Score, asc.Score1, asc.Score2, asc.Score3, asc.Score4, asc.Score5)
+		res, err := stmt.Exec(asc.Score, asc.Score1, asc.Score2, asc.Score3, asc.Score4, asc.Score5, id)
 		if err != nil {
-			sa.SetErr(err)
+			sa.Err(err)
 			return
 		}
-	}
 
-	tx.Commit()
-}
+		if num, err := res.RowsAffected(); err != nil || num == 0 {
+			stmt, err := tx.Preparex(db.SQL("create_article_scores"))
+			if err != nil {
+				sa.Err(err)
+				return
+			}
+			defer stmt.Close()
 
-func (sa *ScoredArticle) Scores() (i info.ArticleScores) {
-	if sa.Err() != nil {
-		return
-	}
+			_, err = stmt.Exec(id, asc.Score, asc.Score1, asc.Score2, asc.Score3, asc.Score4, asc.Score5)
+			if err != nil {
+				sa.Err(err)
+				return
+			}
+		}
 
-	id := sa.Info().Id
-	sa.logger.Infof("Getting article '%d' scores\n", id)
+		tx.Commit()
+	} else {
+		sa.logger.Infof("Getting article '%d' scores\n", id)
 
-	if err := sa.db.Get(&i, db.SQL("get_article_scores"), id); err != nil && err != sql.ErrNoRows {
-		sa.SetErr(err)
+		if err := sa.db.Get(&i, db.SQL("get_article_scores"), id); err != nil && err != sql.ErrNoRows {
+			sa.Err(err)
+		}
 	}
 
 	return

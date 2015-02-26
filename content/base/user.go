@@ -28,32 +28,33 @@ func (u User) String() string {
 	}
 }
 
-func (u *User) Set(info info.User) {
+func (u *User) Info(in ...info.User) info.User {
 	if u.Err() != nil {
-		return
+		return u.info
 	}
 
-	var err error
+	if len(in) > 0 {
+		info := in[0]
+		var err error
 
-	if len(info.ProfileJSON) == 0 {
-		info.ProfileJSON, err = json.Marshal(info.ProfileData)
-	} else {
-		if len(info.ProfileJSON) != 0 {
-			if err = json.Unmarshal(info.ProfileJSON, &info.ProfileData); err != nil {
-				u.SetErr(err)
-				return
+		if len(info.ProfileJSON) == 0 {
+			info.ProfileJSON, err = json.Marshal(info.ProfileData)
+		} else {
+			if len(info.ProfileJSON) != 0 {
+				if err = json.Unmarshal(info.ProfileJSON, &info.ProfileData); err != nil {
+					u.Err(err)
+					return u.info
+				}
+			}
+			if info.ProfileData == nil {
+				info.ProfileData = make(map[string]interface{})
 			}
 		}
-		if info.ProfileData == nil {
-			info.ProfileData = make(map[string]interface{})
-		}
+
+		u.Err(err)
+		u.info = info
 	}
 
-	u.SetErr(err)
-	u.info = info
-}
-
-func (u User) Info() info.User {
 	return u.info
 }
 
@@ -82,7 +83,7 @@ func (u *User) Password(password string, secret []byte) {
 	c := 30
 	salt := make([]byte, c)
 	if _, err := rand.Read(salt); err != nil {
-		u.SetErr(err)
+		u.Err(err)
 		return
 	}
 

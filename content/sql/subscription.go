@@ -27,21 +27,21 @@ func (s *Subscription) Update() {
 
 	tx, err := s.db.Begin()
 	if err != nil {
-		s.SetErr(err)
+		s.Err(err)
 		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(db.SQL("update_hubbub_subscription"))
 	if err != nil {
-		s.SetErr(err)
+		s.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	res, err := stmt.Exec(i.FeedId, i.LeaseDuration, i.VerificationTime, i.SubscriptionFailure, i.Link)
 	if err != nil {
-		s.SetErr(err)
+		s.Err(err)
 		return
 	}
 
@@ -53,14 +53,14 @@ func (s *Subscription) Update() {
 	stmt, err = tx.Preparex(db.SQL("create_hubbub_subscription"))
 
 	if err != nil {
-		s.SetErr(err)
+		s.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(i.Link, i.FeedId, i.LeaseDuration, i.VerificationTime, i.SubscriptionFailure)
 	if err != nil {
-		s.SetErr(err)
+		s.Err(err)
 		return
 	}
 
@@ -77,7 +77,7 @@ func (s *Subscription) Delete() {
 
 	tx, err := s.db.Begin()
 	if err != nil {
-		s.SetErr(err)
+		s.Err(err)
 		return
 	}
 	defer tx.Rollback()
@@ -85,14 +85,14 @@ func (s *Subscription) Delete() {
 	stmt, err := tx.Preparex(db.SQL("delete_hubbub_subscription"))
 
 	if err != nil {
-		s.SetErr(err)
+		s.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(i.Link)
 	if err != nil {
-		s.SetErr(err)
+		s.Err(err)
 		return
 	}
 
