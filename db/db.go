@@ -7,17 +7,40 @@ import (
 	"github.com/urandom/webfw"
 )
 
+type Helper interface {
+	SQL(name string, sql ...string) string
+	Init() []string
+
+	Upgrade(db DB, old, new int) error
+}
+
 type DB struct {
 	*sqlx.DB
 	logger webfw.Logger
 	frozen *Tx
 }
 
-var errAlreadyFrozen = errors.New("DB already frozen")
-var errNotFrozen = errors.New("DB not frozen")
+var (
+	errAlreadyFrozen = errors.New("DB already frozen")
+	errNotFrozen     = errors.New("DB not frozen")
+
+	helpers = make(map[string]Helper)
+)
 
 func New(logger webfw.Logger) *DB {
 	return &DB{logger: logger}
+}
+
+func Register(name string, helper Helper) {
+	if helper == nil {
+		panic("No helper provided")
+	}
+
+	if _, ok := helpers[name]; ok {
+		panic("Helper " + name + " already registered")
+	}
+
+	helpers[name] = helper
 }
 
 func (db *DB) Open(driver, connect string) (err error) {
@@ -62,10 +85,17 @@ func (db *DB) Begin() (*Tx, error) {
 	}
 }
 
-func (db *DB) CreateWithId(stmt *sqlx.Stmt, args ...interface{}) (int64, error) {
+func (db *DB) CreateWithId(tx *Tx, sql string, args ...interface{}) (int64, error) {
 	var id int64
 
+	stmt, err := tx.Preparex(sql)
+	if err != nil {
+		return 0, err
+	}
+	defer stmt.Close()
+
 	if db.DriverName() == "postgres" {
+		sql += " RETURNING id"
 		err := stmt.QueryRow(args...).Scan(&id)
 		if err != nil {
 			return 0, err

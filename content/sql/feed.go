@@ -67,14 +67,7 @@ func (f *Feed) Update() {
 	}
 
 	if num, err := res.RowsAffected(); err != nil || num == 0 {
-		stmt, err := tx.Preparex(db.SQL("create_feed"))
-		if err != nil {
-			f.Err(err)
-			return
-		}
-		defer stmt.Close()
-
-		id, err := f.db.CreateWithId(stmt, i.Link, i.Title, i.Description, i.HubLink, i.SiteLink, i.UpdateError, i.SubscribeError)
+		id, err := f.db.CreateWithId(tx, db.SQL("create_feed"), i.Link, i.Title, i.Description, i.HubLink, i.SiteLink, i.UpdateError, i.SubscribeError)
 		if err != nil {
 			f.Err(err)
 			return
@@ -261,14 +254,7 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 		if num, err := res.RowsAffected(); err != nil && err == dsql.ErrNoRows || num == 0 {
 			a = append(a, articles[i])
 
-			stmt, err := tx.Preparex(db.SQL("create_feed_article"))
-			if err != nil {
-				f.Err(err)
-				return
-			}
-			defer stmt.Close()
-
-			id, err := f.db.CreateWithId(stmt, id, in.Link, in.Guid,
+			id, err := f.db.CreateWithId(tx, db.SQL("create_feed_article"), id, in.Link, in.Guid,
 				in.Title, in.Description, in.Date)
 
 			if err != nil {
