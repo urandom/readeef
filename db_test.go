@@ -1,5 +1,6 @@
 package readeef
 
+/*
 import (
 	"bytes"
 	"crypto/md5"
@@ -536,3 +537,4 @@ func cleanDB(t *testing.T) {
 
 	tx.Commit()
 }
+*/

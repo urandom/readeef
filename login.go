@@ -3,6 +3,7 @@ package readeef
 import (
 	"net/http"
 
+	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/renderer"
@@ -30,21 +31,23 @@ func (con Login) Handler(c context.Context) http.HandlerFunc {
 			if err := r.ParseForm(); err != nil {
 				l.Fatal(err)
 			}
-			username := r.Form.Get("username")
+			username := info.Login(r.Form.Get("username"))
 			password := r.Form.Get("password")
 
-			db := GetDB(c)
+			repo := GetRepo(c)
+			conf := GetConfig(c)
+			u := repo.UserByLogin(username)
 
 			formError := false
-			if u, err := db.GetUser(username); err != nil {
+			if repo.Err() != nil {
 				sess.SetFlash("form-error", "login-incorrect")
 				formError = true
-			} else if !u.Authenticate(password) {
+			} else if !u.Authenticate(password, []byte(conf.Auth.Secret)) {
 				sess.SetFlash("form-error", "login-incorrect")
 				formError = true
 			} else {
 				sess.Set(authkey, u)
-				sess.Set(namekey, u.Login)
+				sess.Set(namekey, username)
 			}
 
 			if formError {

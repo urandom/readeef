@@ -1,5 +1,7 @@
 package readeef
 
+/*
+
 import (
 	"bytes"
 	"fmt"
@@ -207,3 +209,4 @@ var atomXml = `` +
 	`<summary>Some text.</summary>` +
 	`</entry>` +
 	`</feed>`
+*/

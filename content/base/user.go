@@ -100,6 +100,10 @@ func (u *User) Password(password string, secret []byte) {
 }
 
 func (u User) Authenticate(password string, secret []byte) bool {
+	if u.Err() != nil {
+		return false
+	}
+
 	return bytes.Equal(u.info.Hash, u.generateHash(password, secret))
 }
 

@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/util"
@@ -76,6 +78,8 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 			return
 		}
 
+		repo := GetRepo(c)
+
 		switch ac := route.Controller.(type) {
 		case AuthController:
 			if !ac.LoginRequired(c, r) {
@@ -85,32 +89,31 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 
 			sess := webfw.GetSession(c, r)
 
-			var u User
+			var u content.User
 			validUser := false
 			if uv, ok := sess.Get(authkey); ok {
-				if u, ok = uv.(User); ok {
+				if u, ok = uv.(content.User); ok {
 					validUser = true
 				}
 			}
 
 			if !validUser {
 				if uv, ok := sess.Get(namekey); ok {
-					if n, ok := uv.(string); ok {
-						var err error
-						u, err = mw.DB.GetUser(n)
+					if n, ok := uv.(info.Login); ok {
+						u = repo.UserByLogin(n)
 
-						if err == nil {
+						if repo.Err() == nil {
 							validUser = true
 							sess.Set(authkey, u)
-						} else if _, ok := err.(ValidationError); !ok {
-							logger.Print(err)
+						} else if _, ok := repo.Err().(ValidationError); !ok {
+							logger.Print(repo.Err())
 						}
 					}
 				}
 			}
 
-			if validUser && !u.Active {
-				logger.Infoln("User " + u.Login + " is inactive")
+			if validUser && !u.Info().Active {
+				logger.Infoln("User " + u.Info().Login + " is inactive")
 				validUser = false
 			}
 
@@ -133,24 +136,22 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 				return
 			}
 
-			var u User
-			var err error
-
 			url, login, signature, nonce, date, t := authData(r)
 
 			validUser := false
 
+			var u content.User
+
 			if login != "" && signature != "" && !t.IsZero() {
 				switch {
 				default:
-					u, err = mw.DB.GetUser(login)
-					if err != nil {
-						logger.Printf("Error getting db user '%s': %v\n", login, err)
+					u = repo.UserByLogin(info.Login(login))
+					if repo.Err() != nil {
+						logger.Printf("Error getting db user '%s': %v\n", login, repo.Err())
 						break
 					}
 
-					var decoded []byte
-					decoded, err = base64.StdEncoding.DecodeString(signature)
+					decoded, err := base64.StdEncoding.DecodeString(signature)
 					if err != nil {
 						logger.Printf("Error decoding auth header: %v\n", err)
 						break
@@ -183,8 +184,8 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 						url, r.Method, contentMD5, r.Header.Get("Content-Type"),
 						date, nonce)
 
-					b := make([]byte, base64.StdEncoding.EncodedLen(len(u.MD5API)))
-					base64.StdEncoding.Encode(b, u.MD5API)
+					b := make([]byte, base64.StdEncoding.EncodedLen(len(u.Info().MD5API)))
+					base64.StdEncoding.Encode(b, u.Info().MD5API)
 
 					hm := hmac.New(sha256.New, b)
 					if _, err := hm.Write([]byte(message)); err != nil {
@@ -197,8 +198,8 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 						break
 					}
 
-					if !u.Active {
-						logger.Println("User " + u.Login + " is inactive")
+					if !u.Info().Active {
+						logger.Println("User " + u.Info().Login + " is inactive")
 						break
 					}
 

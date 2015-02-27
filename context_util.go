@@ -2,9 +2,9 @@ package readeef
 
 import (
 	"net/http"
-	"os"
 
-	"github.com/urandom/webfw"
+	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/db"
 	"github.com/urandom/webfw/context"
 )
 
@@ -18,26 +18,26 @@ func GetConfig(c context.Context) Config {
 	return Config{}
 }
 
-func GetDB(c context.Context) DB {
+func GetDB(c context.Context) *db.DB {
 	if v, ok := c.GetGlobal(CtxKey("db")); ok {
-		return v.(DB)
+		return v.(*db.DB)
 	}
 
-	conf := GetConfig(c)
-
-	db := NewDB(conf.DB.Driver, conf.DB.Connect, webfw.NewStandardLogger(os.Stderr, "", 0))
-
-	if err := db.Connect(); err != nil {
-		panic(err)
-	}
-
-	return db
+	return nil
 }
 
-func GetUser(c context.Context, r *http.Request) User {
-	if v, ok := c.Get(r, context.BaseCtxKey("user")); ok {
-		return v.(User)
+func GetRepo(c context.Context) content.Repo {
+	if v, ok := c.GetGlobal(CtxKey("repo")); ok {
+		return v.(content.Repo)
 	}
 
-	return User{}
+	return nil
+}
+
+func GetUser(c context.Context, r *http.Request) content.User {
+	if v, ok := c.Get(r, context.BaseCtxKey("user")); ok {
+		return v.(content.User)
+	}
+
+	return nil
 }

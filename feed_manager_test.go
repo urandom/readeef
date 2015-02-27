@@ -1,5 +1,7 @@
 package readeef
 
+/*
+
 import (
 	"net/http"
 	"net/http/httptest"
@@ -144,3 +146,4 @@ type updateReceiver struct {
 func (r updateReceiver) UpdateFeedChannel() chan<- Feed {
 	return r.updateFeed
 }
+*/

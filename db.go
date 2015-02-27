@@ -30,10 +30,6 @@ type ValidationError struct {
 	error
 }
 
-func NewDB(driver, conn string, logger webfw.Logger) DB {
-	return DB{driver: driver, connectString: conn, logger: logger}
-}
-
 func (db *DB) Connect() error {
 	dbx, err := sqlx.Connect(db.driver, db.connectString)
 	if err != nil {
