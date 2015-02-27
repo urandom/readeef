@@ -32,16 +32,6 @@ type SubscriptionError struct {
 	Subscription content.Subscription
 }
 
-type HubbubSubscription struct {
-	Link                string
-	FeedId              int64     `db:"feed_id"`
-	LeaseDuration       int64     `db:"lease_duration"`
-	VerificationTime    time.Time `db:"verification_time"`
-	SubscriptionFailure bool      `db:"subscription_failure"`
-
-	hubbub *Hubbub
-}
-
 type HubbubController struct {
 	webfw.BasePatternController
 	hubbub *Hubbub

@@ -111,8 +111,9 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 	}
 
 	f := fm.repo.FeedByLink(link)
-	if fm.repo.Err() != nil {
-		if fm.repo.Err() == sql.ErrNoRows {
+	if fm.repo.HasErr() {
+		err := fm.repo.Err()
+		if err == sql.ErrNoRows {
 			fm.logger.Infoln("Discovering feeds in " + link)
 
 			feeds, err := fm.discoverParserFeeds(link)
@@ -133,7 +134,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 				}()
 			}
 		} else {
-			return f, fm.repo.Err()
+			return f, err
 		}
 	}
 
@@ -174,10 +175,11 @@ func (fm *FeedManager) DiscoverFeeds(link string) ([]content.Feed, error) {
 	}
 
 	f := fm.repo.FeedByLink(link)
-	if fm.repo.Err() == nil {
+	if !fm.repo.HasErr() {
 		feeds = append(feeds, f)
 	} else {
-		if fm.repo.Err() == sql.ErrNoRows {
+		err := fm.repo.Err()
+		if err == sql.ErrNoRows {
 			fm.logger.Infoln("Discovering feeds in " + link)
 
 			discovered, err := fm.discoverParserFeeds(link)
@@ -189,7 +191,7 @@ func (fm *FeedManager) DiscoverFeeds(link string) ([]content.Feed, error) {
 				feeds = append(feeds, f)
 			}
 		} else {
-			return feeds, fm.repo.Err()
+			return feeds, err
 		}
 	}
 

@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/search"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/webfw"
@@ -23,11 +22,6 @@ type SearchIndex struct {
 	repo      content.Repo
 	newIndex  bool
 	batchSize int64
-}
-
-type SearchResult struct {
-	Article
-	Hit search.DocumentMatch
 }
 
 type indexArticle struct {

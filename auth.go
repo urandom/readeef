@@ -45,7 +45,6 @@ type AuthRejectHandler interface {
 // dispatcher's pattern, which should be ignored. The later may also be passed
 // from the Config.Auth.IgnoreURLPrefix
 type Auth struct {
-	DB              DB
 	Nonce           *Nonce
 	Pattern         string
 	IgnoreURLPrefix []string
@@ -102,10 +101,10 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 					if n, ok := uv.(info.Login); ok {
 						u = repo.UserByLogin(n)
 
-						if repo.Err() == nil {
+						if !repo.HasErr() {
 							validUser = true
 							sess.Set(authkey, u)
-						} else if _, ok := repo.Err().(ValidationError); !ok {
+						} else {
 							logger.Print(repo.Err())
 						}
 					}
@@ -146,7 +145,7 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 				switch {
 				default:
 					u = repo.UserByLogin(info.Login(login))
-					if repo.Err() != nil {
+					if repo.HasErr() {
 						logger.Printf("Error getting db user '%s': %v\n", login, repo.Err())
 						break
 					}
