@@ -1,5 +1,7 @@
 package info
 
+import "time"
+
 type FeedId int64
 
 type Feed struct {
@@ -11,4 +13,7 @@ type Feed struct {
 	HubLink        string `db:"hub_link"`
 	UpdateError    string `db:"update_error"`
 	SubscribeError string `db:"subscribe_error"`
+	TTL            time.Duration
+	SkipHours      map[int]bool
+	SkipDays       map[string]bool
 }

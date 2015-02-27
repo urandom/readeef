@@ -21,7 +21,7 @@ func TestImplements(t *testing.T) {
 
 	var scoredArticle content.ScoredArticle
 
-	scoredArticle = r.ScoredArticle(nil)
+	scoredArticle = r.ScoredArticle()
 	scoredArticle.Info()
 
 	var feed content.Feed

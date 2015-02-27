@@ -18,6 +18,8 @@ type Feed interface {
 
 	Validate() error
 
+	Users() []User
+
 	// Updates the in-memory feed information using the RSS data
 	Refresh(pf parser.Feed)
 	// Returns the []content.Article created from the RSS data
@@ -42,8 +44,6 @@ type UserFeed interface {
 	ArticleSearch
 	UserRelated
 	RepoRelated
-
-	Users() []User
 
 	// Detaches from the current user
 	Detach()

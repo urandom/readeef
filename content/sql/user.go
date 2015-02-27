@@ -520,7 +520,7 @@ func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.S
 
 	sa = make([]content.ScoredArticle, len(ua))
 	for i := range ua {
-		sa[i] = u.Repo().ScoredArticle(u)
+		sa[i] = u.Repo().ScoredArticle()
 		sa[i].Info(ua[i].Info())
 	}
 

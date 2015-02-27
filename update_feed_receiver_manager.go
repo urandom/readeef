@@ -1,11 +1,13 @@
 package readeef
 
+import "github.com/urandom/readeef/content"
+
 type UpdateFeedReceiver interface {
-	UpdateFeedChannel() chan<- Feed
+	UpdateFeedChannel() chan<- content.Feed
 }
 
 type UpdateFeedReceiverManager struct {
-	updateReceivers []chan<- Feed
+	updateReceivers []chan<- content.Feed
 }
 
 func (u *UpdateFeedReceiverManager) AddUpdateReceiver(r UpdateFeedReceiver) {
@@ -31,7 +33,7 @@ func (u *UpdateFeedReceiverManager) RemoveUpdateReceiver(r UpdateFeedReceiver) {
 	}
 }
 
-func (u UpdateFeedReceiverManager) NotifyReceivers(f Feed) {
+func (u UpdateFeedReceiverManager) NotifyReceivers(f content.Feed) {
 	for i := range u.updateReceivers {
 		u.updateReceivers[i] <- f
 	}

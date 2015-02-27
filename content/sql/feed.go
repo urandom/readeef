@@ -37,6 +37,34 @@ func (f Feed) NewArticles() (a []content.Article) {
 	return f.newArticles
 }
 
+func (f *Feed) Users() (u []content.User) {
+	if f.Err() != nil {
+		return
+	}
+
+	id := f.Info().Id
+	f.logger.Infof("Getting users for feed %d\n", id)
+
+	var in []info.User
+	if err := f.db.Select(&in, f.db.SQL("get_feed_users"), id); err != nil {
+		f.Err(err)
+		return
+	}
+
+	u = make([]content.User, len(in))
+	for i := range in {
+		u[i] = f.Repo().User()
+		u[i].Info(in[i])
+
+		if u[i].Err() != nil {
+			f.Err(u[i].Err())
+			return
+		}
+	}
+
+	return
+}
+
 func (f *Feed) Update() {
 	if f.Err() != nil {
 		return
@@ -279,34 +307,6 @@ func (uf UserFeed) Validate() error {
 	return err
 }
 
-func (uf *UserFeed) Users() (u []content.User) {
-	if uf.Err() != nil {
-		return
-	}
-
-	id := uf.Info().Id
-	uf.logger.Infof("Getting users for feed %d\n", id)
-
-	var in []info.User
-	if err := uf.db.Select(&in, uf.db.SQL("get_feed_users"), id); err != nil {
-		uf.Err(err)
-		return
-	}
-
-	u = make([]content.User, len(in))
-	for i := range in {
-		u[i] = uf.Repo().User()
-		u[i].Info(in[i])
-
-		if u[i].Err() != nil {
-			uf.Err(u[i].Err())
-			return
-		}
-	}
-
-	return
-}
-
 func (uf *UserFeed) Detach() {
 	if uf.Err() != nil {
 		return
@@ -442,7 +442,7 @@ func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []cont
 
 	sa = make([]content.ScoredArticle, len(ua))
 	for i := range ua {
-		sa[i] = uf.Repo().ScoredArticle(uf.User())
+		sa[i] = uf.Repo().ScoredArticle()
 		sa[i].Info(ua[i].Info())
 	}
 

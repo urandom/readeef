@@ -42,6 +42,12 @@ type Article interface {
 	Format(templateDir, readabilityKey string) info.ArticleFormatting
 }
 
+type ScoredArticle interface {
+	Article
+
+	Scores() ArticleScores
+}
+
 type UserArticle interface {
 	Article
 	UserRelated
@@ -50,8 +56,16 @@ type UserArticle interface {
 	Favorite(favorite bool)
 }
 
-type ScoredArticle interface {
-	UserArticle
+type ArticleScores interface {
+	Error
+	RepoRelated
 
-	Scores(asc ...info.ArticleScores) info.ArticleScores
+	fmt.Stringer
+
+	Info(info ...info.ArticleScores) info.ArticleScores
+
+	Validate() error
+	Calculate() int64
+
+	Update()
 }

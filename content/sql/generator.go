@@ -9,13 +9,17 @@ func (r Repo) Article() content.Article {
 	return &Article{}
 }
 
+func (r Repo) ScoredArticle() content.ScoredArticle {
+	return &ScoredArticle{Article: Article{}}
+}
+
 func (r Repo) UserArticle(u content.User) content.UserArticle {
 	ua := r.userArticle(u)
 	return &ua
 }
 
-func (r Repo) ScoredArticle(u content.User) content.ScoredArticle {
-	return &ScoredArticle{UserArticle: r.userArticle(u)}
+func (r Repo) ArticleScores() content.ArticleScores {
+	return &ArticleScores{db: r.db, logger: r.logger}
 }
 
 func (r Repo) Feed() content.Feed {

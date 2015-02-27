@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/readeef/db"
@@ -14,16 +15,19 @@ type Article struct {
 	base.Article
 }
 
-type UserArticle struct {
-	base.UserArticle
+type ScoredArticle struct {
 	Article
 	logger webfw.Logger
 
 	db *db.DB
 }
 
-type ScoredArticle struct {
-	UserArticle
+type UserArticle struct {
+	base.UserArticle
+	Article
+	logger webfw.Logger
+
+	db *db.DB
 }
 
 func (ua *UserArticle) Read(read bool) {
@@ -92,59 +96,21 @@ func (ua *UserArticle) Favorite(favorite bool) {
 	ua.Err(err)
 }
 
-func (sa *ScoredArticle) Scores(in ...info.ArticleScores) (i info.ArticleScores) {
+func (sa *ScoredArticle) Scores() (asc content.ArticleScores) {
 	if sa.Err() != nil {
 		return
 	}
 
 	id := sa.Info().Id
-	if len(in) > 0 {
-		asc := in[0]
-		sa.logger.Infof("Setting article '%d' scores\n", id)
+	sa.logger.Infof("Getting article '%d' scores\n", id)
 
-		tx, err := sa.db.Begin()
-		if err != nil {
-			sa.Err(err)
-			return
-		}
-		defer tx.Rollback()
-
-		stmt, err := tx.Preparex(sa.db.SQL("update_article_scores"))
-		if err != nil {
-			sa.Err(err)
-			return
-		}
-		defer stmt.Close()
-
-		res, err := stmt.Exec(asc.Score, asc.Score1, asc.Score2, asc.Score3, asc.Score4, asc.Score5, id)
-		if err != nil {
-			sa.Err(err)
-			return
-		}
-
-		if num, err := res.RowsAffected(); err != nil || num == 0 {
-			stmt, err := tx.Preparex(sa.db.SQL("create_article_scores"))
-			if err != nil {
-				sa.Err(err)
-				return
-			}
-			defer stmt.Close()
-
-			_, err = stmt.Exec(id, asc.Score, asc.Score1, asc.Score2, asc.Score3, asc.Score4, asc.Score5)
-			if err != nil {
-				sa.Err(err)
-				return
-			}
-		}
-
-		tx.Commit()
-	} else {
-		sa.logger.Infof("Getting article '%d' scores\n", id)
-
-		if err := sa.db.Get(&i, sa.db.SQL("get_article_scores"), id); err != nil && err != sql.ErrNoRows {
-			sa.Err(err)
-		}
+	var i info.ArticleScores
+	if err := sa.db.Get(&i, sa.db.SQL("get_article_scores"), id); err != nil && err != sql.ErrNoRows {
+		sa.Err(err)
 	}
+
+	asc = sa.Repo().ArticleScores()
+	asc.Info(i)
 
 	return
 }
