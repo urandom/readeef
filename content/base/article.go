@@ -23,7 +23,7 @@ func (a Article) String() string {
 }
 
 func (a *Article) Info(in ...info.Article) info.Article {
-	if a.Err() != nil {
+	if a.HasErr() {
 		return info.Article{}
 	}
 

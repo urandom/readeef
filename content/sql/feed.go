@@ -4,6 +4,7 @@ import (
 	dsql "database/sql"
 	"time"
 
+	"github.com/blevesearch/bleve"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/info"
@@ -30,7 +31,7 @@ type TaggedFeed struct {
 }
 
 func (f Feed) NewArticles() (a []content.Article) {
-	if f.Err() != nil {
+	if f.HasErr() {
 		return
 	}
 
@@ -38,7 +39,7 @@ func (f Feed) NewArticles() (a []content.Article) {
 }
 
 func (f *Feed) Users() (u []content.User) {
-	if f.Err() != nil {
+	if f.HasErr() {
 		return
 	}
 
@@ -56,7 +57,7 @@ func (f *Feed) Users() (u []content.User) {
 		u[i] = f.Repo().User()
 		u[i].Info(in[i])
 
-		if u[i].Err() != nil {
+		if u[i].HasErr() {
 			f.Err(u[i].Err())
 			return
 		}
@@ -66,7 +67,7 @@ func (f *Feed) Users() (u []content.User) {
 }
 
 func (f *Feed) Update() {
-	if f.Err() != nil {
+	if f.HasErr() {
 		return
 	}
 
@@ -108,7 +109,7 @@ func (f *Feed) Update() {
 
 	articles := f.updateFeedArticles(tx, f.ParsedArticles())
 
-	if f.Err() != nil {
+	if f.HasErr() {
 		return
 	}
 
@@ -118,7 +119,7 @@ func (f *Feed) Update() {
 }
 
 func (f *Feed) Delete() {
-	if f.Err() != nil {
+	if f.HasErr() {
 		return
 	}
 
@@ -149,7 +150,7 @@ func (f *Feed) Delete() {
 }
 
 func (f *Feed) AllArticles() (a []content.Article) {
-	if f.Err() != nil {
+	if f.HasErr() {
 		return
 	}
 
@@ -172,7 +173,7 @@ func (f *Feed) AllArticles() (a []content.Article) {
 }
 
 func (f *Feed) LatestArticles() (a []content.Article) {
-	if f.Err() != nil {
+	if f.HasErr() {
 		return
 	}
 
@@ -195,7 +196,7 @@ func (f *Feed) LatestArticles() (a []content.Article) {
 }
 
 func (f *Feed) AddArticles(articles []content.Article) {
-	if f.Err() != nil {
+	if f.HasErr() {
 		return
 	}
 
@@ -211,7 +212,7 @@ func (f *Feed) AddArticles(articles []content.Article) {
 
 	newArticles := f.updateFeedArticles(tx, articles)
 
-	if f.Err() != nil {
+	if f.HasErr() {
 		return
 	}
 
@@ -221,7 +222,8 @@ func (f *Feed) AddArticles(articles []content.Article) {
 }
 
 func (f *Feed) Subscription() (s content.Subscription) {
-	if f.Err() != nil {
+	s = f.Repo().Subscription()
+	if f.HasErr() {
 		return
 	}
 
@@ -234,14 +236,13 @@ func (f *Feed) Subscription() (s content.Subscription) {
 		return
 	}
 
-	s = f.Repo().Subscription()
 	s.Info(in)
 
 	return
 }
 
 func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []content.Article) {
-	if f.Err() != nil || len(articles) == 0 {
+	if f.HasErr() || len(articles) == 0 {
 		return
 	}
 
@@ -308,7 +309,7 @@ func (uf UserFeed) Validate() error {
 }
 
 func (uf *UserFeed) Detach() {
-	if uf.Err() != nil {
+	if uf.HasErr() {
 		return
 	}
 
@@ -340,7 +341,7 @@ func (uf *UserFeed) Detach() {
 }
 
 func (uf *UserFeed) Articles(paging ...int) (ua []content.UserArticle) {
-	if uf.Err() != nil {
+	if uf.HasErr() {
 		return
 	}
 
@@ -358,7 +359,7 @@ func (uf *UserFeed) Articles(paging ...int) (ua []content.UserArticle) {
 }
 
 func (uf *UserFeed) UnreadArticles(paging ...int) (ua []content.UserArticle) {
-	if uf.Err() != nil {
+	if uf.HasErr() {
 		return
 	}
 
@@ -375,7 +376,7 @@ func (uf *UserFeed) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 }
 
 func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
-	if uf.Err() != nil {
+	if uf.HasErr() {
 		return
 	}
 
@@ -422,7 +423,7 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 }
 
 func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []content.ScoredArticle) {
-	if uf.Err() != nil {
+	if uf.HasErr() {
 		return
 	}
 
@@ -450,7 +451,7 @@ func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []cont
 }
 
 func (uf *UserFeed) getArticles(where, order string, paging ...int) (ua []content.UserArticle) {
-	if uf.Err() != nil {
+	if uf.HasErr() {
 		return
 	}
 
@@ -463,15 +464,28 @@ func (uf *UserFeed) getArticles(where, order string, paging ...int) (ua []conten
 	u := uf.User()
 	ua = getArticles(u, uf.db, uf.logger, uf, "", "", where, order, []interface{}{uf.Info().Id}, paging...)
 
-	if u.Err() != nil {
+	if u.HasErr() {
 		uf.Err(u.Err())
 	}
 
 	return
 }
 
+func (uf *UserFeed) Query(term string, index bleve.Index, paging ...int) (ua []content.UserArticle) {
+	if uf.HasErr() {
+		return
+	}
+
+	var err error
+
+	ua, err = query(term, uf.Highlight(), index, uf.User(), []info.FeedId{uf.Info().Id}, paging...)
+	uf.Err(err)
+
+	return
+}
+
 func (tf *TaggedFeed) AddTags(tags ...content.Tag) {
-	if tf.Err() != nil || len(tags) == 0 {
+	if tf.HasErr() || len(tags) == 0 {
 		return
 	}
 
@@ -518,7 +532,7 @@ func (tf *TaggedFeed) AddTags(tags ...content.Tag) {
 }
 
 func (tf *TaggedFeed) DeleteAllTags() {
-	if tf.Err() != nil {
+	if tf.HasErr() {
 		return
 	}
 

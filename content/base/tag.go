@@ -16,14 +16,14 @@ func (t Tag) String() string {
 	return string(t.value)
 }
 
-func (t Tag) Set(value info.TagValue) {
-	if t.Err() != nil {
-		return
+func (t *Tag) Value(val ...info.TagValue) info.TagValue {
+	if t.HasErr() {
+		return t.value
 	}
 
-	t.value = value
-}
+	if len(val) > 0 {
+		t.value = val[0]
+	}
 
-func (t Tag) Value() info.TagValue {
 	return t.value
 }

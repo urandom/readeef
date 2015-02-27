@@ -3,6 +3,7 @@ package content
 import (
 	"fmt"
 
+	"github.com/blevesearch/bleve"
 	"github.com/urandom/readeef/content/info"
 )
 
@@ -25,8 +26,10 @@ type ArticleSorting interface {
 }
 
 type ArticleSearch interface {
-	Highlight(highlight string)
-	Query(query string) []UserArticle
+	UserRelated
+
+	Highlight(highlight ...string) string
+	Query(query string, index bleve.Index, paging ...int) []UserArticle
 }
 
 type Article interface {

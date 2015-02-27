@@ -9,6 +9,7 @@ func init() {
 	sql["get_user_feeds"] = getUserFeeds
 	sql["get_user_tag_feeds"] = getUserTagFeeds
 	sql["get_user_feed_ids_tags"] = getUserFeedIdsTags
+	sql["get_user_tags"] = getUserTags
 	sql["get_article_columns"] = getArticleColumns
 	sql["get_article_tables"] = getArticleTables
 	sql["get_article_joins"] = getArticleJoins
@@ -54,6 +55,7 @@ WHERE f.id = uft.feed_id
 ORDER BY LOWER(f.title)
 `
 	getUserFeedIdsTags = `SELECT feed_id, tag FROM users_feeds_tags WHERE user_login = $1 ORDER BY feed_id`
+	getUserTags        = `SELECT DISTINCT tag FROM users_feeds_tags WHERE user_login = $1`
 	getArticleColumns  = `
 SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,

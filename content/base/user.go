@@ -35,7 +35,7 @@ func (u User) String() string {
 }
 
 func (u *User) Info(in ...info.User) info.User {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return u.info
 	}
 
@@ -78,7 +78,7 @@ func (u User) Validate() error {
 }
 
 func (u *User) Password(password string, secret []byte) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -100,7 +100,7 @@ func (u *User) Password(password string, secret []byte) {
 }
 
 func (u User) Authenticate(password string, secret []byte) bool {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return false
 	}
 

@@ -33,7 +33,7 @@ func (f Feed) String() string {
 }
 
 func (f *Feed) Info(in ...info.Feed) info.Feed {
-	if f.Err() != nil {
+	if f.HasErr() {
 		return f.info
 	}
 
@@ -53,7 +53,7 @@ func (f Feed) Validate() error {
 }
 
 func (f *Feed) Refresh(pf parser.Feed) {
-	if f.Err() != nil {
+	if f.HasErr() {
 		return
 	}
 
@@ -64,7 +64,7 @@ func (f *Feed) Refresh(pf parser.Feed) {
 	in.SiteLink = pf.SiteLink
 	in.HubLink = pf.HubLink
 
-	newArticles := make([]Article, len(pf.Articles))
+	f.parsedArticles = make([]content.Article, len(pf.Articles))
 
 	for i := range pf.Articles {
 		ai := info.Article{
@@ -80,24 +80,24 @@ func (f *Feed) Refresh(pf parser.Feed) {
 			ai.Guid.String = pf.Articles[i].Guid
 		}
 
-		a := Article{info: ai}
+		a := &Article{info: ai}
 
-		newArticles[i] = a
+		f.parsedArticles[i] = a
 	}
 
 	f.Info(in)
 }
 
 func (f *Feed) ParsedArticles() (a []content.Article) {
-	if f.Err() != nil {
+	if f.HasErr() {
 		return
 	}
 
 	return f.parsedArticles
 }
 
-func (f UserFeed) Validate() error {
-	if f.user.Info().Login == "" {
+func (uf UserFeed) Validate() error {
+	if uf.user.Info().Login == "" {
 		return ValidationError{errors.New("UserFeed has no user")}
 	}
 

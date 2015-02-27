@@ -3,6 +3,7 @@ package sqlite3
 import (
 	"github.com/urandom/readeef/content/sql"
 	"github.com/urandom/readeef/db"
+	_ "github.com/urandom/readeef/db/sqlite3"
 	"github.com/urandom/webfw"
 )
 

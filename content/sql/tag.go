@@ -3,6 +3,7 @@ package sql
 import (
 	"time"
 
+	"github.com/blevesearch/bleve"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/info"
@@ -23,7 +24,7 @@ type feedIdTag struct {
 }
 
 func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
-	if t.Err() != nil {
+	if t.HasErr() {
 		return
 	}
 
@@ -39,7 +40,7 @@ func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
 }
 
 func (t *Tag) Articles(paging ...int) (ua []content.UserArticle) {
-	if t.Err() != nil {
+	if t.HasErr() {
 		return
 	}
 
@@ -58,7 +59,7 @@ func (t *Tag) Articles(paging ...int) (ua []content.UserArticle) {
 }
 
 func (t *Tag) UnreadArticles(paging ...int) (ua []content.UserArticle) {
-	if t.Err() != nil {
+	if t.HasErr() {
 		return
 	}
 
@@ -77,7 +78,7 @@ func (t *Tag) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 }
 
 func (t *Tag) ReadBefore(date time.Time, read bool) {
-	if t.Err() != nil {
+	if t.HasErr() {
 		return
 	}
 
@@ -124,7 +125,7 @@ func (t *Tag) ReadBefore(date time.Time, read bool) {
 }
 
 func (t *Tag) ScoredArticles(from, to time.Time, paging ...int) (sa []content.ScoredArticle) {
-	if t.Err() != nil {
+	if t.HasErr() {
 		return
 	}
 
@@ -146,6 +147,29 @@ func (t *Tag) ScoredArticles(from, to time.Time, paging ...int) (sa []content.Sc
 		sa[i] = t.Repo().ScoredArticle()
 		sa[i].Info(ua[i].Info())
 	}
+
+	return
+}
+
+func (t *Tag) Query(term string, index bleve.Index, paging ...int) (ua []content.UserArticle) {
+	if t.HasErr() {
+		return
+	}
+
+	var err error
+
+	feeds := t.AllFeeds()
+	if t.HasErr() {
+		return
+	}
+
+	ids := make([]info.FeedId, len(feeds))
+	for i := range feeds {
+		ids = append(ids, feeds[i].Info().Id)
+	}
+
+	ua, err = query(term, t.Highlight(), index, t.User(), ids, paging...)
+	t.Err(err)
 
 	return
 }

@@ -42,7 +42,6 @@ type Feed interface {
 type UserFeed interface {
 	Feed
 	ArticleSearch
-	UserRelated
 	RepoRelated
 
 	// Detaches from the current user

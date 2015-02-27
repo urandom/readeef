@@ -33,7 +33,7 @@ type User interface {
 
 	Article(id info.ArticleId) UserArticle
 
-	ArticlesById(ids ...info.ArticleId) []UserArticle
+	ArticlesById(ids []info.ArticleId) []UserArticle
 
 	AllUnreadArticleIds() []info.ArticleId
 	AllFavoriteIds() []info.ArticleId

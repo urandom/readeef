@@ -19,7 +19,7 @@ func (asc ArticleScores) String() string {
 }
 
 func (asc *ArticleScores) Info(in ...info.ArticleScores) info.ArticleScores {
-	if asc.Err() != nil {
+	if asc.HasErr() {
 		return info.ArticleScores{}
 	}
 

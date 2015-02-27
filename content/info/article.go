@@ -33,6 +33,10 @@ type Article struct {
 	Read     bool
 	Favorite bool
 	Score    int64
+
+	Hit struct {
+		Fragments map[string][]string `json:"fragments,omitempty"`
+	}
 }
 
 type ArticleScores struct {

@@ -39,7 +39,7 @@ func TestImplements(t *testing.T) {
 	taggedFeed = r.TaggedFeed(nil)
 	taggedFeed.Info()
 
-	r.Err()
+	r.HasErr()
 
 	var subscription content.Subscription
 

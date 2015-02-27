@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	_ "github.com/lib/pq"
 	"github.com/urandom/readeef/db"
 	"github.com/urandom/readeef/db/base"
 )

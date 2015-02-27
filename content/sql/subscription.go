@@ -14,7 +14,7 @@ type Subscription struct {
 }
 
 func (s *Subscription) Update() {
-	if s.Err() != nil {
+	if s.HasErr() {
 		return
 	}
 
@@ -64,7 +64,7 @@ func (s *Subscription) Update() {
 }
 
 func (s *Subscription) Delete() {
-	if s.Err() != nil {
+	if s.HasErr() {
 		return
 	}
 

@@ -21,7 +21,7 @@ type User struct {
 }
 
 func (u *User) Update() {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -77,7 +77,7 @@ func (u *User) Update() {
 }
 
 func (u *User) Delete() {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -115,7 +115,8 @@ func (u *User) Delete() {
 }
 
 func (u *User) Feed(id info.FeedId) (uf content.UserFeed) {
-	if u.Err() != nil {
+	uf = u.Repo().UserFeed(u)
+	if u.HasErr() {
 		return
 	}
 
@@ -134,7 +135,8 @@ func (u *User) Feed(id info.FeedId) (uf content.UserFeed) {
 }
 
 func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
-	if u.Err() != nil {
+	uf = u.Repo().UserFeed(u)
+	if u.HasErr() {
 		return
 	}
 
@@ -171,14 +173,13 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 		u.Err(err)
 	}
 
-	uf = u.Repo().UserFeed(u)
 	uf.Info(i)
 
 	return
 }
 
 func (u *User) AllFeeds() (uf []content.TaggedFeed) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -201,7 +202,7 @@ func (u *User) AllFeeds() (uf []content.TaggedFeed) {
 }
 
 func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -216,7 +217,7 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	}
 
 	tf = u.AllFeeds()
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -224,7 +225,7 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 
 	for _, tuple := range feedIdTags {
 		tag := u.Repo().Tag(u)
-		tag.Set(tuple.TagValue)
+		tag.Value(tuple.TagValue)
 		feedMap[tuple.FeedId] = append(feedMap[tuple.FeedId], tag)
 	}
 
@@ -236,7 +237,8 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 }
 
 func (u *User) Article(id info.ArticleId) (ua content.UserArticle) {
-	if u.Err() != nil {
+	ua = u.Repo().UserArticle(u)
+	if u.HasErr() {
 		return
 	}
 
@@ -245,15 +247,15 @@ func (u *User) Article(id info.ArticleId) (ua content.UserArticle) {
 
 	articles := getArticles(u, u.db, u.logger, u, "", "", "a.id = $2", "", []interface{}{id})
 
-	if u.Err() == nil && len(articles) > 0 {
+	if !u.HasErr() && len(articles) > 0 {
 		return articles[0]
 	}
 
 	return
 }
 
-func (u *User) ArticlesById(ids ...info.ArticleId) (ua []content.UserArticle) {
-	if u.Err() != nil || len(ids) == 0 {
+func (u *User) ArticlesById(ids []info.ArticleId) (ua []content.UserArticle) {
+	if u.HasErr() || len(ids) == 0 {
 		return
 	}
 
@@ -286,7 +288,7 @@ func (u *User) ArticlesById(ids ...info.ArticleId) (ua []content.UserArticle) {
 }
 
 func (u *User) AllUnreadArticleIds() (ids []info.ArticleId) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -302,7 +304,7 @@ func (u *User) AllUnreadArticleIds() (ids []info.ArticleId) {
 }
 
 func (u *User) AllFavoriteIds() (ids []info.ArticleId) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -318,7 +320,7 @@ func (u *User) AllFavoriteIds() (ids []info.ArticleId) {
 }
 
 func (u *User) ArticleCount() (c int64) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -334,7 +336,7 @@ func (u *User) ArticleCount() (c int64) {
 }
 
 func (u *User) Articles(paging ...int) (ua []content.UserArticle) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -353,7 +355,7 @@ func (u *User) Articles(paging ...int) (ua []content.UserArticle) {
 }
 
 func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -370,7 +372,7 @@ func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 }
 
 func (u *User) ArticlesOrderedById(pivot info.ArticleId, paging ...int) (ua []content.UserArticle) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -389,7 +391,7 @@ func (u *User) ArticlesOrderedById(pivot info.ArticleId, paging ...int) (ua []co
 }
 
 func (u *User) FavoriteArticles(paging ...int) (ua []content.UserArticle) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -406,7 +408,7 @@ func (u *User) FavoriteArticles(paging ...int) (ua []content.UserArticle) {
 }
 
 func (u *User) ReadBefore(date time.Time, read bool) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -453,7 +455,7 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 }
 
 func (u *User) ReadAfter(date time.Time, read bool) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -501,7 +503,7 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 }
 
 func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.ScoredArticle) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 
@@ -528,15 +530,33 @@ func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.S
 }
 
 func (u *User) Tags() (tags []content.Tag) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
+	}
+
+	login := u.Info().Login
+	u.logger.Infof("Getting all tags for user %s\n", login)
+
+	var feedIdTags []feedIdTag
+
+	if err := u.db.Select(&feedIdTags, u.db.SQL("get_user_tags"), login); err != nil {
+		u.Err(err)
+		return
+	}
+
+	tags = make([]content.Tag, len(feedIdTags))
+	for _, tuple := range feedIdTags {
+		tag := u.Repo().Tag(u)
+		tag.Value(tuple.TagValue)
+
+		tags = append(tags, tag)
 	}
 
 	return
 }
 
 func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting content.ArticleSorting, columns, join, where, order string, args []interface{}, paging ...int) (ua []content.UserArticle) {
-	if u.Err() != nil {
+	if u.HasErr() {
 		return
 	}
 

@@ -21,7 +21,7 @@ func (s Subscription) String() string {
 }
 
 func (s *Subscription) Info(in ...info.Subscription) info.Subscription {
-	if s.Err() != nil {
+	if s.HasErr() {
 		return s.info
 	}
 

@@ -14,7 +14,7 @@ type ArticleScores struct {
 }
 
 func (asc *ArticleScores) Update() {
-	if asc.Err() != nil {
+	if asc.HasErr() {
 		return
 	}
 

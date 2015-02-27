@@ -1,7 +1,5 @@
 package postgres
 
-import _ "github.com/lib/pq"
-
 var (
 	initSQL = []string{`
 CREATE TABLE IF NOT EXISTS readeef (

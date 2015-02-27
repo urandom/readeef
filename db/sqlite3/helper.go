@@ -1,6 +1,7 @@
 package sqlite3
 
 import (
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/urandom/readeef/db"
 	"github.com/urandom/readeef/db/base"
 )

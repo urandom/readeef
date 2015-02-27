@@ -11,13 +11,11 @@ type Tag interface {
 	Error
 	ArticleSorting
 	ArticleSearch
-	UserRelated
 	RepoRelated
 
 	fmt.Stringer
 
-	Set(value info.TagValue)
-	Value() info.TagValue
+	Value(val ...info.TagValue) info.TagValue
 
 	AllFeeds() []TaggedFeed
 

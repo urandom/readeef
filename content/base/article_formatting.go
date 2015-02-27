@@ -29,7 +29,7 @@ var (
 )
 
 func (a *Article) Format(templateDir, readabilityKey string) (f info.ArticleFormatting) {
-	if a.Err() != nil {
+	if a.HasErr() {
 		return
 	}
 

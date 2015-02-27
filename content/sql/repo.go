@@ -20,7 +20,8 @@ func NewRepo(db *db.DB, logger webfw.Logger) *Repo {
 }
 
 func (r *Repo) UserByLogin(login info.Login) (u content.User) {
-	if r.Err() != nil {
+	u = r.User()
+	if r.HasErr() {
 		return
 	}
 
@@ -33,10 +34,9 @@ func (r *Repo) UserByLogin(login info.Login) (u content.User) {
 	}
 
 	info.Login = login
-	u = r.User()
 	u.Info(info)
 
-	if u.Err() != nil {
+	if u.HasErr() {
 		r.Err(u.Err())
 	}
 
@@ -44,7 +44,8 @@ func (r *Repo) UserByLogin(login info.Login) (u content.User) {
 }
 
 func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
-	if r.Err() != nil {
+	u = r.User()
+	if r.HasErr() {
 		return
 	}
 
@@ -57,10 +58,9 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 	}
 
 	info.MD5API = md5
-	u = r.User()
 	u.Info(info)
 
-	if u.Err() != nil {
+	if u.HasErr() {
 		r.Err(u.Err())
 	}
 
@@ -68,7 +68,7 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 }
 
 func (r *Repo) AllUsers() (users []content.User) {
-	if r.Err() != nil {
+	if r.HasErr() {
 		return
 	}
 
@@ -85,7 +85,7 @@ func (r *Repo) AllUsers() (users []content.User) {
 	for i := range info {
 		users[i] = r.User()
 		users[i].Info(info[i])
-		if users[i].Err() != nil {
+		if users[i].HasErr() {
 			r.Err(users[i].Err())
 			return
 		}
@@ -95,7 +95,8 @@ func (r *Repo) AllUsers() (users []content.User) {
 }
 
 func (r *Repo) FeedById(id info.FeedId) (f content.Feed) {
-	if r.Err() != nil {
+	f = r.Feed()
+	if r.HasErr() {
 		return
 	}
 
@@ -108,14 +109,14 @@ func (r *Repo) FeedById(id info.FeedId) (f content.Feed) {
 	}
 
 	i.Id = id
-	f = r.Feed()
 	f.Info(i)
 
 	return
 }
 
 func (r *Repo) FeedByLink(link string) (f content.Feed) {
-	if r.Err() != nil {
+	f = r.Feed()
+	if r.HasErr() {
 		return
 	}
 
@@ -128,14 +129,13 @@ func (r *Repo) FeedByLink(link string) (f content.Feed) {
 	}
 
 	i.Link = link
-	f = r.Feed()
 	f.Info(i)
 
 	return
 }
 
 func (r *Repo) AllFeeds() (feeds []content.Feed) {
-	if r.Err() != nil {
+	if r.HasErr() {
 		return
 	}
 
@@ -158,7 +158,7 @@ func (r *Repo) AllFeeds() (feeds []content.Feed) {
 }
 
 func (r *Repo) AllUnsubscribedFeeds() (feeds []content.Feed) {
-	if r.Err() != nil {
+	if r.HasErr() {
 		return
 	}
 
@@ -181,7 +181,7 @@ func (r *Repo) AllUnsubscribedFeeds() (feeds []content.Feed) {
 }
 
 func (r *Repo) AllSubscriptions() (s []content.Subscription) {
-	if r.Err() != nil {
+	if r.HasErr() {
 		return
 	}
 
@@ -204,7 +204,7 @@ func (r *Repo) AllSubscriptions() (s []content.Subscription) {
 }
 
 func (r *Repo) FailSubscriptions() {
-	if r.Err() != nil {
+	if r.HasErr() {
 		return
 	}
 

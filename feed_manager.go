@@ -123,7 +123,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 			f = feeds[0]
 
 			f.Update()
-			if f.Err() != nil {
+			if f.HasErr() {
 				return f, f.Err()
 			}
 
@@ -145,11 +145,12 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 
 func (fm *FeedManager) RemoveFeedByLink(link string) (content.Feed, error) {
 	f := fm.repo.FeedByLink(link)
-	if fm.repo.Err() != nil {
-		if fm.repo.Err() == sql.ErrNoRows {
+	if fm.repo.HasErr() {
+		err := fm.repo.Err()
+		if err == sql.ErrNoRows {
 			return f, nil
 		} else {
-			return f, fm.repo.Err()
+			return f, err
 		}
 	}
 
@@ -283,7 +284,7 @@ func (fm *FeedManager) stopUpdatingFeed(f content.Feed) {
 	delete(fm.activeFeeds, info.Id)
 
 	users := f.Users()
-	if f.Err() != nil {
+	if f.HasErr() {
 		fm.logger.Printf("Error getting users for feed '%s': %v\n", f, f.Err())
 	} else {
 		if len(users) == 0 {
@@ -297,7 +298,7 @@ func (fm *FeedManager) stopUpdatingFeed(f content.Feed) {
 				}
 			}
 			f.Delete()
-			if f.Err() != nil {
+			if f.HasErr() {
 				fm.logger.Printf("Error deleting feed '%s' from the repository: %v\n", f, f.Err())
 			}
 		}
@@ -351,7 +352,7 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 		return
 	default:
 		f.Update()
-		if f.Err() != nil {
+		if f.HasErr() {
 			fm.logger.Printf("Error updating feed '%s' database record: %v\n", f, f.Err())
 		}
 
@@ -392,7 +393,7 @@ func (fm *FeedManager) scoreFeedContent(f content.Feed) {
 	fm.logger.Infoln("Scoring feed content for " + f.String())
 
 	articles := f.LatestArticles()
-	if f.Err() != nil {
+	if f.HasErr() {
 		fm.logger.Printf("Error getting latest feed articles for '%s': %v\n", f, f.Err())
 		return
 	}
@@ -425,7 +426,7 @@ func (fm *FeedManager) scoreArticles() {
 			go func() {
 				asc := sa.Scores()
 
-				if sa.Err() != nil {
+				if sa.HasErr() {
 					fm.logger.Printf("Error getting scores for article '%s': %v\n", sa, sa.Err())
 					ascc <- blankScores
 				} else {
@@ -472,7 +473,7 @@ func (fm *FeedManager) scoreArticles() {
 
 				asc.Info(ai)
 				asc.Update()
-				if asc.Err() != nil {
+				if asc.HasErr() {
 					fm.logger.Printf("Error updating article scores: %v\n", asc.Err())
 				}
 			}
@@ -484,7 +485,7 @@ func (fm *FeedManager) scoreArticles() {
 
 func (fm *FeedManager) scheduleFeeds() {
 	feeds := fm.repo.AllUnsubscribedFeeds()
-	if fm.repo.Err() != nil {
+	if fm.repo.HasErr() {
 		fm.logger.Printf("Error fetching unsubscribed feeds: %v\n", fm.repo.Err())
 		return
 	}
