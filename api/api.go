@@ -143,7 +143,7 @@ func initAdminUser(repo content.Repo, secret []byte) error {
 	}
 
 	u := repo.User()
-	u.Info(info.User{Login: info.Login("admin")})
+	u.Info(info.User{Login: info.Login("admin"), Active: true, Admin: true})
 	u.Password("admin", secret)
 	u.Update()
 
