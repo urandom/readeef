@@ -523,6 +523,7 @@ func getFeedArticles(user content.User, id string, limit int, offset int, newerF
 		limit = 50
 	}
 
+	user.SortingByDate()
 	if newerFirst {
 		user.Order(info.DescendingOrder)
 	} else {
@@ -543,6 +544,7 @@ func getFeedArticles(user content.User, id string, limit int, offset int, newerF
 			tag := user.Repo().Tag(user)
 			tag.Value(info.TagValue(id[12:]))
 
+			tag.SortingByDate()
 			if newerFirst {
 				tag.Order(info.DescendingOrder)
 			} else {
@@ -566,6 +568,7 @@ func getFeedArticles(user content.User, id string, limit int, offset int, newerF
 				return
 			}
 
+			f.SortingByDate()
 			if newerFirst {
 				f.Order(info.DescendingOrder)
 			} else {
@@ -577,6 +580,8 @@ func getFeedArticles(user content.User, id string, limit int, offset int, newerF
 	} else if strings.HasPrefix(id, "tag:") {
 		tag := user.Repo().Tag(user)
 		tag.Value(info.TagValue(id[4:]))
+
+		tag.SortingByDate()
 		if newerFirst {
 			tag.Order(info.DescendingOrder)
 		} else {
@@ -611,6 +616,7 @@ func getFeedArticles(user content.User, id string, limit int, offset int, newerF
 			f.Order(info.AscendingOrder)
 		}
 
+		f.SortingByDate()
 		if unreadOnly {
 			resp.val["Articles"], resp.err = f.UnreadArticles(limit, offset), f.Err()
 		} else {

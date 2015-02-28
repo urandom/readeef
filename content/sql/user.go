@@ -244,6 +244,7 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	tf = make([]content.TaggedFeed, len(uf))
 	for i := range uf {
 		tf[i] = repo.TaggedFeed(u)
+		tf[i].Info(uf[i].Info())
 		tf[i].Tags(feedMap[tf[i].Info().Id])
 	}
 
@@ -639,6 +640,7 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting conten
 	}
 
 	var info []info.Article
+	logger.Debugf("Articles SQL:\n%s\nArgs:%q\n", sql, args)
 	if err := dbo.Select(&info, sql, args...); err != nil {
 		u.Err(err)
 		return
