@@ -19,10 +19,10 @@ type ArticleSorting interface {
 	Reverse() ArticleSorting
 
 	// Returns the current field
-	Field() info.SortingField
+	Field(f ...info.SortingField) info.SortingField
 
 	// Returns the order, as set by Reverse()
-	Order() info.Order
+	Order(o ...info.Order) info.Order
 }
 
 type ArticleSearch interface {

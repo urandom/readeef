@@ -101,11 +101,11 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 					if n, ok := uv.(info.Login); ok {
 						u = repo.UserByLogin(n)
 
-						if !repo.HasErr() {
+						if u.HasErr() {
+							logger.Print(u.Err())
+						} else {
 							validUser = true
 							sess.Set(authkey, u)
-						} else {
-							logger.Print(repo.Err())
 						}
 					}
 				}
@@ -145,8 +145,8 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 				switch {
 				default:
 					u = repo.UserByLogin(info.Login(login))
-					if repo.HasErr() {
-						logger.Printf("Error getting db user '%s': %v\n", login, repo.Err())
+					if u.HasErr() {
+						logger.Printf("Error getting db user '%s': %v\n", login, u.Err())
 						break
 					}
 

@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content/sql/repo"
+	"github.com/urandom/readeef/db"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/middleware"
@@ -22,21 +24,24 @@ func newResponse() responseError {
 }
 
 func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, logger webfw.Logger) error {
-	db := readeef.NewDB(config.DB.Driver, config.DB.Connect, logger)
-	if err := db.Connect(); err != nil {
+	db := db.New(logger)
+	if err := db.Open(config.DB.Driver, config.DB.Connect); err != nil {
 		return fmt.Errorf("Error connecting to database: %v", err)
 	}
+
+	repo := repo.New(db, logger)
 
 	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
 	dispatcher.Context.SetGlobal(context.BaseCtxKey("readeefConfig"), config)
 	dispatcher.Context.SetGlobal(readeef.CtxKey("db"), db)
+	dispatcher.Context.SetGlobal(readeef.CtxKey("repo"), repo)
 
 	um := &readeef.UpdateFeedReceiverManager{}
 
-	fm := readeef.NewFeedManager(db, config, logger, um)
+	fm := readeef.NewFeedManager(repo, config, logger, um)
 
 	if config.Hubbub.CallbackURL != "" {
-		hubbub := readeef.NewHubbub(db, config, logger, dispatcher.Pattern, fm.RemoveFeedChannel(), fm.AddFeedChannel(), um)
+		hubbub := readeef.NewHubbub(repo, config, logger, dispatcher.Pattern, fm.RemoveFeedChannel(), fm.AddFeedChannel(), um)
 		if err := hubbub.InitSubscriptions(); err != nil {
 			return fmt.Errorf("Error initializing hubbub subscriptions: %v", err)
 		}
@@ -48,7 +53,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	var si readeef.SearchIndex
 	if config.SearchIndex.BlevePath != "" {
 		var err error
-		si, err = readeef.NewSearchIndex(config, db, logger)
+		si, err = readeef.NewSearchIndex(repo, config, logger)
 		if err != nil {
 			return fmt.Errorf("Error initializing bleve search: %v", err)
 		}
@@ -102,7 +107,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	um.AddUpdateReceiver(webSocket)
 
 	middleware.InitializeDefault(dispatcher)
-	dispatcher.RegisterMiddleware(readeef.Auth{DB: db, Pattern: dispatcher.Pattern, Nonce: nonce, IgnoreURLPrefix: config.Auth.IgnoreURLPrefix})
+	dispatcher.RegisterMiddleware(readeef.Auth{Pattern: dispatcher.Pattern, Nonce: nonce, IgnoreURLPrefix: config.Auth.IgnoreURLPrefix})
 
 	dispatcher.Renderer = renderer.NewRenderer(dispatcher.Config.Renderer.Dir,
 		dispatcher.Config.Renderer.Base)

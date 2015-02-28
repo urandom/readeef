@@ -16,6 +16,7 @@ func init() {
 	sql["delete_all_users_articles_read_by_feed_date"] = deleteAllUsersArticlesReadByFeedDate
 	sql["create_user_feed_tag"] = createUserFeedTag
 	sql["delete_user_feed_tags"] = deleteUserFeedTags
+	sql["get_user_feed_tags"] = getUserFeedTags
 }
 
 const (
@@ -71,6 +72,7 @@ DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
 	SELECT id FROM articles WHERE feed_id = $2 AND (date IS NULL OR date < $3)
 )
 `
+	getUserFeedTags   = `SELECT tag FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2`
 	createUserFeedTag = `
 INSERT INTO users_feeds_tags(user_login, feed_id, tag)
 	SELECT $1, $2, $3 EXCEPT SELECT user_login, feed_id, tag

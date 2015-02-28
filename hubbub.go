@@ -74,6 +74,10 @@ func (h *Hubbub) Subscribe(f content.Feed) error {
 	}
 
 	s := f.Subscription()
+	if s.HasErr() {
+		return s.Err()
+	}
+
 	info := s.Info()
 	if info.FeedId == finfo.Id {
 		h.logger.Infoln("Already subscribed to " + finfo.HubLink)
@@ -107,7 +111,7 @@ func (h *Hubbub) InitSubscriptions() error {
 	go func() {
 		for _, s := range subscriptions {
 			f := h.repo.FeedById(s.Info().FeedId)
-			if h.repo.Err() != nil {
+			if f.Err() != nil {
 				continue
 			}
 
@@ -185,14 +189,9 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 
 		repo := con.hubbub.repo
 		f := repo.FeedById(info.FeedId(feedId))
-		var s content.Subscription
+		s := f.Subscription()
 
-		if repo.HasErr() {
-			err = repo.Err()
-		} else {
-			s = f.Subscription()
-			err = f.Err()
-		}
+		err = s.Err()
 
 		if err != nil {
 			webfw.GetLogger(c).Print(err)

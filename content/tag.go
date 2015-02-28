@@ -17,6 +17,8 @@ type Tag interface {
 
 	Value(val ...info.TagValue) info.TagValue
 
+	Validate() error
+
 	AllFeeds() []TaggedFeed
 
 	Articles(paging ...int) []UserArticle

@@ -35,7 +35,7 @@ type indexArticle struct {
 
 var EmptySearchIndex = SearchIndex{}
 
-func NewSearchIndex(config Config, repo content.Repo, logger webfw.Logger) (SearchIndex, error) {
+func NewSearchIndex(repo content.Repo, config Config, logger webfw.Logger) (SearchIndex, error) {
 	var err error
 	var index bleve.Index
 

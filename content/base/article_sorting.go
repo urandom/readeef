@@ -6,24 +6,24 @@ import (
 )
 
 type ArticleSorting struct {
-	SortingField info.SortingField
+	sortingField info.SortingField
 	sortingOrder info.Order
 }
 
 func (s *ArticleSorting) DefaultSorting() content.ArticleSorting {
-	s.SortingField = info.DefaultSort
+	s.sortingField = info.DefaultSort
 
 	return s
 }
 
 func (s *ArticleSorting) SortingById() content.ArticleSorting {
-	s.SortingField = info.SortById
+	s.sortingField = info.SortById
 
 	return s
 }
 
 func (s *ArticleSorting) SortingByDate() content.ArticleSorting {
-	s.SortingField = info.SortByDate
+	s.sortingField = info.SortByDate
 
 	return s
 }
@@ -39,10 +39,16 @@ func (s *ArticleSorting) Reverse() content.ArticleSorting {
 	return s
 }
 
-func (s ArticleSorting) Field() info.SortingField {
-	return s.SortingField
+func (s *ArticleSorting) Field(f ...info.SortingField) info.SortingField {
+	if len(f) > 0 {
+		s.sortingField = f[0]
+	}
+	return s.sortingField
 }
 
-func (s ArticleSorting) Order() info.Order {
+func (s *ArticleSorting) Order(o ...info.Order) info.Order {
+	if len(o) > 0 {
+		s.sortingOrder = o[0]
+	}
 	return s.sortingOrder
 }

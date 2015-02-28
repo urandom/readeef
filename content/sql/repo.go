@@ -1,6 +1,8 @@
 package sql
 
 import (
+	"database/sql"
+
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/info"
@@ -22,23 +24,20 @@ func NewRepo(db *db.DB, logger webfw.Logger) *Repo {
 func (r *Repo) UserByLogin(login info.Login) (u content.User) {
 	u = r.User()
 	if r.HasErr() {
+		u.Err(r.Err())
 		return
 	}
 
 	r.logger.Infof("Getting user '%s'\n", login)
 
 	var info info.User
-	if err := r.db.Get(&info, r.db.SQL("get_user"), login); err != nil {
-		r.Err(err)
+	if err := r.db.Get(&info, r.db.SQL("get_user"), login); err != nil && err != sql.ErrNoRows {
+		u.Err(err)
 		return
 	}
 
 	info.Login = login
 	u.Info(info)
-
-	if u.HasErr() {
-		r.Err(u.Err())
-	}
 
 	return
 }
@@ -46,23 +45,20 @@ func (r *Repo) UserByLogin(login info.Login) (u content.User) {
 func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 	u = r.User()
 	if r.HasErr() {
+		u.Err(r.Err())
 		return
 	}
 
 	r.logger.Infof("Getting user using md5 api field '%v'\n", md5)
 
 	var info info.User
-	if err := r.db.Get(&info, r.db.SQL("get_user_by_md5_api"), md5); err != nil {
-		r.Err(err)
+	if err := r.db.Get(&info, r.db.SQL("get_user_by_md5_api"), md5); err != nil && err != sql.ErrNoRows {
+		u.Err(err)
 		return
 	}
 
 	info.MD5API = md5
 	u.Info(info)
-
-	if u.HasErr() {
-		r.Err(u.Err())
-	}
 
 	return
 }
@@ -97,14 +93,15 @@ func (r *Repo) AllUsers() (users []content.User) {
 func (r *Repo) FeedById(id info.FeedId) (f content.Feed) {
 	f = r.Feed()
 	if r.HasErr() {
+		f.Err(r.Err())
 		return
 	}
 
 	r.logger.Infof("Getting feed '%d'\n", id)
 
 	i := info.Feed{}
-	if err := r.db.Get(&i, r.db.SQL("get_feed"), id); err != nil {
-		r.Err(err)
+	if err := r.db.Get(&i, r.db.SQL("get_feed"), id); err != nil && err != sql.ErrNoRows {
+		f.Err(err)
 		return
 	}
 
@@ -117,14 +114,15 @@ func (r *Repo) FeedById(id info.FeedId) (f content.Feed) {
 func (r *Repo) FeedByLink(link string) (f content.Feed) {
 	f = r.Feed()
 	if r.HasErr() {
+		f.Err(r.Err())
 		return
 	}
 
 	r.logger.Infof("Getting feed by link '%s'\n", link)
 
 	i := info.Feed{}
-	if err := r.db.Get(&i, r.db.SQL("get_feed_by_link"), link); err != nil {
-		r.Err(err)
+	if err := r.db.Get(&i, r.db.SQL("get_feed_by_link"), link); err != nil && err != sql.ErrNoRows {
+		f.Err(err)
 		return
 	}
 

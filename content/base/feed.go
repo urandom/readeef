@@ -24,10 +24,6 @@ type UserFeed struct {
 	UserRelated
 }
 
-type TaggedFeed struct {
-	tags []content.Tag
-}
-
 func (f Feed) String() string {
 	return f.info.Title + " " + strconv.FormatInt(int64(f.info.Id), 10)
 }
@@ -45,6 +41,10 @@ func (f *Feed) Info(in ...info.Feed) info.Feed {
 }
 
 func (f Feed) Validate() error {
+	if f.info.Link == "" {
+		return ValidationError{errors.New("Feed has no link")}
+	}
+
 	if u, err := url.Parse(f.info.Link); err != nil || !u.IsAbs() {
 		return ValidationError{errors.New("Feed has no link")}
 	}
@@ -102,12 +102,4 @@ func (uf UserFeed) Validate() error {
 	}
 
 	return nil
-}
-
-func (tf TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
-	if len(tags) > 0 {
-		tf.tags = tags[0]
-	}
-
-	return tf.tags
 }

@@ -6,6 +6,9 @@ import (
 	"os"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content/sql/repo"
+	"github.com/urandom/readeef/db"
+	_ "github.com/urandom/readeef/db/postgres"
 )
 
 func main() {
@@ -23,13 +26,15 @@ func main() {
 	}
 
 	logger := readeef.NewLogger(cfg)
+	db := db.New(logger)
 
-	db := readeef.NewDB(cfg.DB.Driver, cfg.DB.Connect, logger)
-	if err := db.Connect(); err != nil {
+	if err := db.Open(cfg.DB.Driver, cfg.DB.Connect); err != nil {
 		exitWithError(fmt.Sprintf("Error connecting to database: %v", err))
 	}
 
-	si, err := readeef.NewSearchIndex(cfg, db, logger)
+	repo := repo.New(db, logger)
+
+	si, err := readeef.NewSearchIndex(repo, cfg, logger)
 
 	if err != nil {
 		exitWithError(fmt.Sprintf("Error creating search index: %v", err))

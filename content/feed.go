@@ -60,6 +60,5 @@ type TaggedFeed interface {
 
 	Tags(tags ...[]Tag) []Tag
 
-	AddTags(tags ...Tag)
-	DeleteAllTags()
+	UpdateTags()
 }

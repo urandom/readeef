@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/text-summary/summarize"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
@@ -25,35 +27,31 @@ type Readability struct {
 }
 
 type markArticleAsReadProcessor struct {
-	Id    int64 `json:"id"`
-	Value bool  `json:"value"`
+	Id    info.ArticleId `json:"id"`
+	Value bool           `json:"value"`
 
-	db   readeef.DB
-	user readeef.User
+	user content.User
 }
 
 type markArticleAsFavoriteProcessor struct {
-	Id    int64 `json:"id"`
-	Value bool  `json:"value"`
+	Id    info.ArticleId `json:"id"`
+	Value bool           `json:"value"`
 
-	db   readeef.DB
-	user readeef.User
+	user content.User
 }
 
 type formatArticleProcessor struct {
-	Id int64 `json:"id"`
+	Id info.ArticleId `json:"id"`
 
-	db            readeef.DB
-	user          readeef.User
+	user          content.User
 	webfwConfig   webfw.Config
 	readeefConfig readeef.Config
 }
 
 type getArticleProcessor struct {
-	Id int64 `json:"id"`
+	Id info.ArticleId `json:"id"`
 
-	db   readeef.DB
-	user readeef.User
+	user content.User
 }
 
 func (con Article) Patterns() []webfw.MethodIdentifierTuple {
@@ -70,7 +68,6 @@ func (con Article) Patterns() []webfw.MethodIdentifierTuple {
 func (con Article) Handler(c context.Context) http.Handler {
 	logger := webfw.GetLogger(c)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := readeef.GetDB(c)
 		user := readeef.GetUser(c, r)
 
 		params := webfw.GetParams(c, r)
@@ -84,15 +81,16 @@ func (con Article) Handler(c context.Context) http.Handler {
 		articleId, resp.err = strconv.ParseInt(params["article-id"], 10, 64)
 
 		if resp.err == nil {
+			id := info.ArticleId(articleId)
 			switch action {
 			case "fetch":
-				resp = fetchArticle(db, user, articleId)
+				resp = fetchArticle(user, id)
 			case "read":
-				resp = markArticleAsRead(db, user, articleId, params["value"] == "true")
+				resp = markArticleAsRead(user, id, params["value"] == "true")
 			case "favorite":
-				resp = markArticleAsFavorite(db, user, articleId, params["value"] == "true")
+				resp = markArticleAsFavorite(user, id, params["value"] == "true")
 			case "format":
-				resp = formatArticle(db, user, articleId, webfw.GetConfig(c), con.config)
+				resp = formatArticle(user, id, webfw.GetConfig(c), con.config)
 			}
 		}
 
@@ -116,50 +114,50 @@ func (con Article) AuthRequired(c context.Context, r *http.Request) bool {
 }
 
 func (p markArticleAsReadProcessor) Process() responseError {
-	return markArticleAsRead(p.db, p.user, p.Id, p.Value)
+	return markArticleAsRead(p.user, p.Id, p.Value)
 }
 
 func (p markArticleAsFavoriteProcessor) Process() responseError {
-	return markArticleAsFavorite(p.db, p.user, p.Id, p.Value)
+	return markArticleAsFavorite(p.user, p.Id, p.Value)
 }
 
 func (p formatArticleProcessor) Process() responseError {
-	return formatArticle(p.db, p.user, p.Id, p.webfwConfig, p.readeefConfig)
+	return formatArticle(p.user, p.Id, p.webfwConfig, p.readeefConfig)
 }
 
 func (p getArticleProcessor) Process() responseError {
-	return fetchArticle(p.db, p.user, p.Id)
+	return fetchArticle(p.user, p.Id)
 }
 
-func getArticle(db readeef.DB, user readeef.User, id int64) (article readeef.Article, err error) {
-	article, err = db.GetFeedArticle(id, user)
-	return
-}
-
-func fetchArticle(db readeef.DB, user readeef.User, id int64) (resp responseError) {
+func fetchArticle(user content.User, id info.ArticleId) (resp responseError) {
 	resp = newResponse()
 
-	var article readeef.Article
-	if article, resp.err = getArticle(db, user, id); resp.err != nil {
+	article := user.ArticleById(id)
+	if user.HasErr() {
+		resp.err = user.Err()
 		return
 	}
 
-	resp.val["Article"] = article
+	resp.val["Article"] = article.Info()
 	return
 }
 
-func markArticleAsRead(db readeef.DB, user readeef.User, id int64, read bool) (resp responseError) {
+func markArticleAsRead(user content.User, id info.ArticleId, read bool) (resp responseError) {
 	resp = newResponse()
 
-	var article readeef.Article
-	if article, resp.err = getArticle(db, user, id); resp.err != nil {
+	article := user.ArticleById(id)
+	if user.HasErr() {
+		resp.err = user.Err()
 		return
 	}
 
-	previouslyRead := article.Read
+	in := article.Info()
+	previouslyRead := in.Read
 
 	if previouslyRead != read {
-		if resp.err = db.MarkUserArticlesAsRead(user, []readeef.Article{article}, read); resp.err != nil {
+		article.Read(read)
+		if article.HasErr() {
+			resp.err = article.Err()
 			return
 		}
 	}
@@ -170,18 +168,22 @@ func markArticleAsRead(db readeef.DB, user readeef.User, id int64, read bool) (r
 	return
 }
 
-func markArticleAsFavorite(db readeef.DB, user readeef.User, id int64, favorite bool) (resp responseError) {
+func markArticleAsFavorite(user content.User, id info.ArticleId, favorite bool) (resp responseError) {
 	resp = newResponse()
 
-	var article readeef.Article
-	if article, resp.err = getArticle(db, user, id); resp.err != nil {
+	article := user.ArticleById(id)
+	if user.HasErr() {
+		resp.err = user.Err()
 		return
 	}
 
-	previouslyFavorite := article.Favorite
+	in := article.Info()
+	previouslyFavorite := in.Favorite
 
 	if previouslyFavorite != favorite {
-		if resp.err = db.MarkUserArticlesAsFavorite(user, []readeef.Article{article}, favorite); resp.err != nil {
+		article.Favorite(favorite)
+		if article.HasErr() {
+			resp.err = article.Err()
 			return
 		}
 	}
@@ -192,17 +194,18 @@ func markArticleAsFavorite(db readeef.DB, user readeef.User, id int64, favorite 
 	return
 }
 
-func formatArticle(db readeef.DB, user readeef.User, id int64, webfwConfig webfw.Config, readeefConfig readeef.Config) (resp responseError) {
+func formatArticle(user content.User, id info.ArticleId, webfwConfig webfw.Config, readeefConfig readeef.Config) (resp responseError) {
 	resp = newResponse()
 
-	var article readeef.Article
-	if article, resp.err = getArticle(db, user, id); resp.err != nil {
+	article := user.ArticleById(id)
+	if user.HasErr() {
+		resp.err = user.Err()
 		return
 	}
 
-	var formatting readeef.ArticleFormatting
-
-	if formatting, resp.err = readeef.ArticleFormatter(webfwConfig, readeefConfig, article); resp.err != nil {
+	formatting := article.Format(webfwConfig.Renderer.Dir, readeefConfig.ArticleFormatter.ReadabilityKey)
+	if article.HasErr() {
+		resp.err = user.Err()
 		return
 	}
 

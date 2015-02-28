@@ -102,6 +102,7 @@ func (ua *UserArticle) Favorite(favorite bool) {
 func (sa *ScoredArticle) Scores() (asc content.ArticleScores) {
 	asc = sa.Repo().ArticleScores()
 	if sa.HasErr() {
+		asc.Err(sa.Err())
 		return
 	}
 
@@ -110,7 +111,7 @@ func (sa *ScoredArticle) Scores() (asc content.ArticleScores) {
 
 	var i info.ArticleScores
 	if err := sa.db.Get(&i, sa.db.SQL("get_article_scores"), id); err != nil && err != sql.ErrNoRows {
-		sa.Err(err)
+		asc.Err(err)
 	}
 
 	asc.Info(i)

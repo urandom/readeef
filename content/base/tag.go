@@ -1,6 +1,10 @@
 package base
 
-import "github.com/urandom/readeef/content/info"
+import (
+	"errors"
+
+	"github.com/urandom/readeef/content/info"
+)
 
 type Tag struct {
 	ArticleSorting
@@ -26,4 +30,12 @@ func (t *Tag) Value(val ...info.TagValue) info.TagValue {
 	}
 
 	return t.value
+}
+
+func (t *Tag) Validate() error {
+	if t.value == "" {
+		return ValidationError{errors.New("Tag has no value")}
+	}
+
+	return nil
 }

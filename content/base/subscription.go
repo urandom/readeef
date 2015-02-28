@@ -33,6 +33,10 @@ func (s *Subscription) Info(in ...info.Subscription) info.Subscription {
 }
 
 func (s *Subscription) Validate() error {
+	if s.info.Link == "" {
+		return ValidationError{errors.New("No subscription link")}
+	}
+
 	if u, err := url.Parse(s.info.Link); err != nil || !u.IsAbs() {
 		return ValidationError{errors.New("Invalid subscription link")}
 	}

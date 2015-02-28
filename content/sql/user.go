@@ -25,6 +25,11 @@ func (u *User) Update() {
 		return
 	}
 
+	if err := u.Validate(); err != nil {
+		u.Err(err)
+		return
+	}
+
 	i := u.Info()
 	u.logger.Infof("Updating user %s\n", i.Login)
 
@@ -81,13 +86,13 @@ func (u *User) Delete() {
 		return
 	}
 
-	i := u.Info()
-	u.logger.Infof("Deleting user %s\n", i.Login)
-
 	if err := u.Validate(); err != nil {
 		u.Err(err)
 		return
 	}
+
+	i := u.Info()
+	u.logger.Infof("Deleting user %s\n", i.Login)
 
 	tx, err := u.db.Begin()
 	if err != nil {
@@ -117,6 +122,7 @@ func (u *User) Delete() {
 func (u *User) Feed(id info.FeedId) (uf content.UserFeed) {
 	uf = u.Repo().UserFeed(u)
 	if u.HasErr() {
+		uf.Err(u.Err())
 		return
 	}
 
@@ -125,7 +131,7 @@ func (u *User) Feed(id info.FeedId) (uf content.UserFeed) {
 
 	var i info.Feed
 	if err := u.db.Get(&i, u.db.SQL("get_user_feed"), id, login); err != nil && err != sql.ErrNoRows {
-		u.Err(err)
+		uf.Err(err)
 		return
 	}
 
@@ -137,11 +143,12 @@ func (u *User) Feed(id info.FeedId) (uf content.UserFeed) {
 func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 	uf = u.Repo().UserFeed(u)
 	if u.HasErr() {
+		uf.Err(u.Err())
 		return
 	}
 
 	if err := f.Validate(); err != nil {
-		u.Err(err)
+		uf.Err(err)
 		return
 	}
 
@@ -151,26 +158,26 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 
 	tx, err := u.db.Begin()
 	if err != nil {
-		u.Err(err)
+		uf.Err(err)
 		return
 	}
 	defer tx.Rollback()
 
 	stmt, err := tx.Preparex(u.db.SQL("create_user_feed"))
 	if err != nil {
-		u.Err(err)
+		uf.Err(err)
 		return
 	}
 	defer stmt.Close()
 
 	_, err = stmt.Exec(u.Info().Login, i.Id)
 	if err != nil {
-		u.Err(err)
+		uf.Err(err)
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		u.Err(err)
+		uf.Err(err)
 	}
 
 	uf.Info(i)
@@ -239,6 +246,7 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 func (u *User) Article(id info.ArticleId) (ua content.UserArticle) {
 	ua = u.Repo().UserArticle(u)
 	if u.HasErr() {
+		ua.Err(u.Err())
 		return
 	}
 
@@ -247,7 +255,10 @@ func (u *User) Article(id info.ArticleId) (ua content.UserArticle) {
 
 	articles := getArticles(u, u.db, u.logger, u, "", "", "a.id = $2", "", []interface{}{id})
 
-	if !u.HasErr() && len(articles) > 0 {
+	if len(articles) > 0 {
+		if u.HasErr() {
+			articles[0].Err(u.Err())
+		}
 		return articles[0]
 	}
 

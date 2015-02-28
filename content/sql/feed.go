@@ -26,8 +26,9 @@ type UserFeed struct {
 }
 
 type TaggedFeed struct {
-	base.TaggedFeed
 	UserFeed
+
+	tags []content.Tag
 }
 
 func (f Feed) NewArticles() (a []content.Article) {
@@ -68,6 +69,11 @@ func (f *Feed) Users() (u []content.User) {
 
 func (f *Feed) Update() {
 	if f.HasErr() {
+		return
+	}
+
+	if err := f.Validate(); err != nil {
+		f.Err(err)
 		return
 	}
 
@@ -120,6 +126,11 @@ func (f *Feed) Update() {
 
 func (f *Feed) Delete() {
 	if f.HasErr() {
+		return
+	}
+
+	if err := f.Validate(); err != nil {
+		f.Err(err)
 		return
 	}
 
@@ -224,6 +235,7 @@ func (f *Feed) AddArticles(articles []content.Article) {
 func (f *Feed) Subscription() (s content.Subscription) {
 	s = f.Repo().Subscription()
 	if f.HasErr() {
+		s.Err(f.Err())
 		return
 	}
 
@@ -232,8 +244,7 @@ func (f *Feed) Subscription() (s content.Subscription) {
 
 	var in info.Subscription
 	if err := f.db.Get(&in, f.db.SQL("get_hubbub_subscription"), id); err != nil && err != dsql.ErrNoRows {
-		f.Err(err)
-		return
+		s.Err(err)
 	}
 
 	s.Info(in)
@@ -484,54 +495,34 @@ func (uf *UserFeed) Query(term string, index bleve.Index, paging ...int) (ua []c
 	return
 }
 
-func (tf *TaggedFeed) AddTags(tags ...content.Tag) {
-	if tf.HasErr() || len(tags) == 0 {
-		return
+func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
+	if len(tags) > 0 {
+		tf.tags = tags[0]
+		return tf.tags
 	}
 
-	id := tf.Info().Id
-	login := tf.User().Info().Login
-	tf.logger.Infof("Adding tags for feed %d\n", id)
+	if len(tf.tags) == 0 {
+		id := tf.Info().Id
+		login := tf.User().Info().Login
+		tf.logger.Infof("Getting tags for user %s and feed '%d'\n", login, id)
 
-	tx, err := tf.db.Begin()
-	if err != nil {
-		tf.Err(err)
-		return
-	}
-	defer tx.Rollback()
-
-	stmt, err := tx.Preparex(tf.db.SQL("create_user_feed_tag"))
-	if err != nil {
-		tf.Err(err)
-		return
-	}
-	defer stmt.Close()
-
-	existing := tf.Tags()
-	existingMap := make(map[info.TagValue]bool)
-
-	for i := range existing {
-		existingMap[existing[i].Value()] = true
-	}
-
-	for i := range tags {
-		_, err = stmt.Exec(login, id, tags[i].String())
-		if err != nil {
+		var feedIdTags []feedIdTag
+		if err := tf.db.Select(&feedIdTags, tf.db.SQL("get_user_feed_tags"), login, id); err != nil {
 			tf.Err(err)
-			return
+			return []content.Tag{}
 		}
 
-		if !existingMap[tags[i].Value()] {
-			existing = append(existing, tags[i])
+		for _, t := range feedIdTags {
+			tag := tf.Repo().Tag(tf.User())
+			tag.Value(t.TagValue)
+			tf.tags = append(tf.tags, tag)
 		}
 	}
 
-	tf.Tags(existing)
-
-	tx.Commit()
+	return tf.tags
 }
 
-func (tf *TaggedFeed) DeleteAllTags() {
+func (tf *TaggedFeed) UpdateTags() {
 	if tf.HasErr() {
 		return
 	}
@@ -560,7 +551,41 @@ func (tf *TaggedFeed) DeleteAllTags() {
 		return
 	}
 
-	tf.Tags([]content.Tag{})
+	tags := tf.Tags()
+
+	if len(tags) > 0 {
+		id := tf.Info().Id
+		login := tf.User().Info().Login
+		tf.logger.Infof("Adding tags for feed %d\n", id)
+
+		stmt, err := tx.Preparex(tf.db.SQL("create_user_feed_tag"))
+		if err != nil {
+			tf.Err(err)
+			return
+		}
+		defer stmt.Close()
+
+		existing := tf.Tags()
+		existingMap := make(map[info.TagValue]bool)
+
+		for i := range existing {
+			existingMap[existing[i].Value()] = true
+		}
+
+		for i := range tags {
+			_, err = stmt.Exec(login, id, tags[i].String())
+			if err != nil {
+				tf.Err(err)
+				return
+			}
+
+			if !existingMap[tags[i].Value()] {
+				existing = append(existing, tags[i])
+			}
+		}
+
+		tf.Tags(existing)
+	}
 
 	tx.Commit()
 }

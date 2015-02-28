@@ -1,7 +1,6 @@
 package readeef
 
 import (
-	"database/sql"
 	"errors"
 	"regexp"
 	"strconv"
@@ -111,30 +110,29 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 	}
 
 	f := fm.repo.FeedByLink(link)
-	if fm.repo.HasErr() {
-		err := fm.repo.Err()
-		if err == sql.ErrNoRows {
-			fm.logger.Infoln("Discovering feeds in " + link)
+	if f.HasErr() {
+		return f, f.Err()
+	}
 
-			feeds, err := fm.discoverParserFeeds(link)
-			if err != nil {
-				return nil, err
-			}
+	if f.Validate() != nil {
+		fm.logger.Infoln("Discovering feeds in " + link)
 
-			f = feeds[0]
+		feeds, err := fm.discoverParserFeeds(link)
+		if err != nil {
+			return nil, err
+		}
 
-			f.Update()
-			if f.HasErr() {
-				return f, f.Err()
-			}
+		f = feeds[0]
 
-			if fm.searchIndex != EmptySearchIndex {
-				go func() {
-					fm.searchIndex.UpdateFeed(f)
-				}()
-			}
-		} else {
-			return f, err
+		f.Update()
+		if f.HasErr() {
+			return f, f.Err()
+		}
+
+		if fm.searchIndex != EmptySearchIndex {
+			go func() {
+				fm.searchIndex.UpdateFeed(f)
+			}()
 		}
 	}
 
@@ -146,13 +144,12 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 
 func (fm *FeedManager) RemoveFeedByLink(link string) (content.Feed, error) {
 	f := fm.repo.FeedByLink(link)
-	if fm.repo.HasErr() {
-		err := fm.repo.Err()
-		if err == sql.ErrNoRows {
-			return f, nil
-		} else {
-			return f, err
-		}
+	if f.HasErr() {
+		return f, f.Err()
+	}
+
+	if f.Validate != nil {
+		return f, nil
 	}
 
 	fm.logger.Infoln("Removing feed " + f.String() + " from manager")
@@ -175,11 +172,10 @@ func (fm *FeedManager) DiscoverFeeds(link string) ([]content.Feed, error) {
 	}
 
 	f := fm.repo.FeedByLink(link)
-	if !fm.repo.HasErr() {
-		feeds = append(feeds, f)
+	if f.HasErr() {
+		return feeds, f.Err()
 	} else {
-		err := fm.repo.Err()
-		if err == sql.ErrNoRows {
+		if f.Validate() != nil {
 			fm.logger.Infoln("Discovering feeds in " + link)
 
 			discovered, err := fm.discoverParserFeeds(link)
@@ -190,9 +186,8 @@ func (fm *FeedManager) DiscoverFeeds(link string) ([]content.Feed, error) {
 			for _, f := range discovered {
 				feeds = append(feeds, f)
 			}
-		} else {
-			return feeds, err
 		}
+		feeds = append(feeds, f)
 	}
 
 	return feeds, nil
@@ -428,7 +423,7 @@ func (fm *FeedManager) scoreArticles() {
 			go func() {
 				asc := sa.Scores()
 
-				if sa.HasErr() {
+				if asc.HasErr() {
 					fm.logger.Printf("Error getting scores for article '%s': %v\n", sa, sa.Err())
 					ascc <- blankScores
 				} else {

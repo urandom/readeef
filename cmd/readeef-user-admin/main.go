@@ -7,6 +7,10 @@ import (
 	"strings"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/sql/repo"
+	"github.com/urandom/readeef/db"
+	_ "github.com/urandom/readeef/db/postgres"
 )
 
 func main() {
@@ -20,11 +24,13 @@ func main() {
 	}
 
 	logger := readeef.NewLogger(cfg)
+	db := db.New(logger)
 
-	db := readeef.NewDB(cfg.DB.Driver, cfg.DB.Connect, logger)
-	if err := db.Connect(); err != nil {
+	if err := db.Open(cfg.DB.Driver, cfg.DB.Connect); err != nil {
 		exitWithError(fmt.Sprintf("Error connecting to database: %v", err))
 	}
+
+	repo := repo.New(db, logger)
 
 	switch flag.Arg(0) {
 	case "add":
@@ -34,13 +40,17 @@ func main() {
 		login := flag.Arg(1)
 		pass := flag.Arg(2)
 
-		u := readeef.User{Login: login, Active: true}
-		if err := u.SetPassword(pass); err != nil {
-			exitWithError(fmt.Sprintf("Error setting password for user '%s': %v", login, err))
-		}
+		u := repo.User()
+		i := u.Info()
 
-		if err := db.UpdateUser(u); err != nil {
-			exitWithError(fmt.Sprintf("Error updating the user database record for '%s': %v", login, err))
+		i.Login = info.Login(login)
+		i.Active = true
+
+		u.Password(pass, []byte(cfg.Auth.Secret))
+		u.Update()
+
+		if u.HasErr() {
+			exitWithError(fmt.Sprintf("Error setting password for user '%s': %v", login, u.Err()))
 		}
 	case "remove":
 		if flag.NArg() != 2 {
@@ -48,13 +58,11 @@ func main() {
 		}
 		login := flag.Arg(1)
 
-		u, err := db.GetUser(login)
-		if err != nil {
-			exitWithError(fmt.Sprintf("Error getting user '%s' from the database: %v", login, err))
-		}
+		u := repo.UserByLogin(info.Login(login))
+		u.Delete()
 
-		if err := db.DeleteUser(u); err != nil {
-			exitWithError(fmt.Sprintf("Error removing user '%s' from the database: %v", login, err))
+		if u.HasErr() {
+			exitWithError(fmt.Sprintf("Error getting user '%s' from the database: %v", login, u.Err()))
 		}
 	case "get":
 		if flag.NArg() != 3 {
@@ -63,31 +71,31 @@ func main() {
 		login := flag.Arg(1)
 		prop := flag.Arg(2)
 
-		u, err := db.GetUser(login)
-		if err != nil {
-			exitWithError(fmt.Sprintf("Error getting user '%s' from the database: %v", login, err))
+		u := repo.UserByLogin(info.Login(login))
+		if repo.HasErr() {
+			exitWithError(fmt.Sprintf("Error getting user '%s' from the database: %v", login, repo.Err()))
 		}
 
 		lowerProp := strings.ToLower(prop)
 		switch lowerProp {
 		case "firstname", "first_name":
-			fmt.Printf("%s\n", u.FirstName)
+			fmt.Printf("%s\n", u.Info().FirstName)
 		case "lastname", "last_name":
-			fmt.Printf("%s\n", u.LastName)
+			fmt.Printf("%s\n", u.Info().LastName)
 		case "email":
-			fmt.Printf("%s\n", u.Email)
+			fmt.Printf("%s\n", u.Info().Email)
 		case "hashtype", "hash_type":
-			fmt.Printf("%s\n", u.HashType)
+			fmt.Printf("%s\n", u.Info().HashType)
 		case "salt":
-			fmt.Printf("%v\n", u.Salt)
+			fmt.Printf("%v\n", u.Info().Salt)
 		case "hash":
-			fmt.Printf("%v\n", u.Hash)
+			fmt.Printf("%v\n", u.Info().Hash)
 		case "md5api", "md5_api":
-			fmt.Printf("%v\n", u.MD5API)
+			fmt.Printf("%v\n", u.Info().MD5API)
 		case "admin":
-			fmt.Printf("%v\n", u.Admin)
+			fmt.Printf("%v\n", u.Info().Admin)
 		case "active":
-			fmt.Printf("%v\n", u.Active)
+			fmt.Printf("%v\n", u.Info().Active)
 		default:
 			exitWithError(fmt.Sprintf("Unknown user property '%s'", prop))
 		}
@@ -99,68 +107,70 @@ func main() {
 		prop := flag.Arg(2)
 		val := flag.Arg(3)
 
-		u, err := db.GetUser(login)
-		if err != nil {
-			exitWithError(fmt.Sprintf("Error getting user '%s' from the database: %v", login, err))
+		u := repo.UserByLogin(info.Login(login))
+		if repo.HasErr() {
+			exitWithError(fmt.Sprintf("Error getting user '%s' from the database: %v", login, repo.Err()))
 		}
+
+		in := u.Info()
 
 		lowerProp := strings.ToLower(prop)
 		switch lowerProp {
 		case "firstname", "first_name":
-			u.FirstName = val
+			in.FirstName = val
 		case "lastname", "last_name":
-			u.LastName = val
+			in.LastName = val
 		case "email":
-			u.Email = val
+			in.Email = val
 		case "password":
-			if err := u.SetPassword(val); err != nil {
-				exitWithError(fmt.Sprintf("Error setting password for user '%s': %v", u.Login, err))
-			}
+			u.Password(val, []byte(cfg.Auth.Secret))
 		case "admin", "active":
 			enabled := false
 			if val == "1" || val == "true" || val == "on" {
 				enabled = true
 			}
 			if lowerProp == "admin" {
-				u.Admin = enabled
+				in.Admin = enabled
 			} else {
-				u.Active = enabled
+				in.Active = enabled
 			}
 		default:
 			exitWithError(fmt.Sprintf("Unknown user property '%s'", prop))
 		}
 
-		if err := db.UpdateUser(u); err != nil {
-			exitWithError(fmt.Sprintf("Error updating the user database record for '%s': %v", login, err))
+		u.Update()
+		if u.HasErr() {
+			exitWithError(fmt.Sprintf("Error updating the user database record for '%s': %v", login, u.Err()))
 		}
 	case "list":
-		users, err := db.GetUsers()
-		if err != nil {
-			exitWithError(fmt.Sprintf("Error getting users from the database: %v", err))
+		users := repo.AllUsers()
+		if repo.HasErr() {
+			exitWithError(fmt.Sprintf("Error getting users from the database: %v", repo.Err()))
 		}
 
 		for _, u := range users {
-			fmt.Printf("%s\n", u.Login)
+			fmt.Printf("%s\n", u.Info().Login)
 		}
 	case "list-detailed":
-		users, err := db.GetUsers()
-		if err != nil {
-			exitWithError(fmt.Sprintf("Error getting users from the database: %v", err))
+		users := repo.AllUsers()
+		if repo.HasErr() {
+			exitWithError(fmt.Sprintf("Error getting users from the database: %v", repo.Err()))
 		}
 
 		for _, u := range users {
-			fmt.Printf("Login: %s", u.Login)
-			if u.FirstName != "" {
-				fmt.Printf(", first name: %s", u.FirstName)
+			in := u.Info()
+			fmt.Printf("Login: %s", in.Login)
+			if in.FirstName != "" {
+				fmt.Printf(", first name: %s", in.FirstName)
 			}
-			if u.LastName != "" {
-				fmt.Printf(", last name: %s", u.LastName)
+			if in.LastName != "" {
+				fmt.Printf(", last name: %s", in.LastName)
 			}
-			if u.Email != "" {
-				fmt.Printf(", email: %s", u.Email)
+			if in.Email != "" {
+				fmt.Printf(", email: %s", in.Email)
 			}
-			if u.HashType != "" {
-				fmt.Printf(", has type: %s", u.HashType)
+			if in.HashType != "" {
+				fmt.Printf(", has type: %s", in.HashType)
 			}
 			fmt.Printf("\n")
 		}

@@ -39,7 +39,7 @@ func (con Login) Handler(c context.Context) http.HandlerFunc {
 			u := repo.UserByLogin(username)
 
 			formError := false
-			if repo.Err() != nil {
+			if u.Err() != nil {
 				sess.SetFlash("form-error", "login-incorrect")
 				formError = true
 			} else if !u.Authenticate(password, []byte(conf.Auth.Secret)) {

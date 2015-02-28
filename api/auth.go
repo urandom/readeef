@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 )
@@ -14,7 +15,7 @@ type Auth struct {
 }
 
 type getAuthDataProcessor struct {
-	user readeef.User
+	user content.User
 }
 
 func NewAuth() Auth {
@@ -49,7 +50,7 @@ func (p getAuthDataProcessor) Process() responseError {
 	return getAuthData(p.user)
 }
 
-func getAuthData(user readeef.User) (resp responseError) {
+func getAuthData(user content.User) (resp responseError) {
 	resp = newResponse()
 
 	type User struct {
@@ -59,14 +60,16 @@ func getAuthData(user readeef.User) (resp responseError) {
 		Email     string
 		Admin     bool
 	}
+
+	in := user.Info()
 	resp.val["Auth"] = true
 	resp.val["User"] = User{
-		Login:     user.Login,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
-		Admin:     user.Admin,
+		Login:     in.Login,
+		FirstName: in.FirstName,
+		LastName:  in.LastName,
+		Email:     in.Email,
+		Admin:     in.Admin,
 	}
-	resp.val["ProfileData"] = user.ProfileData
+	resp.val["ProfileData"] = in.ProfileData
 	return
 }
