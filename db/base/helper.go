@@ -45,5 +45,5 @@ func (h Helper) CreateWithId(tx *db.Tx, name string, args ...interface{}) (int64
 }
 
 var (
-	sql map[string]string
+	sql = make(map[string]string)
 )

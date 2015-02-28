@@ -2,6 +2,7 @@ package info
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -54,4 +55,15 @@ type ArticleFormatting struct {
 	Title    string
 	TopImage string
 	Language string
+}
+
+func (id *ArticleId) Scan(src interface{}) error {
+	asInt, ok := src.(int64)
+	if !ok {
+		return fmt.Errorf("Scan source '%T' was not of type int64", src)
+	}
+
+	*id = ArticleId(asInt)
+
+	return nil
 }

@@ -1,6 +1,9 @@
 package info
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type FeedId int64
 
@@ -16,4 +19,15 @@ type Feed struct {
 	TTL            time.Duration   `json:"-"`
 	SkipHours      map[int]bool    `json:"-"`
 	SkipDays       map[string]bool `json:"-"`
+}
+
+func (id *FeedId) Scan(src interface{}) error {
+	asInt, ok := src.(int64)
+	if !ok {
+		return fmt.Errorf("Scan source '%T' was not of type int64", src)
+	}
+
+	(*id) = FeedId(asInt)
+
+	return nil
 }

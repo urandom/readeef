@@ -1,5 +1,7 @@
 package info
 
+import "fmt"
+
 type Login string
 
 type User struct {
@@ -16,4 +18,15 @@ type User struct {
 	MD5API      []byte `db:"md5_api",json:"-"` // "md5(user:pass)"
 
 	ProfileData map[string]interface{}
+}
+
+func (val *Login) Scan(src interface{}) error {
+	asString, ok := src.(string)
+	if !ok {
+		return fmt.Errorf("Scan source '%T' was not of type string", src)
+	}
+
+	*val = Login(asString)
+
+	return nil
 }
