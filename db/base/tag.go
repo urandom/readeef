@@ -1,11 +1,19 @@
 package base
 
 func init() {
+	sql["get_user_tag_feeds"] = getUserTagFeeds
 	sql["create_all_user_tag_articles_read_by_date"] = createAllUserTagArticlesByDate
 	sql["delete_all_user_tag_articles_read_by_date"] = deleteAllUserTagArticlesByDate
 }
 
 const (
+	getUserTagFeeds = `
+SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
+FROM feeds f, users_feeds_tags uft
+WHERE f.id = uft.feed_id
+	AND uft.user_login = $1 AND uft.tag = $2
+ORDER BY LOWER(f.title)
+`
 	createAllUserTagArticlesByDate = `
 INSERT INTO users_articles_read
 	SELECT uf.user_login, a.id, uf.feed_id

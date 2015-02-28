@@ -19,8 +19,8 @@ type Tag struct {
 }
 
 type feedIdTag struct {
-	FeedId   info.FeedId `db:"feed_id"`
-	TagValue info.TagValue
+	FeedId   info.FeedId   `db:"feed_id"`
+	TagValue info.TagValue `db:"tag"`
 }
 
 func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {

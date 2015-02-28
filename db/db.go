@@ -77,7 +77,7 @@ func (db *DB) CreateWithId(tx *Tx, name string, args ...interface{}) (int64, err
 	driver := db.DriverName()
 
 	if h, ok := helpers[driver]; ok {
-		return h.CreateWithId(tx, name, args)
+		return h.CreateWithId(tx, name, args...)
 	} else {
 		panic("No helper registered for " + driver)
 	}
@@ -90,7 +90,7 @@ func (db *DB) init() error {
 		return fmt.Errorf("No helper provided for driver '%s'", db.DriverName())
 	}
 
-	for _, sql := range helper.Init() {
+	for _, sql := range helper.InitSQL() {
 		_, err := db.Exec(sql)
 		if err != nil {
 			return fmt.Errorf("Error executing '%s': %v", sql, err)

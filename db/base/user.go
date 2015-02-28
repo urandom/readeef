@@ -7,7 +7,6 @@ func init() {
 	sql["get_user_feed"] = getUserFeed
 	sql["create_user_feed"] = createUserFeed
 	sql["get_user_feeds"] = getUserFeeds
-	sql["get_user_tag_feeds"] = getUserTagFeeds
 	sql["get_user_feed_ids_tags"] = getUserFeedIdsTags
 	sql["get_user_tags"] = getUserTags
 	sql["get_article_columns"] = getArticleColumns
@@ -45,13 +44,6 @@ SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.
 FROM feeds f, users_feeds uf
 WHERE f.id = uf.feed_id
 	AND uf.user_login = $1
-ORDER BY LOWER(f.title)
-`
-	getUserTagFeeds = `
-SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
-FROM feeds f, users_feeds_tags uft
-WHERE f.id = uft.feed_id
-	AND uft.user_login = $1 AND uft.tag = $2
 ORDER BY LOWER(f.title)
 `
 	getUserFeedIdsTags = `SELECT feed_id, tag FROM users_feeds_tags WHERE user_login = $1 ORDER BY feed_id`

@@ -3,14 +3,22 @@ package base
 import "github.com/urandom/readeef/db"
 
 type Helper struct {
+	sql map[string]string
+}
+
+func NewHelper() Helper {
+	return Helper{sql: make(map[string]string)}
 }
 
 func (h Helper) SQL(name string) string {
+	if v, ok := h.sql[name]; ok {
+		return v
+	}
 	return sql[name]
 }
 
 func (h Helper) Set(name, stmt string) {
-	sql[name] = stmt
+	h.sql[name] = stmt
 }
 
 func (h Helper) Upgrade(db *db.DB, old, new int) error {

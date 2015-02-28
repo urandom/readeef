@@ -2,7 +2,7 @@ package db
 
 type Helper interface {
 	SQL(name string) string
-	Init() []string
+	InitSQL() []string
 
 	CreateWithId(tx *Tx, name string, args ...interface{}) (int64, error)
 	Upgrade(db *DB, old, new int) error

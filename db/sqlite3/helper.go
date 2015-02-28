@@ -9,12 +9,12 @@ type Helper struct {
 	base.Helper
 }
 
-func (h Helper) Init() []string {
+func (h Helper) InitSQL() []string {
 	return initSQL
 }
 
 func init() {
-	helper := &Helper{}
+	helper := &Helper{Helper: base.NewHelper()}
 
 	helper.Set("get_user_feeds", getUserFeeds)
 	helper.Set("get_user_tag_feeds", getUserTagFeeds)
