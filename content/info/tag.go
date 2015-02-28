@@ -1,6 +1,9 @@
 package info
 
-import "fmt"
+import (
+	"database/sql/driver"
+	"fmt"
+)
 
 type TagValue string
 
@@ -14,4 +17,8 @@ func (val *TagValue) Scan(src interface{}) error {
 	}
 
 	return nil
+}
+
+func (val TagValue) Value() (driver.Value, error) {
+	return string(val), nil
 }

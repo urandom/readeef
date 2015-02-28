@@ -1,6 +1,7 @@
 package info
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"time"
 )
@@ -30,4 +31,8 @@ func (id *FeedId) Scan(src interface{}) error {
 	(*id) = FeedId(asInt)
 
 	return nil
+}
+
+func (id FeedId) Value() (driver.Value, error) {
+	return int64(id), nil
 }

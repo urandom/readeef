@@ -1,6 +1,9 @@
 package info
 
-import "fmt"
+import (
+	"database/sql/driver"
+	"fmt"
+)
 
 type Login string
 
@@ -30,4 +33,8 @@ func (val *Login) Scan(src interface{}) error {
 	}
 
 	return nil
+}
+
+func (val Login) Value() (driver.Value, error) {
+	return string(val), nil
 }
