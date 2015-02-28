@@ -1,7 +1,7 @@
 package sql
 
 import (
-	dsql "database/sql"
+	"database/sql"
 	"encoding/json"
 	"time"
 
@@ -249,7 +249,10 @@ func (f *Feed) Subscription() (s content.Subscription) {
 	f.logger.Infof("Getting subcription for feed %d\n", id)
 
 	var in info.Subscription
-	if err := f.db.Get(&in, f.db.SQL("get_hubbub_subscription"), id); err != nil && err != dsql.ErrNoRows {
+	if err := f.db.Get(&in, f.db.SQL("get_hubbub_subscription"), id); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
 		s.Err(err)
 	}
 
@@ -273,18 +276,18 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 		in := articles[i].Info()
 		in.FeedId = id
 
-		var sql string
+		var sqlString string
 		args := []interface{}{in.Title, in.Description, in.Date, id}
 
 		if in.Guid.Valid {
-			sql = f.db.SQL("update_feed_article_with_guid")
+			sqlString = f.db.SQL("update_feed_article_with_guid")
 			args = append(args, in.Guid)
 		} else {
-			sql = f.db.SQL("update_feed_article")
+			sqlString = f.db.SQL("update_feed_article")
 			args = append(args, in.Link)
 		}
 
-		stmt, err := tx.Preparex(sql)
+		stmt, err := tx.Preparex(sqlString)
 		if err != nil {
 			f.Err(err)
 			return
@@ -297,7 +300,7 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 			return
 		}
 
-		if num, err := res.RowsAffected(); err != nil && err == dsql.ErrNoRows || num == 0 {
+		if num, err := res.RowsAffected(); err != nil && err == sql.ErrNoRows || num == 0 {
 			a = append(a, articles[i])
 
 			id, err := f.db.CreateWithId(tx, "create_feed_article", id, in.Link, in.Guid,

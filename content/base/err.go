@@ -4,7 +4,7 @@ type Error struct {
 	err error
 }
 
-func (e Error) Err(err ...error) error {
+func (e *Error) Err(err ...error) error {
 	prev := e.err
 
 	if len(err) > 0 {

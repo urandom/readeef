@@ -31,7 +31,10 @@ func (r *Repo) UserByLogin(login info.Login) (u content.User) {
 	r.logger.Infof("Getting user '%s'\n", login)
 
 	var info info.User
-	if err := r.db.Get(&info, r.db.SQL("get_user"), login); err != nil && err != sql.ErrNoRows {
+	if err := r.db.Get(&info, r.db.SQL("get_user"), login); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
 		u.Err(err)
 		return
 	}
@@ -52,7 +55,10 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 	r.logger.Infof("Getting user using md5 api field '%v'\n", md5)
 
 	var info info.User
-	if err := r.db.Get(&info, r.db.SQL("get_user_by_md5_api"), md5); err != nil && err != sql.ErrNoRows {
+	if err := r.db.Get(&info, r.db.SQL("get_user_by_md5_api"), md5); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
 		u.Err(err)
 		return
 	}
@@ -100,7 +106,10 @@ func (r *Repo) FeedById(id info.FeedId) (f content.Feed) {
 	r.logger.Infof("Getting feed '%d'\n", id)
 
 	i := info.Feed{}
-	if err := r.db.Get(&i, r.db.SQL("get_feed"), id); err != nil && err != sql.ErrNoRows {
+	if err := r.db.Get(&i, r.db.SQL("get_feed"), id); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
 		f.Err(err)
 		return
 	}
@@ -121,7 +130,10 @@ func (r *Repo) FeedByLink(link string) (f content.Feed) {
 	r.logger.Infof("Getting feed by link '%s'\n", link)
 
 	i := info.Feed{}
-	if err := r.db.Get(&i, r.db.SQL("get_feed_by_link"), link); err != nil && err != sql.ErrNoRows {
+	if err := r.db.Get(&i, r.db.SQL("get_feed_by_link"), link); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
 		f.Err(err)
 		return
 	}

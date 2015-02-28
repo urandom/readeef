@@ -21,12 +21,13 @@ type User struct {
 }
 
 func (val *Login) Scan(src interface{}) error {
-	asString, ok := src.(string)
-	if !ok {
-		return fmt.Errorf("Scan source '%T' was not of type string", src)
+	switch t := src.(type) {
+	case string:
+	case []byte:
+		*val = Login(t)
+	default:
+		return fmt.Errorf("Scan source '%#v' (%T) was not of type string (Login)", src, src)
 	}
-
-	*val = Login(asString)
 
 	return nil
 }

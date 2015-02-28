@@ -5,12 +5,13 @@ import "fmt"
 type TagValue string
 
 func (val *TagValue) Scan(src interface{}) error {
-	asString, ok := src.(string)
-	if !ok {
-		return fmt.Errorf("Scan source '%T' was not of type string", src)
+	switch t := src.(type) {
+	case string:
+	case []byte:
+		*val = TagValue(t)
+	default:
+		return fmt.Errorf("Scan source '%#v' (%T) was not of type string (TagValue)", src, src)
 	}
-
-	*val = TagValue(asString)
 
 	return nil
 }

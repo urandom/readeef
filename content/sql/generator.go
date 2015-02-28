@@ -14,7 +14,7 @@ func (r *Repo) Article() content.Article {
 }
 
 func (r *Repo) ScoredArticle() content.ScoredArticle {
-	sa := &ScoredArticle{Article: Article{}}
+	sa := &ScoredArticle{Article: Article{}, db: r.db, logger: r.logger}
 
 	sa.Repo(r)
 

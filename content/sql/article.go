@@ -110,7 +110,10 @@ func (sa *ScoredArticle) Scores() (asc content.ArticleScores) {
 	sa.logger.Infof("Getting article '%d' scores\n", id)
 
 	var i info.ArticleScores
-	if err := sa.db.Get(&i, sa.db.SQL("get_article_scores"), id); err != nil && err != sql.ErrNoRows {
+	if err := sa.db.Get(&i, sa.db.SQL("get_article_scores"), id); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
 		asc.Err(err)
 	}
 

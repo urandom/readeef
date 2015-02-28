@@ -47,12 +47,14 @@ var (
 	errTypeInvalidMethodValue = "error-invalid-method-value"
 	errTypeInvalidArgValue    = "error-invalid-arg-value"
 	errTypeUnauthorized       = "error-unauthorized"
+	errTypeResourceNotFound   = "error-resource-not-found"
 
 	errNoId               = errors.New("No Id given")
 	errInvalidMethodValue = errors.New("Invalid method")
 	errInvalidArgValue    = errors.New("Invalid argument value")
 	errInternal           = errors.New("Internal server error")
 	errUnauthorized       = errors.New("Unauthorized")
+	errResourceNotFound   = errors.New("Resource not found")
 )
 
 func NewWebSocket(fm *readeef.FeedManager, si readeef.SearchIndex) WebSocket {
@@ -96,9 +98,6 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 		msg := make(chan apiRequest)
 		resp := make(chan apiResponse)
 
-		done := make(chan bool)
-		defer close(done)
-
 		receiver := make(chan content.Feed)
 
 		mutex.Lock()
@@ -138,6 +137,9 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 						default:
 							if err == errInvalidMethodValue {
 								r.errType = errTypeInvalidMethodValue
+							} else if err == content.ErrNoContent {
+								r.err = errResourceNotFound
+								r.errType = errTypeResourceNotFound
 							}
 						}
 					}
@@ -153,6 +155,10 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 						}
 					}()
 				case f := <-receiver:
+					if f == nil {
+						// Socket was closed
+						return
+					}
 					logger.Infoln("Received notification for feed update of " + f.String())
 
 					r := newResponse()
@@ -175,8 +181,6 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 					}
 				case r := <-resp:
 					websocket.JSON.Send(ws, r)
-				case <-done:
-					return
 				}
 			}
 		}()

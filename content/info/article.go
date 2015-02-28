@@ -60,7 +60,7 @@ type ArticleFormatting struct {
 func (id *ArticleId) Scan(src interface{}) error {
 	asInt, ok := src.(int64)
 	if !ok {
-		return fmt.Errorf("Scan source '%T' was not of type int64", src)
+		return fmt.Errorf("Scan source '%#v' (%T) was not of type int64 (ArticleId)", src, src)
 	}
 
 	*id = ArticleId(asInt)

@@ -110,11 +110,12 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 	}
 
 	f := fm.repo.FeedByLink(link)
-	if f.HasErr() {
-		return f, f.Err()
+	err := f.Err()
+	if err != nil && err != content.ErrNoContent {
+		return f, err
 	}
 
-	if f.Validate() != nil {
+	if err != nil {
 		fm.logger.Infoln("Discovering feeds in " + link)
 
 		feeds, err := fm.discoverParserFeeds(link)
@@ -145,6 +146,10 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 func (fm *FeedManager) RemoveFeedByLink(link string) (content.Feed, error) {
 	f := fm.repo.FeedByLink(link)
 	if f.HasErr() {
+		err := f.Err()
+		if err == content.ErrNoContent {
+			err = nil
+		}
 		return f, f.Err()
 	}
 
@@ -172,10 +177,11 @@ func (fm *FeedManager) DiscoverFeeds(link string) ([]content.Feed, error) {
 	}
 
 	f := fm.repo.FeedByLink(link)
-	if f.HasErr() {
+	err := f.Err()
+	if err != nil && err != content.ErrNoContent {
 		return feeds, f.Err()
 	} else {
-		if f.Validate() != nil {
+		if err != nil {
 			fm.logger.Infoln("Discovering feeds in " + link)
 
 			discovered, err := fm.discoverParserFeeds(link)

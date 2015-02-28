@@ -170,14 +170,17 @@ func addUser(user content.User, login info.Login, password string, secret []byte
 	repo := user.Repo()
 	u := repo.UserByLogin(login)
 
-	if u.Validate() == nil {
+	if !u.HasErr() {
 		/* TODO: non-fatal error */
 		resp.err = errUserExists
 		resp.errType = errTypeUserExists
 		return
-	} else if u.HasErr() {
-		resp.err = u.Err()
-		return
+	} else {
+		err := u.Err()
+		if err != content.ErrNoContent {
+			resp.err = err
+			return
+		}
 	}
 
 	resp.err = nil

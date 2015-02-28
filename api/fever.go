@@ -99,7 +99,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 
 		switch {
 		default:
-			if user == nil || user.Validate() != nil {
+			if user == nil {
 				resp["auth"] = 0
 				break
 			}
@@ -435,6 +435,7 @@ func getReadeefUser(repo content.Repo, md5hex string, log webfw.Logger) content.
 	user := repo.UserByMD5Api(md5)
 	if user.HasErr() {
 		log.Printf("Error getting user by md5api field: %v\n", repo.Err())
+		return nil
 	}
 	return user
 }

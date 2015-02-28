@@ -131,7 +131,10 @@ func (u *User) FeedById(id info.FeedId) (uf content.UserFeed) {
 	u.logger.Infof("Getting user feed for user %s and feed %d\n", login, id)
 
 	var i info.Feed
-	if err := u.db.Get(&i, u.db.SQL("get_user_feed"), id, login); err != nil && err != sql.ErrNoRows {
+	if err := u.db.Get(&i, u.db.SQL("get_user_feed"), id, login); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
 		uf.Err(err)
 		return
 	}
