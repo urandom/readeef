@@ -389,7 +389,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 					if val == "feed" {
 						var feed content.UserFeed
 
-						feed, err = user.FeedById(info.FeedId(id)), user.Err()
+						feed, err = user.FeedById(info.FeedId(id)), feed.Err()
 						if err != nil {
 							break
 						}
@@ -433,7 +433,7 @@ func getReadeefUser(repo content.Repo, md5hex string, log webfw.Logger) content.
 	}
 
 	user := repo.UserByMD5Api(md5)
-	if repo.HasErr() {
+	if user.HasErr() {
 		log.Printf("Error getting user by md5api field: %v\n", repo.Err())
 	}
 	return user
