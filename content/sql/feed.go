@@ -116,6 +116,13 @@ func (f *Feed) Update() {
 
 		i.Id = info.FeedId(id)
 
+		pa := f.ParsedArticles()
+		for index := range pa {
+			ai := pa[index].Info()
+			ai.FeedId = i.Id
+			pa[index].Info(ai)
+		}
+
 		f.Info(i)
 	}
 
