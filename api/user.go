@@ -1,12 +1,13 @@
 package api
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/util"
@@ -17,32 +18,30 @@ type User struct{}
 type listUsersProcessor struct {
 	Attribute string `json:"attribute"`
 
-	db   readeef.DB
-	user readeef.User
+	user content.User
 }
 
 type addUserProcessor struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
+	Login    info.Login `json:"login"`
+	Password string     `json:"password"`
 
-	db   readeef.DB
-	user readeef.User
+	user   content.User
+	secret []byte
 }
 
 type removeUserProcessor struct {
-	Login string `json:"login"`
+	Login info.Login `json:"login"`
 
-	db   readeef.DB
-	user readeef.User
+	user content.User
 }
 
 type setAttributeForUserProcessor struct {
-	Login     string          `json:"login"`
+	Login     info.Login      `json:"login"`
 	Attribute string          `json:"attribute"`
 	Value     json.RawMessage `json:"value"`
 
-	db   readeef.DB
-	user readeef.User
+	user   content.User
+	secret []byte
 }
 
 var (
@@ -71,8 +70,8 @@ func (con User) Patterns() []webfw.MethodIdentifierTuple {
 }
 
 func (con User) Handler(c context.Context) http.Handler {
+	cfg := readeef.GetConfig(c)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := readeef.GetDB(c)
 		user := readeef.GetUser(c, r)
 
 		action := webfw.GetMultiPatternIdentifier(c, r)
@@ -81,18 +80,18 @@ func (con User) Handler(c context.Context) http.Handler {
 		var resp responseError
 		switch action {
 		case "list":
-			resp = listUsers(db, user)
+			resp = listUsers(user)
 		case "add":
 			buf := util.BufferPool.GetBuffer()
 			defer util.BufferPool.Put(buf)
 
 			buf.ReadFrom(r.Body)
 
-			resp = addUser(db, user, params["login"], buf.String())
+			resp = addUser(user, info.Login(params["login"]), buf.String(), []byte(cfg.Auth.Secret))
 		case "remove":
-			resp = removeUser(db, user, params["login"])
+			resp = removeUser(user, info.Login(params["login"]))
 		case "setAttr":
-			resp = setAttributeForUser(db, user, params["login"], params["attr"], []byte(params["value"]))
+			resp = setAttributeForUser(user, []byte(cfg.Auth.Secret), info.Login(params["login"]), params["attr"], []byte(params["value"]))
 		}
 
 		switch resp.err {
@@ -129,89 +128,68 @@ func (con User) AuthRequired(c context.Context, r *http.Request) bool {
 }
 
 func (p listUsersProcessor) Process() responseError {
-	return listUsers(p.db, p.user)
+	return listUsers(p.user)
 }
 
 func (p addUserProcessor) Process() responseError {
-	return addUser(p.db, p.user, p.Login, p.Password)
+	return addUser(p.user, p.Login, p.Password, p.secret)
 }
 
 func (p removeUserProcessor) Process() responseError {
-	return removeUser(p.db, p.user, p.Login)
+	return removeUser(p.user, p.Login)
 }
 
 func (p setAttributeForUserProcessor) Process() responseError {
-	return setAttributeForUser(p.db, p.user, p.Login, p.Attribute, p.Value)
+	return setAttributeForUser(p.user, p.secret, p.Login, p.Attribute, p.Value)
 }
 
-func listUsers(db readeef.DB, user readeef.User) (resp responseError) {
+func listUsers(user content.User) (resp responseError) {
 	resp = newResponse()
 
-	if !user.Admin {
+	if !user.Info().Admin {
 		resp.err = errForbidden
 		resp.errType = errTypeForbidden
 		return
 	}
 
-	var users []readeef.User
-	if users, resp.err = db.GetUsers(); resp.err != nil {
-		return
-	}
-
-	type respUser struct {
-		Login     string
-		FirstName string
-		LastName  string
-		Email     string
-		Active    bool
-		Admin     bool
-	}
-
-	userList := []respUser{}
-	for _, u := range users {
-		userList = append(userList, respUser{
-			Login:     u.Login,
-			FirstName: u.FirstName,
-			LastName:  u.LastName,
-			Email:     u.Email,
-			Active:    u.Active,
-			Admin:     u.Admin,
-		})
-	}
-
-	resp.val["Users"] = userList
+	repo := user.Repo()
+	resp.val["Users"], resp.err = repo.AllUsers(), repo.Err()
 	return
 }
 
-func addUser(db readeef.DB, user readeef.User, login, password string) (resp responseError) {
+func addUser(user content.User, login info.Login, password string, secret []byte) (resp responseError) {
 	resp = newResponse()
 	resp.val["Login"] = login
 
-	if !user.Admin {
+	if !user.Info().Admin {
 		resp.err = errForbidden
 		resp.errType = errTypeForbidden
 		return
 	}
 
-	_, resp.err = db.GetUser(login)
-	if resp.err == nil {
+	repo := user.Repo()
+	u := repo.UserByLogin(login)
+
+	if u.Validate() == nil {
 		/* TODO: non-fatal error */
 		resp.err = errUserExists
 		resp.errType = errTypeUserExists
 		return
-	} else if resp.err != sql.ErrNoRows {
+	} else if u.HasErr() {
+		resp.err = u.Err()
 		return
 	}
 
 	resp.err = nil
 
-	u := readeef.User{Login: login}
+	in := info.User{Login: login}
+	u = repo.User()
 
-	if resp.err = u.SetPassword(password); resp.err != nil {
-		return
-	}
+	u.Info(in)
+	u.Password(password, secret)
+	u.Update()
 
-	if resp.err = db.UpdateUser(u); resp.err != nil {
+	if resp.err = u.Err(); resp.err != nil {
 		return
 	}
 
@@ -220,29 +198,26 @@ func addUser(db readeef.DB, user readeef.User, login, password string) (resp res
 	return
 }
 
-func removeUser(db readeef.DB, user readeef.User, login string) (resp responseError) {
+func removeUser(user content.User, login info.Login) (resp responseError) {
 	resp = newResponse()
 	resp.val["Login"] = login
 
-	if !user.Admin {
+	if !user.Info().Admin {
 		resp.err = errForbidden
 		resp.errType = errTypeForbidden
 		return
 	}
 
-	if user.Login == login {
+	if user.Info().Login == login {
 		resp.err = errCurrentUser
 		resp.errType = errTypeCurrentUser
 		return
 	}
 
-	var u readeef.User
+	u := user.Repo().UserByLogin(login)
+	u.Delete()
 
-	if u, resp.err = db.GetUser(login); resp.err != nil {
-		return
-	}
-
-	if resp.err = db.DeleteUser(u); resp.err != nil {
+	if resp.err = u.Err(); resp.err != nil {
 		return
 	}
 
@@ -250,25 +225,25 @@ func removeUser(db readeef.DB, user readeef.User, login string) (resp responseEr
 	return
 }
 
-func setAttributeForUser(db readeef.DB, user readeef.User, login, attr string, value []byte) (resp responseError) {
-	if !user.Admin {
+func setAttributeForUser(user content.User, secret []byte, login info.Login, attr string, value []byte) (resp responseError) {
+	if !user.Info().Admin {
 		resp.err = errForbidden
 		resp.errType = errTypeForbidden
 		return
 	}
 
-	if user.Login == login {
+	if user.Info().Login == login {
 		resp.err = errCurrentUser
 		resp.errType = errTypeCurrentUser
 		return
 	}
 
-	var u readeef.User
-
-	if u, resp.err = db.GetUser(login); resp.err != nil {
+	if u := user.Repo().UserByLogin(login); u.HasErr() {
+		resp.err = u.Err()
 		return
+	} else {
+		resp = setUserAttribute(u, secret, attr, value)
 	}
 
-	resp = setUserAttribute(db, u, attr, value)
 	return
 }

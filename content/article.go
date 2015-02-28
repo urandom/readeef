@@ -1,6 +1,7 @@
 package content
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/blevesearch/bleve"
@@ -26,8 +27,6 @@ type ArticleSorting interface {
 }
 
 type ArticleSearch interface {
-	UserRelated
-
 	Highlight(highlight ...string) string
 	Query(query string, index bleve.Index, paging ...int) []UserArticle
 }
@@ -37,6 +36,7 @@ type Article interface {
 	RepoRelated
 
 	fmt.Stringer
+	json.Marshaler
 
 	Info(info ...info.Article) info.Article
 

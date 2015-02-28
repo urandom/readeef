@@ -18,6 +18,7 @@ type User struct {
 	ArticleSorting
 	Error
 	RepoRelated
+	ArticleSearch
 
 	info info.User
 }
@@ -75,6 +76,10 @@ func (u User) Validate() error {
 	}
 
 	return nil
+}
+
+func (u User) MarshalJSON() ([]byte, error) {
+	return json.Marshal(u.info)
 }
 
 func (u *User) Password(password string, secret []byte) {

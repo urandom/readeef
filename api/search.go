@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 )
@@ -21,8 +23,7 @@ type searchProcessor struct {
 	Highlight string `json:"highlight"`
 	Id        string `json:"id"`
 
-	db   readeef.DB
-	user readeef.User
+	user content.User
 	si   readeef.SearchIndex
 }
 
@@ -35,8 +36,6 @@ func NewSearch(searchIndex readeef.SearchIndex) Search {
 
 func (con Search) Handler(c context.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := readeef.GetDB(c)
-
 		user := readeef.GetUser(c, r)
 		params := webfw.GetParams(c, r)
 		query := params["query"]
@@ -57,7 +56,7 @@ func (con Search) Handler(c context.Context) http.Handler {
 				}
 			}
 
-			resp = search(db, user, con.searchIndex, query, highlight, feedId)
+			resp = search(user, con.searchIndex, query, highlight, feedId)
 		}
 
 		var b []byte
@@ -80,35 +79,31 @@ func (con Search) AuthRequired(c context.Context, r *http.Request) bool {
 }
 
 func (p searchProcessor) Process() responseError {
-	return search(p.db, p.user, p.si, p.Query, p.Highlight, p.Id)
+	return search(p.user, p.si, p.Query, p.Highlight, p.Id)
 }
 
-func search(db readeef.DB, user readeef.User, searchIndex readeef.SearchIndex, query, highlight, feedId string) (resp responseError) {
+func search(user content.User, searchIndex readeef.SearchIndex, query, highlight, feedId string) (resp responseError) {
 	resp = newResponse()
-	var ids []int64
 
-	if feedId != "" {
+	if feedId == "" {
+		user.Highlight(highlight)
+		resp.val["Articles"], resp.err = user.Query(query, searchIndex.Index), user.Err()
+	} else {
 		if strings.HasPrefix(feedId, "tag:") {
-			var feeds []readeef.Feed
-			if feeds, resp.err = db.GetUserTagFeeds(user, feedId[4:]); resp.err != nil {
-				return
-			}
+			tag := user.Repo().Tag(user)
+			tag.Value(info.TagValue(feedId[4:]))
 
-			for _, feed := range feeds {
-				ids = append(ids, feed.Id)
-			}
+			tag.Highlight(highlight)
+			resp.val["Articles"], resp.err = tag.Query(query, searchIndex.Index), tag.Err()
 		} else {
 			if id, err := strconv.ParseInt(feedId, 10, 64); err == nil {
-				ids = append(ids, id)
+				f := user.FeedById(info.FeedId(id))
+				resp.val["Articles"], resp.err = f.Query(query, searchIndex.Index), f.Err()
+			} else {
+				resp.err = err
 			}
 		}
 	}
 
-	var results []readeef.SearchResult
-	if results, resp.err = searchIndex.Search(user, query, highlight, ids); resp.err != nil {
-		return
-	}
-
-	resp.val["Articles"] = results
 	return
 }

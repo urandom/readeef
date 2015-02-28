@@ -53,23 +53,9 @@ func (p getAuthDataProcessor) Process() responseError {
 func getAuthData(user content.User) (resp responseError) {
 	resp = newResponse()
 
-	type User struct {
-		Login     string
-		FirstName string
-		LastName  string
-		Email     string
-		Admin     bool
-	}
-
 	in := user.Info()
 	resp.val["Auth"] = true
-	resp.val["User"] = User{
-		Login:     in.Login,
-		FirstName: in.FirstName,
-		LastName:  in.LastName,
-		Email:     in.Email,
-		Admin:     in.Admin,
-	}
+	resp.val["User"] = user
 	resp.val["ProfileData"] = in.ProfileData
 	return
 }

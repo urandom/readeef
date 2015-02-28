@@ -1,6 +1,7 @@
 package content
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -14,6 +15,7 @@ type Tag interface {
 	RepoRelated
 
 	fmt.Stringer
+	json.Marshaler
 
 	Value(val ...info.TagValue) info.TagValue
 

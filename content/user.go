@@ -1,6 +1,7 @@
 package content
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -11,8 +12,10 @@ type User interface {
 	Error
 	ArticleSorting
 	RepoRelated
+	ArticleSearch
 
 	fmt.Stringer
+	json.Marshaler
 
 	Info(info ...info.User) info.User
 
@@ -24,14 +27,14 @@ type User interface {
 	Update()
 	Delete()
 
-	Feed(id info.FeedId) UserFeed
+	FeedById(id info.FeedId) UserFeed
 	AddFeed(feed Feed) UserFeed
 
-	AllFeeds() []TaggedFeed
+	AllFeeds() []UserFeed
 
 	AllTaggedFeeds() []TaggedFeed
 
-	Article(id info.ArticleId) UserArticle
+	ArticleById(id info.ArticleId) UserArticle
 
 	ArticlesById(ids []info.ArticleId) []UserArticle
 

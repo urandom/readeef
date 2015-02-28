@@ -2,6 +2,7 @@ package sql
 
 import (
 	dsql "database/sql"
+	"encoding/json"
 	"time"
 
 	"github.com/blevesearch/bleve"
@@ -29,6 +30,11 @@ type TaggedFeed struct {
 	UserFeed
 
 	tags []content.Tag
+}
+
+type taggedFeedJSON struct {
+	info.Feed
+	Tags []content.Tag
 }
 
 func (f Feed) NewArticles() (a []content.Article) {
@@ -493,6 +499,11 @@ func (uf *UserFeed) Query(term string, index bleve.Index, paging ...int) (ua []c
 	uf.Err(err)
 
 	return
+}
+
+func (tf TaggedFeed) MarshalJSON() ([]byte, error) {
+	tfjson := taggedFeedJSON{Feed: tf.Info(), Tags: tf.tags}
+	return json.Marshal(tfjson)
 }
 
 func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {

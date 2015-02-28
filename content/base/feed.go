@@ -1,6 +1,7 @@
 package base
 
 import (
+	"encoding/json"
 	"errors"
 	"net/url"
 	"strconv"
@@ -94,6 +95,10 @@ func (f *Feed) ParsedArticles() (a []content.Article) {
 	}
 
 	return f.parsedArticles
+}
+
+func (f Feed) MarshalJSON() ([]byte, error) {
+	return json.Marshal(f.info)
 }
 
 func (uf UserFeed) Validate() error {

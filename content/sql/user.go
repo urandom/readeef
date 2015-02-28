@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blevesearch/bleve"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/info"
@@ -119,7 +120,7 @@ func (u *User) Delete() {
 	}
 }
 
-func (u *User) Feed(id info.FeedId) (uf content.UserFeed) {
+func (u *User) FeedById(id info.FeedId) (uf content.UserFeed) {
 	uf = u.Repo().UserFeed(u)
 	if u.HasErr() {
 		uf.Err(u.Err())
@@ -185,7 +186,7 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 	return
 }
 
-func (u *User) AllFeeds() (uf []content.TaggedFeed) {
+func (u *User) AllFeeds() (uf []content.UserFeed) {
 	if u.HasErr() {
 		return
 	}
@@ -199,9 +200,9 @@ func (u *User) AllFeeds() (uf []content.TaggedFeed) {
 		return
 	}
 
-	uf = make([]content.TaggedFeed, len(info))
+	uf = make([]content.UserFeed, len(info))
 	for i := range info {
-		uf[i] = u.Repo().TaggedFeed(u)
+		uf[i] = u.Repo().UserFeed(u)
 		uf[i].Info(info[i])
 	}
 
@@ -223,27 +224,30 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 		return
 	}
 
-	tf = u.AllFeeds()
+	uf := u.AllFeeds()
 	if u.HasErr() {
 		return
 	}
 
 	feedMap := make(map[info.FeedId][]content.Tag)
+	repo := u.Repo()
 
 	for _, tuple := range feedIdTags {
-		tag := u.Repo().Tag(u)
+		tag := repo.Tag(u)
 		tag.Value(tuple.TagValue)
 		feedMap[tuple.FeedId] = append(feedMap[tuple.FeedId], tag)
 	}
 
-	for i := range tf {
+	tf = make([]content.TaggedFeed, len(uf))
+	for i := range uf {
+		tf[i] = repo.TaggedFeed(u)
 		tf[i].Tags(feedMap[tf[i].Info().Id])
 	}
 
 	return
 }
 
-func (u *User) Article(id info.ArticleId) (ua content.UserArticle) {
+func (u *User) ArticleById(id info.ArticleId) (ua content.UserArticle) {
 	ua = u.Repo().UserArticle(u)
 	if u.HasErr() {
 		ua.Err(u.Err())
@@ -414,6 +418,19 @@ func (u *User) FavoriteArticles(paging ...int) (ua []content.UserArticle) {
 	for i := range articles {
 		ua[i] = articles[i]
 	}
+
+	return
+}
+
+func (u *User) Query(term string, index bleve.Index, paging ...int) (ua []content.UserArticle) {
+	if u.HasErr() {
+		return
+	}
+
+	var err error
+
+	ua, err = query(term, u.Highlight(), index, u, []info.FeedId{}, paging...)
+	u.Err(err)
 
 	return
 }

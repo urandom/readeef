@@ -1,6 +1,7 @@
 package base
 
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 
@@ -40,4 +41,8 @@ func (a Article) Validate() error {
 	}
 
 	return nil
+}
+
+func (a Article) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.info)
 }

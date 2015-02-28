@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"golang.org/x/net/websocket"
@@ -17,7 +18,7 @@ type WebSocket struct {
 	webfw.BasePatternController
 	fm         *readeef.FeedManager
 	si         readeef.SearchIndex
-	updateFeed chan readeef.Feed
+	updateFeed chan content.Feed
 }
 
 type apiRequest struct {
@@ -59,18 +60,18 @@ func NewWebSocket(fm *readeef.FeedManager, si readeef.SearchIndex) WebSocket {
 		BasePatternController: webfw.NewBasePatternController("/v:version/", webfw.MethodGet, ""),
 		fm:         fm,
 		si:         si,
-		updateFeed: make(chan readeef.Feed),
+		updateFeed: make(chan content.Feed),
 	}
 }
 
-func (con WebSocket) UpdateFeedChannel() chan<- readeef.Feed {
+func (con WebSocket) UpdateFeedChannel() chan<- content.Feed {
 	return con.updateFeed
 }
 
 func (con WebSocket) Handler(c context.Context) http.Handler {
 	var mutex sync.RWMutex
 
-	receivers := make(map[chan readeef.Feed]bool)
+	receivers := make(map[chan content.Feed]bool)
 	logger := webfw.GetLogger(c)
 
 	go func() {
@@ -88,8 +89,8 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 		}
 	}()
 
+	cfg := readeef.GetConfig(c)
 	return websocket.Handler(func(ws *websocket.Conn) {
-		db := readeef.GetDB(c)
 		user := readeef.GetUser(c, ws.Request())
 
 		msg := make(chan apiRequest)
@@ -98,7 +99,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 		done := make(chan bool)
 		defer close(done)
 
-		receiver := make(chan readeef.Feed)
+		receiver := make(chan content.Feed)
 
 		mutex.Lock()
 		receivers[receiver] = true
@@ -119,7 +120,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 					var err error
 					var processor Processor
 
-					if processor, err = data.processor(c, db, user, con.fm, con.si); err == nil {
+					if processor, err = data.processor(c, user, con.fm, con.si, []byte(cfg.Auth.Secret)); err == nil {
 						if len(data.Arguments) > 0 {
 							err = json.Unmarshal([]byte(data.Arguments), processor)
 						}
@@ -152,17 +153,14 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 						}
 					}()
 				case f := <-receiver:
-					logger.Infoln("Received notification for feed update of" + f.Link)
+					logger.Infoln("Received notification for feed update of " + f.String())
 
 					r := newResponse()
 
-					uf, _ := db.GetUserFeed(f.Id, user)
+					uf := user.FeedById(f.Info().Id)
 
-					if uf.Id > 0 {
-						r.val["Feed"] = feed{
-							Id: f.Id, Title: f.Title, Description: f.Description,
-							Link: f.Link, Image: f.Image,
-						}
+					if !uf.HasErr() {
+						r.val["Feed"] = uf
 
 						go func() {
 							var err string
@@ -222,59 +220,59 @@ func (con WebSocket) AuthReject(c context.Context, r *http.Request) {
 
 func (a apiRequest) processor(
 	c context.Context,
-	db readeef.DB,
-	user readeef.User,
+	user content.User,
 	fm *readeef.FeedManager,
 	si readeef.SearchIndex,
+	secret []byte,
 ) (Processor, error) {
 
 	switch a.Method {
 	case "get-auth-data":
 		return &getAuthDataProcessor{user: user}, nil
 	case "mark-article-as-read":
-		return &markArticleAsReadProcessor{db: db, user: user}, nil
+		return &markArticleAsReadProcessor{user: user}, nil
 	case "mark-article-as-favorite":
-		return &markArticleAsFavoriteProcessor{db: db, user: user}, nil
+		return &markArticleAsFavoriteProcessor{user: user}, nil
 	case "format-article":
 		return &formatArticleProcessor{
-			db: db, user: user,
+			user:          user,
 			webfwConfig:   webfw.GetConfig(c),
 			readeefConfig: readeef.GetConfig(c),
 		}, nil
 	case "get-article":
-		return &getArticleProcessor{db: db, user: user}, nil
+		return &getArticleProcessor{user: user}, nil
 	case "list-feeds":
-		return &listFeedsProcessor{db: db, user: user}, nil
+		return &listFeedsProcessor{user: user}, nil
 	case "discover-feeds":
-		return &discoverFeedsProcessor{db: db, user: user, fm: fm}, nil
+		return &discoverFeedsProcessor{user: user, fm: fm}, nil
 	case "parse-opml":
-		return &parseOpmlProcessor{db: db, user: user, fm: fm}, nil
+		return &parseOpmlProcessor{user: user, fm: fm}, nil
 	case "add-feed":
-		return &addFeedProcessor{db: db, user: user, fm: fm}, nil
+		return &addFeedProcessor{user: user, fm: fm}, nil
 	case "remove-feed":
-		return &removeFeedProcessor{db: db, user: user, fm: fm}, nil
+		return &removeFeedProcessor{user: user, fm: fm}, nil
 	case "get-feed-tags":
-		return &getFeedTagsProcessor{db: db, user: user}, nil
+		return &getFeedTagsProcessor{user: user}, nil
 	case "set-feed-tags":
-		return &setFeedTagsProcessor{db: db, user: user}, nil
+		return &setFeedTagsProcessor{user: user}, nil
 	case "mark-feed-as-read":
-		return &markFeedAsReadProcessor{db: db, user: user}, nil
+		return &markFeedAsReadProcessor{user: user}, nil
 	case "get-feed-articles":
-		return &getFeedArticlesProcessor{db: db, user: user}, nil
+		return &getFeedArticlesProcessor{user: user}, nil
 	case "search":
-		return &searchProcessor{db: db, user: user, si: si}, nil
+		return &searchProcessor{user: user, si: si}, nil
 	case "get-user-attribute":
-		return &getUserAttributeProcessor{db: db, user: user}, nil
+		return &getUserAttributeProcessor{user: user}, nil
 	case "set-user-attribute":
-		return &setUserAttributeProcessor{db: db, user: user}, nil
+		return &setUserAttributeProcessor{user: user, secret: secret}, nil
 	case "list-users":
-		return &listUsersProcessor{db: db, user: user}, nil
+		return &listUsersProcessor{user: user}, nil
 	case "add-user":
-		return &addUserProcessor{db: db, user: user}, nil
+		return &addUserProcessor{user: user, secret: secret}, nil
 	case "remove-user":
-		return &removeUserProcessor{db: db, user: user}, nil
+		return &removeUserProcessor{user: user}, nil
 	case "set-attribute-for-user":
-		return &setAttributeForUserProcessor{db: db, user: user}, nil
+		return &setAttributeForUserProcessor{user: user, secret: secret}, nil
 	default:
 		return nil, errInvalidMethodValue
 	}

@@ -138,7 +138,7 @@ func fetchArticle(user content.User, id info.ArticleId) (resp responseError) {
 		return
 	}
 
-	resp.val["Article"] = article.Info()
+	resp.val["Article"] = article
 	return
 }
 
@@ -164,7 +164,7 @@ func markArticleAsRead(user content.User, id info.ArticleId, read bool) (resp re
 
 	resp.val["Success"] = previouslyRead != read
 	resp.val["Read"] = read
-	resp.val["Id"] = article.Id
+	resp.val["Id"] = in.Id
 	return
 }
 
@@ -190,7 +190,7 @@ func markArticleAsFavorite(user content.User, id info.ArticleId, favorite bool) 
 
 	resp.val["Success"] = previouslyFavorite != favorite
 	resp.val["Favorite"] = favorite
-	resp.val["Id"] = article.Id
+	resp.val["Id"] = in.Id
 	return
 }
 
@@ -221,6 +221,6 @@ func formatArticle(user content.User, id info.ArticleId, webfwConfig webfw.Confi
 	resp.val["KeyPoints"] = keyPoints
 	resp.val["Content"] = formatting.Content
 	resp.val["TopImage"] = formatting.TopImage
-	resp.val["Id"] = article.Id
+	resp.val["Id"] = id
 	return
 }

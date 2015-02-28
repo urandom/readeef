@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/util"
@@ -18,16 +19,15 @@ type UserSettings struct {
 type getUserAttributeProcessor struct {
 	Attribute string `json:"attribute"`
 
-	db   readeef.DB
-	user readeef.User
+	user content.User
 }
 
 type setUserAttributeProcessor struct {
 	Attribute string          `json:"attribute"`
 	Value     json.RawMessage `json:"value"`
 
-	db   readeef.DB
-	user readeef.User
+	user   content.User
+	secret []byte
 }
 
 func NewUserSettings() UserSettings {
@@ -37,8 +37,8 @@ func NewUserSettings() UserSettings {
 }
 
 func (con UserSettings) Handler(c context.Context) http.Handler {
+	cfg := readeef.GetConfig(c)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := readeef.GetDB(c)
 		user := readeef.GetUser(c, r)
 
 		params := webfw.GetParams(c, r)
@@ -46,14 +46,14 @@ func (con UserSettings) Handler(c context.Context) http.Handler {
 
 		var resp responseError
 		if r.Method == "GET" {
-			resp = getUserAttribute(db, user, attr)
+			resp = getUserAttribute(user, attr)
 		} else if r.Method == "POST" {
 			buf := util.BufferPool.GetBuffer()
 			defer util.BufferPool.Put(buf)
 
 			buf.ReadFrom(r.Body)
 
-			resp = setUserAttribute(db, user, attr, buf.Bytes())
+			resp = setUserAttribute(user, []byte(cfg.Auth.Secret), attr, buf.Bytes())
 		}
 
 		var b []byte
@@ -77,26 +77,27 @@ func (con UserSettings) AuthRequired(c context.Context, r *http.Request) bool {
 }
 
 func (p getUserAttributeProcessor) Process() responseError {
-	return getUserAttribute(p.db, p.user, p.Attribute)
+	return getUserAttribute(p.user, p.Attribute)
 }
 
 func (p setUserAttributeProcessor) Process() responseError {
-	return setUserAttribute(p.db, p.user, p.Attribute, p.Value)
+	return setUserAttribute(p.user, p.secret, p.Attribute, p.Value)
 }
 
-func getUserAttribute(db readeef.DB, user readeef.User, attr string) (resp responseError) {
+func getUserAttribute(user content.User, attr string) (resp responseError) {
 	resp = newResponse()
-	resp.val["Login"] = user.Login
+	in := user.Info()
+	resp.val["Login"] = in.Login
 
 	switch attr {
 	case "FirstName":
-		resp.val[attr] = user.FirstName
+		resp.val[attr] = in.FirstName
 	case "LastName":
-		resp.val[attr] = user.LastName
+		resp.val[attr] = in.LastName
 	case "Email":
-		resp.val[attr] = user.Email
+		resp.val[attr] = in.Email
 	case "ProfileData":
-		resp.val[attr] = user.ProfileData
+		resp.val[attr] = in.ProfileData
 	default:
 		resp.err = errors.New("Error getting user attribute: unknown attribute " + attr)
 		return
@@ -105,21 +106,22 @@ func getUserAttribute(db readeef.DB, user readeef.User, attr string) (resp respo
 	return
 }
 
-func setUserAttribute(db readeef.DB, user readeef.User, attr string, data []byte) (resp responseError) {
+func setUserAttribute(user content.User, secret []byte, attr string, data []byte) (resp responseError) {
 	resp = newResponse()
-	resp.val["Login"] = user.Login
+	in := user.Info()
+	resp.val["Login"] = in.Login
 
 	switch attr {
 	case "FirstName":
-		user.FirstName = string(data)
+		in.FirstName = string(data)
 	case "LastName":
-		user.LastName = string(data)
+		in.LastName = string(data)
 	case "Email":
-		user.Email = string(data)
+		in.Email = string(data)
 	case "ProfileData":
-		resp.err = json.Unmarshal(data, &user.ProfileData)
+		resp.err = json.Unmarshal(data, &in.ProfileData)
 	case "Active":
-		user.Active = string(data) == "true"
+		in.Active = string(data) == "true"
 	case "Password":
 		passwd := struct {
 			Current string
@@ -129,8 +131,9 @@ func setUserAttribute(db readeef.DB, user readeef.User, attr string, data []byte
 			/* TODO: non-fatal error */
 			return
 		}
-		if user.Authenticate(passwd.Current) {
-			resp.err = user.SetPassword(passwd.New)
+		if user.Authenticate(passwd.Current, secret) {
+			user.Password(passwd.New, secret)
+			resp.err = user.Err()
 		} else {
 			resp.err = errors.New("Error change user password: current password is invalid")
 		}
@@ -142,7 +145,8 @@ func setUserAttribute(db readeef.DB, user readeef.User, attr string, data []byte
 		return
 	}
 
-	if resp.err = db.UpdateUser(user); resp.err != nil {
+	user.Update()
+	if resp.err = user.Err(); resp.err != nil {
 		return
 	}
 

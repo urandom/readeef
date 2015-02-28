@@ -1,6 +1,7 @@
 package base
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/urandom/readeef/content/info"
@@ -30,6 +31,10 @@ func (t *Tag) Value(val ...info.TagValue) info.TagValue {
 	}
 
 	return t.value
+}
+
+func (t Tag) MarshalJSON() ([]byte, error) {
+	return json.Marshal(t.value)
 }
 
 func (t *Tag) Validate() error {

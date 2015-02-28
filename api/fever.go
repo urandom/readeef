@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/util"
@@ -23,12 +25,12 @@ type Fever struct {
 }
 
 type feverFeed struct {
-	Id         int64  `json:"id"`
-	Title      string `json:"title"`
-	Url        string `json:"url"`
-	SiteUrl    string `json:"site_url"`
-	IsSpark    int    `json:"is_spark"`
-	UpdateTime int64  `json:"last_updated_on_time"`
+	Id         info.FeedId `json:"id"`
+	Title      string      `json:"title"`
+	Url        string      `json:"url"`
+	SiteUrl    string      `json:"site_url"`
+	IsSpark    int         `json:"is_spark"`
+	UpdateTime int64       `json:"last_updated_on_time"`
 }
 
 type feverGroup struct {
@@ -42,28 +44,28 @@ type feverFeedsGroup struct {
 }
 
 type feverItem struct {
-	Id            int64  `json:"id"`
-	FeedId        int64  `json:"feed_id"`
-	Title         string `json:"title"`
-	Author        string `json:"author"`
-	Html          string `json:"html"`
-	Url           string `json:"url"`
-	IsSaved       int    `json:"is_saved"`
-	IsRead        int    `json:"is_read"`
-	CreatedOnTime int64  `json:"created_on_time"`
+	Id            info.ArticleId `json:"id"`
+	FeedId        info.FeedId    `json:"feed_id"`
+	Title         string         `json:"title"`
+	Author        string         `json:"author"`
+	Html          string         `json:"html"`
+	Url           string         `json:"url"`
+	IsSaved       int            `json:"is_saved"`
+	IsRead        int            `json:"is_read"`
+	CreatedOnTime int64          `json:"created_on_time"`
 }
 
 type feverLink struct {
-	Id          int64   `json:"id"`
-	FeedId      int64   `json:"feed_id"`
-	ItemId      int64   `json:"item_id"`
-	Temperature float64 `json:"temperature"`
-	IsItem      int     `json:"is_item"`
-	IsLocal     int     `json:"is_local"`
-	IsSaved     int     `json:"is_saved"`
-	Title       string  `json:"title"`
-	Url         string  `json:"url"`
-	ItemIds     string  `json:"item_ids"`
+	Id          info.ArticleId `json:"id"`
+	FeedId      info.FeedId    `json:"feed_id"`
+	ItemId      info.ArticleId `json:"item_id"`
+	Temperature float64        `json:"temperature"`
+	IsItem      int            `json:"is_item"`
+	IsLocal     int            `json:"is_local"`
+	IsSaved     int            `json:"is_saved"`
+	Title       string         `json:"title"`
+	Url         string         `json:"url"`
+	ItemIds     string         `json:"item_ids"`
 }
 
 func NewFever(fm *readeef.FeedManager) Fever {
@@ -80,24 +82,24 @@ var (
 )
 
 func (con Fever) Handler(c context.Context) http.Handler {
+	repo := readeef.GetRepo(c)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		db := readeef.GetDB(c)
 		logger := webfw.GetLogger(c)
 
 		var err error
-		var user readeef.User
+		var user content.User
 
 		err = r.ParseForm()
 
 		if err == nil {
-			user = getReadeefUser(db, r.FormValue("api_key"), webfw.GetLogger(c))
+			user = getReadeefUser(repo, r.FormValue("api_key"), webfw.GetLogger(c))
 		}
 
 		resp := map[string]interface{}{"api_version": 2}
 
 		switch {
 		default:
-			if user.Login == "" {
+			if user == nil || user.Validate() != nil {
 				resp["auth"] = 0
 				break
 			}
@@ -114,9 +116,9 @@ func (con Fever) Handler(c context.Context) http.Handler {
 
 				resp["groups"] = groups
 
-				var feeds []readeef.Feed
+				feeds := user.AllFeeds()
+				err = user.Err()
 
-				feeds, err = db.GetUserFeeds(user)
 				if err != nil {
 					break
 				}
@@ -127,18 +129,19 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			if _, ok := r.Form["feeds"]; ok {
 				logger.Infoln("Fetching fever feeds")
 
-				var feeds []readeef.Feed
 				var feverFeeds []feverFeed
 
-				feeds, err = db.GetUserFeeds(user)
+				feeds := user.AllFeeds()
+				err = user.Err()
 
 				if err != nil {
 					break
 				}
 
-				for _, f := range feeds {
+				for i := range feeds {
+					in := feeds[i].Info()
 					feed := feverFeed{
-						Id: f.Id, Title: f.Title, Url: f.Link, SiteUrl: f.SiteLink, UpdateTime: now,
+						Id: in.Id, Title: in.Title, Url: in.Link, SiteUrl: in.SiteLink, UpdateTime: now,
 					}
 
 					feverFeeds = append(feverFeeds, feed)
@@ -151,9 +154,8 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			if _, ok := r.Form["unread_item_ids"]; ok {
 				logger.Infoln("Fetching unread fever item ids")
 
-				var ids []int64
-
-				ids, err = db.GetAllUnreadUserArticleIds(user)
+				ids := user.AllUnreadArticleIds()
+				err = user.Err()
 				if err != nil {
 					break
 				}
@@ -161,12 +163,12 @@ func (con Fever) Handler(c context.Context) http.Handler {
 				buf := util.BufferPool.GetBuffer()
 				defer util.BufferPool.Put(buf)
 
-				for i, id := range ids {
+				for i := range ids {
 					if i != 0 {
 						buf.WriteString(",")
 					}
 
-					buf.WriteString(strconv.FormatInt(id, 10))
+					buf.WriteString(strconv.FormatInt(int64(ids[i]), 10))
 				}
 
 				resp["unread_item_ids"] = buf.String()
@@ -175,9 +177,8 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			if _, ok := r.Form["saved_item_ids"]; ok {
 				logger.Infoln("Fetching saved fever item ids")
 
-				var ids []int64
-
-				ids, err = db.GetAllFavoriteUserArticleIds(user)
+				ids := user.AllFavoriteIds()
+				err = user.Err()
 				if err != nil {
 					break
 				}
@@ -185,12 +186,12 @@ func (con Fever) Handler(c context.Context) http.Handler {
 				buf := util.BufferPool.GetBuffer()
 				defer util.BufferPool.Put(buf)
 
-				for i, id := range ids {
+				for i := range ids {
 					if i != 0 {
 						buf.WriteString(",")
 					}
 
-					buf.WriteString(strconv.FormatInt(id, 10))
+					buf.WriteString(strconv.FormatInt(int64(ids[i]), 10))
 				}
 
 				resp["saved_item_ids"] = buf.String()
@@ -201,7 +202,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 
 				var count, since, max int64
 
-				count, err = db.GetUserArticleCount(user)
+				count, err = user.ArticleCount(), user.Err()
 				if err != nil {
 					break
 				}
@@ -224,39 +225,42 @@ func (con Fever) Handler(c context.Context) http.Handler {
 						}
 					}
 
-					var articles []readeef.Article
+					var articles []content.UserArticle
 					if withIds, ok := r.Form["with_ids"]; ok {
 						stringIds := strings.Split(withIds[0], ",")
-						ids := make([]int64, len(stringIds))
+						ids := make([]info.ArticleId, 0, len(stringIds))
 
-						for i, stringId := range stringIds {
+						for _, stringId := range stringIds {
 							stringId = strings.TrimSpace(stringId)
 
 							if id, err := strconv.ParseInt(stringId, 10, 64); err == nil {
-								ids[i] = id
+								ids = append(ids, info.ArticleId(id))
 							}
 						}
 
-						articles, err = db.GetSpecificUserArticles(user, ids...)
+						articles, err = user.ArticlesById(ids), user.Err()
 					} else if max > 0 {
-						articles, err = db.GetUnorderedUserArticlesDesc(user, max, 50, 0)
+						user.Order(info.DescendingOrder)
+						articles, err = user.ArticlesOrderedById(info.ArticleId(max), 50, 0), user.Err()
 					} else {
-						articles, err = db.GetUnorderedUserArticles(user, since, 50, 0)
+						user.Order(info.AscendingOrder)
+						articles, err = user.ArticlesOrderedById(info.ArticleId(since), 50, 0), user.Err()
 					}
 
 					if err != nil {
 						break
 					}
 
-					for _, a := range articles {
+					for i := range articles {
+						in := articles[i].Info()
 						item := feverItem{
-							Id: a.Id, FeedId: a.FeedId, Title: a.Title, Html: a.Description,
-							Url: a.Link, CreatedOnTime: a.Date.Unix(),
+							Id: in.Id, FeedId: in.FeedId, Title: in.Title, Html: in.Description,
+							Url: in.Link, CreatedOnTime: in.Date.Unix(),
 						}
-						if a.Read {
+						if in.Read {
 							item.IsRead = 1
 						}
-						if a.Favorite {
+						if in.Favorite {
 							item.IsSaved = 1
 						}
 						items = append(items, item)
@@ -287,7 +291,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 					break
 				}
 
-				var articles []readeef.Article
+				var articles []content.ScoredArticle
 				var from, to time.Time
 
 				if offset == 0 {
@@ -298,21 +302,20 @@ func (con Fever) Handler(c context.Context) http.Handler {
 					to = time.Now().AddDate(0, 0, int(-1*offset))
 				}
 
-				timeRange := readeef.TimeRange{From: from, To: to}
-
-				articles, err = db.GetScoredUserArticlesDesc(user, timeRange, 50, 50*int(page-1))
+				articles, err = user.ScoredArticles(from, to, 50, 50*int(page-1)), user.Err()
 				if err != nil {
 					break
 				}
 
 				links := make([]feverLink, len(articles))
-				for i, a := range articles {
+				for i := range articles {
+					in := articles[i].Info()
 					link := feverLink{
-						Id: a.Id, FeedId: a.FeedId, ItemId: a.Id, Temperature: math.Log10(float64(a.Score)) / math.Log10(1.1),
-						IsItem: 1, IsLocal: 1, Title: a.Title, Url: a.Link, ItemIds: fmt.Sprintf("%d", a.Id),
+						Id: in.Id, FeedId: in.FeedId, ItemId: in.Id, Temperature: math.Log10(float64(in.Score)) / math.Log10(1.1),
+						IsItem: 1, IsLocal: 1, Title: in.Title, Url: in.Link, ItemIds: fmt.Sprintf("%d", in.Id),
 					}
 
-					if a.Favorite {
+					if in.Favorite {
 						link.IsSaved = 1
 					}
 
@@ -325,7 +328,8 @@ func (con Fever) Handler(c context.Context) http.Handler {
 				logger.Infoln("Marking recently read fever items as unread")
 
 				t := time.Now().Add(-24 * time.Hour)
-				err = db.MarkNewerUserArticlesByDateAsUnread(user, t, true)
+				user.ReadAfter(t, true)
+				err = user.Err()
 				if err != nil {
 					break
 				}
@@ -336,27 +340,30 @@ func (con Fever) Handler(c context.Context) http.Handler {
 					logger.Infof("Marking fever item '%s' as '%s'\n", r.PostFormValue("id"), r.PostFormValue("as"))
 
 					var id int64
-					var article readeef.Article
+					var article content.UserArticle
 
 					id, err = strconv.ParseInt(r.PostFormValue("id"), 10, 64)
 					if err != nil {
 						break
 					}
 
-					article, err = db.GetFeedArticle(id, user)
+					article, err = user.ArticleById(info.ArticleId(id)), user.Err()
 					if err != nil {
 						break
 					}
 
 					switch r.PostFormValue("as") {
 					case "read":
-						err = db.MarkUserArticlesAsRead(user, []readeef.Article{article}, true)
+						article.Read(true)
 					case "saved":
-						err = db.MarkUserArticlesAsFavorite(user, []readeef.Article{article}, true)
+						article.Favorite(true)
 					case "unsaved":
-						err = db.MarkUserArticlesAsFavorite(user, []readeef.Article{article}, false)
+						article.Favorite(false)
 					default:
 						err = errors.New("Unknown 'as' action")
+					}
+					if err == nil {
+						err = article.Err()
 					}
 				} else if val == "feed" || val == "group" {
 					logger.Infof("Marking fever %s '%s' as '%s'\n", val, r.PostFormValue("id"), r.PostFormValue("as"))
@@ -380,17 +387,19 @@ func (con Fever) Handler(c context.Context) http.Handler {
 					t := time.Unix(timestamp, 0)
 
 					if val == "feed" {
-						var feed readeef.Feed
+						var feed content.UserFeed
 
-						feed, err = db.GetUserFeed(id, user)
+						feed, err = user.FeedById(info.FeedId(id)), user.Err()
 						if err != nil {
 							break
 						}
 
-						err = db.MarkFeedArticlesByDateAsRead(feed, t, true)
+						feed.ReadBefore(t, true)
+						err = feed.Err()
 					} else if val == "group" {
 						if id == 1 || id == 0 {
-							err = db.MarkUserArticlesByDateAsRead(user, t, true)
+							user.ReadBefore(t, true)
+							err = user.Err()
 						} else {
 							err = errors.New(fmt.Sprintf("Unknown group %d\n", id))
 						}
@@ -415,31 +424,31 @@ func (con Fever) Handler(c context.Context) http.Handler {
 	})
 }
 
-func getReadeefUser(db readeef.DB, md5hex string, log webfw.Logger) readeef.User {
+func getReadeefUser(repo content.Repo, md5hex string, log webfw.Logger) content.User {
 	md5, err := hex.DecodeString(md5hex)
 
 	if err != nil {
 		log.Printf("Error decoding hex api_key")
-		return readeef.User{}
+		return nil
 	}
 
-	user, err := db.GetUserByMD5Api(md5)
-	if err != nil {
-		log.Printf("Error getting user by md5api field: %v\n", err)
+	user := repo.UserByMD5Api(md5)
+	if repo.HasErr() {
+		log.Printf("Error getting user by md5api field: %v\n", repo.Err())
 	}
 	return user
 }
 
-func getFeedsGroups(feeds []readeef.Feed) []feverFeedsGroup {
+func getFeedsGroups(feeds []content.UserFeed) []feverFeedsGroup {
 	buf := util.BufferPool.GetBuffer()
 	defer util.BufferPool.Put(buf)
 
-	for i, f := range feeds {
+	for i := range feeds {
 		if i != 0 {
 			buf.WriteString(",")
 		}
 
-		buf.WriteString(strconv.FormatInt(f.Id, 10))
+		buf.WriteString(strconv.FormatInt(int64(feeds[i].Info().Id), 10))
 	}
 
 	return []feverFeedsGroup{feverFeedsGroup{GroupId: 1, FeedIds: buf.String()}}

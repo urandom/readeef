@@ -1,6 +1,7 @@
 package base
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -46,4 +47,8 @@ func (s *Subscription) Validate() error {
 	}
 
 	return nil
+}
+
+func (s Subscription) MarshalJSON() ([]byte, error) {
+	return json.Marshal(s.info)
 }
