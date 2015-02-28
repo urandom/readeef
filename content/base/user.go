@@ -47,12 +47,11 @@ func (u *User) Info(in ...info.User) info.User {
 		if len(info.ProfileJSON) == 0 {
 			info.ProfileJSON, err = json.Marshal(info.ProfileData)
 		} else {
-			if len(info.ProfileJSON) != 0 {
-				if err = json.Unmarshal(info.ProfileJSON, &info.ProfileData); err != nil {
-					u.Err(err)
-					return u.info
-				}
+			if err = json.Unmarshal(info.ProfileJSON, &info.ProfileData); err != nil {
+				u.Err(err)
+				return u.info
 			}
+
 			if info.ProfileData == nil {
 				info.ProfileData = make(map[string]interface{})
 			}

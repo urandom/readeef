@@ -113,13 +113,15 @@ func setUserAttribute(user content.User, secret []byte, attr string, data []byte
 
 	switch attr {
 	case "FirstName":
-		in.FirstName = string(data)
+		resp.err = json.Unmarshal(data, &in.FirstName)
 	case "LastName":
-		in.LastName = string(data)
+		resp.err = json.Unmarshal(data, &in.LastName)
 	case "Email":
-		in.Email = string(data)
+		resp.err = json.Unmarshal(data, &in.Email)
 	case "ProfileData":
-		resp.err = json.Unmarshal(data, &in.ProfileData)
+		if resp.err = json.Unmarshal(data, &in.ProfileData); resp.err == nil {
+			in.ProfileJSON = []byte{}
+		}
 	case "Active":
 		in.Active = string(data) == "true"
 	case "Password":
@@ -145,6 +147,7 @@ func setUserAttribute(user content.User, secret []byte, attr string, data []byte
 		return
 	}
 
+	user.Info(in)
 	user.Update()
 	if resp.err = user.Err(); resp.err != nil {
 		return
