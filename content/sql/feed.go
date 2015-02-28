@@ -303,7 +303,7 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 		if num, err := res.RowsAffected(); err != nil && err == sql.ErrNoRows || num == 0 {
 			a = append(a, articles[i])
 
-			id, err := f.db.CreateWithId(tx, "create_feed_article", id, in.Link, in.Guid,
+			aId, err := f.db.CreateWithId(tx, "create_feed_article", id, in.Link, in.Guid,
 				in.Title, in.Description, in.Date)
 
 			if err != nil {
@@ -311,7 +311,7 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 				return
 			}
 
-			in.Id = info.ArticleId(id)
+			in.Id = info.ArticleId(aId)
 			articles[i].Info(in)
 		}
 	}

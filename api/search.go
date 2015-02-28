@@ -85,23 +85,19 @@ func (p searchProcessor) Process() responseError {
 func search(user content.User, searchIndex readeef.SearchIndex, query, highlight, feedId string) (resp responseError) {
 	resp = newResponse()
 
-	if feedId == "" {
-		user.Highlight(highlight)
-		resp.val["Articles"], resp.err = user.Query(query, searchIndex.Index), user.Err()
-	} else {
-		if strings.HasPrefix(feedId, "tag:") {
-			tag := user.Repo().Tag(user)
-			tag.Value(info.TagValue(feedId[4:]))
+	if strings.HasPrefix(feedId, "tag:") {
+		tag := user.Repo().Tag(user)
+		tag.Value(info.TagValue(feedId[4:]))
 
-			tag.Highlight(highlight)
-			resp.val["Articles"], resp.err = tag.Query(query, searchIndex.Index), tag.Err()
+		tag.Highlight(highlight)
+		resp.val["Articles"], resp.err = tag.Query(query, searchIndex.Index), tag.Err()
+	} else {
+		if id, err := strconv.ParseInt(feedId, 10, 64); err == nil {
+			f := user.FeedById(info.FeedId(id))
+			resp.val["Articles"], resp.err = f.Query(query, searchIndex.Index), f.Err()
 		} else {
-			if id, err := strconv.ParseInt(feedId, 10, 64); err == nil {
-				f := user.FeedById(info.FeedId(id))
-				resp.val["Articles"], resp.err = f.Query(query, searchIndex.Index), f.Err()
-			} else {
-				resp.err = err
-			}
+			user.Highlight(highlight)
+			resp.val["Articles"], resp.err = user.Query(query, searchIndex.Index), user.Err()
 		}
 	}
 

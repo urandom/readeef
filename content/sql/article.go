@@ -6,7 +6,6 @@ import (
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/search"
-	"github.com/jmoiron/sqlx"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/info"
@@ -49,12 +48,7 @@ func (ua *UserArticle) Read(read bool) {
 	}
 	defer tx.Rollback()
 
-	var stmt *sqlx.Stmt
-	if read {
-		stmt, err = tx.Preparex(ua.db.SQL("create_user_article_read"))
-	} else {
-		stmt, err = tx.Preparex(ua.db.SQL("delete_user_article_read"))
-	}
+	stmt, err := tx.Preparex(ua.db.SQL("delete_user_article_read"))
 
 	if err != nil {
 		ua.Err(err)
@@ -63,7 +57,24 @@ func (ua *UserArticle) Read(read bool) {
 	defer stmt.Close()
 
 	_, err = stmt.Exec(login, id)
-	ua.Err(err)
+	if err != nil {
+		ua.Err(err)
+		return
+	}
+
+	if read {
+		stmt, err = tx.Preparex(ua.db.SQL("create_user_article_read"))
+		if err != nil {
+			ua.Err(err)
+			return
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(login, id)
+		ua.Err(err)
+	}
+
+	tx.Commit()
 }
 
 func (ua *UserArticle) Favorite(favorite bool) {
@@ -82,12 +93,7 @@ func (ua *UserArticle) Favorite(favorite bool) {
 	}
 	defer tx.Rollback()
 
-	var stmt *sqlx.Stmt
-	if favorite {
-		stmt, err = tx.Preparex(ua.db.SQL("create_user_article_favorite"))
-	} else {
-		stmt, err = tx.Preparex(ua.db.SQL("delete_user_article_favorite"))
-	}
+	stmt, err := tx.Preparex(ua.db.SQL("delete_user_article_favorite"))
 
 	if err != nil {
 		ua.Err(err)
@@ -96,7 +102,23 @@ func (ua *UserArticle) Favorite(favorite bool) {
 	defer stmt.Close()
 
 	_, err = stmt.Exec(login, id)
-	ua.Err(err)
+	if err != nil {
+		ua.Err(err)
+		return
+	}
+
+	if favorite {
+		stmt, err = tx.Preparex(ua.db.SQL("create_user_article_favorite"))
+		if err != nil {
+			ua.Err(err)
+			return
+		}
+		defer stmt.Close()
+		_, err = stmt.Exec(login, id)
+		ua.Err(err)
+	}
+
+	tx.Commit()
 }
 
 func (sa *ScoredArticle) Scores() (asc content.ArticleScores) {
