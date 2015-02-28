@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/info"
 	"github.com/urandom/readeef/content/sql/repo"
 	"github.com/urandom/readeef/db"
 	"github.com/urandom/webfw"
@@ -30,6 +32,10 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	}
 
 	repo := repo.New(db, logger)
+
+	if err := initAdminUser(repo, []byte(config.Auth.Secret)); err != nil {
+		return err
+	}
 
 	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
 	dispatcher.Context.SetGlobal(context.BaseCtxKey("readeefConfig"), config)
@@ -124,4 +130,22 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	}()
 
 	return nil
+}
+
+func initAdminUser(repo content.Repo, secret []byte) error {
+	users := repo.AllUsers()
+	if repo.HasErr() {
+		return repo.Err()
+	}
+
+	if len(users) > 0 {
+		return nil
+	}
+
+	u := repo.User()
+	u.Info(info.User{Login: info.Login("admin")})
+	u.Password("admin", secret)
+	u.Update()
+
+	return u.Err()
 }
