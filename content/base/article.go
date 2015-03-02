@@ -5,14 +5,14 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 )
 
 type Article struct {
 	Error
 	RepoRelated
 
-	info info.Article
+	data data.Article
 }
 
 type UserArticle struct {
@@ -20,23 +20,23 @@ type UserArticle struct {
 }
 
 func (a Article) String() string {
-	return a.info.Title + " " + strconv.FormatInt(int64(a.info.Id), 10)
+	return a.data.Title + " " + strconv.FormatInt(int64(a.data.Id), 10)
 }
 
-func (a *Article) Info(in ...info.Article) info.Article {
+func (a *Article) Data(d ...data.Article) data.Article {
 	if a.HasErr() {
-		return info.Article{}
+		return data.Article{}
 	}
 
-	if len(in) > 0 {
-		a.info = in[0]
+	if len(d) > 0 {
+		a.data = d[0]
 	}
 
-	return a.info
+	return a.data
 }
 
 func (a Article) Validate() error {
-	if a.info.FeedId == 0 {
+	if a.data.FeedId == 0 {
 		return ValidationError{errors.New("Article has no feed id")}
 	}
 
@@ -44,5 +44,5 @@ func (a Article) Validate() error {
 }
 
 func (a Article) MarshalJSON() ([]byte, error) {
-	return json.Marshal(a.info)
+	return json.Marshal(a.data)
 }

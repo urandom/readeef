@@ -8,7 +8,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 )
@@ -87,13 +87,13 @@ func search(user content.User, searchIndex readeef.SearchIndex, query, highlight
 
 	if strings.HasPrefix(feedId, "tag:") {
 		tag := user.Repo().Tag(user)
-		tag.Value(info.TagValue(feedId[4:]))
+		tag.Value(data.TagValue(feedId[4:]))
 
 		tag.Highlight(highlight)
 		resp.val["Articles"], resp.err = tag.Query(query, searchIndex.Index), tag.Err()
 	} else {
 		if id, err := strconv.ParseInt(feedId, 10, 64); err == nil {
-			f := user.FeedById(info.FeedId(id))
+			f := user.FeedById(data.FeedId(id))
 			resp.val["Articles"], resp.err = f.Query(query, searchIndex.Index), f.Err()
 		} else {
 			user.Highlight(highlight)

@@ -6,7 +6,7 @@ import (
 	"github.com/blevesearch/bleve"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/db"
 	"github.com/urandom/webfw"
 )
@@ -19,8 +19,8 @@ type Tag struct {
 }
 
 type feedIdTag struct {
-	FeedId   info.FeedId   `db:"feed_id"`
-	TagValue info.TagValue `db:"tag"`
+	FeedId   data.FeedId   `db:"feed_id"`
+	TagValue data.TagValue `db:"tag"`
 }
 
 func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
@@ -30,8 +30,8 @@ func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
 
 	t.logger.Infof("Getting all feeds for tag %s\n", t)
 
-	var i []info.Feed
-	if err := t.db.Select(&i, t.db.SQL("get_user_tag_feeds"), t.User().Info().Login, t.String()); err != nil {
+	var i []data.Feed
+	if err := t.db.Select(&i, t.db.SQL("get_user_tag_feeds"), t.User().Data().Login, t.String()); err != nil {
 		t.Err(err)
 		return
 	}
@@ -99,7 +99,7 @@ func (t *Tag) ReadBefore(date time.Time, read bool) {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(t.User().Info().Login, t.String(), date)
+	_, err = stmt.Exec(t.User().Data().Login, t.String(), date)
 	if err != nil {
 		t.Err(err)
 		return
@@ -114,7 +114,7 @@ func (t *Tag) ReadBefore(date time.Time, read bool) {
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(t.User().Info().Login, t.String(), date)
+		_, err = stmt.Exec(t.User().Data().Login, t.String(), date)
 		if err != nil {
 			t.Err(err)
 			return
@@ -132,7 +132,7 @@ func (t *Tag) ScoredArticles(from, to time.Time, paging ...int) (sa []content.Sc
 	t.logger.Infof("Getting scored articles for tag %s\n", t)
 
 	order := "asco.score"
-	if t.Order() == info.DescendingOrder {
+	if t.Order() == data.DescendingOrder {
 		order = "asco.score DESC"
 	}
 
@@ -145,7 +145,7 @@ func (t *Tag) ScoredArticles(from, to time.Time, paging ...int) (sa []content.Sc
 	sa = make([]content.ScoredArticle, len(ua))
 	for i := range ua {
 		sa[i] = t.Repo().ScoredArticle()
-		sa[i].Info(ua[i].Info())
+		sa[i].Data(ua[i].Data())
 	}
 
 	return
@@ -163,9 +163,9 @@ func (t *Tag) Query(term string, index bleve.Index, paging ...int) (ua []content
 		return
 	}
 
-	ids := make([]info.FeedId, len(feeds))
+	ids := make([]data.FeedId, len(feeds))
 	for i := range feeds {
-		ids = append(ids, feeds[i].Info().Id)
+		ids = append(ids, feeds[i].Data().Id)
 	}
 
 	ua, err = query(term, t.Highlight(), index, t.User(), ids, paging...)

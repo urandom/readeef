@@ -6,7 +6,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/repo"
 	"github.com/urandom/readeef/db"
 	"github.com/urandom/webfw"
@@ -143,7 +143,7 @@ func initAdminUser(repo content.Repo, secret []byte) error {
 	}
 
 	u := repo.User()
-	u.Info(info.User{Login: info.Login("admin"), Active: true, Admin: true})
+	u.Data(data.User{Login: data.Login("admin"), Active: true, Admin: true})
 	u.Password("admin", secret)
 	u.Update()
 

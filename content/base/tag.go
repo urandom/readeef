@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 )
 
 type Tag struct {
@@ -14,16 +14,16 @@ type Tag struct {
 	UserRelated
 	RepoRelated
 
-	value info.TagValue
+	value data.TagValue
 }
 
 func (t Tag) String() string {
 	return string(t.value)
 }
 
-func (t *Tag) Value(val ...info.TagValue) info.TagValue {
+func (t *Tag) Value(val ...data.TagValue) data.TagValue {
 	if t.HasErr() {
-		return t.value
+		return ""
 	}
 
 	if len(val) > 0 {

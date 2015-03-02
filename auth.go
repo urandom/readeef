@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/util"
@@ -98,7 +98,7 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 
 			if !validUser {
 				if uv, ok := sess.Get(namekey); ok {
-					if n, ok := uv.(info.Login); ok {
+					if n, ok := uv.(data.Login); ok {
 						u = repo.UserByLogin(n)
 
 						if u.HasErr() {
@@ -111,8 +111,8 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 				}
 			}
 
-			if validUser && !u.Info().Active {
-				logger.Infoln("User " + u.Info().Login + " is inactive")
+			if validUser && !u.Data().Active {
+				logger.Infoln("User " + u.Data().Login + " is inactive")
 				validUser = false
 			}
 
@@ -144,7 +144,7 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 			if login != "" && signature != "" && !t.IsZero() {
 				switch {
 				default:
-					u = repo.UserByLogin(info.Login(login))
+					u = repo.UserByLogin(data.Login(login))
 					if u.HasErr() {
 						logger.Printf("Error getting db user '%s': %v\n", login, u.Err())
 						break
@@ -183,8 +183,8 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 						url, r.Method, contentMD5, r.Header.Get("Content-Type"),
 						date, nonce)
 
-					b := make([]byte, base64.StdEncoding.EncodedLen(len(u.Info().MD5API)))
-					base64.StdEncoding.Encode(b, u.Info().MD5API)
+					b := make([]byte, base64.StdEncoding.EncodedLen(len(u.Data().MD5API)))
+					base64.StdEncoding.Encode(b, u.Data().MD5API)
 
 					hm := hmac.New(sha256.New, b)
 					if _, err := hm.Write([]byte(message)); err != nil {
@@ -197,8 +197,8 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 						break
 					}
 
-					if !u.Info().Active {
-						logger.Println("User " + u.Info().Login + " is inactive")
+					if !u.Data().Active {
+						logger.Println("User " + u.Data().Login + " is inactive")
 						break
 					}
 

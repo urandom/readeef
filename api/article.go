@@ -8,7 +8,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/text-summary/summarize"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
@@ -27,21 +27,21 @@ type Readability struct {
 }
 
 type markArticleAsReadProcessor struct {
-	Id    info.ArticleId `json:"id"`
+	Id    data.ArticleId `json:"id"`
 	Value bool           `json:"value"`
 
 	user content.User
 }
 
 type markArticleAsFavoriteProcessor struct {
-	Id    info.ArticleId `json:"id"`
+	Id    data.ArticleId `json:"id"`
 	Value bool           `json:"value"`
 
 	user content.User
 }
 
 type formatArticleProcessor struct {
-	Id info.ArticleId `json:"id"`
+	Id data.ArticleId `json:"id"`
 
 	user          content.User
 	webfwConfig   webfw.Config
@@ -49,7 +49,7 @@ type formatArticleProcessor struct {
 }
 
 type getArticleProcessor struct {
-	Id info.ArticleId `json:"id"`
+	Id data.ArticleId `json:"id"`
 
 	user content.User
 }
@@ -81,7 +81,7 @@ func (con Article) Handler(c context.Context) http.Handler {
 		articleId, resp.err = strconv.ParseInt(params["article-id"], 10, 64)
 
 		if resp.err == nil {
-			id := info.ArticleId(articleId)
+			id := data.ArticleId(articleId)
 			switch action {
 			case "fetch":
 				resp = fetchArticle(user, id)
@@ -129,7 +129,7 @@ func (p getArticleProcessor) Process() responseError {
 	return fetchArticle(p.user, p.Id)
 }
 
-func fetchArticle(user content.User, id info.ArticleId) (resp responseError) {
+func fetchArticle(user content.User, id data.ArticleId) (resp responseError) {
 	resp = newResponse()
 
 	article := user.ArticleById(id)
@@ -142,7 +142,7 @@ func fetchArticle(user content.User, id info.ArticleId) (resp responseError) {
 	return
 }
 
-func markArticleAsRead(user content.User, id info.ArticleId, read bool) (resp responseError) {
+func markArticleAsRead(user content.User, id data.ArticleId, read bool) (resp responseError) {
 	resp = newResponse()
 
 	article := user.ArticleById(id)
@@ -151,7 +151,7 @@ func markArticleAsRead(user content.User, id info.ArticleId, read bool) (resp re
 		return
 	}
 
-	in := article.Info()
+	in := article.Data()
 	previouslyRead := in.Read
 
 	if previouslyRead != read {
@@ -168,7 +168,7 @@ func markArticleAsRead(user content.User, id info.ArticleId, read bool) (resp re
 	return
 }
 
-func markArticleAsFavorite(user content.User, id info.ArticleId, favorite bool) (resp responseError) {
+func markArticleAsFavorite(user content.User, id data.ArticleId, favorite bool) (resp responseError) {
 	resp = newResponse()
 
 	article := user.ArticleById(id)
@@ -177,7 +177,7 @@ func markArticleAsFavorite(user content.User, id info.ArticleId, favorite bool) 
 		return
 	}
 
-	in := article.Info()
+	in := article.Data()
 	previouslyFavorite := in.Favorite
 
 	if previouslyFavorite != favorite {
@@ -194,7 +194,7 @@ func markArticleAsFavorite(user content.User, id info.ArticleId, favorite bool) 
 	return
 }
 
-func formatArticle(user content.User, id info.ArticleId, webfwConfig webfw.Config, readeefConfig readeef.Config) (resp responseError) {
+func formatArticle(user content.User, id data.ArticleId, webfwConfig webfw.Config, readeefConfig readeef.Config) (resp responseError) {
 	resp = newResponse()
 
 	article := user.ArticleById(id)

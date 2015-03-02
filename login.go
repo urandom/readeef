@@ -3,7 +3,7 @@ package readeef
 import (
 	"net/http"
 
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/renderer"
@@ -21,17 +21,17 @@ func (con Login) Handler(c context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		l := webfw.GetLogger(c)
 		sess := webfw.GetSession(c, r)
-		data := renderer.RenderData{}
+		renderData := renderer.RenderData{}
 
 		if r.Method == "GET" {
 			if v, ok := sess.Flash("form-error"); ok {
-				data["form-error"] = v
+				renderData["form-error"] = v
 			}
 		} else {
 			if err := r.ParseForm(); err != nil {
 				l.Fatal(err)
 			}
-			username := info.Login(r.Form.Get("username"))
+			username := data.Login(r.Form.Get("username"))
 			password := r.Form.Get("password")
 
 			repo := GetRepo(c)
@@ -63,7 +63,7 @@ func (con Login) Handler(c context.Context) http.HandlerFunc {
 			}
 			return
 		}
-		err := webfw.GetRenderCtx(c, r)(w, data, "login.tmpl")
+		err := webfw.GetRenderCtx(c, r)(w, renderData, "login.tmpl")
 		if err != nil {
 			l.Print(err)
 		}

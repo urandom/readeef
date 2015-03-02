@@ -8,7 +8,7 @@ import (
 	"github.com/blevesearch/bleve/search"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/db"
 	"github.com/urandom/webfw"
 )
@@ -37,8 +37,8 @@ func (ua *UserArticle) Read(read bool) {
 		return
 	}
 
-	id := ua.Info().Id
-	login := ua.User().Info().Login
+	id := ua.Data().Id
+	login := ua.User().Data().Login
 	ua.logger.Infof("Marking user '%s' article '%d' as read: %v\n", login, id, read)
 
 	tx, err := ua.db.Begin()
@@ -82,8 +82,8 @@ func (ua *UserArticle) Favorite(favorite bool) {
 		return
 	}
 
-	id := ua.Info().Id
-	login := ua.User().Info().Login
+	id := ua.Data().Id
+	login := ua.User().Data().Login
 	ua.logger.Infof("Marking user '%s' article '%d' as favorite: %v\n", login, id, favorite)
 
 	tx, err := ua.db.Begin()
@@ -128,10 +128,10 @@ func (sa *ScoredArticle) Scores() (asc content.ArticleScores) {
 		return
 	}
 
-	id := sa.Info().Id
+	id := sa.Data().Id
 	sa.logger.Infof("Getting article '%d' scores\n", id)
 
-	var i info.ArticleScores
+	var i data.ArticleScores
 	if err := sa.db.Get(&i, sa.db.SQL("get_article_scores"), id); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
@@ -139,12 +139,12 @@ func (sa *ScoredArticle) Scores() (asc content.ArticleScores) {
 		asc.Err(err)
 	}
 
-	asc.Info(i)
+	asc.Data(i)
 
 	return
 }
 
-func query(term, highlight string, index bleve.Index, u content.User, feedIds []info.FeedId, paging ...int) (ua []content.UserArticle, err error) {
+func query(term, highlight string, index bleve.Index, u content.User, feedIds []data.FeedId, paging ...int) (ua []content.UserArticle, err error) {
 	var query bleve.Query
 
 	query = bleve.NewQueryStringQuery(term)
@@ -188,12 +188,12 @@ func query(term, highlight string, index bleve.Index, u content.User, feedIds []
 		return
 	}
 
-	articleIds := []info.ArticleId{}
-	hitMap := map[info.ArticleId]*search.DocumentMatch{}
+	articleIds := []data.ArticleId{}
+	hitMap := map[data.ArticleId]*search.DocumentMatch{}
 
 	for _, hit := range searchResult.Hits {
 		if articleId, err := strconv.ParseInt(hit.ID, 10, 64); err == nil {
-			id := info.ArticleId(articleId)
+			id := data.ArticleId(articleId)
 			articleIds = append(articleIds, id)
 			hitMap[id] = hit
 		}
@@ -205,13 +205,13 @@ func query(term, highlight string, index bleve.Index, u content.User, feedIds []
 	}
 
 	for i := range ua {
-		info := ua[i].Info()
+		data := ua[i].Data()
 
-		hit := hitMap[info.Id]
+		hit := hitMap[data.Id]
 
 		if len(hit.Fragments) > 0 {
-			info.Hit.Fragments = hit.Fragments
-			ua[i].Info(info)
+			data.Hit.Fragments = hit.Fragments
+			ua[i].Data(data)
 		}
 	}
 	return

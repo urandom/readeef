@@ -5,7 +5,7 @@ import (
 
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/db"
 	"github.com/urandom/webfw"
 )
@@ -21,7 +21,7 @@ func NewRepo(db *db.DB, logger webfw.Logger) *Repo {
 	return &Repo{db: db, logger: logger}
 }
 
-func (r *Repo) UserByLogin(login info.Login) (u content.User) {
+func (r *Repo) UserByLogin(login data.Login) (u content.User) {
 	u = r.User()
 	if r.HasErr() {
 		u.Err(r.Err())
@@ -30,8 +30,8 @@ func (r *Repo) UserByLogin(login info.Login) (u content.User) {
 
 	r.logger.Infof("Getting user '%s'\n", login)
 
-	var info info.User
-	if err := r.db.Get(&info, r.db.SQL("get_user"), login); err != nil {
+	var data data.User
+	if err := r.db.Get(&data, r.db.SQL("get_user"), login); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -39,8 +39,8 @@ func (r *Repo) UserByLogin(login info.Login) (u content.User) {
 		return
 	}
 
-	info.Login = login
-	u.Info(info)
+	data.Login = login
+	u.Data(data)
 
 	return
 }
@@ -54,8 +54,8 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 
 	r.logger.Infof("Getting user using md5 api field '%v'\n", md5)
 
-	var info info.User
-	if err := r.db.Get(&info, r.db.SQL("get_user_by_md5_api"), md5); err != nil {
+	var data data.User
+	if err := r.db.Get(&data, r.db.SQL("get_user_by_md5_api"), md5); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -63,8 +63,8 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 		return
 	}
 
-	info.MD5API = md5
-	u.Info(info)
+	data.MD5API = md5
+	u.Data(data)
 
 	return
 }
@@ -76,17 +76,17 @@ func (r *Repo) AllUsers() (users []content.User) {
 
 	r.logger.Infoln("Getting all users")
 
-	var info []info.User
-	if err := r.db.Select(&info, r.db.SQL("get_users")); err != nil {
+	var data []data.User
+	if err := r.db.Select(&data, r.db.SQL("get_users")); err != nil {
 		r.Err(err)
 		return
 	}
 
-	users = make([]content.User, len(info))
+	users = make([]content.User, len(data))
 
-	for i := range info {
+	for i := range data {
 		users[i] = r.User()
-		users[i].Info(info[i])
+		users[i].Data(data[i])
 		if users[i].HasErr() {
 			r.Err(users[i].Err())
 			return
@@ -96,7 +96,7 @@ func (r *Repo) AllUsers() (users []content.User) {
 	return
 }
 
-func (r *Repo) FeedById(id info.FeedId) (f content.Feed) {
+func (r *Repo) FeedById(id data.FeedId) (f content.Feed) {
 	f = r.Feed()
 	if r.HasErr() {
 		f.Err(r.Err())
@@ -105,7 +105,7 @@ func (r *Repo) FeedById(id info.FeedId) (f content.Feed) {
 
 	r.logger.Infof("Getting feed '%d'\n", id)
 
-	i := info.Feed{}
+	i := data.Feed{}
 	if err := r.db.Get(&i, r.db.SQL("get_feed"), id); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
@@ -115,7 +115,7 @@ func (r *Repo) FeedById(id info.FeedId) (f content.Feed) {
 	}
 
 	i.Id = id
-	f.Info(i)
+	f.Data(i)
 
 	return
 }
@@ -129,7 +129,7 @@ func (r *Repo) FeedByLink(link string) (f content.Feed) {
 
 	r.logger.Infof("Getting feed by link '%s'\n", link)
 
-	i := info.Feed{}
+	i := data.Feed{}
 	if err := r.db.Get(&i, r.db.SQL("get_feed_by_link"), link); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
@@ -139,7 +139,7 @@ func (r *Repo) FeedByLink(link string) (f content.Feed) {
 	}
 
 	i.Link = link
-	f.Info(i)
+	f.Data(i)
 
 	return
 }
@@ -151,17 +151,17 @@ func (r *Repo) AllFeeds() (feeds []content.Feed) {
 
 	r.logger.Infoln("Getting all feeds")
 
-	var info []info.Feed
-	if err := r.db.Select(&info, r.db.SQL("get_feeds")); err != nil {
+	var data []data.Feed
+	if err := r.db.Select(&data, r.db.SQL("get_feeds")); err != nil {
 		r.Err(err)
 		return
 	}
 
-	feeds = make([]content.Feed, len(info))
+	feeds = make([]content.Feed, len(data))
 
-	for i := range info {
+	for i := range data {
 		feeds[i] = r.Feed()
-		feeds[i].Info(info[i])
+		feeds[i].Data(data[i])
 	}
 
 	return
@@ -174,17 +174,17 @@ func (r *Repo) AllUnsubscribedFeeds() (feeds []content.Feed) {
 
 	r.logger.Infoln("Getting all unsubscribed feeds")
 
-	var info []info.Feed
-	if err := r.db.Select(&info, r.db.SQL("get_unsubscribed_feeds")); err != nil {
+	var data []data.Feed
+	if err := r.db.Select(&data, r.db.SQL("get_unsubscribed_feeds")); err != nil {
 		r.Err(err)
 		return
 	}
 
-	feeds = make([]content.Feed, len(info))
+	feeds = make([]content.Feed, len(data))
 
-	for i := range info {
+	for i := range data {
 		feeds[i] = r.Feed()
-		feeds[i].Info(info[i])
+		feeds[i].Data(data[i])
 	}
 
 	return
@@ -197,17 +197,17 @@ func (r *Repo) AllSubscriptions() (s []content.Subscription) {
 
 	r.logger.Infoln("Getting all subscriptions")
 
-	var info []info.Subscription
-	if err := r.db.Select(&info, r.db.SQL("get_hubbub_subscriptions")); err != nil {
+	var data []data.Subscription
+	if err := r.db.Select(&data, r.db.SQL("get_hubbub_subscriptions")); err != nil {
 		r.Err(err)
 		return
 	}
 
-	s = make([]content.Subscription, len(info))
+	s = make([]content.Subscription, len(data))
 
-	for i := range info {
+	for i := range data {
 		s[i] = r.Subscription()
-		s[i].Info(info[i])
+		s[i].Data(data[i])
 	}
 
 	return

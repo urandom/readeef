@@ -8,7 +8,7 @@ import (
 	"github.com/blevesearch/bleve"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/db"
 	"github.com/urandom/webfw"
 )
@@ -33,7 +33,7 @@ type TaggedFeed struct {
 }
 
 type taggedFeedJSON struct {
-	info.Feed
+	data.Feed
 	Tags []content.Tag
 }
 
@@ -50,10 +50,10 @@ func (f *Feed) Users() (u []content.User) {
 		return
 	}
 
-	id := f.Info().Id
+	id := f.Data().Id
 	f.logger.Infof("Getting users for feed %d\n", id)
 
-	var in []info.User
+	var in []data.User
 	if err := f.db.Select(&in, f.db.SQL("get_feed_users"), id); err != nil {
 		f.Err(err)
 		return
@@ -62,7 +62,7 @@ func (f *Feed) Users() (u []content.User) {
 	u = make([]content.User, len(in))
 	for i := range in {
 		u[i] = f.Repo().User()
-		u[i].Info(in[i])
+		u[i].Data(in[i])
 
 		if u[i].HasErr() {
 			f.Err(u[i].Err())
@@ -83,7 +83,7 @@ func (f *Feed) Update() {
 		return
 	}
 
-	i := f.Info()
+	i := f.Data()
 	id := i.Id
 	f.logger.Infof("Updating feed %d\n", id)
 
@@ -114,16 +114,16 @@ func (f *Feed) Update() {
 			return
 		}
 
-		i.Id = info.FeedId(id)
+		i.Id = data.FeedId(id)
 
 		pa := f.ParsedArticles()
 		for index := range pa {
-			ai := pa[index].Info()
+			ai := pa[index].Data()
 			ai.FeedId = i.Id
-			pa[index].Info(ai)
+			pa[index].Data(ai)
 		}
 
-		f.Info(i)
+		f.Data(i)
 	}
 
 	articles := f.updateFeedArticles(tx, f.ParsedArticles())
@@ -147,7 +147,7 @@ func (f *Feed) Delete() {
 		return
 	}
 
-	id := f.Info().Id
+	id := f.Data().Id
 	f.logger.Infof("Deleting feed %d\n", id)
 
 	tx, err := f.db.Begin()
@@ -178,19 +178,19 @@ func (f *Feed) AllArticles() (a []content.Article) {
 		return
 	}
 
-	id := f.Info().Id
+	id := f.Data().Id
 	f.logger.Infof("Getting all feed %d articles\n", id)
 
-	var info []info.Article
-	if err := f.db.Select(&info, f.db.SQL("get_all_feed_articles"), id); err != nil {
+	var data []data.Article
+	if err := f.db.Select(&data, f.db.SQL("get_all_feed_articles"), id); err != nil {
 		f.Err(err)
 		return
 	}
 
-	a = make([]content.Article, len(info))
-	for i := range info {
+	a = make([]content.Article, len(data))
+	for i := range data {
 		a[i] = f.Repo().Article()
-		a[i].Info(info[i])
+		a[i].Data(data[i])
 	}
 
 	return
@@ -201,19 +201,19 @@ func (f *Feed) LatestArticles() (a []content.Article) {
 		return
 	}
 
-	id := f.Info().Id
+	id := f.Data().Id
 	f.logger.Infof("Getting latest feed %d articles\n", id)
 
-	var info []info.Article
-	if err := f.db.Select(&info, f.db.SQL("get_latest_feed_articles"), id); err != nil {
+	var data []data.Article
+	if err := f.db.Select(&data, f.db.SQL("get_latest_feed_articles"), id); err != nil {
 		f.Err(err)
 		return
 	}
 
-	a = make([]content.Article, len(info))
-	for i := range info {
+	a = make([]content.Article, len(data))
+	for i := range data {
 		a[i] = f.Repo().Article()
-		a[i].Info(info[i])
+		a[i].Data(data[i])
 	}
 
 	return
@@ -224,7 +224,7 @@ func (f *Feed) AddArticles(articles []content.Article) {
 		return
 	}
 
-	id := f.Info().Id
+	id := f.Data().Id
 	f.logger.Infof("Adding articles to feed %d\n", id)
 
 	tx, err := f.db.Begin()
@@ -252,10 +252,10 @@ func (f *Feed) Subscription() (s content.Subscription) {
 		return
 	}
 
-	id := f.Info().Id
+	id := f.Data().Id
 	f.logger.Infof("Getting subcription for feed %d\n", id)
 
-	var in info.Subscription
+	var in data.Subscription
 	if err := f.db.Get(&in, f.db.SQL("get_hubbub_subscription"), id); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
@@ -263,7 +263,7 @@ func (f *Feed) Subscription() (s content.Subscription) {
 		s.Err(err)
 	}
 
-	s.Info(in)
+	s.Data(in)
 
 	return
 }
@@ -279,8 +279,8 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 			return
 		}
 
-		id := f.Info().Id
-		in := articles[i].Info()
+		id := f.Data().Id
+		in := articles[i].Data()
 		in.FeedId = id
 
 		var sqlString string
@@ -318,8 +318,8 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 				return
 			}
 
-			in.Id = info.ArticleId(aId)
-			articles[i].Info(in)
+			in.Id = data.ArticleId(aId)
+			articles[i].Data(in)
 		}
 	}
 
@@ -340,8 +340,8 @@ func (uf *UserFeed) Detach() {
 		return
 	}
 
-	id := uf.Info().Id
-	login := uf.User().Info().Login
+	id := uf.Data().Id
+	login := uf.User().Data().Login
 	uf.logger.Infof("Detaching feed %d from user %s\n", id, login)
 
 	tx, err := uf.db.Begin()
@@ -372,7 +372,7 @@ func (uf *UserFeed) Articles(paging ...int) (ua []content.UserArticle) {
 		return
 	}
 
-	id := uf.Info().Id
+	id := uf.Data().Id
 	uf.logger.Infof("Getting articles for feed %d\n", id)
 
 	order := "read"
@@ -390,7 +390,7 @@ func (uf *UserFeed) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 		return
 	}
 
-	id := uf.Info().Id
+	id := uf.Data().Id
 	uf.logger.Infof("Getting unread articles for feed %d\n", id)
 
 	articles := uf.getArticles("ar.article_id IS NULL", "", paging...)
@@ -407,8 +407,8 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 		return
 	}
 
-	id := uf.Info().Id
-	login := uf.User().Info().Login
+	id := uf.Data().Id
+	login := uf.User().Data().Login
 	uf.logger.Infof("Marking user %s feed %d articles before %v as read: %v\n", login, id, date, read)
 
 	tx, err := uf.db.Begin()
@@ -455,12 +455,12 @@ func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []cont
 	}
 
 	u := uf.User()
-	id := uf.Info().Id
-	login := u.Info().Login
+	id := uf.Data().Id
+	login := u.Data().Login
 	uf.logger.Infof("Getting scored articles for user %s feed %d between %v and %v\n", login, id, from, to)
 
 	order := ""
-	if uf.Order() == info.DescendingOrder {
+	if uf.Order() == data.DescendingOrder {
 		order = " DESC"
 	}
 	ua := getArticles(u, uf.db, uf.logger, uf, "asco.score",
@@ -471,7 +471,7 @@ func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []cont
 	sa = make([]content.ScoredArticle, len(ua))
 	for i := range ua {
 		sa[i] = uf.Repo().ScoredArticle()
-		sa[i].Info(ua[i].Info())
+		sa[i].Data(ua[i].Data())
 	}
 
 	return
@@ -489,7 +489,7 @@ func (uf *UserFeed) getArticles(where, order string, paging ...int) (ua []conten
 	}
 
 	u := uf.User()
-	ua = getArticles(u, uf.db, uf.logger, uf, "", "", where, order, []interface{}{uf.Info().Id}, paging...)
+	ua = getArticles(u, uf.db, uf.logger, uf, "", "", where, order, []interface{}{uf.Data().Id}, paging...)
 
 	if u.HasErr() {
 		uf.Err(u.Err())
@@ -505,14 +505,14 @@ func (uf *UserFeed) Query(term string, index bleve.Index, paging ...int) (ua []c
 
 	var err error
 
-	ua, err = query(term, uf.Highlight(), index, uf.User(), []info.FeedId{uf.Info().Id}, paging...)
+	ua, err = query(term, uf.Highlight(), index, uf.User(), []data.FeedId{uf.Data().Id}, paging...)
 	uf.Err(err)
 
 	return
 }
 
 func (tf TaggedFeed) MarshalJSON() ([]byte, error) {
-	tfjson := taggedFeedJSON{Feed: tf.Info(), Tags: tf.tags}
+	tfjson := taggedFeedJSON{Feed: tf.Data(), Tags: tf.tags}
 	return json.Marshal(tfjson)
 }
 
@@ -523,8 +523,8 @@ func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
 	}
 
 	if len(tf.tags) == 0 {
-		id := tf.Info().Id
-		login := tf.User().Info().Login
+		id := tf.Data().Id
+		login := tf.User().Data().Login
 		tf.logger.Infof("Getting tags for user %s and feed '%d'\n", login, id)
 
 		var feedIdTags []feedIdTag
@@ -548,8 +548,8 @@ func (tf *TaggedFeed) UpdateTags() {
 		return
 	}
 
-	id := tf.Info().Id
-	login := tf.User().Info().Login
+	id := tf.Data().Id
+	login := tf.User().Data().Login
 	tf.logger.Infof("Deleting all tags for feed %d\n", id)
 
 	tx, err := tf.db.Begin()
@@ -575,8 +575,8 @@ func (tf *TaggedFeed) UpdateTags() {
 	tags := tf.Tags()
 
 	if len(tags) > 0 {
-		id := tf.Info().Id
-		login := tf.User().Info().Login
+		id := tf.Data().Id
+		login := tf.User().Data().Login
 		tf.logger.Infof("Adding tags for feed %d\n", id)
 
 		stmt, err := tx.Preparex(tf.db.SQL("create_user_feed_tag"))
@@ -587,7 +587,7 @@ func (tf *TaggedFeed) UpdateTags() {
 		defer stmt.Close()
 
 		existing := tf.Tags()
-		existingMap := make(map[info.TagValue]bool)
+		existingMap := make(map[data.TagValue]bool)
 
 		for i := range existing {
 			existingMap[existing[i].Value()] = true

@@ -11,7 +11,7 @@ import (
 	"net/mail"
 
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 )
 
 type User struct {
@@ -20,7 +20,7 @@ type User struct {
 	RepoRelated
 	ArticleSearch
 
-	info info.User
+	data data.User
 }
 
 type UserRelated struct {
@@ -28,47 +28,47 @@ type UserRelated struct {
 }
 
 func (u User) String() string {
-	if u.info.Email == "" {
-		return u.info.FirstName + " " + u.info.LastName
+	if u.data.Email == "" {
+		return u.data.FirstName + " " + u.data.LastName
 	} else {
-		return u.info.FirstName + " " + u.info.LastName + " <" + u.info.Email + ">"
+		return u.data.FirstName + " " + u.data.LastName + " <" + u.data.Email + ">"
 	}
 }
 
-func (u *User) Info(in ...info.User) info.User {
+func (u *User) Data(d ...data.User) data.User {
 	if u.HasErr() {
-		return u.info
+		return u.data
 	}
 
-	if len(in) > 0 {
-		info := in[0]
+	if len(d) > 0 {
+		data := d[0]
 		var err error
 
-		if len(info.ProfileJSON) == 0 {
-			info.ProfileJSON, err = json.Marshal(info.ProfileData)
+		if len(data.ProfileJSON) == 0 {
+			data.ProfileJSON, err = json.Marshal(data.ProfileData)
 		} else {
-			if err = json.Unmarshal(info.ProfileJSON, &info.ProfileData); err != nil {
+			if err = json.Unmarshal(data.ProfileJSON, &data.ProfileData); err != nil {
 				u.Err(err)
-				return u.info
+				return u.data
 			}
 
-			if info.ProfileData == nil {
-				info.ProfileData = make(map[string]interface{})
+			if data.ProfileData == nil {
+				data.ProfileData = make(map[string]interface{})
 			}
 		}
 
 		u.Err(err)
-		u.info = info
+		u.data = data
 	}
 
-	return u.info
+	return u.data
 }
 
 func (u User) Validate() error {
-	if u.info.Login == "" {
+	if u.data.Login == "" {
 		return ValidationError{errors.New("Invalid user login")}
 	}
-	if u.info.Email != "" {
+	if u.data.Email != "" {
 		if _, err := mail.ParseAddress(u.String()); err != nil {
 			return ValidationError{err}
 		}
@@ -78,7 +78,7 @@ func (u User) Validate() error {
 }
 
 func (u User) MarshalJSON() ([]byte, error) {
-	return json.Marshal(u.info)
+	return json.Marshal(u.data)
 }
 
 func (u *User) Password(password string, secret []byte) {
@@ -86,9 +86,9 @@ func (u *User) Password(password string, secret []byte) {
 		return
 	}
 
-	h := md5.Sum([]byte(fmt.Sprintf("%s:%s", u.info.Login, password)))
+	h := md5.Sum([]byte(fmt.Sprintf("%s:%s", u.data.Login, password)))
 
-	u.info.MD5API = h[:]
+	u.data.MD5API = h[:]
 
 	c := 30
 	salt := make([]byte, c)
@@ -97,10 +97,10 @@ func (u *User) Password(password string, secret []byte) {
 		return
 	}
 
-	u.info.Salt = salt
+	u.data.Salt = salt
 
-	u.info.HashType = "sha1"
-	u.info.Hash = u.generateHash(password, secret)
+	u.data.HashType = "sha1"
+	u.data.Hash = u.generateHash(password, secret)
 }
 
 func (u User) Authenticate(password string, secret []byte) bool {
@@ -108,11 +108,11 @@ func (u User) Authenticate(password string, secret []byte) bool {
 		return false
 	}
 
-	return bytes.Equal(u.info.Hash, u.generateHash(password, secret))
+	return bytes.Equal(u.data.Hash, u.generateHash(password, secret))
 }
 
 func (u User) generateHash(password string, secret []byte) []byte {
-	hash := sha1.Sum(append(secret, append(u.info.Salt, []byte(password)...)...))
+	hash := sha1.Sum(append(secret, append(u.data.Salt, []byte(password)...)...))
 
 	return hash[:]
 }

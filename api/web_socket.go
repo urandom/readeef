@@ -163,7 +163,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 
 					r := newResponse()
 
-					uf := user.FeedById(f.Info().Id)
+					uf := user.FeedById(f.Data().Id)
 
 					if !uf.HasErr() {
 						r.val["Feed"] = uf

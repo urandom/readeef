@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/parser"
 )
 
@@ -16,7 +16,7 @@ type Feed struct {
 	Error
 	RepoRelated
 
-	info           info.Feed
+	data           data.Feed
 	parsedArticles []content.Article
 }
 
@@ -26,27 +26,27 @@ type UserFeed struct {
 }
 
 func (f Feed) String() string {
-	return f.info.Title + " " + strconv.FormatInt(int64(f.info.Id), 10)
+	return f.data.Title + " " + strconv.FormatInt(int64(f.data.Id), 10)
 }
 
-func (f *Feed) Info(in ...info.Feed) info.Feed {
+func (f *Feed) Data(d ...data.Feed) data.Feed {
 	if f.HasErr() {
-		return f.info
+		return data.Feed{}
 	}
 
-	if len(in) > 0 {
-		f.info = in[0]
+	if len(d) > 0 {
+		f.data = d[0]
 	}
 
-	return f.info
+	return f.data
 }
 
 func (f Feed) Validate() error {
-	if f.info.Link == "" {
+	if f.data.Link == "" {
 		return ValidationError{errors.New("Feed has no link")}
 	}
 
-	if u, err := url.Parse(f.info.Link); err != nil || !u.IsAbs() {
+	if u, err := url.Parse(f.data.Link); err != nil || !u.IsAbs() {
 		return ValidationError{errors.New("Feed has no link")}
 	}
 
@@ -58,7 +58,7 @@ func (f *Feed) Refresh(pf parser.Feed) {
 		return
 	}
 
-	in := f.Info()
+	in := f.Data()
 
 	in.Title = pf.Title
 	in.Description = pf.Description
@@ -68,7 +68,7 @@ func (f *Feed) Refresh(pf parser.Feed) {
 	f.parsedArticles = make([]content.Article, len(pf.Articles))
 
 	for i := range pf.Articles {
-		ai := info.Article{
+		ai := data.Article{
 			Title:       pf.Articles[i].Title,
 			Description: pf.Articles[i].Description,
 			Link:        pf.Articles[i].Link,
@@ -81,12 +81,12 @@ func (f *Feed) Refresh(pf parser.Feed) {
 			ai.Guid.String = pf.Articles[i].Guid
 		}
 
-		a := &Article{info: ai}
+		a := &Article{data: ai}
 
 		f.parsedArticles[i] = a
 	}
 
-	f.Info(in)
+	f.Data(in)
 }
 
 func (f *Feed) ParsedArticles() (a []content.Article) {
@@ -98,11 +98,11 @@ func (f *Feed) ParsedArticles() (a []content.Article) {
 }
 
 func (f Feed) MarshalJSON() ([]byte, error) {
-	return json.Marshal(f.info)
+	return json.Marshal(f.data)
 }
 
 func (uf UserFeed) Validate() error {
-	if uf.user.Info().Login == "" {
+	if uf.user.Data().Login == "" {
 		return ValidationError{errors.New("UserFeed has no user")}
 	}
 

@@ -12,39 +12,39 @@ func TestImplements(t *testing.T) {
 	r := NewRepo(nil, nil)
 
 	article = r.Article()
-	article.Info()
+	article.Data()
 
 	var userArticle content.UserArticle
 
 	userArticle = r.UserArticle(nil)
-	userArticle.Info()
+	userArticle.Data()
 
 	var scoredArticle content.ScoredArticle
 
 	scoredArticle = r.ScoredArticle()
-	scoredArticle.Info()
+	scoredArticle.Data()
 
 	var feed content.Feed
 
 	feed = r.Feed()
-	feed.Info()
+	feed.Data()
 
 	var userFeed content.UserFeed
 
 	userFeed = r.UserFeed(nil)
-	userFeed.Info()
+	userFeed.Data()
 
 	var taggedFeed content.TaggedFeed
 
 	taggedFeed = r.TaggedFeed(nil)
-	taggedFeed.Info()
+	taggedFeed.Data()
 
 	r.HasErr()
 
 	var subscription content.Subscription
 
 	subscription = r.Subscription()
-	subscription.Info()
+	subscription.Data()
 
 	var tag content.Tag
 
@@ -54,5 +54,5 @@ func TestImplements(t *testing.T) {
 	var user content.User
 
 	user = r.User()
-	user.Info()
+	user.Data()
 }

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/urandom/readeef"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/repo"
 	"github.com/urandom/readeef/db"
 	_ "github.com/urandom/readeef/db/postgres"
@@ -41,9 +41,9 @@ func main() {
 		pass := flag.Arg(2)
 
 		u := repo.User()
-		i := u.Info()
+		i := u.Data()
 
-		i.Login = info.Login(login)
+		i.Login = data.Login(login)
 		i.Active = true
 
 		u.Password(pass, []byte(cfg.Auth.Secret))
@@ -58,7 +58,7 @@ func main() {
 		}
 		login := flag.Arg(1)
 
-		u := repo.UserByLogin(info.Login(login))
+		u := repo.UserByLogin(data.Login(login))
 		u.Delete()
 
 		if u.HasErr() {
@@ -71,7 +71,7 @@ func main() {
 		login := flag.Arg(1)
 		prop := flag.Arg(2)
 
-		u := repo.UserByLogin(info.Login(login))
+		u := repo.UserByLogin(data.Login(login))
 		if repo.HasErr() {
 			exitWithError(fmt.Sprintf("Error getting user '%s' from the database: %v", login, repo.Err()))
 		}
@@ -79,23 +79,23 @@ func main() {
 		lowerProp := strings.ToLower(prop)
 		switch lowerProp {
 		case "firstname", "first_name":
-			fmt.Printf("%s\n", u.Info().FirstName)
+			fmt.Printf("%s\n", u.Data().FirstName)
 		case "lastname", "last_name":
-			fmt.Printf("%s\n", u.Info().LastName)
+			fmt.Printf("%s\n", u.Data().LastName)
 		case "email":
-			fmt.Printf("%s\n", u.Info().Email)
+			fmt.Printf("%s\n", u.Data().Email)
 		case "hashtype", "hash_type":
-			fmt.Printf("%s\n", u.Info().HashType)
+			fmt.Printf("%s\n", u.Data().HashType)
 		case "salt":
-			fmt.Printf("%v\n", u.Info().Salt)
+			fmt.Printf("%v\n", u.Data().Salt)
 		case "hash":
-			fmt.Printf("%v\n", u.Info().Hash)
+			fmt.Printf("%v\n", u.Data().Hash)
 		case "md5api", "md5_api":
-			fmt.Printf("%v\n", u.Info().MD5API)
+			fmt.Printf("%v\n", u.Data().MD5API)
 		case "admin":
-			fmt.Printf("%v\n", u.Info().Admin)
+			fmt.Printf("%v\n", u.Data().Admin)
 		case "active":
-			fmt.Printf("%v\n", u.Info().Active)
+			fmt.Printf("%v\n", u.Data().Active)
 		default:
 			exitWithError(fmt.Sprintf("Unknown user property '%s'", prop))
 		}
@@ -107,12 +107,12 @@ func main() {
 		prop := flag.Arg(2)
 		val := flag.Arg(3)
 
-		u := repo.UserByLogin(info.Login(login))
+		u := repo.UserByLogin(data.Login(login))
 		if repo.HasErr() {
 			exitWithError(fmt.Sprintf("Error getting user '%s' from the database: %v", login, repo.Err()))
 		}
 
-		in := u.Info()
+		in := u.Data()
 
 		lowerProp := strings.ToLower(prop)
 		switch lowerProp {
@@ -149,7 +149,7 @@ func main() {
 		}
 
 		for _, u := range users {
-			fmt.Printf("%s\n", u.Info().Login)
+			fmt.Printf("%s\n", u.Data().Login)
 		}
 	case "list-detailed":
 		users := repo.AllUsers()
@@ -158,7 +158,7 @@ func main() {
 		}
 
 		for _, u := range users {
-			in := u.Info()
+			in := u.Data()
 			fmt.Printf("Login: %s", in.Login)
 			if in.FirstName != "" {
 				fmt.Printf(", first name: %s", in.FirstName)

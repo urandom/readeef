@@ -11,7 +11,7 @@ import (
 
 	"github.com/blevesearch/bleve"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw"
 )
 
@@ -105,12 +105,12 @@ func (si SearchIndex) UpdateFeed(feed content.Feed) {
 
 	newArticleLinks := map[string]bool{}
 	for _, a := range feed.NewArticles() {
-		newArticleLinks[a.Info().Link] = true
+		newArticleLinks[a.Data().Link] = true
 	}
 
 	var articles []content.Article
 	for _, a := range feed.ParsedArticles() {
-		if newArticleLinks[a.Info().Link] {
+		if newArticleLinks[a.Data().Link] {
 			articles = append(articles, a)
 		}
 	}
@@ -140,11 +140,11 @@ func (si SearchIndex) batchIndex(articles []content.Article) {
 	count := int64(0)
 
 	for i := range articles {
-		info := articles[i].Info()
+		data := articles[i].Data()
 
-		si.logger.Debugf("Indexing article '%d' from feed id '%d'\n", info.Id, info.FeedId)
+		si.logger.Debugf("Indexing article '%d' from feed id '%d'\n", data.Id, data.FeedId)
 
-		batch.Index(prepareArticle(info))
+		batch.Index(prepareArticle(data))
 		count++
 
 		if count >= si.batchSize {
@@ -172,11 +172,11 @@ func (si SearchIndex) batchDelete(articles []content.Article) {
 	count := int64(0)
 
 	for i := range articles {
-		info := articles[i].Info()
+		data := articles[i].Data()
 
-		si.logger.Debugf("Indexing article '%d' from feed id '%d'\n", info.Id, info.FeedId)
+		si.logger.Debugf("Indexing article '%d' from feed id '%d'\n", data.Id, data.FeedId)
 
-		batch.Delete(strconv.FormatInt(int64(info.Id), 10))
+		batch.Delete(strconv.FormatInt(int64(data.Id), 10))
 		count++
 
 		if count >= si.batchSize {
@@ -195,15 +195,15 @@ func (si SearchIndex) batchDelete(articles []content.Article) {
 	}
 }
 
-func prepareArticle(info info.Article) (string, indexArticle) {
-	ia := indexArticle{FeedId: strconv.FormatInt(int64(info.FeedId), 10),
-		ArticleId:   strconv.FormatInt(int64(info.Id), 10),
-		Title:       html.UnescapeString(StripTags(info.Title)),
-		Description: html.UnescapeString(StripTags(info.Description)),
-		Link:        info.Link, Date: info.Date,
+func prepareArticle(data data.Article) (string, indexArticle) {
+	ia := indexArticle{FeedId: strconv.FormatInt(int64(data.FeedId), 10),
+		ArticleId:   strconv.FormatInt(int64(data.Id), 10),
+		Title:       html.UnescapeString(StripTags(data.Title)),
+		Description: html.UnescapeString(StripTags(data.Description)),
+		Link:        data.Link, Date: data.Date,
 	}
 
-	return strconv.FormatInt(int64(info.Id), 10), ia
+	return strconv.FormatInt(int64(data.Id), 10), ia
 }
 
 func StripTags(text string) string {

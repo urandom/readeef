@@ -12,7 +12,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
@@ -53,21 +53,21 @@ type addFeedProcessor struct {
 }
 
 type removeFeedProcessor struct {
-	Id info.FeedId `json:"id"`
+	Id data.FeedId `json:"id"`
 
 	fm   *readeef.FeedManager
 	user content.User
 }
 
 type getFeedTagsProcessor struct {
-	Id info.FeedId `json:"id"`
+	Id data.FeedId `json:"id"`
 
 	user content.User
 }
 
 type setFeedTagsProcessor struct {
-	Id   info.FeedId     `json:"id"`
-	Tags []info.TagValue `json:"tags"`
+	Id   data.FeedId     `json:"id"`
+	Tags []data.TagValue `json:"tags"`
 
 	user content.User
 }
@@ -141,22 +141,22 @@ func (con Feed) Handler(c context.Context) http.Handler {
 				resp = addFeed(user, con.fm, links)
 			case "remove":
 				if feedId, resp.err = strconv.ParseInt(params["feed-id"], 10, 64); resp.err == nil {
-					resp = removeFeed(user, con.fm, info.FeedId(feedId))
+					resp = removeFeed(user, con.fm, data.FeedId(feedId))
 				}
 			case "tags":
 				if feedId, resp.err = strconv.ParseInt(params["feed-id"], 10, 64); resp.err == nil {
 					if r.Method == "GET" {
-						resp = getFeedTags(user, info.FeedId(feedId))
+						resp = getFeedTags(user, data.FeedId(feedId))
 					} else if r.Method == "POST" {
 						decoder := json.NewDecoder(r.Body)
 
-						tags := []info.TagValue{}
+						tags := []data.TagValue{}
 						if resp.err = decoder.Decode(&tags); resp.err != nil && resp.err != io.EOF {
 							break
 						}
 
 						resp.err = nil
-						resp = setFeedTags(user, info.FeedId(feedId), tags)
+						resp = setFeedTags(user, data.FeedId(feedId), tags)
 					}
 				}
 			case "read":
@@ -284,10 +284,10 @@ func discoverFeeds(user content.User, fm *readeef.FeedManager, link string) (res
 		return
 	}
 
-	userFeedIdMap := make(map[info.FeedId]bool)
+	userFeedIdMap := make(map[data.FeedId]bool)
 	userFeedLinkMap := make(map[string]bool)
 	for i := range uf {
-		in := uf[i].Info()
+		in := uf[i].Data()
 		userFeedIdMap[in.Id] = true
 		userFeedLinkMap[in.Link] = true
 
@@ -300,7 +300,7 @@ func discoverFeeds(user content.User, fm *readeef.FeedManager, link string) (res
 
 	respFeeds := []content.Feed{}
 	for i := range feeds {
-		in := feeds[i].Info()
+		in := feeds[i].Data()
 		if !userFeedIdMap[in.Id] && !userFeedLinkMap[in.Link] {
 			respFeeds = append(respFeeds, feeds[i])
 		}
@@ -310,11 +310,11 @@ func discoverFeeds(user content.User, fm *readeef.FeedManager, link string) (res
 	return
 }
 
-func parseOpml(user content.User, fm *readeef.FeedManager, data []byte) (resp responseError) {
+func parseOpml(user content.User, fm *readeef.FeedManager, opmlData []byte) (resp responseError) {
 	resp = newResponse()
 
 	var opml parser.Opml
-	if opml, resp.err = parser.ParseOpml(data); resp.err != nil {
+	if opml, resp.err = parser.ParseOpml(opmlData); resp.err != nil {
 		return
 	}
 
@@ -324,9 +324,9 @@ func parseOpml(user content.User, fm *readeef.FeedManager, data []byte) (resp re
 		return
 	}
 
-	userFeedMap := make(map[info.FeedId]bool)
+	userFeedMap := make(map[data.FeedId]bool)
 	for i := range uf {
-		userFeedMap[uf[i].Info().Id] = true
+		userFeedMap[uf[i].Data().Id] = true
 	}
 
 	var feeds []content.Feed
@@ -337,13 +337,13 @@ func parseOpml(user content.User, fm *readeef.FeedManager, data []byte) (resp re
 		}
 
 		for _, f := range discovered {
-			in := f.Info()
+			in := f.Data()
 			if !userFeedMap[in.Id] {
 				if len(opmlFeed.Tags) > 0 {
 					in.Link += "#" + strings.Join(opmlFeed.Tags, ",")
 				}
 
-				f.Info(in)
+				f.Data(in)
 
 				feeds = append(feeds, f)
 			}
@@ -384,12 +384,12 @@ func addFeed(user content.User, fm *readeef.FeedManager, links []string) (resp r
 			if u.Fragment != "" && len(tags) > 0 {
 				repo := uf.Repo()
 				tf := repo.TaggedFeed(user)
-				tf.Info(uf.Info())
+				tf.Data(uf.Data())
 
 				t := make([]content.Tag, len(tags))
 				for i := range tags {
 					t[i] = repo.Tag(user)
-					t[i].Value(info.TagValue(tags[i]))
+					t[i].Value(data.TagValue(tags[i]))
 				}
 
 				tf.Tags(t)
@@ -407,7 +407,7 @@ func addFeed(user content.User, fm *readeef.FeedManager, links []string) (resp r
 	return
 }
 
-func removeFeed(user content.User, fm *readeef.FeedManager, id info.FeedId) (resp responseError) {
+func removeFeed(user content.User, fm *readeef.FeedManager, id data.FeedId) (resp responseError) {
 	resp = newResponse()
 
 	feed := user.FeedById(id)
@@ -422,7 +422,7 @@ func removeFeed(user content.User, fm *readeef.FeedManager, id info.FeedId) (res
 	return
 }
 
-func getFeedTags(user content.User, id info.FeedId) (resp responseError) {
+func getFeedTags(user content.User, id data.FeedId) (resp responseError) {
 	resp = newResponse()
 
 	repo := user.Repo()
@@ -431,7 +431,7 @@ func getFeedTags(user content.User, id info.FeedId) (resp responseError) {
 		resp.err = uf.Err()
 		return
 	} else {
-		tf.Info(uf.Info())
+		tf.Data(uf.Data())
 	}
 
 	tags := tf.Tags()
@@ -450,7 +450,7 @@ func getFeedTags(user content.User, id info.FeedId) (resp responseError) {
 	return
 }
 
-func setFeedTags(user content.User, id info.FeedId, tagValues []info.TagValue) (resp responseError) {
+func setFeedTags(user content.User, id data.FeedId, tagValues []data.TagValue) (resp responseError) {
 	resp = newResponse()
 
 	feed := user.FeedById(id)
@@ -461,7 +461,7 @@ func setFeedTags(user content.User, id info.FeedId, tagValues []info.TagValue) (
 
 	repo := user.Repo()
 	tf := repo.TaggedFeed(user)
-	tf.Info(feed.Info())
+	tf.Data(feed.Data())
 	tags := make([]content.Tag, len(tagValues))
 	for i := range tagValues {
 		tags[i] = repo.Tag(user)
@@ -493,7 +493,7 @@ func markFeedAsRead(user content.User, id string, timestamp int64) (resp respons
 		// Favorites are assumbed to have been read already
 	case strings.HasPrefix(id, "tag:"):
 		tag := user.Repo().Tag(user)
-		tag.Value(info.TagValue(id[4:]))
+		tag.Value(data.TagValue(id[4:]))
 		if tag.ReadBefore(t, true); tag.HasErr() {
 			resp.err = tag.Err()
 			return
@@ -505,7 +505,7 @@ func markFeedAsRead(user content.User, id string, timestamp int64) (resp respons
 			return
 		}
 
-		feed := user.FeedById(info.FeedId(feedId))
+		feed := user.FeedById(data.FeedId(feedId))
 		if feed.ReadBefore(t, true); feed.HasErr() {
 			resp.err = feed.Err()
 			return
@@ -525,9 +525,9 @@ func getFeedArticles(user content.User, id string, limit int, offset int, newerF
 
 	user.SortingByDate()
 	if newerFirst {
-		user.Order(info.DescendingOrder)
+		user.Order(data.DescendingOrder)
 	} else {
-		user.Order(info.AscendingOrder)
+		user.Order(data.AscendingOrder)
 	}
 	if id == "favorite" {
 		resp.val["Articles"], resp.err = user.FavoriteArticles(limit, offset), user.Err()
@@ -542,13 +542,13 @@ func getFeedArticles(user content.User, id string, limit int, offset int, newerF
 	} else if strings.HasPrefix(id, "popular:") {
 		if strings.HasPrefix(id, "popular:tag:") {
 			tag := user.Repo().Tag(user)
-			tag.Value(info.TagValue(id[12:]))
+			tag.Value(data.TagValue(id[12:]))
 
 			tag.SortingByDate()
 			if newerFirst {
-				tag.Order(info.DescendingOrder)
+				tag.Order(data.DescendingOrder)
 			} else {
-				tag.Order(info.AscendingOrder)
+				tag.Order(data.AscendingOrder)
 			}
 			resp.val["Articles"], resp.err = tag.ScoredArticles(time.Now().AddDate(0, 0, -5), time.Now(), limit, offset), tag.Err()
 		} else {
@@ -562,7 +562,7 @@ func getFeedArticles(user content.User, id string, limit int, offset int, newerF
 				return
 			}
 
-			if f = user.FeedById(info.FeedId(feedId)); f.HasErr() {
+			if f = user.FeedById(data.FeedId(feedId)); f.HasErr() {
 				/* TODO: non-fatal error */
 				resp.err = f.Err()
 				return
@@ -570,22 +570,22 @@ func getFeedArticles(user content.User, id string, limit int, offset int, newerF
 
 			f.SortingByDate()
 			if newerFirst {
-				f.Order(info.DescendingOrder)
+				f.Order(data.DescendingOrder)
 			} else {
-				f.Order(info.AscendingOrder)
+				f.Order(data.AscendingOrder)
 			}
 
 			resp.val["Articles"], resp.err = f.ScoredArticles(time.Now().AddDate(0, 0, -5), time.Now(), limit, offset), f.Err()
 		}
 	} else if strings.HasPrefix(id, "tag:") {
 		tag := user.Repo().Tag(user)
-		tag.Value(info.TagValue(id[4:]))
+		tag.Value(data.TagValue(id[4:]))
 
 		tag.SortingByDate()
 		if newerFirst {
-			tag.Order(info.DescendingOrder)
+			tag.Order(data.DescendingOrder)
 		} else {
-			tag.Order(info.AscendingOrder)
+			tag.Order(data.AscendingOrder)
 		}
 
 		if unreadOnly {
@@ -604,16 +604,16 @@ func getFeedArticles(user content.User, id string, limit int, offset int, newerF
 			return
 		}
 
-		if f = user.FeedById(info.FeedId(feedId)); f.HasErr() {
+		if f = user.FeedById(data.FeedId(feedId)); f.HasErr() {
 			/* TODO: non-fatal error */
 			resp.err = f.Err()
 			return
 		}
 
 		if newerFirst {
-			f.Order(info.DescendingOrder)
+			f.Order(data.DescendingOrder)
 		} else {
-			f.Order(info.AscendingOrder)
+			f.Order(data.AscendingOrder)
 		}
 
 		f.SortingByDate()

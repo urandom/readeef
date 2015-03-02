@@ -18,8 +18,8 @@ func (asc *ArticleScores) Update() {
 		return
 	}
 
-	info := asc.Info()
-	asc.logger.Infof("Updating scores for article", info.ArticleId)
+	data := asc.Data()
+	asc.logger.Infof("Updating scores for article", data.ArticleId)
 
 	tx, err := asc.db.Begin()
 	if err != nil {
@@ -35,7 +35,7 @@ func (asc *ArticleScores) Update() {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(info.Score, info.Score1, info.Score2, info.Score3, info.Score4, info.Score5, info.ArticleId)
+	res, err := stmt.Exec(data.Score, data.Score1, data.Score2, data.Score3, data.Score4, data.Score5, data.ArticleId)
 	if err != nil {
 		asc.Err(err)
 		return
@@ -49,7 +49,7 @@ func (asc *ArticleScores) Update() {
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(info.ArticleId, info.Score, info.Score1, info.Score2, info.Score3, info.Score4, info.Score5)
+		_, err = stmt.Exec(data.ArticleId, data.Score, data.Score1, data.Score2, data.Score3, data.Score4, data.Score5)
 		if err != nil {
 			asc.Err(err)
 			return

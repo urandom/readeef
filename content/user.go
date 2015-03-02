@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 )
 
 type User interface {
@@ -17,7 +17,7 @@ type User interface {
 	fmt.Stringer
 	json.Marshaler
 
-	Info(info ...info.User) info.User
+	Data(data ...data.User) data.User
 
 	Validate() error
 
@@ -27,25 +27,25 @@ type User interface {
 	Update()
 	Delete()
 
-	FeedById(id info.FeedId) UserFeed
+	FeedById(id data.FeedId) UserFeed
 	AddFeed(feed Feed) UserFeed
 
 	AllFeeds() []UserFeed
 
 	AllTaggedFeeds() []TaggedFeed
 
-	ArticleById(id info.ArticleId) UserArticle
+	ArticleById(id data.ArticleId) UserArticle
 
-	ArticlesById(ids []info.ArticleId) []UserArticle
+	ArticlesById(ids []data.ArticleId) []UserArticle
 
-	AllUnreadArticleIds() []info.ArticleId
-	AllFavoriteIds() []info.ArticleId
+	AllUnreadArticleIds() []data.ArticleId
+	AllFavoriteIds() []data.ArticleId
 
 	ArticleCount() int64
 
 	Articles(paging ...int) []UserArticle
 	UnreadArticles(paging ...int) []UserArticle
-	ArticlesOrderedById(pivot info.ArticleId, paging ...int) []UserArticle
+	ArticlesOrderedById(pivot data.ArticleId, paging ...int) []UserArticle
 	FavoriteArticles(paging ...int) []UserArticle
 
 	ReadBefore(date time.Time, read bool)

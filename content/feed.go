@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/parser"
 )
 
@@ -14,7 +14,7 @@ type Feed interface {
 
 	fmt.Stringer
 
-	Info(in ...info.Feed) info.Feed
+	Data(data ...data.Feed) data.Feed
 
 	Validate() error
 

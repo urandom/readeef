@@ -11,7 +11,7 @@ import (
 	"sync"
 
 	"github.com/advancedlogic/GoOse"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw/renderer"
 	"github.com/urandom/webfw/util"
 )
@@ -28,14 +28,14 @@ var (
 	mutex               = &sync.Mutex{}
 )
 
-func (a *Article) Format(templateDir, readabilityKey string) (f info.ArticleFormatting) {
+func (a *Article) Format(templateDir, readabilityKey string) (f data.ArticleFormatting) {
 	if a.HasErr() {
 		return
 	}
 
 	if readabilityKey != "" {
 		url := fmt.Sprintf("http://readability.com/api/content/v1/parser?url=%s&token=%s",
-			url.QueryEscape(a.Info().Link), readabilityKey,
+			url.QueryEscape(a.Data().Link), readabilityKey,
 		)
 
 		var r readability
@@ -73,7 +73,7 @@ func (a *Article) Format(templateDir, readabilityKey string) (f info.ArticleForm
 
 	g := goose.New()
 	/* TODO: preserve links */
-	formatted := g.ExtractFromUrl(a.Info().Link)
+	formatted := g.ExtractFromUrl(a.Data().Link)
 
 	content := formatted.CleanedText
 	buf := util.BufferPool.GetBuffer()

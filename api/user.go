@@ -7,7 +7,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/util"
@@ -22,7 +22,7 @@ type listUsersProcessor struct {
 }
 
 type addUserProcessor struct {
-	Login    info.Login `json:"login"`
+	Login    data.Login `json:"login"`
 	Password string     `json:"password"`
 
 	user   content.User
@@ -30,13 +30,13 @@ type addUserProcessor struct {
 }
 
 type removeUserProcessor struct {
-	Login info.Login `json:"login"`
+	Login data.Login `json:"login"`
 
 	user content.User
 }
 
 type setAttributeForUserProcessor struct {
-	Login     info.Login      `json:"login"`
+	Login     data.Login      `json:"login"`
 	Attribute string          `json:"attribute"`
 	Value     json.RawMessage `json:"value"`
 
@@ -87,11 +87,11 @@ func (con User) Handler(c context.Context) http.Handler {
 
 			buf.ReadFrom(r.Body)
 
-			resp = addUser(user, info.Login(params["login"]), buf.String(), []byte(cfg.Auth.Secret))
+			resp = addUser(user, data.Login(params["login"]), buf.String(), []byte(cfg.Auth.Secret))
 		case "remove":
-			resp = removeUser(user, info.Login(params["login"]))
+			resp = removeUser(user, data.Login(params["login"]))
 		case "setAttr":
-			resp = setAttributeForUser(user, []byte(cfg.Auth.Secret), info.Login(params["login"]), params["attr"], []byte(params["value"]))
+			resp = setAttributeForUser(user, []byte(cfg.Auth.Secret), data.Login(params["login"]), params["attr"], []byte(params["value"]))
 		}
 
 		switch resp.err {
@@ -146,7 +146,7 @@ func (p setAttributeForUserProcessor) Process() responseError {
 func listUsers(user content.User) (resp responseError) {
 	resp = newResponse()
 
-	if !user.Info().Admin {
+	if !user.Data().Admin {
 		resp.err = errForbidden
 		resp.errType = errTypeForbidden
 		return
@@ -157,11 +157,11 @@ func listUsers(user content.User) (resp responseError) {
 	return
 }
 
-func addUser(user content.User, login info.Login, password string, secret []byte) (resp responseError) {
+func addUser(user content.User, login data.Login, password string, secret []byte) (resp responseError) {
 	resp = newResponse()
 	resp.val["Login"] = login
 
-	if !user.Info().Admin {
+	if !user.Data().Admin {
 		resp.err = errForbidden
 		resp.errType = errTypeForbidden
 		return
@@ -185,10 +185,10 @@ func addUser(user content.User, login info.Login, password string, secret []byte
 
 	resp.err = nil
 
-	in := info.User{Login: login}
+	in := data.User{Login: login}
 	u = repo.User()
 
-	u.Info(in)
+	u.Data(in)
 	u.Password(password, secret)
 	u.Update()
 
@@ -201,17 +201,17 @@ func addUser(user content.User, login info.Login, password string, secret []byte
 	return
 }
 
-func removeUser(user content.User, login info.Login) (resp responseError) {
+func removeUser(user content.User, login data.Login) (resp responseError) {
 	resp = newResponse()
 	resp.val["Login"] = login
 
-	if !user.Info().Admin {
+	if !user.Data().Admin {
 		resp.err = errForbidden
 		resp.errType = errTypeForbidden
 		return
 	}
 
-	if user.Info().Login == login {
+	if user.Data().Login == login {
 		resp.err = errCurrentUser
 		resp.errType = errTypeCurrentUser
 		return
@@ -228,14 +228,14 @@ func removeUser(user content.User, login info.Login) (resp responseError) {
 	return
 }
 
-func setAttributeForUser(user content.User, secret []byte, login info.Login, attr string, value []byte) (resp responseError) {
-	if !user.Info().Admin {
+func setAttributeForUser(user content.User, secret []byte, login data.Login, attr string, value []byte) (resp responseError) {
+	if !user.Data().Admin {
 		resp.err = errForbidden
 		resp.errType = errTypeForbidden
 		return
 	}
 
-	if user.Info().Login == login {
+	if user.Data().Login == login {
 		resp.err = errCurrentUser
 		resp.errType = errTypeCurrentUser
 		return

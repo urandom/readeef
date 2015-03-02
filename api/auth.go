@@ -53,7 +53,7 @@ func (p getAuthDataProcessor) Process() responseError {
 func getAuthData(user content.User) (resp responseError) {
 	resp = newResponse()
 
-	in := user.Info()
+	in := user.Data()
 	resp.val["Auth"] = true
 	resp.val["User"] = user
 	resp.val["ProfileData"] = in.ProfileData

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/blevesearch/bleve"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 )
 
 type ArticleSorting interface {
@@ -20,10 +20,10 @@ type ArticleSorting interface {
 	Reverse() ArticleSorting
 
 	// Returns the current field
-	Field(f ...info.SortingField) info.SortingField
+	Field(f ...data.SortingField) data.SortingField
 
 	// Returns the order, as set by Reverse()
-	Order(o ...info.Order) info.Order
+	Order(o ...data.Order) data.Order
 }
 
 type ArticleSearch interface {
@@ -38,11 +38,11 @@ type Article interface {
 	fmt.Stringer
 	json.Marshaler
 
-	Info(info ...info.Article) info.Article
+	Data(data ...data.Article) data.Article
 
 	Validate() error
 
-	Format(templateDir, readabilityKey string) info.ArticleFormatting
+	Format(templateDir, readabilityKey string) data.ArticleFormatting
 }
 
 type ScoredArticle interface {
@@ -65,7 +65,7 @@ type ArticleScores interface {
 
 	fmt.Stringer
 
-	Info(info ...info.ArticleScores) info.ArticleScores
+	Data(data ...data.ArticleScores) data.ArticleScores
 
 	Validate() error
 	Calculate() int64

@@ -13,7 +13,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/util"
@@ -25,7 +25,7 @@ type Fever struct {
 }
 
 type feverFeed struct {
-	Id         info.FeedId `json:"id"`
+	Id         data.FeedId `json:"id"`
 	Title      string      `json:"title"`
 	Url        string      `json:"url"`
 	SiteUrl    string      `json:"site_url"`
@@ -44,8 +44,8 @@ type feverFeedsGroup struct {
 }
 
 type feverItem struct {
-	Id            info.ArticleId `json:"id"`
-	FeedId        info.FeedId    `json:"feed_id"`
+	Id            data.ArticleId `json:"id"`
+	FeedId        data.FeedId    `json:"feed_id"`
 	Title         string         `json:"title"`
 	Author        string         `json:"author"`
 	Html          string         `json:"html"`
@@ -56,9 +56,9 @@ type feverItem struct {
 }
 
 type feverLink struct {
-	Id          info.ArticleId `json:"id"`
-	FeedId      info.FeedId    `json:"feed_id"`
-	ItemId      info.ArticleId `json:"item_id"`
+	Id          data.ArticleId `json:"id"`
+	FeedId      data.FeedId    `json:"feed_id"`
+	ItemId      data.ArticleId `json:"item_id"`
 	Temperature float64        `json:"temperature"`
 	IsItem      int            `json:"is_item"`
 	IsLocal     int            `json:"is_local"`
@@ -139,7 +139,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 				}
 
 				for i := range feeds {
-					in := feeds[i].Info()
+					in := feeds[i].Data()
 					feed := feverFeed{
 						Id: in.Id, Title: in.Title, Url: in.Link, SiteUrl: in.SiteLink, UpdateTime: now,
 					}
@@ -228,23 +228,23 @@ func (con Fever) Handler(c context.Context) http.Handler {
 					var articles []content.UserArticle
 					if withIds, ok := r.Form["with_ids"]; ok {
 						stringIds := strings.Split(withIds[0], ",")
-						ids := make([]info.ArticleId, 0, len(stringIds))
+						ids := make([]data.ArticleId, 0, len(stringIds))
 
 						for _, stringId := range stringIds {
 							stringId = strings.TrimSpace(stringId)
 
 							if id, err := strconv.ParseInt(stringId, 10, 64); err == nil {
-								ids = append(ids, info.ArticleId(id))
+								ids = append(ids, data.ArticleId(id))
 							}
 						}
 
 						articles, err = user.ArticlesById(ids), user.Err()
 					} else if max > 0 {
-						user.Order(info.DescendingOrder)
-						articles, err = user.ArticlesOrderedById(info.ArticleId(max), 50, 0), user.Err()
+						user.Order(data.DescendingOrder)
+						articles, err = user.ArticlesOrderedById(data.ArticleId(max), 50, 0), user.Err()
 					} else {
-						user.Order(info.AscendingOrder)
-						articles, err = user.ArticlesOrderedById(info.ArticleId(since), 50, 0), user.Err()
+						user.Order(data.AscendingOrder)
+						articles, err = user.ArticlesOrderedById(data.ArticleId(since), 50, 0), user.Err()
 					}
 
 					if err != nil {
@@ -252,7 +252,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 					}
 
 					for i := range articles {
-						in := articles[i].Info()
+						in := articles[i].Data()
 						item := feverItem{
 							Id: in.Id, FeedId: in.FeedId, Title: in.Title, Html: in.Description,
 							Url: in.Link, CreatedOnTime: in.Date.Unix(),
@@ -309,7 +309,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 
 				links := make([]feverLink, len(articles))
 				for i := range articles {
-					in := articles[i].Info()
+					in := articles[i].Data()
 					link := feverLink{
 						Id: in.Id, FeedId: in.FeedId, ItemId: in.Id, Temperature: math.Log10(float64(in.Score)) / math.Log10(1.1),
 						IsItem: 1, IsLocal: 1, Title: in.Title, Url: in.Link, ItemIds: fmt.Sprintf("%d", in.Id),
@@ -347,7 +347,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 						break
 					}
 
-					article, err = user.ArticleById(info.ArticleId(id)), user.Err()
+					article, err = user.ArticleById(data.ArticleId(id)), user.Err()
 					if err != nil {
 						break
 					}
@@ -389,7 +389,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 					if val == "feed" {
 						var feed content.UserFeed
 
-						feed, err = user.FeedById(info.FeedId(id)), feed.Err()
+						feed, err = user.FeedById(data.FeedId(id)), feed.Err()
 						if err != nil {
 							break
 						}
@@ -449,7 +449,7 @@ func getFeedsGroups(feeds []content.UserFeed) []feverFeedsGroup {
 			buf.WriteString(",")
 		}
 
-		buf.WriteString(strconv.FormatInt(int64(feeds[i].Info().Id), 10))
+		buf.WriteString(strconv.FormatInt(int64(feeds[i].Data().Id), 10))
 	}
 
 	return []feverFeedsGroup{feverFeedsGroup{GroupId: 1, FeedIds: buf.String()}}

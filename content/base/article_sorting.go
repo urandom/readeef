@@ -2,51 +2,51 @@ package base
 
 import (
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 )
 
 type ArticleSorting struct {
-	sortingField info.SortingField
-	sortingOrder info.Order
+	sortingField data.SortingField
+	sortingOrder data.Order
 }
 
 func (s *ArticleSorting) DefaultSorting() content.ArticleSorting {
-	s.sortingField = info.DefaultSort
+	s.sortingField = data.DefaultSort
 
 	return s
 }
 
 func (s *ArticleSorting) SortingById() content.ArticleSorting {
-	s.sortingField = info.SortById
+	s.sortingField = data.SortById
 
 	return s
 }
 
 func (s *ArticleSorting) SortingByDate() content.ArticleSorting {
-	s.sortingField = info.SortByDate
+	s.sortingField = data.SortByDate
 
 	return s
 }
 
 func (s *ArticleSorting) Reverse() content.ArticleSorting {
 	switch s.sortingOrder {
-	case info.AscendingOrder:
-		s.sortingOrder = info.DescendingOrder
-	case info.DescendingOrder:
-		s.sortingOrder = info.AscendingOrder
+	case data.AscendingOrder:
+		s.sortingOrder = data.DescendingOrder
+	case data.DescendingOrder:
+		s.sortingOrder = data.AscendingOrder
 	}
 
 	return s
 }
 
-func (s *ArticleSorting) Field(f ...info.SortingField) info.SortingField {
+func (s *ArticleSorting) Field(f ...data.SortingField) data.SortingField {
 	if len(f) > 0 {
 		s.sortingField = f[0]
 	}
 	return s.sortingField
 }
 
-func (s *ArticleSorting) Order(o ...info.Order) info.Order {
+func (s *ArticleSorting) Order(o ...data.Order) data.Order {
 	if len(o) > 0 {
 		s.sortingOrder = o[0]
 	}

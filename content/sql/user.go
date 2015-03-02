@@ -9,7 +9,7 @@ import (
 	"github.com/blevesearch/bleve"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/db"
 	"github.com/urandom/webfw"
 )
@@ -31,7 +31,7 @@ func (u *User) Update() {
 		return
 	}
 
-	i := u.Info()
+	i := u.Data()
 	u.logger.Infof("Updating user %s\n", i.Login)
 
 	tx, err := u.db.Begin()
@@ -92,7 +92,7 @@ func (u *User) Delete() {
 		return
 	}
 
-	i := u.Info()
+	i := u.Data()
 	u.logger.Infof("Deleting user %s\n", i.Login)
 
 	tx, err := u.db.Begin()
@@ -120,17 +120,17 @@ func (u *User) Delete() {
 	}
 }
 
-func (u *User) FeedById(id info.FeedId) (uf content.UserFeed) {
+func (u *User) FeedById(id data.FeedId) (uf content.UserFeed) {
 	uf = u.Repo().UserFeed(u)
 	if u.HasErr() {
 		uf.Err(u.Err())
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting user feed for user %s and feed %d\n", login, id)
 
-	var i info.Feed
+	var i data.Feed
 	if err := u.db.Get(&i, u.db.SQL("get_user_feed"), id, login); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
@@ -139,7 +139,7 @@ func (u *User) FeedById(id info.FeedId) (uf content.UserFeed) {
 		return
 	}
 
-	uf.Info(i)
+	uf.Data(i)
 
 	return
 }
@@ -156,8 +156,8 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 		return
 	}
 
-	login := u.Info().Login
-	i := f.Info()
+	login := u.Data().Login
+	i := f.Data()
 	u.logger.Infof("Getting user feed for user %s and feed %d\n", login, i.Id)
 
 	tx, err := u.db.Begin()
@@ -174,7 +174,7 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(u.Info().Login, i.Id)
+	_, err = stmt.Exec(u.Data().Login, i.Id)
 	if err != nil {
 		uf.Err(err)
 		return
@@ -184,7 +184,7 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 		uf.Err(err)
 	}
 
-	uf.Info(i)
+	uf.Data(i)
 
 	return
 }
@@ -194,19 +194,19 @@ func (u *User) AllFeeds() (uf []content.UserFeed) {
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting all feeds for user %s\n", login)
 
-	var info []info.Feed
-	if err := u.db.Select(&info, u.db.SQL("get_user_feeds"), login); err != nil {
+	var data []data.Feed
+	if err := u.db.Select(&data, u.db.SQL("get_user_feeds"), login); err != nil {
 		u.Err(err)
 		return
 	}
 
-	uf = make([]content.UserFeed, len(info))
-	for i := range info {
+	uf = make([]content.UserFeed, len(data))
+	for i := range data {
 		uf[i] = u.Repo().UserFeed(u)
-		uf[i].Info(info[i])
+		uf[i].Data(data[i])
 	}
 
 	return
@@ -217,7 +217,7 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting all tagged feeds for user %s\n", login)
 
 	var feedIdTags []feedIdTag
@@ -232,7 +232,7 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 		return
 	}
 
-	feedMap := make(map[info.FeedId][]content.Tag)
+	feedMap := make(map[data.FeedId][]content.Tag)
 	repo := u.Repo()
 
 	for _, tuple := range feedIdTags {
@@ -244,21 +244,21 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	tf = make([]content.TaggedFeed, len(uf))
 	for i := range uf {
 		tf[i] = repo.TaggedFeed(u)
-		tf[i].Info(uf[i].Info())
-		tf[i].Tags(feedMap[tf[i].Info().Id])
+		tf[i].Data(uf[i].Data())
+		tf[i].Tags(feedMap[tf[i].Data().Id])
 	}
 
 	return
 }
 
-func (u *User) ArticleById(id info.ArticleId) (ua content.UserArticle) {
+func (u *User) ArticleById(id data.ArticleId) (ua content.UserArticle) {
 	ua = u.Repo().UserArticle(u)
 	if u.HasErr() {
 		ua.Err(u.Err())
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting article '%d' for user %s\n", id, login)
 
 	articles := getArticles(u, u.db, u.logger, u, "", "", "a.id = $2", "", []interface{}{id})
@@ -273,12 +273,12 @@ func (u *User) ArticleById(id info.ArticleId) (ua content.UserArticle) {
 	return
 }
 
-func (u *User) ArticlesById(ids []info.ArticleId) (ua []content.UserArticle) {
+func (u *User) ArticlesById(ids []data.ArticleId) (ua []content.UserArticle) {
 	if u.HasErr() || len(ids) == 0 {
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting articles %q for user %s\n", ids, login)
 
 	where := "("
@@ -306,12 +306,12 @@ func (u *User) ArticlesById(ids []info.ArticleId) (ua []content.UserArticle) {
 	return
 }
 
-func (u *User) AllUnreadArticleIds() (ids []info.ArticleId) {
+func (u *User) AllUnreadArticleIds() (ids []data.ArticleId) {
 	if u.HasErr() {
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting unread article ids for user %s\n", login)
 
 	if err := u.db.Select(&ids, u.db.SQL("get_all_unread_user_article_ids"), login); err != nil {
@@ -322,12 +322,12 @@ func (u *User) AllUnreadArticleIds() (ids []info.ArticleId) {
 	return
 }
 
-func (u *User) AllFavoriteIds() (ids []info.ArticleId) {
+func (u *User) AllFavoriteIds() (ids []data.ArticleId) {
 	if u.HasErr() {
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting favorite article ids for user %s\n", login)
 
 	if err := u.db.Select(&ids, u.db.SQL("get_all_favorite_user_article_ids"), login); err != nil {
@@ -343,7 +343,7 @@ func (u *User) ArticleCount() (c int64) {
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting article count for user %s\n", login)
 
 	if err := u.db.Get(&c, u.db.SQL("get_user_article_count"), login); err != nil && err != sql.ErrNoRows {
@@ -359,7 +359,7 @@ func (u *User) Articles(paging ...int) (ua []content.UserArticle) {
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting articles for paging %q and user %s\n", paging, login)
 
 	order := "read"
@@ -378,7 +378,7 @@ func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting unread articles for paging %q and user %s\n", paging, login)
 
 	articles := getArticles(u, u.db, u.logger, u, "", "", "ar.article_id IS NULL", "", nil, paging...)
@@ -390,12 +390,12 @@ func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 	return
 }
 
-func (u *User) ArticlesOrderedById(pivot info.ArticleId, paging ...int) (ua []content.UserArticle) {
+func (u *User) ArticlesOrderedById(pivot data.ArticleId, paging ...int) (ua []content.UserArticle) {
 	if u.HasErr() {
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting articles order by id for paging %q and user %s\n", paging, login)
 
 	u.SortingById()
@@ -414,7 +414,7 @@ func (u *User) FavoriteArticles(paging ...int) (ua []content.UserArticle) {
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting favorite articles for paging %q and user %s\n", paging, login)
 
 	articles := getArticles(u, u.db, u.logger, u, "", "", "af.article_id IS NOT NULL", "", nil, paging...)
@@ -433,7 +433,7 @@ func (u *User) Query(term string, index bleve.Index, paging ...int) (ua []conten
 
 	var err error
 
-	ua, err = query(term, u.Highlight(), index, u, []info.FeedId{}, paging...)
+	ua, err = query(term, u.Highlight(), index, u, []data.FeedId{}, paging...)
 	u.Err(err)
 
 	return
@@ -444,7 +444,7 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Marking user %s articles before %v as read: %v\n", login, date, read)
 
 	tx, err := u.db.Begin()
@@ -491,7 +491,7 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Marking user %s articles after %v as read: %v\n", login, date, read)
 
 	tx, err := u.db.Begin()
@@ -539,11 +539,11 @@ func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.S
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting scored articles for paging %q and user %s\n", paging, login)
 
 	order := "asco.score"
-	if u.Order() == info.DescendingOrder {
+	if u.Order() == data.DescendingOrder {
 		order = "asco.score DESC"
 	}
 
@@ -555,7 +555,7 @@ func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.S
 	sa = make([]content.ScoredArticle, len(ua))
 	for i := range ua {
 		sa[i] = u.Repo().ScoredArticle()
-		sa[i].Info(ua[i].Info())
+		sa[i].Data(ua[i].Data())
 	}
 
 	return sa
@@ -566,7 +566,7 @@ func (u *User) Tags() (tags []content.Tag) {
 		return
 	}
 
-	login := u.Info().Login
+	login := u.Data().Login
 	u.logger.Infof("Getting all tags for user %s\n", login)
 
 	var feedIdTags []feedIdTag
@@ -604,7 +604,7 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting conten
 
 	sql += dbo.SQL("get_article_joins")
 
-	args = append([]interface{}{u.Info().Login}, args...)
+	args = append([]interface{}{u.Data().Login}, args...)
 	if where != "" {
 		sql += " AND " + where
 	}
@@ -617,9 +617,9 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting conten
 		fields = append(fields, order)
 	}
 	switch sortingField {
-	case info.SortById:
+	case data.SortById:
 		fields = append(fields, "a.id")
-	case info.SortByDate:
+	case data.SortByDate:
 		fields = append(fields, "a.date")
 	}
 	if len(fields) > 0 {
@@ -627,7 +627,7 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting conten
 
 		sql += strings.Join(fields, ",")
 
-		if sortingOrder == info.DescendingOrder {
+		if sortingOrder == data.DescendingOrder {
 			sql += " DESC"
 		}
 	}
@@ -639,17 +639,17 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting conten
 		args = append(args, limit, offset)
 	}
 
-	var info []info.Article
+	var data []data.Article
 	logger.Debugf("Articles SQL:\n%s\nArgs:%q\n", sql, args)
-	if err := dbo.Select(&info, sql, args...); err != nil {
+	if err := dbo.Select(&data, sql, args...); err != nil {
 		u.Err(err)
 		return
 	}
 
-	ua = make([]content.UserArticle, len(info))
-	for i := range info {
+	ua = make([]content.UserArticle, len(data))
+	for i := range data {
 		ua[i] = u.Repo().UserArticle(u)
-		ua[i].Info(info[i])
+		ua[i].Data(data[i])
 	}
 
 	return

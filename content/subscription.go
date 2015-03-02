@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 )
 
 type Subscription interface {
@@ -14,7 +14,7 @@ type Subscription interface {
 	fmt.Stringer
 	json.Marshaler
 
-	Info(in ...info.Subscription) info.Subscription
+	Data(data ...data.Subscription) data.Subscription
 
 	Validate() error
 

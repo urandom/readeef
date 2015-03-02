@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/popularity"
 	"github.com/urandom/webfw"
@@ -29,7 +29,7 @@ type FeedManager struct {
 	done         chan bool
 	client       *http.Client
 	logger       webfw.Logger
-	activeFeeds  map[info.FeedId]bool
+	activeFeeds  map[data.FeedId]bool
 	hubbub       *Hubbub
 	searchIndex  SearchIndex
 }
@@ -50,7 +50,7 @@ func NewFeedManager(repo content.Repo, c Config, l webfw.Logger, um *UpdateFeedR
 		repo: repo, config: c, logger: l,
 		addFeed: make(chan content.Feed, 2), removeFeed: make(chan content.Feed, 2),
 		scoreArticle: make(chan content.ScoredArticle), done: make(chan bool),
-		activeFeeds: map[info.FeedId]bool{},
+		activeFeeds: map[data.FeedId]bool{},
 		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 
@@ -83,7 +83,7 @@ func (fm *FeedManager) Stop() {
 }
 
 func (fm *FeedManager) AddFeed(f content.Feed) {
-	if f.Info().HubLink != "" && fm.hubbub != nil {
+	if f.Data().HubLink != "" && fm.hubbub != nil {
 		err := fm.hubbub.Subscribe(f)
 
 		if err == nil || err == ErrSubscribed {
@@ -226,23 +226,23 @@ func (fm *FeedManager) startUpdatingFeed(f content.Feed) {
 		return
 	}
 
-	info := f.Info()
+	data := f.Data()
 
-	if info.Id == 0 || fm.activeFeeds[info.Id] {
-		fm.logger.Infoln("Feed " + info.Link + " already active")
+	if data.Id == 0 || fm.activeFeeds[data.Id] {
+		fm.logger.Infoln("Feed " + data.Link + " already active")
 		return
 	}
 
 	d := 30 * time.Minute
 	if fm.config.Updater.Converted.Interval != 0 {
-		if info.TTL != 0 && info.TTL > fm.config.Updater.Converted.Interval {
-			d = info.TTL
+		if data.TTL != 0 && data.TTL > fm.config.Updater.Converted.Interval {
+			d = data.TTL
 		} else {
 			d = fm.config.Updater.Converted.Interval
 		}
 	}
 
-	fm.activeFeeds[info.Id] = true
+	fm.activeFeeds[data.Id] = true
 
 	go func() {
 		fm.requestFeedContent(f)
@@ -254,17 +254,17 @@ func (fm *FeedManager) startUpdatingFeed(f content.Feed) {
 		for {
 			select {
 			case now := <-ticker:
-				if !fm.activeFeeds[info.Id] {
-					fm.logger.Infof("Feed '%s' no longer active\n", info.Link)
+				if !fm.activeFeeds[data.Id] {
+					fm.logger.Infof("Feed '%s' no longer active\n", data.Link)
 					break TICKER
 				}
 
-				if !info.SkipHours[now.Hour()] && !info.SkipDays[now.Weekday().String()] {
+				if !data.SkipHours[now.Hour()] && !data.SkipDays[now.Weekday().String()] {
 					fm.requestFeedContent(f)
 				}
 
 				ticker = time.After(d)
-				fm.logger.Infof("New feed ticker for '%s' after %d\n", info.Link, d)
+				fm.logger.Infof("New feed ticker for '%s' after %d\n", data.Link, d)
 			case <-fm.done:
 				fm.stopUpdatingFeed(f)
 				return
@@ -281,10 +281,10 @@ func (fm *FeedManager) stopUpdatingFeed(f content.Feed) {
 		return
 	}
 
-	info := f.Info()
+	data := f.Data()
 
-	fm.logger.Infoln("Stopping feed update for " + info.Link)
-	delete(fm.activeFeeds, info.Id)
+	fm.logger.Infoln("Stopping feed update for " + data.Link)
+	delete(fm.activeFeeds, data.Id)
 
 	users := f.Users()
 	if f.HasErr() {
@@ -314,20 +314,20 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 		return
 	}
 
-	info := f.Info()
+	data := f.Data()
 
 	fm.logger.Infoln("Requesting feed content for " + f.String())
 
-	resp, err := fm.client.Get(info.Link)
+	resp, err := fm.client.Get(data.Link)
 
 	if err != nil {
-		info.UpdateError = err.Error()
+		data.UpdateError = err.Error()
 	} else if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
-		info.UpdateError = httpStatusPrefix + strconv.Itoa(resp.StatusCode)
+		data.UpdateError = httpStatusPrefix + strconv.Itoa(resp.StatusCode)
 	} else {
 		defer resp.Body.Close()
-		info.UpdateError = ""
+		data.UpdateError = ""
 
 		buf := util.BufferPool.GetBuffer()
 		defer util.BufferPool.Put(buf)
@@ -336,19 +336,19 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
 				f.Refresh(pf)
 			} else {
-				info.UpdateError = err.Error()
+				data.UpdateError = err.Error()
 			}
 		} else {
-			info.UpdateError = err.Error()
+			data.UpdateError = err.Error()
 		}
 
 	}
 
-	if info.UpdateError != "" {
-		fm.logger.Printf("Error updating feed '%s': %s\n", f, info.UpdateError)
+	if data.UpdateError != "" {
+		fm.logger.Printf("Error updating feed '%s': %s\n", f, data.UpdateError)
 	}
 
-	f.Info(info)
+	f.Data(data)
 
 	select {
 	case <-fm.done:
@@ -381,14 +381,14 @@ func (fm *FeedManager) scoreFeedContent(f content.Feed) {
 		return
 	}
 
-	info := f.Info()
+	data := f.Data()
 
 	if len(fm.config.Popularity.Providers) == 0 {
 		fm.logger.Infoln("No popularity providers configured")
 		return
 	}
 
-	if !fm.activeFeeds[info.Id] {
+	if !fm.activeFeeds[data.Id] {
 		fm.logger.Infof("Feed '%s' no longer active for scoring\n", f)
 		return
 	}
@@ -403,7 +403,7 @@ func (fm *FeedManager) scoreFeedContent(f content.Feed) {
 
 	for i := range articles {
 		sa := fm.repo.ScoredArticle()
-		sa.Info(articles[i].Info())
+		sa.Data(articles[i].Data())
 		fm.scoreArticle <- sa
 	}
 
@@ -437,20 +437,20 @@ func (fm *FeedManager) scoreArticles() {
 				}
 			}()
 
-			info := sa.Info()
+			data := sa.Data()
 
 			fm.logger.Infof("Scoring '%s' using %+v\n", sa, fm.config.Popularity.Providers)
-			score, err := popularity.Score(info.Link, info.Description, fm.config.Popularity.Providers)
+			score, err := popularity.Score(data.Link, data.Description, fm.config.Popularity.Providers)
 			if err != nil {
 				fm.logger.Printf("Error getting article popularity: %v\n", err)
 				continue
 			}
 
 			asc := <-ascc
-			ai := asc.Info()
+			ai := asc.Data()
 
 			if asc != blankScores {
-				age := ageInDays(info.Date)
+				age := ageInDays(data.Date)
 				switch age {
 				case 0:
 					ai.Score1 = score
@@ -464,9 +464,9 @@ func (fm *FeedManager) scoreArticles() {
 					ai.Score5 = score - ai.Score1 - ai.Score2 - ai.Score3 - ai.Score4
 				}
 
-				asc.Info(ai)
+				asc.Data(ai)
 				score := asc.Calculate()
-				penalty := float64(time.Now().Unix()-info.Date.Unix()) / (60 * 60) * float64(age)
+				penalty := float64(time.Now().Unix()-data.Date.Unix()) / (60 * 60) * float64(age)
 
 				if penalty > 0 {
 					ai.Score = int64(float64(score) / penalty)
@@ -474,7 +474,7 @@ func (fm *FeedManager) scoreArticles() {
 					ai.Score = score
 				}
 
-				asc.Info(ai)
+				asc.Data(ai)
 				asc.Update()
 				if asc.HasErr() {
 					fm.logger.Printf("Error updating article scores: %v\n", asc.Err())
@@ -515,7 +515,7 @@ func (fm FeedManager) discoverParserFeeds(link string) ([]content.Feed, error) {
 	if parserFeed, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
 		feed := fm.repo.Feed()
 
-		feed.Info(info.Feed{Link: link})
+		feed.Data(data.Feed{Link: link})
 		feed.Refresh(parserFeed)
 
 		return []content.Feed{feed}, nil

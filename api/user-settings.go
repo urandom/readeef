@@ -86,7 +86,7 @@ func (p setUserAttributeProcessor) Process() responseError {
 
 func getUserAttribute(user content.User, attr string) (resp responseError) {
 	resp = newResponse()
-	in := user.Info()
+	in := user.Data()
 	resp.val["Login"] = in.Login
 
 	switch attr {
@@ -108,7 +108,7 @@ func getUserAttribute(user content.User, attr string) (resp responseError) {
 
 func setUserAttribute(user content.User, secret []byte, attr string, data []byte) (resp responseError) {
 	resp = newResponse()
-	in := user.Info()
+	in := user.Data()
 	resp.val["Login"] = in.Login
 
 	switch attr {
@@ -147,7 +147,7 @@ func setUserAttribute(user content.User, secret []byte, attr string, data []byte
 		return
 	}
 
-	user.Info(in)
+	user.Data(in)
 	user.Update()
 	if resp.err = user.Err(); resp.err != nil {
 		return

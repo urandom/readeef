@@ -1,16 +1,16 @@
 package content
 
-import "github.com/urandom/readeef/content/info"
+import "github.com/urandom/readeef/content/data"
 
 type Repo interface {
 	Error
 	Generator
 
-	UserByLogin(login info.Login) User
+	UserByLogin(login data.Login) User
 	UserByMD5Api(md5 []byte) User
 	AllUsers() []User
 
-	FeedById(id info.FeedId) Feed
+	FeedById(id data.FeedId) Feed
 	FeedByLink(link string) Feed
 
 	AllFeeds() []Feed

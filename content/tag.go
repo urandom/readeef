@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 )
 
 type Tag interface {
@@ -17,7 +17,7 @@ type Tag interface {
 	fmt.Stringer
 	json.Marshaler
 
-	Value(val ...info.TagValue) info.TagValue
+	Value(val ...data.TagValue) data.TagValue
 
 	Validate() error
 

@@ -6,43 +6,43 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/urandom/readeef/content/info"
+	"github.com/urandom/readeef/content/data"
 )
 
 type Subscription struct {
 	Error
 	RepoRelated
 
-	info           info.Subscription
+	data           data.Subscription
 	callbackPrefix string
 }
 
 func (s Subscription) String() string {
-	return fmt.Sprintf("Subscription for %s\n", s.info.Link)
+	return fmt.Sprintf("Subscription for %s\n", s.data.Link)
 }
 
-func (s *Subscription) Info(in ...info.Subscription) info.Subscription {
+func (s *Subscription) Data(d ...data.Subscription) data.Subscription {
 	if s.HasErr() {
-		return s.info
+		return data.Subscription{}
 	}
 
-	if len(in) > 0 {
-		s.info = in[0]
+	if len(d) > 0 {
+		s.data = d[0]
 	}
 
-	return s.info
+	return s.data
 }
 
 func (s *Subscription) Validate() error {
-	if s.info.Link == "" {
+	if s.data.Link == "" {
 		return ValidationError{errors.New("No subscription link")}
 	}
 
-	if u, err := url.Parse(s.info.Link); err != nil || !u.IsAbs() {
+	if u, err := url.Parse(s.data.Link); err != nil || !u.IsAbs() {
 		return ValidationError{errors.New("Invalid subscription link")}
 	}
 
-	if s.info.FeedId == 0 {
+	if s.data.FeedId == 0 {
 		return ValidationError{errors.New("Invalid feed id")}
 	}
 
@@ -50,5 +50,5 @@ func (s *Subscription) Validate() error {
 }
 
 func (s Subscription) MarshalJSON() ([]byte, error) {
-	return json.Marshal(s.info)
+	return json.Marshal(s.data)
 }
