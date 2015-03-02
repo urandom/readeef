@@ -3,6 +3,7 @@ package sql
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/blevesearch/bleve"
@@ -29,7 +30,8 @@ type UserFeed struct {
 type TaggedFeed struct {
 	UserFeed
 
-	tags []content.Tag
+	initialized bool
+	tags        []content.Tag
 }
 
 type taggedFeedJSON struct {
@@ -519,10 +521,11 @@ func (tf TaggedFeed) MarshalJSON() ([]byte, error) {
 func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
 	if len(tags) > 0 {
 		tf.tags = tags[0]
+		tf.initialized = true
 		return tf.tags
 	}
 
-	if len(tf.tags) == 0 {
+	if !tf.initialized {
 		id := tf.Data().Id
 		login := tf.User().Data().Login
 		tf.logger.Infof("Getting tags for user %s and feed '%d'\n", login, id)
@@ -538,6 +541,7 @@ func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
 			tag.Value(t.TagValue)
 			tf.tags = append(tf.tags, tag)
 		}
+		tf.initialized = true
 	}
 
 	return tf.tags
@@ -545,6 +549,11 @@ func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
 
 func (tf *TaggedFeed) UpdateTags() {
 	if tf.HasErr() {
+		return
+	}
+
+	if err := tf.Validate(); err != nil {
+		tf.Err(err)
 		return
 	}
 
@@ -568,7 +577,7 @@ func (tf *TaggedFeed) UpdateTags() {
 
 	_, err = stmt.Exec(login, id)
 	if err != nil {
-		tf.Err(err)
+		tf.Err(fmt.Errorf("Error deleting user feed tags: %v", err))
 		return
 	}
 
@@ -594,9 +603,15 @@ func (tf *TaggedFeed) UpdateTags() {
 		}
 
 		for i := range tags {
-			_, err = stmt.Exec(login, id, tags[i].String())
-			if err != nil {
+			if err := tags[i].Validate(); err != nil {
 				tf.Err(err)
+				return
+			}
+			fmt.Println(tags[i])
+
+			_, err = stmt.Exec(login, id, tags[i].Value())
+			if err != nil {
+				tf.Err(fmt.Errorf("Error adding user feed tag: %v", err))
 				return
 			}
 

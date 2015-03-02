@@ -12,28 +12,28 @@ import (
 func TestUser(t *testing.T) {
 	u := repo.User()
 
-	tests.CheckBool(t, false, u.HasErr())
+	tests.CheckBool(t, false, u.HasErr(), u.Err())
 
 	u.Update()
 	tests.CheckBool(t, true, u.HasErr())
 
 	err := u.Err()
 	_, ok := err.(base.ValidationError)
-	tests.CheckBool(t, true, ok)
+	tests.CheckBool(t, true, ok, err)
 
 	u.Data(data.User{Login: data.Login("login")})
 
-	tests.CheckBool(t, false, u.HasErr())
+	tests.CheckBool(t, false, u.HasErr(), u.Err())
 
 	u.Update()
-	tests.CheckBool(t, false, u.HasErr())
+	tests.CheckBool(t, false, u.HasErr(), u.Err())
 
 	u2 := repo.UserByLogin(data.Login("login"))
-	tests.CheckBool(t, false, u2.HasErr())
+	tests.CheckBool(t, false, u2.HasErr(), u2.Err())
 	tests.CheckString(t, "login", string(u2.Data().Login))
 
 	u.Delete()
-	tests.CheckBool(t, false, u.HasErr())
+	tests.CheckBool(t, false, u.HasErr(), u.Err())
 
 	u2 = repo.UserByLogin(data.Login("login"))
 	tests.CheckBool(t, true, u2.HasErr())

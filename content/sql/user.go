@@ -577,11 +577,11 @@ func (u *User) Tags() (tags []content.Tag) {
 	}
 
 	tags = make([]content.Tag, len(feedIdTags))
-	for _, tuple := range feedIdTags {
+	for i, tuple := range feedIdTags {
 		tag := u.Repo().Tag(u)
 		tag.Value(tuple.TagValue)
 
-		tags = append(tags, tag)
+		tags[i] = tag
 	}
 
 	return
