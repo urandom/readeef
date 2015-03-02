@@ -70,4 +70,19 @@ func TestTag(t *testing.T) {
 			tests.CheckInt64(t, 2, int64(len(tags)))
 		}
 	}
+
+	tf.Tags([]content.Tag{tag, tag3})
+	tf.UpdateTags()
+	tests.CheckBool(t, false, tf.HasErr(), tf.Err())
+
+	feeds = tag.AllFeeds()
+	tests.CheckBool(t, false, tag.HasErr(), tag.Err())
+
+	tests.CheckInt64(t, 1, int64(len(feeds)))
+	tests.CheckInt64(t, 1, int64(feeds[0].Data().Id))
+
+	feeds = tag3.AllFeeds()
+	tests.CheckBool(t, false, tag.HasErr(), tag.Err())
+
+	tests.CheckInt64(t, 2, int64(len(feeds)))
 }

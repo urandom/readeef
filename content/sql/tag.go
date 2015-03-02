@@ -29,11 +29,19 @@ func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
 	}
 
 	t.logger.Infof("Getting all feeds for tag %s\n", t)
+	u := t.User()
 
-	var i []data.Feed
-	if err := t.db.Select(&i, t.db.SQL("get_user_tag_feeds"), t.User().Data().Login, t.String()); err != nil {
+	var d []data.Feed
+	if err := t.db.Select(&d, t.db.SQL("get_user_tag_feeds"), u.Data().Login, t.String()); err != nil {
 		t.Err(err)
 		return
+	}
+
+	repo := t.Repo()
+	tf = make([]content.TaggedFeed, len(d))
+	for i := range d {
+		tf[i] = repo.TaggedFeed(u)
+		tf[i].Data(d[i])
 	}
 
 	return
