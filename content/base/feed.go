@@ -26,7 +26,7 @@ type UserFeed struct {
 }
 
 func (f Feed) String() string {
-	return f.data.Title + " " + strconv.FormatInt(int64(f.data.Id), 10)
+	return f.data.Title + " (" + strconv.FormatInt(int64(f.data.Id), 10) + ")"
 }
 
 func (f *Feed) Data(d ...data.Feed) data.Feed {
@@ -58,12 +58,12 @@ func (f *Feed) Refresh(pf parser.Feed) {
 		return
 	}
 
-	in := f.Data()
+	d := f.Data()
 
-	in.Title = pf.Title
-	in.Description = pf.Description
-	in.SiteLink = pf.SiteLink
-	in.HubLink = pf.HubLink
+	d.Title = pf.Title
+	d.Description = pf.Description
+	d.SiteLink = pf.SiteLink
+	d.HubLink = pf.HubLink
 
 	f.parsedArticles = make([]content.Article, len(pf.Articles))
 
@@ -74,7 +74,7 @@ func (f *Feed) Refresh(pf parser.Feed) {
 			Link:        pf.Articles[i].Link,
 			Date:        pf.Articles[i].Date,
 		}
-		ai.FeedId = in.Id
+		ai.FeedId = d.Id
 
 		if pf.Articles[i].Guid != "" {
 			ai.Guid.Valid = true
@@ -86,7 +86,7 @@ func (f *Feed) Refresh(pf parser.Feed) {
 		f.parsedArticles[i] = a
 	}
 
-	f.Data(in)
+	f.Data(d)
 }
 
 func (f *Feed) ParsedArticles() (a []content.Article) {

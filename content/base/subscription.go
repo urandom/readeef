@@ -3,7 +3,6 @@ package base
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/url"
 
 	"github.com/urandom/readeef/content/data"
@@ -18,7 +17,7 @@ type Subscription struct {
 }
 
 func (s Subscription) String() string {
-	return fmt.Sprintf("Subscription for %s\n", s.data.Link)
+	return "Subscription for " + s.data.Link
 }
 
 func (s *Subscription) Data(d ...data.Subscription) data.Subscription {
