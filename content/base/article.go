@@ -20,7 +20,7 @@ type UserArticle struct {
 }
 
 func (a Article) String() string {
-	return a.data.Title + " " + strconv.FormatInt(int64(a.data.Id), 10)
+	return a.data.Title + " (" + strconv.FormatInt(int64(a.data.Id), 10) + ")"
 }
 
 func (a *Article) Data(d ...data.Article) data.Article {
