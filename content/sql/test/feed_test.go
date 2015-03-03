@@ -24,13 +24,54 @@ func TestFeed(t *testing.T) {
 	now := time.Now()
 
 	f.AddArticles([]content.Article{
-		createArticle(data.Article{Title: "article1", Date: now, Id: 1}),
-		createArticle(data.Article{Title: "article2", Date: now.Add(2 * time.Hour), Id: 2}),
-		createArticle(data.Article{Title: "article3", Date: now.Add(-3 * time.Hour), Id: 3}),
+		createArticle(data.Article{Title: "article1", Date: now, Link: "http://sugr.org/en/products/gearshift"}),
+		createArticle(data.Article{Title: "article2", Date: now.Add(2 * time.Hour), Link: "http://sugr.org/en/products/readeef"}),
+		createArticle(data.Article{Title: "article3", Date: now.Add(-3 * time.Hour), Link: "http://sugr.org/en/about/us"}),
 	})
 	tests.CheckBool(t, false, f.HasErr(), f.Err())
 
 	tests.CheckInt64(t, 3, int64(len(f.NewArticles())))
+
+	f.AddArticles([]content.Article{
+		createArticle(data.Article{Title: "article4", Date: now.Add(-10 * 24 * time.Hour), Link: "http://sugr.org/bg/"}),
+	})
+	tests.CheckBool(t, false, f.HasErr(), f.Err())
+
+	tests.CheckInt64(t, 1, int64(len(f.NewArticles())))
+	tests.CheckString(t, "article4", f.NewArticles()[0].Data().Title)
+
+	a := f.AllArticles()
+
+	tests.CheckBool(t, false, f.HasErr(), f.Err())
+	tests.CheckInt64(t, 4, int64(len(a)))
+
+	for i := range a {
+		d := a[i].Data()
+		switch d.Title {
+		case "article1":
+		case "article2":
+		case "article3":
+		case "article4":
+		default:
+			tests.CheckBool(t, false, true, "Unknown article")
+		}
+	}
+
+	a = f.LatestArticles()
+	tests.CheckBool(t, false, f.HasErr(), f.Err())
+	tests.CheckInt64(t, 3, int64(len(a)))
+
+	for i := range a {
+		d := a[i].Data()
+		switch d.Title {
+		case "article1":
+		case "article2":
+		case "article3":
+		default:
+			tests.CheckBool(t, false, true, "Unknown article")
+		}
+	}
+
 }
 
 func createFeed(d data.Feed) (f content.Feed) {

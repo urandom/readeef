@@ -276,6 +276,11 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 	}
 
 	for i := range articles {
+		if err := articles[i].Validate(); err != nil {
+			f.Err(err)
+			return
+		}
+
 		id := f.Data().Id
 		d := articles[i].Data()
 		d.FeedId = id

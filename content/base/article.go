@@ -36,8 +36,8 @@ func (a *Article) Data(d ...data.Article) data.Article {
 }
 
 func (a Article) Validate() error {
-	if a.data.FeedId == 0 {
-		return ValidationError{errors.New("Article has no feed id")}
+	if !a.data.Guid.Valid && a.data.Link == "" {
+		return ValidationError{errors.New("Article has no guid or link")}
 	}
 
 	return nil
