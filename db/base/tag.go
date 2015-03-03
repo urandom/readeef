@@ -16,7 +16,7 @@ ORDER BY LOWER(f.title)
 `
 	createAllUserTagArticlesByDate = `
 INSERT INTO users_articles_read
-	SELECT uf.user_login, a.id, uf.feed_id
+	SELECT uf.user_login, a.id
 	FROM users_feeds uf INNER JOIN users_feeds_tags uft
 		ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login
 			AND uft.user_login = $1 AND uft.tag = $2
@@ -27,7 +27,7 @@ INSERT INTO users_articles_read
 
 	deleteAllUserTagArticlesByDate = `
 DELETE FROM users_articles_read WHERE user_login = $1
-	AND article_feed_id IN (
+	AND article_id IN (
 		SELECT feed_id FROM users_feeds_tags WHERE user_login = $1 AND tag = $2
 	) AND article_id IN (
 		SELECT id FROM articles WHERE date IS NULL OR date < $3

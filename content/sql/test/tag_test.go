@@ -2,6 +2,7 @@ package test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
@@ -76,14 +77,59 @@ func TestTag(t *testing.T) {
 
 	tests.CheckInt64(t, 2, int64(len(feeds)))
 
-	tf.AddArticles([]content.Article{createArticle(data.Article{Title: "article1"})})
-	tf.AddArticles([]content.Article{createArticle(data.Article{Title: "article2", Link: "http://sugr.org"})})
-	tf2.AddArticles([]content.Article{createArticle(data.Article{Title: "article3"})})
+	now := time.Now()
+
+	tf.AddArticles([]content.Article{createArticle(data.Article{Title: "article1", Date: now, Id: 1})})
+	tf.AddArticles([]content.Article{createArticle(data.Article{Title: "article2", Link: "http://sugr.org", Date: now.Add(3 * time.Hour), Id: 2})})
+	tf2.AddArticles([]content.Article{createArticle(data.Article{Title: "article3", Date: now.Add(-2 * time.Hour), Id: 3})})
 
 	ua := tag3.Articles()
 	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
 
 	tests.CheckInt64(t, 3, int64(len(ua)))
+
+	tests.CheckInt64(t, 1, int64(ua[0].Data().Id))
+	tests.CheckString(t, "article2", ua[1].Data().Title)
+	tests.CheckBool(t, true, now.Add(-2*time.Hour).Equal(ua[2].Data().Date))
+
+	tag3.SortingByDate()
+	ua = tag3.Articles()
+
+	tests.CheckInt64(t, 3, int64(ua[0].Data().Id))
+	tests.CheckString(t, "article1", ua[1].Data().Title)
+	tests.CheckBool(t, true, now.Add(3*time.Hour).Equal(ua[2].Data().Date))
+
+	tag3.Reverse()
+	ua = tag3.Articles()
+
+	tests.CheckInt64(t, 2, int64(ua[0].Data().Id))
+	tests.CheckString(t, "article1", ua[1].Data().Title)
+	tests.CheckBool(t, true, now.Add(-2*time.Hour).Equal(ua[2].Data().Date))
+
+	ua[0].Read(true)
+
+	tag3.Reverse()
+	tag3.DefaultSorting()
+
+	ua = tag3.UnreadArticles()
+	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
+	tests.CheckInt64(t, 2, int64(len(ua)))
+
+	tests.CheckInt64(t, 1, int64(ua[0].Data().Id))
+	tests.CheckString(t, "article3", ua[1].Data().Title)
+
+	u.ArticleById(data.ArticleId(2)).Read(false)
+
+	ua = tag3.UnreadArticles()
+	tests.CheckInt64(t, 3, int64(len(ua)))
+
+	tag3.ReadBefore(now.Add(time.Minute), true)
+	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
+
+	ua = tag3.UnreadArticles()
+	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
+	tests.CheckInt64(t, 1, int64(len(ua)))
+	tests.CheckInt64(t, 2, int64(ua[0].Data().Id))
 }
 
 func createTag(u content.User, d data.TagValue) (t content.Tag) {
