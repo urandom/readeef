@@ -103,6 +103,63 @@ func TestUserFeed(t *testing.T) {
 	tests.CheckBool(t, false, uf2.HasErr(), uf2.Err())
 	tests.CheckString(t, uf.Data().Title, uf2.Data().Title)
 
+	now := time.Now()
+
+	uf.AddArticles([]content.Article{
+		createArticle(data.Article{Id: 1, Title: "article1", Date: now, Link: "http://sugr.org/en/products/gearshift"}),
+		createArticle(data.Article{Id: 2, Title: "article2", Date: now.Add(2 * time.Hour), Link: "http://sugr.org/en/products/readeef"}),
+		createArticle(data.Article{Id: 3, Title: "article3", Date: now.Add(-3 * time.Hour), Link: "http://sugr.org/en/about/us"}),
+	})
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+
+	ua := uf.Articles()
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+
+	tests.CheckInt64(t, 3, int64(len(ua)))
+
+	tests.CheckInt64(t, 1, int64(ua[0].Data().Id))
+	tests.CheckString(t, "article2", ua[1].Data().Title)
+	tests.CheckBool(t, true, now.Add(-3*time.Hour).Equal(ua[2].Data().Date))
+
+	uf.SortingByDate()
+	ua = uf.Articles()
+
+	tests.CheckInt64(t, 3, int64(ua[0].Data().Id))
+	tests.CheckString(t, "article1", ua[1].Data().Title)
+	tests.CheckBool(t, true, now.Add(2*time.Hour).Equal(ua[2].Data().Date))
+
+	uf.Reverse()
+	ua = uf.Articles()
+
+	tests.CheckInt64(t, 2, int64(ua[0].Data().Id))
+	tests.CheckString(t, "article1", ua[1].Data().Title)
+	tests.CheckBool(t, true, now.Add(-3*time.Hour).Equal(ua[2].Data().Date))
+
+	ua[0].Read(true)
+
+	uf.Reverse()
+	uf.DefaultSorting()
+
+	ua = uf.UnreadArticles()
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+	tests.CheckInt64(t, 2, int64(len(ua)))
+
+	tests.CheckInt64(t, 1, int64(ua[0].Data().Id))
+	tests.CheckString(t, "article3", ua[1].Data().Title)
+
+	u.ArticleById(data.ArticleId(2)).Read(false)
+
+	ua = uf.UnreadArticles()
+	tests.CheckInt64(t, 3, int64(len(ua)))
+
+	uf.ReadBefore(now.Add(time.Minute), true)
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+
+	ua = uf.UnreadArticles()
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+	tests.CheckInt64(t, 1, int64(len(ua)))
+	tests.CheckInt64(t, 2, int64(ua[0].Data().Id))
+
 	uf.Detach()
 	tests.CheckInt64(t, 0, int64(len(u.AllFeeds())))
 
