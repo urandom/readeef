@@ -74,6 +74,42 @@ func TestFeed(t *testing.T) {
 
 }
 
+func TestUserFeed(t *testing.T) {
+	uf := repo.UserFeed(createUser(data.User{}))
+	uf.Data(data.Feed{Link: "http://sugr.org"})
+
+	tests.CheckBool(t, false, uf.Validate() == nil)
+
+	u := createUser(data.User{Login: "user_feed_login"})
+
+	uf = repo.UserFeed(u)
+	uf.Data(data.Feed{Link: "http://sugr.org", Title: "User feed 1"})
+
+	tests.CheckBool(t, true, uf.Validate() == nil, uf.Validate())
+
+	uf.Update()
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+
+	u.AddFeed(uf)
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+
+	tests.CheckInt64(t, 1, int64(len(u.AllFeeds())))
+	tests.CheckString(t, "http://sugr.org", u.AllFeeds()[0].Data().Link)
+	tests.CheckString(t, "User feed 1", u.AllFeeds()[0].Data().Title)
+
+	id := uf.Data().Id
+
+	uf2 := u.FeedById(id)
+	tests.CheckBool(t, false, uf2.HasErr(), uf2.Err())
+	tests.CheckString(t, uf.Data().Title, uf2.Data().Title)
+
+	uf.Detach()
+	tests.CheckInt64(t, 0, int64(len(u.AllFeeds())))
+
+	uf2 = u.FeedById(id)
+	tests.CheckBool(t, true, uf2.Err() == content.ErrNoContent)
+}
+
 func createFeed(d data.Feed) (f content.Feed) {
 	f = repo.Feed()
 	f.Data(d)
