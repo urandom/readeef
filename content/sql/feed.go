@@ -276,24 +276,19 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 	}
 
 	for i := range articles {
-		if err := articles[i].Validate(); err != nil {
-			f.Err(err)
-			return
-		}
-
 		id := f.Data().Id
-		in := articles[i].Data()
-		in.FeedId = id
+		d := articles[i].Data()
+		d.FeedId = id
 
 		var sqlString string
-		args := []interface{}{in.Title, in.Description, in.Date, id}
+		args := []interface{}{d.Title, d.Description, d.Date, id}
 
-		if in.Guid.Valid {
+		if d.Guid.Valid {
 			sqlString = f.db.SQL("update_feed_article_with_guid")
-			args = append(args, in.Guid)
+			args = append(args, d.Guid)
 		} else {
 			sqlString = f.db.SQL("update_feed_article")
-			args = append(args, in.Link)
+			args = append(args, d.Link)
 		}
 
 		stmt, err := tx.Preparex(sqlString)
@@ -312,16 +307,16 @@ func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []co
 		if num, err := res.RowsAffected(); err != nil && err == sql.ErrNoRows || num == 0 {
 			a = append(a, articles[i])
 
-			aId, err := f.db.CreateWithId(tx, "create_feed_article", id, in.Link, in.Guid,
-				in.Title, in.Description, in.Date)
+			aId, err := f.db.CreateWithId(tx, "create_feed_article", id, d.Link, d.Guid,
+				d.Title, d.Description, d.Date)
 
 			if err != nil {
 				f.Err(err)
 				return
 			}
 
-			in.Id = data.ArticleId(aId)
-			articles[i].Data(in)
+			d.Id = data.ArticleId(aId)
+			articles[i].Data(d)
 		}
 	}
 

@@ -39,3 +39,11 @@ func TestUser(t *testing.T) {
 	tests.CheckBool(t, true, u2.HasErr())
 	tests.CheckBool(t, true, u2.Err() == content.ErrNoContent)
 }
+
+func createUser(d data.User) (u content.User) {
+	u = repo.User()
+	u.Data(d)
+	u.Update()
+
+	return
+}
