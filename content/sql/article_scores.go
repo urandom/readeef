@@ -19,6 +19,10 @@ func (asc *ArticleScores) Update() {
 	}
 
 	data := asc.Data()
+	if data.Score == 0 {
+		data.Score = asc.Calculate()
+		asc.Data(data)
+	}
 	asc.logger.Infof("Updating scores for article", data.ArticleId)
 
 	tx, err := asc.db.Begin()

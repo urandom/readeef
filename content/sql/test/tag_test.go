@@ -130,6 +130,23 @@ func TestTag(t *testing.T) {
 	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
 	tests.CheckInt64(t, 1, int64(len(ua)))
 	tests.CheckInt64(t, 2, int64(ua[0].Data().Id))
+
+	asc1 := createArticleScores(data.ArticleScores{ArticleId: 1, Score1: 2, Score2: 2})
+	asc2 := createArticleScores(data.ArticleScores{ArticleId: 2, Score1: 1, Score2: 3})
+
+	sa := tag3.ScoredArticles(now.Add(-20*time.Hour), now.Add(20*time.Hour))
+
+	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
+	tests.CheckInt64(t, 2, int64(len(sa)))
+
+	for i := range sa {
+		switch sa[i].Data().Id {
+		case 1:
+			tests.CheckInt64(t, asc1.Calculate(), sa[i].Data().Score)
+		case 2:
+			tests.CheckInt64(t, asc2.Calculate(), sa[i].Data().Score)
+		}
+	}
 }
 
 func createTag(u content.User, d data.TagValue) (t content.Tag) {
