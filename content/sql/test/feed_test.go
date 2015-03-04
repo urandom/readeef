@@ -107,6 +107,7 @@ func TestUserFeed(t *testing.T) {
 	})
 	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
 
+	uf.SortingById()
 	ua := uf.Articles()
 	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
 
@@ -148,7 +149,7 @@ func TestUserFeed(t *testing.T) {
 	ua[0].Read(true)
 
 	uf.Reverse()
-	uf.DefaultSorting()
+	uf.SortingById()
 
 	ua = uf.UnreadArticles()
 	tests.CheckBool(t, false, uf.HasErr(), uf.Err())

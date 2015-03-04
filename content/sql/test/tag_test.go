@@ -90,6 +90,7 @@ func TestTag(t *testing.T) {
 	})
 	tf2.AddArticles([]content.Article{createArticle(data.Article{Title: "article3", Date: now.Add(-2 * time.Hour), Link: "http://sugr.org/products/readeef"})})
 
+	tag3.SortingById()
 	ua := tag3.Articles()
 	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
 	tests.CheckInt64(t, 3, int64(len(ua)))
@@ -130,7 +131,7 @@ func TestTag(t *testing.T) {
 	ua[0].Read(true)
 
 	tag3.Reverse()
-	tag3.DefaultSorting()
+	tag3.SortingById()
 
 	ua = tag3.UnreadArticles()
 	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
