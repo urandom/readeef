@@ -328,7 +328,7 @@ func (u *User) AllUnreadArticleIds() (ids []data.ArticleId) {
 	return
 }
 
-func (u *User) AllFavoriteIds() (ids []data.ArticleId) {
+func (u *User) AllFavoriteArticleIds() (ids []data.ArticleId) {
 	if u.HasErr() {
 		return
 	}

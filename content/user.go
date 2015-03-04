@@ -40,7 +40,7 @@ type User interface {
 	ArticlesById(ids []data.ArticleId) []UserArticle
 
 	AllUnreadArticleIds() []data.ArticleId
-	AllFavoriteIds() []data.ArticleId
+	AllFavoriteArticleIds() []data.ArticleId
 
 	ArticleCount() int64
 

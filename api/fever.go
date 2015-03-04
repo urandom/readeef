@@ -177,7 +177,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			if _, ok := r.Form["saved_item_ids"]; ok {
 				logger.Infoln("Fetching saved fever item ids")
 
-				ids := user.AllFavoriteIds()
+				ids := user.AllFavoriteArticleIds()
 				err = user.Err()
 				if err != nil {
 					break
