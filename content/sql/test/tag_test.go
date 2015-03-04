@@ -16,7 +16,7 @@ func TestTag(t *testing.T) {
 	tag := repo.Tag(u)
 	tests.CheckBool(t, false, tag.HasErr(), tag.Err())
 
-	tf := createTaggedFeed(u, data.Feed{Id: 1, Link: "http://sugr.org"})
+	tf := createTaggedFeed(u, data.Feed{Link: "http://sugr.org/"})
 
 	tests.CheckInt64(t, 0, int64(len(tf.Tags())))
 	tests.CheckInt64(t, 1, int64(len(tf.Tags([]content.Tag{tag}))))
@@ -33,7 +33,7 @@ func TestTag(t *testing.T) {
 	tf.UpdateTags()
 	tests.CheckBool(t, false, tf.HasErr(), tf.Err())
 
-	tf2 := createTaggedFeed(u, data.Feed{Id: 2, Link: "http://sugr.org/products/readeef"})
+	tf2 := createTaggedFeed(u, data.Feed{Link: "http://sugr.org/products/readeef"})
 
 	tag2 := repo.Tag(u)
 	tag2.Value(data.TagValue("tag2"))
@@ -52,13 +52,18 @@ func TestTag(t *testing.T) {
 	feeds := u.AllTaggedFeeds()
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 
+	var fId1 data.FeedId
 	for i := range feeds {
 		tags := feeds[i].Tags()
-		switch feeds[i].Data().Id {
-		case 1:
+		d := feeds[i].Data()
+		switch d.Link {
+		case "http://sugr.org/":
+			fId1 = d.Id
 			tests.CheckInt64(t, 1, int64(len(tags)))
-		case 2:
+		case "http://sugr.org/products/readeef":
 			tests.CheckInt64(t, 2, int64(len(tags)))
+		default:
+			tests.CheckBool(t, false, true, "Unknown feed")
 		}
 	}
 
@@ -70,7 +75,7 @@ func TestTag(t *testing.T) {
 	tests.CheckBool(t, false, tag.HasErr(), tag.Err())
 
 	tests.CheckInt64(t, 1, int64(len(feeds)))
-	tests.CheckInt64(t, 1, int64(feeds[0].Data().Id))
+	tests.CheckInt64(t, int64(fId1), int64(feeds[0].Data().Id))
 
 	feeds = tag3.AllFeeds()
 	tests.CheckBool(t, false, tag.HasErr(), tag.Err())
@@ -79,30 +84,46 @@ func TestTag(t *testing.T) {
 
 	now := time.Now()
 
-	tf.AddArticles([]content.Article{createArticle(data.Article{Title: "article1", Date: now, Id: 1})})
-	tf.AddArticles([]content.Article{createArticle(data.Article{Title: "article2", Link: "http://sugr.org", Date: now.Add(3 * time.Hour), Id: 2})})
-	tf2.AddArticles([]content.Article{createArticle(data.Article{Title: "article3", Date: now.Add(-2 * time.Hour), Id: 3})})
+	tf.AddArticles([]content.Article{
+		createArticle(data.Article{Title: "article1", Date: now, Link: "http://1.example.com"}),
+		createArticle(data.Article{Title: "article2", Link: "http://sugr.org", Date: now.Add(3 * time.Hour)}),
+	})
+	tf2.AddArticles([]content.Article{createArticle(data.Article{Title: "article3", Date: now.Add(-2 * time.Hour), Link: "http://sugr.org/products/readeef"})})
 
 	ua := tag3.Articles()
 	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
-
 	tests.CheckInt64(t, 3, int64(len(ua)))
 
-	tests.CheckInt64(t, 1, int64(ua[0].Data().Id))
+	var id1, id2, id3 data.ArticleId
+	for i := range ua {
+		d := ua[i].Data()
+		switch d.Title {
+		case "article1":
+			id1 = d.Id
+		case "article2":
+			id2 = d.Id
+		case "article3":
+			id3 = d.Id
+		default:
+			tests.CheckBool(t, false, true, "Unknown article")
+		}
+	}
+
+	tests.CheckInt64(t, int64(id1), int64(ua[0].Data().Id))
 	tests.CheckString(t, "article2", ua[1].Data().Title)
 	tests.CheckBool(t, true, now.Add(-2*time.Hour).Equal(ua[2].Data().Date))
 
 	tag3.SortingByDate()
 	ua = tag3.Articles()
 
-	tests.CheckInt64(t, 3, int64(ua[0].Data().Id))
+	tests.CheckInt64(t, int64(id3), int64(ua[0].Data().Id))
 	tests.CheckString(t, "article1", ua[1].Data().Title)
 	tests.CheckBool(t, true, now.Add(3*time.Hour).Equal(ua[2].Data().Date))
 
 	tag3.Reverse()
 	ua = tag3.Articles()
 
-	tests.CheckInt64(t, 2, int64(ua[0].Data().Id))
+	tests.CheckInt64(t, int64(id2), int64(ua[0].Data().Id))
 	tests.CheckString(t, "article1", ua[1].Data().Title)
 	tests.CheckBool(t, true, now.Add(-2*time.Hour).Equal(ua[2].Data().Date))
 
@@ -115,10 +136,10 @@ func TestTag(t *testing.T) {
 	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
 	tests.CheckInt64(t, 2, int64(len(ua)))
 
-	tests.CheckInt64(t, 1, int64(ua[0].Data().Id))
+	tests.CheckInt64(t, int64(id1), int64(ua[0].Data().Id))
 	tests.CheckString(t, "article3", ua[1].Data().Title)
 
-	u.ArticleById(data.ArticleId(2)).Read(false)
+	u.ArticleById(id2).Read(false)
 
 	ua = tag3.UnreadArticles()
 	tests.CheckInt64(t, 3, int64(len(ua)))
@@ -129,10 +150,10 @@ func TestTag(t *testing.T) {
 	ua = tag3.UnreadArticles()
 	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
 	tests.CheckInt64(t, 1, int64(len(ua)))
-	tests.CheckInt64(t, 2, int64(ua[0].Data().Id))
+	tests.CheckInt64(t, int64(id2), int64(ua[0].Data().Id))
 
-	asc1 := createArticleScores(data.ArticleScores{ArticleId: 1, Score1: 2, Score2: 2})
-	asc2 := createArticleScores(data.ArticleScores{ArticleId: 2, Score1: 1, Score2: 3})
+	asc1 := createArticleScores(data.ArticleScores{ArticleId: id1, Score1: 2, Score2: 2})
+	asc2 := createArticleScores(data.ArticleScores{ArticleId: id2, Score1: 1, Score2: 3})
 
 	sa := tag3.ScoredArticles(now.Add(-20*time.Hour), now.Add(20*time.Hour))
 

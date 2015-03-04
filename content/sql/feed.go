@@ -611,7 +611,7 @@ func (tf *TaggedFeed) UpdateTags() {
 
 			_, err = stmt.Exec(login, id, tags[i].Value())
 			if err != nil {
-				tf.Err(fmt.Errorf("Error adding user feed tag: %v", err))
+				tf.Err(fmt.Errorf("Error adding user feed tag for user %s, feed %d, and tag %s: %v", login, id, tags[i].Value(), err))
 				return
 			}
 

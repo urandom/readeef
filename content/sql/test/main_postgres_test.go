@@ -13,7 +13,6 @@ func TestMain(m *testing.M) {
 	if err := db.Open("postgres", "host=/var/run/postgresql user=urandom dbname=readeef-test sslmode=disable"); err != nil {
 		panic(err)
 	}
-	ret := m.Run()
 
 	db.Exec("TRUNCATE articles CASCADE")
 	db.Exec("TRUNCATE articles_scores CASCADE")
@@ -25,6 +24,8 @@ func TestMain(m *testing.M) {
 	db.Exec("TRUNCATE users_articles_read CASCADE")
 	db.Exec("TRUNCATE users_feeds CASCADE")
 	db.Exec("TRUNCATE users_feeds_tags CASCADE")
+
+	ret := m.Run()
 
 	os.Exit(ret)
 }

@@ -276,6 +276,8 @@ func (u *User) ArticleById(id data.ArticleId) (ua content.UserArticle) {
 		return articles[0]
 	}
 
+	ua.Err(content.ErrNoContent)
+
 	return
 }
 
@@ -406,7 +408,15 @@ func (u *User) ArticlesOrderedById(pivot data.ArticleId, paging ...int) (ua []co
 
 	u.SortingById()
 
-	articles := getArticles(u, u.db, u.logger, u, "", "", "a.id > $2", "", []interface{}{pivot}, paging...)
+	var where string
+	switch u.Order() {
+	case data.AscendingOrder:
+		where = "a.id > $2"
+	case data.DescendingOrder:
+		where = "a.id < $2"
+	}
+
+	articles := getArticles(u, u.db, u.logger, u, "", "", where, "", []interface{}{pivot}, paging...)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -530,12 +540,14 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(login, date)
+		_, err := stmt.Exec(login, date)
 		if err != nil {
 			u.Err(err)
 			return
 		}
 	}
+
+	tx.Commit()
 
 	return
 }

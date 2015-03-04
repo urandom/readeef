@@ -14,6 +14,18 @@ func TestMain(m *testing.M) {
 	if err := db.Open("sqlite3", "file::memory:?cache=shared"); err != nil {
 		panic(err)
 	}
+
+	db.Exec("DELETE FROM articles")
+	db.Exec("DELETE FROM articles_scores")
+	db.Exec("DELETE FROM feed_images")
+	db.Exec("DELETE FROM feeds")
+	db.Exec("DELETE FROM hubbub_subscriptions")
+	db.Exec("DELETE FROM users")
+	db.Exec("DELETE FROM users_articles_fav")
+	db.Exec("DELETE FROM users_articles_read")
+	db.Exec("DELETE FROM users_feeds")
+	db.Exec("DELETE FROM users_feeds_tags")
+
 	ret := m.Run()
 
 	os.Exit(ret)

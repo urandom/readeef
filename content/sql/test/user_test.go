@@ -45,27 +45,43 @@ func TestUser(t *testing.T) {
 	now := time.Now()
 	uf := createUserFeed(u, data.Feed{Link: "http://sugr.org/en/sitemap.xml", Title: "User feed 1"})
 	uf.AddArticles([]content.Article{
-		createArticle(data.Article{Id: 11, Title: "article1", Date: now, Link: "http://sugr.org/bg/products/gearshift"}),
-		createArticle(data.Article{Id: 12, Title: "article2", Date: now.Add(2 * time.Hour), Link: "http://sugr.org/bg/products/readeef"}),
-		createArticle(data.Article{Id: 13, Title: "article3", Date: now.Add(-3 * time.Hour), Link: "http://sugr.org/bg/about/us"}),
+		createArticle(data.Article{Title: "article1", Date: now, Link: "http://sugr.org/bg/products/gearshift"}),
+		createArticle(data.Article{Title: "article2", Date: now.Add(2 * time.Hour), Link: "http://sugr.org/bg/products/readeef"}),
+		createArticle(data.Article{Title: "article3", Date: now.Add(-3 * time.Hour), Link: "http://sugr.org/bg/about/us"}),
 	})
 
 	u.AddFeed(uf)
 
+	var id1, id2, id3 data.ArticleId
+
+	for _, a := range uf.AllArticles() {
+		d := a.Data()
+		switch d.Title {
+		case "article1":
+			id1 = d.Id
+		case "article2":
+			id2 = d.Id
+		case "article3":
+			id3 = d.Id
+		default:
+			tests.CheckBool(t, true, false, "Unknown article")
+		}
+	}
+
 	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
 	tests.CheckInt64(t, 1, int64(len(u.AllFeeds())))
-	tests.CheckString(t, "http://sugr.org", u.AllFeeds()[0].Data().Link)
+	tests.CheckString(t, "http://sugr.org/en/sitemap.xml", u.AllFeeds()[0].Data().Link)
 	tests.CheckString(t, "User feed 1", u.AllFeeds()[0].Data().Title)
 
-	a := u.ArticleById(10)
+	a := u.ArticleById(10000000)
 	tests.CheckBool(t, true, a.Err() == content.ErrNoContent)
 
-	a = u.ArticleById(11)
+	a = u.ArticleById(id1)
 	tests.CheckBool(t, false, a.HasErr(), a.Err())
 
 	tests.CheckString(t, "article1", a.Data().Title)
 
-	a2 := u.ArticlesById([]data.ArticleId{10, 11, 12})
+	a2 := u.ArticlesById([]data.ArticleId{100000000, id1, id2})
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 
 	tests.CheckInt64(t, 2, int64(len(a2)))
@@ -85,21 +101,21 @@ func TestUser(t *testing.T) {
 
 	tests.CheckInt64(t, 3, int64(len(ua)))
 
-	tests.CheckInt64(t, 11, int64(ua[0].Data().Id))
+	tests.CheckInt64(t, int64(id1), int64(ua[0].Data().Id))
 	tests.CheckString(t, "article2", ua[1].Data().Title)
 	tests.CheckBool(t, true, now.Add(-3*time.Hour).Equal(ua[2].Data().Date))
 
 	u.SortingByDate()
 	ua = u.Articles()
 
-	tests.CheckInt64(t, 13, int64(ua[0].Data().Id))
+	tests.CheckInt64(t, int64(id3), int64(ua[0].Data().Id))
 	tests.CheckString(t, "article1", ua[1].Data().Title)
 	tests.CheckBool(t, true, now.Add(2*time.Hour).Equal(ua[2].Data().Date))
 
 	u.Reverse()
 	ua = u.Articles()
 
-	tests.CheckInt64(t, 12, int64(ua[0].Data().Id))
+	tests.CheckInt64(t, int64(id2), int64(ua[0].Data().Id))
 	tests.CheckString(t, "article1", ua[1].Data().Title)
 	tests.CheckBool(t, true, now.Add(-3*time.Hour).Equal(ua[2].Data().Date))
 
@@ -112,10 +128,10 @@ func TestUser(t *testing.T) {
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 	tests.CheckInt64(t, 2, int64(len(ua)))
 
-	tests.CheckInt64(t, 11, int64(ua[0].Data().Id))
+	tests.CheckInt64(t, int64(id1), int64(ua[0].Data().Id))
 	tests.CheckString(t, "article3", ua[1].Data().Title)
 
-	u.ArticleById(data.ArticleId(12)).Read(false)
+	u.ArticleById(id2).Read(false)
 
 	ua = u.UnreadArticles()
 	tests.CheckInt64(t, 3, int64(len(ua)))
@@ -126,24 +142,24 @@ func TestUser(t *testing.T) {
 	ua = u.UnreadArticles()
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 	tests.CheckInt64(t, 1, int64(len(ua)))
-	tests.CheckInt64(t, 2, int64(ua[0].Data().Id))
+	tests.CheckInt64(t, int64(id2), int64(ua[0].Data().Id))
 
-	u.ArticleById(data.ArticleId(11)).Read(false)
+	u.ArticleById(id1).Read(false)
 
 	u.ReadAfter(now.Add(time.Minute), true)
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 
 	ua = u.UnreadArticles()
 	tests.CheckInt64(t, 1, int64(len(ua)))
-	tests.CheckInt64(t, 11, int64(ua[0].Data().Id))
+	tests.CheckInt64(t, int64(id1), int64(ua[0].Data().Id))
 
-	u.ArticleById(data.ArticleId(11)).Favorite(true)
-	u.ArticleById(data.ArticleId(13)).Favorite(true)
+	u.ArticleById(id1).Favorite(true)
+	u.ArticleById(id3).Favorite(true)
 
 	uIds := u.AllUnreadArticleIds()
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 	tests.CheckInt64(t, 1, int64(len(uIds)))
-	tests.CheckInt64(t, 11, int64(uIds[0]))
+	tests.CheckInt64(t, int64(id1), int64(uIds[0]))
 
 	fIds := u.AllFavoriteArticleIds()
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
@@ -151,8 +167,8 @@ func TestUser(t *testing.T) {
 
 	for i := range fIds {
 		switch fIds[i] {
-		case 11:
-		case 13:
+		case id1:
+		case id3:
 		default:
 			tests.CheckBool(t, false, true, "Unknown article id")
 		}
@@ -168,35 +184,35 @@ func TestUser(t *testing.T) {
 	for i := range ua {
 		d := ua[i].Data()
 		switch d.Id {
-		case 11:
-		case 13:
+		case id1:
+		case id3:
 		default:
 			tests.CheckBool(t, false, true, "Unknown article id")
 		}
 	}
 
-	ua = u.ArticlesOrderedById(11)
+	ua = u.ArticlesOrderedById(id1)
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 	tests.CheckInt64(t, 2, int64(len(ua)))
 
 	for i := range ua {
 		d := ua[i].Data()
 		switch d.Id {
-		case 12:
-		case 13:
+		case id2:
+		case id3:
 		default:
 			tests.CheckBool(t, false, true, "Unknown article id")
 		}
 	}
 
 	u.Reverse()
-	ua = u.ArticlesOrderedById(12)
+	ua = u.ArticlesOrderedById(id2)
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 	tests.CheckInt64(t, 1, int64(len(ua)))
 	tests.CheckString(t, "article1", ua[0].Data().Title)
 
-	asc1 := createArticleScores(data.ArticleScores{ArticleId: 1, Score1: 2, Score2: 2})
-	asc2 := createArticleScores(data.ArticleScores{ArticleId: 2, Score1: 1, Score2: 3})
+	asc1 := createArticleScores(data.ArticleScores{ArticleId: id1, Score1: 2, Score2: 2})
+	asc2 := createArticleScores(data.ArticleScores{ArticleId: id2, Score1: 1, Score2: 3})
 
 	sa := u.ScoredArticles(now.Add(-20*time.Hour), now.Add(20*time.Hour))
 

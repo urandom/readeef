@@ -11,37 +11,41 @@ import (
 
 func TestScoredArticle(t *testing.T) {
 	now := time.Now()
-	u := createUser(data.User{Login: "user_feed_login"})
+	u := createUser(data.User{Login: "scored_article_login"})
 	uf := createUserFeed(u, data.Feed{Link: "http://sugr.org/bg/sitemap.xml", Title: "article feed 1"})
 	uf.AddArticles([]content.Article{
-		createArticle(data.Article{Id: 21, Title: "article1", Date: now, Link: "http://sugr.org/bg/products/gearshift"}),
-		createArticle(data.Article{Id: 22, Title: "article2", Date: now.Add(2 * time.Hour), Link: "http://sugr.org/bg/products/readeef"}),
-		createArticle(data.Article{Id: 23, Title: "article3", Date: now.Add(-3 * time.Hour), Link: "http://sugr.org/bg/about/us"}),
+		createArticle(data.Article{Title: "article1", Date: now, Link: "http://sugr.org/bg/products/gearshift"}),
+		createArticle(data.Article{Title: "article2", Date: now.Add(2 * time.Hour), Link: "http://sugr.org/bg/products/readeef"}),
+		createArticle(data.Article{Title: "article3", Date: now.Add(-3 * time.Hour), Link: "http://sugr.org/bg/about/us"}),
 	})
 
-	asc1 := createArticleScores(data.ArticleScores{ArticleId: 21, Score1: 2, Score2: 2})
-	asc2 := createArticleScores(data.ArticleScores{ArticleId: 22, Score1: 1, Score2: 3})
+	ua := uf.AllArticles()
+	id1, id3 := ua[0].Data().Id, ua[2].Data().Id
+
+	asc1 := createArticleScores(data.ArticleScores{ArticleId: id1, Score1: 2, Score2: 2})
+	asc2 := createArticleScores(data.ArticleScores{ArticleId: id3, Score1: 1, Score2: 3})
 
 	sa := repo.ScoredArticle()
-	sa.Data(data.Article{Id: 21})
+	sa.Data(data.Article{Id: id1})
 
 	tests.CheckInt64(t, asc1.Calculate(), sa.Scores().Calculate())
 	tests.CheckBool(t, false, sa.HasErr(), sa.Err())
 
-	sa.Data(data.Article{Id: 22})
+	sa.Data(data.Article{Id: id3})
 	tests.CheckInt64(t, asc2.Calculate(), sa.Scores().Calculate())
 	tests.CheckBool(t, false, sa.HasErr(), sa.Err())
 }
 
 func TestUserArticle(t *testing.T) {
 	now := time.Now()
-	u := createUser(data.User{Login: "user_feed_login"})
+	u := createUser(data.User{Login: "user_article_login"})
 	uf := createUserFeed(u, data.Feed{Link: "http://sugr.org/bg/404", Title: "user article feed 1"})
 	uf.AddArticles([]content.Article{
-		createArticle(data.Article{Id: 31, Title: "article1", Date: now, Link: "http://sugr.org/bg/products/readeef"}),
+		createArticle(data.Article{Title: "article1", Date: now, Link: "http://sugr.org/bg/products/readeef"}),
 	})
 
-	a := u.ArticleById(31)
+	id := uf.AllArticles()[0].Data().Id
+	a := u.ArticleById(id)
 	tests.CheckBool(t, false, a.HasErr(), a.Err())
 	tests.CheckBool(t, false, a.Data().Read)
 	tests.CheckBool(t, false, a.Data().Favorite)
@@ -49,22 +53,22 @@ func TestUserArticle(t *testing.T) {
 	a.Read(true)
 	tests.CheckBool(t, false, a.HasErr(), a.Err())
 	tests.CheckBool(t, true, a.Data().Read)
-	tests.CheckBool(t, true, u.ArticleById(31).Data().Read)
+	tests.CheckBool(t, true, u.ArticleById(id).Data().Read)
 
 	a.Read(false)
 	tests.CheckBool(t, false, a.HasErr(), a.Err())
 	tests.CheckBool(t, false, a.Data().Read)
-	tests.CheckBool(t, false, u.ArticleById(31).Data().Read)
+	tests.CheckBool(t, false, u.ArticleById(id).Data().Read)
 
 	a.Favorite(true)
 	tests.CheckBool(t, false, a.HasErr(), a.Err())
 	tests.CheckBool(t, true, a.Data().Favorite)
-	tests.CheckBool(t, true, u.ArticleById(31).Data().Favorite)
+	tests.CheckBool(t, true, u.ArticleById(id).Data().Favorite)
 
 	a.Favorite(false)
 	tests.CheckBool(t, false, a.HasErr(), a.Err())
 	tests.CheckBool(t, false, a.Data().Favorite)
-	tests.CheckBool(t, false, u.ArticleById(31).Data().Favorite)
+	tests.CheckBool(t, false, u.ArticleById(id).Data().Favorite)
 }
 
 func createArticle(d data.Article) (a content.Article) {

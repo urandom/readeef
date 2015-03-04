@@ -23,7 +23,7 @@ func (asc *ArticleScores) Update() {
 		data.Score = asc.Calculate()
 		asc.Data(data)
 	}
-	asc.logger.Infof("Updating scores for article", data.ArticleId)
+	asc.logger.Infof("Updating scores for article %d", data.ArticleId)
 
 	tx, err := asc.db.Begin()
 	if err != nil {
