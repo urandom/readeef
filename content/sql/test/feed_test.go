@@ -129,21 +129,21 @@ func TestUserFeed(t *testing.T) {
 
 	tests.CheckInt64(t, int64(id1), int64(ua[0].Data().Id))
 	tests.CheckString(t, "article2", ua[1].Data().Title)
-	tests.CheckBool(t, true, now.Add(-3*time.Hour).Equal(ua[2].Data().Date))
+	tests.CheckInt64(t, now.Add(-3*time.Hour).Unix(), ua[2].Data().Date.Unix())
 
 	uf.SortingByDate()
 	ua = uf.Articles()
 
 	tests.CheckInt64(t, int64(id3), int64(ua[0].Data().Id))
 	tests.CheckString(t, "article1", ua[1].Data().Title)
-	tests.CheckBool(t, true, now.Add(2*time.Hour).Equal(ua[2].Data().Date))
+	tests.CheckInt64(t, now.Add(2*time.Hour).Unix(), ua[2].Data().Date.Unix())
 
 	uf.Reverse()
 	ua = uf.Articles()
 
 	tests.CheckInt64(t, int64(id2), int64(ua[0].Data().Id))
 	tests.CheckString(t, "article1", ua[1].Data().Title)
-	tests.CheckBool(t, true, now.Add(-3*time.Hour).Equal(ua[2].Data().Date))
+	tests.CheckInt64(t, now.Add(-3*time.Hour).Unix(), ua[2].Data().Date.Unix())
 
 	ua[0].Read(true)
 
