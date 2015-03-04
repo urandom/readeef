@@ -37,9 +37,9 @@ func (ua *UserArticle) Read(read bool) {
 		return
 	}
 
-	id := ua.Data().Id
+	d := ua.Data()
 	login := ua.User().Data().Login
-	ua.logger.Infof("Marking user '%s' article '%d' as read: %v\n", login, id, read)
+	ua.logger.Infof("Marking user '%s' article '%d' as read: %v\n", login, d.Id, read)
 
 	tx, err := ua.db.Begin()
 	if err != nil {
@@ -56,11 +56,13 @@ func (ua *UserArticle) Read(read bool) {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(login, id)
+	_, err = stmt.Exec(login, d.Id)
 	if err != nil {
 		ua.Err(err)
 		return
 	}
+
+	d.Read = read
 
 	if read {
 		stmt, err = tx.Preparex(ua.db.SQL("create_user_article_read"))
@@ -70,11 +72,13 @@ func (ua *UserArticle) Read(read bool) {
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(login, id)
+		_, err = stmt.Exec(login, d.Id)
 		ua.Err(err)
 	}
 
 	tx.Commit()
+
+	ua.Data(d)
 }
 
 func (ua *UserArticle) Favorite(favorite bool) {
@@ -82,9 +86,9 @@ func (ua *UserArticle) Favorite(favorite bool) {
 		return
 	}
 
-	id := ua.Data().Id
+	d := ua.Data()
 	login := ua.User().Data().Login
-	ua.logger.Infof("Marking user '%s' article '%d' as favorite: %v\n", login, id, favorite)
+	ua.logger.Infof("Marking user '%s' article '%d' as favorite: %v\n", login, d.Id, favorite)
 
 	tx, err := ua.db.Begin()
 	if err != nil {
@@ -101,11 +105,13 @@ func (ua *UserArticle) Favorite(favorite bool) {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(login, id)
+	_, err = stmt.Exec(login, d.Id)
 	if err != nil {
 		ua.Err(err)
 		return
 	}
+
+	d.Favorite = favorite
 
 	if favorite {
 		stmt, err = tx.Preparex(ua.db.SQL("create_user_article_favorite"))
@@ -114,11 +120,13 @@ func (ua *UserArticle) Favorite(favorite bool) {
 			return
 		}
 		defer stmt.Close()
-		_, err = stmt.Exec(login, id)
+		_, err = stmt.Exec(login, d.Id)
 		ua.Err(err)
 	}
 
 	tx.Commit()
+
+	ua.Data(d)
 }
 
 func (sa *ScoredArticle) Scores() (asc content.ArticleScores) {
