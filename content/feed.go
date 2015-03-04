@@ -2,7 +2,6 @@ package content
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/parser"
@@ -42,17 +41,11 @@ type Feed interface {
 type UserFeed interface {
 	Feed
 	ArticleSearch
+	ArticleRepo
 	RepoRelated
 
 	// Detaches from the current user
 	Detach()
-
-	Articles(paging ...int) []UserArticle
-	UnreadArticles(paging ...int) []UserArticle
-
-	ReadBefore(date time.Time, read bool)
-
-	ScoredArticles(from, to time.Time, paging ...int) []ScoredArticle
 }
 
 type TaggedFeed interface {

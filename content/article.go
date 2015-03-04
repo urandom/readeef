@@ -3,6 +3,7 @@ package content
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/blevesearch/bleve"
 	"github.com/urandom/readeef/content/data"
@@ -24,6 +25,15 @@ type ArticleSorting interface {
 
 	// Returns the order, as set by Reverse()
 	Order(o ...data.Order) data.Order
+}
+
+type ArticleRepo interface {
+	Articles(paging ...int) []UserArticle
+	UnreadArticles(paging ...int) []UserArticle
+
+	ReadBefore(date time.Time, read bool)
+
+	ScoredArticles(from, to time.Time, paging ...int) []ScoredArticle
 }
 
 type ArticleSearch interface {

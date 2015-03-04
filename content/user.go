@@ -13,6 +13,7 @@ type User interface {
 	ArticleSorting
 	RepoRelated
 	ArticleSearch
+	ArticleRepo
 
 	fmt.Stringer
 	json.Marshaler
@@ -43,15 +44,10 @@ type User interface {
 
 	ArticleCount() int64
 
-	Articles(paging ...int) []UserArticle
-	UnreadArticles(paging ...int) []UserArticle
 	ArticlesOrderedById(pivot data.ArticleId, paging ...int) []UserArticle
 	FavoriteArticles(paging ...int) []UserArticle
 
-	ReadBefore(date time.Time, read bool)
 	ReadAfter(date time.Time, read bool)
-
-	ScoredArticles(from, to time.Time, paging ...int) []ScoredArticle
 
 	Tags() []Tag
 }

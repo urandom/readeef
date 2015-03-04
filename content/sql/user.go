@@ -151,14 +151,20 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 		return
 	}
 
+	d := f.Data()
+	if f.HasErr() {
+		uf.Data(d)
+		uf.Err(f.Err())
+		return
+	}
+
 	if err := f.Validate(); err != nil {
 		uf.Err(err)
 		return
 	}
 
 	login := u.Data().Login
-	i := f.Data()
-	u.logger.Infof("Getting user feed for user %s and feed %d\n", login, i.Id)
+	u.logger.Infof("Getting user feed for user %s and feed %d\n", login, d.Id)
 
 	tx, err := u.db.Begin()
 	if err != nil {
@@ -174,7 +180,7 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(u.Data().Login, i.Id)
+	_, err = stmt.Exec(u.Data().Login, d.Id)
 	if err != nil {
 		uf.Err(err)
 		return
@@ -184,7 +190,7 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 		uf.Err(err)
 	}
 
-	uf.Data(i)
+	uf.Data(d)
 
 	return
 }

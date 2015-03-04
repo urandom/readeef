@@ -91,11 +91,6 @@ func TestUserFeed(t *testing.T) {
 	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
 
 	u.AddFeed(uf)
-	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
-
-	tests.CheckInt64(t, 1, int64(len(u.AllFeeds())))
-	tests.CheckString(t, "http://sugr.org", u.AllFeeds()[0].Data().Link)
-	tests.CheckString(t, "User feed 1", u.AllFeeds()[0].Data().Title)
 
 	id := uf.Data().Id
 
@@ -165,6 +160,23 @@ func TestUserFeed(t *testing.T) {
 
 	uf2 = u.FeedById(id)
 	tests.CheckBool(t, true, uf2.Err() == content.ErrNoContent)
+
+	asc1 := createArticleScores(data.ArticleScores{ArticleId: 1, Score1: 2, Score2: 2})
+	asc2 := createArticleScores(data.ArticleScores{ArticleId: 2, Score1: 1, Score2: 3})
+
+	sa := uf.ScoredArticles(now.Add(-20*time.Hour), now.Add(20*time.Hour))
+
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+	tests.CheckInt64(t, 2, int64(len(sa)))
+
+	for i := range sa {
+		switch sa[i].Data().Id {
+		case 1:
+			tests.CheckInt64(t, asc1.Calculate(), sa[i].Data().Score)
+		case 2:
+			tests.CheckInt64(t, asc2.Calculate(), sa[i].Data().Score)
+		}
+	}
 }
 
 func createFeed(d data.Feed) (f content.Feed) {
