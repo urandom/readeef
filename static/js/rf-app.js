@@ -566,6 +566,7 @@
         },
 
         onFeedReadAllMessage: function(event, data) {
+            this.currentFeed.Articles = null;
             this.updateFeedArticles();
         },
 
