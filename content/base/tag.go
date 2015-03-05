@@ -43,5 +43,9 @@ func (t *Tag) Validate() error {
 		return content.NewValidationError(errors.New("Tag has no value"))
 	}
 
+	if t.user.Data().Login == "" {
+		return content.NewValidationError(errors.New("Tag has no user"))
+	}
+
 	return nil
 }

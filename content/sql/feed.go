@@ -3,6 +3,7 @@ package sql
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -53,6 +54,11 @@ func (f *Feed) Users() (u []content.User) {
 	}
 
 	id := f.Data().Id
+	if id == 0 {
+		f.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
 	f.logger.Infof("Getting users for feed %d\n", id)
 
 	var in []data.User
@@ -150,6 +156,11 @@ func (f *Feed) Delete() {
 	}
 
 	id := f.Data().Id
+	if id == 0 {
+		f.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
 	f.logger.Infof("Deleting feed %d\n", id)
 
 	tx, err := f.db.Begin()
@@ -181,6 +192,11 @@ func (f *Feed) AllArticles() (a []content.Article) {
 	}
 
 	id := f.Data().Id
+	if id == 0 {
+		f.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
 	f.logger.Infof("Getting all feed %d articles\n", id)
 
 	var data []data.Article
@@ -204,6 +220,11 @@ func (f *Feed) LatestArticles() (a []content.Article) {
 	}
 
 	id := f.Data().Id
+	if id == 0 {
+		f.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
 	f.logger.Infof("Getting latest feed %d articles\n", id)
 
 	var data []data.Article
@@ -227,6 +248,11 @@ func (f *Feed) AddArticles(articles []content.Article) {
 	}
 
 	id := f.Data().Id
+	if id == 0 {
+		f.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
 	f.logger.Infof("Adding articles to feed %d\n", id)
 
 	tx, err := f.db.Begin()
@@ -255,6 +281,11 @@ func (f *Feed) Subscription() (s content.Subscription) {
 	}
 
 	id := f.Data().Id
+	if id == 0 {
+		f.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
 	f.logger.Infof("Getting subcription for feed %d\n", id)
 
 	var in data.Subscription
@@ -342,7 +373,17 @@ func (uf *UserFeed) Detach() {
 		return
 	}
 
+	if err := uf.Validate(); err != nil {
+		uf.Err(err)
+		return
+	}
+
 	id := uf.Data().Id
+	if id == 0 {
+		uf.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
 	login := uf.User().Data().Login
 	uf.logger.Infof("Detaching feed %d from user %s\n", id, login)
 
@@ -374,7 +415,17 @@ func (uf *UserFeed) Articles(paging ...int) (ua []content.UserArticle) {
 		return
 	}
 
+	if err := uf.Validate(); err != nil {
+		uf.Err(err)
+		return
+	}
+
 	id := uf.Data().Id
+	if id == 0 {
+		uf.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
 	uf.logger.Infof("Getting articles for feed %d\n", id)
 
 	order := "read"
@@ -392,7 +443,17 @@ func (uf *UserFeed) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 		return
 	}
 
+	if err := uf.Validate(); err != nil {
+		uf.Err(err)
+		return
+	}
+
 	id := uf.Data().Id
+	if id == 0 {
+		uf.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
 	uf.logger.Infof("Getting unread articles for feed %d\n", id)
 
 	articles := uf.getArticles("ar.article_id IS NULL", "", paging...)
@@ -409,7 +470,17 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 		return
 	}
 
+	if err := uf.Validate(); err != nil {
+		uf.Err(err)
+		return
+	}
+
 	id := uf.Data().Id
+	if id == 0 {
+		uf.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
 	login := uf.User().Data().Login
 	uf.logger.Infof("Marking user %s feed %d articles before %v as read: %v\n", login, id, date, read)
 
@@ -456,8 +527,18 @@ func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []cont
 		return
 	}
 
+	if err := uf.Validate(); err != nil {
+		uf.Err(err)
+		return
+	}
+
 	u := uf.User()
 	id := uf.Data().Id
+	if id == 0 {
+		uf.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
 	login := u.Data().Login
 	uf.logger.Infof("Getting scored articles for user %s feed %d between %v and %v\n", login, id, from, to)
 
@@ -505,9 +586,20 @@ func (uf *UserFeed) Query(term string, index bleve.Index, paging ...int) (ua []c
 		return
 	}
 
+	if err := uf.Validate(); err != nil {
+		uf.Err(err)
+		return
+	}
+
+	id := uf.Data().Id
+	if id == 0 {
+		uf.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
 	var err error
 
-	ua, err = query(term, uf.Highlight(), index, uf.User(), []data.FeedId{uf.Data().Id}, paging...)
+	ua, err = query(term, uf.Highlight(), index, uf.User(), []data.FeedId{id}, paging...)
 	uf.Err(err)
 
 	return
@@ -526,7 +618,17 @@ func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
 	}
 
 	if !tf.initialized {
+		if err := tf.Validate(); err != nil {
+			tf.Err(err)
+			return tf.tags
+		}
+
 		id := tf.Data().Id
+		if id == 0 {
+			tf.Err(content.NewValidationError(errors.New("Invalid feed id")))
+			return tf.tags
+		}
+
 		login := tf.User().Data().Login
 		tf.logger.Infof("Getting tags for user %s and feed '%d'\n", login, id)
 
@@ -558,6 +660,11 @@ func (tf *TaggedFeed) UpdateTags() {
 	}
 
 	id := tf.Data().Id
+	if id == 0 {
+		tf.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
 	login := tf.User().Data().Login
 	tf.logger.Infof("Deleting all tags for feed %d\n", id)
 

@@ -2,6 +2,7 @@ package sql
 
 import (
 	"database/sql"
+	"errors"
 	"strconv"
 
 	"github.com/blevesearch/bleve"
@@ -38,6 +39,11 @@ func (ua *UserArticle) Read(read bool) {
 	}
 
 	d := ua.Data()
+	if d.Id == 0 {
+		ua.Err(content.NewValidationError(errors.New("Invalid article id")))
+		return
+	}
+
 	login := ua.User().Data().Login
 	ua.logger.Infof("Marking user '%s' article '%d' as read: %v\n", login, d.Id, read)
 
@@ -87,6 +93,11 @@ func (ua *UserArticle) Favorite(favorite bool) {
 	}
 
 	d := ua.Data()
+	if d.Id == 0 {
+		ua.Err(content.NewValidationError(errors.New("Invalid article id")))
+		return
+	}
+
 	login := ua.User().Data().Login
 	ua.logger.Infof("Marking user '%s' article '%d' as favorite: %v\n", login, d.Id, favorite)
 
@@ -137,6 +148,11 @@ func (sa *ScoredArticle) Scores() (asc content.ArticleScores) {
 	}
 
 	id := sa.Data().Id
+	if id == 0 {
+		sa.Err(content.NewValidationError(errors.New("Invalid article id")))
+		return
+	}
+
 	sa.logger.Infof("Getting article '%d' scores\n", id)
 
 	var i data.ArticleScores

@@ -28,6 +28,11 @@ func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
 		return
 	}
 
+	if err := t.Validate(); err != nil {
+		t.Err(err)
+		return
+	}
+
 	t.logger.Infof("Getting all feeds for tag %s\n", t)
 	u := t.User()
 
@@ -52,6 +57,11 @@ func (t *Tag) Articles(paging ...int) (ua []content.UserArticle) {
 		return
 	}
 
+	if err := t.Validate(); err != nil {
+		t.Err(err)
+		return
+	}
+
 	t.logger.Infof("Getting articles for tag %s\n", t)
 
 	articles := getArticles(t.User(), t.db, t.logger, t,
@@ -71,6 +81,11 @@ func (t *Tag) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 		return
 	}
 
+	if err := t.Validate(); err != nil {
+		t.Err(err)
+		return
+	}
+
 	t.logger.Infof("Getting unread articles for tag %s\n", t)
 
 	articles := getArticles(t.User(), t.db, t.logger, t,
@@ -87,6 +102,11 @@ func (t *Tag) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 
 func (t *Tag) ReadBefore(date time.Time, read bool) {
 	if t.HasErr() {
+		return
+	}
+
+	if err := t.Validate(); err != nil {
+		t.Err(err)
 		return
 	}
 
@@ -137,6 +157,11 @@ func (t *Tag) ScoredArticles(from, to time.Time, paging ...int) (sa []content.Sc
 		return
 	}
 
+	if err := t.Validate(); err != nil {
+		t.Err(err)
+		return
+	}
+
 	t.logger.Infof("Getting scored articles for tag %s\n", t)
 
 	order := "asco.score"
@@ -161,6 +186,11 @@ func (t *Tag) ScoredArticles(from, to time.Time, paging ...int) (sa []content.Sc
 
 func (t *Tag) Query(term string, index bleve.Index, paging ...int) (ua []content.UserArticle) {
 	if t.HasErr() {
+		return
+	}
+
+	if err := t.Validate(); err != nil {
+		t.Err(err)
 		return
 	}
 

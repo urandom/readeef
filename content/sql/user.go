@@ -127,6 +127,11 @@ func (u *User) FeedById(id data.FeedId) (uf content.UserFeed) {
 		return
 	}
 
+	if err := u.Validate(); err != nil {
+		u.Err(err)
+		return
+	}
+
 	login := u.Data().Login
 	u.logger.Infof("Getting user feed for user %s and feed %d\n", login, id)
 
@@ -148,6 +153,11 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 	uf = u.Repo().UserFeed(u)
 	if u.HasErr() {
 		uf.Err(u.Err())
+		return
+	}
+
+	if err := u.Validate(); err != nil {
+		u.Err(err)
 		return
 	}
 
@@ -200,6 +210,11 @@ func (u *User) AllFeeds() (uf []content.UserFeed) {
 		return
 	}
 
+	if err := u.Validate(); err != nil {
+		u.Err(err)
+		return
+	}
+
 	login := u.Data().Login
 	u.logger.Infof("Getting all feeds for user %s\n", login)
 
@@ -220,6 +235,11 @@ func (u *User) AllFeeds() (uf []content.UserFeed) {
 
 func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	if u.HasErr() {
+		return
+	}
+
+	if err := u.Validate(); err != nil {
+		u.Err(err)
 		return
 	}
 
@@ -264,6 +284,11 @@ func (u *User) ArticleById(id data.ArticleId) (ua content.UserArticle) {
 		return
 	}
 
+	if err := u.Validate(); err != nil {
+		u.Err(err)
+		return
+	}
+
 	login := u.Data().Login
 	u.logger.Infof("Getting article '%d' for user %s\n", id, login)
 
@@ -283,6 +308,11 @@ func (u *User) ArticleById(id data.ArticleId) (ua content.UserArticle) {
 
 func (u *User) ArticlesById(ids []data.ArticleId) (ua []content.UserArticle) {
 	if u.HasErr() || len(ids) == 0 {
+		return
+	}
+
+	if err := u.Validate(); err != nil {
+		u.Err(err)
 		return
 	}
 
@@ -319,6 +349,11 @@ func (u *User) AllUnreadArticleIds() (ids []data.ArticleId) {
 		return
 	}
 
+	if err := u.Validate(); err != nil {
+		u.Err(err)
+		return
+	}
+
 	login := u.Data().Login
 	u.logger.Infof("Getting unread article ids for user %s\n", login)
 
@@ -332,6 +367,11 @@ func (u *User) AllUnreadArticleIds() (ids []data.ArticleId) {
 
 func (u *User) AllFavoriteArticleIds() (ids []data.ArticleId) {
 	if u.HasErr() {
+		return
+	}
+
+	if err := u.Validate(); err != nil {
+		u.Err(err)
 		return
 	}
 
@@ -351,6 +391,11 @@ func (u *User) ArticleCount() (c int64) {
 		return
 	}
 
+	if err := u.Validate(); err != nil {
+		u.Err(err)
+		return
+	}
+
 	login := u.Data().Login
 	u.logger.Infof("Getting article count for user %s\n", login)
 
@@ -364,6 +409,11 @@ func (u *User) ArticleCount() (c int64) {
 
 func (u *User) Articles(paging ...int) (ua []content.UserArticle) {
 	if u.HasErr() {
+		return
+	}
+
+	if err := u.Validate(); err != nil {
+		u.Err(err)
 		return
 	}
 
@@ -386,6 +436,11 @@ func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 		return
 	}
 
+	if err := u.Validate(); err != nil {
+		u.Err(err)
+		return
+	}
+
 	login := u.Data().Login
 	u.logger.Infof("Getting unread articles for paging %q and user %s\n", paging, login)
 
@@ -400,6 +455,11 @@ func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 
 func (u *User) ArticlesOrderedById(pivot data.ArticleId, paging ...int) (ua []content.UserArticle) {
 	if u.HasErr() {
+		return
+	}
+
+	if err := u.Validate(); err != nil {
+		u.Err(err)
 		return
 	}
 
@@ -430,6 +490,11 @@ func (u *User) FavoriteArticles(paging ...int) (ua []content.UserArticle) {
 		return
 	}
 
+	if err := u.Validate(); err != nil {
+		u.Err(err)
+		return
+	}
+
 	login := u.Data().Login
 	u.logger.Infof("Getting favorite articles for paging %q and user %s\n", paging, login)
 
@@ -447,6 +512,11 @@ func (u *User) Query(term string, index bleve.Index, paging ...int) (ua []conten
 		return
 	}
 
+	if err := u.Validate(); err != nil {
+		u.Err(err)
+		return
+	}
+
 	var err error
 
 	ua, err = query(term, u.Highlight(), index, u, []data.FeedId{}, paging...)
@@ -457,6 +527,11 @@ func (u *User) Query(term string, index bleve.Index, paging ...int) (ua []conten
 
 func (u *User) ReadBefore(date time.Time, read bool) {
 	if u.HasErr() {
+		return
+	}
+
+	if err := u.Validate(); err != nil {
+		u.Err(err)
 		return
 	}
 
@@ -504,6 +579,11 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 
 func (u *User) ReadAfter(date time.Time, read bool) {
 	if u.HasErr() {
+		return
+	}
+
+	if err := u.Validate(); err != nil {
+		u.Err(err)
 		return
 	}
 
@@ -557,6 +637,11 @@ func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.S
 		return
 	}
 
+	if err := u.Validate(); err != nil {
+		u.Err(err)
+		return
+	}
+
 	login := u.Data().Login
 	u.logger.Infof("Getting scored articles for paging %q and user %s\n", paging, login)
 
@@ -581,6 +666,11 @@ func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.S
 
 func (u *User) Tags() (tags []content.Tag) {
 	if u.HasErr() {
+		return
+	}
+
+	if err := u.Validate(); err != nil {
+		u.Err(err)
 		return
 	}
 

@@ -18,6 +18,11 @@ func (s *Subscription) Update() {
 		return
 	}
 
+	if err := s.Validate(); err != nil {
+		s.Err(err)
+		return
+	}
+
 	i := s.Data()
 	s.logger.Infof("Updating subscription to %s\n", i.Link)
 
@@ -65,6 +70,11 @@ func (s *Subscription) Update() {
 
 func (s *Subscription) Delete() {
 	if s.HasErr() {
+		return
+	}
+
+	if err := s.Validate(); err != nil {
+		s.Err(err)
 		return
 	}
 

@@ -18,6 +18,11 @@ func (asc *ArticleScores) Update() {
 		return
 	}
 
+	if err := asc.Validate(); err != nil {
+		asc.Err(err)
+		return
+	}
+
 	data := asc.Data()
 	if data.Score == 0 {
 		data.Score = asc.Calculate()
