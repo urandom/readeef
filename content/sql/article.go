@@ -163,6 +163,7 @@ func (sa *ScoredArticle) Scores() (asc content.ArticleScores) {
 		asc.Err(err)
 	}
 
+	i.ArticleId = id
 	asc.Data(i)
 
 	return
