@@ -51,17 +51,17 @@ CREATE TABLE IF NOT EXISTS articles (
 	description STRING,
 	date time,
 
-	_id_link STRING,
-	_id_guid STRING
+	_feed_id_link STRING,
+	_feed_id_guid STRING
 )`, `
 CREATE INDEX IF NOT EXISTS idx_article_id
 	ON articles (id())
 )`, `
-CREATE UNIQUE INDEX IF NOT EXISTS uniq_articles_id_link
-	ON articles (_id_link)
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_articles_feed_id_link
+	ON articles (_feed_id_link)
 )`, `
-CREATE UNIQUE INDEX IF NOT EXISTS uniq_articles_id_guid
-	ON articles (_id_guid)
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_articles_feed_id_guid
+	ON articles (_feed_id_guid)
 )`, `
 CREATE TABLE IF NOT EXISTS users_feeds (
 	user_login STRING,
