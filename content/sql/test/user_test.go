@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/tests"
 )
@@ -19,7 +18,7 @@ func TestUser(t *testing.T) {
 	tests.CheckBool(t, true, u.HasErr())
 
 	err := u.Err()
-	_, ok := err.(base.ValidationError)
+	_, ok := err.(content.ValidationError)
 	tests.CheckBool(t, true, ok, err)
 
 	u.Data(data.User{Login: data.Login("login")})

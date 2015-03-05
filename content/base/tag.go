@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 )
 
@@ -39,7 +40,7 @@ func (t Tag) MarshalJSON() ([]byte, error) {
 
 func (t *Tag) Validate() error {
 	if t.value == "" {
-		return ValidationError{errors.New("Tag has no value")}
+		return content.NewValidationError(errors.New("Tag has no value"))
 	}
 
 	return nil

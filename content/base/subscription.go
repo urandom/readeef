@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/url"
 
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 )
 
@@ -34,15 +35,15 @@ func (s *Subscription) Data(d ...data.Subscription) data.Subscription {
 
 func (s *Subscription) Validate() error {
 	if s.data.Link == "" {
-		return ValidationError{errors.New("No subscription link")}
+		return content.NewValidationError(errors.New("No subscription link"))
 	}
 
 	if u, err := url.Parse(s.data.Link); err != nil || !u.IsAbs() {
-		return ValidationError{errors.New("Invalid subscription link")}
+		return content.NewValidationError(errors.New("Invalid subscription link"))
 	}
 
 	if s.data.FeedId == 0 {
-		return ValidationError{errors.New("Invalid feed id")}
+		return content.NewValidationError(errors.New("Invalid feed id"))
 	}
 
 	return nil

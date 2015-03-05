@@ -43,11 +43,11 @@ func (f *Feed) Data(d ...data.Feed) data.Feed {
 
 func (f Feed) Validate() error {
 	if f.data.Link == "" {
-		return ValidationError{errors.New("Feed has no link")}
+		return content.NewValidationError(errors.New("Feed has no link"))
 	}
 
 	if u, err := url.Parse(f.data.Link); err != nil || !u.IsAbs() {
-		return ValidationError{errors.New("Feed has no link")}
+		return content.NewValidationError(errors.New("Feed has no link"))
 	}
 
 	return nil
@@ -103,7 +103,7 @@ func (f Feed) MarshalJSON() ([]byte, error) {
 
 func (uf UserFeed) Validate() error {
 	if uf.user.Data().Login == "" {
-		return ValidationError{errors.New("UserFeed has no user")}
+		return content.NewValidationError(errors.New("UserFeed has no user"))
 	}
 
 	return nil

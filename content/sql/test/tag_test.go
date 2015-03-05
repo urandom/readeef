@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/tests"
 )
@@ -23,7 +22,7 @@ func TestTag(t *testing.T) {
 
 	tf.UpdateTags()
 	tests.CheckBool(t, true, tf.HasErr())
-	_, ok := tf.Err().(base.ValidationError)
+	_, ok := tf.Err().(content.ValidationError)
 	tests.CheckBool(t, true, ok)
 
 	tag.Value("tag1")

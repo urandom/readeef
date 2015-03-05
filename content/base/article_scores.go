@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 )
 
@@ -32,7 +33,7 @@ func (asc *ArticleScores) Data(d ...data.ArticleScores) data.ArticleScores {
 
 func (asc ArticleScores) Validate() error {
 	if asc.data.ArticleId == 0 {
-		return ValidationError{errors.New("Article scores has no article id")}
+		return content.NewValidationError(errors.New("Article scores has no article id"))
 	}
 
 	return nil

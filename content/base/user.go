@@ -66,11 +66,11 @@ func (u *User) Data(d ...data.User) data.User {
 
 func (u User) Validate() error {
 	if u.data.Login == "" {
-		return ValidationError{errors.New("Invalid user login")}
+		return content.NewValidationError(errors.New("Invalid user login"))
 	}
 	if u.data.Email != "" {
 		if _, err := mail.ParseAddress(u.String()); err != nil {
-			return ValidationError{err}
+			return content.NewValidationError(err)
 		}
 	}
 
