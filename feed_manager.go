@@ -424,17 +424,21 @@ func (fm *FeedManager) scoreArticles() {
 			time.Sleep(fm.config.Popularity.Converted.Delay)
 
 			ascc := make(chan content.ArticleScores)
-			blankScores := fm.repo.ArticleScores()
 
 			go func() {
 				asc := sa.Scores()
 
 				if asc.HasErr() {
-					fm.logger.Printf("Error getting scores for article '%s': %v\n", sa, sa.Err())
-					ascc <- blankScores
-				} else {
-					ascc <- asc
+					err := asc.Err()
+					if err == content.ErrNoContent {
+						asc.Data(data.ArticleScores{ArticleId: sa.Data().Id})
+					} else {
+						asc.Err(err)
+						fm.logger.Printf("Error getting scores for article '%s': %v\n", sa, err)
+					}
 				}
+
+				ascc <- asc
 			}()
 
 			data := sa.Data()
@@ -449,7 +453,7 @@ func (fm *FeedManager) scoreArticles() {
 			asc := <-ascc
 			ai := asc.Data()
 
-			if asc != blankScores {
+			if !asc.HasErr() {
 				age := ageInDays(data.Date)
 				switch age {
 				case 0:
@@ -464,7 +468,6 @@ func (fm *FeedManager) scoreArticles() {
 					ai.Score5 = score - ai.Score1 - ai.Score2 - ai.Score3 - ai.Score4
 				}
 
-				asc.Data(ai)
 				score := asc.Calculate()
 				penalty := float64(time.Now().Unix()-data.Date.Unix()) / (60 * 60) * float64(age)
 

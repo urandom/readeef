@@ -43,9 +43,9 @@ func (l Logger) Print(args ...interface{}) {
 }
 
 func (l Logger) Printf(format string, args ...interface{}) {
-	l.Logger.Errorf(format, args)
+	l.Logger.Errorf(format, args...)
 }
 
 func (l Logger) Errorln(args ...interface{}) {
-	l.Logger.Errorln(args)
+	l.Logger.Errorln(args...)
 }
