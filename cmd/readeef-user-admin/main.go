@@ -101,7 +101,7 @@ func main() {
 		}
 	case "set":
 		if flag.NArg() != 4 {
-			exitWithError("Not enough arguments for 'update' command. Login, user property, and value must be specified")
+			exitWithError("Not enough arguments for 'set' command. Login, user property, and value must be specified")
 		}
 		login := flag.Arg(1)
 		prop := flag.Arg(2)
