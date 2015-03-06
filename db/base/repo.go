@@ -2,7 +2,7 @@ package base
 
 func init() {
 	sql["get_user"] = getUser
-	sql["get_user_by_md5_api"] = getUser
+	sql["get_user_by_md5_api"] = getUserByMD5Api
 	sql["get_users"] = getUsers
 	sql["get_feed"] = getFeed
 	sql["get_feed_by_link"] = getFeedByLink
