@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	_ "github.com/urandom/readeef/db/postgres"
+	_ "github.com/urandom/readeef/content/sql/db/postgres"
 )
 
 func TestMain(m *testing.M) {

@@ -6,7 +6,7 @@ import (
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/sql/postgres"
 	"github.com/urandom/readeef/content/sql/sqlite3"
-	"github.com/urandom/readeef/db"
+	"github.com/urandom/readeef/content/sql/db"
 	"github.com/urandom/webfw"
 )
 

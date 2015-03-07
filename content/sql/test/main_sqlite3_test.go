@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	_ "github.com/urandom/readeef/db/sqlite3"
+	_ "github.com/urandom/readeef/content/sql/db/sqlite3"
 )
 
 func TestMain(m *testing.M) {

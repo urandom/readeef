@@ -11,7 +11,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api"
-	_ "github.com/urandom/readeef/db/postgres"
+	_ "github.com/urandom/readeef/content/sql/db/postgres"
 	"github.com/urandom/readeef/web"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/middleware"

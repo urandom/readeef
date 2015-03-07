@@ -1,6 +1,6 @@
 package base
 
-import "github.com/urandom/readeef/db"
+import "github.com/urandom/readeef/content/sql/db"
 
 type Helper struct {
 	sql map[string]string

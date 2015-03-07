@@ -2,7 +2,7 @@ package sql
 
 import (
 	"github.com/urandom/readeef/content/base"
-	"github.com/urandom/readeef/db"
+	"github.com/urandom/readeef/content/sql/db"
 	"github.com/urandom/webfw"
 )
 

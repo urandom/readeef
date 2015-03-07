@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/urandom/readeef/content/sql/sqlite3"
-	dbo "github.com/urandom/readeef/db"
+	dbo "github.com/urandom/readeef/content/sql/db"
 	"github.com/urandom/readeef/tests"
 	"github.com/urandom/webfw"
 )

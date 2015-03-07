@@ -1,8 +1,8 @@
 package sqlite3
 
 import (
-	"github.com/urandom/readeef/db"
-	"github.com/urandom/readeef/db/base"
+	"github.com/urandom/readeef/content/sql/db"
+	"github.com/urandom/readeef/content/sql/db/base"
 )
 
 type Helper struct {

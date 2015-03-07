@@ -9,7 +9,7 @@ import (
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
-	_ "github.com/urandom/readeef/db/postgres"
+	_ "github.com/urandom/readeef/content/sql/db/postgres"
 )
 
 func main() {
