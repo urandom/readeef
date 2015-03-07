@@ -102,7 +102,7 @@ func (f Feed) MarshalJSON() ([]byte, error) {
 }
 
 func (uf UserFeed) Validate() error {
-	if uf.user.Data().Login == "" {
+	if uf.user == nil || uf.user.Data().Login == "" {
 		return content.NewValidationError(errors.New("UserFeed has no user"))
 	}
 

@@ -25,7 +25,7 @@ func TestTag(t *testing.T) {
 	tests.CheckBool(t, false, tag.Validate() == nil)
 
 	tag.value = "tag"
-	tests.CheckBool(t, true, tag.Validate() == nil)
+	tests.CheckBool(t, false, tag.Validate() == nil)
 
 	ejson, eerr := json.Marshal(tag.value)
 	tests.CheckBool(t, true, eerr == nil)
