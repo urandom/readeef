@@ -7,8 +7,7 @@ import (
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
-	"github.com/urandom/readeef/content/sql/repo"
-	"github.com/urandom/readeef/db"
+	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/middleware"
@@ -26,12 +25,10 @@ func newResponse() responseError {
 }
 
 func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, logger webfw.Logger) error {
-	db := db.New(logger)
-	if err := db.Open(config.DB.Driver, config.DB.Connect); err != nil {
-		return fmt.Errorf("Error connecting to database: %v", err)
+	repo, err := repo.New(config.DB.Driver, config.DB.Connect, logger)
+	if err != nil {
+		return err
 	}
-
-	repo := repo.New(db, logger)
 
 	if err := initAdminUser(repo, []byte(config.Auth.Secret)); err != nil {
 		return err
@@ -39,7 +36,6 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
 	dispatcher.Context.SetGlobal(context.BaseCtxKey("readeefConfig"), config)
-	dispatcher.Context.SetGlobal(readeef.CtxKey("db"), db)
 	dispatcher.Context.SetGlobal(readeef.CtxKey("repo"), repo)
 
 	um := &readeef.UpdateFeedReceiverManager{}

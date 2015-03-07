@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/db"
 	"github.com/urandom/webfw/context"
 )
 
@@ -16,14 +15,6 @@ func GetConfig(c context.Context) Config {
 	}
 
 	return Config{}
-}
-
-func GetDB(c context.Context) *db.DB {
-	if v, ok := c.GetGlobal(CtxKey("db")); ok {
-		return v.(*db.DB)
-	}
-
-	return nil
 }
 
 func GetRepo(c context.Context) content.Repo {

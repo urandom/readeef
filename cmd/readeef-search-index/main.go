@@ -6,8 +6,7 @@ import (
 	"os"
 
 	"github.com/urandom/readeef"
-	"github.com/urandom/readeef/content/sql/repo"
-	"github.com/urandom/readeef/db"
+	"github.com/urandom/readeef/content/repo"
 	_ "github.com/urandom/readeef/db/postgres"
 )
 
@@ -26,13 +25,10 @@ func main() {
 	}
 
 	logger := readeef.NewLogger(cfg)
-	db := db.New(logger)
-
-	if err := db.Open(cfg.DB.Driver, cfg.DB.Connect); err != nil {
+	repo, err := repo.New(cfg.DB.Driver, cfg.DB.Connect, logger)
+	if err != nil {
 		exitWithError(fmt.Sprintf("Error connecting to database: %v", err))
 	}
-
-	repo := repo.New(db, logger)
 
 	si, err := readeef.NewSearchIndex(repo, cfg, logger)
 
