@@ -60,6 +60,32 @@
             }
         },
 
+        ordinal: function(value) {
+            var str = value.toString(), suff = str.slice(-1), ord = '';
+
+            switch (suff) {
+            case '1':
+                ord = str.slice(-2) == '11' ? 'th' : 'st';
+                break;
+            case '2':
+                ord = str.slice(-2) == '12' ? 'th' : 'nd';
+                break;
+            case '3':
+                ord = str.slice(-2) == '13' ? 'th' : 'rd';
+                break;
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case '0':
+                ord = 'th';
+                break;
+            }
+            return value + ord;
+        },
+
         updateItem: function(virtualIndex, physicalIndex) {
             var src = this.articles[virtualIndex],
                 dest = this._physicalArticles[physicalIndex],
@@ -79,9 +105,8 @@
             dest.selected = physicalIndex == middle;
             dest.wide = this.wide;
             dest.model = src;
-
-            dest._physicalIndex = physicalIndex;
-            dest._virtualIndex = virtualIndex;
+            dest.index = virtualIndex;
+            dest.ordinal = this.ordinal(virtualIndex + 1);
         },
 
         articleChanged: function() {

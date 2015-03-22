@@ -17,6 +17,12 @@
     font-weight: bold;
 }
 
+.article-detail .index {
+    font-size: smaller;
+    font-style: italic;
+    padding-left: 0.7em;
+}
+
 .article-detail .title-wrapper a {
     text-decoration: none;
 }

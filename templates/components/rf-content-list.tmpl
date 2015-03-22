@@ -51,6 +51,7 @@
                                     <span flex class="title-wrapper" layout vertical>
                                         <a href="{{ model.Link }}" target="feed-article-{{ model.Id }}">
                                             <span class="title" title="{{ model.Title }}">{{ model.Title }}</span>
+                                            <small class="index">{{ ordinal }}</small>
                                         </a>
                                         <span layout horizontal class="article-narrow-header-details">
                                             <span class="feed-origin" title="{{ model.FeedOrigin }}" hidden?="{{ !model.FeedOrigin }}" style="float: left">{{ model.FeedOrigin }}</span>
