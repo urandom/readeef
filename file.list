@@ -117,6 +117,7 @@ static/images/readeef.png
 static/js/append-articles-worker.js
 static/js/content-articles-worker.js
 static/js/dom-utils.js
+static/js/relative-date-worker.js
 static/js/rf-api.js
 static/js/rf-app.js
 static/js/rf-article-display.js
