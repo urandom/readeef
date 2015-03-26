@@ -12,6 +12,38 @@
             document.addEventListener('keypress', this.onContentKeypress.bind(this), false);
         },
 
+        onUpdateRelativeDate: function() {
+            if (this.feed && this.articles && this.articles.length) {
+                var worker = new Worker('/js/relative-date-worker.js');
+
+                worker.addEventListener('message', function(event) {
+                    window.requestAnimationFrame(function() {
+                        if (this.feed.Id == event.data.feedId) {
+
+                            var dates = event.data.dates;
+
+                            for (var i = 0, a, d; a = this.articles[i]; ++i) {
+                                d = dates[a.Id];
+                                if (d) {
+                                    a.RelativeDate = d;
+                                }
+                            }
+                        }
+
+                        this.job('relativeDateWorker', function() {
+                            this.onUpdateRelativeDate();
+                        }, 60000);
+                    }.bind(this));
+                }.bind(this));
+
+                worker.postMessage({current: this.feed});
+            } else {
+                this.job('relativeDateWorker', function() {
+                    this.onUpdateRelativeDate();
+                }, 60000);
+            }
+        },
+
         nextArticle: function(unread) {
             if (this.article) {
                 var index = this.articles.indexOf(this.article),
@@ -102,6 +134,9 @@
 
                     worker.addEventListener('message', function(event) {
                         this.articles = event.data.articles;
+                        this.job('relativeDateWorker', function() {
+                            this.onUpdateRelativeDate();
+                        }, 60000);
                     }.bind(this));
 
                     if (feedId.indexOf("tag:") == 0 || feedId.indexOf("search:") == 0 || feedId.indexOf("popular:") == 0 || feedId == 'favorite' || feedId == 'all') {
