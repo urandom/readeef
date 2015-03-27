@@ -13,11 +13,11 @@
         },
 
         onUpdateRelativeDate: function() {
-            if (this.feed && this.articles && this.articles.length) {
-                var worker = new Worker('/js/relative-date-worker.js');
+            window.requestAnimationFrame(function() {
+                if (this.feed && this.articles && this.articles.length) {
+                    var worker = new Worker('/js/relative-date-worker.js');
 
-                worker.addEventListener('message', function(event) {
-                    window.requestAnimationFrame(function() {
+                    worker.addEventListener('message', function(event) {
                         if (this.feed.Id == event.data.feedId) {
 
                             var dates = event.data.dates;
@@ -34,14 +34,14 @@
                             this.onUpdateRelativeDate();
                         }, 60000);
                     }.bind(this));
-                }.bind(this));
 
-                worker.postMessage({current: this.feed});
-            } else {
-                this.job('relativeDateWorker', function() {
-                    this.onUpdateRelativeDate();
-                }, 60000);
-            }
+                    worker.postMessage({current: this.feed});
+                } else {
+                    this.job('relativeDateWorker', function() {
+                        this.onUpdateRelativeDate();
+                    }, 60000);
+                }
+            }.bind(this));
         },
 
         nextArticle: function(unread) {
