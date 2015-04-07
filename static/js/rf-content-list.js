@@ -296,6 +296,7 @@
                 if (this.article) {
                     this.fire('core-signal', {name: "rf-article-favorite"});
                 }
+            } else if (key == "U+003F" || key == "Help" || code == "47" || code == "63") {
             }
         }
     });
