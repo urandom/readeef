@@ -220,6 +220,9 @@
                 this.userSettingsObserver.open(function (added, removed, changed, getOldValueFn) {
                     var amalgamation = Polymer.mixin({}, added, removed, changed);
                     if ('newerFirst' in amalgamation || 'unreadOnly' in amalgamation) {
+                        if (this.currentFeed) {
+                            this.currentFeed.Articles = null;
+                        }
                         this.updateFeedArticles();
                     }
 
@@ -562,6 +565,9 @@
         },
 
         onMarkAllAsRead: function() {
+            if (this.currentFeed) {
+                this.currentFeed.Articles = null;
+            }
             this.$['feed-read-all'].send();
         },
 
