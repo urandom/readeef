@@ -36,26 +36,24 @@
                 <rf-scaffolding id="scaffolding" cross-fade wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feed="{{ currentFeed }}" article="{{ currentArticle }}" display="{{ display }}" updateAvailable="{{ updateAvailable }}" shareServices="{{ shareServices }}">
                     <div fit class="drawer-title bottom">Feeds</div>
 
-                    <template if="{{ feeds.length > 0 }}">
-                        <paper-item class="drawer-content" on-tap="{{ onFeedTap }}" name="favorite" selectable>Favorite</paper-item>
-                        <div class="drawer-content collapser" layout horizontal center>
-                            <paper-icon-button icon="more-horiz" fill on-tap="{{ onTagCollapseToggle }}" data-tag="popular:"></paper-icon-button>
-                            <paper-item on-tap="{{ onFeedTap }}" name="popular:all" selectable flex>Popular</paper-item>
-                        </div>
-                        <core-collapse class="drawer-content" data-tag="popular:">
-                            <template repeat="{{ tag in tags }}">
-                                <paper-item icon="icons:tab" on-tap="{{ onFeedTap }}" name="popular:tag:{{ tag.name }}" selectable>{{ tag.name }}</paper-item>
-                            </template>
-                            <template repeat="{{ feed in feeds }}">
-                                <paper-item class="feed-item" on-tap="{{ onFeedTap }}" title="{{ feed.Title }}" name="popular:{{ feed.Id }}" selectable>
-                                    <div fit class="feed-title" style="background-image: url('http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}')">
-                                        {{ feed.Title }}
-                                    </div>
-                                </paper-item>
-                            </template>
-                        </core-collapse>
-                        <hr class="drawer-content">
-                    </template>
+                    <paper-item class="drawer-content" on-tap="{{ onFeedTap }}" name="favorite" selectable hidden?="{{ !feeds.length }}">Favorite</paper-item>
+                    <div class="drawer-content collapser" layout horizontal center hidden?="{{ !feeds.length }}">
+                        <paper-icon-button icon="more-horiz" fill on-tap="{{ onTagCollapseToggle }}" data-tag="popular:"></paper-icon-button>
+                        <paper-item on-tap="{{ onFeedTap }}" name="popular:all" selectable flex>Popular</paper-item>
+                    </div>
+                    <core-collapse class="drawer-content" data-tag="popular:" hidden?="{{ !feeds.length }}">
+                        <template repeat="{{ tag in tags }}">
+                            <paper-item icon="icons:tab" on-tap="{{ onFeedTap }}" name="popular:tag:{{ tag.name }}" selectable>{{ tag.name }}</paper-item>
+                        </template>
+                        <template repeat="{{ feed in feeds }}">
+                            <paper-item class="feed-item" on-tap="{{ onFeedTap }}" title="{{ feed.Title }}" name="popular:{{ feed.Id }}" selectable>
+                                <div fit class="feed-title" style="background-image: url('http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}')">
+                                    {{ feed.Title }}
+                                </div>
+                            </paper-item>
+                        </template>
+                    </core-collapse>
+                    <hr class="drawer-content" hidden?="{{ !feeds.length }}">
                     <div class="drawer-content collapser" layout horizontal center>
                         <paper-icon-button icon="more-horiz" fill on-tap="{{ onTagCollapseToggle }}" data-tag="all"></paper-icon-button>
                         <paper-item on-tap="{{ onFeedTap }}" name="all" selectable flex>All</paper-item>
@@ -91,11 +89,9 @@
                     <div class="main-content">
                         <rf-content-list id="content-list" wide="{{ wide }}" user="{{ user }}" feed="{{ currentFeed }}" feeds="{{ feeds }}" article="{{ currentArticle }}" hidden?="{{ display != 'feed' || loadingArticles }}"></rf-content-list>
                         <rf-settings id="settings" wide="{{ wide }}" user="{{ user }}" settings="{{ userSettings }}" feeds="{{ feeds }}" hidden?="{{ display == 'feed' }}" display="{{ display }}" shareServices="{{ shareServices }}" settingsTab="{{ settingsTab }}"></rf-settings>
-                        <template if="{{ loadingArticles || loadingMoreArticles }}">
-                            <div layout vertical center>
-                                <loading-wave background="transparent"></loading-wave>
-                            </div>
-                        </template>
+                        <div layout vertical center hidden?="{{ !loadingArticles && !loadingMoreArticles }}">
+                            <loading-wave background="transparent"></loading-wave>
+                        </div>
                     </div>
                 </rf-scaffolding>
             </section>
