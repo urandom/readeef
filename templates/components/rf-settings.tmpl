@@ -29,7 +29,6 @@
                 <paper-dropdown class="dropdown">
                     <core-menu selected="{{ settingsTab }}">
                         <paper-item name="general" >General</paper-item>
-                        <paper-item name="add-feed" >Add Feed</paper-item>
                         <paper-item name="feeds" >Manage Feeds</paper-item>
                         <paper-item name="share-services" >Share services</paper-item>
 
@@ -39,11 +38,11 @@
                     </core-menu>
                 </paper-dropdown>
             </paper-dropdown-menu>
-            <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ settingsTab }}" transitions="hero-transition">
+            <core-animated-pages id="pages" class="{{ {wide: wide} | tokenList }}" selected="{{ settingsTab }}">
 
                 <section name="general" layout vertical center>
                     <div class="container">
-                        <div class="card" hero-id="card" hero layout vertical>
+                        <div class="card" hero-id="card" hero cross-fade layout vertical>
                             <p>
                                 Personalize your feed reader
                             </p>
@@ -82,10 +81,10 @@
                     </div>
                 </section>
 
-                <section name="add-feed" layout vertical center>
+                <section name="feeds" layout vertical center>
                     <div class="container">
-                        <div class="card" hero-id="card" hero layout vertical>
-                            <template if="{{ !discoveredFeeds }}">
+                        <div class="card" hero-id="card" hero cross-fade>
+                            <div layout vertical hidden?="{{ discoveredFeeds }}">
                                 <p>
                                     Enter the address of a feed, or a website that might contain one or more feeds.
                                 </p>
@@ -99,11 +98,11 @@
                                 </p>
 
                                 <input type="file" id="opml" name="opml" accept=".opml" tabindex="2">
-                            </template>
-                            <template if="{{ discoveredFeeds && !discoveredFeeds.length }}">
+                            </div>
+                            <div layout vertical hidden?="{{ !discoveredFeeds || discoveredFeeds.length }}">
                                 <p>No feeds found for '{{url}}'</p>
-                            </template>
-                            <template if="{{ discoveredFeeds && discoveredFeeds.length }}">
+                            </div>
+                            <div layout vertical hidden?="{{ !discoveredFeeds || !discoveredFeeds.length }}">
                                 <p>Found the following feeds for '{{url}}':</p>
                                 <ul>
                                 <template repeat="{{ feed in discoveredFeeds }}">
@@ -113,23 +112,22 @@
                                     </li>
                                 </template>
                                 </ul>
-                            </template>
-                            <template if="{{ loading }}">
-                                <loading-wave background="transparent" self-center></loading-wave>
-                            </template>
+                            </div>
 
                             <div layout horizontal end-justified>
+                                <loading-wave background="transparent" self-start hidden?="{{ !loading }}"></loading-wave>
+
                                 <paper-button on-tap="{{ onFindFeed }}" id="find-feeds" autofocus hidden?="{{ discoveredFeeds }}">Find</paper-button>
                                 <paper-button on-tap="{{ onAddFeed }}" id="add-feeds" autofocus hidden?="{{ !discoveredFeeds || !discoveredFeeds.length }}">Add</paper-button>
                             </div>
                         </div>
-                    </div>
-                </section>
 
-                <section name="feeds" layout vertical center>
-                    <div class="container">
-                        <div class="card" hero-id="card" hero layout vertical>
+                        <div class="card" hero-id="card" hero cross-fade layout vertical>
                             <ul cross-fade>
+                                <div hidden?="{{ feeds.length }}">
+                                    You are not subscribed to any feeds yet
+                                </div>
+
                                 <template repeat="{{ feed in feeds }}">
                                 <li title="{{ feed.Title }}" layout vertical>
                                     <template if="{{ wide }}">
@@ -167,7 +165,7 @@
 
                 <section name="share-services" id="share-services" layout vertical center>
                     <div class="container">
-                        <div class="card" hero-id="card" hero layout vertical>
+                        <div class="card" hero-id="card" hero cross-fade layout vertical>
                             <ul cross-fade>
                                 <template repeat="{{ category in shareServiceList }}">
                                 <li>
@@ -197,7 +195,7 @@
                 <template if="{{ user.Admin }}">
                     <section name="admin" layout vertical center>
                         <div class="container">
-                            <div class="card" hero-id="card" hero layout vertical>
+                            <div class="card" hero-id="card" hero cross-fade layout vertical>
                                 <template if="{{ users.length }}">
                                 <ul cross-fade>
                                     <template repeat="{{ user in users }}">
