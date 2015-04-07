@@ -165,10 +165,9 @@
 
                 <section name="share-services" id="share-services" layout vertical center>
                     <div class="container">
-                        <div class="card" hero-id="card" hero cross-fade layout vertical>
-                            <ul cross-fade>
-                                <template repeat="{{ category in shareServiceList }}">
-                                <li>
+                        <div class="card" hero-id="card" hero cross-fade layout horizontal>
+                            <template repeat="{{ category in shareServiceList }}">
+                                <div class="share-category">
                                     <h4>{{ category.name }}</h4>
                                     <ul>
                                         <template repeat="{{ service in category.services }}">
@@ -185,9 +184,8 @@
                                             </li>
                                         </template>
                                     </ul>
-                                </li>
-                                </template>
-                            </ul>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </section>
