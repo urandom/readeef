@@ -136,7 +136,7 @@ func (si SearchIndex) batchIndex(articles []content.Article) {
 		return
 	}
 
-	batch := bleve.NewBatch()
+	batch := si.Index.NewBatch()
 	count := int64(0)
 
 	for i := range articles {
@@ -151,7 +151,7 @@ func (si SearchIndex) batchIndex(articles []content.Article) {
 			if err := si.Index.Batch(batch); err != nil {
 				si.logger.Printf("Error indexing article batch: %v\n", err)
 			}
-			batch = bleve.NewBatch()
+			batch = si.Index.NewBatch()
 			count = 0
 		}
 	}
@@ -168,7 +168,7 @@ func (si SearchIndex) batchDelete(articles []content.Article) {
 		return
 	}
 
-	batch := bleve.NewBatch()
+	batch := si.Index.NewBatch()
 	count := int64(0)
 
 	for i := range articles {
@@ -183,7 +183,7 @@ func (si SearchIndex) batchDelete(articles []content.Article) {
 			if err := si.Index.Batch(batch); err != nil {
 				si.logger.Printf("Error indexing article batch: %v\n", err)
 			}
-			batch = bleve.NewBatch()
+			batch = si.Index.NewBatch()
 			count = 0
 		}
 	}
