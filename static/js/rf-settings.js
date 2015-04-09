@@ -149,6 +149,16 @@
             this.loading = true;
         },
 
+        onManageFeedsBack: function() {
+            if (this.noSelectedFeeds) {
+                this.noSelectedFeeds = false;
+            } else if (this.addFeedError) {
+                this.addFeedError = null;
+            } else {
+                this.discoveredFeeds = null;
+            }
+        },
+
         onAddFeed: function() {
             var links = [];
             for (var i = 0, f; f = this.discoveredFeeds[i]; ++i) {
@@ -158,7 +168,7 @@
             }
 
             if (!links.length) {
-                /* TODO: show that nothing was selected */
+                this.noSelectedFeeds = true;
                 return;
             }
 
@@ -186,6 +196,11 @@
             this.fire('core-signal', {name: 'rf-feeds-added'});
 
             this.cleanFields();
+        },
+
+        onAddFeedError: function(event, data) {
+            this.addFeedError = data.error;
+            this.loading = false;
         },
 
         onRemoveFeed: function(event, detail, sender) {
