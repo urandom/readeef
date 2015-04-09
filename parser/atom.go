@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"encoding/xml"
+	"time"
 )
 
 type atomFeed struct {
@@ -55,9 +56,14 @@ func ParseAtom(b []byte) (Feed, error) {
 		article.Description = getLargerContent(i.Content, i.Description)
 
 		var err error
-		if article.Date, err = parseDate(i.Date); err != nil {
-			return f, err
+		if i.Date != "" {
+			if article.Date, err = parseDate(i.Date); err != nil {
+				return f, err
+			}
+		} else {
+			article.Date = time.Now()
 		}
+
 		f.Articles = append(f.Articles, article)
 	}
 	f.HubLink = getHubLink(b)

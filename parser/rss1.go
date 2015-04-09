@@ -85,7 +85,10 @@ func ParseRss1(b []byte) (Feed, error) {
 			if article.Date, err = parseDate(i.Date); err != nil {
 				return f, err
 			}
+		} else {
+			article.Date = time.Now()
 		}
+
 		f.Articles = append(f.Articles, article)
 	}
 

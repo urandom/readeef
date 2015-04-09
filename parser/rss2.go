@@ -68,11 +68,14 @@ func ParseRss2(b []byte) (Feed, error) {
 			if article.Date, err = parseDate(i.PubDate); err != nil {
 				return f, err
 			}
-		} else {
+		} else if i.Date != "" {
 			if article.Date, err = parseDate(i.Date); err != nil {
 				return f, err
 			}
+		} else {
+			article.Date = time.Now()
 		}
+
 		f.Articles = append(f.Articles, article)
 	}
 	f.HubLink = getHubLink(b)
