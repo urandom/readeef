@@ -421,7 +421,13 @@
         onAllFeedsMessage: function(event, data) {
             this.feeds = data.arguments.Feeds;
 
-            this.updateTags();
+            if (this.feeds.length) {
+                this.updateTags();
+            } else {
+                this.display = "settings";
+                this.settingsTab = "feeds";
+                history.pushState(null, null, "/web/settings/feeds");
+            }
         },
 
         onFeedTap: function(event, detail, sender) {

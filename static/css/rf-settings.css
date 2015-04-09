@@ -89,6 +89,10 @@ li paper-checkbox {
     margin: 5px 20px 5px 0;
 }
 
-.share-category {
-    margin: 0.7em;
+.container {
+    clear: both;
+}
+
+.container .card {
+    float: left;
 }
