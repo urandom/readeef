@@ -51,6 +51,7 @@ type Config struct {
 	}
 	ArticleFormatter struct {
 		ReadabilityKey string `gcfg:"readability-key"`
+		ConvertToHTTPS bool   `gcfg:"convert-to-https"`
 	} `gcfg:"article-formatter"`
 
 	SearchIndex struct {
