@@ -9,7 +9,7 @@ INSERT INTO feeds(link, title, description, hub_link, site_link, update_error, s
 	deleteFeed        = `DELETE FROM feeds WHERE id() = $1`
 	createFeedArticle = `
 INSERT INTO articles(feed_id, link, guid, title, description, date, _feed_id_guid, _feed_id_link)
-	VALUES ($1, $2, $3, $4, $5, $6, formatInt($1) + ':' + $3, formatInt($1) + ':' + $2)
+	VALUES ($1, $2, $3, $4, $5, $6, formatInt($1) + ":" + $3, formatInt($1) + ":" + $2)
 `
 	getAllFeedArticles = `
 SELECT a.feed_id, id(a), a.title, a.description, a.link, a.guid, a.date
@@ -23,7 +23,7 @@ WHERE a.feed_id = $1 AND a.date > NOW() - INTERVAL '5 days'
 `
 	createAllUsersArticlesReadByFeedDate = `
 INSERT INTO users_articles_read
-	SELECT uf.user_login, a.id, uf.user_login + ':' + formatInt(a.id)
+	SELECT uf.user_login, a.id, uf.user_login + ":" + formatInt(a.id)
 	FROM users_feeds uf INNER JOIN articles a
 		ON uf.feed_id = a.feed_id AND uf.user_login = $1 AND uf.feed_id = $2
 		AND a.id IN (SELECT id FROM articles WHERE date IS NULL OR date < $3)
@@ -35,6 +35,6 @@ DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
 `
 	createUserFeedTag = `
 INSERT INTO users_feeds_tags(user_login, feed_id, tag, _login_id_tag)
-	VALUES ($1, $2, $3, $1 + ':' + formatInt($2) + ':' + $3)
+	VALUES ($1, $2, $3, $1 + ":" + formatInt($2) + ":" + $3)
 `
 )

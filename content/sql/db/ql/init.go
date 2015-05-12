@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 	link STRING,
 	lease_duration UINT32,
 	verification_time TIME,
-	subscription_failure BOOL
+	subscription_failure BOOL DEFAULT false
 )`, `
 CREATE UNIQUE INDEX IF NOT EXISTS uniq_hubbub_subscriptions_feed_id
 	ON hubbub_subscriptions (feed_id)

@@ -139,7 +139,7 @@
                                 <li title="{{ feed.Title }}" layout vertical>
                                     <template if="{{ wide }}">
                                     <div layout horizontal center>
-                                        <img src="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" alt="favicon" class="feed-favicon">
+                                        <img src="//www.google.com/s2/favicons?domain={{ feed.Link | domain }}" alt="favicon" class="feed-favicon">
                                         <span flex style="padding-right: 10px" layout horizontal>
                                             {{ feed.Title }}
                                             <template if="{{ user.Admin && (feed.UpdateError || feed.SubscribeError) }}">
@@ -153,7 +153,7 @@
                                     </template>
                                     <template if="{{ !wide }}">
                                     <div layout horizontal center>
-                                        <img src="http://www.google.com/s2/favicons?domain={{ feed.Link | domain }}" alt="favicon" class="feed-favicon">
+                                        <img src="//www.google.com/s2/favicons?domain={{ feed.Link | domain }}" alt="favicon" class="feed-favicon">
                                         <span flex>{{ feed.Title }}</span>
                                     </div>
                                     <div layout horizontal center>

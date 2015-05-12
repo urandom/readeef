@@ -14,7 +14,7 @@ WHERE id(f) = uf.feed_id
 `
 	createUserFeed = `
 INSERT INTO users_feeds(user_login, feed_id, _login_id)
-	VALUES ($1, $2, $1 + ':' + formatInt($2))`
+	VALUES ($1, $2, $1 + ":" + formatInt($2))`
 	getUserFeeds = `
 SELECT id(f), f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
 FROM feeds f, users_feeds uf
@@ -29,7 +29,7 @@ WHERE uf.feed_id = a.feed_id AND uf.user_login = $1
 `
 	createAllUserArticlesReadByDate = `
 INSERT INTO users_articles_read
-	SELECT uf.user_login, id(a), uf.user_login + ':' + formatInt(id(a))
+	SELECT uf.user_login, id(a), uf.user_login + ":" + formatInt(id(a))
 	FROM users_feeds uf, articles a
 	WHERE uf.feed_id = a.feed_id AND uf.user_login = $1
 		AND id(a) IN (SELECT id() FROM articles WHERE date IS NULL OR date < $2)
@@ -41,7 +41,7 @@ DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
 `
 	createNewerUserArticlesReadByDate = `
 INSERT INTO users_articles_read
-	SELECT uf.user_login, id(a), uf.user_login + ':' + formatInt(id(a))
+	SELECT uf.user_login, id(a), uf.user_login + ":" + formatInt(id(a))
 	FROM users_feeds uf, articles a
 	WHERE uf.feed_id = a.feed_id AND uf.user_login = $1
 		AND id(a) IN (SELECT id() FROM articles WHERE date > $2)

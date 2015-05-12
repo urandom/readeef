@@ -76,13 +76,18 @@
                 }
 
                 var date = new Date().getTime(),
-                    nonce = response.Nonce;
+                    nonce = response.Nonce,
+                    proto = 'ws';
 
                 signature = generateSignature(encodeURI(self.url), 'GET', null,
                     "", date, nonce, self.user.MD5API || "");
 
+                if (location.protocol == "https:") {
+                    proto = 'wss';
+                }
+
                 webSocket = new WebSocket(
-                    "ws://" + location.host + self.url +
+                    proto + "://" + location.host + self.url +
                     "?login=" + encodeURIComponent(self.user.Login) +
                     "&signature=" + encodeURIComponent(signature) +
                     "&date=" + encodeURIComponent(date) +
