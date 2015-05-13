@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/parser"
@@ -360,6 +361,50 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 		}
 
 		if len(f.NewArticles()) > 0 {
+			if fm.config.ArticleFormatter.ConvertLinksToProtocolRelative {
+				fm.logger.Infoln("Converting feed urls to be protocol-relative")
+
+				for _, a := range f.NewArticles() {
+					data := a.Data()
+					if d, err := goquery.NewDocumentFromReader(
+						strings.NewReader(data.Description)); err == nil {
+
+						changed := false
+						d.Find("[src]").Each(func(i int, s *goquery.Selection) {
+							var val string
+							var ok bool
+
+							if val, ok = s.Attr("src"); !ok {
+								return
+							}
+
+							u, err := url.Parse(val)
+							if err != nil || !u.IsAbs() {
+								return
+							}
+
+							domain := fm.repo.Domain(val)
+							fm.logger.Infof("Testing %s for HTTPS support\n", val)
+							if domain.SupportsHTTPS() && domain.URL().Scheme != u.Scheme {
+								changed = true
+								s.SetAttr("src", domain.URL().String())
+							}
+						})
+
+						if changed {
+							if content, err := d.Html(); err == nil {
+								// net/http tries to provide valid html, adding html, head and body tags
+								content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
+
+								data.Description = content
+
+								a.Data(data)
+							}
+						}
+					}
+				}
+			}
+
 			if fm.searchIndex != EmptySearchIndex {
 				fm.searchIndex.UpdateFeed(f)
 			}

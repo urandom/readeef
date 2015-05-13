@@ -54,7 +54,7 @@ func (d Domain) SupportsHTTPS() bool {
 		return false
 	}
 
-	return d.url.Scheme == "https"
+	return d.url.Scheme == "https" || d.url.Host != "" && d.url.Scheme == ""
 }
 
 func (d Domain) CheckHTTPSSupport() bool {

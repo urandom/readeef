@@ -6,15 +6,15 @@ import (
 )
 
 func (r *Repo) Article() content.Article {
-	a := &Article{}
+	a := r.article()
 
 	a.Repo(r)
 
-	return a
+	return &a
 }
 
 func (r *Repo) ScoredArticle() content.ScoredArticle {
-	sa := &ScoredArticle{Article: Article{}, db: r.db, logger: r.logger}
+	sa := &ScoredArticle{Article: r.article()}
 
 	sa.Repo(r)
 
@@ -96,7 +96,11 @@ func (r *Repo) userArticle(u content.User) UserArticle {
 	ua := &base.UserArticle{}
 	ua.User(u)
 
-	return UserArticle{UserArticle: *ua, db: r.db, logger: r.logger}
+	return UserArticle{Article: r.article(), UserArticle: *ua}
+}
+
+func (r Repo) article() Article {
+	return Article{db: r.db, logger: r.logger}
 }
 
 func (r Repo) feed() Feed {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/search"
+	"github.com/jmoiron/sqlx"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
@@ -16,21 +17,85 @@ import (
 
 type Article struct {
 	base.Article
+
+	logger webfw.Logger
+	db     *db.DB
 }
 
 type ScoredArticle struct {
 	Article
-	logger webfw.Logger
-
-	db *db.DB
 }
 
 type UserArticle struct {
 	base.UserArticle
 	Article
-	logger webfw.Logger
+}
 
-	db *db.DB
+func (a *Article) Update() {
+	tx, err := a.db.Beginx()
+	if err != nil {
+		a.Err(err)
+		return
+	}
+	defer tx.Rollback()
+
+	updateArticle(a, tx, a.db, a.logger)
+
+	tx.Commit()
+}
+
+func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logger) {
+	if a.HasErr() {
+		return
+	}
+
+	if err := a.Validate(); err != nil {
+		a.Err(err)
+		return
+	}
+
+	logger.Infof("Updating article %s\n", a)
+
+	var sqlString string
+	d := a.Data()
+	args := []interface{}{d.Title, d.Description, d.Date, d.FeedId}
+
+	if d.Guid.Valid {
+		sqlString = db.SQL("update_feed_article_with_guid")
+		args = append(args, d.Guid)
+	} else {
+		sqlString = db.SQL("update_feed_article")
+		args = append(args, d.Link)
+	}
+
+	stmt, err := tx.Preparex(sqlString)
+	if err != nil {
+		a.Err(err)
+		return
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(args...)
+	if err != nil {
+		a.Err(err)
+		return
+	}
+
+	if num, err := res.RowsAffected(); err != nil && err == sql.ErrNoRows || num == 0 {
+		logger.Infof("Creating article %s\n", a)
+
+		aId, err := db.CreateWithId(tx, "create_feed_article", d.FeedId, d.Link, d.Guid,
+			d.Title, d.Description, d.Date)
+
+		if err != nil {
+			a.Err(err)
+			return
+		}
+
+		d.Id = data.ArticleId(aId)
+		d.IsNew = true
+		a.Data(d)
+	}
 }
 
 func (ua *UserArticle) Read(read bool) {
@@ -47,7 +112,7 @@ func (ua *UserArticle) Read(read bool) {
 	login := ua.User().Data().Login
 	ua.logger.Infof("Marking user '%s' article '%d' as read: %v\n", login, d.Id, read)
 
-	tx, err := ua.db.Begin()
+	tx, err := ua.db.Beginx()
 	if err != nil {
 		ua.Err(err)
 		return
@@ -101,7 +166,7 @@ func (ua *UserArticle) Favorite(favorite bool) {
 	login := ua.User().Data().Login
 	ua.logger.Infof("Marking user '%s' article '%d' as favorite: %v\n", login, d.Id, favorite)
 
-	tx, err := ua.db.Begin()
+	tx, err := ua.db.Beginx()
 	if err != nil {
 		ua.Err(err)
 		return

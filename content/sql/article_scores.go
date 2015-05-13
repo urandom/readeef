@@ -30,7 +30,7 @@ func (asc *ArticleScores) Update() {
 	}
 	asc.logger.Infof("Updating scores for article %d", data.ArticleId)
 
-	tx, err := asc.db.Begin()
+	tx, err := asc.db.Beginx()
 	if err != nil {
 		asc.Err(err)
 		return

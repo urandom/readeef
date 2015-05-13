@@ -17,7 +17,7 @@ type Feed struct {
 	RepoRelated
 
 	data           data.Feed
-	parsedArticles []content.Article
+	parsedArticles []Article
 }
 
 type UserFeed struct {
@@ -65,7 +65,7 @@ func (f *Feed) Refresh(pf parser.Feed) {
 	d.SiteLink = pf.SiteLink
 	d.HubLink = pf.HubLink
 
-	f.parsedArticles = make([]content.Article, len(pf.Articles))
+	f.parsedArticles = make([]Article, len(pf.Articles))
 
 	for i := range pf.Articles {
 		ai := data.Article{
@@ -81,15 +81,13 @@ func (f *Feed) Refresh(pf parser.Feed) {
 			ai.Guid.String = pf.Articles[i].Guid
 		}
 
-		a := &Article{data: ai}
-
-		f.parsedArticles[i] = a
+		f.parsedArticles[i] = Article{data: ai}
 	}
 
 	f.Data(d)
 }
 
-func (f *Feed) ParsedArticles() (a []content.Article) {
+func (f *Feed) ParsedArticles() (a []Article) {
 	if f.HasErr() {
 		return
 	}

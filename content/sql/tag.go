@@ -112,7 +112,7 @@ func (t *Tag) ReadBefore(date time.Time, read bool) {
 
 	t.logger.Infof("Marking articles for tag %s before %v as read\n", t, date)
 
-	tx, err := t.db.Begin()
+	tx, err := t.db.Beginx()
 	if err != nil {
 		t.Err(err)
 		return

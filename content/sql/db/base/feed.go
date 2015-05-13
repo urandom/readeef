@@ -4,9 +4,6 @@ func init() {
 	sql["create_feed"] = createFeed
 	sql["update_feed"] = updateFeed
 	sql["delete_feed"] = deleteFeed
-	sql["create_feed_article"] = createFeedArticle
-	sql["update_feed_article"] = updateFeedArticle
-	sql["update_feed_article_with_guid"] = updateFeedArticleWithGuid
 	sql["get_all_feed_articles"] = getAllFeedArticles
 	sql["get_latest_feed_articles"] = getLatestFeedArticles
 	sql["get_hubbub_subscription"] = getHubbubSubscription
@@ -23,22 +20,9 @@ const (
 	createFeed = `
 INSERT INTO feeds(link, title, description, hub_link, site_link, update_error, subscribe_error)
 	SELECT $1, $2, $3, $4, $5, $6, $7 EXCEPT SELECT link, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds WHERE link = $1`
-	updateFeed        = `UPDATE feeds SET link = $1, title = $2, description = $3, hub_link = $4, site_link = $5, update_error = $6, subscribe_error = $7 WHERE id = $8`
-	deleteFeed        = `DELETE FROM feeds WHERE id = $1`
-	createFeedArticle = `
-INSERT INTO articles(feed_id, link, guid, title, description, date)
-	SELECT $1, $2, $3, $4, $5, $6 EXCEPT
-		SELECT feed_id, link, guid, title, description, date
-		FROM articles WHERE feed_id = $1 AND link = $2
-`
+	updateFeed = `UPDATE feeds SET link = $1, title = $2, description = $3, hub_link = $4, site_link = $5, update_error = $6, subscribe_error = $7 WHERE id = $8`
+	deleteFeed = `DELETE FROM feeds WHERE id = $1`
 
-	updateFeedArticle = `
-UPDATE articles SET title = $1, description = $2, date = $3 WHERE feed_id = $4 AND link = $5
-`
-
-	updateFeedArticleWithGuid = `
-UPDATE articles SET title = $1, description = $2, date = $3 WHERE feed_id = $4 AND guid = $5
-`
 	getAllFeedArticles = `
 SELECT a.feed_id, a.id, a.title, a.description, a.link, a.guid, a.date
 FROM articles a

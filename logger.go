@@ -1,6 +1,9 @@
 package readeef
 
 import (
+	"io"
+	"os"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/urandom/webfw"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -12,12 +15,20 @@ type Logger struct {
 
 func NewLogger(cfg Config) webfw.Logger {
 	logger := Logger{Logger: logrus.New()}
-	logger.Out = &lumberjack.Logger{
-		Filename:   cfg.Logger.File,
-		MaxSize:    20,
-		MaxBackups: 5,
-		MaxAge:     28,
+
+	var writer io.Writer
+	if cfg.Logger.File == "-" {
+		writer = os.Stderr
+	} else {
+		writer = &lumberjack.Logger{
+			Filename:   cfg.Logger.File,
+			MaxSize:    20,
+			MaxBackups: 5,
+			MaxAge:     28,
+		}
 	}
+
+	logger.Out = writer
 
 	switch cfg.Logger.Formatter {
 	case "text":

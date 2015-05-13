@@ -18,8 +18,11 @@ func TestScoredArticle(t *testing.T) {
 		createArticle(data.Article{Title: "article2", Date: now.Add(2 * time.Hour), Link: "http://sugr.org/bg/products/readeef"}),
 		createArticle(data.Article{Title: "article3", Date: now.Add(-3 * time.Hour), Link: "http://sugr.org/bg/about/us"}),
 	})
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
 
 	ua := uf.AllArticles()
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+	tests.CheckInt64(t, 3, int64(len(ua)))
 	id1, id3 := ua[0].Data().Id, ua[2].Data().Id
 
 	asc1 := createArticleScores(data.ArticleScores{ArticleId: id1, Score1: 2, Score2: 2})
@@ -43,8 +46,15 @@ func TestUserArticle(t *testing.T) {
 	uf.AddArticles([]content.Article{
 		createArticle(data.Article{Title: "article1", Date: now, Link: "http://sugr.org/bg/products/readeef"}),
 	})
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
 
-	id := uf.AllArticles()[0].Data().Id
+	articles := uf.AllArticles()
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+	tests.CheckInt64(t, 1, int64(len(articles)))
+
+	id := articles[0].Data().Id
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+
 	a := u.ArticleById(id)
 	tests.CheckBool(t, false, a.HasErr(), a.Err())
 	tests.CheckBool(t, false, a.Data().Read)

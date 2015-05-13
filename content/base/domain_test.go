@@ -2,7 +2,6 @@ package base
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -27,7 +26,6 @@ func TestDomain(t *testing.T) {
 	tests.CheckString(t, urlString, d.URL().String())
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "1")
 	}))
 	defer ts.Close()
 

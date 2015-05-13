@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"runtime"
@@ -48,12 +49,19 @@ func main() {
 		server.Port = *port
 	}
 
-	accessLogger := webfw.NewStandardLogger(&lumberjack.Logger{
-		Filename:   cfg.Logger.AccessFile,
-		MaxSize:    20,
-		MaxBackups: 5,
-		MaxAge:     28,
-	}, "", 0)
+	var accessWriter io.Writer
+	if cfg.Logger.AccessFile == "-" {
+		accessWriter = os.Stdout
+	} else {
+		accessWriter = &lumberjack.Logger{
+			Filename:   cfg.Logger.AccessFile,
+			MaxSize:    20,
+			MaxBackups: 5,
+			MaxAge:     28,
+		}
+	}
+
+	accessLogger := webfw.NewStandardLogger(accessWriter, "", 0)
 
 	dispatcher := server.Dispatcher("/api/")
 	dispatcher.Logger = logger

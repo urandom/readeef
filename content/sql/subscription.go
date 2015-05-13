@@ -26,7 +26,7 @@ func (s *Subscription) Update() {
 	i := s.Data()
 	s.logger.Infof("Updating subscription to %s\n", i.Link)
 
-	tx, err := s.db.Begin()
+	tx, err := s.db.Beginx()
 	if err != nil {
 		s.Err(err)
 		return
@@ -81,7 +81,7 @@ func (s *Subscription) Delete() {
 	i := s.Data()
 	s.logger.Infof("Deleting subscription to %s\n", i.Link)
 
-	tx, err := s.db.Begin()
+	tx, err := s.db.Beginx()
 	if err != nil {
 		s.Err(err)
 		return

@@ -1,36 +1,21 @@
 package test
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
-	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/tests"
 )
 
-type dom struct {
-	content.Domain
-
-	currentSupport bool
-}
-
-func (d dom) CheckHTTPSSupport() bool {
-	return d.currentSupport
-}
-
 func TestDomain(t *testing.T) {
-	realD := repo.Domain("http://sugr.org")
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	}))
+	defer ts.Close()
 
-	d := &dom{Domain: realD}
+	d := repo.Domain(ts.URL)
 
 	tests.CheckBool(t, false, d.HasErr(), d.Err())
 
 	tests.CheckBool(t, false, d.SupportsHTTPS(), d.Err())
-
-	d.currentSupport = true
-	// Already checked, will return false
-	tests.CheckBool(t, false, d.SupportsHTTPS(), d.Err())
-
-	d.Domain = repo.Domain("http:/sugr.org")
-	d.currentSupport = true
-	tests.CheckBool(t, true, d.SupportsHTTPS(), d.Err())
 }

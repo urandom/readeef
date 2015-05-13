@@ -52,6 +52,8 @@ type Article interface {
 
 	Validate() error
 
+	Update()
+
 	Format(templateDir, readabilityKey string) data.ArticleFormatting
 }
 

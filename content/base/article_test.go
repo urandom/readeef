@@ -27,6 +27,7 @@ func TestArticle(t *testing.T) {
 	tests.CheckBool(t, false, a.Validate() == nil)
 
 	d.Link = "http://sugr.org/en/"
+	d.FeedId = 42
 	a.Data(d)
 
 	tests.CheckBool(t, true, a.Validate() == nil)

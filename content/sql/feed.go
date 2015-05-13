@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve"
+	"github.com/jmoiron/sqlx"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
@@ -38,6 +39,24 @@ type TaggedFeed struct {
 type taggedFeedJSON struct {
 	data.Feed
 	Tags []content.Tag
+}
+
+func (f *Feed) ParsedArticles() (a []content.Article) {
+	if f.HasErr() {
+		return
+	}
+
+	articles := f.Feed.ParsedArticles()
+	r := f.Repo()
+	a = make([]content.Article, len(articles))
+
+	for i := range articles {
+		article := r.Article()
+		article.Data(articles[i].Data())
+		a[i] = article
+	}
+
+	return
 }
 
 func (f Feed) NewArticles() (a []content.Article) {
@@ -95,7 +114,7 @@ func (f *Feed) Update() {
 	id := i.Id
 	f.logger.Infof("Updating feed %d\n", id)
 
-	tx, err := f.db.Begin()
+	tx, err := f.db.Beginx()
 	if err != nil {
 		f.Err(err)
 		return
@@ -163,7 +182,7 @@ func (f *Feed) Delete() {
 
 	f.logger.Infof("Deleting feed %d\n", id)
 
-	tx, err := f.db.Begin()
+	tx, err := f.db.Beginx()
 	if err != nil {
 		f.Err(err)
 		return
@@ -253,9 +272,9 @@ func (f *Feed) AddArticles(articles []content.Article) {
 		return
 	}
 
-	f.logger.Infof("Adding articles to feed %d\n", id)
+	f.logger.Infof("Adding %d articles to feed %d\n", len(articles), id)
 
-	tx, err := f.db.Begin()
+	tx, err := f.db.Beginx()
 	if err != nil {
 		f.Err(err)
 		return
@@ -301,58 +320,22 @@ func (f *Feed) Subscription() (s content.Subscription) {
 	return
 }
 
-func (f *Feed) updateFeedArticles(tx *db.Tx, articles []content.Article) (a []content.Article) {
+func (f *Feed) updateFeedArticles(tx *sqlx.Tx, articles []content.Article) (a []content.Article) {
 	if f.HasErr() || len(articles) == 0 {
 		return
 	}
 
-	for i := range articles {
-		if err := articles[i].Validate(); err != nil {
-			f.Err(err)
-			return
-		}
+	id := f.Data().Id
 
-		id := f.Data().Id
+	for i := range articles {
 		d := articles[i].Data()
 		d.FeedId = id
+		articles[i].Data(d)
 
-		var sqlString string
-		args := []interface{}{d.Title, d.Description, d.Date, id}
+		updateArticle(articles[i], tx, f.db, f.logger)
 
-		if d.Guid.Valid {
-			sqlString = f.db.SQL("update_feed_article_with_guid")
-			args = append(args, d.Guid)
-		} else {
-			sqlString = f.db.SQL("update_feed_article")
-			args = append(args, d.Link)
-		}
-
-		stmt, err := tx.Preparex(sqlString)
-		if err != nil {
-			f.Err(err)
-			return
-		}
-		defer stmt.Close()
-
-		res, err := stmt.Exec(args...)
-		if err != nil {
-			f.Err(err)
-			return
-		}
-
-		if num, err := res.RowsAffected(); err != nil && err == sql.ErrNoRows || num == 0 {
+		if articles[i].Data().IsNew {
 			a = append(a, articles[i])
-
-			aId, err := f.db.CreateWithId(tx, "create_feed_article", id, d.Link, d.Guid,
-				d.Title, d.Description, d.Date)
-
-			if err != nil {
-				f.Err(err)
-				return
-			}
-
-			d.Id = data.ArticleId(aId)
-			articles[i].Data(d)
 		}
 	}
 
@@ -387,7 +370,7 @@ func (uf *UserFeed) Detach() {
 	login := uf.User().Data().Login
 	uf.logger.Infof("Detaching feed %d from user %s\n", id, login)
 
-	tx, err := uf.db.Begin()
+	tx, err := uf.db.Beginx()
 	if err != nil {
 		uf.Err(err)
 		return
@@ -484,7 +467,7 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 	login := uf.User().Data().Login
 	uf.logger.Infof("Marking user %s feed %d articles before %v as read: %v\n", login, id, date, read)
 
-	tx, err := uf.db.Begin()
+	tx, err := uf.db.Beginx()
 	if err != nil {
 		uf.Err(err)
 		return
@@ -668,7 +651,7 @@ func (tf *TaggedFeed) UpdateTags() {
 	login := tf.User().Data().Login
 	tf.logger.Infof("Deleting all tags for feed %d\n", id)
 
-	tx, err := tf.db.Begin()
+	tx, err := tf.db.Beginx()
 	if err != nil {
 		tf.Err(err)
 		return

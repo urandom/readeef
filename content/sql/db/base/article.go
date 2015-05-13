@@ -1,6 +1,9 @@
 package base
 
 func init() {
+	sql["create_feed_article"] = createFeedArticle
+	sql["update_feed_article"] = updateFeedArticle
+	sql["update_feed_article_with_guid"] = updateFeedArticleWithGuid
 	sql["create_user_article_read"] = createUserArticleRead
 	sql["delete_user_article_read"] = deleteUserArticleRead
 	sql["create_user_article_favorite"] = createUserArticleFavorite
@@ -11,6 +14,20 @@ func init() {
 }
 
 const (
+	createFeedArticle = `
+INSERT INTO articles(feed_id, link, guid, title, description, date)
+	SELECT $1, $2, $3, $4, $5, $6 EXCEPT
+		SELECT feed_id, link, guid, title, description, date
+		FROM articles WHERE feed_id = $1 AND link = $2
+`
+
+	updateFeedArticle = `
+UPDATE articles SET title = $1, description = $2, date = $3 WHERE feed_id = $4 AND link = $5
+`
+
+	updateFeedArticleWithGuid = `
+UPDATE articles SET title = $1, description = $2, date = $3 WHERE feed_id = $4 AND guid = $5
+`
 	createUserArticleRead = `
 INSERT INTO users_articles_read(user_login, article_id)
 	SELECT $1, $2 EXCEPT

@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/urandom/readeef/content/sql/db"
 	"github.com/urandom/readeef/content/sql/db/base"
@@ -14,7 +15,7 @@ func (h Helper) InitSQL() []string {
 	return initSQL
 }
 
-func (h Helper) CreateWithId(tx *db.Tx, name string, args ...interface{}) (int64, error) {
+func (h Helper) CreateWithId(tx *sqlx.Tx, name string, args ...interface{}) (int64, error) {
 	var id int64
 
 	sql := h.SQL(name)

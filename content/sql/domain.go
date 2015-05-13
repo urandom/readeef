@@ -50,13 +50,14 @@ func (d *Domain) SupportsHTTPS() (supports bool) {
 		supports = d.CheckHTTPSSupport()
 
 		u := d.URL()
-		u.Scheme = "https"
+		// This will produce a protocol-relative url, indicating that it supports HTTPS for future checks
+		u.Scheme = ""
 
 		d.URL(u.String())
 
 		d.logger.Infof("Updating domain https support for %s\n", host)
 
-		tx, err := d.db.Begin()
+		tx, err := d.db.Beginx()
 		if err != nil {
 			d.Err(err)
 			return

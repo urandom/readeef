@@ -1,10 +1,12 @@
 package db
 
+import "github.com/jmoiron/sqlx"
+
 type Helper interface {
 	SQL(name string) string
 	InitSQL() []string
 
-	CreateWithId(tx *Tx, name string, args ...interface{}) (int64, error)
+	CreateWithId(tx *sqlx.Tx, name string, args ...interface{}) (int64, error)
 	Upgrade(db *DB, old, new int) error
 }
 

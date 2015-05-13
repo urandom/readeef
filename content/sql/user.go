@@ -34,7 +34,7 @@ func (u *User) Update() {
 	i := u.Data()
 	u.logger.Infof("Updating user %s\n", i.Login)
 
-	tx, err := u.db.Begin()
+	tx, err := u.db.Beginx()
 	if err != nil {
 		u.Err(err)
 		return
@@ -95,7 +95,7 @@ func (u *User) Delete() {
 	i := u.Data()
 	u.logger.Infof("Deleting user %s\n", i.Login)
 
-	tx, err := u.db.Begin()
+	tx, err := u.db.Beginx()
 	if err != nil {
 		u.Err(err)
 		return
@@ -176,7 +176,7 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 	login := u.Data().Login
 	u.logger.Infof("Getting user feed for user %s and feed %d\n", login, d.Id)
 
-	tx, err := u.db.Begin()
+	tx, err := u.db.Beginx()
 	if err != nil {
 		uf.Err(err)
 		return
@@ -538,7 +538,7 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 	login := u.Data().Login
 	u.logger.Infof("Marking user %s articles before %v as read: %v\n", login, date, read)
 
-	tx, err := u.db.Begin()
+	tx, err := u.db.Beginx()
 	if err != nil {
 		u.Err(err)
 		return
@@ -590,7 +590,7 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 	login := u.Data().Login
 	u.logger.Infof("Marking user %s articles after %v as read: %v\n", login, date, read)
 
-	tx, err := u.db.Begin()
+	tx, err := u.db.Beginx()
 	if err != nil {
 		u.Err(err)
 		return

@@ -1,6 +1,9 @@
 package base
 
-import "github.com/urandom/readeef/content/sql/db"
+import (
+	"github.com/jmoiron/sqlx"
+	"github.com/urandom/readeef/content/sql/db"
+)
 
 type Helper struct {
 	sql map[string]string
@@ -25,7 +28,7 @@ func (h Helper) Upgrade(db *db.DB, old, new int) error {
 	return nil
 }
 
-func (h Helper) CreateWithId(tx *db.Tx, name string, args ...interface{}) (int64, error) {
+func (h Helper) CreateWithId(tx *sqlx.Tx, name string, args ...interface{}) (int64, error) {
 	var id int64
 
 	sql := h.SQL(name)

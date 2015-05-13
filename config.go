@@ -50,8 +50,8 @@ type Config struct {
 		}
 	}
 	ArticleFormatter struct {
-		ReadabilityKey string `gcfg:"readability-key"`
-		ConvertToHTTPS bool   `gcfg:"convert-to-https"`
+		ReadabilityKey                 string `gcfg:"readability-key"`
+		ConvertLinksToProtocolRelative bool   `gcfg:"convert-links-to-protocol-relative"`
 	} `gcfg:"article-formatter"`
 
 	SearchIndex struct {
@@ -131,9 +131,9 @@ func defaultConfig() (Config, error) {
 var cfg string = `
 [logger]
 	level = error # error, info, debug
-	file = error.log
+	file = - # stderr, or a filename
 	formatter = text # text, json
-	access-file = access.log
+	access-file = - # stdout or a filename
 [db]
 	driver = sqlite3
 	connect = file:./readeef.sqlite3?cache=shared&mode=rwc

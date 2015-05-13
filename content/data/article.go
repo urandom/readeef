@@ -36,6 +36,8 @@ type Article struct {
 	Favorite bool
 	Score    int64
 
+	IsNew bool `json:"-"`
+
 	Hit struct {
 		Fragments map[string][]string `json:"fragments,omitempty"`
 	}
