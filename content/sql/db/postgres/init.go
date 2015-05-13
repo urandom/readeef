@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 	PRIMARY KEY(feed_id),
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`, `
-CREATE TABLE IF NOT EXISTS domain_https (
+CREATE TABLE IF NOT EXISTS domain_https_support (
 	domain TEXT,
 	https BOOLEAN DEFAULT 'f',
 

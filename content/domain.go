@@ -7,6 +7,7 @@ import (
 
 type Domain interface {
 	Error
+	RepoRelated
 
 	fmt.Stringer
 

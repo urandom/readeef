@@ -37,6 +37,8 @@ type Generator interface {
 	Tag(u User) Tag
 
 	User() User
+
+	Domain(u string) Domain
 }
 
 type RepoRelated interface {

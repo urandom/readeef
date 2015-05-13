@@ -12,6 +12,7 @@ import (
 
 type Domain struct {
 	Error
+	RepoRelated
 
 	url *url.URL
 }
@@ -48,6 +49,11 @@ func (d Domain) Validate() error {
 }
 
 func (d Domain) SupportsHTTPS() bool {
+	if err := d.Validate(); err != nil {
+		d.Err(err)
+		return false
+	}
+
 	return d.url.Scheme == "https"
 }
 
