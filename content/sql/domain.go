@@ -33,6 +33,7 @@ func (d *Domain) SupportsHTTPS() (supports bool) {
 	var needsChecking bool
 	if err := d.db.Get(&sup, d.db.SQL("get_domain_https_support"), host); err != nil {
 		if err == sql.ErrNoRows {
+			d.logger.Debugf("Domain %s has no db recort\n", host)
 			needsChecking = true
 		} else {
 			d.Err(err)
@@ -40,8 +41,17 @@ func (d *Domain) SupportsHTTPS() (supports bool) {
 		}
 	} else {
 		if sup.Valid {
+			if sup.Bool {
+				u := d.URL()
+				// This will produce a protocol-relative url, indicating that
+				// it supports HTTPS for future checks
+				u.Scheme = ""
+
+				d.URL(u.String())
+			}
 			return sup.Bool
 		} else {
+			d.logger.Debugf("Domain %s has an invalid db recort\n", host)
 			needsChecking = true
 		}
 	}
@@ -50,7 +60,6 @@ func (d *Domain) SupportsHTTPS() (supports bool) {
 		supports = d.CheckHTTPSSupport()
 
 		u := d.URL()
-		// This will produce a protocol-relative url, indicating that it supports HTTPS for future checks
 		u.Scheme = ""
 
 		d.URL(u.String())
@@ -71,7 +80,7 @@ func (d *Domain) SupportsHTTPS() (supports bool) {
 		}
 		defer stmt.Close()
 
-		res, err := stmt.Exec(host, supports)
+		res, err := stmt.Exec(supports, host)
 		if err != nil {
 			d.Err(err)
 			return
@@ -92,7 +101,7 @@ func (d *Domain) SupportsHTTPS() (supports bool) {
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(supports, host)
+		_, err = stmt.Exec(host, supports)
 		if err != nil {
 			d.Err(err)
 			return

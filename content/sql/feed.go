@@ -48,11 +48,14 @@ func (f *Feed) ParsedArticles() (a []content.Article) {
 
 	articles := f.Feed.ParsedArticles()
 	r := f.Repo()
+	id := f.Data().Id
 	a = make([]content.Article, len(articles))
 
 	for i := range articles {
 		article := r.Article()
-		article.Data(articles[i].Data())
+		data := articles[i].Data()
+		data.FeedId = id
+		article.Data(data)
 		a[i] = article
 	}
 
@@ -142,13 +145,6 @@ func (f *Feed) Update() {
 		}
 
 		i.Id = data.FeedId(id)
-
-		pa := f.ParsedArticles()
-		for index := range pa {
-			ai := pa[index].Data()
-			ai.FeedId = i.Id
-			pa[index].Data(ai)
-		}
 
 		f.Data(i)
 	}

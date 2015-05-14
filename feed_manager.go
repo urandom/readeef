@@ -126,15 +126,13 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 
 		f = feeds[0]
 
-		f.Update()
+		fm.updateFeed(f, true)
 		if f.HasErr() {
 			return f, f.Err()
 		}
 
 		if fm.searchIndex != EmptySearchIndex {
-			go func() {
-				fm.searchIndex.UpdateFeed(f)
-			}()
+			go fm.searchIndex.UpdateFeed(f)
 		}
 	}
 
@@ -355,56 +353,12 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 	case <-fm.done:
 		return
 	default:
-		f.Update()
+		fm.updateFeed(f, false)
 		if f.HasErr() {
 			fm.logger.Printf("Error updating feed '%s' database record: %v\n", f, f.Err())
 		}
 
 		if len(f.NewArticles()) > 0 {
-			if fm.config.ArticleFormatter.ConvertLinksToProtocolRelative {
-				fm.logger.Infoln("Converting feed urls to be protocol-relative")
-
-				for _, a := range f.NewArticles() {
-					data := a.Data()
-					if d, err := goquery.NewDocumentFromReader(
-						strings.NewReader(data.Description)); err == nil {
-
-						changed := false
-						d.Find("[src]").Each(func(i int, s *goquery.Selection) {
-							var val string
-							var ok bool
-
-							if val, ok = s.Attr("src"); !ok {
-								return
-							}
-
-							u, err := url.Parse(val)
-							if err != nil || !u.IsAbs() {
-								return
-							}
-
-							domain := fm.repo.Domain(val)
-							fm.logger.Infof("Testing %s for HTTPS support\n", val)
-							if domain.SupportsHTTPS() && domain.URL().Scheme != u.Scheme {
-								changed = true
-								s.SetAttr("src", domain.URL().String())
-							}
-						})
-
-						if changed {
-							if content, err := d.Html(); err == nil {
-								// net/http tries to provide valid html, adding html, head and body tags
-								content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
-
-								data.Description = content
-
-								a.Data(data)
-							}
-						}
-					}
-				}
-			}
-
 			if fm.searchIndex != EmptySearchIndex {
 				fm.searchIndex.UpdateFeed(f)
 			}
@@ -611,6 +565,86 @@ func (fm FeedManager) discoverParserFeeds(link string) ([]content.Feed, error) {
 	}
 
 	return []content.Feed{}, ErrNoFeed
+}
+
+func (fm FeedManager) updateFeed(f content.Feed, isNew bool) {
+	f.Update()
+
+	if !f.HasErr() {
+		var articles []content.Article
+		if isNew {
+			articles = f.ParsedArticles()
+		} else {
+			articles = f.NewArticles()
+		}
+
+		go fm.formatArticles(articles)
+	}
+}
+
+func (fm FeedManager) formatArticles(articles []content.Article) {
+	if len(articles) > 0 {
+		for i := range articles {
+			data := articles[i].Data()
+			if d, err := goquery.NewDocumentFromReader(strings.NewReader(data.Description)); err == nil {
+				changed := false
+
+				if fm.config.ArticleFormatter.ConvertLinksToProtocolRelative {
+					changed = fm.convertArticleLinks(d)
+				}
+
+				if changed {
+					if content, err := d.Html(); err == nil {
+						// net/http tries to provide valid html, adding html, head and body tags
+						content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
+
+						data.Description = content
+
+						articles[i].Data(data)
+
+						articles[i].Update()
+						if articles[i].HasErr() {
+							fm.logger.Debugf("Error updating article '%s': %v\n", articles[i], articles[i].Err())
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func (fm FeedManager) convertArticleLinks(d *goquery.Document) bool {
+	fm.logger.Infoln("Converting feed urls to be protocol-relative")
+
+	changed := false
+	d.Find("[src]").Each(func(i int, s *goquery.Selection) {
+		var val string
+		var ok bool
+
+		if val, ok = s.Attr("src"); !ok {
+			return
+		}
+
+		u, err := url.Parse(val)
+		if err != nil || !u.IsAbs() {
+			return
+		}
+
+		domain := fm.repo.Domain(val)
+		fm.logger.Infof("Testing %s for HTTPS support\n", val)
+		if domain.SupportsHTTPS() && domain.URL().Scheme != u.Scheme {
+			changed = true
+			src := domain.URL().String()
+			fm.logger.Infof("%s supports HTTPS, changing [src] attribute to %s\n", val, src)
+			s.SetAttr("src", src)
+		} else if domain.HasErr() {
+			fm.logger.Debugf("Error checking '%s' for domain HTTPS support: %v\n", domain.URL(), domain.Err())
+		} else {
+			fm.logger.Infof("%s has no support for HTTPS, or is already an HTTPS link\n", domain.URL())
+		}
+	})
+
+	return changed
 }
 
 func ageInDays(published time.Time) int {
