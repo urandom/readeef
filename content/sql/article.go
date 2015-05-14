@@ -41,7 +41,9 @@ func (a *Article) Update() {
 
 	updateArticle(a, tx, a.db, a.logger)
 
-	tx.Commit()
+	if !a.HasErr() {
+		tx.Commit()
+	}
 }
 
 func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logger) {

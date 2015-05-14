@@ -330,6 +330,11 @@ func (f *Feed) updateFeedArticles(tx *sqlx.Tx, articles []content.Article) (a []
 
 		updateArticle(articles[i], tx, f.db, f.logger)
 
+		if articles[i].HasErr() {
+			f.Err(fmt.Errorf("Error updating article %s: %v\n", articles[i], articles[i].Err()))
+			return
+		}
+
 		if articles[i].Data().IsNew {
 			a = append(a, articles[i])
 		}
