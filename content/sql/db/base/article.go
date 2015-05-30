@@ -3,8 +3,6 @@ package base
 func init() {
 	sql["create_feed_article"] = createFeedArticle
 	sql["update_feed_article"] = updateFeedArticle
-	sql["update_feed_article_with_guid"] = updateFeedArticleWithGuid
-	sql["delete_feed_article"] = deleteFeedArticle
 	sql["create_user_article_read"] = createUserArticleRead
 	sql["delete_user_article_read"] = deleteUserArticleRead
 	sql["create_user_article_favorite"] = createUserArticleFavorite
@@ -23,15 +21,10 @@ INSERT INTO articles(feed_id, link, guid, title, description, date)
 `
 
 	updateFeedArticle = `
-UPDATE articles SET title = $1, description = $2, date = $3, guid = $4 WHERE feed_id = $5 AND link = $6
+UPDATE articles SET title = $1, description = $2, date = $3, guid = $4, link = $5
+	WHERE feed_id = $6 AND (guid = $4 OR link = $5)
 `
 
-	updateFeedArticleWithGuid = `
-UPDATE articles SET title = $1, description = $2, date = $3, link = $4 WHERE feed_id = $5 AND guid = $6
-`
-	deleteFeedArticle = `
-DELETE FROM articles WHERE feed_id = $1 AND link = $2
-`
 	createUserArticleRead = `
 INSERT INTO users_articles_read(user_login, article_id)
 	SELECT $1, $2 EXCEPT

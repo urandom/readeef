@@ -59,52 +59,22 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logge
 
 	logger.Infof("Updating article %s\n", a)
 
-	var sqlString string
 	d := a.Data()
-	args := []interface{}{d.Title, d.Description, d.Date}
 
-	if d.Guid.Valid {
-		// Update using the guid, in case an article's link changed
-		sqlString = db.SQL("update_feed_article_with_guid")
-		args = append(args, d.Link, d.FeedId, d.Guid)
-	} else {
-		sqlString = db.SQL("update_feed_article")
-		args = append(args, d.Guid, d.FeedId, d.Link)
-	}
-
-	stmt, err := tx.Preparex(sqlString)
+	stmt, err := tx.Preparex(db.SQL("update_feed_article"))
 	if err != nil {
 		a.Err(err)
 		return
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(args...)
+	res, err := stmt.Exec(d.Title, d.Description, d.Date, d.Guid, d.Link, d.FeedId)
 	if err != nil {
 		a.Err(err)
 		return
 	}
 
 	if num, err := res.RowsAffected(); err != nil && err == sql.ErrNoRows || num == 0 {
-		if d.Guid.Valid {
-			logger.Infof("Deleting any stale article with the same link as %s\n", a)
-
-			// The guid might have changed, yet there might still be an article
-			// with the same link
-			stmt, err := tx.Preparex(db.SQL("delete_feed_article"))
-			if err != nil {
-				a.Err(err)
-				return
-			}
-			defer stmt.Close()
-
-			_, err = stmt.Exec(d.FeedId, d.Link)
-			if err != nil {
-				a.Err(fmt.Errorf("Error deleting article %s: %v", a, err))
-				return
-			}
-		}
-
 		logger.Infof("Creating article %s\n", a)
 
 		aId, err := db.CreateWithId(tx, "create_feed_article", d.FeedId, d.Link, d.Guid,
