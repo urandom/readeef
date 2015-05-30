@@ -3,6 +3,7 @@ package base
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
@@ -35,7 +36,13 @@ func (t *Tag) Value(val ...data.TagValue) data.TagValue {
 }
 
 func (t Tag) MarshalJSON() ([]byte, error) {
-	return json.Marshal(t.value)
+	b, err := json.Marshal(t.value)
+
+	if err == nil {
+		return b, nil
+	} else {
+		return []byte{}, fmt.Errorf("Error marshaling tag %s: %v", t, err)
+	}
 }
 
 func (t *Tag) Validate() error {

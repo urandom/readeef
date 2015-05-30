@@ -3,6 +3,7 @@ package base
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/urandom/readeef/content"
@@ -49,5 +50,11 @@ func (a Article) Validate() error {
 }
 
 func (a Article) MarshalJSON() ([]byte, error) {
-	return json.Marshal(a.data)
+	b, err := json.Marshal(a.data)
+
+	if err == nil {
+		return b, nil
+	} else {
+		return []byte{}, fmt.Errorf("Error marshaling article data for %s: %v", a, err)
+	}
 }

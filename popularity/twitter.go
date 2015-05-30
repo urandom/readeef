@@ -2,6 +2,7 @@ package popularity
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 )
@@ -28,7 +29,7 @@ func (t Twitter) Score(link string) (int64, error) {
 
 	var result twitterResult
 	if err := dec.Decode(&result); err != nil {
-		return score, err
+		return score, fmt.Errorf("Error scoring link %s using twitter: %v", link, err)
 	}
 
 	score = result.Count

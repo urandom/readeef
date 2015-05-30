@@ -48,7 +48,7 @@ func (u *User) Data(d ...data.User) data.User {
 			data.ProfileJSON, err = json.Marshal(data.ProfileData)
 		} else {
 			if err = json.Unmarshal(data.ProfileJSON, &data.ProfileData); err != nil {
-				u.Err(err)
+				u.Err(fmt.Errorf("Error unmarshaling user profile data for %s: %v", u, err))
 				return u.data
 			}
 
@@ -57,7 +57,9 @@ func (u *User) Data(d ...data.User) data.User {
 			}
 		}
 
-		u.Err(err)
+		if err != nil {
+			u.Err(fmt.Errorf("Error marshaling user profile data for %s: %v", u, err))
+		}
 		u.data = data
 	}
 
@@ -78,7 +80,13 @@ func (u User) Validate() error {
 }
 
 func (u User) MarshalJSON() ([]byte, error) {
-	return json.Marshal(u.data)
+	b, err := json.Marshal(u.data)
+
+	if err == nil {
+		return b, nil
+	} else {
+		return []byte{}, fmt.Errorf("Error marshaling user data for %s: %v", u, err)
+	}
 }
 
 func (u *User) Password(password string, secret []byte) {

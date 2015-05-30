@@ -2,6 +2,7 @@ package popularity
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 )
@@ -30,7 +31,7 @@ func (f Facebook) Score(link string) (int64, error) {
 
 	var results []facebookResult
 	if err := dec.Decode(&results); err != nil {
-		return score, err
+		return score, fmt.Errorf("Error scoring link %s using facebook: %v", link, err)
 	}
 
 	score = 0

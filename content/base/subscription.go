@@ -3,6 +3,7 @@ package base
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 
 	"github.com/urandom/readeef/content"
@@ -50,5 +51,11 @@ func (s *Subscription) Validate() error {
 }
 
 func (s Subscription) MarshalJSON() ([]byte, error) {
-	return json.Marshal(s.data)
+	b, err := json.Marshal(s.data)
+
+	if err == nil {
+		return b, nil
+	} else {
+		return []byte{}, fmt.Errorf("Error marshaling subscription data for %s: %v", s, err)
+	}
 }

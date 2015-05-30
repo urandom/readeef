@@ -58,7 +58,7 @@ func ParseAtom(b []byte) (Feed, error) {
 		var err error
 		if i.Date != "" {
 			if article.Date, err = parseDate(i.Date); err != nil {
-				return f, err
+				article.Date = time.Now()
 			}
 		} else {
 			article.Date = time.Now()

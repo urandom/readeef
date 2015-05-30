@@ -591,7 +591,13 @@ func (uf *UserFeed) Query(term string, index bleve.Index, paging ...int) (ua []c
 
 func (tf TaggedFeed) MarshalJSON() ([]byte, error) {
 	tfjson := taggedFeedJSON{Feed: tf.Data(), Tags: tf.tags}
-	return json.Marshal(tfjson)
+	b, err := json.Marshal(tfjson)
+
+	if err == nil {
+		return b, nil
+	} else {
+		return []byte{}, fmt.Errorf("Error marshaling tagged feed data for %s: %v", tf, err)
+	}
 }
 
 func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
