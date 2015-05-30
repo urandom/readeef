@@ -69,7 +69,7 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logge
 		args = append(args, d.Link, d.FeedId, d.Guid)
 	} else {
 		sqlString = db.SQL("update_feed_article")
-		args = append(args, d.Link, d.FeedId, d.Link)
+		args = append(args, d.Guid, d.FeedId, d.Link)
 	}
 
 	stmt, err := tx.Preparex(sqlString)
