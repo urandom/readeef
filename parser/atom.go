@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"encoding/xml"
+	"io"
 	"time"
 )
 
@@ -50,18 +51,24 @@ func ParseAtom(b []byte) (Feed, error) {
 			rss.Image.Width, rss.Image.Height},
 	}
 
+	var lastValidDate time.Time
 	for _, i := range rss.Items {
 		article := Article{Title: i.Title, Link: i.Link.Href, Guid: i.Id}
-
 		article.Description = getLargerContent(i.Content, i.Description)
 
 		var err error
 		if i.Date != "" {
-			if article.Date, err = parseDate(i.Date); err != nil {
-				article.Date = time.Now()
-			}
+			article.Date, err = parseDate(i.Date)
 		} else {
-			article.Date = time.Now()
+			err = io.EOF
+		}
+
+		if err == nil {
+			lastValidDate = article.Date.Add(time.Second)
+		} else if lastValidDate.IsZero() {
+			article.Date = unknownTime
+		} else {
+			article.Date = lastValidDate
 		}
 
 		f.Articles = append(f.Articles, article)

@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"encoding/xml"
+	"io"
 	"strings"
 	"time"
 )
@@ -58,22 +59,26 @@ func ParseRss2(b []byte) (Feed, error) {
 		f.SkipDays[strings.Title(v)] = true
 	}
 
+	var lastValidDate time.Time
 	for _, i := range rss.Channel.Items {
 		article := Article{Title: i.Title, Link: i.Link, Guid: i.Id}
-
 		article.Description = getLargerContent(i.Content, i.Description)
 
 		var err error
 		if i.PubDate != "" {
-			if article.Date, err = parseDate(i.PubDate); err != nil {
-				article.Date = time.Now()
-			}
+			article.Date, err = parseDate(i.PubDate)
 		} else if i.Date != "" {
-			if article.Date, err = parseDate(i.Date); err != nil {
-				article.Date = time.Now()
-			}
+			article.Date, err = parseDate(i.Date)
 		} else {
-			article.Date = time.Now()
+			err = io.EOF
+		}
+
+		if err == nil {
+			lastValidDate = article.Date.Add(time.Second)
+		} else if lastValidDate.IsZero() {
+			article.Date = unknownTime
+		} else {
+			article.Date = lastValidDate
 		}
 
 		f.Articles = append(f.Articles, article)
