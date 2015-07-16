@@ -83,6 +83,10 @@ func main() {
 
 	locales := []string{}
 	filepath.Walk(localeDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error walking %s: %v\n", path, err)
+			return nil
+		}
 		if !info.IsDir() {
 			locales = append(locales, path)
 		}

@@ -1,5 +1,6 @@
 (function() {
-    var webSocket = null, messagePool = [], requestPool = [], receivers = [], initializing = false;
+    var webSocket = null, messagePool = [], requestPool = [], receivers = [], initializing = false,
+        heartbeatMisses = 0, heartbeatInterval = null;
 
     function generateSignature(uri, method, body, contentType, date, nonce, secret) {
         var message, bodyHash;
@@ -100,6 +101,25 @@
 
                         m.instance.send(m.data);
                     }
+
+                    if (heartbeatInterval === null) {
+                        heartbeatMisses = 0
+                        heartbeatInterval = setInterval(function() {
+                            try {
+                                heartbeatMisses++;
+                                if (heartbeatMisses >= 3) {
+                                    throw new Error("Too many missed hearbeats.");
+                                }
+
+                                webSocket.send(JSON.stringify({method: "heartbeat"}));
+                            } catch (e) {
+                                clearInterval(heartbeatInterval);
+                                heartbeatInterval = null;
+                                webSocket.close();
+                                webSocket = null;
+                            }
+                        }, 5000);
+                    }
                 };
 
                 webSocket.onmessage = function(event) {
@@ -107,6 +127,11 @@
                     try {
                         data = JSON.parse(data)
                     } catch(e) {}
+
+                    if (data.method == "heartbeat") {
+                        heartbeatMisses = 0;
+                        return;
+                    }
 
                     for (var i = 0, r; r = receivers[i]; ++i) {
                         if (dispatchData(r, data)) {

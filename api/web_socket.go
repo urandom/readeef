@@ -40,6 +40,8 @@ type Processor interface {
 	Process() responseError
 }
 
+type heartbeatProcessor struct{}
+
 var (
 	errTypeInternal           = "error-internal"
 	errTypeMessageParse       = "error-message-parse"
@@ -231,6 +233,8 @@ func (a apiRequest) processor(
 ) (Processor, error) {
 
 	switch a.Method {
+	case "heartbeat":
+		return &heartbeatProcessor{}, nil
 	case "get-auth-data":
 		return &getAuthDataProcessor{user: user}, nil
 	case "mark-article-as-read":
@@ -280,6 +284,10 @@ func (a apiRequest) processor(
 	default:
 		return nil, errInvalidMethodValue
 	}
+}
+
+func (p heartbeatProcessor) Process() responseError {
+	return responseError{}
 }
 
 func forbidden(c context.Context, r *http.Request) bool {
