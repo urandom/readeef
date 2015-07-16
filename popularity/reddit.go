@@ -2,6 +2,7 @@ package popularity
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 )
@@ -35,7 +36,7 @@ func (r Reddit) Score(link string) (int64, error) {
 
 	var result redditResult
 	if err := dec.Decode(&result); err != nil {
-		return score, err
+		return score, fmt.Errorf("Error scoring link %s using reddit: %v", link, err)
 	}
 
 	score = 0

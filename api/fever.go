@@ -96,6 +96,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 		}
 
 		resp := map[string]interface{}{"api_version": 2}
+		var reqType string
 
 		switch {
 		default:
@@ -110,6 +111,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			resp["last_refreshed_on_time"] = now
 
 			if _, ok := r.Form["groups"]; ok {
+				reqType = "groups"
 				logger.Infoln("Fetching fever groups")
 
 				groups := []feverGroup{feverGroup{Id: 1, Title: "All"}}
@@ -127,6 +129,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			}
 
 			if _, ok := r.Form["feeds"]; ok {
+				reqType = "feeds"
 				logger.Infoln("Fetching fever feeds")
 
 				var feverFeeds []feverFeed
@@ -152,6 +155,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			}
 
 			if _, ok := r.Form["unread_item_ids"]; ok {
+				reqType = "unread item ids"
 				logger.Infoln("Fetching unread fever item ids")
 
 				ids := user.AllUnreadArticleIds()
@@ -175,6 +179,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			}
 
 			if _, ok := r.Form["saved_item_ids"]; ok {
+				reqType = "saved item ids"
 				logger.Infoln("Fetching saved fever item ids")
 
 				ids := user.AllFavoriteArticleIds()
@@ -198,6 +203,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			}
 
 			if _, ok := r.Form["items"]; ok {
+				reqType = "items"
 				logger.Infoln("Fetching fever items")
 
 				var count, since, max int64
@@ -272,6 +278,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			}
 
 			if _, ok := r.Form["links"]; ok {
+				reqType = "links"
 				logger.Infoln("Fetching fever links")
 				offset, _ := strconv.ParseInt(r.FormValue("offset"), 10, 64)
 
@@ -310,6 +317,10 @@ func (con Fever) Handler(c context.Context) http.Handler {
 				links := make([]feverLink, len(articles))
 				for i := range articles {
 					in := articles[i].Data()
+					if in.Score == 0 {
+						continue
+					}
+
 					link := feverLink{
 						Id: in.Id, FeedId: in.FeedId, ItemId: in.Id, Temperature: math.Log10(float64(in.Score)) / math.Log10(1.1),
 						IsItem: 1, IsLocal: 1, Title: in.Title, Url: in.Link, ItemIds: fmt.Sprintf("%d", in.Id),
@@ -325,6 +336,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			}
 
 			if val := r.PostFormValue("unread_recently_read"); val == "1" {
+				reqType = "unread and recently read"
 				logger.Infoln("Marking recently read fever items as unread")
 
 				t := time.Now().Add(-24 * time.Hour)
@@ -416,7 +428,12 @@ func (con Fever) Handler(c context.Context) http.Handler {
 		if err == nil {
 			w.Write(b)
 		} else {
-			webfw.GetLogger(c).Print(err)
+			if reqType == "" {
+				reqType = "modifying fever data"
+			} else {
+				reqType = "getting " + reqType + " for fever"
+			}
+			webfw.GetLogger(c).Print(fmt.Errorf("Error %s: %v", reqType, err))
 
 			w.WriteHeader(http.StatusInternalServerError)
 		}

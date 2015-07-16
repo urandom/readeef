@@ -53,7 +53,7 @@ func (a *Article) Format(templateDir, readabilityKey string) (f data.ArticleForm
 
 		err = dec.Decode(&r)
 		if err != nil {
-			a.Err(err)
+			a.Err(fmt.Errorf("Error formatting article %s: %v", a, err))
 			return
 		}
 

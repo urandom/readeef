@@ -2,6 +2,7 @@ package popularity
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/urandom/webfw/util"
@@ -42,7 +43,7 @@ func (f GoogleP) Score(link string) (int64, error) {
 
 	requestData, err := json.Marshal([]interface{}{request})
 	if err != nil {
-		return score, err
+		return score, fmt.Errorf("Error marshaling google score data for %s: %v", link, err)
 	}
 
 	_, err = buf.Write(requestData)
@@ -61,7 +62,7 @@ func (f GoogleP) Score(link string) (int64, error) {
 
 	var results []googlepResult
 	if err := dec.Decode(&results); err != nil {
-		return score, err
+		return score, fmt.Errorf("Error scoring link %s using google: %v", link, err)
 	}
 
 	score = 0

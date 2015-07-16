@@ -3,6 +3,7 @@ package base
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 	"strconv"
 
@@ -96,7 +97,13 @@ func (f *Feed) ParsedArticles() (a []Article) {
 }
 
 func (f Feed) MarshalJSON() ([]byte, error) {
-	return json.Marshal(f.data)
+	b, err := json.Marshal(f.data)
+
+	if err == nil {
+		return b, nil
+	} else {
+		return []byte{}, fmt.Errorf("Error marshaling feed data for %s: %v", f, err)
+	}
 }
 
 func (uf UserFeed) Validate() error {

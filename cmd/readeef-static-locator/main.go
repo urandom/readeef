@@ -26,10 +26,12 @@ var (
 	output      string
 	templateDir string
 	staticDir   string
+	localeDir   string
 
 	sqstring      = regexp.MustCompile(`'([^\\']*(?:(?:\\'|\\)[^\\']*)*)'`)
 	dqstring      = regexp.MustCompile(`"([^\\"]*(?:(?:\\"|\\)[^\\"]*)*)"`)
 	importScripts = regexp.MustCompile(`importScripts\(([^)]+)\)`)
+	cssURL        = regexp.MustCompile(`url\(([^)]+)\)`)
 	worker        = regexp.MustCompile(`new Worker\(([^)]+)\)`)
 
 	seen   = make(map[string]bool)
@@ -79,8 +81,22 @@ func main() {
 		static = append(static, s...)
 	}
 
+	locales := []string{}
+	filepath.Walk(localeDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error walking %s: %v\n", path, err)
+			return nil
+		}
+		if !info.IsDir() {
+			locales = append(locales, path)
+		}
+
+		return nil
+	})
+
 	sort.Strings(templates)
 	sort.Strings(static)
+	sort.Strings(locales)
 
 	buf := new(bytes.Buffer)
 
@@ -90,6 +106,11 @@ func main() {
 
 	buf.WriteString("\n")
 	for _, s := range static {
+		buf.WriteString(s + "\n")
+	}
+
+	buf.WriteString("\n")
+	for _, s := range locales {
 		buf.WriteString(s + "\n")
 	}
 
@@ -164,6 +185,8 @@ func parseHTMLFile(path string) (static []string, err error) {
 			s, err = parseHTMLFile(p)
 		} else if strings.HasSuffix(p, ".js") {
 			s, err = parseJSFile(p)
+		} else if strings.HasSuffix(p, ".css") {
+			s, err = parseCSSFile(p)
 		}
 
 		if err != nil {
@@ -248,8 +271,80 @@ func parseJSFile(path string) (static []string, err error) {
 	return
 }
 
+func parseCSSFile(path string) (static []string, err error) {
+	if parsed[path] {
+		return
+	}
+	parsed[path] = true
+
+	var b []byte
+
+	b, err = ioutil.ReadFile(path)
+	if err != nil {
+		err = errors.New(fmt.Sprintf("Error opening '%s': %v\n", path, err))
+		return
+	}
+
+	content := string(b)
+
+	matches := cssURL.FindAllStringSubmatch(content, -1)
+	for _, match := range matches {
+		if len(match) > 1 {
+			args := match[1]
+
+			urls := sqstring.FindAllString(args, -1)
+			urls = append(urls, dqstring.FindAllString(args, -1)...)
+
+			for _, val := range urls {
+				val = val[1 : len(val)-1]
+				if val[0] != '/' {
+					dir, _ := filepath.Split(path)
+					if strings.HasPrefix(dir, staticDir) {
+						dir = dir[len(staticDir):]
+					}
+
+					val = filepath.Join(dir, val)
+				}
+
+				var p string
+				if strings.HasPrefix(val, css) ||
+					strings.HasPrefix(val, dist) ||
+					strings.HasPrefix(val, images) ||
+					strings.HasPrefix(val, js) {
+
+					p = filepath.Join(staticDir, val)
+				} else {
+					continue
+				}
+
+				if !seen[p] {
+					static = append(static, p)
+					seen[p] = true
+				}
+			}
+		}
+	}
+
+	for _, p := range static {
+		var s []string
+
+		if strings.HasSuffix(p, ".css") {
+			s, err = parseCSSFile(p)
+		}
+
+		if err != nil {
+			return
+		}
+
+		static = append(static, s...)
+	}
+
+	return
+}
+
 func init() {
 	flag.StringVar(&output, "output", "-", "the output file")
 	flag.StringVar(&templateDir, "template-dir", "templates", "the templates directory")
 	flag.StringVar(&staticDir, "static-dir", "static", "the static directory")
+	flag.StringVar(&localeDir, "locale-dir", "locale", "the locale directory")
 }

@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+var (
+	unknownTime = time.Unix(0, 0)
+)
+
 func ParseFeed(source []byte, funcs ...func([]byte) (Feed, error)) (Feed, error) {
 	var feed Feed
 	var err error

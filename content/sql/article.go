@@ -3,6 +3,7 @@ package sql
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/blevesearch/bleve"
@@ -58,26 +59,16 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logge
 
 	logger.Infof("Updating article %s\n", a)
 
-	var sqlString string
 	d := a.Data()
-	args := []interface{}{d.Title, d.Description, d.Date, d.FeedId}
 
-	if d.Guid.Valid {
-		sqlString = db.SQL("update_feed_article_with_guid")
-		args = append(args, d.Guid)
-	} else {
-		sqlString = db.SQL("update_feed_article")
-		args = append(args, d.Link)
-	}
-
-	stmt, err := tx.Preparex(sqlString)
+	stmt, err := tx.Preparex(db.SQL("update_feed_article"))
 	if err != nil {
 		a.Err(err)
 		return
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(args...)
+	res, err := stmt.Exec(d.Title, d.Description, d.Date, d.Guid, d.Link, d.FeedId)
 	if err != nil {
 		a.Err(err)
 		return
@@ -90,7 +81,7 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logge
 			d.Title, d.Description, d.Date)
 
 		if err != nil {
-			a.Err(err)
+			a.Err(fmt.Errorf("Error updating article %s (guid - %v, link - %s): %v", a, d.Guid, d.Link, err))
 			return
 		}
 

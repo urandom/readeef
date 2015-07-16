@@ -2,6 +2,7 @@ package popularity
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 )
@@ -30,7 +31,7 @@ func (t StumbleUpon) Score(link string) (int64, error) {
 
 	var result StumbleUponResult
 	if err := dec.Decode(&result); err != nil {
-		return score, err
+		return score, fmt.Errorf("Error scoring link %s using stumbleupon: %v", link, err)
 	}
 
 	score = result.Result.Views

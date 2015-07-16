@@ -136,7 +136,7 @@ func TestRss1Parse(t *testing.T) {
 		t.Fatalf("Unexpected article link: '%v'\n", a.Link)
 	}
 
-	if !a.Date.Equal(time.Time{}) {
+	if !a.Date.Equal(unknownTime) {
 		t.Fatalf("Unexpected article date: '%s'\n", a.Date)
 	}
 
