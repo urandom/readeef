@@ -1,6 +1,9 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
-<link rel="import" href="/dist/paper-material/paper-material.html">
+<link rel="import" href="/dist/paper-input/paper-input.html">
+<link rel="import" href="/dist/paper-fab/paper-fab.html">
+<link rel="import" href="/dist/iron-icons/iron-icons.html">
+
 
 <dom-module id="rf-login">
     <link rel="import" type="css" href="/css/rf-login.css">
@@ -9,6 +12,16 @@
 
         <div class="main">
             <div class="card-container {{ {wide: wide} | tokenList }}">
+                <div class="card">
+                    <div class="layout vertical">
+                        <paper-input id="login" label="Login" isInvalid="{{ invalid }}" error="The login credentials are incorrect" tabindex="1"></paper-input>
+                        <paper-input id="password" type="password" label="Password" tabindex="2"></paper-input>
+                    </div>
+                    <div class="layout horizontal">
+                        <div class="flex"></div>
+                        <paper-fab id="submit" icon="arrow-forward" on-tap="{{onLogin}}" tabindex="3"></paper-fab>
+                    </div>
+                </div>
             </div>
         </div>
     </template>

@@ -15,16 +15,11 @@
 }
 
 .card {
-    margin: 0 auto;
-    position: relative;
-    background-color: white;
+    @apply(--card-style);
     padding: 20px 16px;
-    box-sizing: border-box;
-    -moz-box-sizing: border-box;
     max-width: 512px;
     max-height: 512px;
     min-width: 288px;
-    border-radius: 2px;
 }
 
 #submit {

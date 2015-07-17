@@ -24,6 +24,9 @@
     "neon-animation": "PolymerElements/neon-animated-pages#~1.0.6",
     "paper-styles": "PolymerElements/paper-styles#~1.0.10",
     "paper-material": "PolymerElements/paper-material#~1.0.1",
-    "paper-drawer-panel": "PolymerElements/paper-drawer-panel#~1.0.3"
+    "paper-drawer-panel": "PolymerElements/paper-drawer-panel#~1.0.3",
+    "paper-input": "PolymerElements/paper-input#~1.0.6",
+    "paper-fab": "PolymerElements/paper-fab#~1.0.3",
+    "iron-icons": "PolymerElements/iron-icons#~1.0.3"
   }
 }
