@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 
+	"github.com/urandom/readeef"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/middleware"
@@ -26,9 +27,14 @@ func NewComponent(dispatcher *webfw.Dispatcher, apiPattern string) Component {
 func (con Component) Handler(c context.Context) http.Handler {
 	mw, i18nFound := con.dispatcher.Middleware("I18N")
 	logger := webfw.GetLogger(c)
+	cfg := readeef.GetConfig(c)
 
 	rnd := renderer.NewRenderer(con.dispatcher.Config.Renderer.Dir, "raw.tmpl")
 	rnd.Delims("{%", "%}")
+
+	if cfg.Logger.Level == "debug" {
+		rnd.SkipCache(true)
+	}
 
 	if i18nFound {
 		if i18n, ok := mw.(middleware.I18N); ok {

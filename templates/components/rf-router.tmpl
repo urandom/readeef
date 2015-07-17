@@ -1,0 +1,48 @@
+{% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/paper-styles/paper-styles.html">
+<link rel="import" href="/dist/more-routing/more-routing.html">
+<link rel="import" href="/dist/plastik-lazy-route-selector/plastik-lazy-route-selector.html">
+<link rel="import" href="/dist/neon-animation/neon-animated-pages.html">
+<link rel="import" href="/dist/neon-animation/neon-animatable.html">
+<link rel="import" href="/dist/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
+
+<dom-module id="rf-router">
+    <style>
+neon-animated-pages {
+    position: static;
+}
+
+neon-animatable {
+    @apply(--layout-horizontal);
+    @apply(--layout-center-center);
+}
+
+    </style>
+    <template>
+        <more-routing-config driver="path"></more-routing-config>
+        <more-route name="splash" path="/"></more-route>
+        <more-route path="/web">
+            <more-route name="login" path="/login"></more-route>
+        </more-route>
+
+        <plastik-lazy-route-selector main selected="{{ route }}" class="flex">
+            <neon-animated-pages attr-for-selected="route" entry-animation="fade-in-animation" exit-animation="fade-out-animation" class="flex">
+                <neon-animatable route="splash" import="/component/rf-splash"></neon-animatable>
+                <neon-animatable route="login" import="/component/rf-login"></neon-animatable>
+            </neon-animated-pages>
+        </plastik-lazy-route-selector>
+    </template>
+    <script>
+        Polymer({
+            is: "rf-router",
+            properties: {
+                route: {
+                    type: String
+                }
+            }
+        })
+    </script>
+</dom-module>
+{% end %}

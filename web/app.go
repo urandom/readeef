@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 
+	"github.com/urandom/readeef"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/renderer"
@@ -22,8 +23,14 @@ func (con App) Patterns() []webfw.MethodIdentifierTuple {
 }
 
 func (con App) Handler(c context.Context) http.Handler {
+	cfg := readeef.GetConfig(c)
+	rnd := webfw.GetRenderer(c)
+
+	if cfg.Logger.Level == "debug" {
+		rnd.SkipCache(true)
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rnd := webfw.GetRenderer(c)
 		action := webfw.GetMultiPatternIdentifier(c, r)
 
 		data := renderer.RenderData{}

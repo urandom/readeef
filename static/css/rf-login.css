@@ -1,6 +1,19 @@
 .overlay {
     background: #eee;
+    @apply(--layout-fit);
 }
+.main {
+    @apply(--layout-fit);
+    @apply(--layout-vertical);
+    @apply(--layout-center);
+}
+.card-container {
+    height: 100%;
+    background: transparent;
+    @apply(--layout-horizontal);
+    @apply(--layout-center);
+}
+
 .card {
     margin: 0 auto;
     position: relative;
@@ -12,11 +25,6 @@
     max-height: 512px;
     min-width: 288px;
     border-radius: 2px;
-}
-
-.card-container {
-    height: 100%;
-    background: transparent;
 }
 
 #submit {

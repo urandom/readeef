@@ -14,33 +14,20 @@
 {% end %}
 
 {% define "imports" %}
-    <script src="/dist/webcomponentsjs/webcomponents.js"></script>
+    <script src="/dist/webcomponentsjs/webcomponents-lite.min.js"></script>
 
+    <link rel="import" href="/dist/polymer/polymer.html">
     <link rel="import" href="/dist/font-roboto/roboto.html">
-    <link rel="import" href="/dist/core-style/core-style.html">
-    <link rel="import" href="/component/rf-theme">
-    <link rel="import" href="/component/rf-app">
+    <link rel="import" href="/dist/paper-styles/shadow.html">
+    <link rel="import" href="/component/rf-router">
 {% end %}
 
 {% define "styles" %}
-<style>
+<style is="custom-style">
 body {
     margin: 0;
-    font-family: "RobotoDraft", sans-serif;
+    font-family: "Roboto", sans-serif;
     font-size: 14px;
-}
-
-html /deep/ .drawer-content.core-selected[selectable] {
-    font-weight: bold;
-}
-
-/* bug: Polymer 0.4 shows scrollbars in the menus */
-html /deep/ core-menu {
-    overflow: hidden !important;
-}
-
-html a, html /deep/ a {
-    color: inherit;
 }
 
 html /deep/ .clearfix:before,
@@ -53,19 +40,26 @@ html /deep/ .clearfix:after {
     clear: both;
 }
 
-html /deep/ paper-dropdown paper-item.core-selected {
-    background: transparent;
+:root {
+    --card-style: {
+        position: relative;
+        background-color: white;
+        box-sizing: border-box;
+        border-radius: 2px;
+
+        @apply(--shadow-transition);
+        @apply(--shadow-elevation-8dp);
+    }
 }
 </style>
 {% end %}
-{% define "body-attrs" %} fullbleed unresolved {% end %}
+{% define "body-attrs" %} unresolved class="fullbleed" {% end %}
 
 {% define "content" %}
-    <rf-app fit touch-action="auto"></rf-app>
+    <rf-router></rf-router>
 {% end %}
 
 {% define "scripts" %}
-    <script src="/js/dom-utils.js"></script>
     <script src="//www.google.com/jsapi"></script>
     <script> google.load("feeds", "1"); </script>
 {% end %}

@@ -1,4 +1,27 @@
 {% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/paper-material/paper-material.html">
+
+<dom-module id="rf-login">
+    <link rel="import" type="css" href="/css/rf-login.css">
+    <template>
+        <div class="overlay"></div>
+
+        <div class="main">
+            <div class="card-container {{ {wide: wide} | tokenList }}">
+            </div>
+        </div>
+    </template>
+
+    <script>
+        Polymer({
+            is: "rf-login"
+        })
+    </script>
+</dom-module>
+{% end %}
+
+<!--
 <link rel="import" href="/dist/core-input/core-input.html">
 
 <link rel="import" href="/dist/polymer/polymer.html">
@@ -36,4 +59,4 @@
 
     <script src="/js/rf-login.js"></script>
 </polymer-element>
-{% end %}
+-->

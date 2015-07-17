@@ -13,6 +13,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, ap
 		dispatcher.Config.Renderer.Base)
 
 	dispatcher.Renderer.Delims("{%", "%}")
+	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
 	dispatcher.Context.SetGlobal(context.BaseCtxKey("readeefConfig"), config)
 
 	middleware.InitializeDefault(dispatcher)
