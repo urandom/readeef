@@ -3,6 +3,11 @@
 <link rel="import" href="/dist/paper-input/paper-input.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/iron-icons/iron-icons.html">
+<link rel="import" href="/dist/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="/dist/neon-animation/animations/slide-down-animation.html">
+<link rel="import" href="/dist/neon-animation/animations/slide-up-animation.html">
+<link rel="import" href="/dist/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
 
 <dom-module id="rf-login">
     <link rel="import" type="css" href="/css/rf-login.css">
@@ -11,7 +16,7 @@
 
         <div class="main">
             <div class="card-container {{ {wide: wide} | tokenList }}" on-keypress="onKeypress">
-                <div class="card">
+                <div class="card" id="login-card">
                     <div class="layout vertical">
                         <paper-input id="login" label="Login" isInvalid="{{ invalid }}" error="The login credentials are incorrect" tabindex="1"></paper-input>
                         <paper-input id="password" type="password" label="Password" tabindex="2"></paper-input>
@@ -28,43 +33,3 @@
     <script src="/js/rf-login.js"></script>
 </dom-module>
 {% end %}
-
-<!--
-<link rel="import" href="/dist/core-input/core-input.html">
-
-<link rel="import" href="/dist/polymer/polymer.html">
-<link rel="import" href="/dist/paper-input/paper-input-decorator.html">
-<link rel="import" href="/dist/paper-fab/paper-fab.html">
-<link rel="import" href="/dist/paper-shadow/paper-shadow.html">
-
-<polymer-element name="rf-login" attributes="wide user invalid">
-    <template>
-        <link href="/css/rf-login.css" rel="stylesheet">
-
-        <div class="overlay" fit cross-fade></div>
-
-        <div class="main" fit layout vertical center slide-up-offscreen>
-            <div class="card-container {{ {wide: wide} | tokenList }}" layout horizontal centervf on-keypress="{{ onKeypress }}">
-                <paper-shadow z="1">
-                    <div class="card" layout vertical>
-                        <div layout vertical>
-                            <paper-input-decorator label="Login" isInvalid="{{ invalid }}" error="The login credentials are incorrect" floatingLabel>
-                                <input is="core-input" id="login" tabindex="1">
-                            </paper-input-decorator>
-                            <paper-input-decorator label="Password" floatingLabel>
-                                <input is="core-input" id="password" type="password" tabindex="2">
-                            </paper-input-decorator>
-                        </div>
-                        <div horizontal center layout>
-                            <div flex></div>
-                            <paper-fab id="submit" icon="arrow-forward" on-tap="{{onLogin}}"></paper-fab>
-                        </div>
-                    </div>
-                </paper-shadow>
-            </div>
-        </div>
-    </template>
-
-    <script src="/js/rf-login.js"></script>
-</polymer-element>
--->
