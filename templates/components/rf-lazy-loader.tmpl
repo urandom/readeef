@@ -1,0 +1,44 @@
+{% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+
+<dom-module id="rf-lazy-loader">
+    <script>
+        Polymer({
+            is: "rf-lazy-loader",
+            properties: {
+                import: {
+                    type: String
+                },
+                element: {
+                    type: String
+                }
+            },
+            content: null,
+
+            attached: function() {
+                if (this.content === null) {
+                    if (!this.element) {
+                        this.element = this.import.split('/').slice(-1)[0].replace('.html', '');
+                    }
+                    this.importHref(this.import, function(event) {
+                        this.content = event.target.import;
+                        this.insertContent(this.content);
+                    }, function(err) {
+                        console.error(err);
+                    });
+                } else {
+                    this.insertContent(this.content);
+                }
+            },
+
+            insertContent: function(content) {
+                var element = document.createElement(this.element);
+
+                Polymer.dom(this).innerHTML = "";
+                Polymer.dom(this).appendChild(element);
+                Polymer.dom(this).flush();
+            }
+        })
+    </script>
+</dom-module>
+{% end %}
