@@ -496,7 +496,7 @@
             this.loadingArticles = true;
 
             if (this.requestArticle) {
-                var api = new RfAPI();
+                var api = document.createElement('rf-api');
 
                 api.addEventListener('rf-api-message', function(event) {
                     var article = event.detail.arguments.Article,
