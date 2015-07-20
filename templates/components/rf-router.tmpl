@@ -1,76 +1,56 @@
 {% define "content" %}
 <link rel="import" href="/dist/iron-icons/iron-icons.html">
+<link rel="import" href="/dist/iron-pages/iron-pages.html">
 <link rel="import" href="/dist/more-routing/more-routing.html">
-<link rel="import" href="/dist/neon-animation/animations/fade-in-animation.html">
-<link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
-<link rel="import" href="/dist/neon-animation/neon-animatable.html">
-<link rel="import" href="/dist/neon-animation/neon-animated-pages.html">
 <link rel="import" href="/dist/paper-drawer-panel/paper-drawer-panel.html">
 <link rel="import" href="/dist/paper-header-panel/paper-header-panel.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="/dist/paper-styles/paper-styles.html">
 <link rel="import" href="/dist/paper-toolbar/paper-toolbar.html">
-<link rel="import" href="/dist/plastik-lazy-route-selector/plastik-lazy-route-selector.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
-<link rel="import" href="/component/rf-settings-base">
+<link rel="import" href="/component/rf-lazy-loader">
 
 <dom-module id="rf-router">
-    <style>
-neon-animated-pages {
-    position: static;
-}
-
-neon-animatable {
-    @apply(--layout-horizontal);
-    @apply(--layout-center-center);
-}
-
-paper-drawer-panel.disabled ::shadow paper-header-panel[main] paper-toolbar {
-    display: none;
-}
-
-    </style>
     <template>
         <more-routing-config driver="path"></more-routing-config>
-        <more-route name="splash" path="/"></more-route>
-        <more-route path="/web">
-            <more-route name="login" path="/login"></more-route>
-            <more-route name="login-from" path="/login/from/:url"></more-route>
-            <more-route name="feed-base" path="/feed">
-            </more-route>
-            <more-route name="settings-base" path="/settings">
-                <more-route name="settings-general" path="/general"></more-route>
-                <more-route name="settings-feeds" path="/feeds"></more-route>
-                <more-route name="settings-share-services" path="/share-services"></more-route>
-                <more-route name="settings-admin" path="/admin"></more-route>
+        <more-route name="splash" path="/">
+            <more-route path="/web">
+                <more-route name="login" path="/login"></more-route>
+                <more-route name="login-from" path="/login/from/:url"></more-route>
+                <more-route name="feed-base" path="/feed">
+                </more-route>
+                <more-route name="settings-base" path="/settings">
+                    <more-route name="settings-general" path="/general"></more-route>
+                    <more-route name="settings-feeds" path="/feeds"></more-route>
+                    <more-route name="settings-share-services" path="/share-services"></more-route>
+                    <more-route name="settings-admin" path="/admin"></more-route>
+                </more-route>
             </more-route>
         </more-route>
 
-        <paper-drawer-panel id="drawer">
-            <paper-header-panel drawer>
-                <paper-toolbar>
-                  <div>Application</div>
-                </paper-toolbar>
-            </paper-header-panel>
-            <paper-header-panel main>
-                <paper-toolbar>
-                    <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-                    <div>Title</div>
-                </paper-toolbar>
-
-                <plastik-lazy-route-selector selected="{{ route }}" on-more-route-change="onRouteChange">
-                    <neon-animated-pages attr-for-selected="route" entry-animation="fade-in-animation" exit-animation="fade-out-animation">
-                        <neon-animatable route="splash" import="/component/rf-splash"></neon-animatable>
-                        <neon-animatable route="login" import="/component/rf-login"></neon-animatable>
-                        <neon-animatable route="login-from" import="/component/rf-login"></neon-animatable>
-                        <neon-animatable route="feed-base" import="/component/rf-feed-base"></neon-animatable>
-                        <neon-animatable route="settings-general" import="/component/rf-settings-general"></neon-animatable>
-                        <neon-animatable route="settings-feeds" import="/component/rf-settings-feeds"></neon-animatable>
-                    </neon-animated-pages>
-                </plastik-lazy-route-selector>
-            <paper-header-panel>
-        </paper-drawer-panel>
+        <more-route-selector on-more-route-change="onRouteChange">
+            <iron-pages>
+                <rf-lazy-loader route="splash" import="/component/rf-splash"></rf-lazy-loader>
+                <rf-lazy-loader route="login" import="/component/rf-login"></rf-lazy-loader>
+                <rf-lazy-loader route="login-from" import="/component/rf-login"></rf-lazy-loader>
+                <section route="feed-base">
+                    <paper-drawer-panel id="drawer">
+                        <paper-header-panel drawer>
+                            <paper-toolbar>
+                              <div>Feeds</div>
+                            </paper-toolbar>
+                        </paper-header-panel>
+                        <paper-header-panel main>
+                            <paper-toolbar>
+                                <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+                                <div>Title</div>
+                            </paper-toolbar>
+                        <paper-header-panel>
+                    </paper-drawer-panel>
+                </section>
+                <rf-lazy-loader route="settings-base" import="/component/rf-settings-base"></rf-lazy-loader>
+            </iron-pages>
+        </more-route-selector>
     </template>
     <script src="/js/rf-router.js"></script>
 </dom-module>

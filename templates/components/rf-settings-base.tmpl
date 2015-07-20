@@ -1,0 +1,42 @@
+{% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/paper-drawer-panel/paper-drawer-panel.html">
+<link rel="import" href="/dist/paper-header-panel/paper-header-panel.html">
+<link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/dist/paper-toolbar/paper-toolbar.html">
+
+<link rel="import" href="/component/rf-lazy-loader">
+
+<dom-module id="rf-settings-base">
+    <template>
+        <paper-drawer-panel id="drawer">
+            <paper-header-panel drawer>
+                <paper-toolbar>
+                  <div>Settings</div>
+                </paper-toolbar>
+            </paper-header-panel>
+            <paper-header-panel main>
+                <paper-toolbar>
+                    <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+                    <div>Title</div>
+                </paper-toolbar>
+
+                <more-route-selector>
+                    <iron-pages>
+                        <rf-lazy-loader route="settings-general" import="/component/rf-settings-general"></rf-lazy-loader>
+                        <rf-lazy-loader route="settings-feeds" import="/component/rf-settings-feeds"></rf-lazy-loader>
+                        <rf-lazy-loader route="settings-share-services" import="/component/rf-settings-share-services"></rf-lazy-loader>
+                        <rf-lazy-loader route="settings-admin" import="/component/rf-settings-admin"></rf-lazy-loader>
+                    </iron-pages>
+                </more-route-selector>
+            <paper-header-panel>
+        </paper-drawer-panel>
+    </template>
+    <script>
+        "use strict";
+        Polymer({
+            is: "rf-settings-base"
+        })
+    </script>
+</dom-module>
+{% end %}

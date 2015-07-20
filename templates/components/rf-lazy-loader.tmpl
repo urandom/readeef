@@ -16,10 +16,42 @@
             content: null,
 
             attached: function() {
+                var parentSelector = this._findSelector();
+
+                if (parentSelector != null) {
+                    if (this._isSelectedInSelector(parentSelector)) {
+                        this._addContent();
+                    } else {
+                        var cb = function(event) {
+                            if (event.detail.item == this) {
+                                this._addContent();
+                                parentSelector.removeEventListener('iron-select', cb);
+                            }
+                        }.bind(this);
+
+                        parentSelector.addEventListener('iron-select', cb);
+                    }
+                } else {
+                    this._addContent();
+                }
+            },
+
+            insertContent: function(content) {
+                var element = document.createElement(this.element);
+
+                Polymer.dom(this).innerHTML = "";
+                Polymer.dom(this).appendChild(element);
+                Polymer.dom(this).flush();
+
+                this.fire('rf-lazy-insert', {element: element});
+            },
+
+            _addContent: function() {
                 if (this.content === null) {
                     if (!this.element) {
                         this.element = this.import.split('/').slice(-1)[0].replace('.html', '');
                     }
+console.log(this.import);
                     this.importHref(this.import, function(event) {
                         this.content = event.target.import;
                         this.insertContent(this.content);
@@ -31,12 +63,18 @@
                 }
             },
 
-            insertContent: function(content) {
-                var element = document.createElement(this.element);
+            _findSelector: function() {
+                var selector = Polymer.dom(this).parentNode;
 
-                Polymer.dom(this).innerHTML = "";
-                Polymer.dom(this).appendChild(element);
-                Polymer.dom(this).flush();
+                if ('selected' in selector && 'items' in selector) {
+                    return selector;
+                }
+
+                return null;
+            },
+
+            _isSelectedInSelector: function(selector) {
+                return selector.items[selector._valueToIndex(selector.selected)] == this;
             }
         })
     </script>

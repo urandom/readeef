@@ -29,34 +29,25 @@
 
             switch (this.routeNameMap[detail.newRoute]) {
                 case "splash":
+                case "feed-base":
+                case "settings-base":
+                /*
                     if (this.user) {
                         this.validateUser(this.user);
                     } else {
                         MoreRouting.navigateTo('login');
                     }
-                    this._toggleDrawer(true);
+                    */
                     break;
                 case "login":
                 case "login-from":
-                    this._toggleDrawer(true);
                     break;
-                default:
-                    this._toggleDrawer(false);
             }
         },
 
         validateUser: function(user) {
             Polymer.dom(this.root).querySelector('rf-login').hide();
             // TODO: test if user is valid
-        },
-
-        _toggleDrawer: function(disabled) {
-            this.$.drawer.forceNarrow = disabled;
-            this.$.drawer.toggleClass('disabled', disabled);
-
-            if (disabled) {
-                this.$.drawer.closeDrawer();
-            }
         },
 
         _generateRouteMap: function() {
