@@ -23,16 +23,20 @@
         if (r.method == data.method && r.tag == data.tag) {
             if (data.error) {
                 if (data.errorType == "error-unauthorized") {
-                    r.instance.asyncFire('core-signal', {name: 'rf-connection-unauthorized'});
+                    r.instance.async(function() {
+                        Polymer.dom(document).querySelector('rf-router').connectionUnauthorized();
+                    });
                 } else {
                     if (r.instance.hasAttribute('on-rf-api-error')) {
                         r.instance.fire('rf-api-error', data);
                     } else {
-                        r.instance.asyncFire('core-signal', {name: 'rf-api-error', data: data});
+                        Polymer.dom(document).querySelector('rf-router').unhandledAPIError(data);
                     }
                 }
             } else {
-                r.instance.fire('rf-api-message', data);
+                r.instance.async(function() {
+                    r.instance.fire('rf-api-message', data);
+                });
             }
             return true;
         }
@@ -40,129 +44,53 @@
         return false;
     }
 
-    Polymer('rf-api', {
-        version: 1,
-        retryTimeout: 10,
-        tag: "",
+    Polymer({
+        is: 'rf-api',
+        properties: {
+            user: {
+                type: Object
+            },
+            version: {
+                type: Number,
+                value: 1
+            },
+            url: {
+                type: String
+            },
+            method: {
+                type: String
+            },
+            args: {
+                type: Object
+            },
+            receiver: {
+                type: Boolean
+            },
+            tag: {
+                type: String,
+                value: ""
+            }
+        },
+        listeners: {
+            'nonce.response': 'onRequestResponse',
+            'nonce.error': 'onRequestError'
+        }
 
-        ready: function() {
+        retryTimeout: 10,
+
+        attached: function() {
             if (this.receiver) {
                 receivers.push({instance: this, method: this.method, tag: this.tag});
             }
-        },
 
-        initialize: function() {
-            if (!this.user || initializing) {
-                return;
-            }
-
-            if (webSocket != null && webSocket.readyState == WebSocket.OPEN) {
-                return;
-            }
-
-            if (webSocket != null) {
-                webSocket.close();
-            }
-
-            initializing = true;
-
-            var self = this;
-
-            this.$.nonce.processResponse = function(xhr) {
-                var response = this.evalResponse(xhr);
-                this.response = response;
-
-                if (!self.url) {
-                    self.url = self.getAttribute('data-api-pattern') + "v" + self.version + "/";
-                }
-
-                var date = new Date().getTime(),
-                    nonce = response.Nonce,
-                    proto = 'ws';
-
-                signature = generateSignature(encodeURI(self.url), 'GET', null,
-                    "", date, nonce, self.user.MD5API || "");
-
-                if (location.protocol == "https:") {
-                    proto = 'wss';
-                }
-
-                webSocket = new WebSocket(
-                    proto + "://" + location.host + self.url +
-                    "?login=" + encodeURIComponent(self.user.Login) +
-                    "&signature=" + encodeURIComponent(signature) +
-                    "&date=" + encodeURIComponent(date) +
-                    "&nonce=" + encodeURIComponent(nonce));
-
-                webSocket.onopen = function() {
-                    initializing = false;
-                    while (messagePool.length) {
-                        var m = messagePool.shift();
-
-                        m.instance.send(m.data);
-                    }
-
-                    if (heartbeatInterval === null) {
-                        heartbeatMisses = 0
-                        heartbeatInterval = setInterval(function() {
-                            try {
-                                heartbeatMisses++;
-                                if (heartbeatMisses >= 3) {
-                                    throw new Error("Too many missed hearbeats.");
-                                }
-
-                                webSocket.send(JSON.stringify({method: "heartbeat"}));
-                            } catch (e) {
-                                clearInterval(heartbeatInterval);
-                                heartbeatInterval = null;
-                                webSocket.close();
-                                webSocket = null;
-                            }
-                        }, 5000);
-                    }
-                };
-
-                webSocket.onmessage = function(event) {
-                    var data = event.data;
-                    try {
-                        data = JSON.parse(data)
-                    } catch(e) {}
-
-                    if (data.method == "heartbeat") {
-                        heartbeatMisses = 0;
-                        return;
-                    }
-
-                    for (var i = 0, r; r = receivers[i]; ++i) {
-                        if (dispatchData(r, data)) {
-                            return;
-                        }
-                    }
-
-                    for (var i = 0, r; r = requestPool[i]; ++i) {
-                        if (dispatchData(r, data)) {
-                            requestPool.splice(i, 1)
-                            return;
-                        }
-                    }
-                };
-
-                webSocket.onclose = function(event) {
-                    initializing = false;
-                    setTimeout(function() {
-                        self.initialize();
-                    }, self.retryTimeout * 1000)
-                };
-            }
-
-            return this.$.nonce.go();
+            this._init();
         },
 
         send: function(data) {
             if (!webSocket || webSocket.readyState != WebSocket.OPEN) {
                 messagePool.push({instance: this, data: data});
 
-                this.initialize();
+                this._init();
                 return;
             }
 
@@ -183,8 +111,111 @@
             webSocket.send(JSON.stringify(payload));
         },
 
+        onRequestResponse: function(event) {
+            if (!this.url) {
+                this.url = this.getAttribute('data-api-pattern') + "v" + this.version + "/";
+            }
+
+            var date = new Date().getTime(),
+                nonce = event.response.Nonce,
+                proto = 'ws';
+
+            signature = generateSignature(encodeURI(this.url), 'GET', null,
+                "", date, nonce, this.user.MD5API || "");
+
+            if (location.protocol == "https:") {
+                proto = 'wss';
+            }
+
+            webSocket = new WebSocket(
+                proto + "://" + location.host + this.url +
+                "?login=" + encodeURIComponent(this.user.Login) +
+                "&signature=" + encodeURIComponent(signature) +
+                "&date=" + encodeURIComponent(date) +
+                "&nonce=" + encodeURIComponent(nonce));
+
+            webSocket.onopen = function() {
+                initializing = false;
+                while (messagePool.length) {
+                    var m = messagePool.shift();
+
+                    m.instance.send(m.data);
+                }
+
+                if (heartbeatInterval === null) {
+                    heartbeatMisses = 0
+                    heartbeatInterval = setInterval(function() {
+                        try {
+                            heartbeatMisses++;
+                            if (heartbeatMisses >= 3) {
+                                throw new Error("Too many missed hearbeats.");
+                            }
+
+                            webSocket.send(JSON.stringify({method: "heartbeat"}));
+                        } catch (e) {
+                            clearInterval(heartbeatInterval);
+                            heartbeatInterval = null;
+                            webSocket.close();
+                            webSocket = null;
+                        }
+                    }, 5000);
+                }
+            };
+
+            webSocket.onmessage = function(event) {
+                var data = event.data;
+                try {
+                    data = JSON.parse(data)
+                } catch(e) {}
+
+                if (data.method == "heartbeat") {
+                    heartbeatMisses = 0;
+                    return;
+                }
+
+                for (var i = 0, r; r = receivers[i]; ++i) {
+                    if (dispatchData(r, data)) {
+                        return;
+                    }
+                }
+
+                for (var i = 0, r; r = requestPool[i]; ++i) {
+                    if (dispatchData(r, data)) {
+                        requestPool.splice(i, 1)
+                        return;
+                    }
+                }
+            };
+
+            webSocket.onclose = function(event) {
+                initializing = false;
+                setTimeout(function() {
+                    this._init();
+                }.bind(this), this.retryTimeout * 1000)
+            }.bind(this);
+        },
+
         onRequestError: function(event, detail) {
             this.fire('rf-api-error', detail);
         },
+
+        _init: function() {
+            if (!this.user || initializing) {
+                return;
+            }
+
+            if (webSocket != null && webSocket.readyState == WebSocket.OPEN) {
+                return;
+            }
+
+            if (webSocket != null) {
+                webSocket.close();
+            }
+
+            initializing = true;
+
+            return this.$.nonce.go();
+        }
+
     });
 })();
