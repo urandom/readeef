@@ -32,6 +32,7 @@
     "paper-toolbar": "PolymerElements/paper-toolbar#~1.0.4",
     "paper-icon-button": "PolymerElements/paper-icon-button#~1.0.3",
     "iron-pages": "PolymerElements/iron-pages#~1.0.2",
-    "iron-ajax": "PolymerElements/iron-ajax#~1.0.3"
+    "iron-ajax": "PolymerElements/iron-ajax#~1.0.3",
+    "iron-localstorage": "PolymerElements/iron-localstorage#~1.0.4"
   }
 }

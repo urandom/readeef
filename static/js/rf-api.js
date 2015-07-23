@@ -74,7 +74,7 @@
         listeners: {
             'nonce.response': 'onRequestResponse',
             'nonce.error': 'onRequestError'
-        }
+        },
 
         retryTimeout: 10,
 
@@ -214,7 +214,7 @@
 
             initializing = true;
 
-            return this.$.nonce.go();
+            return this.$.nonce.generateRequest();
         }
 
     });
