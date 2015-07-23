@@ -10,6 +10,7 @@
 <link rel="import" href="/dist/paper-drawer-panel/paper-drawer-panel.html">
 <link rel="import" href="/dist/paper-header-panel/paper-header-panel.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/dist/paper-toast/paper-toast.html">
 <link rel="import" href="/dist/paper-toolbar/paper-toolbar.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
@@ -28,14 +29,11 @@ neon-animated-pages {
         <more-routing-config driver="path"></more-routing-config>
         <more-route name="splash" path="/">
             <more-route path="/web">
-                <more-route name="login" path="/login"></more-route>
-                <more-route name="login-from" path="/login/from/:url"></more-route>
-                <more-route name="feed-base" path="/feed">
-                    <more-route name="feed-favorite" path="/favorite"></more-route>
-                    <more-route name="feed-popular" path="/popular:tag"></more-route>
-                    <more-route name="feed" path="/:id">
-                        <more-route name="feed-tag" path="/:id">
-                    </more-route>
+                <more-route name="login" path="/login">
+                    <more-route name="login-from" path="/from/:url"></more-route>
+                </more-route>
+                <more-route name="feed" path="/feed/:tag">
+                    <more-route name="article" path="/article/:id">
                 </more-route>
                 <more-route name="settings-base" path="/settings">
                     <more-route name="settings-general" path="/general"></more-route>
@@ -55,7 +53,7 @@ neon-animated-pages {
                         <rf-splash route="splash"></rf-splash>
                         <rf-lazy-loader route="login" import="/component/rf-login"></rf-lazy-loader>
                         <rf-lazy-loader route="login-from" import="/component/rf-login"></rf-lazy-loader>
-                        <section route="feed-base">
+                        <section route="feed">
                             <paper-drawer-panel id="drawer">
                                 <paper-header-panel drawer>
                                     <paper-toolbar>
@@ -80,6 +78,8 @@ neon-animated-pages {
             </neon-animatable>
 
         </neon-animated-pages>
+
+        <paper-toast id="api-error"></paper-toast>
             
         <rf-api id="auth-check" method="get-auth-data"></rf-api>
     </template>

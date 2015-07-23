@@ -12,39 +12,30 @@
             },
             user: {
                 type: Object,
-                readOnly: true
+                readOnly: true,
+                notify: true
             }
         },
-        routeNameMap: {},
         state: 0,
 
         attached: function() {
-            if (!Object.keys(this.routeNameMap).length) {
-                this._generateRouteMap();
-            }
-
-            if (!this.user && this.state & state | state.VALIDATING) {
-                if (!MoreRouting.getRouteByName('splash').children[0].active) {
-                    MoreRouting.navigateTo('login');
-                } else if (!MoreRouting.getRouteByName('login').active &&
-                    !MoreRouting.getRouteByName('login-from').active) {
-                    MoreRouting.navigateTo('login-from', {url: encodeURIComponent(location.pathname)});
+            this.async(function() {
+                if (!this.user && this.state & state.VALIDATING != state.VALIDATING) {
+                    if (!MoreRouting.getRouteByName('splash').children[0].active) {
+                        MoreRouting.navigateTo('login');
+                    } else if (!MoreRouting.getRouteByName('login').active &&
+                        !MoreRouting.getRouteByName('login-from').active) {
+                        MoreRouting.navigateTo('login-from', {url: this.encodeURI(location.pathname)});
+                    }
                 }
-            }
+            });
         },
 
         onRouteChange: function(event, detail) {
-            if (!Object.keys(this.routeNameMap).length) {
-                this._generateRouteMap();
-            }
-
-            switch (this.routeNameMap[detail.newRoute]) {
-                case "login":
-                case "login-from":
-                    if (!this.user & this.state | state.VALIDATING) {
-                        this.$.splash.selected = 0;
-                    }
-                    break;
+            if (MoreRouting.getRouteByName('login').active) {
+                if (!this.user & this.state & state.VALIDATING != state.VALIDATING) {
+                    this.$.splash.selected = 0;
+                }
             }
         },
 
@@ -61,27 +52,46 @@
         },
 
         validateUser: function(user) {
+            if (!user) {
+                return;
+            }
+
             this.state |= state.VALIDATING;
-            this.async(function() {
-                this.state &= ~state.VALIDATING;
-            }.bind(this));
 
             var authCheck = this.$['auth-check'];
-            var validateMessage = function(event, data) {
-                console.log(data);
-                this._setUser(user);
+            var validateMessage = function(event) {
+                if (!event.detail.arguments.Auth) {
+                    return this.connectionUnauthorized();
+                }
 
-                if (MoreRouting.getRouteByName('login').active) {
-                    Polymer.dom(this.root).querySelector('rf-login').hide();
-                } else if (MoreRouting.getRouteByName('login-from').active) {
-                    url = MoreRouting.getRouteByName('login-from').params.url;
-                    Polymer.dom(this.root).querySelector('rf-login').hide();
-                    MoreRouting.navigateTo(url);
+                var user = event.detail.arguments.User;
+                user.authTime = new Date().getTime();
+
+                this._setUser(user);
+                this.state &= ~state.VALIDATING;
+
+                if (MoreRouting.getRouteByName('login-from').active) {
+                    var login = Polymer.dom(this.root).querySelector('rf-login');
+                    if (login) {
+                        login.hide();
+                    }
+
+                    var url = MoreRouting.getRouteByName('login-from').params.url;
+
+                    try {
+                        MoreRouting.navigateTo(this.decodeURI(url));
+                    } catch(e) {
+                        MoreRouting.navigateTo('feed', {tag: 'all'});
+                    }
+                } else if (MoreRouting.getRouteByName('login').active) {
+                    var login = Polymer.dom(this.root).querySelector('rf-login');
+                    if (login) {
+                        login.hide();
+                    }
                 } else if (MoreRouting.getRouteByName('splash').active) {
                     MoreRouting.navigateTo('feed', {tag: 'all'});
                 }
                 this.$.splash.selected = 0;
-                // TODO: test if user is valid
                 authCheck.removeEventListener('rf-api-message', validateMessage);
             }.bind(this);
 
@@ -90,12 +100,25 @@
             authCheck.send();
         },
 
-        _generateRouteMap: function() {
-            var map = {};
-            ["splash", "login", "login-from", "feed-base", "settings-base"].forEach(function(n) {
-                map[MoreRouting.getRouteByName(n)] = n;
-            });
-            this.routeNameMap = map;
+        connectionUnauthorized: function() {
+            if (!MoreRouting.getRouteByName('login').active) {
+                MoreRouting.navigateTo('login-from', {url: location.pathname});
+            }
+
+            Polymer.dom(this.root).querySelector('rf-login').invalid = true;
+        },
+
+        unhandledAPIError: function(data) {
+            this.$['api-error'].text = "Error: " + JSON.stringify(data.error) + ", type: " + data.errorType;
+            this.$['api-error'].show();
+        },
+
+        encodeURI: function(uri) {
+            return encodeURIComponent(uri).replace(/%/g, '$');
+        },
+
+        decodeURI: function(encodedURI) {
+            return decodeURIComponent(encodedURI.replace(/\$/g, '%'));
         }
 
     })

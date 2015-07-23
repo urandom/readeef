@@ -113,11 +113,11 @@
 
         onRequestResponse: function(event) {
             if (!this.url) {
-                this.url = this.getAttribute('data-api-pattern') + "v" + this.version + "/";
+                this.url = this.$.nonce.getAttribute('data-api-pattern') + "v" + this.version + "/";
             }
 
             var date = new Date().getTime(),
-                nonce = event.response.Nonce,
+                nonce = event.detail.response.Nonce,
                 proto = 'ws';
 
             signature = generateSignature(encodeURI(this.url), 'GET', null,

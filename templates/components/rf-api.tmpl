@@ -2,10 +2,9 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/iron-ajax/iron-ajax.html">
 
-<dom-module id="rf-api" hidden data-api-pattern="{% .apiPattern %}">
+<dom-module id="rf-api">
     <template>
-        <content></content>
-        <iron-ajax id="nonce" url="{% .apiPattern %}v{{version}}/nonce" handleAs="json"></iron-ajax>
+        <iron-ajax id="nonce" url="{% .apiPattern %}v{{version}}/nonce" handleAs="json" data-api-pattern="{% .apiPattern %}"></iron-ajax>
     </template>
     <script src="/dist/cryptojs/rollups/md5.js"></script>
     <script src="/dist/cryptojs/rollups/hmac-sha256.js"></script>

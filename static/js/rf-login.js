@@ -68,13 +68,13 @@
         },
 
         onLogin: function() {
-            this.$.login.value = "";
-            this.$.password.value = "";
-
             var user = {
                 Login: this.$.login.value,
                 MD5API: CryptoJS.MD5(this.$.login.value + ":" + this.$.password.value).toString(CryptoJS.enc.Base64)
             };
+
+            this.$.login.value = "";
+            this.$.password.value = "";
 
             Polymer.dom(document).querySelector('rf-router').validateUser(user);
         }
