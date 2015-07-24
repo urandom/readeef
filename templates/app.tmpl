@@ -54,9 +54,21 @@ html /deep/ .clearfix:after {
         @apply(--shadow-elevation-8dp);
     }
 }
+
+body.blue /deep/ * {
+    --default-primary-color: #5677fc;
+    --text-primary-color: #ffffff;
+    --dark-primary-color: #2a36b1;
+}
+
+body.light-blue /deep/ * {
+    --default-primary-color: #03a9f4;
+    --text-primary-color: #ffffff;
+    --dark-primary-color: #01579b;
+}
 </style>
 {% end %}
-{% define "body-attrs" %} unresolved class="fullbleed" {% end %}
+{% define "body-attrs" %} unresolved class="fullbleed blue" {% end %}
 
 {% define "content" %}
     <rf-router></rf-router>

@@ -29,6 +29,10 @@
                     }
                 }
             });
+
+            document.addEventListener('rf-lazy-insert', function() {
+                Polymer.updateStyles();
+            });
         },
 
         onRouteChange: function(event, detail) {
