@@ -16,11 +16,11 @@
                 notify: true
             }
         },
-        state: 0,
+        _state: 0,
 
         attached: function() {
             this.async(function() {
-                if (!this.user && (this.state & state.VALIDATING) != state.VALIDATING) {
+                if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING) {
                     if (!MoreRouting.getRouteByName('splash').children[0].active) {
                         MoreRouting.navigateTo('login');
                     } else if (!MoreRouting.getRouteByName('login').active &&
@@ -33,7 +33,7 @@
 
         onRouteChange: function(event, detail) {
             if (MoreRouting.getRouteByName('login').active) {
-                if (!this.user & (this.state & state.VALIDATING) != state.VALIDATING) {
+                if (!this.user & (this._state & state.VALIDATING) != state.VALIDATING) {
                     this.$.splash.selected = 0;
                 }
             }
@@ -56,7 +56,7 @@
                 return;
             }
 
-            this.state |= state.VALIDATING;
+            this._state |= state.VALIDATING;
 
             var authCheck = this.$['auth-check'];
             var validateMessage = function(event) {
@@ -68,7 +68,7 @@
                 user.authTime = new Date().getTime();
 
                 this._setUser(user);
-                this.state &= ~state.VALIDATING;
+                this._state &= ~state.VALIDATING;
 
                 if (MoreRouting.getRouteByName('login-from').active) {
                     var login = Polymer.dom(this.root).querySelector('rf-login');
@@ -81,15 +81,16 @@
                     try {
                         MoreRouting.navigateTo(this.decodeURI(url));
                     } catch(e) {
-                        MoreRouting.navigateTo('feed', {tag: 'all'});
+                        MoreRouting.navigateTo('feed', {tagOrId: 'all'});
                     }
                 } else if (MoreRouting.getRouteByName('login').active) {
                     var login = Polymer.dom(this.root).querySelector('rf-login');
                     if (login) {
                         login.hide();
                     }
+                    MoreRouting.navigateTo('feed', {tagOrId: 'all'});
                 } else if (MoreRouting.getRouteByName('splash').active) {
-                    MoreRouting.navigateTo('feed', {tag: 'all'});
+                    MoreRouting.navigateTo('feed', {tagOrId: 'all'});
                 }
                 this.$.splash.selected = 0;
                 authCheck.removeEventListener('rf-api-message', validateMessage);
@@ -98,6 +99,11 @@
             authCheck.user = user;
             authCheck.addEventListener('rf-api-message', validateMessage);
             authCheck.send();
+        },
+
+        logout: function() {
+            this._setUser(null);
+            MoreRouting.navigateTo('login');
         },
 
         connectionUnauthorized: function() {
