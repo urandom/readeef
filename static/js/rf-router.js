@@ -20,7 +20,7 @@
 
         attached: function() {
             this.async(function() {
-                if (!this.user && this.state & state.VALIDATING != state.VALIDATING) {
+                if (!this.user && (this.state & state.VALIDATING) != state.VALIDATING) {
                     if (!MoreRouting.getRouteByName('splash').children[0].active) {
                         MoreRouting.navigateTo('login');
                     } else if (!MoreRouting.getRouteByName('login').active &&
@@ -33,7 +33,7 @@
 
         onRouteChange: function(event, detail) {
             if (MoreRouting.getRouteByName('login').active) {
-                if (!this.user & this.state & state.VALIDATING != state.VALIDATING) {
+                if (!this.user & (this.state & state.VALIDATING) != state.VALIDATING) {
                     this.$.splash.selected = 0;
                 }
             }
@@ -103,9 +103,9 @@
         connectionUnauthorized: function() {
             if (!MoreRouting.getRouteByName('login').active) {
                 MoreRouting.navigateTo('login-from', {url: location.pathname});
+            } else {
+                Polymer.dom(this.root).querySelector('rf-login').invalid = true;
             }
-
-            Polymer.dom(this.root).querySelector('rf-login').invalid = true;
         },
 
         unhandledAPIError: function(data) {
