@@ -36,6 +36,7 @@
     "iron-localstorage": "PolymerElements/iron-localstorage#~1.0.4",
     "paper-toast": "PolymerElements/paper-toast#~1.0.0",
     "paper-menu": "PolymerElements/paper-menu#~1.0.1",
-    "pushstate-anchor": "erikringsmuth/pushstate-anchor#~0.3.2"
+    "pushstate-anchor": "erikringsmuth/pushstate-anchor#~0.3.2",
+    "paper-ripple": "PolymerElements/paper-ripple#~1.0.1"
   }
 }

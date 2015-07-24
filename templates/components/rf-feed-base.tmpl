@@ -3,11 +3,20 @@
 <link rel="import" href="/dist/paper-header-panel/paper-header-panel.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-menu/paper-menu.html">
+<link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/paper-toolbar/paper-toolbar.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
 
 <dom-module id="rf-feed-base">
+    <style>
+a[is="pushstate-anchor"] {
+    display: block;
+    min-height: 20px;
+    font-size: 16px;
+    padding: 16px;
+}
+    </style>
     <template>
         <paper-drawer-panel id="drawer">
             <paper-header-panel drawer>
@@ -15,7 +24,10 @@
                     <div>Feeds</div>
                 </paper-toolbar>
                 <paper-menu>
-                    <a is="pushstate-anchor" href="/web/feed/favorite">Favorite</a>
+                    <a is="pushstate-anchor" href="/web/feed/favorite">
+                        Favorite
+                        <paper-ripple></paper-ripple>
+                    </a>
                 </paper-menu>
             </paper-header-panel>
             <paper-header-panel main mode="cover">
