@@ -10,38 +10,86 @@
 
 <dom-module id="rf-feed-base">
     <style>
-a[is="pushstate-anchor"] {
+paper-toolbar {
+    font-size: 24px;
+}
+
+.card {
+    @apply(--card-style);
+}
+
+.content {
+    min-height: 5em;
+    margin: 10px 120px 60px 5px;
+}
+
+.narrow .content {
+    margin: 10px 5px 60px 5px;
+}
+
+[drawer] paper-menu a {
     display: block;
     min-height: 20px;
     font-size: 16px;
     padding: 16px;
+    color: var(--text-primary-color);
+    text-decoration: none;
 }
     </style>
     <template>
-        <paper-drawer-panel id="drawer">
-            <paper-header-panel drawer>
+        <paper-drawer-panel id="drawer" on-paper-responsive-change="onResponsiveChange" class$="[[_computeDrawerClass(narrow)]]">
+            <paper-header-panel drawer mode="[[_computeDrawerPanelMode(narrow)]]">
                 <paper-toolbar>
                     <div>Feeds</div>
                 </paper-toolbar>
                 <paper-menu>
                     <a is="pushstate-anchor" href="/web/feed/favorite">
-                        Favorite
+                        <span>Favorite</span>
                         <paper-ripple></paper-ripple>
                     </a>
                 </paper-menu>
             </paper-header-panel>
-            <paper-header-panel main mode="cover">
+            <paper-header-panel main mode="[[_computeMainPanelMode(narrow)]]">
                 <paper-toolbar>
                     <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
                     <div>Title</div>
                 </paper-toolbar>
-            <paper-header-panel>
+                <div class$="[[_computeContentClass(narrow)]]">
+                    <h1>test</h1>
+                </div>
+            </paper-header-panel>
         </paper-drawer-panel>
     </template>
     <script>
         "use strict";
         Polymer({
-            is: "rf-feed-base"
+            is: "rf-feed-base",
+            properties: {
+                narrow: {
+                    type: Boolean,
+                    readOnly: true
+                }
+            },
+            
+            onResponsiveChange: function(event, detail) {
+                this._setNarrow(detail.narrow);
+            },
+
+            _computeDrawerClass: function(narrow) {
+                return narrow ? 'narrow' : '';
+            },
+
+            _computeContentClass: function(narrow) {
+                return narrow ? 'content' : 'content card';
+            },
+
+            _computeDrawerPanelMode: function(narrow) {
+                return narrow ? 'standard' : 'seamed';
+            },
+
+            _computeMainPanelMode: function(narrow) {
+                return narrow ? 'standard' : 'cover';
+            }
         })
     </script>
 </dom-module>

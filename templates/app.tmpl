@@ -55,16 +55,22 @@ html /deep/ .clearfix:after {
     }
 }
 
+body /deep/ * {
+    --text-primary-color: #0a0a0a;
+}
+
 body.blue /deep/ * {
-    --default-primary-color: #5677fc;
-    --text-primary-color: #ffffff;
-    --dark-primary-color: #2a36b1;
+    --paper-toolbar-background: #5677fc;
+    --paper-toolbar-color: #ffffff;
+    --paper-fab-background: #2a36b1;
+}
+body.blue /deep/ paper-fab {
+    --text-primary-color: #e3e5f5;
 }
 
 body.light-blue /deep/ * {
-    --default-primary-color: #03a9f4;
-    --text-primary-color: #ffffff;
-    --dark-primary-color: #01579b;
+    --paper-toolbar-background: #03a9f4;
+    --paper-toolbar-color: #ffffff;
 }
 </style>
 {% end %}
