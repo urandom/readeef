@@ -16,7 +16,6 @@
   ],
   "dependencies": {
     "polymer": "Polymer/polymer#^1.0.0",
-    "loading-wave": "~0.0.1",
     "moment": "~2.8.2",
     "iron-flex-layout": "PolymerElements/iron-flex-layout#~1.0.2",
     "more-routing": "PolymerLabs/more-routing#~1.0.0",
@@ -37,6 +36,7 @@
     "paper-toast": "PolymerElements/paper-toast#~1.0.0",
     "paper-menu": "PolymerElements/paper-menu#~1.0.1",
     "pushstate-anchor": "erikringsmuth/pushstate-anchor#~0.3.2",
-    "paper-ripple": "PolymerElements/paper-ripple#~1.0.1"
+    "paper-ripple": "PolymerElements/paper-ripple#~1.0.1",
+    "iron-collapse": "PolymerElements/iron-collapse#~1.0.2"
   }
 }
