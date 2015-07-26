@@ -90,6 +90,15 @@ paper-toolbar {
                             </a>
                         </div>
                     </iron-collapse>
+                    <hr>
+                    <a is="pushstate-anchor" href="/web/settings/general" class="item">
+                        <span>Settings</span>
+                        <paper-ripple></paper-ripple>
+                    </a>
+                    <a href="#" class="item" on-click="logout">
+                        <span>Logout</span>
+                        <paper-ripple></paper-ripple>
+                    </a>
                 </div>
             </paper-header-panel>
             <paper-header-panel main mode="[[_computeMainPanelMode(narrow)]]">
@@ -131,6 +140,10 @@ paper-toolbar {
             
             onResponsiveChange: function(event, detail) {
                 this._setNarrow(detail.narrow);
+            },
+
+            logout: function(event) {
+                Polymer.dom(document).querySelector('rf-router').logout();
             },
 
             _computeDrawerClass: function(narrow) {
