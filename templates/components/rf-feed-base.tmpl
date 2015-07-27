@@ -2,6 +2,7 @@
 <link rel="import" href="/dist/iron-collapse/iron-collapse.html">
 <link rel="import" href="/dist/iron-icon/iron-icon.html">
 <link rel="import" href="/dist/iron-icons/iron-icons.html">
+<link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/polymer/polymer.html">
@@ -33,6 +34,18 @@
 .drawer-menu paper-icon-button.item {
     padding: 8px;
     margin-left: 4px;
+}
+
+.main-title paper-fab {
+    position: absolute;
+    right: 24px;
+    bottom: -24px;
+    z-index: 1;
+    background: white;
+}
+.main-title paper-fab.notify {
+    background: var(--paper-fab-notify-background);
+    color: var(--text-primary-color-inverse);
 }
     </style>
     <template>
@@ -71,6 +84,7 @@
             <div class="main-title">
                 <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
                 Title
+                <paper-fab icon="refresh"></paper-fab>
             </div>
             <div class="main-content">
                 <h1>Test</h1>
