@@ -2,44 +2,16 @@
 <link rel="import" href="/dist/iron-collapse/iron-collapse.html">
 <link rel="import" href="/dist/iron-icon/iron-icon.html">
 <link rel="import" href="/dist/iron-icons/iron-icons.html">
-<link rel="import" href="/dist/paper-drawer-panel/paper-drawer-panel.html">
-<link rel="import" href="/dist/paper-header-panel/paper-header-panel.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
-<link rel="import" href="/dist/paper-toolbar/paper-toolbar.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
 
+<link rel="import" href="/component/rf-app-scaffold">
+
 <dom-module id="rf-feed-base">
     <style>
-paper-toolbar {
-    font-size: 24px;
-}
-
-.card {
-    @apply(--card-style);
-}
-
-.content {
-    min-height: 5em;
-    margin: -10px 120px 60px 5px;
-}
-
-.narrow .content {
-    margin: 10px 5px 60px 5px;
-}
-
-[drawer] .menu {
-    padding: 8px 0;
-
-    @apply(--layout-vertical);
-}
-
-[drawer] .submenu {
-    margin-left: 44px;
-}
-
-[drawer] .menu a {
+.drawer-menu a {
     display: block;
     color: var(--text-primary-color);
     text-decoration: none;
@@ -50,85 +22,66 @@ paper-toolbar {
     @apply(--layout-center);
 }
 
-[drawer] .submenu a {
+.drawer-menu .submenu {
+    margin-left: 44px;
+}
+
+.drawer-menu .submenu a {
     font-size: 14px;
 }
 
-[drawer] .menu .item {
-    position: relative;
-    padding: 16px;
-}
-
-[drawer] .menu paper-icon-button.item {
+.drawer-menu paper-icon-button.item {
     padding: 8px;
     margin-left: 4px;
 }
-
-[drawer] hr {
-    background-color: var(--text-primary-color);
-    border-style: ridge;
-    width: 100%;
-    margin: 2px 16px;
-}
     </style>
     <template>
-        <paper-drawer-panel id="drawer" on-paper-responsive-change="onResponsiveChange" class$="[[_computeDrawerClass(narrow)]]" responsiveWidth="768px">
-            <paper-header-panel drawer mode="[[_computeDrawerPanelMode(narrow)]]">
-                <paper-toolbar>
-                    <div>Feeds</div>
-                </paper-toolbar>
-                <div class="menu">
-                    <a is="pushstate-anchor" href="/web/feed/favorite" class="item">
-                        <span>Favorite</span>
+        <rf-app-scaffold>
+            <div class="drawer-title">Feeds</div>
+            <div class="drawer-menu">
+                <a is="pushstate-anchor" href="/web/feed/favorite" class="item">
+                    <span>Favorite</span>
+                    <paper-ripple></paper-ripple>
+                </a>
+                <a is="pushstate-anchor" href="/web/feed/popular:all" class="layout horizontal">
+                    <paper-icon-button icon="expand-more" expands="popular-feeds" class="item"></paper-icon-button>
+                    <div style="position: relative" class="flex item">
+                        Popular
                         <paper-ripple></paper-ripple>
-                    </a>
-                    <a is="pushstate-anchor" href="/web/feed/popular:all" class="layout horizontal">
-                        <paper-icon-button icon="expand-more" expands="popular-feeds" class="item"></paper-icon-button>
-                        <div style="position: relative" class="flex item">
-                            Popular
+                    </div>
+                </a>
+                <iron-collapse id="popular-feeds">
+                    <div class="menu submenu">
+                        <a is="pushstate-anchor" href="/web/feed/popular:tag:android" class="item">
+                            <span>android</span>
                             <paper-ripple></paper-ripple>
-                        </div>
-                    </a>
-                    <iron-collapse id="popular-feeds">
-                        <div class="menu submenu">
-                            <a is="pushstate-anchor" href="/web/feed/popular:tag:android" class="item">
-                                <span>android</span>
-                                <paper-ripple></paper-ripple>
-                            </a>
-                        </div>
-                    </iron-collapse>
-                    <hr>
-                    <a is="pushstate-anchor" href="/web/settings/general" class="item">
-                        <span>Settings</span>
-                        <paper-ripple></paper-ripple>
-                    </a>
-                    <a href="#" class="item" on-click="logout">
-                        <span>Logout</span>
-                        <paper-ripple></paper-ripple>
-                    </a>
-                </div>
-            </paper-header-panel>
-            <paper-header-panel main mode="[[_computeMainPanelMode(narrow)]]">
-                <paper-toolbar>
-                    <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-                    <div>Title</div>
-                </paper-toolbar>
-                <div class$="[[_computeContentClass(narrow)]]">
-                    <h1>test</h1>
-                </div>
-            </paper-header-panel>
-        </paper-drawer-panel>
+                        </a>
+                    </div>
+                </iron-collapse>
+                <hr>
+                <a is="pushstate-anchor" href="/web/settings/general" class="item">
+                    <span>Settings</span>
+                    <paper-ripple></paper-ripple>
+                </a>
+                <a href="#" class="item" on-click="logout">
+                    <span>Logout</span>
+                    <paper-ripple></paper-ripple>
+                </a>
+            </div>
+            <div class="main-title">
+                <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+                Title
+            </div>
+            <div class="main-content">
+                <h1>Test</h1>
+            </div>
+        </rf-app-scaffold>
     </template>
+
     <script>
         "use strict";
         Polymer({
             is: "rf-feed-base",
-            properties: {
-                narrow: {
-                    type: Boolean,
-                    readOnly: true
-                }
-            },
 
             attached: function() {
                 Polymer.dom(this.root).querySelectorAll('[expands]').forEach(function(e) {
@@ -145,29 +98,10 @@ paper-toolbar {
                 }.bind(this));
             },
             
-            onResponsiveChange: function(event, detail) {
-                this._setNarrow(detail.narrow);
-            },
-
             logout: function(event) {
                 Polymer.dom(document).querySelector('rf-router').logout();
-            },
-
-            _computeDrawerClass: function(narrow) {
-                return narrow ? 'narrow' : '';
-            },
-
-            _computeContentClass: function(narrow) {
-                return narrow ? 'content' : 'content card';
-            },
-
-            _computeDrawerPanelMode: function(narrow) {
-                return narrow ? 'standard' : 'seamed';
-            },
-
-            _computeMainPanelMode: function(narrow) {
-                return narrow ? 'standard' : 'cover';
             }
+
         })
     </script>
 </dom-module>
