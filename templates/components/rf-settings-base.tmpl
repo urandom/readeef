@@ -28,8 +28,25 @@
         <rf-app-scaffold>
             <div class="drawer-title">Settings</div>
             <div class="drawer-menu">
-                <a is="pushstate-anchor" href="/web/feed/all" class="item">
+                <a is="pushstate-anchor" href="/web/settings/general" class="item">
+                    <span>General</span>
+                    <paper-ripple></paper-ripple>
+                </a>
+                <a is="pushstate-anchor" href="/web/settings/feeds" class="item">
                     <span>Feeds</span>
+                    <paper-ripple></paper-ripple>
+                </a>
+                <a is="pushstate-anchor" href="/web/settings/share-services" class="item">
+                    <span>Share Services</span>
+                    <paper-ripple></paper-ripple>
+                </a>
+                <a is="pushstate-anchor" href="/web/settings/admin" class="item" hidden$="{{ !user.Admin }}">
+                    <span>Admin</span>
+                    <paper-ripple></paper-ripple>
+                </a>
+                <hr>
+                <a is="pushstate-anchor" href="/web/feed/all" class="item">
+                    <span>Back to feeds</span>
                     <paper-ripple></paper-ripple>
                 </a>
                 <a href="#" class="item" on-click="logout">
@@ -47,7 +64,7 @@
                         <rf-lazy-loader route="settings-general" import="/component/rf-settings-general"></rf-lazy-loader>
                         <rf-lazy-loader route="settings-feeds" import="/component/rf-settings-feeds"></rf-lazy-loader>
                         <rf-lazy-loader route="settings-share-services" import="/component/rf-settings-share-services"></rf-lazy-loader>
-                        <rf-lazy-loader route="settings-admin" import="/component/rf-settings-admin"></rf-lazy-loader>
+                        <rf-lazy-loader route="settings-admin" import="/component/rf-settings-admin" hidden$="{{ !user.Admin }}"></rf-lazy-loader>
                     </iron-pages>
                 </more-route-selector>
             </div>
@@ -57,6 +74,9 @@
         "use strict";
         Polymer({
             is: "rf-settings-base",
+            properties: {
+                user: Object
+            },
 
             logout: function(event) {
                 Polymer.dom(document).querySelector('rf-router').logout();

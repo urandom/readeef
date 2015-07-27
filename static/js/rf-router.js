@@ -30,9 +30,12 @@
                 }
             });
 
-            document.addEventListener('rf-lazy-insert', function() {
+            document.addEventListener('rf-lazy-insert', function(event) {
+                if (event.detail.element.nodeName.toLowerCase() == 'rf-settings-base') {
+                    event.detail.element.user = this.user;
+                }
                 Polymer.updateStyles();
-            });
+            }.bind(this));
         },
 
         onRouteChange: function(event, detail) {
