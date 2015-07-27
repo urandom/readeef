@@ -36,9 +36,14 @@
         },
 
         onRouteChange: function(event, detail) {
-            if (MoreRouting.getRouteByName('login').active) {
-                if (!this.user & (this._state & state.VALIDATING) != state.VALIDATING) {
+            if (!this.user & (this._state & state.VALIDATING) != state.VALIDATING) {
+                if (MoreRouting.getRouteByName('login').active) {
                     this.$.splash.selected = 0;
+                } else if (!MoreRouting.getRouteByName('splash').children[0].active) {
+                    MoreRouting.navigateTo('login');
+                } else if (!MoreRouting.getRouteByName('login').active &&
+                    !MoreRouting.getRouteByName('login-from').active) {
+                    MoreRouting.navigateTo('login-from', {url: this.encodeURI(location.pathname)});
                 }
             }
         },
