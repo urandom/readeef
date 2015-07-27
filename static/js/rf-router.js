@@ -119,7 +119,10 @@
             if (!MoreRouting.getRouteByName('login').active) {
                 MoreRouting.navigateTo('login-from', {url: location.pathname});
             } else {
-                Polymer.dom(this.root).querySelector('rf-login').invalid = true;
+                var login = Polymer.dom(this.root).querySelector('rf-login');
+                if (login) {
+                    login.invalid = true;
+                }
             }
         },
 

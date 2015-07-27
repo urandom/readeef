@@ -22,7 +22,7 @@ paper-toolbar {
 
 .content {
     min-height: 5em;
-    margin: 10px 120px 60px 5px;
+    margin: -10px 120px 60px 5px;
 }
 
 .narrow .content {
@@ -63,9 +63,16 @@ paper-toolbar {
     padding: 8px;
     margin-left: 4px;
 }
+
+[drawer] hr {
+    background-color: var(--text-primary-color);
+    border-style: ridge;
+    width: 100%;
+    margin: 2px 16px;
+}
     </style>
     <template>
-        <paper-drawer-panel id="drawer" on-paper-responsive-change="onResponsiveChange" class$="[[_computeDrawerClass(narrow)]]">
+        <paper-drawer-panel id="drawer" on-paper-responsive-change="onResponsiveChange" class$="[[_computeDrawerClass(narrow)]]" responsiveWidth="768px">
             <paper-header-panel drawer mode="[[_computeDrawerPanelMode(narrow)]]">
                 <paper-toolbar>
                     <div>Feeds</div>
@@ -76,7 +83,7 @@ paper-toolbar {
                         <paper-ripple></paper-ripple>
                     </a>
                     <a is="pushstate-anchor" href="/web/feed/popular:all" class="layout horizontal">
-                        <paper-icon-button icon="expand-less" expands="popular-feeds" class="item"></paper-icon-button>
+                        <paper-icon-button icon="expand-more" expands="popular-feeds" class="item"></paper-icon-button>
                         <div style="position: relative" class="flex item">
                             Popular
                             <paper-ripple></paper-ripple>
@@ -131,7 +138,7 @@ paper-toolbar {
                         event.stopPropagation();
 
                         if ('icon' in e) {
-                            e.icon = collapser.opened ? 'expand-less' : 'expand-more';
+                            e.icon = collapser.opened ? 'expand-more' : 'expand-less';
                         }
                         collapser.toggle();
                     });
