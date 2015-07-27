@@ -55,6 +55,7 @@ paper-toolbar {
             </paper-header-panel>
             <paper-header-panel main mode="[[_computeMainPanelMode(narrow)]]">
                 <paper-toolbar>
+                    <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
                     <content select=".main-title"></content>
                 </paper-toolbar>
                 <div class$="[[_computeContentClass(narrow)]]">
@@ -70,7 +71,8 @@ paper-toolbar {
             properties: {
                 narrow: {
                     type: Boolean,
-                    readOnly: true
+                    readOnly: true,
+                    notify: true
                 }
             },
 

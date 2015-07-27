@@ -49,7 +49,7 @@
 }
     </style>
     <template>
-        <rf-app-scaffold>
+        <rf-app-scaffold narrow="{{ narrow }}">
             <div class="drawer-title">Feeds</div>
             <div class="drawer-menu">
                 <a is="pushstate-anchor" href="/web/feed/favorite" class="item">
@@ -82,9 +82,8 @@
                 </a>
             </div>
             <div class="main-title">
-                <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
                 Title
-                <paper-fab icon="refresh"></paper-fab>
+                <paper-fab icon="refresh" hidden$="{{ narrow }}"></paper-fab>
             </div>
             <div class="main-content">
                 <h1>Test</h1>
