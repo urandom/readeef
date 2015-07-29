@@ -61,105 +61,105 @@ body /deep/ * {
     --text-primary-color-inverse: #ffffff;
 }
 
-body.blue /deep/ * {
+body.theme-blue /deep/ * {
     --paper-toolbar-background: var(--paper-blue-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-blue-800);
     --paper-fab-keyboard-focus-background: var(--paper-blue-100);
 }
 
-body.light-blue /deep/ * {
+body.theme-light-blue /deep/ * {
     --paper-toolbar-background: var(--paper-light-blue-500);
     --paper-toolbar-color: var(--text-primary-color);
     --paper-fab-notify-background: var(--paper-light-blue-800);
     --paper-fab-keyboard-focus-background: var(--paper-light-blue-100);
 }
 
-body.indigo /deep/ * {
+body.theme-indigo /deep/ * {
     --paper-toolbar-background: var(--paper-indigo-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-indigo-800);
     --paper-fab-keyboard-focus-background: var(--paper-indigo-100);
 }
 
-body.teal /deep/ * {
+body.theme-teal /deep/ * {
     --paper-toolbar-background: var(--paper-teal-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-teal-800);
     --paper-fab-keyboard-focus-background: var(--paper-teal-100);
 }
 
-body.green /deep/ * {
+body.theme-green /deep/ * {
     --paper-toolbar-background: var(--paper-green-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-green-800);
     --paper-fab-keyboard-focus-background: var(--paper-green-100);
 }
 
-body.light-green /deep/ * {
+body.theme-light-green /deep/ * {
     --paper-toolbar-background: var(--paper-light-green-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-light-green-800);
     --paper-fab-keyboard-focus-background: var(--paper-light-green-100);
 }
 
-body.lime /deep/ * {
+body.theme-lime /deep/ * {
     --paper-toolbar-background: var(--paper-lime-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-lime-800);
     --paper-fab-keyboard-focus-background: var(--paper-lime-100);
 }
 
-body.red /deep/ * {
+body.theme-red /deep/ * {
     --paper-toolbar-background: var(--paper-red-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-red-800);
     --paper-fab-keyboard-focus-background: var(--paper-red-100);
 }
 
-body.pink /deep/ * {
+body.theme-pink /deep/ * {
     --paper-toolbar-background: var(--paper-pink-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-pink-800);
     --paper-fab-keyboard-focus-background: var(--paper-pink-100);
 }
 
-body.purple /deep/ * {
+body.theme-purple /deep/ * {
     --paper-toolbar-background: var(--paper-purple-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-purple-800);
     --paper-fab-keyboard-focus-background: var(--paper-purple-100);
 }
 
-body.deep-purple /deep/ * {
+body.theme-deep-purple /deep/ * {
     --paper-toolbar-background: var(--paper-deep-purple-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-deep-purple-800);
     --paper-fab-keyboard-focus-background: var(--paper-deep-purple-100);
 }
 
-body.yellow /deep/ * {
+body.theme-yellow /deep/ * {
     --paper-toolbar-background: var(--paper-yellow-500);
     --paper-toolbar-color: var(--text-primary-color);
     --paper-fab-notify-background: var(--paper-yellow-800);
     --paper-fab-keyboard-focus-background: var(--paper-yellow-100);
 }
 
-body.amber /deep/ * {
+body.theme-amber /deep/ * {
     --paper-toolbar-background: var(--paper-amber-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-amber-800);
     --paper-fab-keyboard-focus-background: var(--paper-amber-100);
 }
 
-body.deep-orange /deep/ * {
+body.theme-deep-orange /deep/ * {
     --paper-toolbar-background: var(--paper-deep-orange-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-deep-orange-800);
     --paper-fab-keyboard-focus-background: var(--paper-deep-orange-100);
 }
 
-body.grey /deep/ * {
+body.theme-grey /deep/ * {
     --paper-toolbar-background: var(--paper-grey-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-grey-800);
@@ -167,7 +167,7 @@ body.grey /deep/ * {
 }
 </style>
 {% end %}
-{% define "body-attrs" %} unresolved class="fullbleed blue" {% end %}
+{% define "body-attrs" %} unresolved class="fullbleed theme-blue" {% end %}
 
 {% define "content" %}
     <rf-router></rf-router>

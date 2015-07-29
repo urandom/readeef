@@ -1,9 +1,108 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/paper-button/paper-button.html">
+<link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 
 <dom-module id="rf-settings-general">
+    <style>
+.card {
+    @apply(--card-style);
+}
+.theme-bubbles {
+    margin: 8px 0;
+}
+
+.theme {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border-width: 2px;
+    border-color: transparent;
+    margin: 8px;
+}
+
+.theme.blue {
+    background: var(--paper-blue-500);
+}
+.theme.light-blue {
+    background: var(--paper-light-blue-500);
+}
+.theme.indigo {
+    background: var(--paper-indigo-500);
+}
+.theme.teal {
+    background: var(--paper-teal-500);
+}
+.theme.green {
+    background: var(--paper-green-500);
+}
+.theme.light-green {
+    background: var(--paper-light-green-500);
+}
+.theme.lime {
+    background: var(--paper-lime-500);
+}
+.theme.red {
+    background: var(--paper-red-500);
+}
+.theme.ping {
+    background: var(--paper-ping-500);
+}
+.theme.purple {
+    background: var(--paper-purple-500);
+}
+.theme.deep-purple {
+    background: var(--paper-deep-purple-500);
+}
+.theme.yellow {
+    background: var(--paper-yellow-500);
+}
+.theme.amber {
+    background: var(--paper-amber-500);
+}
+.theme.deep-orange {
+    background: var(--paper-deep-orange-500);
+}
+.theme.grey {
+    background: var(--paper-grey-500);
+}
+
+    </style>
     <template>
-        <h1> general </h1>
+        <div class="card" class="layout vertica"l>
+            <p>
+                Personalize your feed reader
+            </p>
+            <paper-input id="first-name" label="First name" tabindex="1" value="{{ user.FirstName }}"></paper-input>
+            <paper-input id="last-name" label="Last name" tabindex="2" value="{{ user.LastName }}"></paper-input>
+            <paper-input id="email" label="Email" tabindex="3" type="email" value="{{ user.Email }}"></paper-input>
+
+            <p>
+                Pick your style
+            </p>
+            <div class="theme-bubbles" class="layout horizontal justified">
+                <template is="dom-repeat" items="{{ ['blue', 'light-blue', 'indigo', 'teal'] }}">
+                    <paper-icon-button class="theme {{ color }}" on-tap="{{ onThemeSelect }}"></paper-icon-button>
+                </template>
+            </div>
+            <div class="theme-bubbles" class="layout horizontal justified">
+                <template is="dom-repeat" items="{{ ['green', 'light-green', 'lime', 'red'] }}">
+                    <paper-icon-button class="theme {{ color }}" on-tap="{{ onThemeSelect }}"></paper-icon-button>
+                </template>
+            </div>
+            <div class="theme-bubbles" class="layout horizontal justified">
+                <template is="dom-repeat" items="{{ ['pink', 'purple', 'deep-purple', 'yellow'] }}">
+                    <paper-icon-button class="theme {{ color }}" on-tap="{{ onThemeSelect }}"></paper-icon-button>
+                </template>
+            </div>
+            <div class="theme-bubbles" class="layout horizontal justified">
+                <template is="dom-repeat" items="{{ ['amber', 'deep-orange', 'grey'] }}">
+                    <paper-icon-button class="theme {{ color }}" on-tap="{{ onThemeSelect }}"></paper-icon-button>
+                </template>
+            </div>
+
+            <paper-button on-tap="{{ onChangePassword }}" self-end>Change password</paper-button>
+        </div>
     </template>
     <script>
         "use strict";

@@ -140,6 +140,25 @@
 
         decodeURI: function(encodedURI) {
             return decodeURIComponent(encodedURI.replace(/\$/g, '%'));
+        },
+
+        _onUserChanged: function(oldValue, newValue) {
+            var profile = newValue && newValue.ProfileData,
+                oldProfile = oldValue && oldValue.ProfileData;
+
+            if (profile) {
+                if (!oldProfile || oldProfile.theme != profile.theme) {
+                    var body = document.querySelector('body');
+                    for (var i = 0, c; c = body.classList[i]; ++i) {
+                        if (c.startsWith('theme-')) {
+                            body.classList.remove(c);
+                            break;
+                        }
+                    }
+
+                    body.classList.add('theme-' + profile.theme);
+                }
+            }
         }
 
     })
