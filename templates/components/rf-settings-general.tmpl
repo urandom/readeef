@@ -2,6 +2,9 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/paper-button/paper-button.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/dist/paper-ripple/paper-ripple.html">
+
+<link rel="import" href="/component/rf-api">
 
 <dom-module id="rf-settings-general">
     <style>
@@ -19,95 +22,146 @@
     border-width: 2px;
     border-color: transparent;
     margin: 8px;
+    position: relative;
+    float: left;
 }
 
-.theme.blue {
+.theme[data-theme="blue"] {
     background: var(--paper-blue-500);
 }
-.theme.light-blue {
-    background: var(--paper-light-blue-500);
-}
-.theme.indigo {
+.theme[data-theme="indigo"] {
     background: var(--paper-indigo-500);
 }
-.theme.teal {
+.theme[data-theme="cyan"] {
+    background: var(--paper-cyan-500);
+}
+.theme[data-theme="teal"] {
     background: var(--paper-teal-500);
 }
-.theme.green {
+.theme[data-theme="green"] {
     background: var(--paper-green-500);
 }
-.theme.light-green {
+.theme[data-theme="light-green"] {
     background: var(--paper-light-green-500);
 }
-.theme.lime {
+.theme[data-theme="lime"] {
     background: var(--paper-lime-500);
 }
-.theme.red {
+.theme[data-theme="red"] {
     background: var(--paper-red-500);
 }
-.theme.ping {
-    background: var(--paper-ping-500);
+.theme[data-theme="pink"] {
+    background: var(--paper-pink-500);
 }
-.theme.purple {
+.theme[data-theme="purple"] {
     background: var(--paper-purple-500);
 }
-.theme.deep-purple {
+.theme[data-theme="deep-purple"] {
     background: var(--paper-deep-purple-500);
 }
-.theme.yellow {
+.theme[data-theme="yellow"] {
     background: var(--paper-yellow-500);
 }
-.theme.amber {
+.theme[data-theme="amber"] {
     background: var(--paper-amber-500);
 }
-.theme.deep-orange {
+.theme[data-theme="deep-orange"] {
     background: var(--paper-deep-orange-500);
 }
-.theme.grey {
+.theme[data-theme="grey"] {
     background: var(--paper-grey-500);
 }
 
     </style>
     <template>
-        <div class="card" class="layout vertica"l>
+        <div class="card" class="layout vertical" style="max-width: 400px;">
             <p>
                 Personalize your feed reader
             </p>
-            <paper-input id="first-name" label="First name" tabindex="1" value="{{ user.FirstName }}"></paper-input>
-            <paper-input id="last-name" label="Last name" tabindex="2" value="{{ user.LastName }}"></paper-input>
-            <paper-input id="email" label="Email" tabindex="3" type="email" value="{{ user.Email }}"></paper-input>
+            <paper-input id="first-name" label="First name" tabindex="1" value="{{ user.FirstName }}" on-bind-value-changed="onFirstNameChange"></paper-input>
+            <paper-input id="last-name" label="Last name" tabindex="2" value="{{ user.LastName }}"  on-bind-value-changed="onLastNameChange"></paper-input>
+            <paper-input id="email" label="Email" tabindex="3" type="email" value="{{ user.Email }}"  on-bind-value-changed="onEmailChange"></paper-input>
 
             <p>
                 Pick your style
             </p>
             <div class="theme-bubbles" class="layout horizontal justified">
-                <template is="dom-repeat" items="{{ ['blue', 'light-blue', 'indigo', 'teal'] }}">
-                    <paper-icon-button class="theme {{ color }}" on-tap="{{ onThemeSelect }}"></paper-icon-button>
-                </template>
-            </div>
-            <div class="theme-bubbles" class="layout horizontal justified">
-                <template is="dom-repeat" items="{{ ['green', 'light-green', 'lime', 'red'] }}">
-                    <paper-icon-button class="theme {{ color }}" on-tap="{{ onThemeSelect }}"></paper-icon-button>
-                </template>
-            </div>
-            <div class="theme-bubbles" class="layout horizontal justified">
-                <template is="dom-repeat" items="{{ ['pink', 'purple', 'deep-purple', 'yellow'] }}">
-                    <paper-icon-button class="theme {{ color }}" on-tap="{{ onThemeSelect }}"></paper-icon-button>
-                </template>
-            </div>
-            <div class="theme-bubbles" class="layout horizontal justified">
-                <template is="dom-repeat" items="{{ ['amber', 'deep-orange', 'grey'] }}">
-                    <paper-icon-button class="theme {{ color }}" on-tap="{{ onThemeSelect }}"></paper-icon-button>
-                </template>
+                <div class="theme" data-theme="blue"><paper-ripple/></div>
+                <div class="theme" data-theme="indigo"><paper-ripple/></div>
+                <div class="theme" data-theme="cyan"><paper-ripple/></div>
+                <div class="theme" data-theme="teal"><paper-ripple/></div>
+                <div class="theme" data-theme="green"><paper-ripple/></div>
+                <div class="theme" data-theme="light-green"><paper-ripple/></div>
+                <div class="theme" data-theme="lime"><paper-ripple/></div>
+                <div class="theme" data-theme="red"><paper-ripple/></div>
+                <div class="theme" data-theme="pink"><paper-ripple/></div>
+                <div class="theme" data-theme="purple"><paper-ripple/></div>
+                <div class="theme" data-theme="deep-purple"><paper-ripple/></div>
+                <div class="theme" data-theme="yellow"><paper-ripple/></div>
+                <div class="theme" data-theme="amber"><paper-ripple/></div>
+                <div class="theme" data-theme="deep-orange"><paper-ripple/></div>
+                <div class="theme" data-theme="grey"><paper-ripple/></div>
+                <br style="clear: both">
             </div>
 
             <paper-button on-tap="{{ onChangePassword }}" self-end>Change password</paper-button>
         </div>
+
+        <rf-api id="user-settings" method="set-user-attribute" tag="current-user" user="{{ user }}"></rf-api>
     </template>
     <script>
         "use strict";
         Polymer({
-            is: "rf-settings-general"
+            is: "rf-settings-general",
+            properties: {
+                user: Object
+            },
+
+            attached: function() {
+                Polymer.dom(this.root).querySelectorAll('.theme').forEach(function(e) {
+                    e.addEventListener('tap', function(event) {
+                        var theme = e.getAttribute('data-theme');
+
+                        this.user.ProfileData.theme = theme;
+
+                        for (var i = 0, c; c = document.body.classList[i]; ++i) {
+                            if (c.startsWith('theme-')) {
+                                document.body.classList.remove(c);
+                                break;
+                            }
+                        }
+
+                        document.body.classList.add('theme-' + theme);
+                        Polymer.updateStyles();
+
+                        this.$['user-settings'].send({
+                            attribute: "ProfileData",
+                            value: this.user.ProfileData
+                        });
+                    }.bind(this), false);
+                }.bind(this));
+            },
+
+            onFirstNameChange: function(event, detail) {
+                this.$['user-settings'].send({
+                    attribute: "FirstName",
+                    value: detail.value
+                });
+            },
+
+            onLastNameChange: function(event, detail) {
+                this.$['user-settings'].send({
+                    attribute: "LastName",
+                    value: detail.value
+                });
+            },
+
+            onEmailChange: function(event, detail) {
+                this.$['user-settings'].send({
+                    attribute: "Email",
+                    value: detail.value
+                });
+            }
         })
     </script>
 </dom-module>

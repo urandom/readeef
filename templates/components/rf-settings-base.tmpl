@@ -55,7 +55,7 @@
                 </a>
             </div>
             <div class="main-title">
-                Title
+                <h3>Title</h3>
             </div>
             <div class="main-content">
                 <more-route-selector>
@@ -75,6 +75,14 @@
             is: "rf-settings-base",
             properties: {
                 user: Object
+            },
+
+            attached: function() {
+                this.addEventListener('rf-lazy-insert', function(event) {
+                    if (event.detail.element.nodeName.toLowerCase().startsWith('rf-settings-')) {
+                        event.detail.element.user = this.user;
+                    }
+                }.bind(this))
             },
 
             logout: function(event) {

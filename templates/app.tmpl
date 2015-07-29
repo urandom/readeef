@@ -59,6 +59,11 @@ html /deep/ .clearfix:after {
 body /deep/ * {
     --text-primary-color: #0a0a0a;
     --text-primary-color-inverse: #ffffff;
+
+    --paper-toolbar-background: var(--paper-blue-500);
+    --paper-toolbar-color: var(--text-primary-color-inverse);
+    --paper-fab-notify-background: var(--paper-blue-800);
+    --paper-fab-keyboard-focus-background: var(--paper-blue-100);
 }
 
 body.theme-blue /deep/ * {
@@ -68,18 +73,18 @@ body.theme-blue /deep/ * {
     --paper-fab-keyboard-focus-background: var(--paper-blue-100);
 }
 
-body.theme-light-blue /deep/ * {
-    --paper-toolbar-background: var(--paper-light-blue-500);
-    --paper-toolbar-color: var(--text-primary-color);
-    --paper-fab-notify-background: var(--paper-light-blue-800);
-    --paper-fab-keyboard-focus-background: var(--paper-light-blue-100);
-}
-
 body.theme-indigo /deep/ * {
     --paper-toolbar-background: var(--paper-indigo-500);
     --paper-toolbar-color: var(--text-primary-color-inverse);
     --paper-fab-notify-background: var(--paper-indigo-800);
     --paper-fab-keyboard-focus-background: var(--paper-indigo-100);
+}
+
+body.theme-cyan /deep/ * {
+    --paper-toolbar-background: var(--paper-cyan-500);
+    --paper-toolbar-color: var(--text-primary-color-inverse);
+    --paper-fab-notify-background: var(--paper-cyan-800);
+    --paper-fab-keyboard-focus-background: var(--paper-cyan-100);
 }
 
 body.theme-teal /deep/ * {
@@ -167,7 +172,7 @@ body.theme-grey /deep/ * {
 }
 </style>
 {% end %}
-{% define "body-attrs" %} unresolved class="fullbleed theme-blue" {% end %}
+{% define "body-attrs" %} unresolved class="fullbleed" {% end %}
 
 {% define "content" %}
     <rf-router></rf-router>

@@ -18,6 +18,7 @@ paper-toolbar {
 .content {
     min-height: 5em;
     margin: -10px 120px 60px 5px;
+    background-color: #f8f8f8 !important;
 }
 
 .narrow .content {
@@ -55,10 +56,15 @@ paper-toolbar {
             </paper-header-panel>
             <paper-header-panel main mode="[[_computeMainPanelMode(narrow)]]">
                 <paper-toolbar>
-                    <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-                    <content select=".main-title"></content>
+                    <template is="dom-if" if="{{ narrow }}">
+                        <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+                        <content select=".main-title"></content>
+                    </template>
                 </paper-toolbar>
                 <div class$="[[_computeContentClass(narrow)]]">
+                    <template is="dom-if" if="{{ !narrow }}">
+                        <content select=".main-title"></content>
+                    </template>
                     <content select=".main-content"></content>
                 </div>
             </paper-header-panel>
