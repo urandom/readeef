@@ -1,8 +1,11 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/paper-button/paper-button.html">
+<link rel="import" href="/dist/paper-dialog/paper-dialog.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
+<link rel="import" href="/dist/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
 
 <link rel="import" href="/component/rf-api">
 
@@ -10,6 +13,8 @@
     <style>
 .card {
     @apply(--card-style);
+    padding: 16px;
+    margin: 16px 0 8px;
 }
 .theme-bubbles {
     margin: 8px 0;
@@ -74,17 +79,17 @@
 
     </style>
     <template>
-        <div class="card" class="layout vertical" style="max-width: 400px;">
-            <p>
+        <div class="card" class="layout vertical start" style="max-width: 400px;">
+            <h2>
                 Personalize your feed reader
-            </p>
+            </h2>
             <paper-input id="first-name" label="First name" tabindex="1" value="{{ user.FirstName }}" on-bind-value-changed="onFirstNameChange"></paper-input>
             <paper-input id="last-name" label="Last name" tabindex="2" value="{{ user.LastName }}"  on-bind-value-changed="onLastNameChange"></paper-input>
             <paper-input id="email" label="Email" tabindex="3" type="email" value="{{ user.Email }}"  on-bind-value-changed="onEmailChange"></paper-input>
 
-            <p>
+            <h3>
                 Pick your style
-            </p>
+            </h3>
             <div class="theme-bubbles" class="layout horizontal justified">
                 <div class="theme" data-theme="blue"><paper-ripple/></div>
                 <div class="theme" data-theme="indigo"><paper-ripple/></div>
@@ -104,11 +109,28 @@
                 <br style="clear: both">
             </div>
 
-            <paper-button on-tap="{{ onChangePassword }}" self-end>Change password</paper-button>
+            <paper-button on-tap="onChangePassword" class="self-end">Change password</paper-button>
         </div>
+
+        <paper-dialog id="set-password-dialog" on-keypress="onPasswordDialogKeypress" on-iron-overlay-closed="onPasswordDialogClosed" entry-animation="scale-up-animation" exit-animation="fade-out-animation" with-backdrop>
+            <h2>Change your password</h2>
+
+            <div>
+                <small>A successfull change will force a re-log</small>
+                <paper-input id="password" type="password" label="Current password" tabindex="4"></paper-input>
+                <paper-input id="new-password" type="password" label="New password" tabindex="5"></paper-input>
+                <paper-input id="confirm-new-password" type="password" label="Confirm new password" tabindex="6"></paper-input>
+            </div>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss autofocus>Cancel</paper-button>
+                <paper-button dialog-confirm autofocus on-click="onPasswordChangeApply">Apply</paper-button>
+            </div>
+        </paper-dialog>
 
         <rf-api id="user-settings" method="set-user-attribute" tag="current-user" user="{{ user }}"></rf-api>
     </template>
+
     <script>
         "use strict";
         Polymer({
@@ -161,6 +183,20 @@
                     attribute: "Email",
                     value: detail.value
                 });
+            },
+
+            onChangePassword: function() {
+                this.$['set-password-dialog'].open();
+            },
+
+            onPasswordDialogClosed: function() {
+                this.$['password'].value = "";
+                this.$['new-password'].value = "";
+                this.$['confirm-new-password'].value = "";
+            },
+
+            onPasswordChangeApply: function() {
+                console.log(this.$['new-password'].value);
             }
         })
     </script>

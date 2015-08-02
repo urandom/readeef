@@ -41,7 +41,7 @@
                     <paper-ripple></paper-ripple>
                 </a>
                 <a is="pushstate-anchor" href="/web/settings/admin" class="item" hidden$="{{ !user.Admin }}">
-                    <span>Admin</span>
+                    <span>Administration</span>
                     <paper-ripple></paper-ripple>
                 </a>
                 <hr>
@@ -54,11 +54,20 @@
                     <paper-ripple></paper-ripple>
                 </a>
             </div>
+            <div class="main-narrow-title">
+                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-general') }}">General</span>
+                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-feeds') }}">Manage Feeds</span>
+                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-share-services') }}">Share Services</span>
+                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-admin') }}">Administration</span>
+            </div>
             <div class="main-title">
-                <h3>Title</h3>
+                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-general') }}">General</span>
+                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-feeds') }}">Manage Feeds</span>
+                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-share-services') }}">Share Services</span>
+                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-admin') }}">Administration</span>
             </div>
             <div class="main-content">
-                <more-route-selector>
+                <more-route-selector on-more-route-change="onRouteChange">
                     <iron-pages>
                         <rf-lazy-loader route="settings-general" import="/component/rf-settings-general"></rf-lazy-loader>
                         <rf-lazy-loader route="settings-feeds" import="/component/rf-settings-feeds"></rf-lazy-loader>
@@ -74,20 +83,31 @@
         Polymer({
             is: "rf-settings-base",
             properties: {
-                user: Object
-            },
-
-            attached: function() {
-                this.addEventListener('rf-lazy-insert', function(event) {
-                    if (event.detail.element.nodeName.toLowerCase().startsWith('rf-settings-')) {
-                        event.detail.element.user = this.user;
-                    }
-                }.bind(this))
+                user: Object,
+                activeSettings: {
+                    type: String,
+                    notify: true
+                }
             },
 
             logout: function(event) {
                 Polymer.dom(document).querySelector('rf-router').logout();
+            },
+
+            onRouteChange: function(event, detail) {
+                if (MoreRouting.isCurrentUrl('settings-general')) {
+                    this.activeSettings = 'settings-general';
+                } else if (MoreRouting.isCurrentUrl('settings-feeds')) {
+                    this.activeSettings = 'settings-feeds';
+                } else {
+                    this.activeSettings = '';
+                }
+            },
+
+            _computeSettingsIsActive(active, current) {
+                return active == current;
             }
+
         })
     </script>
 </dom-module>

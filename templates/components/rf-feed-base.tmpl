@@ -8,6 +8,7 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
 
+<link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-app-scaffold">
 
 <dom-module id="rf-feed-base">
@@ -92,12 +93,17 @@
                 <h1>Test</h1>
             </div>
         </rf-app-scaffold>
+
+        <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage" user="{{ user }}"></rf-api>
     </template>
 
     <script>
         "use strict";
         Polymer({
             is: "rf-feed-base",
+            properties: {
+                user: Object
+            },
 
             attached: function() {
                 Polymer.dom(this.root).querySelectorAll('[expands]').forEach(function(e) {
@@ -112,10 +118,16 @@
                         collapser.toggle();
                     });
                 }.bind(this));
+
+                this.$['list-feeds'].send();
             },
             
             logout: function(event) {
                 Polymer.dom(document).querySelector('rf-router').logout();
+            },
+
+            onAllFeedsMessage: function(event, detail) {
+                console.log(event, detail);
             }
 
         })

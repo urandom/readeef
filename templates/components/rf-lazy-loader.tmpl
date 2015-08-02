@@ -39,6 +39,8 @@
             insertContent: function(content) {
                 var element = document.createElement(this.element);
 
+                this.fire('rf-lazy-pre-insert', {element: element});
+
                 Polymer.dom(this).innerHTML = "";
                 Polymer.dom(this).appendChild(element);
                 Polymer.dom(this).flush();
@@ -51,7 +53,6 @@
                     if (!this.element) {
                         this.element = this.import.split('/').slice(-1)[0].replace('.html', '');
                     }
-console.log(this.import);
                     this.importHref(this.import, function(event) {
                         this.content = event.target.import;
                         this.insertContent(this.content);
