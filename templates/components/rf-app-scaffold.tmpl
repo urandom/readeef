@@ -16,32 +16,38 @@ paper-toolbar {
 }
 
 .content {
+    padding: 8px 16px 16px;
     min-height: 5em;
-    margin: -10px 120px 60px 5px;
+    margin: 10px 120px 60px 5px;
     background-color: #f8f8f8 !important;
 }
 
-.narrow .content {
-    margin: 10px 5px 60px 5px;
+.narrow.content {
+    padding-top: 16px;
+    margin: 0px 0px 60px 0px;
 }
 
-[drawer] .menu {
+[drawer] .menu-container {
     padding: 8px 0;
 
     @apply(--layout-vertical);
 }
 
-[drawer] .menu > ::content .item {
+[drawer] .menu-container > ::content .item {
     position: relative;
     padding: 16px;
 }
 
-[drawer] .menu > ::content hr {
+[drawer] .menu-container > ::content hr {
     background-color: var(--text-primary-color);
     border-style: ridge;
     width: 100%;
     margin: 2px 16px;
 }
+paper-header-panel[main] .main-title-container > ::content {
+    font-size: 24px;
+}
+
     </style>
 
     <template>
@@ -50,21 +56,21 @@ paper-toolbar {
                 <paper-toolbar>
                     <content select=".drawer-title"></content>
                 </paper-toolbar>
-                <div class="menu">
+                <div class="menu-container">
                     <content select=".drawer-menu"></content>
                 </div>
             </paper-header-panel>
             <paper-header-panel main mode="[[_computeMainPanelMode(narrow)]]">
                 <paper-toolbar>
-                    <template is="dom-if" if="{{ narrow }}">
-                        <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-                        <content select=".main-title"></content>
-                    </template>
+                    <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+                    <div class="main-narrow-title-container" hidden$="{{ !narrow }}">
+                        <content select=".main-narrow-title"></content>
+                    </div>
                 </paper-toolbar>
                 <div class$="[[_computeContentClass(narrow)]]">
-                    <template is="dom-if" if="{{ !narrow }}">
+                    <div class="main-title-container" hidden$="{{ narrow }}">
                         <content select=".main-title"></content>
-                    </template>
+                    </div>
                     <content select=".main-content"></content>
                 </div>
             </paper-header-panel>
@@ -91,7 +97,7 @@ paper-toolbar {
             },
 
             _computeContentClass: function(narrow) {
-                return narrow ? 'content' : 'content card';
+                return narrow ? 'content narrow' : 'content card';
             },
 
             _computeDrawerPanelMode: function(narrow) {

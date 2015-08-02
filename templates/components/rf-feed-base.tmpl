@@ -38,8 +38,8 @@
 
 .main-title paper-fab {
     position: absolute;
-    right: 24px;
-    bottom: -24px;
+    right: -80px;
+    top: 24px;
     z-index: 1;
     background: white;
 }
@@ -81,9 +81,12 @@
                     <paper-ripple></paper-ripple>
                 </a>
             </div>
+            <div class="main-narrow-title">
+                Title
+            </div>
             <div class="main-title">
                 Title
-                <paper-fab icon="refresh" hidden$="{{ narrow }}"></paper-fab>
+                <paper-fab icon="refresh"></paper-fab>
             </div>
             <div class="main-content">
                 <h1>Test</h1>
