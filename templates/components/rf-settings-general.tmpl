@@ -11,11 +11,6 @@
 
 <dom-module id="rf-settings-general">
     <style>
-.card {
-    @apply(--card-style);
-    padding: 16px;
-    margin: 16px 0 8px;
-}
 .theme-bubbles {
     margin: 8px 0;
 }
@@ -128,13 +123,17 @@
             </div>
         </paper-dialog>
 
-        <rf-api id="user-settings" method="set-user-attribute" tag="current-user" user="{{ user }}"></rf-api>
+        <rf-api id="user-settings" method="set-user-attribute" tag="current-user" user="[[ user ]]"></rf-api>
+        <rf-api id="password-change" method="set-user-attribute" tag="password-change" on-rf-api-message="onPasswordChangeMessage" user="[[ user ]]"></rf-api>
     </template>
 
     <script>
         "use strict";
         Polymer({
             is: "rf-settings-general",
+            behaviors: [
+                UserBehavior
+            ],
             properties: {
                 user: Object
             },
@@ -190,9 +189,11 @@
             },
 
             onPasswordDialogClosed: function() {
-                this.$['password'].value = "";
-                this.$['new-password'].value = "";
-                this.$['confirm-new-password'].value = "";
+                ["password", "new-password", "confirm-new-password"].forEach(function(id) {
+                    this.$[id].required = false;
+                    this.$[id].invalid = false;
+                    this.$[id].value = "";
+                }.bind(this));
             },
 
             onPasswordDialogKeypress: function(event) {
@@ -214,14 +215,17 @@
                 ["password", "new-password", "confirm-new-password"].forEach(function(id) {
                     if (!this.$[id].value) {
                         this.$[id].required = true;
+                        this.$[id].invalid = true;
                         this.$[id].value = null;
                         invalid = true;
+                    } else {
+                        this.$[id].invalid = false;
                     }
                 }.bind(this));
 
                 if (this.$["new-password"].value != this.$["confirm-new-password"].value) {
                     this.$["confirm-new-password"].invalid = true;
-                    this.$["confirm-new-password"].error = "Make sure the new password fields match.";
+                    this.$["confirm-new-password"].errorMessage = "Make sure the new password fields match.";
                     invalid = true;
                 }
 
@@ -238,6 +242,12 @@
                 });
 
                 this.$['set-password-dialog'].close()
+            },
+
+            onPasswordChangeMessage: function(event, data) {
+                if (data.success) {
+                    this.logout();
+                }
             }
         })
     </script>

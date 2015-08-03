@@ -101,6 +101,9 @@
         "use strict";
         Polymer({
             is: "rf-feed-base",
+            behaviors: [
+                UserBehavior
+            ],
             properties: {
                 user: Object
             },
@@ -122,10 +125,6 @@
                 this.$['list-feeds'].send();
             },
             
-            logout: function(event) {
-                Polymer.dom(document).querySelector('rf-router').logout();
-            },
-
             onAllFeedsMessage: function(event, detail) {
                 console.log(event, detail);
             }

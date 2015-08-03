@@ -1,4 +1,4 @@
-(function() {
+(function(root) {
     "use strict";
 
     var userTTL = 1000 * 60 * 60 * 24 * 15,
@@ -147,5 +147,15 @@
             return decodeURIComponent(encodedURI.replace(/\$/g, '%'));
         }
 
-    })
-})();
+    });
+
+    root.UserBehavior = {
+        validateUser: function(user) {
+            Polymer.dom(document).querySelector('rf-router').validateUser(user);
+        },
+
+        logout: function() {
+            Polymer.dom(document).querySelector('rf-router').logout();
+        }
+    }
+})(window);

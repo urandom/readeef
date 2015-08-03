@@ -23,6 +23,12 @@
     padding: 8px;
     margin-left: 4px;
 }
+
+.main-content /deep/ .card {
+    @apply(--card-style);
+    padding: 16px;
+    margin: 16px 0 8px;
+}
     </style>
     <template>
         <rf-app-scaffold>
@@ -82,16 +88,15 @@
         "use strict";
         Polymer({
             is: "rf-settings-base",
+            behaviors: [
+                UserBehavior
+            ],
             properties: {
                 user: Object,
                 activeSettings: {
                     type: String,
                     notify: true
                 }
-            },
-
-            logout: function(event) {
-                Polymer.dom(document).querySelector('rf-router').logout();
             },
 
             onRouteChange: function(event, detail) {

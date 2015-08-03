@@ -4,7 +4,8 @@
     Polymer({
         is: 'rf-login',
         behaviors: [
-          Polymer.NeonAnimationRunnerBehavior
+            Polymer.NeonAnimationRunnerBehavior,
+            UserBehavior
         ],
         properties: {
             invalid: {
@@ -76,7 +77,7 @@
             this.$.login.value = "";
             this.$.password.value = "";
 
-            Polymer.dom(document).querySelector('rf-router').validateUser(user);
+            this.validateUser(user);
         }
     });
 })();
