@@ -112,7 +112,7 @@
             <paper-button on-tap="onChangePassword" class="self-end">Change password</paper-button>
         </div>
 
-        <paper-dialog id="set-password-dialog" on-keypress="onPasswordDialogKeypress" on-iron-overlay-closed="onPasswordDialogClosed" entry-animation="scale-up-animation" exit-animation="fade-out-animation" with-backdrop>
+        <paper-dialog id="set-password-dialog" on-keypress="onPasswordDialogKeypress" on-iron-overlay-closed="onPasswordDialogClosed" entry-animation="scale-up-animation" exit-animation="fade-out-animation" modal>
             <h2>Change your password</h2>
 
             <div>
@@ -124,7 +124,7 @@
 
             <div class="buttons">
                 <paper-button dialog-dismiss autofocus>Cancel</paper-button>
-                <paper-button dialog-confirm autofocus on-click="onPasswordChangeApply">Apply</paper-button>
+                <paper-button autofocus on-click="onPasswordChangeApply">Apply</paper-button>
             </div>
         </paper-dialog>
 
@@ -195,8 +195,49 @@
                 this.$['confirm-new-password'].value = "";
             },
 
+            onPasswordDialogKeypress: function(event) {
+                var code = event.keyCode || event.charCode, key = event.keyIdentifier;
+
+                if (key == 'Enter' || code == 13) {
+                    if (event.target === this.$.password.$.input) { 
+                        this.$["new-password"].$.input.focus();
+                    } else if (event.target === this.$["new-password"].$.input) {
+                        this.$["confirm-new-password"].$.input.focus();
+                    } else if (event.target === this.$["confirm-new-password"].$.input) {
+                        this.onPasswordChangeApply();
+                    }
+                }
+            },
+
             onPasswordChangeApply: function() {
-                console.log(this.$['new-password'].value);
+                var invalid = false;
+                ["password", "new-password", "confirm-new-password"].forEach(function(id) {
+                    if (!this.$[id].value) {
+                        this.$[id].required = true;
+                        this.$[id].value = null;
+                        invalid = true;
+                    }
+                }.bind(this));
+
+                if (this.$["new-password"].value != this.$["confirm-new-password"].value) {
+                    this.$["confirm-new-password"].invalid = true;
+                    this.$["confirm-new-password"].error = "Make sure the new password fields match.";
+                    invalid = true;
+                }
+
+                if (invalid) {
+                    return;
+                }
+
+                this.$['password-change'].send({
+                    attribute: "Password",
+                    value: {
+                        "Current": this.$.password.value,
+                        "New": this.$["new-password"].value
+                    }
+                });
+
+                this.$['set-password-dialog'].close()
             }
         })
     </script>
