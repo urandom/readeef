@@ -28,6 +28,7 @@ neon-animated-pages {
                 <more-route name="login" path="/login">
                     <more-route name="login-from" path="/from/:url"></more-route>
                 </more-route>
+                <more-route name="logout" path="/logout"></more-route>
                 <more-route name="feed-base" path="/feed">
                     <more-route name="feed" path="/:tagOrId">
                         <more-route name="article" path="/article/:id"></more-route>
@@ -35,7 +36,16 @@ neon-animated-pages {
                 </more-route>
                 <more-route name="settings-base" path="/settings">
                     <more-route name="settings-general" path="/general"></more-route>
-                    <more-route name="settings-feeds" path="/feeds"></more-route>
+                    <more-route name="settings-add-feed" path="/feed/add">
+                        <more-route name="settings-add-feed-discover" path="/discover">
+                            <more-route name="settings-add-feed-discover-not-found" path="/not-found"></more-route>
+                            <more-route name="settings-add-feed-discover-select" path="/select">
+                                <more-route name="settings-add-feed-discover-select-none" path="/none"></more-route>
+                                <more-route name="settings-add-feed-discover-select-error" path="/error"></more-route>
+                            </more-route>
+                        </more-route>
+                    </more-route>
+                    <more-route name="settings-manage-feeds" path="/feed/manage"></more-route>
                     <more-route name="settings-share-services" path="/share-services"></more-route>
                     <more-route name="settings-admin" path="/admin"></more-route>
                 </more-route>
@@ -51,6 +61,7 @@ neon-animated-pages {
                         <rf-splash route="splash"></rf-splash>
                         <rf-lazy-loader route="login" import="/component/rf-login"></rf-lazy-loader>
                         <rf-lazy-loader route="login-from" import="/component/rf-login"></rf-lazy-loader>
+                        <section route="logout"><!-- Empty section for the logout route to match --></section>
                         <rf-lazy-loader route="feed-base" import="/component/rf-feed-base"></rf-lazy-loader>
                         <rf-lazy-loader route="settings-base" import="/component/rf-settings-base" params="{{ { user: user } }}"></rf-lazy-loader>
                     </iron-pages>

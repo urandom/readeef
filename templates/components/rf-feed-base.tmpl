@@ -7,6 +7,8 @@
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
+<link rel="import" href="/dist/more-routing/more-route-template-helpers.html">
+<link rel="import" href="/dist/more-routing/more-routing.html">
 
 <link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-app-scaffold">
@@ -53,11 +55,11 @@
         <rf-app-scaffold narrow="{{ narrow }}">
             <div class="drawer-title">Feeds</div>
             <div class="drawer-menu">
-                <a is="pushstate-anchor" href="/web/feed/favorite" class="item">
+                <a is="pushstate-anchor" href="[[ feedUrlFor('favorite') ]]" class="item">
                     <span>Favorite</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="/web/feed/popular:all" class="layout horizontal">
+                <a is="pushstate-anchor" href="[[ feedUrlFor('popular:all') ]]" class="layout horizontal">
                     <paper-icon-button icon="expand-more" expands="popular-feeds" class="item"></paper-icon-button>
                     <div style="position: relative" class="flex item">
                         Popular
@@ -66,18 +68,18 @@
                 </a>
                 <iron-collapse id="popular-feeds">
                     <div class="menu submenu">
-                        <a is="pushstate-anchor" href="/web/feed/popular:tag:android" class="item">
+                        <a is="pushstate-anchor" href="[[ feedUrlFor('tag:android') ]]" class="item">
                             <span>android</span>
                             <paper-ripple></paper-ripple>
                         </a>
                     </div>
                 </iron-collapse>
                 <hr>
-                <a is="pushstate-anchor" href="/web/settings/general" class="item">
+                <a is="pushstate-anchor" href="[[ urlFor('settings-general') ]]" class="item">
                     <span>Settings</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a href="#" class="item" on-click="logout">
+                <a is="pushstate-anchor" href="[[ urlFor('logout') ]]" class="item">
                     <span>Logout</span>
                     <paper-ripple></paper-ripple>
                 </a>
@@ -102,10 +104,15 @@
         Polymer({
             is: "rf-feed-base",
             behaviors: [
-                UserBehavior
+                UserBehavior,
+                MoreRouting.TemplateHelpers
             ],
             properties: {
                 user: Object
+            },
+
+            feedUrlFor: function(tagOrId) {
+                return this.urlFor('feed', {tagOrId: tagOrId})
             },
 
             attached: function() {

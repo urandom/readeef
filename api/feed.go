@@ -45,7 +45,7 @@ type parseOpmlProcessor struct {
 	user content.User
 }
 
-type addFeedProcessor struct {
+type addFeedsProcessor struct {
 	Links []string `json:"links"`
 
 	fm   *readeef.FeedManager
@@ -138,7 +138,7 @@ func (con Feed) Handler(c context.Context) http.Handler {
 				resp = parseOpml(user, con.fm, buf.Bytes())
 			case "add":
 				links := r.Form["url"]
-				resp = addFeed(user, con.fm, links)
+				resp = addFeeds(user, con.fm, links)
 			case "remove":
 				if feedId, resp.err = strconv.ParseInt(params["feed-id"], 10, 64); resp.err == nil {
 					resp = removeFeed(user, con.fm, data.FeedId(feedId))
@@ -220,8 +220,8 @@ func (p parseOpmlProcessor) Process() responseError {
 	return parseOpml(p.user, p.fm, []byte(p.Opml))
 }
 
-func (p addFeedProcessor) Process() responseError {
-	return addFeed(p.user, p.fm, p.Links)
+func (p addFeedsProcessor) Process() responseError {
+	return addFeeds(p.user, p.fm, p.Links)
 }
 
 func (p removeFeedProcessor) Process() responseError {
@@ -354,7 +354,7 @@ func parseOpml(user content.User, fm *readeef.FeedManager, opmlData []byte) (res
 	return
 }
 
-func addFeed(user content.User, fm *readeef.FeedManager, links []string) (resp responseError) {
+func addFeeds(user content.User, fm *readeef.FeedManager, links []string) (resp responseError) {
 	resp = newResponse()
 
 	success := false

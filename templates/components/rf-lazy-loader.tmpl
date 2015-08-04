@@ -38,7 +38,7 @@
 
             insertContent: function(content) {
                 var element = document.createElement(this.element);
-
+console.log("Inserting ", element)
                 this.fire('rf-lazy-pre-insert', {element: element});
 
                 Polymer.dom(this).innerHTML = "";

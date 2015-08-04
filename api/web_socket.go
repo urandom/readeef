@@ -255,8 +255,8 @@ func (a apiRequest) processor(
 		return &discoverFeedsProcessor{user: user, fm: fm}, nil
 	case "parse-opml":
 		return &parseOpmlProcessor{user: user, fm: fm}, nil
-	case "add-feed":
-		return &addFeedProcessor{user: user, fm: fm}, nil
+	case "add-feeds":
+		return &addFeedsProcessor{user: user, fm: fm}, nil
 	case "remove-feed":
 		return &removeFeedProcessor{user: user, fm: fm}, nil
 	case "get-feed-tags":

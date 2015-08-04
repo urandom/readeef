@@ -23,8 +23,7 @@
                 if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING) {
                     if (!MoreRouting.getRouteByName('splash').children[0].active) {
                         MoreRouting.navigateTo('login');
-                    } else if (!MoreRouting.getRouteByName('login').active &&
-                        !MoreRouting.getRouteByName('login-from').active) {
+                    } else if (!MoreRouting.isCurrentUrl('login')) {
                         MoreRouting.navigateTo('login-from', {url: this.encodeURI(location.pathname)});
                     }
                 }
@@ -40,13 +39,18 @@
         },
 
         onRouteChange: function(event, detail) {
+            // For some reason, MoreRouting keeps logout active for some time after redirecting
+            if (MoreRouting.isCurrentUrl('logout') && !MoreRouting.isCurrentUrl('login')) {
+                this.logout();
+                return;
+            }
+
             if (!this.user & (this._state & state.VALIDATING) != state.VALIDATING) {
-                if (MoreRouting.getRouteByName('login').active) {
+                if (MoreRouting.isCurrentUrl('login')) {
                     this.$.splash.selected = 0;
                 } else if (!MoreRouting.getRouteByName('splash').children[0].active) {
                     MoreRouting.navigateTo('login');
-                } else if (!MoreRouting.getRouteByName('login').active &&
-                    !MoreRouting.getRouteByName('login-from').active) {
+                } else {
                     MoreRouting.navigateTo('login-from', {url: this.encodeURI(location.pathname)});
                 }
             }
@@ -152,10 +156,6 @@
     root.UserBehavior = {
         validateUser: function(user) {
             Polymer.dom(document).querySelector('rf-router').validateUser(user);
-        },
-
-        logout: function() {
-            Polymer.dom(document).querySelector('rf-router').logout();
         }
     }
 })(window);
