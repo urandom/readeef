@@ -5,7 +5,7 @@
 <link rel="import" href="/dist/paper-input/paper-input.html">
 <link rel="import" href="/dist/paper-spinner/paper-spinner.html">
 
-<dom-module id="rf-settings-feeds">
+<dom-module id="rf-settings-manage-feeds">
     <template>
         <div class="card" class="layout vertical start" style="max-width: 400px;">
             <div class="layout vertical" hidden$="{{ discoveredFeeds }}">
@@ -56,7 +56,7 @@
     <script>
         "use strict";
         Polymer({
-            is: "rf-settings-feeds",
+            is: "rf-settings-manage-feeds",
             properties: {
                 discoveredFeeds: {
                     type: Array,

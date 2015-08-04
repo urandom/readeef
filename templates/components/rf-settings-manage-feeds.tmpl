@@ -1,0 +1,130 @@
+{% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/dist/paper-input/paper-input.html">
+
+<link rel="import" href="/component/rf-api">
+
+<dom-module id="rf-settings-manage-feeds">
+    <style>
+/deep/ .feed-favicon {
+    margin-right: 5px;
+}
+
+/deep/ .feed-title {
+    color: var(--text-primary-color);
+    font-size: 16px;
+}
+
+/deep/ .feed {
+    line-height: 16px;
+}
+
+    </style>
+    <template>
+        <div class="card layout vertical start" style="max-width: 600px;">
+            <div hidden$="{{ _computeHideEmptyMessage(feeds) }}">
+                You are not subscribed to any feeds yet
+            </div>
+
+            <ul>
+                <template is="dom-repeat" items="{{ feeds }}">
+                    <li class="layout vertical feed" title="{{ item.Title }}">
+                        <div class="layout horizontal center wrap">
+                            <img src="{{ _computeFavIconUrl(item) }}" alt="favicon" class="feed-favicon">
+                            <span class="feed-title">{{ item.Title }}</span>
+                            <paper-icon-button icon="warning" on-tap="onDisplayFeedErrors" hidden$="{{ _computeHideFeedErrors(item) }}"></paper-icon-button>
+                            <paper-toast text="[[ _computeToastFeedErrorsText(item) ]]"></paper-toast>
+                            <paper-input value="[[ feed.Tags ]]" on-change="onFeedTagsChange" placeholder="Comma-separated tag list" no-label-float="true"></paper-input>
+                            <paper-icon-button icon="remove" on-tap="onRemoveFeed"></paper-icon-button>
+                        </div>
+                    </li>
+                </template>
+            </ul>
+        </div>
+
+        <rf-api id="list-feeds" method="list-feeds" tag="settings" on-rf-api-message="onAllFeedsMessage" user="{{ user }}"></rf-api>
+        <rf-api id="set-feed-tags" method="set-feed-tags" on-rf-api-message="onSetFeedTagsMessage" user="{{ user }}"></rf-api>
+        <rf-api id="remove-feed" method="remove-feed" on-rf-api-message="{{ onRemoveFeedMessage }}" user="{{ user }}"></rf-api>
+    </template>
+
+    <script>
+        "use strict";
+        Polymer({
+            is: "rf-settings-manage-feeds",
+            properties: {
+                user: Object,
+                feeds: {
+                    type: Array
+                }
+            },
+            _urlParser: document.createElement('a'),
+
+            attached: function() {
+                this.$['list-feeds'].send();
+            },
+
+            onAllFeedsMessage: function(event, detail) {
+                this.feeds = detail.arguments.Feeds;
+            },
+
+            onDisplayFeedErrors: function(event) {
+                var element = event.target;
+                while (element.nodeName.toLowerCase() != "paper-icon-button") {
+                    element = element.parentNode;
+                }
+
+                element.parentNode.querySelector('paper-toast').toggle();
+            },
+
+            onFeedTagsChange: function(event, detail, sender) {
+                if (typeof event.target.value != "string") {
+                    return;
+                }
+
+                var tags = event.target.value.split(/\s*,\s*/);
+
+                event.model.item.Tags = tags;
+
+                this.$['set-feed-tags'].send({id: event.model.item.Id, tags: tags});
+            },
+
+            onSetFeedTagsMessage: function(event, data) {
+                var feed = this.feeds.filter(function(feed) {
+                    if (feed.Id == data.arguments.Id) {
+                        return feed;
+                    }
+                });
+                this.fire('iron-signal', {name: 'rf-feed-tags-changed', data: feed});
+            },
+
+            onRemoveFeed: function(event, detail) {
+                this.$['remove-feed'].send({id: event.model.item.Id});
+            },
+
+            onRemoveFeedMessage: function(event, data) {
+                this.fire('iron-signal', {name: 'rf-feeds-removed'});
+            },
+
+            _computeHideEmptyMessage: function(feeds) {
+                return !!feeds.length
+            },
+
+            _computeFavIconUrl: function(feed) {
+                this._urlParser.href = feed.Link
+
+                return "//www.google.com/s2/favicons?domain=" + this._urlParser.host;
+            },
+
+            _computeHideFeedErrors: function(feed) {
+                return !this.user.Admin || (!feed.UpdateError && !feed.SubscribeError);
+            },
+
+            _computeToastFeedErrorsText: function(feed) {
+                return feed.UpdateError + "\n" + feed.SubscribeError;
+            }
+
+        })
+    </script>
+</dom-module>
+{% end %}

@@ -44,7 +44,7 @@ li paper-checkbox {
                                 Enter the address of a feed, or a website that might contain one or more feeds.
                             </p>
 
-                            <paper-input id="feed-url" label="URL" data-error-no-feed="{% __ "No feeds were found" .base.lang %}" data-error-no-absolute="{% __ "The value is not a valid absolute URL" .base.lang %}" data-error-internal="{% __ "There was an error processing the request" .base.lang %}"></paper-input>
+                            <paper-input id="feed-url" label="URL" on-keypress="onUrlKeypress" data-error-no-feed="{% __ "No feeds were found" .base.lang %}" data-error-no-absolute="{% __ "The value is not a valid absolute URL" .base.lang %}" data-error-internal="{% __ "There was an error processing the request" .base.lang %}"></paper-input>
 
                             <p>
                                 Alternatively, you may provide an OPML file that contains a list of feeds.
@@ -54,7 +54,7 @@ li paper-checkbox {
 
                             <div class="layout horizontal end-justified">
                                 <paper-spinner active="{{ loading }}"></paper-spinner>
-                                <paper-button id="find-feeds" on-tap="onFindFeed" autofocus hidden$="{{ loading }}">Find</paper-button>
+                                <paper-button id="find-feeds" on-tap="onFindFeeds" autofocus hidden$="{{ loading }}">Find</paper-button>
                             </div>
                         </section>
 
@@ -152,7 +152,15 @@ li paper-checkbox {
                 this.loading = false;
             },
 
-            onFindFeed: function() {
+            onUrlKeypress: function() {
+                var code = event.keyCode || event.charCode, key = event.keyIdentifier;
+
+                if (key == 'Enter' || code == 13) {
+                    this.onFindFeeds();
+                }
+            },
+
+            onFindFeeds: function() {
                 if (this.$.opml.$.input.files.length) {
                     var file = this.$.opml.$.input.files[0], fileReader = new FileReader();
 
