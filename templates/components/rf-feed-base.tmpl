@@ -94,7 +94,7 @@
                     <hr>
 
                     <template is="dom-repeat" items="[[ _computeNavigationTags(tags) ]]">
-                        <a is="pushstate-anchor" href="[[ feedUrlFor(item.name) ]]" class="layout horizontal">
+                        <a is="pushstate-anchor" href="[[ repeaterTagUrl(item.name) ]]" class="layout horizontal">
                             <paper-icon-button icon="expand-more" expands$="[[ _computeNavigationExpandTag(item) ]]" class="item" on-tap="onToggleExpand"></paper-icon-button>
                             <div style="position: relative" class="flex item">
                                 <span>[[ item.name ]]</span>
@@ -167,6 +167,14 @@
                     tagOrId = prefix + ":" + tagOrId;
                 }
                 return this.urlFor('feed', {tagOrId: tagOrId})
+            },
+
+            repeaterTagUrl: function(name) {
+                if (name == 'All') {
+                    return this.feedUrlFor('all');
+                } else {
+                    return this.feedUrlFor(name, 'tag');
+                }
             },
 
             updateTags: function() {
