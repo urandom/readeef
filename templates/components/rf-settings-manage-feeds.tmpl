@@ -1,5 +1,6 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/iron-signals/iron-signals.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
 
@@ -14,6 +15,7 @@
 /deep/ .feed-title {
     color: var(--text-primary-color);
     font-size: 16px;
+    padding: 0 8px;
 }
 
 /deep/ .feed {
@@ -22,7 +24,7 @@
 
     </style>
     <template>
-        <div class="card layout vertical start" style="max-width: 600px;">
+        <div class="card layout vertical start">
             <div hidden$="{{ _computeHideEmptyMessage(feeds) }}">
                 You are not subscribed to any feeds yet
             </div>
@@ -32,10 +34,10 @@
                     <li class="layout vertical feed" title="{{ item.Title }}">
                         <div class="layout horizontal center wrap">
                             <img src="{{ _computeFavIconUrl(item) }}" alt="favicon" class="feed-favicon">
-                            <span class="feed-title">{{ item.Title }}</span>
+                            <span class="feed-title flex">{{ item.Title }}</span>
                             <paper-icon-button icon="warning" on-tap="onDisplayFeedErrors" hidden$="{{ _computeHideFeedErrors(item) }}"></paper-icon-button>
                             <paper-toast text="[[ _computeToastFeedErrorsText(item) ]]"></paper-toast>
-                            <paper-input value="[[ feed.Tags ]]" on-change="onFeedTagsChange" placeholder="Comma-separated tag list" no-label-float="true"></paper-input>
+                            <paper-input value="[[ _computeFeedTags(item) ]]" on-change="onFeedTagsChange" placeholder="Comma-separated tag list" no-label-float="true"></paper-input>
                             <paper-icon-button icon="remove" on-tap="onRemoveFeed"></paper-icon-button>
                         </div>
                     </li>
@@ -46,6 +48,8 @@
         <rf-api id="list-feeds" method="list-feeds" tag="settings" on-rf-api-message="onAllFeedsMessage" user="{{ user }}"></rf-api>
         <rf-api id="set-feed-tags" method="set-feed-tags" on-rf-api-message="onSetFeedTagsMessage" user="{{ user }}"></rf-api>
         <rf-api id="remove-feed" method="remove-feed" on-rf-api-message="onRemoveFeedMessage" user="{{ user }}"></rf-api>
+
+        <iron-signals on-iron-signal-rf-feeds-added="onSignalFeedsAdded"></iron-signals>
     </template>
 
     <script>
@@ -103,7 +107,13 @@
             },
 
             onRemoveFeedMessage: function(event, data) {
+                this.$['list-feeds'].send();
+
                 this.fire('iron-signal', {name: 'rf-feeds-removed'});
+            },
+
+            onSignalFeedsAdded: function() {
+                this.$['list-feeds'].send();
             },
 
             _computeHideEmptyMessage: function(feeds) {
@@ -122,6 +132,10 @@
 
             _computeToastFeedErrorsText: function(feed) {
                 return feed.UpdateError + "\n" + feed.SubscribeError;
+            },
+
+            _computeFeedTags: function(feed) {
+                return feed.Tags ? feed.Tags.join(', ') : '';
             }
 
         })

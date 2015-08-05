@@ -35,7 +35,7 @@ li paper-checkbox {
 }
     </style>
     <template>
-        <div class="card" class="layout vertical start" style="max-width: 400px;">
+        <div class="card" class="layout vertical start">
             <div class="layout vertical">
                 <more-route-selector on-more-route-change="onRouteChange">
                     <iron-pages>
@@ -53,7 +53,7 @@ li paper-checkbox {
                             <paper-input type="file" id="opml" name="opml" accept=".opml" tabindex="2"></paper-input>
 
                             <div class="layout horizontal end-justified">
-                                <paper-spinner active="{{ loading }}"></paper-spinner>
+                                <paper-spinner active="{{ loading }}" hidden$="{{ !loading }}"></paper-spinner>
                                 <paper-button id="find-feeds" on-tap="onFindFeeds" autofocus hidden$="{{ loading }}">Find</paper-button>
                             </div>
                         </section>
@@ -81,11 +81,11 @@ li paper-checkbox {
                             </ul>
 
                             <div class="layout horizontal end-justified">
-                                <paper-spinner active="{{ loading }}"></paper-spinner>
                                 <a is="pushstate-anchor" href="[[ urlFor('settings-add-feed-discover') ]]">
                                     <paper-material elevation="0">Back</paper-material>
                                     <paper-ripple></paper-ripple>
                                 </a>
+                                <paper-spinner active="{{ loading }}" hidden$="{{ !loading }}"></paper-spinner>
                                 <paper-button on-tap="onAddFeeds" autofocus hidden$="{{ loading }}">Add</paper-button>
                             </div>
                         </section>
@@ -251,7 +251,7 @@ li paper-checkbox {
             },
 
             onAddFeedMessage: function(event, data) {
-                this.fire('core-signal', {name: 'rf-feeds-added'});
+                this.fire('iron-signal', {name: 'rf-feeds-added'});
                 this.$['feed-url'].value = "";
                 this.$['feed-url'].invalid = false;
 
