@@ -68,19 +68,14 @@
                     <paper-ripple></paper-ripple>
                 </a>
             </div>
-            <div class="main-narrow-title">
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-general') }}">General</span>
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-add-feed') }}">Add Feed</span>
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-manage-feeds') }}">Manage Feeds</span>
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-share-services') }}">Share Services</span>
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-admin') }}">Administration</span>
-            </div>
             <div class="main-title">
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-general') }}">General</span>
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-add-feed') }}">Add Feed</span>
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-manage-feeds') }}">Manage Feeds</span>
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-share-services') }}">Share Services</span>
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-admin') }}">Administration</span>
+                <template>
+                    <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-general') }}">General</span>
+                    <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-add-feed') }}">Add Feed</span>
+                    <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-manage-feeds') }}">Manage Feeds</span>
+                    <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-share-services') }}">Share Services</span>
+                    <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-admin') }}">Administration</span>
+                </template>
             </div>
             <div class="main-content">
                 <more-route-selector on-more-route-change="onRouteChange">
