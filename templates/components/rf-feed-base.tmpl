@@ -130,7 +130,7 @@
             </div>
             <div class="main-title">
                 Title
-                <paper-fab icon="refresh"></paper-fab>
+                <paper-fab icon="refresh" on-tap="onRefresh"></paper-fab>
             </div>
             <div class="main-content">
                 <h1>Test</h1>
@@ -236,6 +236,10 @@
                     element.icon = collapser.opened ? 'expand-more' : 'expand-less';
                 }
                 collapser.toggle();
+            },
+
+            onRefresh: function() {
+                this.$['list-feeds'].send();
             },
 
             _feedsChanged: function(oldValue, newValue) {
