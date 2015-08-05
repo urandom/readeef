@@ -15,6 +15,10 @@
 
 {% define "imports" %}
     <script src="/dist/webcomponentsjs/webcomponents-lite.min.js"></script>
+    <script>
+    window.Polymer = window.Polymer || {};
+    //window.Polymer.dom = 'shadow';
+    </script>
     <script src="/dist/cryptojs/rollups/md5.js"></script>
     <script src="/dist/cryptojs/rollups/hmac-sha256.js"></script>
     <script src="/dist/cryptojs/components/enc-base64-min.js"></script>

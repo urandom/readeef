@@ -44,7 +44,7 @@ paper-toolbar {
     width: 100%;
     margin: 2px 16px;
 }
-paper-header-panel[main] .main-title-container > ::content {
+paper-header-panel[main] /deep/ .main-title-container {
     font-size: 24px;
 }
 
@@ -64,7 +64,6 @@ paper-header-panel[main] .main-title-container > ::content {
                 <paper-toolbar>
                     <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
                     <div class="main-narrow-title-container" hidden$="{{ !narrow }}">
-                        <content select=".main-narrow-title"></content>
                     </div>
                 </paper-toolbar>
                 <div class$="[[_computeContentClass(narrow)]]">
@@ -80,12 +79,20 @@ paper-header-panel[main] .main-title-container > ::content {
         "use strict";
         Polymer({
             is: "rf-app-scaffold",
+            behaviors: [
+                Polymer.Templatizer
+            ],
             properties: {
                 narrow: {
                     type: Boolean,
                     readOnly: true,
                     notify: true
                 }
+            },
+            _titleInstances: [],
+
+            attached: function() {
+                this._insertTitle();
             },
 
             onResponsiveChange: function(event, detail) {
@@ -106,7 +113,50 @@ paper-header-panel[main] .main-title-container > ::content {
 
             _computeMainPanelMode: function(narrow) {
                 return narrow ? 'standard' : 'cover';
+            },
+
+            _ensureTemplatized: function() {
+                if (!this.ctor) {
+                    this._userTemplate = Polymer.dom(this).querySelector('.main-title template');
+                    if (this._userTemplate) {
+                        this.templatize(this._userTemplate);
+                    }
+                }
+            },
+ 
+            _insertTitle: function() {
+                this._ensureTemplatized();
+
+                var el = Polymer.dom(this.root);
+
+                ['.main-narrow-title-container', '.main-title-container'].forEach(function(cls) {
+                    var container = el.querySelector(cls),
+                        inst = this.stamp(null);
+
+                    this._titleInstances.push(inst.root.querySelector('*'));
+                    container.innerHTML = "";
+                    container.appendChild(inst.root);
+
+                    for (var prop in inst._parentProps) {
+                        inst[prop] = this[prop];
+                    }
+                }.bind(this));
+
+                el.flush();
+            },
+
+            _forwardParentProp: function(prop, value) {
+                this._titleInstances.forEach(function(inst) {
+                    inst._templateInstance[prop] = value;
+                }.bind(this));
+            },
+
+            _forwardParentPath: function(path, value) {
+                this._titleInstances.forEach(function(inst) {
+                    inst._templateInstance.notifyPath(path, value, true);
+                }, this);
             }
+
         })
     </script>
 </dom-module>

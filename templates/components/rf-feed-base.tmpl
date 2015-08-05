@@ -40,14 +40,15 @@
     margin-left: 4px;
 }
 
-.main-title paper-fab {
+rf-app-scaffold /deep/ .main-title-container paper-fab {
     position: absolute;
     right: -80px;
     top: 24px;
     z-index: 1;
     background: white;
 }
-.main-title paper-fab.notify {
+
+rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
     background: var(--paper-fab-notify-background);
     color: var(--text-primary-color-inverse);
 }
@@ -125,12 +126,11 @@
                     <paper-ripple></paper-ripple>
                 </a>
             </div>
-            <div class="main-narrow-title">
-                Title
-            </div>
             <div class="main-title">
-                Title
-                <paper-fab icon="refresh" on-tap="onRefresh"></paper-fab>
+                <template>
+                    Title
+                    <paper-fab icon="refresh" on-tap="onRefresh" hidden$="[[ narrow ]]"></paper-fab>
+                </template>
             </div>
             <div class="main-content">
                 <h1>Test</h1>
