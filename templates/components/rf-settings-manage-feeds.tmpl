@@ -58,9 +58,7 @@
             is: "rf-settings-manage-feeds",
             properties: {
                 user: Object,
-                feeds: {
-                    type: Array
-                }
+                feeds: Array
             },
             _urlParser: document.createElement('a'),
 
@@ -98,7 +96,7 @@
                     if (feed.Id == data.arguments.Id) {
                         return feed;
                     }
-                });
+                })[0];
                 this.fire('iron-signal', {name: 'rf-feed-tags-changed', data: feed});
             },
 
