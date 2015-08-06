@@ -1,0 +1,29 @@
+{% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+
+<link rel="import" href="/component/rf-api">
+
+<dom-module id="rf-feed">
+    <style>
+    </style>
+    <template>
+    </template>
+
+    <script>
+        "use strict";
+        Polymer({
+            is: "rf-feed",
+            properties: {
+                tagOrId: {
+                    type: String,
+                    observer: '_tagOrIdChanged'
+                }
+            },
+
+            _tagOrIdChanged: function(newValue, oldValue) {
+                console.log(oldValue, newValue);
+            }
+        })
+    </script>
+</dom-module>
+{% end %}

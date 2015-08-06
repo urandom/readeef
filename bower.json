@@ -18,7 +18,7 @@
     "polymer": "Polymer/polymer#^1.0.0",
     "moment": "~2.8.2",
     "iron-flex-layout": "PolymerElements/iron-flex-layout#~1.0.2",
-    "more-routing": "PolymerLabs/more-routing#~1.0.0",
+    "more-routing": "PolymerLabs/more-routing#0df996e",
     "plastik-lazy-route-selector": "Plastikit/plastik-lazy-route-selector#~0.0.2",
     "neon-animation": "PolymerElements/neon-animated-pages#~1.0.6",
     "paper-styles": "PolymerElements/paper-styles#~1.0.10",
