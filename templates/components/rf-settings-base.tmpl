@@ -59,7 +59,7 @@
                     <paper-ripple></paper-ripple>
                 </a>
                 <hr>
-                <a is="pushstate-anchor" href="[[ feedUrlFor('all') ]]" class="item">
+                <a is="pushstate-anchor" href="[[ urlFor('feed-base') ]]" class="item">
                     <span>Back to feeds</span>
                     <paper-ripple></paper-ripple>
                 </a>
@@ -104,10 +104,6 @@
                     type: String,
                     notify: true
                 }
-            },
-
-            feedUrlFor: function(tagOrId) {
-                return this.urlFor('feed', {tagOrId: tagOrId})
             },
 
             onRouteChange: function(event, detail) {

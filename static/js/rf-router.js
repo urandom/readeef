@@ -156,6 +156,27 @@
     root.UserBehavior = {
         validateUser: function(user) {
             Polymer.dom(document).querySelector('rf-router').validateUser(user);
-        }
-    }
+        },
+    };
+
+    root.NestedRouteBehavior = {
+        routeToNested: function(parentName, nestedName, nestedParams) {
+            MoreRouting.navigateTo(nestedName, nestedParams || {});
+
+            MoreRouting.getRouteByName(parentName).__subscribe(function(name, value) {
+                if (name == "active") {
+                    // Change the route with async, otherwise once it finishes,
+                    // the current one will continue and will revert it
+                    this.async(function() {
+                        if (value) {
+                                if (!MoreRouting.isCurrentUrl(nestedName)) {
+                                    MoreRouting.navigateTo(MoreRouting.urlFor(nestedName, nestedParams || {}));
+                                }
+                        }
+                    }.bind(this));
+                }
+            }.bind(this));
+        },
+    };
+
 })(window);

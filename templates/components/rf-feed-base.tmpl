@@ -150,7 +150,8 @@ rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
             is: "rf-feed-base",
             behaviors: [
                 UserBehavior,
-                MoreRouting.TemplateHelpers
+                NestedRouteBehavior,
+                MoreRouting.TemplateHelpers,
             ],
             properties: {
                 user: Object,
@@ -175,6 +176,8 @@ rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
                         event.detail.element.tagOrId = route.params.tagOrId;
                     }
                 }.bind(this));
+
+                this.routeToNested('feed-base', 'feed', {tagOrId: 'all'});
             },
 
             feedUrlFor: function(tagOrId, prefix) {

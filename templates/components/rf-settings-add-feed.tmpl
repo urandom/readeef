@@ -127,7 +127,8 @@ li paper-checkbox {
         Polymer({
             is: "rf-settings-add-feed",
             behaviors: [
-                MoreRouting.TemplateHelpers
+                NestedRouteBehavior,
+                MoreRouting.TemplateHelpers,
             ],
             properties: {
                 discoveredFeeds: {
@@ -143,27 +144,9 @@ li paper-checkbox {
                     value: false
                 }
             },
-            _parentRouteActive: false,
 
             attached: function() {
-                MoreRouting.navigateTo(MoreRouting.urlFor('settings-add-feed-discover'));
-
-                MoreRouting.getRoute('settings-add-feed').__subscribe(function(name, value) {
-                    if (name == "active") {
-                        if (value) {
-                            if (!this._parentRouteActive) {
-                                this._parentRouteActive = true;
-                                // Change the route with async, otherwise once it finishes, the
-                                // current one will continue and will revert it
-                                this.async(function() {
-                                    MoreRouting.navigateTo(MoreRouting.urlFor('settings-add-feed-discover'));
-                                });
-                            }
-                        } else {
-                            this._parentRouteActive = false;
-                        }
-                    }
-                }.bind(this));
+                this.routeToNested('settings-add-feed', 'settings-add-feed-discover');
             },
 
             onRouteChange: function(event, detail) {
