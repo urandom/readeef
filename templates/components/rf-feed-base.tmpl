@@ -14,6 +14,7 @@
 
 <link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-app-scaffold">
+<link rel="import" href="/component/rf-feed">
 
 <dom-module id="rf-feed-base">
     <style>
@@ -134,7 +135,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
                 </template>
             </div>
             <div class="main-content">
-                <rf-lazy-loader route="feed" import="/component/rf-feed"></rf-lazy-loader>
+                <rf-feed user="[[ user ]]"></rf-feed>
             </div>
         </rf-app-scaffold>
 

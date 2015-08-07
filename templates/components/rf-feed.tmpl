@@ -7,6 +7,7 @@
     <style>
     </style>
     <template>
+        <rf-api id="feed-articles" method="get-feed-articles" arguments="[[ _computeFeedArticlesArguments(currentFeedId, limit, offset, user.ProfileData.newerFirst, user.ProfileData.unreadOnly) ]]" on-rf-api-message="{{ onFeedArticlesMessage }}" user="{{ user }}"></rf-api>
     </template>
 
     <script>
@@ -16,13 +17,28 @@
             properties: {
                 tagOrId: {
                     type: String,
-                    observer: '_tagOrIdChanged'
-                }
+                    observer: '_tagOrIdChanged',
+                },
+                user: {
+                    type: Object,
+                    observer: '_userChanged',
+                },
+                currentFeedId: String,
+                limit: Number,
+                offset: Number,
             },
 
             _tagOrIdChanged: function(newValue, oldValue) {
                 console.log(oldValue, newValue);
-            }
+            },
+
+            _userChanged: function(newValue, oldValue) {
+                console.log("userChanged", newValue, oldValue);
+            },
+
+            _computeFeedArticlesArguments: function() {
+                return JSON.stringify({id: this.currentFeedId, limit: this.limit, offset: this.offset, newerFirst: this.user.ProfileData.newerFirst || false, unreadOnly: this.use.ProfileData.unreadOnly || false});
+            },
         })
     </script>
 </dom-module>

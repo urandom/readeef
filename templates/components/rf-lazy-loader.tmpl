@@ -6,12 +6,13 @@
         Polymer({
             is: "rf-lazy-loader",
             properties: {
-                import: {
-                    type: String
+                import: String,
+                element: String,
+                propertyPayload: {
+                    type: Object,
+                    value: {},
+                    observer: '_onPropertyPayloadChanged',
                 },
-                element: {
-                    type: String
-                }
             },
             content: null,
 
@@ -36,32 +37,31 @@
                 }
             },
 
-            insertContent: function(content) {
-                var element = document.createElement(this.element);
-console.log("Inserting ", element)
-                this.fire('rf-lazy-pre-insert', {element: element});
+            insertContent: function() {
+                this.content = document.createElement(this.element);
+                for (var key in this.propertyPayload) {
+                    this.content[key] = this.propertyPayload[key];
+                }
+console.log("Inserting ", this.content)
+
+                this.fire('rf-lazy-pre-insert', {element: this.content});
 
                 Polymer.dom(this).innerHTML = "";
-                Polymer.dom(this).appendChild(element);
+                Polymer.dom(this).appendChild(this.content);
                 Polymer.dom(this).flush();
 
-                this.fire('rf-lazy-insert', {element: element});
+                this.fire('rf-lazy-insert', {element: this.content});
             },
 
             _addContent: function() {
-                if (this.content === null) {
-                    if (!this.element) {
-                        this.element = this.import.split('/').slice(-1)[0].replace('.html', '');
-                    }
-                    this.importHref(this.import, function(event) {
-                        this.content = event.target.import;
-                        this.insertContent(this.content);
-                    }, function(err) {
-                        console.error(err);
-                    });
-                } else {
-                    this.insertContent(this.content);
+                if (!this.element) {
+                    this.element = this.import.split('/').slice(-1)[0].replace('.html', '');
                 }
+                this.importHref(this.import, function(event) {
+                    this.insertContent();
+                }, function(err) {
+                    console.error(err);
+                });
             },
 
             _findSelector: function() {
@@ -76,7 +76,15 @@ console.log("Inserting ", element)
 
             _isSelectedInSelector: function(selector) {
                 return selector.items[selector._valueToIndex(selector.selected)] == this;
-            }
+            },
+
+            _onPropertyPayloadChanged: function(newValue, oldValue) {
+                if (this.content) {
+                    for (var key in (newValue || {})) {
+                        this.content[key] = newValue[key];
+                    }
+                }
+            },
         })
     </script>
 </dom-module>

@@ -117,9 +117,9 @@ li paper-checkbox {
 
         <paper-toast id="add-feed-success" text="{% __ "Feed was added successfully" .base.lang %}"></paper-toast>
 
-        <rf-api user="{{ user }}" id="discover-feeds" method="discover-feeds" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError"></rf-api>
-        <rf-api user="{{ user }}" id="parse-opml" method="parse-opml" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError"></rf-api>
-        <rf-api user="{{ user }}" id="add-feeds" method="add-feeds" on-rf-api-message="onAddFeedMessage" on-rf-api-error="onAddFeedError"></rf-api>
+        <rf-api user="[[ user ]]" id="discover-feeds" method="discover-feeds" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError"></rf-api>
+        <rf-api user="[[ user ]]" id="parse-opml" method="parse-opml" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError"></rf-api>
+        <rf-api user="[[ user ]]" id="add-feeds" method="add-feeds" on-rf-api-message="onAddFeedMessage" on-rf-api-error="onAddFeedError"></rf-api>
     </template>
 
     <script>
@@ -131,6 +131,7 @@ li paper-checkbox {
                 MoreRouting.TemplateHelpers,
             ],
             properties: {
+                user: Object,
                 discoveredFeeds: {
                     type: Array,
                     value: null

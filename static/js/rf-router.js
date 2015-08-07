@@ -29,11 +29,7 @@
                 }
             });
 
-            document.addEventListener('rf-lazy-pre-insert', function(event) {
-                if ('user' in event.detail.element) {
-                    event.detail.element.user = this.user;
-                }
-
+            document.addEventListener('rf-lazy-insert', function(event) {
                 Polymer.updateStyles();
             }.bind(this));
         },
@@ -149,7 +145,15 @@
 
         decodeURI: function(encodedURI) {
             return decodeURIComponent(encodedURI.replace(/\$/g, '%'));
-        }
+        },
+
+        _computeFeedBasePayload: function(user) {
+            return {user: user};
+        },
+
+        _computeSettingsBasePayload: function(user) {
+            return {user: user};
+        },
 
     });
 
@@ -169,9 +173,9 @@
                     // the current one will continue and will revert it
                     this.async(function() {
                         if (value) {
-                                if (!MoreRouting.isCurrentUrl(nestedName)) {
-                                    MoreRouting.navigateTo(MoreRouting.urlFor(nestedName, nestedParams || {}));
-                                }
+                            if (!MoreRouting.isCurrentUrl(nestedName)) {
+                                MoreRouting.navigateTo(MoreRouting.urlFor(nestedName, nestedParams || {}));
+                            }
                         }
                     }.bind(this));
                 }

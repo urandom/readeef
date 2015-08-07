@@ -62,8 +62,8 @@ neon-animated-pages {
                         <rf-lazy-loader route="login" import="/component/rf-login"></rf-lazy-loader>
                         <rf-lazy-loader route="login-from" import="/component/rf-login"></rf-lazy-loader>
                         <section route="logout"><!-- Empty section for the logout route to match --></section>
-                        <rf-lazy-loader route="feed-base" import="/component/rf-feed-base"></rf-lazy-loader>
-                        <rf-lazy-loader route="settings-base" import="/component/rf-settings-base" params="{{ { user: user } }}"></rf-lazy-loader>
+                        <rf-lazy-loader route="feed-base" import="/component/rf-feed-base" property-payload="[[ _computeFeedBasePayload(user) ]]"></rf-lazy-loader>
+                        <rf-lazy-loader route="settings-base" import="/component/rf-settings-base" property-payload="[[ _computeSettingsBasePayload(user) ]]"></rf-lazy-loader>
                     </iron-pages>
                 </more-route-selector>
             </neon-animatable>
