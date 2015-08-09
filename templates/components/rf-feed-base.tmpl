@@ -19,7 +19,6 @@
 <dom-module id="rf-feed-base">
     <style>
 .drawer-menu a {
-    display: block;
     color: var(--text-primary-color);
     text-decoration: none;
     min-height: 20px;
@@ -43,9 +42,9 @@
 }
 
 rf-app-scaffold /deep/ .main-title-container paper-fab {
-    position: absolute;
-    right: -80px;
-    top: 24px;
+    position: fixed;
+    right: 50px;
+    top: 32px;
     z-index: 1;
     background: white;
 }
@@ -69,13 +68,15 @@ rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
                         <paper-ripple></paper-ripple>
                     </a>
 
-                    <a is="pushstate-anchor" href="[[ feedUrlFor('popular:all') ]]" class="layout horizontal">
+                    <div class="layout horizontal center">
                         <paper-icon-button icon="expand-more" expands="popular-feeds" class="item" on-tap="onToggleExpand"></paper-icon-button>
-                        <div style="position: relative" class="flex item">
-                            Popular
-                            <paper-ripple></paper-ripple>
-                        </div>
-                    </a>
+                        <a is="pushstate-anchor" href="[[ feedUrlFor('popular:all') ]]" class="layout horizontal flex">
+                            <div style="position: relative" class="flex item">
+                                Popular
+                                <paper-ripple></paper-ripple>
+                            </div>
+                        </a>
+                    </div>
                     <iron-collapse id="popular-feeds">
                         <div class="menu submenu">
                             <template is="dom-repeat" items="[[ tags ]]">
@@ -97,13 +98,15 @@ rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
                     <hr>
 
                     <template is="dom-repeat" items="[[ _computeNavigationTags(tags) ]]">
-                        <a is="pushstate-anchor" href="[[ repeaterTagUrl(item.name) ]]" class="layout horizontal">
+                        <div class="layout horizontal center">
                             <paper-icon-button icon="expand-more" expands$="[[ _computeNavigationExpandTag(item) ]]" class="item" on-tap="onToggleExpand"></paper-icon-button>
-                            <div style="position: relative" class="flex item">
-                                <span>[[ item.name ]]</span>
-                                <paper-ripple></paper-ripple>
-                            </div>
-                        </a>
+                            <a is="pushstate-anchor" href="[[ repeaterTagUrl(item.name) ]]" class="layout horizontal flex">
+                                <div style="position: relative" class="flex item">
+                                    <span>[[ item.name ]]</span>
+                                    <paper-ripple></paper-ripple>
+                                </div>
+                            </a>
+                        </div>
                         <iron-collapse id="[[ _computeNavigationExpandTag(item) ]]">
                             <div class="menu submenu">
                                 <template is="dom-repeat" items="[[ item.feeds ]]">
@@ -166,19 +169,17 @@ rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
             _urlParser: document.createElement('a'),
 
             attached: function() {
-                document.addEventListener('rf-lazy-pre-insert', function(event) {
-                    var route = MoreRouting.getRoute('feed');
-                    if (event.detail.element.is == "rf-feed") {
-                        route.params.__subscribe(function(name, value) {
-                            if (name == 'tagOrId') {
-                                event.detail.element.tagOrId = value;
-                            }
-                        });
-                        event.detail.element.tagOrId = route.params.tagOrId;
-                    }
-                }.bind(this));
-
                 this.routeToNested('feed-base', 'feed', {tagOrId: 'all'});
+
+                var feedElement = Polymer.dom(this.root).querySelector('rf-feed'),
+                    route = MoreRouting.getRoute('feed');
+
+                route.params.__subscribe(function(name, value) {
+                    if (name == 'tagOrId') {
+                        feedElement.tagOrId = value;
+                    }
+                });
+                feedElement.tagOrId = route.params.tagOrId;
             },
 
             feedUrlFor: function(tagOrId, prefix) {

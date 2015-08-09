@@ -165,7 +165,9 @@
 
     root.NestedRouteBehavior = {
         routeToNested: function(parentName, nestedName, nestedParams) {
-            MoreRouting.navigateTo(nestedName, nestedParams || {});
+            if (!MoreRouting.isCurrentUrl(nestedName)) {
+                MoreRouting.navigateTo(nestedName, nestedParams || {});
+            }
 
             MoreRouting.getRouteByName(parentName).__subscribe(function(name, value) {
                 if (name == "active") {

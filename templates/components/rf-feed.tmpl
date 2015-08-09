@@ -1,13 +1,99 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/iron-list/iron-list.html">
+<link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/dist/paper-ripple/paper-ripple.html">
+<link rel="import" href="/dist/paper-spinner/paper-spinner.html">
 
 <link rel="import" href="/component/rf-api">
 
 <dom-module id="rf-feed">
     <style>
+.list-container {
+    margin: 16px 0 8px;
+}
+
+.card {
+    @apply(--card-style);
+    padding: 8px;
+    margin-bottom: 16px;
+}
+
+.card > .list-wrapper {
+    height: 32px;
+    line-height: 32px;
+    position: relative;
+}
+
+.list-wrapper paper-icon-button {
+    margin-top: -10px;
+}
+
+.article.read {
+    color: #999;
+}
+
+.article .title-wrapper {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.title {
+    font-size: 16px;
+    line-height: 24px;
+}
+
+.short-description {
+    font-size: 12px;
+    line-height: 24px;
+    padding-left: 1em;
+    font-weight: 200;
+}
+
+.publish-date {
+    font-size: 14px;
+    line-height: 24px;
+    padding-left: 0.7em;
+}
+
+.feed-origin {
+    font-size: 10px;
+    line-height: 24px;
+    font-weight: 200;
+    padding-right: 1em;
+    width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
     </style>
     <template>
-        <rf-api id="feed-articles" method="get-feed-articles" arguments="[[ _computeFeedArticlesArguments(currentFeedId, limit, offset, user.ProfileData.newerFirst, user.ProfileData.unreadOnly) ]]" on-rf-api-message="{{ onFeedArticlesMessage }}" user="{{ user }}"></rf-api>
+        <div class="list-container">
+            <iron-list items="[[ articles ]]">
+                <template>
+                    <div class$="[[ _computeArticleClass(item) ]]" id$="[[ item.Id ]]">
+                        <div class="card layout vertical">
+                            <div class="list-wrapper layout horizontal">
+                                <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item) ]]" on-tap="onFavoriteToggle" data-article-id$="[[ item.Id ]]" data-feed-id$="[[ item.FeedId ]]"></paper-icon-button>
+                                <span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
+                                <span flex class="title-wrapper"  on-tap="onArticleActivate">
+                                    <span class="title" title$="[[ item.Title ]]">[[ _computeArticleTitle(item) ]]</span>
+                                    <span class="short-description">[[ _computeArticleDescription(item) ]]</span>
+                                </span>
+                                <span class="publish-date"  on-tap="onArticleActivate">[[ item.RelativeDate ]]</span>
+                            </div>
+                            <!-- allow the inner elements to receiver pointer events -->
+                            <paper-ripple style="pointer-events: none;"></paper-ripple>
+                        </div>
+                    </div>
+                </template>
+            </iron-list>
+        </div>
+        <div class="layout vertical center" hidden$="[[ !loading ]]">
+            <paper-spinner id="loading-spinner"></paper-spinner>
+        </div>
+        <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" user="{{ user }}"></rf-api>
     </template>
 
     <script>
@@ -23,21 +109,127 @@
                     type: Object,
                     observer: '_userChanged',
                 },
-                currentFeedId: String,
-                limit: Number,
-                offset: Number,
+                limit: {
+                    type: Number,
+                    value: 200,
+                },
+                offset: {
+                    type: Number,
+                    value: 0,
+                },
+                loading: {
+                    type: Boolean,
+                    observer: '_loadingChanged',
+                },
+                articles: Array,
+            },
+            _lastUpdateTime: 0,
+            _tagStripper: document.createElement('div'),
+
+            attached: function() {
+                // Find the scroller that will be used by the list
+                var el = Polymer.dom(this);
+                while (el = (el.parentNode || el.host)) {
+                    if ('scroller' in el) {
+                        Polymer.dom(this.root).querySelector('.list-container').scroller = el.scroller;
+                        break;
+                    }
+                }
             },
 
-            _tagOrIdChanged: function(newValue, oldValue) {
-                console.log(oldValue, newValue);
+            onFeedArticlesMessage: function(event, data) {
+                if (data.arguments.Articles && data.arguments.Articles.length) {
+                    var worker = new Worker('/js/append-articles-worker.js');
+
+                    worker.addEventListener('message', function(event) {
+                        this.articles = event.data.articles;
+                        this.loading = false;
+                    }.bind(this));
+
+                    worker.postMessage({
+                        current: this.articles,
+                        newArticles: data.arguments.Articles
+                    });
+                } else {
+                    this.noMoreArticles = true;
+                    this.loading = false;
+
+                    if (!this.offset) {
+                        this.articles = null;
+                    }
+                }
+                this._lastUpdateTime = new Date().getTime();
             },
 
-            _userChanged: function(newValue, oldValue) {
-                console.log("userChanged", newValue, oldValue);
+            onArticleActivate: function(event) {
             },
 
-            _computeFeedArticlesArguments: function() {
-                return JSON.stringify({id: this.currentFeedId, limit: this.limit, offset: this.offset, newerFirst: this.user.ProfileData.newerFirst || false, unreadOnly: this.use.ProfileData.unreadOnly || false});
+            _tagOrIdChanged: function(tagOrId, oldValue) {
+                console.log("tagOrIdChanged", tagOrId, oldValue);
+                this.async(function() {
+                    this.loading = true;
+                    this.articles = null;
+                    this.$['feed-articles'].send();
+                }.bind(this));
+            },
+
+            _userChanged: function(user, oldValue) {
+                console.log("userChanged", user, oldValue);
+            },
+
+            _loadingChanged: function(loading, old) {
+                if (loading) {
+                    this.$['loading-spinner'].reset();
+                    this.$['loading-spinner'].active = true;
+                } else {
+                    this.$['loading-spinner'].active = false;
+                }
+            },
+
+            _computeFeedArticlesArguments: function(user, tagOrId, limit, offset) {
+                return {id: tagOrId, limit: limit, offset: offset, newerFirst: user.ProfileData.newerFirst || false, unreadOnly: user.ProfileData.unreadOnly || false};
+            },
+
+            _computeArticleClass: function(item) {
+                var classList = ["article"]
+                if (item.Read) {
+                    classList.push("read");
+                }
+
+                if (item.Favorite) {
+                    classList.push("favorite");
+                }
+
+                return classList.join(' ');
+            },
+
+            _computeFavoriteIcon: function(item) {
+                return item.Favorite ? 'bookmark' : 'bookmark-border';
+            },
+
+            _computeArticleTitle: function(item) {
+                return this._stripTags(
+                    item.Hit && item.Hit.fragment && item.Hit.fragments.Title ?
+                        item.Hit.fragments.Title :
+                        item.Title
+                    );
+            },
+
+            _computeArticleDescription: function(item) {
+                return this._stripTags(
+                    item.Hit && item.Hit.fragment && item.Hit.fragments.Description ?
+                        item.Hit.fragments.Description :
+                        item.Description
+                    );
+            },
+
+            _stripTags: function(html) {
+                this._tagStripper.innerHTML = html;
+
+                return this._tagStripper.textContent || "";
+            },
+
+            _updateFeedArticles: function() {
             },
         })
     </script>

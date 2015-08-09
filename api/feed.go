@@ -519,8 +519,8 @@ func markFeedAsRead(user content.User, id string, timestamp int64) (resp respons
 func getFeedArticles(user content.User, id string, limit int, offset int, newerFirst bool, unreadOnly bool) (resp responseError) {
 	resp = newResponse()
 
-	if limit > 50 {
-		limit = 50
+	if limit > 200 {
+		limit = 200
 	}
 
 	user.SortingByDate()

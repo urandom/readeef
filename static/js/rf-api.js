@@ -47,25 +47,15 @@
     Polymer({
         is: 'rf-api',
         properties: {
-            user: {
-                type: Object
-            },
+            user: Object,
             version: {
                 type: Number,
                 value: 1
             },
-            url: {
-                type: String
-            },
-            method: {
-                type: String
-            },
-            args: {
-                type: Object
-            },
-            receiver: {
-                type: Boolean
-            },
+            url: String,
+            method: String,
+            args: Object,
+            receiver: Boolean,
             tag: {
                 type: String,
                 value: ""
@@ -98,10 +88,10 @@
 
             var payload = {method: this.method, tag: this.tag};
 
-            if (!data && this.arguments) {
-                data = this.arguments;
+            if (!data && this.args) {
+                data = this.args;
                 try {
-                    data = JSON.parse(this.arguments);
+                    data = JSON.parse(this.args);
                 } catch (e) {}
             }
             if (data) {

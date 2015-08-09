@@ -53,8 +53,8 @@ li paper-checkbox {
                             <paper-input type="file" id="opml" name="opml" accept=".opml" tabindex="2"></paper-input>
 
                             <div class="layout horizontal end-justified">
-                                <paper-spinner active="{{ loading }}" hidden$="{{ !loading }}"></paper-spinner>
-                                <paper-button id="find-feeds" on-tap="onFindFeeds" autofocus hidden$="{{ loading }}">Find</paper-button>
+                                <paper-spinner class="loading-dependant" hidden$="[[ !loading ]]"></paper-spinner>
+                                <paper-button id="find-feeds" on-tap="onFindFeeds" autofocus hidden$="[[ loading ]]">Find</paper-button>
                             </div>
                         </section>
 
@@ -85,8 +85,8 @@ li paper-checkbox {
                                     <paper-material elevation="0">Back</paper-material>
                                     <paper-ripple></paper-ripple>
                                 </a>
-                                <paper-spinner active="{{ loading }}" hidden$="{{ !loading }}"></paper-spinner>
-                                <paper-button on-tap="onAddFeeds" autofocus hidden$="{{ loading }}">Add</paper-button>
+                                <paper-spinner class="loading-dependant" hidden$="[[ !loading ]]"></paper-spinner>
+                                <paper-button on-tap="onAddFeeds" autofocus hidden$="[[ loading ]]">Add</paper-button>
                             </div>
                         </section>
 
@@ -142,7 +142,8 @@ li paper-checkbox {
                 },
                 loading: {
                     type: Boolean,
-                    value: false
+                    value: false,
+                    observer: '_loadingChanged',
                 }
             },
 
@@ -264,6 +265,18 @@ li paper-checkbox {
             onAddFeedError: function(event, data) {
                 this.addFeedError = data.error;
                 MoreRouting.navigateTo('settings-add-feed-discover-select-error');
+            },
+
+            _loadingChanged: function(loading, old) {
+                var dependants = Polymer.dom(this.root).querySelectorAll('.loading-dependant');
+                dependants.forEach(function(d) {
+                    if (loading) {
+                        d.reset();
+                        d.active = true;
+                    } else {
+                        d.active = false;
+                    }
+                });
             },
 
             _computeHideFindFeeds(discoveredFeeds, loading) {

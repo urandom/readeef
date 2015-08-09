@@ -1,91 +1,89 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 
-<dom-module id="rf-lazy-loader">
-    <script>
-        Polymer({
-            is: "rf-lazy-loader",
-            properties: {
-                import: String,
-                element: String,
-                propertyPayload: {
-                    type: Object,
-                    value: {},
-                    observer: '_onPropertyPayloadChanged',
-                },
+<script>
+    Polymer({
+        is: "rf-lazy-loader",
+        properties: {
+            import: String,
+            element: String,
+            propertyPayload: {
+                type: Object,
+                value: {},
+                observer: '_onPropertyPayloadChanged',
             },
-            content: null,
+        },
+        content: null,
 
-            attached: function() {
-                var parentSelector = this._findSelector();
+        attached: function() {
+            var parentSelector = this._findSelector();
 
-                if (parentSelector != null) {
-                    if (this._isSelectedInSelector(parentSelector)) {
-                        this._addContent();
-                    } else {
-                        var cb = function(event) {
-                            if (event.detail.item == this) {
-                                this._addContent();
-                                parentSelector.removeEventListener('iron-select', cb);
-                            }
-                        }.bind(this);
-
-                        parentSelector.addEventListener('iron-select', cb);
-                    }
-                } else {
+            if (parentSelector != null) {
+                if (this._isSelectedInSelector(parentSelector)) {
                     this._addContent();
-                }
-            },
+                } else {
+                    var cb = function(event) {
+                        if (event.detail.item == this) {
+                            this._addContent();
+                            parentSelector.removeEventListener('iron-select', cb);
+                        }
+                    }.bind(this);
 
-            insertContent: function() {
-                this.content = document.createElement(this.element);
-                for (var key in this.propertyPayload) {
-                    this.content[key] = this.propertyPayload[key];
+                    parentSelector.addEventListener('iron-select', cb);
                 }
+            } else {
+                this._addContent();
+            }
+        },
+
+        insertContent: function() {
+            this.content = document.createElement(this.element);
+            for (var key in this.propertyPayload) {
+                this.content[key] = this.propertyPayload[key];
+            }
 console.log("Inserting ", this.content)
 
-                this.fire('rf-lazy-pre-insert', {element: this.content});
+            this.fire('rf-lazy-pre-insert', {element: this.content});
 
-                Polymer.dom(this).innerHTML = "";
-                Polymer.dom(this).appendChild(this.content);
-                Polymer.dom(this).flush();
+            Polymer.dom(this).innerHTML = "";
+            Polymer.dom(this).appendChild(this.content);
+            Polymer.dom(this).flush();
 
-                this.fire('rf-lazy-insert', {element: this.content});
-            },
+            this.fire('rf-lazy-insert', {element: this.content});
+        },
 
-            _addContent: function() {
-                if (!this.element) {
-                    this.element = this.import.split('/').slice(-1)[0].replace('.html', '');
+        _addContent: function() {
+            if (!this.element) {
+                this.element = this.import.split('/').slice(-1)[0].replace('.html', '');
+            }
+            this.importHref(this.import, function(event) {
+                this.insertContent();
+            }, function(err) {
+                console.error(err);
+            });
+        },
+
+        _findSelector: function() {
+            var selector = Polymer.dom(this).parentNode;
+
+            if ('selected' in selector && 'items' in selector) {
+                return selector;
+            }
+
+            return null;
+        },
+
+        _isSelectedInSelector: function(selector) {
+            return selector.items[selector._valueToIndex(selector.selected)] == this;
+        },
+
+        _onPropertyPayloadChanged: function(newValue, oldValue) {
+            if (this.content) {
+                for (var key in (newValue || {})) {
+                    this.content[key] = newValue[key];
                 }
-                this.importHref(this.import, function(event) {
-                    this.insertContent();
-                }, function(err) {
-                    console.error(err);
-                });
-            },
-
-            _findSelector: function() {
-                var selector = Polymer.dom(this).parentNode;
-
-                if ('selected' in selector && 'items' in selector) {
-                    return selector;
-                }
-
-                return null;
-            },
-
-            _isSelectedInSelector: function(selector) {
-                return selector.items[selector._valueToIndex(selector.selected)] == this;
-            },
-
-            _onPropertyPayloadChanged: function(newValue, oldValue) {
-                if (this.content) {
-                    for (var key in (newValue || {})) {
-                        this.content[key] = newValue[key];
-                    }
-                }
-            },
-        })
-    </script>
-</dom-module>
+            }
+        },
+    })
+</script>
 {% end %}
