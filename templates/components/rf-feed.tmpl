@@ -25,10 +25,6 @@
     position: relative;
 }
 
-.list-wrapper paper-icon-button {
-    margin-top: -10px;
-}
-
 .article.read {
     color: #999;
 }
@@ -55,6 +51,7 @@
     font-size: 14px;
     line-height: 24px;
     padding-left: 0.7em;
+    font-weight: 200;
 }
 
 .feed-origin {
@@ -74,10 +71,10 @@
                 <template>
                     <div class$="[[ _computeArticleClass(item) ]]" id$="[[ item.Id ]]">
                         <div class="card layout vertical">
-                            <div class="list-wrapper layout horizontal">
+                            <div class="list-wrapper layout horizontal center">
                                 <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item) ]]" on-tap="onFavoriteToggle" data-article-id$="[[ item.Id ]]" data-feed-id$="[[ item.FeedId ]]"></paper-icon-button>
                                 <span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
-                                <span flex class="title-wrapper"  on-tap="onArticleActivate">
+                                <span flex class="title-wrapper flex"  on-tap="onArticleActivate">
                                     <span class="title" title$="[[ item.Title ]]">[[ _computeArticleTitle(item) ]]</span>
                                     <span class="short-description">[[ _computeArticleDescription(item) ]]</span>
                                 </span>
@@ -121,6 +118,7 @@
                     type: Boolean,
                     observer: '_loadingChanged',
                 },
+                feeds: Object,
                 articles: Array,
             },
             _lastUpdateTime: 0,
@@ -139,17 +137,22 @@
 
             onFeedArticlesMessage: function(event, data) {
                 if (data.arguments.Articles && data.arguments.Articles.length) {
-                    var worker = new Worker('/js/append-articles-worker.js');
+                    var worker = new Worker('/js/append-articles-worker.js'),
+                        data = {
+                            current: this.articles,
+                            newArticles: data.arguments.Articles
+                        };
 
                     worker.addEventListener('message', function(event) {
                         this.articles = event.data.articles;
                         this.loading = false;
                     }.bind(this));
 
-                    worker.postMessage({
-                        current: this.articles,
-                        newArticles: data.arguments.Articles
-                    });
+                    if (isNaN(this.tagOrId)) {
+                        data.feeds = this.feeds;
+                    }
+
+                    worker.postMessage(data);
                 } else {
                     this.noMoreArticles = true;
                     this.loading = false;
@@ -165,7 +168,6 @@
             },
 
             _tagOrIdChanged: function(tagOrId, oldValue) {
-                console.log("tagOrIdChanged", tagOrId, oldValue);
                 this.async(function() {
                     this.loading = true;
                     this.articles = null;
