@@ -169,17 +169,12 @@ rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
             _urlParser: document.createElement('a'),
 
             attached: function() {
-                this.routeToNested('feed-base', 'feed', {tagOrId: 'all'});
+                var feedElement = Polymer.dom(this.root).querySelector('rf-feed');
 
-                var feedElement = Polymer.dom(this.root).querySelector('rf-feed'),
-                    route = MoreRouting.getRoute('feed');
-
-                route.params.__subscribe(function(name, value) {
-                    if (name == 'tagOrId') {
-                        feedElement.tagOrId = value;
-                    }
-                });
-                feedElement.tagOrId = route.params.tagOrId;
+                this.defaultNestedRoute('feed-base', 'feed', {tagOrId: 'all'});
+                this.routeParamObserver('feed', 'tagOrId', function(value) {
+                    feedElement.tagOrId = value;
+                }.bind(this));
             },
 
             feedUrlFor: function(tagOrId, prefix) {

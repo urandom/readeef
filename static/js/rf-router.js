@@ -164,7 +164,7 @@
     };
 
     root.NestedRouteBehavior = {
-        routeToNested: function(parentName, nestedName, nestedParams) {
+        defaultNestedRoute: function(parentName, nestedName, nestedParams) {
             if (!MoreRouting.isCurrentUrl(nestedName)) {
                 MoreRouting.navigateTo(nestedName, nestedParams || {});
             }
@@ -182,6 +182,18 @@
                     }.bind(this));
                 }
             }.bind(this));
+        },
+
+        routeParamObserver: function(routeName, param, cb) {
+            var route = MoreRouting.getRoute(routeName);
+
+            route.params.__subscribe(function(name, value) {
+                if (name == param) {
+                    cb(value);
+                }
+            });
+
+            cb(route.params[param]);
         },
     };
 

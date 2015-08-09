@@ -1,0 +1,41 @@
+{% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+
+<link rel="import" href="/component/rf-api">
+
+<dom-module id="rf-article">
+    <style>
+    </style>
+    <template>
+        <h1>Article</h1>
+    </template>
+
+    <script>
+        "use strict";
+        Polymer({
+            is: "rf-article",
+            properties: {
+                user: Object,
+
+                _article: {
+                    type: Object,
+                    observer: '_articleChanged',
+                },
+                _previous: Object,
+                _next: Object,
+            },
+
+            setArticles: function(article, previous, next) {
+                this._previous = previous;
+                this._next = next;
+                this._article = article;
+            },
+
+            _articleChanged: function(article, oldValue) {
+                console.log(article);
+            },
+
+        })
+    </script>
+</dom-module>
+{% end %}

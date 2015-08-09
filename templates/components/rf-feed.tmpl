@@ -1,11 +1,14 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/iron-list/iron-list.html">
+<link rel="import" href="/dist/iron-pages/iron-pages.html">
+<link rel="import" href="/dist/more-routing/more-routing.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/paper-spinner/paper-spinner.html">
 
 <link rel="import" href="/component/rf-api">
+<link rel="import" href="/component/rf-article">
 
 <dom-module id="rf-feed">
     <style>
@@ -66,27 +69,33 @@
 }
     </style>
     <template>
-        <div class="list-container">
-            <iron-list items="[[ articles ]]">
-                <template>
-                    <div class$="[[ _computeArticleClass(item) ]]" id$="[[ item.Id ]]">
-                        <div class="card layout vertical">
-                            <div class="list-wrapper layout horizontal center">
-                                <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item) ]]" on-tap="onFavoriteToggle" data-article-id$="[[ item.Id ]]" data-feed-id$="[[ item.FeedId ]]"></paper-icon-button>
-                                <span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
-                                <span flex class="title-wrapper flex"  on-tap="onArticleActivate">
-                                    <span class="title" title$="[[ item.Title ]]">[[ _computeArticleTitle(item) ]]</span>
-                                    <span class="short-description">[[ _computeArticleDescription(item) ]]</span>
-                                </span>
-                                <span class="publish-date"  on-tap="onArticleActivate">[[ item.RelativeDate ]]</span>
+        <more-route-selector>
+            <iron-pages>
+                <div route="feed" class="list-container">
+                    <iron-list items="[[ articles ]]">
+                        <template>
+                            <div class$="[[ _computeArticleClass(item) ]]" id$="[[ item.Id ]]" data-feed-id$="[[ item.FeedId ]]">
+                                <div class="card layout vertical">
+                                    <div class="list-wrapper layout horizontal center">
+                                        <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
+                                        <span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
+                                        <span flex class="title-wrapper flex"  on-tap="onArticleActivate">
+                                            <span class="title" title$="[[ item.Title ]]">[[ _computeArticleTitle(item) ]]</span>
+                                            <span class="short-description">[[ _computeArticleDescription(item) ]]</span>
+                                        </span>
+                                        <span class="publish-date"  on-tap="onArticleActivate">[[ item.RelativeDate ]]</span>
+                                    </div>
+                                    <!-- allow the inner elements to receiver pointer events -->
+                                    <paper-ripple style="pointer-events: none;"></paper-ripple>
+                                </div>
                             </div>
-                            <!-- allow the inner elements to receiver pointer events -->
-                            <paper-ripple style="pointer-events: none;"></paper-ripple>
-                        </div>
-                    </div>
-                </template>
-            </iron-list>
-        </div>
+                        </template>
+                    </iron-list>
+                </div>
+                <rf-article route="article" user="[[ user ]]" id="article"></rf-article>
+            </iron-pages>
+        </more-route-selector>
+        
         <div class="layout vertical center" hidden$="[[ !loading ]]">
             <paper-spinner id="loading-spinner"></paper-spinner>
         </div>
@@ -165,6 +174,25 @@
             },
 
             onArticleActivate: function(event) {
+                var el = Polymer.dom(event.target), feedId = null, articleId = null;
+
+                while (el = el.parentNode) {
+                    if (el.matches('[data-feed-id]')) {
+                        feedId = el.getAttribute('data-feed-id');
+                        articleId = el.id;
+                        break;
+                    }
+                }
+
+                if (articleId !== null) {
+                    for (var i = 0, a; a = this.articles[i]; ++i) {
+                        if (a.Id == articleId) {
+                            this.$.article.setArticles(a, this.articles[i-1], this.articles[i+1]);
+                            break;
+                        }
+                    }
+                    MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: articleId});
+                }
             },
 
             _tagOrIdChanged: function(tagOrId, oldValue) {
