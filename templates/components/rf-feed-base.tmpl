@@ -3,6 +3,7 @@
 <link rel="import" href="/dist/iron-icon/iron-icon.html">
 <link rel="import" href="/dist/iron-icons/iron-icons.html">
 <link rel="import" href="/dist/iron-signals/iron-signals.html">
+<link rel="import" href="/dist/iron-pages/iron-pages.html">
 <link rel="import" href="/dist/more-routing/more-routing.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
@@ -52,6 +53,11 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
     background: var(--paper-fab-notify-background);
     color: var(--text-primary-color-inverse);
+}
+
+rf-app-scaffold /deep/ .main-title-container paper-icon-button {
+    margin-top: -8px;
+    margin-left: -8px;
 }
 
 /deep/ .feed-favicon {
@@ -133,6 +139,11 @@ rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
             </div>
             <div class="main-title">
                 <template>
+                    <more-route-selector>
+                        <iron-pages style="display: inline-block;">
+                            <paper-icon-button route="article" icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
+                        </iron-pages>
+                    </more-route-selector>
                     Title
                     <paper-fab icon="refresh" on-tap="onRefresh" hidden$="[[ narrow ]]"></paper-fab>
                 </template>
@@ -251,6 +262,10 @@ rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
                     element.icon = collapser.opened ? 'expand-more' : 'expand-less';
                 }
                 collapser.toggle();
+            },
+
+            onArticleUp: function() {
+                MoreRouting.navigateTo('feed', {tagOrId: MoreRouting.getRoute('feed').params.tagOrId});
             },
 
             onRefresh: function() {

@@ -75,7 +75,7 @@
                     <iron-list items="[[ articles ]]">
                         <template>
                             <div class$="[[ _computeArticleClass(item) ]]" id$="[[ item.Id ]]" data-feed-id$="[[ item.FeedId ]]">
-                                <div class="card layout vertical">
+                                <div class="card layout vertical" on-tap="onArticleActivate">
                                     <div class="list-wrapper layout horizontal center">
                                         <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
                                         <span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
@@ -83,7 +83,7 @@
                                             <span class="title" title$="[[ item.Title ]]">[[ _computeArticleTitle(item) ]]</span>
                                             <span class="short-description">[[ _computeArticleDescription(item) ]]</span>
                                         </span>
-                                        <span class="publish-date"  on-tap="onArticleActivate">[[ item.RelativeDate ]]</span>
+                                        <span class="publish-date" on-tap="onArticleActivate">[[ item.RelativeDate ]]</span>
                                     </div>
                                     <!-- allow the inner elements to receiver pointer events -->
                                     <paper-ripple style="pointer-events: none;"></paper-ripple>
@@ -92,7 +92,7 @@
                         </template>
                     </iron-list>
                 </div>
-                <rf-article route="article" user="[[ user ]]" id="article"></rf-article>
+                <rf-article route="article" user="[[ user ]]" id="article" on-next-article="onNextArticle" on-previous-article="onPreviousArticle"></rf-article>
             </iron-pages>
         </more-route-selector>
         
@@ -193,6 +193,11 @@
                     }
                     MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: articleId});
                 }
+            },
+
+            onFavoriteToggle: function(event) {
+                event.preventDefault();
+                event.stopPropagation();
             },
 
             _tagOrIdChanged: function(tagOrId, oldValue) {

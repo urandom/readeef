@@ -193,7 +193,9 @@
                 }
             });
 
-            cb(route.params[param]);
+            if (route.active) {
+                cb(route.params[param]);
+            }
         },
     };
 
