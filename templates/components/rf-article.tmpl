@@ -5,15 +5,42 @@
 
 <dom-module id="rf-article">
     <style>
+.articles-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.article {
+    width: 100%;
+    margin: 8px;
+}
+
+#previous-article {
+    -webkit-transform: translate3d(-100%, 0px, 0px);
+    transform: translate3d(-100%, 0px, 0px);
+}
+
+#next-article {
+    -webkit-transform: translate3d(100%, 0px, 0px);
+    transform: translate3d(100%, 0px, 0px);
+}
     </style>
     <template>
-        <h1>Article</h1>
+        <div class="articles-container layout horizontal">
+            <div class="article" id="previous-article"></div>
+            <div class="article" id="active-article"></div>
+            <div class="article" id="next-article"></div>
+            <content></content>
+        </div>
     </template>
 
     <script>
         "use strict";
         Polymer({
             is: "rf-article",
+            behaviors: [
+                Polymer.Templatizer
+            ],
             properties: {
                 user: Object,
 
@@ -25,14 +52,67 @@
                 _next: Object,
             },
 
+            ready: function() {
+                if (!this.ctor) {
+                    var template = Polymer.dom(this).querySelector('template');
+                    this.templatize(template);
+                }
+            },
+
             setArticles: function(article, previous, next) {
+                if (article.Id == this._article && this._article.Id) {
+                    return;
+                }
+
+                var direction = 0;
+                if (article.Id == this._previous && this._previous.Id) {
+                    direction = -1
+                } else if (article.Id == this._next && this._next.Id) {
+                    direction = 1;
+                }
+
                 this._previous = previous;
                 this._next = next;
                 this._article = article;
+
+                this._debounceTemplate(this._render);
             },
 
             _articleChanged: function(article, oldValue) {
                 console.log(article);
+            },
+
+            _render: function() {
+                if (this._previous) {
+                    this.$['previous-article'].innerHTML = '';
+
+                    var inst = this._generateArticle(this._previous);
+                    Polymer.dom(this.$['previous-article']).appendChild(inst.root);
+                }
+
+                if (this._next) {
+                    this.$['next-article'].innerHTML = '';
+
+                    var inst = this._generateArticle(this._next);
+                    Polymer.dom(this.$['next-article']).appendChild(inst.root);
+                }
+
+                this.$['active-article'].innerHTML = '';
+                var inst = this._generateArticle(this._article);
+                Polymer.dom(this.$['active-article']).appendChild(inst.root);
+
+                Polymer.dom(this).flush();
+            },
+
+            _generateArticle: function(article) {
+                var model = {
+                    article: article,
+                    summarized: false,
+                    topImage: null,
+                    keyPoints: [],
+                }
+
+                return this.stamp(model);
             },
 
         })
