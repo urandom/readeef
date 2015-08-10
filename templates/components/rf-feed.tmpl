@@ -17,8 +17,10 @@
     margin: 16px 0 8px;
 }
 
-.card {
+.card,
+rf-article /deep/ .card {
     @apply(--card-style);
+    @apply(--shadow-elevation-4dp);
     padding: 8px;
     margin-bottom: 16px;
 }
@@ -68,6 +70,19 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+rf-article /deep/ .article-description img {
+    max-width: 100%;
+    height: auto;
+}
+
+rf-article[narrow] /deep/ .article-description object,
+rf-article[narrow] /deep/ .article-description iframe {
+    max-width: 100%;
+    width: auto;
+    height: auto;
+}
+
     </style>
     <template>
         <more-route-selector>
@@ -93,7 +108,7 @@
                         </template>
                     </iron-list>
                 </div>
-                <rf-article route="article" user="[[ user ]]" id="article" on-next-article="onNextArticle" on-previous-article="onPreviousArticle">
+                <rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" on-next-article="onNextArticle" on-previous-article="onPreviousArticle">
                     <template>
                         <div class="article-detail">
                             <div class="card layout vertical">
@@ -172,6 +187,7 @@
                 },
                 feeds: Object,
                 articles: Array,
+                narrow: Boolean,
             },
             _lastUpdateTime: 0,
             _tagStripper: document.createElement('div'),

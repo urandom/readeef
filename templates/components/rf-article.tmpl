@@ -12,7 +12,18 @@
 
 .article {
     width: 100%;
-    margin: 8px;
+    margin-top: 8px;
+    display: none;
+    position: absolute;
+    top: 0;
+}
+
+#active-article {
+    width: calc(100% - 16px);
+    margin-left: 8px;
+    margin-right: 8px;
+    position: relative;
+    display: block;
 }
 
 #previous-article {
@@ -43,6 +54,10 @@
             ],
             properties: {
                 user: Object,
+                narrow: {
+                    type: Boolean,
+                    reflectToAttribute: true,
+                },
 
                 _article: {
                     type: Object,
@@ -112,7 +127,44 @@
                     keyPoints: [],
                 }
 
-                return this.stamp(model);
+                return this._stylizeArticleDescription(this.stamp(model), model);
+            },
+
+            _stylizeArticleDescription: function(inst, model) {
+                if (model.summarized) {
+                    return inst;
+                }
+
+                var description = inst.root.querySelector('.article-description'),
+                    imageStyler = function() {
+                        if (image.width < 300) {
+                            (image.parentNode || description).classList.add('clearfix');
+                            image.style.float = "right";
+                        }
+                    }, image;
+
+                description.innerHTML = model.formatted ? model.formattedDescription : model.article.Description;
+                image = description.querySelector('img');
+
+                if (image) {
+                    if (image.complete) {
+                        imageStyler();
+                    } else {
+                        image.addEventListener('load', imageStyler);
+                    }
+                }
+
+                Array.prototype.forEach.call(
+                    description.querySelectorAll('img'),
+                    function(element) {
+                        element.style.width = 'auto';
+                        element.style.height = 'auto';
+                    }
+                );
+
+                Polymer.dom.flush();
+
+                return inst;
             },
 
         })
