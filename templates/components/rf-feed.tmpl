@@ -39,6 +39,8 @@ rf-article /deep/ .card {
     margin-right: 1em;
     margin-top: 0.3em;
     margin-bottom: 0.3em;
+    border-radius: 2px;
+    @apply(--shadow-elevation-2dp);
 }
 
 .article .title-wrapper .short-description {
@@ -288,13 +290,13 @@ rf-article[narrow] /deep/ .article-description iframe {
                 if (articleId !== null) {
                     for (var i = 0, a; a = this.articles[i]; ++i) {
                         if (a.Id == articleId) {
-                            this.$.article.setArticles(a, this.articles[i-1], this.articles[i+1], i);
+                            this.async(function() {
+                                this.$.article.setArticles(a, this.articles[i-1], this.articles[i+1], i);
+                                MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: articleId});
+                            }.bind(this), 250);
                             break;
                         }
                     }
-                    this.async(function() {
-                        MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: articleId});
-                    }.bind(this), 250);
                 }
             },
 
