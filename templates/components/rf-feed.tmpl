@@ -76,13 +76,22 @@ rf-article /deep/ .article-description img {
     height: auto;
 }
 
+rf-article /deep/ .article-link {
+    position: relative;
+    margin: 0 0.29em;
+    padding: 0.7em 0.57em;
+    text-transform: uppercase;
+    text-decoration: none;
+    text-align: center;
+    border-radius: 3px;
+}
+
 rf-article[narrow] /deep/ .article-description object,
 rf-article[narrow] /deep/ .article-description iframe {
     max-width: 100%;
     width: auto;
     height: auto;
 }
-
     </style>
     <template>
         <more-route-selector>
@@ -142,7 +151,10 @@ rf-article[narrow] /deep/ .article-description iframe {
                                     </div>
 
                                     <div class="article-buttons layout horizontal">
-                                        <a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item) ]]" class="article-link flex">View</a>
+                                        <a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item) ]]" class="article-link flex">
+                                            View
+                                            <paper-ripple></paper-ripple>
+                                        </a>
                                         <paper-button class="flex" on-tap="onArticleSummarize" toggles active="[[ _computeArticleToggleSummarize(item) ]]">Summarize</paper-button>
                                         <paper-button class="flex" on-tap="onArticleFormat" toggles active="[[ _computeArticleToggleFormat(item) ]]">Format</paper-button>
                                     </div>
@@ -317,6 +329,10 @@ rf-article[narrow] /deep/ .article-description iframe {
                         item.Hit.fragments.Description :
                         item.Description
                     );
+            },
+
+            _computeArticleTarget: function(item) {
+                return "feed-article-" + item.article.Id;
             },
 
             _stripTags: function(html) {
