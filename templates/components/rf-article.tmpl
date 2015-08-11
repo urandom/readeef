@@ -49,6 +49,32 @@
 (function() {
     "use strict";
 
+     function ordinal(value) {
+        var str = value.toString(), suff = str.slice(-1), ord = '';
+
+        switch (suff) {
+        case '1':
+            ord = str.slice(-2) == '11' ? 'th' : 'st';
+            break;
+        case '2':
+            ord = str.slice(-2) == '12' ? 'th' : 'nd';
+            break;
+        case '3':
+            ord = str.slice(-2) == '13' ? 'th' : 'rd';
+            break;
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+        case '0':
+            ord = 'th';
+            break;
+        }
+        return value + ord;
+    }
+
     Polymer({
         is: "rf-article",
         behaviors: [
@@ -67,6 +93,7 @@
             },
             _previous: Object,
             _next: Object,
+            _articleIndex: Number,
         },
 
         created: function() {
@@ -80,7 +107,7 @@
             }
         },
 
-        setArticles: function(article, previous, next) {
+        setArticles: function(article, previous, next, index) {
             if (article.Id == this._article && this._article.Id) {
                 return;
             }
@@ -95,6 +122,7 @@
             this._previous = previous;
             this._next = next;
             this._article = article;
+            this._articleIndex = index;
 
             this._debounceTemplate(this._render);
         },
@@ -107,7 +135,7 @@
             if (this._previous) {
                 this.$['previous-article'].innerHTML = '';
 
-                var inst = this._generateArticle(this._previous, 0);
+                var inst = this._generateArticle(this._previous, -1);
                 this._instances[0] = inst;
                 Polymer.dom(this.$['previous-article']).appendChild(inst.root);
             } else {
@@ -117,7 +145,7 @@
             if (this._next) {
                 this.$['next-article'].innerHTML = '';
 
-                var inst = this._generateArticle(this._next, 2);
+                var inst = this._generateArticle(this._next, 1);
                 this._instances[2] = inst;
                 Polymer.dom(this.$['next-article']).appendChild(inst.root);
             } else {
@@ -125,20 +153,22 @@
             }
 
             this.$['active-article'].innerHTML = '';
-            var inst = this._generateArticle(this._article, 1);
+            var inst = this._generateArticle(this._article, 0);
             this._instances[1] = inst;
             Polymer.dom(this.$['active-article']).appendChild(inst.root);
 
             Polymer.dom(this).flush();
         },
 
-        _generateArticle: function(article, position) {
+        _generateArticle: function(article, direction) {
+            var index = this._articleIndex + direction;
             var model = {
                 article: article,
                 summarized: false,
                 topImage: null,
                 keyPoints: [],
-                position: position,
+                index: index,
+                ordinalPosition: ordinal(index + 1),
             }
 
             var inst = this.stamp(null);

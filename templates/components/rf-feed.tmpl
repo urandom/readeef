@@ -26,8 +26,6 @@ rf-article /deep/ .card {
 }
 
 .card > .list-wrapper {
-    height: 32px;
-    line-height: 32px;
     position: relative;
 }
 
@@ -35,7 +33,23 @@ rf-article /deep/ .card {
     color: #999;
 }
 
-.article .title-wrapper {
+.article .title-wrapper .top-image {
+    float: left;
+    max-width: 8em;
+    margin-right: 1em;
+    margin-top: 0.3em;
+    margin-bottom: 0.3em;
+}
+
+.article .title-wrapper .short-description {
+    max-height: 6.0em;
+    line-height: 1.25em;
+    word-wrap: break-word;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.article .title-wrapper .title {
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -48,16 +62,20 @@ rf-article /deep/ .card {
 
 .short-description {
     font-size: 12px;
-    line-height: 24px;
-    padding-left: 1em;
+    line-height: 14px;
     font-weight: 200;
 }
 
 .publish-date {
-    font-size: 14px;
-    line-height: 24px;
-    padding-left: 0.7em;
+    font-size: 12px;
+    font-style: italic;
+    line-height: 14px;
     font-weight: 200;
+}
+
+.misc-info {
+    width: 80px;
+    padding-left: 0.5em;
 }
 
 .feed-origin {
@@ -69,6 +87,12 @@ rf-article /deep/ .card {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+rf-article /deep/ .index {
+    font-size: smaller;
+    font-style: italic;
+    padding-left: 0.7em;
 }
 
 rf-article /deep/ .article-description img {
@@ -103,12 +127,20 @@ rf-article[narrow] /deep/ .article-description iframe {
                                 <div class="card layout vertical" on-tap="onArticleActivate">
                                     <div class="list-wrapper layout horizontal center">
                                         <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
-                                        <span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
-                                        <span flex class="title-wrapper flex"  on-tap="onArticleActivate">
+                                        <span class="title-wrapper flex layout vertical"  on-tap="onArticleActivate">
                                             <span class="title" title$="[[ item.Title ]]">[[ _computeArticleTitle(item) ]]</span>
-                                            <span class="short-description">[[ _computeArticleDescription(item) ]]</span>
+                                            <span class="flex layout horizontal center">
+                                                <span class="short-description flex">
+                                                    <img src$="[[ _computeArticleTopImage(item) ]]" class="top-image">
+                                                    <span>[[ _computeArticleDescription(item) ]]</span>
+                                                    <br style="clear: both">
+                                                </span>
+                                            </span>
                                         </span>
-                                        <span class="publish-date" on-tap="onArticleActivate">[[ item.RelativeDate ]]</span>
+                                        <span class="misc-info layout vertical">
+                                            <span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
+                                            <span class="publish-date" on-tap="onArticleActivate">[[ item.RelativeDate ]]</span>
+                                        </span>
                                     </div>
                                     <!-- allow the inner elements to receiver pointer events -->
                                     <paper-ripple style="pointer-events: none;"></paper-ripple>
@@ -121,20 +153,18 @@ rf-article[narrow] /deep/ .article-description iframe {
                     <template>
                         <div class="article-detail">
                             <div class="card layout vertical">
-                                <div class="article-header layout horizontal">
+                                <div class="article-header layout horizontal center">
                                     <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
-                                    <span class="feed-origin" title$="[[ item.article.FeedOrigin ]]" hidden$="[[ !item.article.FeedOrigin ]]">[[ item.article.FeedOrigin ]]</span>
                                     <span flex class="title-wrapper layout vertical">
                                         <a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item) ]]">
                                             <span class="title" title$="[[ item.article.Title ]]">[[ item.article.Title ]]</span>
-                                            <small class="index">[[ _computeArticleOrdinalPosition(item) ]]</small>
+                                            <small class="index">[[ item.ordinalPosition ]]</small>
                                         </a>
-                                        <span class="article-narrow-header-details layout horizontal">
+                                        <span class="layout horizontal center">
                                             <span class="feed-origin" title$="[[ item.article.FeedOrigin ]]" hidden$="[[ !item.article.FeedOrigin ]]">[[ item.article.FeedOrigin ]]</span>
                                             <span class="publish-date">[[ item.article.RelativeDate ]]</span>
                                         </span>
                                     </span>
-                                    <span class="publish-date">[[ item.article.RelativeDate ]]</span>
                                 </div>
                                 <div class="article-content">
                                     <div class="article-description" hidden$="[[ item.summarized ]]"></div>
@@ -258,7 +288,7 @@ rf-article[narrow] /deep/ .article-description iframe {
                 if (articleId !== null) {
                     for (var i = 0, a; a = this.articles[i]; ++i) {
                         if (a.Id == articleId) {
-                            this.$.article.setArticles(a, this.articles[i-1], this.articles[i+1]);
+                            this.$.article.setArticles(a, this.articles[i-1], this.articles[i+1], i);
                             break;
                         }
                     }
@@ -331,6 +361,10 @@ rf-article[narrow] /deep/ .article-description iframe {
                     );
             },
 
+            _computeArticleTopImage: function(item) {
+                return this._findTopImage(item.Description);
+            },
+
             _computeArticleTarget: function(item) {
                 return "feed-article-" + item.article.Id;
             },
@@ -339,6 +373,14 @@ rf-article[narrow] /deep/ .article-description iframe {
                 this._tagStripper.innerHTML = html;
 
                 return this._tagStripper.textContent || "";
+            },
+
+            _findTopImage: function(html) {
+                this._tagStripper.innerHTML = html;
+
+                var img = this._tagStripper.querySelector('img');
+
+                return img && img.src;
             },
 
             _updateFeedArticles: function() {
