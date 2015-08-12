@@ -58,7 +58,8 @@ rf-article /deep/ .card {
 }
 
 .title {
-    font-size: 16px;
+    font-size: 1.2em;
+    font-weight: 500;
     line-height: 24px;
 }
 
@@ -68,38 +69,32 @@ rf-article /deep/ .card {
     font-weight: 200;
 }
 
-.publish-date {
-    font-size: 12px;
-    font-style: italic;
-    line-height: 14px;
-    font-weight: 200;
-}
-
 .misc-info {
     width: 80px;
     padding-left: 0.5em;
 }
 
-.feed-origin {
-    font-size: 10px;
-    line-height: 24px;
-    font-weight: 200;
-    padding-right: 1em;
-    width: 80px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 rf-article /deep/ .index {
+    font-family: "Roboto Condensed", serif;
     font-size: smaller;
     font-style: italic;
     padding-left: 0.7em;
 }
 
+.short-description,
+rf-article /deep/ .article-description {
+    font-family: "Roboto Slab", sans-serif;
+}
+
 rf-article /deep/ .article-description img {
     max-width: 100%;
     height: auto;
+}
+
+rf-article /deep/ .article-anchor {
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1.2em;
 }
 
 rf-article /deep/ .article-link {
@@ -118,6 +113,45 @@ rf-article[narrow] /deep/ .article-description iframe {
     width: auto;
     height: auto;
 }
+
+.feed-origin,
+rf-article /deep/ .feed-origin {
+    font-family: "Roboto Condensed", serif;
+    font-size: 11px;
+    line-height: 24px;
+    font-weight: 200;
+    padding-right: 1em;
+    width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.publish-date,
+rf-article /deep/ .publish-date {
+    font-family: "Roboto Condensed", sans-serif;
+    font-size: 12px;
+    font-style: italic;
+    line-height: 14px;
+}
+
+rf-article /deep/ .article-control {
+    font-family: "Roboto Condensed", sans-serif;
+}
+
+@media(min-width: 768px) {
+    rf-article /deep/ .card {
+        padding: 16px;
+    }
+}
+
+
+@media(min-width: 1350px) {
+    rf-article /deep/ .card {
+        padding: 32px;
+    }
+}
+
     </style>
     <template>
         <more-route-selector>
@@ -158,7 +192,7 @@ rf-article[narrow] /deep/ .article-description iframe {
                                 <div class="article-header layout horizontal center">
                                     <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
                                     <span flex class="title-wrapper layout vertical">
-                                        <a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item) ]]">
+                                        <a class="article-anchor" href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item) ]]">
                                             <span class="title" title$="[[ item.article.Title ]]">[[ item.article.Title ]]</span>
                                             <small class="index">[[ item.ordinalPosition ]]</small>
                                         </a>
@@ -183,12 +217,12 @@ rf-article[narrow] /deep/ .article-description iframe {
                                     </div>
 
                                     <div class="article-buttons layout horizontal">
-                                        <a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item) ]]" class="article-link flex">
+                                        <a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item) ]]" class="article-link flex article-control">
                                             View
                                             <paper-ripple></paper-ripple>
                                         </a>
-                                        <paper-button class="flex" on-tap="onArticleSummarize" toggles active="[[ _computeArticleToggleSummarize(item) ]]">Summarize</paper-button>
-                                        <paper-button class="flex" on-tap="onArticleFormat" toggles active="[[ _computeArticleToggleFormat(item) ]]">Format</paper-button>
+                                        <paper-button class="flex article-control" on-tap="onArticleSummarize" toggles active="[[ _computeArticleToggleSummarize(item) ]]">Summarize</paper-button>
+                                        <paper-button class="flex article-control" on-tap="onArticleFormat" toggles active="[[ _computeArticleToggleFormat(item) ]]">Format</paper-button>
                                     </div>
                                 </div>
                             </div>
