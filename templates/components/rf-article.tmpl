@@ -16,24 +16,31 @@
     display: none;
     position: absolute;
     top: 0;
+    margin-left: 8px;
+    margin-right: 8px;
+    width: calc(100% - 16px);
+    z-index: 1;
+}
+
+.article.css-animating {
+    -webkit-transition: -webkit-transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #active-article {
-    width: calc(100% - 16px);
-    margin-left: 8px;
-    margin-right: 8px;
     position: relative;
     display: block;
+    z-index: 0;
 }
 
 #previous-article {
-    -webkit-transform: translate3d(-100%, 0px, 0px);
-    transform: translate3d(-100%, 0px, 0px);
+    -webkit-transform: translate3d(-105%, 0px, 0px);
+    transform: translate3d(-105%, 0px, 0px);
 }
 
 #next-article {
-    -webkit-transform: translate3d(100%, 0px, 0px);
-    transform: translate3d(100%, 0px, 0px);
+    -webkit-transform: translate3d(105%, 0px, 0px);
+    transform: translate3d(105%, 0px, 0px);
 }
     </style>
     <template>
