@@ -1,5 +1,6 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/neon-animation/web-animations.html">
 
 <link rel="import" href="/component/rf-api">
 
@@ -11,43 +12,43 @@
 }
 
 .article {
-    width: 100%;
-    margin-top: 8px;
-    display: none;
+    width: calc(100% - 16px);
     position: absolute;
     top: 0;
+    left: 0;
+    margin-top: 8px;
     margin-left: 8px;
     margin-right: 8px;
-    width: calc(100% - 16px);
     z-index: 1;
 }
 
-.article.css-animating {
-    -webkit-transition: -webkit-transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#active-article {
+.active-article {
     position: relative;
-    display: block;
     z-index: 0;
 }
 
-#previous-article {
+.previous-article {
     -webkit-transform: translate3d(-105%, 0px, 0px);
     transform: translate3d(-105%, 0px, 0px);
 }
 
-#next-article {
+.next-article {
     -webkit-transform: translate3d(105%, 0px, 0px);
     transform: translate3d(105%, 0px, 0px);
+}
+
+.active-article.from-top,
+.previous-article.from-top,
+.next-article.from-top {
+    -webkit-transform: translate3d(0px, -105%, 0px);
+    transform: translate3d(0px, -105%, 0px);
 }
     </style>
     <template>
         <div class="articles-container layout horizontal">
-            <div class="article" id="previous-article"></div>
-            <div class="article" id="active-article"></div>
-            <div class="article" id="next-article"></div>
+            <div class="article previous-article" hidden></div>
+            <div class="article active-article"></div>
+            <div class="article next-article" hidden></div>
             <content></content>
         </div>
     </template>
@@ -56,30 +57,89 @@
 (function() {
     "use strict";
 
-     function ordinal(value) {
+    var animations = {};
+
+    function ordinal(value) {
         var str = value.toString(), suff = str.slice(-1), ord = '';
 
         switch (suff) {
-        case '1':
-            ord = str.slice(-2) == '11' ? 'th' : 'st';
-            break;
-        case '2':
-            ord = str.slice(-2) == '12' ? 'th' : 'nd';
-            break;
-        case '3':
-            ord = str.slice(-2) == '13' ? 'th' : 'rd';
-            break;
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        case '8':
-        case '9':
-        case '0':
-            ord = 'th';
-            break;
+            case '1':
+                ord = str.slice(-2) == '11' ? 'th' : 'st';
+                break;
+            case '2':
+                ord = str.slice(-2) == '12' ? 'th' : 'nd';
+                break;
+            case '3':
+                ord = str.slice(-2) == '13' ? 'th' : 'rd';
+                break;
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case '0':
+                ord = 'th';
+                break;
         }
         return value + ord;
+    }
+
+    function slideFromTop(element) {
+        animations[element.id] = element.animate([
+            {opacity: 0.5, transform: "translate3d(0px, -105%, 0px)"},
+            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+    }
+
+    function slideFromLeft(left, active, cb) {
+        left.removeAttribute('hidden');
+        animations[left.id] = left.animate([
+            {opacity: 0.5, transform: "translate3d(-105%, 0px, 0px)"},
+            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+
+        animations[active.id] = active.animate([
+            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
+            {opacity: 0.5, transform: "translate3d(105%, 0px, 0px)"},
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+
+        animations[active.id].onfinish = cb;
+    }
+
+    function slideFromRight(active, right, cb) {
+        right.removeAttribute('hidden');
+        animations[right.id] = right.animate([
+            {opacity: 0.5, transform: "translate3d(105%, 0px, 0px)"},
+            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+
+        animations[active.id] = active.animate([
+            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
+            {opacity: 0.5, transform: "translate3d(-105%, 0px, 0px)"},
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+
+        animations[active.id].onfinish = cb;
+    }
+
+    function clearAnimationsAndRun(cb) {
+        var added = false;
+        for (var key in animations) {
+            if (animations[key].playState == 'running') {
+                if (!added) {
+                    added = true;
+                    animations[key].addEventListener('finish', cb)
+                }
+                animations[key].finish();
+            } else {
+                animations[key].cancel();
+            }
+            delete animations[key];
+        }
+
+        if (!added) {
+            cb();
+        }
     }
 
     Polymer({
@@ -94,10 +154,7 @@
                 reflectToAttribute: true,
             },
 
-            _article: {
-                type: Object,
-                observer: '_articleChanged',
-            },
+            _article: Object,
             _previous: Object,
             _next: Object,
             _articleIndex: Number,
@@ -120,9 +177,9 @@
             }
 
             var direction = 0;
-            if (article.Id == this._previous && this._previous.Id) {
+            if (this._previous && article.Id == this._previous.Id) {
                 direction = -1
-            } else if (article.Id == this._next && this._next.Id) {
+            } else if (this._next && article.Id == this._next.Id) {
                 direction = 1;
             }
 
@@ -131,38 +188,104 @@
             this._article = article;
             this._articleIndex = index;
 
-            this._debounceTemplate(this._render);
-        },
-
-        _articleChanged: function(article, oldValue) {
-            console.log(article);
-        },
-
-        _render: function() {
-            if (this._previous) {
-                this.$['previous-article'].innerHTML = '';
-
-                var inst = this._generateArticle(this._previous, -1);
-                this._instances[0] = inst;
-                Polymer.dom(this.$['previous-article']).appendChild(inst.root);
+            if (direction === 0) {
+                this._debounceTemplate(this._render);
+                this.debounce('animation', function() {
+                    clearAnimationsAndRun(function() {
+                        slideFromTop(this.querySelector('.active-article')) ;
+                    }.bind(this))
+                }.bind(this));
             } else {
+                if (direction === 1) {
+                    clearAnimationsAndRun(function() {
+                        slideFromRight(this.querySelector('.active-article'), this.querySelector('.next-article'), function() {
+                            this._render(direction);
+                        }.bind(this));
+                    }.bind(this));
+                } else {
+                    clearAnimationsAndRun(function() {
+                        slideFromLeft(this.querySelector('.previous-article'), this.querySelector('.active-article'), function() {
+                            this._render(direction);
+                        }.bind(this));
+                    }.bind(this));
+                }
+            }
+        },
+
+        _render: function(direction) {
+            var active = this.querySelector('.active-article'),
+                previous = this.querySelector('.previous-article'),
+                next = this.querySelector('.next-article');
+            if (direction === 1) {
+                active.classList.remove('active-article');
+                active.classList.add('previous-article');
+
+                next.classList.remove('next-article');
+                next.classList.add('active-article');
+
+                previous.classList.remove('previous-article');
+                previous.classList.add('next-article');
+
+                this._instances[0] = this._instances[1];
+                this._instances[1] = this._instances[2];
+                this._instances[2] = null;
+            } else if (direction === -1) {
+                active.classList.remove('active-article');
+                active.classList.add('next-article');
+
+                previous.classList.remove('previous-article');
+                previous.classList.add('active-article');
+
+                next.classList.remove('next-article');
+                next.classList.add('previous-article');
+
+                this._instances[2] = this._instances[1];
+                this._instances[1] = this._instances[0];
                 this._instances[0] = null;
             }
 
-            if (this._next) {
-                this.$['next-article'].innerHTML = '';
+            if (direction !== 1) {
+                if (this._previous) {
+                    var el = this.querySelector('.previous-article');
+                    el.innerHTML = '';
 
-                var inst = this._generateArticle(this._next, 1);
-                this._instances[2] = inst;
-                Polymer.dom(this.$['next-article']).appendChild(inst.root);
-            } else {
-                this._instances[2] = null;
+                    var inst = this._generateArticle(this._previous, -1);
+                    this._instances[0] = inst;
+                    Polymer.dom(el).appendChild(inst.root);
+                } else {
+                    this._instances[0] = null;
+                }
             }
 
-            this.$['active-article'].innerHTML = '';
-            var inst = this._generateArticle(this._article, 0);
-            this._instances[1] = inst;
-            Polymer.dom(this.$['active-article']).appendChild(inst.root);
+            if (direction !== -1) {
+                if (this._next) {
+                    var el = this.querySelector('.next-article');
+                    el.innerHTML = '';
+
+                    var inst = this._generateArticle(this._next, 1);
+                    this._instances[2] = inst;
+                    Polymer.dom(el).appendChild(inst.root);
+                } else {
+                    this._instances[2] = null;
+                }
+            }
+
+            if (direction !== 1 && direction !== -1) {
+                var el = this.querySelector('.active-article');
+                el.innerHTML = '';
+
+                var inst = this._generateArticle(this._article, 0);
+                this._instances[1] = inst;
+                Polymer.dom(el).appendChild(inst.root);
+            }
+
+            ['previous-article', 'active-article', 'next-article'].forEach(function(cls) {
+                var el = this.querySelector('.' + cls);
+                el.removeAttribute('style');
+                if (cls != 'active-article') {
+                    el.setAttribute('hidden', '');
+                }
+            }.bind(this));
 
             Polymer.dom(this).flush();
         },
