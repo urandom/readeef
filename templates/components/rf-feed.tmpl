@@ -267,10 +267,15 @@ rf-article /deep/ .article-control {
                 articles: Array,
                 narrow: Boolean,
             },
+            behaviors: [
+                NestedRouteBehavior,
+            ],
             _lastUpdateTime: 0,
             _tagStripper: document.createElement('div'),
 
             attached: function() {
+                this._articleIndexMap = {};
+
                 // Find the scroller that will be used by the list
                 var el = Polymer.dom(this);
                 while (el = (el.parentNode || el.host)) {
@@ -279,6 +284,13 @@ rf-article /deep/ .article-control {
                         break;
                     }
                 }
+
+                this.routeParamObserver('article', 'articleId', function(value) {
+                    var i = this._articleIndexMap[value];
+                    this.$.article.setArticles(this.articles[i], this.articles[i-1], this.articles[i+1], i);
+                }.bind(this));
+
+                document.addEventListener('keypress', this.onKeypress.bind(this), false);
             },
 
             onFeedArticlesMessage: function(event, data) {
@@ -291,6 +303,7 @@ rf-article /deep/ .article-control {
 
                     worker.addEventListener('message', function(event) {
                         this.articles = event.data.articles;
+                        this._articleIndexMap = event.data.indexMap;
                         this.loading = false;
                     }.bind(this));
 
@@ -322,21 +335,55 @@ rf-article /deep/ .article-control {
                 }
 
                 if (articleId !== null) {
-                    for (var i = 0, a; a = this.articles[i]; ++i) {
-                        if (a.Id == articleId) {
-                            this.async(function() {
-                                this.$.article.setArticles(a, this.articles[i-1], this.articles[i+1], i);
-                                MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: articleId});
-                            }.bind(this), 250);
-                            break;
-                        }
-                    }
+                    this.async(function() {
+                        MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: articleId});
+                    }.bind(this), 250);
                 }
             },
 
             onFavoriteToggle: function(event) {
                 event.preventDefault();
                 event.stopPropagation();
+            },
+
+            onKeypress: function(event) {
+                if (!MoreRouting.isCurrentUrl('feed')) {
+                    return;
+                }
+
+                var code = event.keyCode || event.charCode;
+
+                switch (code) {
+                    case 74: // J
+                    case 106: // j
+                        break;
+                    case 75: // K
+                    case 107: // k
+                        break;
+                    case 72: // H
+                    case 104: // h
+                        break;
+                    case 86: // V
+                    case 118: // v
+                        break;
+                    case 77: // M
+                    case 109: // m
+                        break;
+                    case 67: // C
+                    case 99: // c
+                        break;
+                    case 83: // S
+                    case 115: // s
+                        break;
+                    case 82: // R
+                    case 114: // r
+                        break;
+                    case 70: // F
+                    case 102: // f
+                        break;
+                    case 63: // ?
+                        break;
+                }
             },
 
             _tagOrIdChanged: function(tagOrId, oldValue) {

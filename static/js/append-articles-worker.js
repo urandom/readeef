@@ -6,7 +6,7 @@ self.addEventListener('message', function(event) {
     var articles = event.data.current || [],
         newArticles = event.data.newArticles,
         feeds = event.data.feeds,
-        articleMap = {}, feedMap;
+        articleMap = {}, indexMap = {}, feedMap;
 
     for (var i = 0, a; a = articles[i]; ++i) {
         delete a.First;
@@ -53,5 +53,9 @@ self.addEventListener('message', function(event) {
     articles[0].First = true;
     articles[articles.length - 1].Last = true;
 
-    self.postMessage({articles: articles});
+    for (var i = 0, a; a = articles[i]; ++i) {
+      indexMap[a.Id] = i
+    }
+
+    self.postMessage({articles: articles, indexMap: indexMap});
 });
