@@ -170,6 +170,31 @@
         return hadRunning;
     }
 
+    function responsiveIframe(iframe) {
+        var ratio = iframe.width && iframe.height ?
+            iframe.height / iframe.width * 100 :
+            9 / 16 * 100
+        var container = document.createElement('div');
+        container.style.position = 'relative';
+        container.style.paddingBottom = ratio + '%';
+        container.style.paddingTop = '35px';
+        container.style.height = 0;
+        container.style.overflow = 'hidden';
+
+        iframe.style.position = 'absolute';
+        iframe.style.top = 0;
+        iframe.style.left = 0;
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+
+        if (iframe.parentNode.style.width) {
+            iframe.parentNode.style.width = 'auto';
+        }
+
+        iframe.parentNode.insertBefore(container, iframe);
+        container.appendChild(iframe);
+    }
+
     Polymer({
         is: "rf-article",
         behaviors: [
@@ -382,6 +407,11 @@
                     element.style.width = 'auto';
                     element.style.height = 'auto';
                 }
+            );
+
+            Array.prototype.forEach.call(
+                description.querySelectorAll('iframe, object'),
+                responsiveIframe
             );
 
             Polymer.dom.flush();
