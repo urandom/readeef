@@ -6,9 +6,13 @@
 
 <dom-module id="rf-article">
     <style>
-.articles-container {
+#article-container {
     position: relative;
     overflow: hidden;
+
+    -webkit-transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
 }
 
 .article {
@@ -48,7 +52,7 @@
 }
     </style>
     <template>
-        <div class="articles-container layout horizontal">
+        <div id="article-container" class="layout horizontal">
             <div class="article previous-article" hidden id="article-0"></div>
             <div class="article active-article height-provider" id="article-1"></div>
             <div class="article next-article" hidden id="article-2"></div>
@@ -98,11 +102,6 @@
     function slideFromLeft(left, active, cb) {
         left.removeAttribute('hidden');
 
-        if (left.offsetHeight > active.offsetHeight) {
-            left.classList.add('height-provider');
-            active.classList.remove('height-provider');
-        }
-
         animations[left.id] = left.animate([
             {opacity: 0.3, transform: "translate3d(-105%, 0px, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
@@ -118,11 +117,6 @@
 
     function slideFromRight(active, right, cb) {
         right.removeAttribute('hidden');
-
-        if (right.offsetHeight > active.offsetHeight) {
-            right.classList.add('height-provider');
-            active.classList.remove('height-provider');
-        }
 
         animations[right.id] = right.animate([
             {opacity: 0.3, transform: "translate3d(105%, 0px, 0px)"},
@@ -314,16 +308,27 @@
                 Polymer.dom(el).appendChild(inst.root);
             }
 
+            var oldHeight = window.getComputedStyle(this.$['article-container']).getPropertyValue('height');
+
             ['previous-article', 'active-article', 'next-article'].forEach(function(cls) {
                 var el = this.querySelector('.' + cls);
                 el.removeAttribute('style');
                 if (cls == 'active-article') {
                     el.classList.add('height-provider');
+                    el.removeAttribute('hidden');
                 } else {
                     el.classList.remove('height-provider');
                     el.setAttribute('hidden', '');
                 }
             }.bind(this));
+
+            var newHeight = window.getComputedStyle(this.$['article-container']).getPropertyValue('height');
+            if (oldHeight != newHeight) {
+                this.$['article-container'].animate([
+                    {height: oldHeight},
+                    {height: newHeight},
+                ], {duration: 400, easing: 'ease'});
+            }
 
             Polymer.dom.flush();
         },
