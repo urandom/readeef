@@ -15,6 +15,15 @@
 
 }
 
+#article-container.disable-select {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
 .article {
     width: calc(100% - 16px);
     position: absolute;
@@ -212,9 +221,13 @@
             _next: Object,
             _articleIndex: Number,
         },
+        listeners: {
+            'track': 'onTrack',
+        },
 
         created: function() {
             this._instances = new Array(3);
+            this.setScrollDirection('y');
         },
 
         ready: function() {
@@ -263,6 +276,93 @@
                         this._render(direction);
                     }.bind(this));
                 }
+            }
+        },
+
+        onTrack: function(event) {
+            switch (event.detail.state) {
+                case 'start':
+                    this._trackState = {
+                        dragStart: false,
+                        previousDx: 0,
+                        previous: this.querySelector('.previous-article'),
+                        active: this.querySelector('.active-article'),
+                        next: this.querySelector('.next-article'),
+                        containerWidth: this.$['article-container'].offsetWidth,
+                    };
+                    break;
+                case 'track':
+                    var now = new Date().getTime(), dx = event.detail.dx;
+
+                    if (!this._trackState.dragStart && Math.abs(dx) > 10) {
+                        this._trackState.dragStart = true;
+                        this._trackState.previous.removeAttribute('hidden');
+                        this._trackState.next.removeAttribute('hidden');
+                        this.$['article-container'].classList.add('disable-select');
+                    }
+
+                    if (!this._trackState.dragStart) {
+                        return;
+                    }
+
+                    var distance = dx - this._trackState.previousDx;
+                    if (distance == 0) {
+                        return;
+                    }
+
+                    if (!this._trackState.dragStartTime || this._trackState.direction != (distance > 0 ? 1 : -1)) {
+                        this._trackState.dragStartTime = now;
+                        this._trackState.previousTick = now;
+                        this._trackState.previousV = 0;
+                        this._trackState.direction = distance > 0 ? 1 : -1;
+                        console.log('switching dir', this._trackState.direction);
+                    }
+
+                    if (((this._next && dx < 0) || (this._previous && dx > 0)) && Math.abs(dx) < this._trackState.containerWidth) {
+                        var tD = now - this._trackState.dragStartTime,
+                            d = now - this._trackState.previousTick;
+
+                        if (d > 0) {
+                            var v = Math.abs(distance) / d,
+                                a = Math.abs(v - this._trackState.previousV) / tD;
+
+                            this._trackState.v = v;
+                            this._trackState.a = a;
+
+                            this.translate3d(dx + 'px', 0, 0, this._trackState.active);
+                            this.translate3d(dx - this._trackState.containerWidth + 'px', 0, 0, this._trackState.previous);
+                            this.translate3d(dx + this._trackState.containerWidth + 'px', 0, 0, this._trackState.next);
+                        }
+                    }
+
+                    this._trackState.previousDx = dx;
+                    this._trackState.previousTick = now;
+                    break;
+                case 'end':
+                    this._trackState.previous.animate([
+                        {transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
+                        {transform: "translate3d(-105%, 0px, 0px)"},
+                    ], {duration: 200});
+                    this._trackState.next.animate([
+                        {transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
+                        {transform: "translate3d(105%, 0px, 0px)"},
+                    ], {duration: 200});
+                    this._trackState.active.animate([
+                        {transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
+                        {transform: "translate3d(0px, 0px, 0px)"},
+                    ], {duration: 200}).onfinish = function() {
+                        this.async(function() {
+                            this._trackState.previous.removeAttribute('style');
+                            this._trackState.active.removeAttribute('style');
+                            this._trackState.next.removeAttribute('style');
+
+                            this._trackState.previous.setAttribute('hidden', '');
+                            this._trackState.next.setAttribute('hidden', '');
+                        });
+                    }.bind(this);
+
+                    this.$['article-container'].classList.remove('disable-select');
+                    break;
             }
         },
 
