@@ -267,7 +267,11 @@
                     slideFromTop(this.querySelector('.active-article'));
                 }.bind(this));
             } else {
-                if (direction === 1) {
+                if (this._trackState && article.Id == this._trackState.selectedId) {
+                    this._debounceTemplate(function() {
+                        this._render(direction);
+                    });
+                } else if (direction === 1) {
                     slideFromRight(this.querySelector('.active-article'), this.querySelector('.next-article'), function() {
                         this._render(direction);
                     }.bind(this));
@@ -339,27 +343,89 @@
                     this._trackState.previousTick = now;
                     break;
                 case 'end':
-                    this._trackState.previous.animate([
-                        {transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
-                        {transform: "translate3d(-105%, 0px, 0px)"},
-                    ], {duration: 200});
-                    this._trackState.next.animate([
-                        {transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
-                        {transform: "translate3d(105%, 0px, 0px)"},
-                    ], {duration: 200});
-                    this._trackState.active.animate([
-                        {transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
-                        {transform: "translate3d(0px, 0px, 0px)"},
-                    ], {duration: 200}).onfinish = function() {
-                        this.async(function() {
-                            this._trackState.previous.removeAttribute('style');
-                            this._trackState.active.removeAttribute('style');
-                            this._trackState.next.removeAttribute('style');
+                    if (!this._trackState.dragStart) {
+                        return;
+                    }
 
-                            this._trackState.previous.setAttribute('hidden', '');
-                            this._trackState.next.setAttribute('hidden', '');
-                        });
-                    }.bind(this);
+                    var direction = this._trackState.direction,
+                        ratio = Math.abs(this._trackState.previousDx) / this._trackState.containerWidth;
+
+                    if (this._trackState.a > 0.001 || ratio > 0.6) {
+                        var duration, easing;
+
+                        if (ratio > 0.6) {
+                            // Sufficient distance
+                            duration = 200 * (1 - ratio);
+                            easing = 'ease';
+                        } else {
+                            // Fling
+                            duration = Math.min(200 / this._trackState.v, 50);
+                            easing = 'cubic-bezier(0, 0.83, 0.17, 1)';
+                        }
+
+                        if (direction > 0) {
+                            this._trackState.previous.animate([
+                                {transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
+                                {transform: "translate3d(0px, 0px, 0px)"},
+                            ], {duration: duration, easing: easing});
+                        }
+                        if (direction < 0) {
+                            this._trackState.next.animate([
+                                {transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
+                                {transform: "translate3d(0px, 0px, 0px)"},
+                            ], {duration: duration, easing: easing});
+                        }
+                        this._trackState.active.animate([
+                            {transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
+                            {transform: "translate3d(" + (direction > 0 ? '' : '-') + "105%, 0px, 0px)"},
+                        ], {duration: duration, easing: easing}).onfinish = function() {
+                            this.async(function() {
+                                this._trackState.previous.removeAttribute('style');
+                                this._trackState.active.removeAttribute('style');
+                                this._trackState.next.removeAttribute('style');
+
+                                this._trackState.active.setAttribute('hidden', '');
+                                if (direction > 0) {
+                                    this._trackState.previous.classList.add('height-provider');
+                                    this.translate3d(0, 0, 0, this._trackState.previous);
+
+                                    this._trackState.selectedId = this._previous.Id;
+                                } else {
+                                    this._trackState.next.classList.add('height-provider');
+                                    this.translate3d(0, 0, 0, this._trackState.next);
+
+                                    this._trackState.selectedId = this._next.Id;
+                                }
+
+                                MoreRouting.navigateTo('article', {
+                                    tagOrId: MoreRouting.getRoute('article').params.tagOrId,
+                                    articleId: this._trackState.selectedId,
+                                });
+                            });
+                        }.bind(this);
+                    } else {
+                        this._trackState.previous.animate([
+                            {transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
+                            {transform: "translate3d(-105%, 0px, 0px)"},
+                        ], {duration: 200});
+                        this._trackState.next.animate([
+                            {transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
+                            {transform: "translate3d(105%, 0px, 0px)"},
+                        ], {duration: 200});
+                        this._trackState.active.animate([
+                            {transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
+                            {transform: "translate3d(0px, 0px, 0px)"},
+                        ], {duration: 200}).onfinish = function() {
+                            this.async(function() {
+                                this._trackState.previous.removeAttribute('style');
+                                this._trackState.active.removeAttribute('style');
+                                this._trackState.next.removeAttribute('style');
+
+                                this._trackState.previous.setAttribute('hidden', '');
+                                this._trackState.next.setAttribute('hidden', '');
+                            });
+                        }.bind(this);
+                    }
 
                     this.$['article-container'].classList.remove('disable-select');
                     break;
