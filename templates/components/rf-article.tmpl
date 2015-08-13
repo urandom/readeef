@@ -11,16 +11,6 @@
     overflow: hidden;
 }
 
-#article-height-placeholder {
-    width: 100%;
-    margin-top: 8px;
-    margin-left: 8px;
-    margin-right: 8px;
-
-    -webkit-transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 .article {
     width: calc(100% - 16px);
     position: absolute;
@@ -30,6 +20,10 @@
     margin-left: 8px;
     margin-right: 8px;
     z-index: 1;
+}
+
+.article.height-provider {
+    position: relative;
 }
 
 .active-article {
@@ -56,9 +50,8 @@
     <template>
         <div class="articles-container layout horizontal">
             <div class="article previous-article" hidden id="article-0"></div>
-            <div class="article active-article" id="article-1"></div>
+            <div class="article active-article height-provider" id="article-1"></div>
             <div class="article next-article" hidden id="article-2"></div>
-            <div id="article-height-placeholder"></div>
             <content></content>
         </div>
     </template>
@@ -95,77 +88,92 @@
         return value + ord;
     }
 
-    function slideFromTop(element, placeholder) {
+    function slideFromTop(element) {
         animations[element.id] = element.animate([
             {opacity: 0.5, transform: "translate3d(0px, -105%, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
         ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
-
-        animations[element.id].onfinish = function() {
-            placeholder.style.height = element.offsetHeight + 'px';
-        };
     }
 
-    function slideFromLeft(left, active, placeholder, cb) {
+    function slideFromLeft(left, active, cb) {
         left.removeAttribute('hidden');
 
-        var maxHeight = Math.max(left.offsetHeight, active.offsetHeight);
-        if (maxHeight > 0 && maxHeight + 'px' != placeholder.style.height) {
-            placeholder.style.height = maxHeight + 'px';
+        if (left.offsetHeight > active.offsetHeight) {
+            left.classList.add('height-provider');
+            active.classList.remove('height-provider');
         }
 
         animations[left.id] = left.animate([
-            {opacity: 0.5, transform: "translate3d(-105%, 0px, 0px)"},
+            {opacity: 0.3, transform: "translate3d(-105%, 0px, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
         ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
 
         animations[active.id] = active.animate([
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
-            {opacity: 0.5, transform: "translate3d(105%, 0px, 0px)"},
+            {opacity: 0.3, transform: "translate3d(105%, 0px, 0px)"},
         ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
 
         animations[active.id].onfinish = cb;
     }
 
-    function slideFromRight(active, right, placeholder, cb) {
+    function slideFromRight(active, right, cb) {
         right.removeAttribute('hidden');
 
-        var maxHeight = Math.max(right.offsetHeight, active.offsetHeight);
-        if (maxHeight > 0 && maxHeight + 'px' != placeholder.style.height) {
-            placeholder.style.height = maxHeight + 'px'; 
+        if (right.offsetHeight > active.offsetHeight) {
+            right.classList.add('height-provider');
+            active.classList.remove('height-provider');
         }
 
         animations[right.id] = right.animate([
-            {opacity: 0.5, transform: "translate3d(105%, 0px, 0px)"},
+            {opacity: 0.3, transform: "translate3d(105%, 0px, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
         ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
 
         animations[active.id] = active.animate([
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
-            {opacity: 0.5, transform: "translate3d(-105%, 0px, 0px)"},
+            {opacity: 0.3, transform: "translate3d(-105%, 0px, 0px)"},
         ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
 
         animations[active.id].onfinish = cb;
     }
 
-    function clearAnimationsAndRun(cb) {
-        var added = false;
+    function stopRunningAnimations(finish) {
+        var hadRunning = false;
+
+        if (finish) {
+            var emitter = null;
+            for (var key in animations) {
+                if (animations[key].playState == 'running') {
+                    var oldHandler = animations[key].onfinish;
+                    if (oldHandler) {
+                        animations[key].onfinish = function() {
+                            oldHandler.apply(this, arguments);
+                            finish.apply(this, arguments);
+                        };
+                        emitter = null;
+                        break;
+                    } else {
+                        emitter = animations[key];
+                    }
+                }
+            }
+
+            if (emitter) {
+                emitter.onfinish = finish;
+            }
+        }
+
         for (var key in animations) {
             if (animations[key].playState == 'running') {
-                if (!added) {
-                    added = true;
-                    animations[key].addEventListener('finish', cb)
-                }
+                hadRunning = true;
                 animations[key].finish();
-            } else {
+            } else if (animations[key].playState != 'finished') {
                 animations[key].cancel();
             }
             delete animations[key];
         }
 
-        if (!added) {
-            cb();
-        }
+        return hadRunning;
     }
 
     Polymer({
@@ -198,6 +206,13 @@
         },
 
         setArticles: function(article, previous, next, index) {
+            var args = arguments;
+            if (stopRunningAnimations(function() {
+                this.setArticles.apply(this, args);
+            }.bind(this))) {
+                return;
+            }
+
             if (article.Id == this._article && this._article.Id) {
                 return;
             }
@@ -217,23 +232,16 @@
             if (direction === 0) {
                 this._debounceTemplate(this._render);
                 this.debounce('animation', function() {
-                    clearAnimationsAndRun(function() {
-                        slideFromTop(this.querySelector('.active-article'), this.$['article-height-placeholder']) ;
-
-                    }.bind(this))
+                    slideFromTop(this.querySelector('.active-article'));
                 }.bind(this));
             } else {
                 if (direction === 1) {
-                    clearAnimationsAndRun(function() {
-                        slideFromRight(this.querySelector('.active-article'), this.querySelector('.next-article'), this.$['article-height-placeholder'], function() {
-                            this._render(direction);
-                        }.bind(this));
+                    slideFromRight(this.querySelector('.active-article'), this.querySelector('.next-article'), function() {
+                        this._render(direction);
                     }.bind(this));
                 } else {
-                    clearAnimationsAndRun(function() {
-                        slideFromLeft(this.querySelector('.previous-article'), this.querySelector('.active-article'), this.$['article-height-placeholder'], function() {
-                            this._render(direction);
-                        }.bind(this));
+                    slideFromLeft(this.querySelector('.previous-article'), this.querySelector('.active-article'), function() {
+                        this._render(direction);
                     }.bind(this));
                 }
             }
@@ -310,24 +318,14 @@
                 var el = this.querySelector('.' + cls);
                 el.removeAttribute('style');
                 if (cls == 'active-article') {
-                    this.$['article-height-placeholder'].style.height = el.offsetHeight + 'px';
-                    var incomplete = Array.prototype.filter.call(el.querySelectorAll('img'), function(img) {
-                        return !img.complete;
-                    });
-                    var count = incomplete.length;
-                    incomplete.forEach(function(img) {
-                        img.addEventListener('load', function() {
-                            if (--count == 0) {
-                                this.$['article-height-placeholder'].style.height = el.offsetHeight + 'px';
-                            }
-                        }.bind(this));
-                    }.bind(this));
+                    el.classList.add('height-provider');
                 } else {
+                    el.classList.remove('height-provider');
                     el.setAttribute('hidden', '');
                 }
             }.bind(this));
 
-            Polymer.dom(this).flush();
+            Polymer.dom.flush();
         },
 
         _generateArticle: function(article, direction) {
