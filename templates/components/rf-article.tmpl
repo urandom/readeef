@@ -11,6 +11,16 @@
     overflow: hidden;
 }
 
+#article-height-placeholder {
+    width: 100%;
+    margin-top: 8px;
+    margin-left: 8px;
+    margin-right: 8px;
+
+    -webkit-transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .article {
     width: calc(100% - 16px);
     position: absolute;
@@ -23,7 +33,6 @@
 }
 
 .active-article {
-    position: relative;
     z-index: 0;
 }
 
@@ -46,9 +55,10 @@
     </style>
     <template>
         <div class="articles-container layout horizontal">
-            <div class="article previous-article" hidden></div>
-            <div class="article active-article"></div>
-            <div class="article next-article" hidden></div>
+            <div class="article previous-article" hidden id="article-0"></div>
+            <div class="article active-article" id="article-1"></div>
+            <div class="article next-article" hidden id="article-2"></div>
+            <div id="article-height-placeholder"></div>
             <content></content>
         </div>
     </template>
@@ -85,15 +95,25 @@
         return value + ord;
     }
 
-    function slideFromTop(element) {
+    function slideFromTop(element, placeholder) {
         animations[element.id] = element.animate([
             {opacity: 0.5, transform: "translate3d(0px, -105%, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
         ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+
+        animations[element.id].onfinish = function() {
+            placeholder.style.height = element.offsetHeight + 'px';
+        };
     }
 
-    function slideFromLeft(left, active, cb) {
+    function slideFromLeft(left, active, placeholder, cb) {
         left.removeAttribute('hidden');
+
+        var maxHeight = Math.max(left.offsetHeight, active.offsetHeight);
+        if (maxHeight > 0 && maxHeight + 'px' != placeholder.style.height) {
+            placeholder.style.height = maxHeight + 'px';
+        }
+
         animations[left.id] = left.animate([
             {opacity: 0.5, transform: "translate3d(-105%, 0px, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
@@ -107,8 +127,14 @@
         animations[active.id].onfinish = cb;
     }
 
-    function slideFromRight(active, right, cb) {
+    function slideFromRight(active, right, placeholder, cb) {
         right.removeAttribute('hidden');
+
+        var maxHeight = Math.max(right.offsetHeight, active.offsetHeight);
+        if (maxHeight > 0 && maxHeight + 'px' != placeholder.style.height) {
+            placeholder.style.height = maxHeight + 'px'; 
+        }
+
         animations[right.id] = right.animate([
             {opacity: 0.5, transform: "translate3d(105%, 0px, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
@@ -192,19 +218,20 @@
                 this._debounceTemplate(this._render);
                 this.debounce('animation', function() {
                     clearAnimationsAndRun(function() {
-                        slideFromTop(this.querySelector('.active-article')) ;
+                        slideFromTop(this.querySelector('.active-article'), this.$['article-height-placeholder']) ;
+
                     }.bind(this))
                 }.bind(this));
             } else {
                 if (direction === 1) {
                     clearAnimationsAndRun(function() {
-                        slideFromRight(this.querySelector('.active-article'), this.querySelector('.next-article'), function() {
+                        slideFromRight(this.querySelector('.active-article'), this.querySelector('.next-article'), this.$['article-height-placeholder'], function() {
                             this._render(direction);
                         }.bind(this));
                     }.bind(this));
                 } else {
                     clearAnimationsAndRun(function() {
-                        slideFromLeft(this.querySelector('.previous-article'), this.querySelector('.active-article'), function() {
+                        slideFromLeft(this.querySelector('.previous-article'), this.querySelector('.active-article'), this.$['article-height-placeholder'], function() {
                             this._render(direction);
                         }.bind(this));
                     }.bind(this));
@@ -282,7 +309,20 @@
             ['previous-article', 'active-article', 'next-article'].forEach(function(cls) {
                 var el = this.querySelector('.' + cls);
                 el.removeAttribute('style');
-                if (cls != 'active-article') {
+                if (cls == 'active-article') {
+                    this.$['article-height-placeholder'].style.height = el.offsetHeight + 'px';
+                    var incomplete = Array.prototype.filter.call(el.querySelectorAll('img'), function(img) {
+                        return !img.complete;
+                    });
+                    var count = incomplete.length;
+                    incomplete.forEach(function(img) {
+                        img.addEventListener('load', function() {
+                            if (--count == 0) {
+                                this.$['article-height-placeholder'].style.height = el.offsetHeight + 'px';
+                            }
+                        }.bind(this));
+                    }.bind(this));
+                } else {
                     el.setAttribute('hidden', '');
                 }
             }.bind(this));
