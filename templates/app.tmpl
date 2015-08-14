@@ -54,16 +54,9 @@ html /deep/ .clearfix:after {
     clear: both;
 }
 
-:root {
-    --card-style: {
-        position: relative;
-        background-color: white;
-        box-sizing: border-box;
-        border-radius: 2px;
-
-        @apply(--shadow-transition);
-        @apply(--shadow-elevation-8dp);
-    }
+html /deep/ paper-toast {
+    left: inherit;
+    margin-left: 12px;
 }
 
 /* https://github.com/Polymer/polymer/issues/2263 */
@@ -181,6 +174,19 @@ body.theme-grey /deep/ * {
     --paper-fab-notify-background: var(--paper-grey-800);
     --paper-fab-keyboard-focus-background: var(--paper-grey-100);
 }
+
+:root {
+    --card-style: {
+        position: relative;
+        background-color: white;
+        box-sizing: border-box;
+        border-radius: 2px;
+
+        @apply(--shadow-transition);
+        @apply(--shadow-elevation-8dp);
+    }
+}
+
 </style>
 {% end %}
 {% define "body-attrs" %} unresolved class="fullbleed" {% end %}
