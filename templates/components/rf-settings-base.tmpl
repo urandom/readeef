@@ -70,6 +70,7 @@
             </div>
             <div class="main-title">
                 <template>
+                    <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
                     <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-general') }}">General</span>
                     <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-add-feed') }}">Add Feed</span>
                     <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-manage-feeds') }}">Manage Feeds</span>
