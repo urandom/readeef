@@ -288,6 +288,7 @@
                 case 'start':
                     this._trackState = {
                         dragStart: false,
+                        ignoreTrack: false,
                         previousDx: 0,
                         previous: this.querySelector('.previous-article'),
                         active: this.querySelector('.active-article'),
@@ -296,9 +297,22 @@
                     };
                     break;
                 case 'track':
-                    var now = new Date().getTime(), dx = event.detail.dx;
+                    if (this._trackState.ignoreTrack) {
+                        return;
+                    }
 
-                    if (!this._trackState.dragStart && Math.abs(dx) > 10) {
+                    var dx = event.detail.dx, dy = event.detail.dy,
+                        absDx = Math.abs(dx), absDy = Math.abs(dy);
+
+                    if (!this._trackState.dragStart &&
+                            absDx > 4 && absDy > absDx * 0.5) {
+                        this._trackState.ignoreTrack = true;
+                        return;
+                    }
+
+                    var now = new Date().getTime();
+
+                    if (!this._trackState.dragStart && absDx > 10) {
                         this._trackState.dragStart = true;
                         this._trackState.previous.removeAttribute('hidden');
                         this._trackState.next.removeAttribute('hidden');
@@ -322,7 +336,7 @@
                         console.log('switching dir', this._trackState.direction);
                     }
 
-                    if (((this._next && dx < 0) || (this._previous && dx > 0)) && Math.abs(dx) < this._trackState.containerWidth) {
+                    if (((this._next && dx < 0) || (this._previous && dx > 0)) && absDx < this._trackState.containerWidth) {
                         var tD = now - this._trackState.dragStartTime,
                             d = now - this._trackState.previousTick;
 
