@@ -10,6 +10,9 @@ func init() {
 	sql["get_article_scores"] = getArticleScores
 	sql["create_article_scores"] = createArticleScores
 	sql["update_article_scores"] = updateArticleScores
+	sql["get_article_thumbnail"] = getArticleThumbnail
+	sql["create_article_thumbnail"] = createArticleThumbnail
+	sql["update_article_thumbnail"] = updateArticleThumbnail
 }
 
 const (
@@ -51,4 +54,14 @@ WHERE asco.article_id = $1
 INSERT INTO articles_scores(article_id, score, score1, score2, score3, score4, score5)
 	SELECT $1, $2, $3, $4, $5, $6, $7 EXCEPT SELECT article_id, score, score1, score2, score3, score4, score5 FROM articles_scores WHERE article_id = $1`
 	updateArticleScores = `UPDATE articles_scores SET score = $1, score1 = $2, score2 = $3, score3 = $4, score4 = $5, score5 = $6 WHERE article_id = $7`
+
+	getArticleThumbnail = `
+SELECT at.thumbnail, at.mime_type, at.processed
+FROM articles_thumbnails at
+WHERE at.article_id = $1
+`
+	createArticleThumbnail = `
+INSERT INTO articles_thumbnails(article_id, thumbnail, mime_type, processed)
+	SELECT $1, $2, $3, $4 EXCEPT SELECT article_id, thumbnail, mime_type, processed FROM articles_thumbnails WHERE article_id = $1`
+	updateArticleThumbnail = `UPDATE articles_thumbnails SET thumbnail = $1, mime_type = $2, processed = $3 WHERE article_id = $4`
 )

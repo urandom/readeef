@@ -160,7 +160,7 @@ rf-article /deep/ .article-control {
                                             <span class="title" title$="[[ item.Title ]]">[[ _computeArticleTitle(item) ]]</span>
                                             <span class="flex layout horizontal center">
                                                 <span class="short-description flex">
-                                                    <img src$="[[ _computeArticleTopImage(item) ]]" class="top-image">
+                                                    <img src$="[[ item.Thumbnail ]]" class="top-image">
                                                     <span>[[ _computeArticleDescription(item) ]]</span>
                                                     <br style="clear: both">
                                                 </span>
@@ -506,10 +506,6 @@ rf-article /deep/ .article-control {
                     );
             },
 
-            _computeArticleTopImage: function(item) {
-                return this._findTopImage(item.Description);
-            },
-
             _computeArticleTarget: function(item) {
                 return "feed-article-" + item.article.Id;
             },
@@ -518,14 +514,6 @@ rf-article /deep/ .article-control {
                 this._tagStripper.innerHTML = html;
 
                 return this._tagStripper.textContent || "";
-            },
-
-            _findTopImage: function(html) {
-                this._tagStripper.innerHTML = html;
-
-                var img = this._tagStripper.querySelector('img');
-
-                return img && img.src;
             },
 
             _updateFeedArticles: function() {

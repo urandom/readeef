@@ -47,6 +47,35 @@ func (a *Article) Update() {
 	}
 }
 
+func (a *Article) Thumbnail() (at content.ArticleThumbnail) {
+	at = a.Repo().ArticleThumbnail()
+	if a.HasErr() {
+		at.Err(a.Err())
+		return
+	}
+
+	id := a.Data().Id
+	if id == 0 {
+		a.Err(content.NewValidationError(errors.New("Invalid article id")))
+		return
+	}
+
+	a.logger.Infof("Getting article '%d' scores\n", id)
+
+	var i data.ArticleThumbnail
+	if err := a.db.Get(&i, a.db.SQL("get_article_thumbnail"), id); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
+		at.Err(err)
+	}
+
+	i.ArticleId = id
+	at.Data(i)
+
+	return
+}
+
 func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logger) {
 	if a.HasErr() {
 		return

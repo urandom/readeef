@@ -95,6 +95,15 @@ CREATE TABLE IF NOT EXISTS articles_scores (
 	PRIMARY KEY(article_id),
 	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
 )`, `
+CREATE TABLE IF NOT EXISTS articles_thumbnails (
+	article_id BIGINT,
+	thumbnail BYTEA,
+	mime_type TEXT,
+	processed BOOLEAN DEFAULT 'f',
+
+	PRIMARY KEY(article_id),
+	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
+)`, `
 CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 	feed_id INTEGER,
 	link TEXT,

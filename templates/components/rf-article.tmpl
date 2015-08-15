@@ -372,7 +372,9 @@
                             duration = 200 * (1 - ratio);
                             easing = 'ease';
                         } else {
+                            // Fling
                             duration = 1.5 * (this._trackState.containerWidth - Math.abs(this._trackState.previousDx)) / this._trackState.v
+                            // TODO: construct curve based on the acceleration
                             easing = 'cubic-bezier(0, 0.73, 0.27, 1)';
                         }
 

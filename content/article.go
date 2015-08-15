@@ -53,6 +53,7 @@ type Article interface {
 	Validate() error
 
 	Update()
+	Thumbnail() ArticleThumbnail
 
 	Format(templateDir, readabilityKey string) data.ArticleFormatting
 }
@@ -81,6 +82,20 @@ type ArticleScores interface {
 
 	Validate() error
 	Calculate() int64
+
+	Update()
+}
+
+type ArticleThumbnail interface {
+	Error
+	RepoRelated
+
+	fmt.Stringer
+
+	Data(data ...data.ArticleThumbnail) data.ArticleThumbnail
+	Base64DataUri() string
+
+	Validate() error
 
 	Update()
 }

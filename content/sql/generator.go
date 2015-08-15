@@ -37,6 +37,14 @@ func (r *Repo) ArticleScores() content.ArticleScores {
 	return asc
 }
 
+func (r *Repo) ArticleThumbnail() content.ArticleThumbnail {
+	at := &ArticleThumbnail{db: r.db, logger: r.logger}
+
+	at.Repo(r)
+
+	return at
+}
+
 func (r *Repo) Feed() content.Feed {
 	f := r.feed()
 

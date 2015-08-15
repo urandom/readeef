@@ -26,6 +26,7 @@ type Generator interface {
 	ScoredArticle() ScoredArticle
 	UserArticle(u User) UserArticle
 
+	ArticleThumbnail() ArticleThumbnail
 	ArticleScores() ArticleScores
 
 	Feed() Feed

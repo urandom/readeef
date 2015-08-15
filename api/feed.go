@@ -624,5 +624,24 @@ func getFeedArticles(user content.User, id string, limit int, offset int, newerF
 		}
 	}
 
+	switch articles := resp.val["Articles"].(type) {
+	case []content.UserArticle:
+		for _, a := range articles {
+			insertThumbnail(a)
+		}
+	case []content.ScoredArticle:
+		for _, a := range articles {
+			insertThumbnail(a)
+		}
+	}
+
 	return
+}
+
+func insertThumbnail(a content.Article) {
+	d := a.Data()
+	t := a.Thumbnail()
+
+	d.Thumbnail = t.Base64DataUri()
+	a.Data(d)
 }

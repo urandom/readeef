@@ -36,7 +36,8 @@ type Article struct {
 	Favorite bool
 	Score    int64
 
-	IsNew bool `json:"-"`
+	IsNew     bool   `json:"-"`
+	Thumbnail string `json:",omitempty"`
 
 	Hit struct {
 		Fragments map[string][]string `json:"fragments,omitempty"`
@@ -51,6 +52,13 @@ type ArticleScores struct {
 	Score3    int64
 	Score4    int64
 	Score5    int64
+}
+
+type ArticleThumbnail struct {
+	ArticleId ArticleId
+	Thumbnail []byte
+	MimeType  string `db:"mime_type"`
+	Processed bool
 }
 
 type ArticleFormatting struct {

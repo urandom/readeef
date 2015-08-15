@@ -33,6 +33,7 @@ type FeedManager struct {
 	activeFeeds  map[data.FeedId]bool
 	hubbub       *Hubbub
 	searchIndex  SearchIndex
+	thumbnailer  Thumbnailer
 }
 
 var (
@@ -52,7 +53,9 @@ func NewFeedManager(repo content.Repo, c Config, l webfw.Logger, um *UpdateFeedR
 		addFeed: make(chan content.Feed, 2), removeFeed: make(chan content.Feed, 2),
 		scoreArticle: make(chan content.ScoredArticle), done: make(chan bool),
 		activeFeeds: map[data.FeedId]bool{},
-		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
+		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite),
+		thumbnailer: NewThumbnailer(c, l),
+	}
 }
 
 func (fm *FeedManager) SetHubbub(hubbub *Hubbub) {
@@ -126,7 +129,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 
 		f = feeds[0]
 
-		fm.updateFeed(f, true)
+		fm.updateFeed(f)
 		if f.HasErr() {
 			return f, f.Err()
 		}
@@ -353,7 +356,7 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 	case <-fm.done:
 		return
 	default:
-		fm.updateFeed(f, false)
+		fm.updateFeed(f)
 		if f.HasErr() {
 			fm.logger.Printf("Error updating feed '%s' database record: %v\n", f, f.Err())
 		}
@@ -567,18 +570,17 @@ func (fm FeedManager) discoverParserFeeds(link string) ([]content.Feed, error) {
 	return []content.Feed{}, ErrNoFeed
 }
 
-func (fm FeedManager) updateFeed(f content.Feed, isNew bool) {
+func (fm FeedManager) updateFeed(f content.Feed) {
 	f.Update()
 
 	if !f.HasErr() {
 		var articles []content.Article
-		if isNew {
-			articles = f.ParsedArticles()
-		} else {
-			articles = f.NewArticles()
-		}
+		articles = f.NewArticles()
 
-		go fm.formatArticles(articles)
+		if len(articles) > 0 {
+			go fm.formatArticles(articles)
+			go fm.thumbnailer.Process(articles)
+		}
 	}
 }
 
