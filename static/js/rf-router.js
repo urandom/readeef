@@ -102,7 +102,8 @@
                         login.hide();
                     }
                     MoreRouting.navigateTo('feed', {tagOrId: 'all'});
-                } else if (MoreRouting.getRouteByName('splash').active) {
+                } else if (!MoreRouting.isCurrentUrl('feed-base') &&
+                        !MoreRouting.isCurrentUrl('settings-base')) {
                     MoreRouting.navigateTo('feed', {tagOrId: 'all'});
                 }
                 this.$.splash.selected = 0;

@@ -383,6 +383,8 @@ rf-article /deep/ .article-control {
             },
 
             onArticleActivate: function(event) {
+                event.stopPropagation();
+
                 var el = Polymer.dom(event.target), feedId = null, articleId = null;
 
                 while (el = el.parentNode) {
