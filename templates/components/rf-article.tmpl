@@ -399,14 +399,11 @@
                                 this._trackState.active.removeAttribute('style');
                                 this._trackState.next.removeAttribute('style');
 
-                                this._trackState.active.setAttribute('hidden', '');
                                 if (direction > 0) {
-                                    this._trackState.previous.classList.add('height-provider');
                                     this.translate3d(0, 0, 0, this._trackState.previous);
 
                                     this._trackState.selectedId = this._previous.Id;
                                 } else {
-                                    this._trackState.next.classList.add('height-provider');
                                     this.translate3d(0, 0, 0, this._trackState.next);
 
                                     this._trackState.selectedId = this._next.Id;
