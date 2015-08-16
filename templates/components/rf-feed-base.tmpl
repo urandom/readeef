@@ -86,14 +86,14 @@ rf-app-scaffold /deep/ .main-title-container paper-icon-button {
                     <iron-collapse id="popular-feeds">
                         <div class="menu submenu">
                             <template is="dom-repeat" items="[[ tags ]]">
-                                <a is="pushstate-anchor" href="[[ feedUrlFor(item.name, 'tag') ]]" class="item">
+                                <a is="pushstate-anchor" href="[[ feedUrlFor(item.name, 'popular:tag') ]]" class="item">
                                     <span>[[ item.name ]]</span>
                                     <paper-ripple></paper-ripple>
                                 </a>
                             </template>
 
                             <template is="dom-repeat" items="[[ feeds ]]">
-                                <a is="pushstate-anchor" href="[[ feedUrlFor(item.Id) ]]" class="item">
+                                <a is="pushstate-anchor" href="[[ feedUrlFor(item.Id, 'popular') ]]" class="item">
                                     <img src="[[ _computeFavIconUrl(item) ]]" alt="favicon" class="feed-favicon">
                                     <span>[[ item.Title ]]</span>
                                     <paper-ripple></paper-ripple>
@@ -145,12 +145,12 @@ rf-app-scaffold /deep/ .main-title-container paper-icon-button {
                             <paper-icon-button route="article" icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
                         </iron-pages>
                     </more-route-selector>
-                    Title
+                    <span>[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
                     <paper-fab icon="refresh" on-tap="onRefresh" hidden$="[[ narrow ]]"></paper-fab>
                 </template>
             </div>
             <div class="main-content">
-                <rf-feed user="[[ user ]]" feeds="[[ feeds ]]" narrow="[[ narrow ]]"></rf-feed>
+                <rf-feed user="[[ user ]]" feeds="[[ feeds ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]"></rf-feed>
             </div>
         </rf-app-scaffold>
 
@@ -171,22 +171,25 @@ rf-app-scaffold /deep/ .main-title-container paper-icon-button {
             ],
             properties: {
                 user: Object,
+                tagOrId: String,
                 feeds: {
                     type: Array,
                     notify: true,
-                    observer: '_feedsChanged'
+                    observer: '_feedsChanged',
                 },
-                tags: Array
+                tags: Array,
             },
             _urlParser: document.createElement('a'),
 
             attached: function() {
-                var feedElement = Polymer.dom(this.root).querySelector('rf-feed');
-
                 this.defaultNestedRoute('feed-base', 'feed', {tagOrId: 'all'});
-                this.routeParamObserver('feed', 'tagOrId', function(value) {
-                    feedElement.tagOrId = value;
-                }.bind(this));
+
+                // Set the property async, or it might be set too early for the template
+                this.async(function() {
+                    this.routeParamObserver('feed', 'tagOrId', function(value) {
+                        this.tagOrId = value;
+                    }.bind(this));
+                });
             },
 
             feedUrlFor: function(tagOrId, prefix) {
@@ -250,11 +253,7 @@ rf-app-scaffold /deep/ .main-title-container paper-icon-button {
             },
 
             onToggleExpand: function(event) {
-                var element = event.target;
-
-                while (!element.hasAttribute('expands')) {
-                    element = element.parentNode;
-                }
+                var element = Polymer.dom(event).localTarget;
 
                 var collapser = Polymer.dom(this.root).querySelector(
                         '#' + element.getAttribute('expands'));
@@ -274,6 +273,36 @@ rf-app-scaffold /deep/ .main-title-container paper-icon-button {
 
             _feedsChanged: function(newValue, oldValue) {
                 this.updateTags();
+            },
+
+            _computeFeedTitle: function(tagOrId) {
+                if (tagOrId == "all") {
+                    return "All feed articles";
+                } else if (tagOrId == "favorite") {
+                    return "Favorite feed articles";
+                } else if (tagOrId.startsWith("popular:")) {
+                    var sub = tagOrId.substring("popular:".length);
+
+                    if (sub == "all") {
+                        return "Popular feed articles";
+                    } else if (sub.startsWith("tag:")) {
+                        return "Popular articles from " + tagOrId.substring("tag:".length);
+                    } else if (!isNaN(sub)) {
+                        var feed = this.feeds.filter(function(f) { return f.Id == sub })[0];
+                        if (feed) {
+                            return "Popular articles from " + feed.Title;
+                        }
+                    }
+                } else if (tagOrId.startsWith("tag:")) {
+                    var sub = tagOrId.substring("tag:".length);
+
+                    return "Articles from " + sub;
+                } else if (!isNaN(tagOrId)) {
+                    var feed = (this.feeds || []).filter(function(f) { return f.Id == tagOrId })[0];
+                    if (feed) {
+                        return feed.Title;
+                    }
+                }
             },
 
             _computeHideFeedItems: function(feeds) {
