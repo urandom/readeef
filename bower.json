@@ -43,6 +43,8 @@
     "paper-checkbox": "PolymerElements/paper-checkbox#~1.0.5",
     "paper-spinner": "PolymerElements/paper-spinner#~1.0.2",
     "iron-list": "PolymerElements/iron-list#~1.0.2",
-    "iron-signals": "PolymerElements/iron-signals#~1.0.2"
+    "iron-signals": "PolymerElements/iron-signals#~1.0.2",
+    "paper-menu-button": "PolymerElements/paper-menu-button#~1.0.2",
+    "paper-item": "PolymerElements/paper-item#~1.0.2"
   }
 }

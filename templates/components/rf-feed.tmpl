@@ -228,7 +228,7 @@ rf-article /deep/ .article-control {
         <div class="layout vertical center" hidden$="[[ !loading ]]">
             <paper-spinner id="loading-spinner"></paper-spinner>
         </div>
-        <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" user="{{ user }}"></rf-api>
+        <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" user="{{ user }}"></rf-api>
     </template>
 
     <script>
@@ -240,10 +240,7 @@ rf-article /deep/ .article-control {
                     type: String,
                     observer: '_tagOrIdChanged',
                 },
-                user: {
-                    type: Object,
-                    observer: '_userChanged',
-                },
+                user: Object,
                 limit: {
                     type: Number,
                     value: 200,
@@ -330,6 +327,12 @@ rf-article /deep/ .article-control {
                 if (article) {
                     MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: article.Id});
                 }
+            },
+
+            refresh: function() {
+                this.loading = true;
+                this.articles = [];
+                this.$['feed-articles'].send();
             },
 
             attached: function() {
@@ -452,14 +455,8 @@ rf-article /deep/ .article-control {
 
             _tagOrIdChanged: function(tagOrId, oldValue) {
                 this.async(function() {
-                    this.loading = true;
-                    this.articles = null;
-                    this.$['feed-articles'].send();
-                }.bind(this));
-            },
-
-            _userChanged: function(user, oldValue) {
-                console.log("userChanged", user, oldValue);
+                    this.refresh();
+                });
             },
 
             _loadingChanged: function(loading, old) {
@@ -471,8 +468,14 @@ rf-article /deep/ .article-control {
                 }
             },
 
-            _computeFeedArticlesArguments: function(user, tagOrId, limit, offset) {
-                return {id: tagOrId, limit: limit, offset: offset, newerFirst: user.ProfileData.newerFirst || false, unreadOnly: user.ProfileData.unreadOnly || false};
+            _computeFeedArticlesArguments: function(userRecord, tagOrId, limit, offset) {
+                return {
+                    id: tagOrId,
+                    limit: limit,
+                    offset: offset,
+                    newerFirst: userRecord.base.ProfileData.newerFirst || false,
+                    unreadOnly: userRecord.base.ProfileData.unreadOnly || false,
+                };
             },
 
             _computeArticleClass: function(item) {

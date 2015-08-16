@@ -7,6 +7,9 @@
 <link rel="import" href="/dist/more-routing/more-routing.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/dist/paper-menu/paper-menu.html">
+<link rel="import" href="/dist/paper-item/paper-item.html">
+<link rel="import" href="/dist/paper-menu-button/paper-menu-button.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
@@ -55,9 +58,14 @@ rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
     color: var(--text-primary-color-inverse);
 }
 
-rf-app-scaffold /deep/ .main-title-container paper-icon-button {
+rf-app-scaffold /deep/ .main-title-container [route="feed"] {
     margin-top: -8px;
     margin-left: -8px;
+    margin-bottom: -24px;
+}
+rf-app-scaffold /deep/ .main-title-container [route="article"] {
+    margin-left: -8px;
+    margin-bottom: -8px;
 }
 
 /deep/ .feed-favicon {
@@ -144,15 +152,27 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
             <div class="main-title">
                 <template>
                     <more-route-selector>
-                        <iron-pages style="display: inline-block;">
-                            <section route="feed" class="layout horizontal center">
+                        <iron-pages>
+                            <section route="feed" class="layout horizontal center flex">
                                 <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
                                 <paper-icon-button icon="arrow-back" style="visibility: hidden;" hidden$="[[ narrow ]]"></paper-icon-button>
-                                <span class="title-text-feed">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
+                                <span class="title-text-feed flex">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
+
+                                <span class="layout horizontal center">
+                                    <paper-menu-button>
+                                        <paper-icon-button icon="more-vert" class="dropdown-trigger"></paper-icon-button>
+                                        {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
+                                        <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selectedValues="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
+                                            <paper-item name="newer-first">Newer first</paper-item>
+                                            <paper-item name="unread-only">Unread only</paper-item>
+                                            <paper-item name="mark-all-as-read">Mark all as read</paper-item>
+                                        </paper-menu>
+                                    </paper-menu-button>
+                                </span>
                             </section>
-                            <section route="article" class="layout horizontal center">
+                            <section route="article" class="layout horizontal center flex">
                                 <paper-icon-button icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
-                                <span class="title-text-article">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
+                                <span class="title-text-article flex">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
                             </section>
                         </iron-pages>
                     </more-route-selector>
@@ -165,6 +185,8 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
         </rf-app-scaffold>
 
         <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage" user="{{ user }}"></rf-api>
+        <rf-api id="user-settings" method="set-user-attribute" tag="feed-base" user="[[ user ]]"></rf-api>
+
         <iron-signals on-iron-signal-rf-feeds-added="onSignalFeedsChanged"></iron-signals>
         <iron-signals on-iron-signal-rf-feed-removed="onSignalFeedsChanged"></iron-signals>
         <iron-signals on-iron-signal-rf-feed-tags-changed="onSignalFeedTagsChanged"></iron-signals>
@@ -189,6 +211,9 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 },
                 tags: Array,
             },
+            observers: [
+                '_userProfileChanged(user.ProfileData.*)',
+            ],
             _urlParser: document.createElement('a'),
 
             attached: function() {
@@ -279,10 +304,42 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
             },
 
             onRefresh: function() {
+                MoreRouting.navigateTo('feed', {tagOrId: MoreRouting.getRoute('feed').params.tagOrId});
+                Polymer.dom(this.root).querySelector('rf-feed').refresh();
+            },
+
+            onFeedMenuItemActivate: function(event) {
+                // Event is fired before the actual selection takes place
+                var menu = Polymer.dom(event).localTarget,
+                    name = event.detail.selected,
+                    selected = (menu.selectedValues || []).indexOf(name) == -1;
+
+                switch (name) {
+                case "newer-first":
+                    this.set("user.ProfileData.newerFirst", selected)
+                    Polymer.dom(this.root).querySelector('rf-feed').refresh();
+                    break;
+                case "unread-only":
+                    this.set("user.ProfileData.unreadOnly", selected)
+                    Polymer.dom(this.root).querySelector('rf-feed').refresh();
+                    break;
+                case "mark-all-as-read":
+                    if (selected) {
+                        menu.select(name);
+                    }
+                    break;
+                }
             },
 
             _feedsChanged: function(newValue, oldValue) {
                 this.updateTags();
+            },
+
+            _userProfileChanged: function(userProfileRecord) {
+                this.$['user-settings'].send({
+                    attribute: "ProfileData",
+                    value: this.user.ProfileData
+                });
             },
 
             _computeFeedTitle: function(tagOrId) {
@@ -301,6 +358,22 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                         var feed = this.feeds.filter(function(f) { return f.Id == sub })[0];
                         if (feed) {
                             return "Popular articles from " + feed.Title;
+                        }
+                    }
+                } else if (tagOrId.startsWith("search:")) {
+                    var parts = tagOrId.split(":"),
+                        term = parts.pop(),
+                        sub = parts.join(":"),
+                        base = "Search results for " + term;
+
+                    if (sub == "all") {
+                        return base;
+                    } else if (sub.startsWith("tag:")) {
+                        return base + "  from " + tagOrId.substring("tag:".length);
+                    } else if (!isNaN(sub)) {
+                        var feed = this.feeds.filter(function(f) { return f.Id == sub })[0];
+                        if (feed) {
+                            return base + " from " + feed.Title;
                         }
                     }
                 } else if (tagOrId.startsWith("tag:")) {
@@ -331,7 +404,21 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
 
             _computeNavigationExpandTag: function(item) {
                 return 'feeds-' + item.name;
-            }
+            },
+
+            _computeOptionsMenuSelectedValues: function(userRecord) {
+                var selected = [];
+
+                if (this.user.ProfileData.newerFirst) {
+                    selected.push("newer-first");
+                }
+
+                if (this.user.ProfileData.unreadOnly) {
+                    selected.push("unreadOnly");
+                }
+
+                return selected;
+            },
         })
     </script>
 </dom-module>
