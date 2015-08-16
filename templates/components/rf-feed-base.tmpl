@@ -63,6 +63,10 @@ rf-app-scaffold /deep/ .main-title-container paper-icon-button {
 /deep/ .feed-favicon {
     margin-right: 5px;
 }
+
+rf-app-scaffold /deep/ [icon="arrow-back"] {
+    margin-right: 24px;
+}
     </style>
     <template>
         <rf-app-scaffold narrow="{{ narrow }}">
@@ -141,11 +145,17 @@ rf-app-scaffold /deep/ .main-title-container paper-icon-button {
                 <template>
                     <more-route-selector>
                         <iron-pages style="display: inline-block;">
-                            <paper-icon-button route="feed" icon="menu" paper-drawer-toggle></paper-icon-button>
-                            <paper-icon-button route="article" icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
+                            <section route="feed" class="layout horizontal center">
+                                <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+                                <paper-icon-button icon="arrow-back" style="visibility: hidden;" hidden$="[[ narrow ]]"></paper-icon-button>
+                                <span class="title-text-feed">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
+                            </section>
+                            <section route="article" class="layout horizontal center">
+                                <paper-icon-button icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
+                                <span class="title-text-article">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
+                            </section>
                         </iron-pages>
                     </more-route-selector>
-                    <span>[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
                     <paper-fab icon="refresh" on-tap="onRefresh" hidden$="[[ narrow ]]"></paper-fab>
                 </template>
             </div>
