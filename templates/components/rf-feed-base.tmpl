@@ -159,10 +159,10 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                                 <span class="title-text-feed flex">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
 
                                 <span class="layout horizontal center">
-                                    <paper-menu-button>
+                                    <paper-menu-button horizontal-align="right">
                                         <paper-icon-button icon="more-vert" class="dropdown-trigger"></paper-icon-button>
                                         {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
-                                        <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selectedValues="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
+                                        <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selected-values="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
                                             <paper-item name="newer-first">Newer first</paper-item>
                                             <paper-item name="unread-only">Unread only</paper-item>
                                             <paper-item name="mark-all-as-read">Mark all as read</paper-item>
