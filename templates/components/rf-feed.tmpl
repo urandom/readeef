@@ -330,9 +330,11 @@ rf-article /deep/ .article-control {
             },
 
             refresh: function() {
-                this.loading = true;
-                this.articles = [];
-                this.$['feed-articles'].send();
+                this.debounce('feed-refresh', function() {
+                    this.loading = true;
+                    this.articles = [];
+                    this.$['feed-articles'].send();
+                });
             },
 
             attached: function() {
@@ -454,9 +456,7 @@ rf-article /deep/ .article-control {
             },
 
             _tagOrIdChanged: function(tagOrId, oldValue) {
-                this.async(function() {
-                    this.refresh();
-                });
+                this.refresh();
             },
 
             _loadingChanged: function(loading, old) {
