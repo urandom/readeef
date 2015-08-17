@@ -2,19 +2,20 @@
 <link rel="import" href="/dist/iron-collapse/iron-collapse.html">
 <link rel="import" href="/dist/iron-icon/iron-icon.html">
 <link rel="import" href="/dist/iron-icons/iron-icons.html">
-<link rel="import" href="/dist/iron-signals/iron-signals.html">
 <link rel="import" href="/dist/iron-pages/iron-pages.html">
+<link rel="import" href="/dist/iron-signals/iron-signals.html">
+<link rel="import" href="/dist/more-routing/more-route-template-helpers.html">
+<link rel="import" href="/dist/more-routing/more-routing.html">
 <link rel="import" href="/dist/more-routing/more-routing.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="/dist/paper-menu/paper-menu.html">
+<link rel="import" href="/dist/paper-input/paper-input.html">
 <link rel="import" href="/dist/paper-item/paper-item.html">
 <link rel="import" href="/dist/paper-menu-button/paper-menu-button.html">
+<link rel="import" href="/dist/paper-menu/paper-menu.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
-<link rel="import" href="/dist/more-routing/more-route-template-helpers.html">
-<link rel="import" href="/dist/more-routing/more-routing.html">
 
 <link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-app-scaffold">
@@ -156,19 +157,22 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                             <section route="feed" class="layout horizontal center flex">
                                 <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
                                 <paper-icon-button icon="arrow-back" style="visibility: hidden;" hidden$="[[ narrow ]]"></paper-icon-button>
-                                <span class="title-text-feed flex">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
-
-                                <span class="layout horizontal center">
-                                    <paper-menu-button horizontal-align="right">
-                                        <paper-icon-button icon="more-vert" class="dropdown-trigger"></paper-icon-button>
-                                        {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
-                                        <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selected-values="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
-                                            <paper-item name="newer-first">Newer first</paper-item>
-                                            <paper-item name="unread-only">Unread only</paper-item>
-                                            <paper-item name="mark-all-as-read">Mark all as read</paper-item>
-                                        </paper-menu>
-                                    </paper-menu-button>
+                                <span class="title-text-feed flex" hidden$="[[ searchTerm ]]">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
+                                <span class="search-feed flex layout horizontal center" hidden$="[[ !searchTerm ]]">
+                                    <paper-icon-button icon="clear"></paper-icon-button>
+                                    <paper-input id="search" placeholder="Search" no-label-float value="{{ searchTerm }}"></paper-input>
                                 </span>
+
+                                <paper-icon-button icon="search" hidden$="[[ searchTerm ]]"></paper-icon-button>
+                                <paper-menu-button horizontal-align="right">
+                                    <paper-icon-button icon="more-vert" class="dropdown-trigger"></paper-icon-button>
+                                    {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
+                                    <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selected-values="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
+                                        <paper-item name="newer-first">Newer first</paper-item>
+                                        <paper-item name="unread-only">Unread only</paper-item>
+                                        <paper-item name="mark-all-as-read">Mark all as read</paper-item>
+                                    </paper-menu>
+                                </paper-menu-button>
                             </section>
                             <section route="article" class="layout horizontal center flex">
                                 <paper-icon-button icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
@@ -210,6 +214,10 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                     observer: '_feedsChanged',
                 },
                 tags: Array,
+                searchTerm: {
+                    type: String,
+                    value: null,
+                },
             },
             observers: [
                 '_userProfileChanged(user.ProfileData.*)',
