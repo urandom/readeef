@@ -267,7 +267,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
             ready: function() {
                 this.$['list-feeds'].send();
             },
-            
+
             onAllFeedsMessage: function(event, detail) {
                 this.feeds = detail.arguments.Feeds;
             },

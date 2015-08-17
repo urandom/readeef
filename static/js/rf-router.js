@@ -177,7 +177,18 @@
                     this.async(function() {
                         if (value) {
                             if (!MoreRouting.isCurrentUrl(nestedName)) {
+                                var route = MoreRouting.getRoute(nestedName), toNotify = {};
+                                for (var key in nestedParams) {
+                                    if (route.params[key] === nestedParams[key]) {
+                                        toNotify[key] = nestedParams[key];
+                                    }
+                                }
+
                                 MoreRouting.navigateTo(MoreRouting.urlFor(nestedName, nestedParams || {}));
+
+                                for (var key in toNotify) {
+                                    route.params.__notify(key, toNotify[key]);
+                                }
                             }
                         }
                     }.bind(this));
