@@ -25,15 +25,11 @@ rf-article /deep/ .card {
     margin-bottom: 16px;
 }
 
-.card > .list-wrapper {
-    position: relative;
-}
-
 .article.read {
     color: #999;
 }
 
-.article .title-wrapper .top-image {
+.article .detail-wrapper .top-image {
     float: left;
     max-width: 8em;
     margin-right: 1em;
@@ -43,7 +39,7 @@ rf-article /deep/ .card {
     @apply(--shadow-elevation-2dp);
 }
 
-.article .title-wrapper .short-description {
+.article .detail-wrapper .short-description {
     max-height: 6.0em;
     line-height: 1.25em;
     word-wrap: break-word;
@@ -70,8 +66,8 @@ rf-article /deep/ .card {
 }
 
 .misc-info {
-    width: 80px;
     padding-left: 0.5em;
+    padding-top: 0.5em;
 }
 
 rf-article /deep/ .index {
@@ -114,7 +110,6 @@ rf-article /deep/ .feed-origin {
     line-height: 24px;
     font-weight: 200;
     padding-right: 1em;
-    width: 80px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -154,23 +149,21 @@ rf-article /deep/ .article-control {
                         <template>
                             <div class$="[[ _computeArticleClass(item) ]]" id$="[[ item.Id ]]" data-feed-id$="[[ item.FeedId ]]">
                                 <div class="card layout vertical" on-tap="onArticleActivate">
-                                    <div class="list-wrapper layout horizontal center">
+                                    <div class="title-wrapper layout horizontal center">
                                         <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
-                                        <span class="title-wrapper flex layout vertical"  on-tap="onArticleActivate">
-                                            <span class="title" title$="[[ item.Title ]]">[[ _computeArticleTitle(item) ]]</span>
-                                            <span class="flex layout horizontal center">
-                                                <span class="short-description flex">
-                                                    <img src$="[[ item.Thumbnail ]]" class="top-image">
-                                                    <span>[[ _computeArticleDescription(item) ]]</span>
-                                                    <br style="clear: both">
-                                                </span>
-                                            </span>
-                                        </span>
-                                        <span class="misc-info layout vertical">
-                                            <span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
-                                            <span class="publish-date" on-tap="onArticleActivate">[[ item.RelativeDate ]]</span>
+                                        <span class="title" title$="[[ item.Title ]]">[[ _computeArticleTitle(item) ]]</span>
+                                    </div>
+                                    <div class="detail-wrapper layout horizontal center">
+                                        <span class="short-description flex">
+                                            <img src$="[[ item.Thumbnail ]]" class="top-image">
+                                            <span>[[ _computeArticleDescription(item) ]]</span>
+                                            <br style="clear: both">
                                         </span>
                                     </div>
+                                    <span class="misc-info layout horizontal center">
+                                        <span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
+                                        <span class="publish-date" on-tap="onArticleActivate">[[ item.RelativeDate ]]</span>
+                                    </span>
                                     <!-- allow the inner elements to receiver pointer events -->
                                     <paper-ripple style="pointer-events: none;"></paper-ripple>
                                 </div>
@@ -182,18 +175,14 @@ rf-article /deep/ .article-control {
                     <template>
                         <div class="article-detail">
                             <div class="card layout vertical">
-                                <div class="article-header layout horizontal center">
+                                <a class="article-anchor title-wrapper" href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item) ]]">
                                     <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
-                                    <span flex class="title-wrapper layout vertical">
-                                        <a class="article-anchor" href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item) ]]">
-                                            <span class="title" title$="[[ item.article.Title ]]">[[ item.article.Title ]]</span>
-                                            <small class="index">[[ item.ordinalPosition ]]</small>
-                                        </a>
-                                        <span class="layout horizontal center">
-                                            <span class="feed-origin" title$="[[ item.article.FeedOrigin ]]" hidden$="[[ !item.article.FeedOrigin ]]">[[ item.article.FeedOrigin ]]</span>
-                                            <span class="publish-date">[[ item.article.RelativeDate ]]</span>
-                                        </span>
-                                    </span>
+                                    <span class="title" title$="[[ item.article.Title ]]">[[ item.article.Title ]]</span>
+                                    <small class="index">[[ item.ordinalPosition ]]</small>
+                                </a>
+                                <div class="misc-info layout horizontal center">
+                                    <span class="feed-origin" title$="[[ item.article.FeedOrigin ]]" hidden$="[[ !item.article.FeedOrigin ]]">[[ item.article.FeedOrigin ]]</span>
+                                    <span class="publish-date">[[ item.article.RelativeDate ]]</span>
                                 </div>
                                 <div class="article-content">
                                     <div class="article-description" hidden$="[[ item.summarized ]]"></div>
