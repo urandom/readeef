@@ -285,6 +285,22 @@ rf-article /deep/ .article-control {
                 }
             },
 
+            hasPreviousArticle: function(id) {
+                var index = this._articleIndexMap[id === undefined ?
+                    MoreRouting.getRoute('article').params.articleId :
+                    id];
+
+                return index > 0;
+            },
+
+            hasNextArticle: function(id) {
+                var index = this._articleIndexMap[id === undefined ?
+                    MoreRouting.getRoute('article').params.articleId :
+                    id];
+
+                return index < this.articles.length - 1;
+            },
+
             previousArticle: function(unread) {
                 var route = MoreRouting.getRoute('article'),
                     article;

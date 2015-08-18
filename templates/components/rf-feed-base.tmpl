@@ -2,6 +2,7 @@
 <link rel="import" href="/dist/iron-collapse/iron-collapse.html">
 <link rel="import" href="/dist/iron-icon/iron-icon.html">
 <link rel="import" href="/dist/iron-icons/iron-icons.html">
+<link rel="import" href="/dist/iron-icons/hardware-icons.html">
 <link rel="import" href="/dist/iron-pages/iron-pages.html">
 <link rel="import" href="/dist/iron-signals/iron-signals.html">
 <link rel="import" href="/dist/more-routing/more-route-template-helpers.html">
@@ -65,8 +66,8 @@ rf-app-scaffold /deep/ .main-title-container [route="feed"] {
     margin-bottom: -16px;
 }
 rf-app-scaffold /deep/ .main-title-container [route="article"] {
+    margin-top: -8px;
     margin-left: -8px;
-    margin-bottom: -8px;
 }
 
 /deep/ .feed-favicon {
@@ -179,6 +180,8 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                             <section route="article" class="layout horizontal center flex">
                                 <paper-icon-button icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
                                 <span class="title-text-article flex">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
+                                <paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(_articleId, 'previous') ]]" on-tap="onPreviousArticle"></paper-icon-button>
+                                <paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(_articleId, 'next') ]]" on-tap="onNextArticle"></paper-icon-button>
                             </section>
                         </iron-pages>
                     </more-route-selector>
@@ -220,6 +223,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                     type: Boolean,
                     value: false,
                 },
+                _articleId: String,
             },
             observers: [
                 '_userProfileChanged(user.ProfileData.*)',
@@ -304,6 +308,10 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                             });
                         }
                     }.bind(this));
+
+                    this.routeParamObserver('article', 'articleId', function(value) {
+                        this._articleId = value;
+                    }.bind(this));
                 });
             },
 
@@ -340,6 +348,14 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
 
             onArticleUp: function() {
                 MoreRouting.navigateTo('feed', {tagOrId: MoreRouting.getRoute('feed').params.tagOrId});
+            },
+
+            onPreviousArticle: function() {
+                Polymer.dom(this.root).querySelector('rf-feed').previousArticle();
+            },
+
+            onNextArticle: function() {
+                Polymer.dom(this.root).querySelector('rf-feed').nextArticle();
             },
 
             onRefresh: function() {
@@ -469,6 +485,15 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 }
 
                 return selected;
+            },
+
+            _computeHideArticleArrow(articleId, direction) {
+                var feed = Polymer.dom(this.root).querySelector('rf-feed');
+                if (direction == 'previous') {
+                    return feed.hasPreviousArticle(articleId) ? "" : "visibility: hidden";
+                } else {
+                    return feed.hasNextArticle(articleId) ? "" : "visibility: hidden";
+                }
             },
 
             _extractSearchTokens: function(tagOrId) {
