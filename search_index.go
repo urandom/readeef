@@ -61,7 +61,7 @@ func NewSearchIndex(repo content.Repo, config Config, logger webfw.Logger) (Sear
 		mapping.AddDocumentMapping(mapping.DefaultType, docMapping)
 
 		logger.Infoln("Creating search index " + config.SearchIndex.BlevePath)
-		index, err = bleve.New(config.SearchIndex.BlevePath, mapping)
+		index, err = bleve.NewUsing(config.SearchIndex.BlevePath, mapping, "goleveldb", nil)
 
 		if err != nil {
 			return EmptySearchIndex, errors.New(fmt.Sprintf("Error creating search index: %v\n", err))
