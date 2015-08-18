@@ -96,6 +96,7 @@ func (t Thumbnailer) processThumbnail(done <-chan struct{}, processors <-chan co
 						t.logger.Debugf("Decoding original image config of %s from %s\n", a, u)
 						imgCfg, _, err := image.DecodeConfig(r)
 						if err != nil {
+							t.logger.Printf("Error decoding image config of %s from %s: %v\n", a, u, err)
 							return true
 						}
 
@@ -105,13 +106,13 @@ func (t Thumbnailer) processThumbnail(done <-chan struct{}, processors <-chan co
 							r.Seek(0, 0)
 							img, imgType, err := image.Decode(r)
 							if err != nil {
-								t.logger.Debugf("Error decoding image of %s from %s: %v\n", a, u, err)
+								t.logger.Printf("Error decoding image of %s from %s: %v\n", a, u, err)
 								return true
 							}
 							td.MimeType = "image/" + imgType
 
 							t.logger.Debugf("Generating thumbnail of %s from %s\n", a, u)
-							thumb := resize.Thumbnail(192, 128, img, resize.Lanczos3)
+							thumb := resize.Thumbnail(256, 192, img, resize.Lanczos3)
 							buf.Reset()
 
 							switch imgType {
@@ -131,6 +132,7 @@ func (t Thumbnailer) processThumbnail(done <-chan struct{}, processors <-chan co
 
 							t.logger.Debugf("Encoding thumbnail of %s from %s to type %s\n", a, u, td.MimeType)
 							td.Thumbnail = buf.Bytes()
+							td.Link = u.String()
 
 							return false
 						}
@@ -143,7 +145,7 @@ func (t Thumbnailer) processThumbnail(done <-chan struct{}, processors <-chan co
 
 			thumbnail.Data(td)
 			if thumbnail.Update(); thumbnail.HasErr() {
-				t.logger.Debugf("Error saving thumbnail of %s to database :%v\n", a, thumbnail.Err())
+				t.logger.Printf("Error saving thumbnail of %s to database :%v\n", a, thumbnail.Err())
 			}
 		}
 	}

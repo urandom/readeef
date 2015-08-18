@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS articles_scores (
 CREATE TABLE IF NOT EXISTS articles_thumbnails (
 	article_id BIGINT,
 	thumbnail BYTEA,
+	link TEXT,
 	mime_type TEXT,
 	processed BOOLEAN DEFAULT 'f',
 

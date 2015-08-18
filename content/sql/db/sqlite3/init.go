@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS articles_scores (
 CREATE TABLE IF NOT EXISTS articles_thumbnails (
 	article_id BIGINT,
 	thumbnail BLOB,
+	link TEXT,
 	mime_type TEXT,
 	processed INTEGER DEFAULT 0,
 

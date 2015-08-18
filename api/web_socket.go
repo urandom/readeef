@@ -266,7 +266,7 @@ func (a apiRequest) processor(
 	case "mark-feed-as-read":
 		return &markFeedAsReadProcessor{user: user}, nil
 	case "get-feed-articles":
-		return &getFeedArticlesProcessor{user: user}, nil
+		return &getFeedArticlesProcessor{user: user, si: si}, nil
 	case "search":
 		return &searchProcessor{user: user, si: si}, nil
 	case "get-user-attribute":

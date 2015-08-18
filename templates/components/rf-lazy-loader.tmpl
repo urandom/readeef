@@ -41,7 +41,6 @@
             for (var key in this.propertyPayload) {
                 this.content[key] = this.propertyPayload[key];
             }
-console.log("Inserting ", this.content)
 
             this.fire('rf-lazy-pre-insert', {element: this.content});
 

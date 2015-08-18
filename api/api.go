@@ -79,7 +79,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	patternController = NewAuth()
 	dispatcher.Handle(patternController)
 
-	multiPatternController = NewFeed(fm)
+	multiPatternController = NewFeed(fm, si)
 	dispatcher.Handle(multiPatternController)
 
 	multiPatternController = NewArticle(config)

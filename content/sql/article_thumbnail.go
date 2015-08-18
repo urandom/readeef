@@ -40,7 +40,7 @@ func (at *ArticleThumbnail) Update() {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(data.Thumbnail, data.MimeType, data.Processed, data.ArticleId)
+	res, err := stmt.Exec(data.Thumbnail, data.Link, data.MimeType, data.Processed, data.ArticleId)
 	if err != nil {
 		at.Err(err)
 		return
@@ -54,7 +54,7 @@ func (at *ArticleThumbnail) Update() {
 		}
 		defer stmt.Close()
 
-		_, err = stmt.Exec(data.ArticleId, data.Thumbnail, data.MimeType, data.Processed)
+		_, err = stmt.Exec(data.ArticleId, data.Thumbnail, data.Link, data.MimeType, data.Processed)
 		if err != nil {
 			at.Err(err)
 			return

@@ -56,12 +56,14 @@ INSERT INTO articles_scores(article_id, score, score1, score2, score3, score4, s
 	updateArticleScores = `UPDATE articles_scores SET score = $1, score1 = $2, score2 = $3, score3 = $4, score4 = $5, score5 = $6 WHERE article_id = $7`
 
 	getArticleThumbnail = `
-SELECT at.thumbnail, at.mime_type, at.processed
+SELECT at.thumbnail, at.link, at.mime_type, at.processed
 FROM articles_thumbnails at
 WHERE at.article_id = $1
 `
 	createArticleThumbnail = `
-INSERT INTO articles_thumbnails(article_id, thumbnail, mime_type, processed)
-	SELECT $1, $2, $3, $4 EXCEPT SELECT article_id, thumbnail, mime_type, processed FROM articles_thumbnails WHERE article_id = $1`
-	updateArticleThumbnail = `UPDATE articles_thumbnails SET thumbnail = $1, mime_type = $2, processed = $3 WHERE article_id = $4`
+INSERT INTO articles_thumbnails(article_id, thumbnail, link, mime_type, processed)
+	SELECT $1, $2, $3, $4, $5 EXCEPT SELECT article_id, thumbnail, link, mime_type, processed FROM articles_thumbnails WHERE article_id = $1
+`
+	updateArticleThumbnail = `
+UPDATE articles_thumbnails SET thumbnail = $1, link = $2, mime_type = $3, processed = $4 WHERE article_id = $5`
 )

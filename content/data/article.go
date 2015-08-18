@@ -57,6 +57,7 @@ type ArticleScores struct {
 type ArticleThumbnail struct {
 	ArticleId ArticleId
 	Thumbnail []byte
+	Link      string
 	MimeType  string `db:"mime_type"`
 	Processed bool
 }

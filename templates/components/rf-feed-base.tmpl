@@ -60,9 +60,9 @@ rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
 }
 
 rf-app-scaffold /deep/ .main-title-container [route="feed"] {
-    margin-top: -8px;
+    margin-top: -16px;
     margin-left: -8px;
-    margin-bottom: -24px;
+    margin-bottom: -16px;
 }
 rf-app-scaffold /deep/ .main-title-container [route="article"] {
     margin-left: -8px;
@@ -156,14 +156,16 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                         <iron-pages>
                             <section route="feed" class="layout horizontal center flex">
                                 <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-                                <paper-icon-button icon="arrow-back" style="visibility: hidden;" hidden$="[[ narrow ]]"></paper-icon-button>
-                                <span class="title-text-feed flex" hidden$="[[ searchTerm ]]">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
-                                <span class="search-feed flex layout horizontal center" hidden$="[[ !searchTerm ]]">
-                                    <paper-icon-button icon="clear"></paper-icon-button>
-                                    <paper-input id="search" placeholder="Search" no-label-float value="{{ searchTerm }}"></paper-input>
+                                <span class="title-text-feed flex" hidden$="[[ searchVisible ]]">
+                                    <paper-icon-button icon="arrow-back" style="visibility: hidden;" hidden$="[[ narrow ]]"></paper-icon-button>
+                                    <span>[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
+                                </span>
+                                <span class="search-feed flex layout horizontal center" hidden$="[[ !searchVisible ]]">
+                                    <paper-icon-button icon="clear" on-tap="toggleSearch"></paper-icon-button>
+                                    <paper-input class="search-input" placeholder="Search" no-label-float on-keypress="onSearchKeypress" autofocus></paper-input>
                                 </span>
 
-                                <paper-icon-button icon="search" hidden$="[[ searchTerm ]]"></paper-icon-button>
+                                <paper-icon-button icon="search" hidden$="[[ searchVisible ]]" on-tap="toggleSearch"></paper-icon-button>
                                 <paper-menu-button horizontal-align="right">
                                     <paper-icon-button icon="more-vert" class="dropdown-trigger"></paper-icon-button>
                                     {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
@@ -214,29 +216,15 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                     observer: '_feedsChanged',
                 },
                 tags: Array,
-                searchTerm: {
-                    type: String,
-                    value: null,
+                searchVisible: {
+                    type: Boolean,
+                    value: false,
                 },
             },
             observers: [
                 '_userProfileChanged(user.ProfileData.*)',
             ],
             _urlParser: document.createElement('a'),
-
-            attached: function() {
-                this.defaultNestedRoute('feed-base', 'feed', {tagOrId: 'all'});
-
-                // Set the property async, or it might be set too early for the template
-                this.async(function() {
-                    this.routeParamObserver('feed', 'tagOrId', function(value) {
-                        if (this.tagOrId == value) {
-                            this.tagOrId = "";
-                        }
-                        this.tagOrId = value;
-                    }.bind(this));
-                });
-            },
 
             feedUrlFor: function(tagOrId, prefix) {
                 if (prefix) {
@@ -275,8 +263,48 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 this.tags = tagList;
             },
 
+            toggleSearch: function() {
+                this.searchVisible = !this.searchVisible;
+                if (this.searchVisible) {
+                    // Get the currently active search input
+                    var search = Polymer.dom(
+                        Polymer.dom(this.root).querySelector('rf-app-scaffold').root
+                    ).querySelector('.search-input');
+                    if (search) {
+                        search.$.input.focus();
+                    }
+                } else if (this.tagOrId.startsWith("search:")) {
+                    var tagOrId = this._extractSearchTokens(this.tagOrId)[0];
+                    MoreRouting.navigateTo('feed', {tagOrId: tagOrId});
+                }
+            },
+
             ready: function() {
                 this.$['list-feeds'].send();
+            },
+
+            attached: function() {
+                this.defaultNestedRoute('feed-base', 'feed', {tagOrId: 'all'});
+
+                // Set the property async, or it might be set too early for the template
+                this.async(function() {
+                    this.routeParamObserver('feed', 'tagOrId', function(value) {
+                        // Force the notification
+                        if (this.tagOrId == value) {
+                            this.tagOrId = "";
+                        }
+                        this.tagOrId = value;
+
+                        if (value.startsWith("search:")) {
+                            this.searchVisible = true;
+                            var term = this._extractSearchTokens(value)[1];
+
+                            Polymer.dom(this.root).querySelectorAll('.search-input').forEach(function(input) {
+                                input.value = term;
+                            });
+                        }
+                    }.bind(this));
+                });
             },
 
             onAllFeedsMessage: function(event, detail) {
@@ -342,6 +370,18 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 }
             },
 
+            onSearchKeypress: function(event) {
+                var code = event.keyCode || event.charCode, key = event.keyIdentifier,
+                    target = Polymer.dom(event).localTarget;
+
+                if (key == 'Enter' || code == 13) {
+                    MoreRouting.navigateTo('feed', {
+                        tagOrId: "search:" + this.tagOrId + ":" + target.value,
+                    });
+                }
+            },
+
+
             _feedsChanged: function(newValue, oldValue) {
                 this.updateTags();
             },
@@ -372,10 +412,10 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                         }
                     }
                 } else if (tagOrId.startsWith("search:")) {
-                    var parts = tagOrId.split(":"),
-                        term = parts.pop(),
-                        sub = parts.join(":"),
-                        base = "Search results for " + term;
+                    var parts = this._extractSearchTokens(tagOrId),
+                        sub = parts[0],
+                        term = parts[1],
+                        base = "Search results for " + term;;
 
                     if (sub == "all") {
                         return base;
@@ -429,6 +469,23 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 }
 
                 return selected;
+            },
+
+            _extractSearchTokens: function(tagOrId) {
+                var parts = tagOrId.split(":"), term, sub;
+
+                parts.shift();
+                sub = parts[0];
+
+                if (sub == "tag") {
+                    sub = parts.splice(0, 2).join(":")
+                } else {
+                    sub = parts.shift();
+                }
+
+                term = decodeURIComponent(parts.join(":"));
+
+                return [sub, term];
             },
         })
     </script>

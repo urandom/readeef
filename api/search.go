@@ -101,5 +101,12 @@ func search(user content.User, searchIndex readeef.SearchIndex, query, highlight
 		}
 	}
 
+	switch articles := resp.val["Articles"].(type) {
+	case []content.UserArticle:
+		for _, a := range articles {
+			insertThumbnail(a)
+		}
+	}
+
 	return
 }

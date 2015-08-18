@@ -20,11 +20,12 @@ import (
 )
 
 type Feed struct {
-	fm *readeef.FeedManager
+	fm          *readeef.FeedManager
+	searchIndex readeef.SearchIndex
 }
 
-func NewFeed(fm *readeef.FeedManager) Feed {
-	return Feed{fm}
+func NewFeed(fm *readeef.FeedManager, searchIndex readeef.SearchIndex) Feed {
+	return Feed{fm: fm, searchIndex: searchIndex}
 }
 
 type listFeedsProcessor struct {
@@ -87,6 +88,7 @@ type getFeedArticlesProcessor struct {
 	UnreadOnly bool   `json:"unreadOnly"`
 
 	user content.User
+	si   readeef.SearchIndex
 }
 
 var (
@@ -170,7 +172,7 @@ func (con Feed) Handler(c context.Context) http.Handler {
 
 				if limit, resp.err = strconv.Atoi(params["limit"]); resp.err == nil {
 					if offset, resp.err = strconv.Atoi(params["offset"]); resp.err == nil {
-						resp = getFeedArticles(user, params["feed-id"], limit, offset,
+						resp = getFeedArticles(user, con.searchIndex, params["feed-id"], limit, offset,
 							params["newer-first"] == "true", params["unread-only"] == "true")
 					}
 				}
@@ -241,7 +243,7 @@ func (p markFeedAsReadProcessor) Process() responseError {
 }
 
 func (p getFeedArticlesProcessor) Process() responseError {
-	return getFeedArticles(p.user, p.Id, p.Limit, p.Offset, p.NewerFirst, p.UnreadOnly)
+	return getFeedArticles(p.user, p.si, p.Id, p.Limit, p.Offset, p.NewerFirst, p.UnreadOnly)
 }
 
 func listFeeds(user content.User) (resp responseError) {
@@ -516,7 +518,7 @@ func markFeedAsRead(user content.User, id string, timestamp int64) (resp respons
 	return
 }
 
-func getFeedArticles(user content.User, id string, limit int, offset int, newerFirst bool, unreadOnly bool) (resp responseError) {
+func getFeedArticles(user content.User, searchIndex readeef.SearchIndex, id string, limit int, offset int, newerFirst bool, unreadOnly bool) (resp responseError) {
 	resp = newResponse()
 
 	if limit > 200 {
@@ -577,6 +579,20 @@ func getFeedArticles(user content.User, id string, limit int, offset int, newerF
 
 			resp.val["Articles"], resp.err = f.ScoredArticles(time.Now().AddDate(0, 0, -5), time.Now(), limit, offset), f.Err()
 		}
+	} else if strings.HasPrefix(id, "search:") && searchIndex != readeef.EmptySearchIndex {
+		var query string
+		id = id[7:]
+		parts := strings.Split(id, ":")
+
+		if parts[0] == "tag" {
+			id = strings.Join(parts[:2], ":")
+			query = strings.Join(parts[2:], ":")
+		} else {
+			id = strings.Join(parts[:1], ":")
+			query = strings.Join(parts[1:], ":")
+		}
+
+		resp = search(user, searchIndex, query, "", id)
 	} else if strings.HasPrefix(id, "tag:") {
 		tag := user.Repo().Tag(user)
 		tag.Value(data.TagValue(id[4:]))
