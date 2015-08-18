@@ -217,7 +217,10 @@ rf-article /deep/ .article-control {
         <div class="layout vertical center" hidden$="[[ !loading ]]">
             <paper-spinner id="loading-spinner"></paper-spinner>
         </div>
-        <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" user="{{ user }}"></rf-api>
+
+        <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" user="[[ user ]]"></rf-api>
+        <rf-api id="article-read" method="mark-article-as-read" tag="content-list" on-rf-api-message="onArticleReadMessage" user="[[ user ]]"></rf-api>
+        <rf-api id="article-favorite" method="mark-article-as-favorite" tag="content-list" user="[[ user ]]"></rf-api>
     </template>
 
     <script>
