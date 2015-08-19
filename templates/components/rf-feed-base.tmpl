@@ -180,7 +180,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                             <section route="article" class="layout horizontal center flex">
                                 <paper-icon-button icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
                                 <span class="title-text-article flex">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
-                                <paper-icon-button id="article-read-state"></paper-icon-button>
+                                <paper-icon-button icon="[[ _computeReadStateIcon(_readState) ]]" on-tap="onReadStateTap"></paper-icon-button>
 
                                 <paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(_articleId, 'previous') ]]" on-tap="onPreviousArticle"></paper-icon-button>
                                 <paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(_articleId, 'next') ]]" on-tap="onNextArticle"></paper-icon-button>
@@ -191,7 +191,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 </template>
             </div>
             <div class="main-content">
-                <rf-feed user="[[ user ]]" feeds="[[ feeds ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]"></rf-feed>
+                <rf-feed id="feed" user="[[ user ]]" feeds="[[ feeds ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]" on-feed-article-state="onFeedArticleState"></rf-feed>
             </div>
         </rf-app-scaffold>
 
@@ -226,6 +226,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                     value: false,
                 },
                 _articleId: String,
+                _readState: Boolean,
             },
             observers: [
                 '_userProfileChanged(user.ProfileData.*)',
@@ -313,8 +314,24 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
 
                     this.routeParamObserver('article', 'articleId', function(value) {
                         this._articleId = value;
+                        this.cancelDebouncer('article-read-state');
+                        this._readState = this.$.feed.articleState(value).Read;
+                        this._ignoreReadDebouncer = false;
                     }.bind(this));
                 });
+            },
+
+            onFeedArticleState: function(event, detail) {
+                if ('Read' in detail) {
+                    if (this._ignoreReadDebouncer) {
+                        this._readState = detail.Read;
+                        this._ignoreReadDebouncer = false;
+                    } else {
+                        this.debounce('article-read-state', function() {
+                            this._readState = detail.Read;
+                        }, 1000);
+                    }
+                }
             },
 
             onAllFeedsMessage: function(event, detail) {
@@ -352,17 +369,26 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 MoreRouting.navigateTo('feed', {tagOrId: MoreRouting.getRoute('feed').params.tagOrId});
             },
 
+            onReadStateTap: function(event) {
+                var element = Polymer.dom(event).localTarget;
+
+                this._ignoreReadDebouncer = true;
+                this.flushDebouncer('article-read-state');
+                this.$.feed.articleState(this._articleId,
+                    {Read: !this.$.feed.articleState(this._articleId).Read});
+            },
+
             onPreviousArticle: function() {
-                Polymer.dom(this.root).querySelector('rf-feed').previousArticle();
+                this.$.feed.previousArticle();
             },
 
             onNextArticle: function() {
-                Polymer.dom(this.root).querySelector('rf-feed').nextArticle();
+                this.$.feed.nextArticle();
             },
 
             onRefresh: function() {
                 MoreRouting.navigateTo('feed', {tagOrId: MoreRouting.getRoute('feed').params.tagOrId});
-                Polymer.dom(this.root).querySelector('rf-feed').refresh();
+                this.$.feed.refresh();
             },
 
             onFeedMenuItemActivate: function(event) {
@@ -374,11 +400,11 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 switch (name) {
                 case "newer-first":
                     this.set("user.ProfileData.newerFirst", selected)
-                    Polymer.dom(this.root).querySelector('rf-feed').refresh();
+                    this.$.feed.refresh();
                     break;
                 case "unread-only":
                     this.set("user.ProfileData.unreadOnly", selected)
-                    Polymer.dom(this.root).querySelector('rf-feed').refresh();
+                    this.$.feed.refresh();
                     break;
                 case "mark-all-as-read":
                     if (selected) {
@@ -489,12 +515,15 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 return selected;
             },
 
+            _computeReadStateIcon: function(readState) {
+                return readState ? 'check-box' : 'check-box-outline-blank';
+            },
+
             _computeHideArticleArrow(articleId, direction) {
-                var feed = Polymer.dom(this.root).querySelector('rf-feed');
                 if (direction == 'previous') {
-                    return feed.hasPreviousArticle(articleId) ? "" : "visibility: hidden";
+                    return this.$.feed.hasPreviousArticle(articleId) ? "" : "visibility: hidden";
                 } else {
-                    return feed.hasNextArticle(articleId) ? "" : "visibility: hidden";
+                    return this.$.feed.hasNextArticle(articleId) ? "" : "visibility: hidden";
                 }
             },
 

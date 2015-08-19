@@ -219,8 +219,8 @@ rf-article /deep/ .article-control {
         </div>
 
         <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" user="[[ user ]]"></rf-api>
-        <rf-api id="article-read" method="mark-article-as-read" tag="content-list" on-rf-api-message="onArticleReadMessage" user="[[ user ]]"></rf-api>
-        <rf-api id="article-favorite" method="mark-article-as-favorite" tag="content-list" user="[[ user ]]"></rf-api>
+        <rf-api id="article-read" method="mark-article-as-read" tag="content-list" on-rf-api-message="onArticleStateMessage" user="[[ user ]]"></rf-api>
+        <rf-api id="article-favorite" method="mark-article-as-favorite" tag="content-list"on-rf-api-message="onArticleStateMessage"  user="[[ user ]]"></rf-api>
     </template>
 
     <script>
@@ -255,42 +255,9 @@ rf-article /deep/ .article-control {
             _lastUpdateTime: 0,
             _tagStripper: document.createElement('div'),
 
-            nextArticle: function(unread) {
-                var route = MoreRouting.getRoute('article'),
-                    article;
-                if (route.active) {
-                    var index = this._articleIndexMap[route.params.articleId];
-
-                    if (unread) {
-                        while (article = this.articles[++index]) {
-                            if (!article.Read) {
-                                break
-                            }
-                        }
-                    } else {
-                        article = this.articles[index+1]
-                    }
-                } else {
-                    var index = -1;
-                    if (unread) {
-                        while (article = this.articles[++index]) {
-                            if (!article.Read) {
-                                break
-                            }
-                        }
-                    } else {
-                        article = this.articles[0];
-                    }
-                }
-
-                if (article) {
-                    MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: article.Id});
-                }
-            },
-
             hasPreviousArticle: function(id) {
                 var index = this._articleIndexMap[id === undefined ?
-                    MoreRouting.getRoute('article').params.articleId :
+                    MoreRouting.getRouteByName('article').params.articleId :
                     id];
 
                 return index > 0;
@@ -298,14 +265,14 @@ rf-article /deep/ .article-control {
 
             hasNextArticle: function(id) {
                 var index = this._articleIndexMap[id === undefined ?
-                    MoreRouting.getRoute('article').params.articleId :
+                    MoreRouting.getRouteByName('article').params.articleId :
                     id];
 
                 return index < this.articles.length - 1;
             },
 
             previousArticle: function(unread) {
-                var route = MoreRouting.getRoute('article'),
+                var route = MoreRouting.getRouteByName('article'),
                     article;
                 if (route.active) {
                     var index = this._articleIndexMap[route.params.articleId];
@@ -337,6 +304,59 @@ rf-article /deep/ .article-control {
                 }
             },
 
+            nextArticle: function(unread) {
+                var route = MoreRouting.getRouteByName('article'),
+                    article;
+                if (route.active) {
+                    var index = this._articleIndexMap[route.params.articleId];
+
+                    if (unread) {
+                        while (article = this.articles[++index]) {
+                            if (!article.Read) {
+                                break
+                            }
+                        }
+                    } else {
+                        article = this.articles[index+1]
+                    }
+                } else {
+                    var index = -1;
+                    if (unread) {
+                        while (article = this.articles[++index]) {
+                            if (!article.Read) {
+                                break
+                            }
+                        }
+                    } else {
+                        article = this.articles[0];
+                    }
+                }
+
+                if (article) {
+                    MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: article.Id});
+                }
+            },
+
+            articleState: function(articleId, state) {
+                var index = this._articleIndexMap[
+                    arguments.length ?
+                        articleId :
+                        MoreRouting.getRouteByName('article').params.articleId],
+                    article = this.articles[index];
+
+                if (arguments.length < 2) {
+                    return {Read: article.Read, Favorite: article.Favorite};
+                }
+
+                if ('Read' in state) {
+                    this.$['article-read'].send({id: articleId - 0, value: state.Read});
+                }
+
+                if ('Favorite' in state) {
+                    this.$['article-favorite'].send({id: articleId - 0, value: state.Favorite});
+                }
+            },
+
             refresh: function() {
                 this.debounce('feed-refresh', function() {
                     this.loading = true;
@@ -357,9 +377,13 @@ rf-article /deep/ .article-control {
                     }
                 }
 
-                this.routeParamObserver('article', 'articleId', function(value) {
-                    var i = this._articleIndexMap[value];
+                this.routeParamObserver('article', 'articleId', function(id) {
+                    var i = this._articleIndexMap[id];
                     this.$.article.setArticles(this.articles[i], this.articles[i-1], this.articles[i+1], i);
+
+                    if (!this.articles[i].Read) {
+                        this.$['article-read'].send({id: id - 0, value: true});
+                    }
                 }.bind(this));
 
                 document.addEventListener('keypress', this.onKeypress.bind(this), false);
@@ -393,6 +417,24 @@ rf-article /deep/ .article-control {
                     }
                 }
                 this._lastUpdateTime = new Date().getTime();
+            },
+
+            onArticleStateMessage: function(event, data) {
+                var index = this._articleIndexMap[data.arguments.Id];
+                if (index != -1) {
+                    var type, args = {};
+                    if ('Read' in data.arguments) {
+                        type = 'Read';
+                    } else if ('Favorite' in data.arguments) {
+                        type = 'Favorite';
+                    } else {
+                        return;
+                    }
+
+                    args[type] = data.arguments[type];
+                    this.set("articles." + index + "." + type, data.arguments[type]);
+                    this.fire('feed-article-state', args);
+                }
             },
 
             onArticleActivate: function(event) {
