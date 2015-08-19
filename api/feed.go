@@ -592,7 +592,7 @@ func getFeedArticles(user content.User, searchIndex readeef.SearchIndex, id stri
 			query = strings.Join(parts[1:], ":")
 		}
 
-		resp = search(user, searchIndex, query, "", id)
+		resp = search(user, searchIndex, query, "html", id)
 	} else if strings.HasPrefix(id, "tag:") {
 		tag := user.Repo().Tag(user)
 		tag.Value(data.TagValue(id[4:]))

@@ -428,6 +428,8 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                         tagOrId: "search:" + this.tagOrId + ":" + target.value,
                     });
                 }
+
+                event.stopPropagation();
             },
 
 

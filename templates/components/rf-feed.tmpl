@@ -158,12 +158,12 @@ rf-article /deep/ .article-control {
                                 <div class="card layout vertical" on-tap="onArticleActivate">
                                     <div class="title-wrapper layout horizontal center">
                                         <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.Favorite) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
-                                        <span class="title" title$="[[ item.Title ]]">[[ _computeArticleTitle(item) ]]</span>
+                                        <span class="title" title$="[[ item.Title ]]" inner-h-t-m-l="[[ _computeArticleTitle(item) ]]"></span>
                                     </div>
                                     <div class="detail-wrapper layout horizontal center">
                                         <span class="short-description flex">
                                             <img src$="[[ item.Thumbnail ]]" class="top-image">
-                                            <span>[[ _computeArticleDescription(item) ]]</span>
+                                            <span inner-h-t-m-l="[[ _computeArticleDescription(item) ]]"></span>
                                             <br style="clear: both">
                                         </span>
                                     </div>
@@ -575,19 +575,21 @@ rf-article /deep/ .article-control {
             },
 
             _computeArticleTitle: function(item) {
-                return this._stripTags(
-                    item.Hit && item.Hit.fragment && item.Hit.fragments.Title ?
-                        item.Hit.fragments.Title :
-                        item.Title
-                    );
+                if (item.Hit && item.Hit.fragments && item.Hit.fragments.Title) {
+                    this._tagStripper.innerHTML = item.Hit.fragments.Title;
+
+                    return this._tagStripper.innerHTML;
+                }
+                return this._stripTags(item.Title);
             },
 
             _computeArticleDescription: function(item) {
-                return this._stripTags(
-                    item.Hit && item.Hit.fragment && item.Hit.fragments.Description ?
-                        item.Hit.fragments.Description :
-                        item.Description
-                    );
+                if (item.Hit && item.Hit.fragments && item.Hit.fragments.Description) {
+                    this._tagStripper.innerHTML = item.Hit.fragments.Description;
+
+                    return this._tagStripper.innerHTML;
+                }
+                return this._stripTags(item.Description);
             },
 
             _computeArticleTarget: function(item) {
@@ -600,8 +602,6 @@ rf-article /deep/ .article-control {
                 return this._tagStripper.textContent || "";
             },
 
-            _updateFeedArticles: function() {
-            },
         })
     </script>
 </dom-module>
