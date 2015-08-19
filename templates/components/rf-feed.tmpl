@@ -147,7 +147,7 @@ rf-article /deep/ .article-control {
                 <div route="feed" class="list-container">
                     <iron-list items="[[ articles ]]">
                         <template>
-                            <div class$="[[ _computeArticleClass(item) ]]" id$="[[ item.Id ]]" data-feed-id$="[[ item.FeedId ]]">
+                            <div class$="[[ _computeArticleClass(item) ]]" data-feed-id$="[[ item.FeedId ]]" data-article-id$="[[ item.Id ]]">
                                 <div class="card layout vertical" on-tap="onArticleActivate">
                                     <div class="title-wrapper layout horizontal center">
                                         <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
@@ -173,10 +173,10 @@ rf-article /deep/ .article-control {
                 </div>
                 <rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" on-next-article="onNextArticle" on-previous-article="onPreviousArticle">
                     <template>
-                        <div class="article-detail">
+                        <div class="article-detail" data-article-id$="[[ item.article.Id ]]">
                             <div class="card layout vertical">
                                 <a class="article-anchor title-wrapper" href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item) ]]">
-                                    <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
+                                    <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.article) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
                                     <span class="title" title$="[[ item.article.Title ]]">[[ item.article.Title ]]</span>
                                     <small class="index">[[ item.ordinalPosition ]]</small>
                                 </a>
@@ -440,12 +440,12 @@ rf-article /deep/ .article-control {
             onArticleActivate: function(event) {
                 event.stopPropagation();
 
-                var el = Polymer.dom(event.target), feedId = null, articleId = null;
+                var el = Polymer.dom(event).localTarget, feedId = null, articleId = null;
 
                 while (el = el.parentNode) {
                     if (el.matches('[data-feed-id]')) {
-                        feedId = el.getAttribute('data-feed-id');
-                        articleId = el.id;
+                        feedId = el.dataset.feedId;
+                        articleId = el.dataset.articleId;
                         break;
                     }
                 }
@@ -460,6 +460,20 @@ rf-article /deep/ .article-control {
             onFavoriteToggle: function(event) {
                 event.preventDefault();
                 event.stopPropagation();
+
+                var el = Polymer.dom(event).localTarget, articleId = null;
+
+                while (el = el.parentNode) {
+                    if (el.matches('[data-feed-id]')) {
+                        articleId = el.dataset.articleId;
+                        break;
+                    }
+                }
+
+                if (articleId !== null) {
+                    this.articleState(articleId,
+                        {Favorite: !this.articleState(articleId).Favorite});
+                }
             },
 
             onKeypress: function(event) {
