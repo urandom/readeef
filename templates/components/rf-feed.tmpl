@@ -171,7 +171,7 @@ rf-article /deep/ .article-control {
                         </template>
                     </iron-list>
                 </div>
-                <rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" on-next-article="onNextArticle" on-previous-article="onPreviousArticle">
+                <rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" articles="[[ articles ]]" on-next-article="onNextArticle" on-previous-article="onPreviousArticle">
                     <template>
                         <div class="article-detail" data-article-id$="[[ item.article.Id ]]">
                             <div class="card layout vertical">
@@ -361,6 +361,7 @@ rf-article /deep/ .article-control {
                 this.debounce('feed-refresh', function() {
                     this.loading = true;
                     this.articles = [];
+                    this.$.article.index = -1;
                     this.$['feed-articles'].send();
                 });
             },
@@ -379,7 +380,7 @@ rf-article /deep/ .article-control {
 
                 this.routeParamObserver('article', 'articleId', function(id) {
                     var i = this._articleIndexMap[id];
-                    this.$.article.setArticles(this.articles[i], this.articles[i-1], this.articles[i+1], i);
+                    this.$.article.index = i;
 
                     if (!this.articles[i].Read) {
                         this.$['article-read'].send({id: id - 0, value: true});
@@ -464,7 +465,7 @@ rf-article /deep/ .article-control {
                 var el = Polymer.dom(event).localTarget, articleId = null;
 
                 while (el = el.parentNode) {
-                    if (el.matches('[data-feed-id]')) {
+                    if (el.matches('[data-article-id]')) {
                         articleId = el.dataset.articleId;
                         break;
                     }
