@@ -147,7 +147,7 @@
                         this.user.ProfileData.theme = theme;
 
                         for (var i = 0, c; c = document.body.classList[i]; ++i) {
-                            if (c.startsWith('theme-')) {
+                            if (c.indexOf('theme-') == 0) {
                                 document.body.classList.remove(c);
                                 break;
                             }

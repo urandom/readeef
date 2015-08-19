@@ -280,7 +280,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                     if (search) {
                         search.$.input.focus();
                     }
-                } else if (this.tagOrId.startsWith("search:")) {
+                } else if (this.tagOrId.indexOf("search:") == 0) {
                     var tagOrId = this._extractSearchTokens(this.tagOrId)[0];
                     MoreRouting.navigateTo('feed', {tagOrId: tagOrId});
                 }
@@ -302,7 +302,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                         }
                         this.tagOrId = value;
 
-                        if (value.startsWith("search:")) {
+                        if (value.indexOf("search:") == 0) {
                             this.searchVisible = true;
                             var term = this._extractSearchTokens(value)[1];
 
@@ -442,12 +442,12 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                     return "All feed articles";
                 } else if (tagOrId == "favorite") {
                     return "Favorite feed articles";
-                } else if (tagOrId.startsWith("popular:")) {
+                } else if (tagOrId.indexOf("popular:") == 0) {
                     var sub = tagOrId.substring("popular:".length);
 
                     if (sub == "all") {
                         return "Popular feed articles";
-                    } else if (sub.startsWith("tag:")) {
+                    } else if (sub.indexOf("tag:") == 0) {
                         return "Popular articles from " + tagOrId.substring("tag:".length);
                     } else if (!isNaN(sub)) {
                         var feed = this.feeds.filter(function(f) { return f.Id == sub })[0];
@@ -455,7 +455,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                             return "Popular articles from " + feed.Title;
                         }
                     }
-                } else if (tagOrId.startsWith("search:")) {
+                } else if (tagOrId.indexOf("search:") == 0) {
                     var parts = this._extractSearchTokens(tagOrId),
                         sub = parts[0],
                         term = parts[1],
@@ -463,7 +463,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
 
                     if (sub == "all") {
                         return base;
-                    } else if (sub.startsWith("tag:")) {
+                    } else if (sub.indexOf("tag:") == 0) {
                         return base + "  from " + tagOrId.substring("tag:".length);
                     } else if (!isNaN(sub)) {
                         var feed = this.feeds.filter(function(f) { return f.Id == sub })[0];
@@ -471,7 +471,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                             return base + " from " + feed.Title;
                         }
                     }
-                } else if (tagOrId.startsWith("tag:")) {
+                } else if (tagOrId.indexOf("tag:") == 0) {
                     var sub = tagOrId.substring("tag:".length);
 
                     return "Articles from " + sub;

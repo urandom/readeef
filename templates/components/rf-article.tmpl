@@ -454,19 +454,7 @@
                 return;
             }
 
-            var selector;
-            if (parts[1] == this.index) {
-                selector = '.active-article .favorite-button';
-            } else if (parts[1] == this.index - 1) {
-                selector = '.previous-article .favorite-button';
-            } else if (parts[1] == this.index + 1) {
-                selector = '.next-article .favorite-button';
-            } else {
-                return;
-            }
-
-            Polymer.dom(this.root).querySelector(selector).icon = record.value ?
-                'bookmark' : 'bookmark-border';
+            this._forwardItemPath(parts.slice(1).join('.'), record.value);
         },
 
         _render: function(direction) {
@@ -629,11 +617,28 @@
         },
 
         _forwardParentPath: function(path, value) {
-            this._titleInstances.forEach(function(inst) {
+            this._instances.forEach(function(inst) {
                 if (inst) {
                     inst._templateInstance.notifyPath(path, value, true);
                 }
             }, this);
+        },
+
+        _forwardItemPath: function(path, value) {
+            if (this.articles.length) {
+                var dot = path.indexOf('.');
+                var key = path.substring(0, dot < 0 ? path.length : dot);
+                var idx = key - this.index + 1;
+                var inst = this._instances[idx];
+                if (inst) {
+                    if (dot >= 0) {
+                        path = 'item.article.' + path.substring(dot+1);
+                        inst.notifyPath(path, value, true);
+                    } else {
+                        inst.__setProperty('item.article', value, true);
+                    }
+                }
+            }
         },
 
     })
