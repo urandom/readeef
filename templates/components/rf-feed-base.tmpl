@@ -301,7 +301,6 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                         }
 
                         this.tagOrId = value;
-                        this.searchVisible = false;
 
                         if (value.indexOf("search:") == 0) {
                             this.searchVisible = true;
@@ -310,6 +309,8 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                             Polymer.dom(this.root).querySelectorAll('.search-input').forEach(function(input) {
                                 input.value = term;
                             });
+                        } else {
+                            this.searchVisible = false;
                         }
                     }.bind(this));
 
@@ -425,7 +426,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
 
                 if (key == 'Enter' || code == 13) {
                     MoreRouting.navigateTo('feed', {
-                        tagOrId: "search:" + this.tagOrId + ":" + target.value,
+                        tagOrId: "search:" + this._extractSearchTokens(this.tagOrId)[0] + ":" + target.value,
                     });
                 }
 
@@ -540,6 +541,10 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
 
             _extractSearchTokens: function(tagOrId) {
                 var parts = tagOrId.split(":"), term, sub;
+
+                if (parts[0] != "search") {
+                    return [parts.join(':'), null];
+                }
 
                 parts.shift();
                 sub = parts[0];
