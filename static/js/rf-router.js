@@ -197,16 +197,22 @@
         },
 
         routeParamObserver: function(routeName, param, cb) {
-            var route = MoreRouting.getRoute(routeName);
+            var route = MoreRouting.getRoute(routeName), debouncer;
 
             route.params.__subscribe(function(name, value) {
                 if (name == param) {
-                    cb(value);
+                    debouncer = Polymer.Debounce(debouncer, cb.bind(this, value));
+                }
+            });
+
+            route.__subscribe(function(key, value) {
+                if (key == 'active' && value && route.params[param] !== undefined) {
+                    debouncer = Polymer.Debounce(debouncer, cb.bind(this, route.params[param]));
                 }
             });
 
             if (route.active) {
-                cb(route.params[param]);
+                debouncer = Polymer.Debounce(debouncer, cb.bind(this, route.params[param]));
             }
         },
     };

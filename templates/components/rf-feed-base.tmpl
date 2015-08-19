@@ -296,10 +296,6 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 // Set the property async, or it might be set too early for the template
                 this.async(function() {
                     this.routeParamObserver('feed', 'tagOrId', function(value) {
-                        // Force the notification
-                        if (this.tagOrId == value) {
-                            this.tagOrId = "";
-                        }
                         this.tagOrId = value;
 
                         if (value.indexOf("search:") == 0) {
