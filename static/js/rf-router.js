@@ -206,8 +206,12 @@
             });
 
             route.__subscribe(function(key, value) {
-                if (key == 'active' && value && route.params[param] !== undefined) {
-                    debouncer = Polymer.Debounce(debouncer, cb.bind(this, route.params[param]));
+                if (key == 'active' && route.params[param] !== undefined) {
+                    if (value) {
+                        debouncer = Polymer.Debounce(debouncer, cb.bind(this, route.params[param]));
+                    } else {
+                        debouncer = Polymer.Debounce(debouncer, cb.bind(this, null, true));
+                    }
                 }
             });
 

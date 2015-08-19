@@ -296,6 +296,10 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 // Set the property async, or it might be set too early for the template
                 this.async(function() {
                     this.routeParamObserver('feed', 'tagOrId', function(value) {
+                        if (value === null) {
+                            return;
+                        }
+
                         this.tagOrId = value;
 
                         if (value.indexOf("search:") == 0) {
@@ -309,6 +313,10 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                     }.bind(this));
 
                     this.routeParamObserver('article', 'articleId', function(value) {
+                        if (value === null) {
+                            return;
+                        }
+
                         this._articleId = value;
                         this.cancelDebouncer('article-read-state');
                         this._readState = this.$.feed.articleState(value).Read;

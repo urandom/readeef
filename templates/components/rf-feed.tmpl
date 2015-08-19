@@ -379,11 +379,15 @@ rf-article /deep/ .article-control {
                 }
 
                 this.routeParamObserver('article', 'articleId', function(id) {
-                    var i = this._articleIndexMap[id];
-                    this.$.article.index = i;
+                    if (id === null) {
+                        this.$.article.index = -1;
+                    } else {
+                        var i = this._articleIndexMap[id];
+                        this.$.article.index = i;
 
-                    if (!this.articles[i].Read) {
-                        this.$['article-read'].send({id: id - 0, value: true});
+                        if (!this.articles[i].Read) {
+                            this.$['article-read'].send({id: id - 0, value: true});
+                        }
                     }
                 }.bind(this));
 
