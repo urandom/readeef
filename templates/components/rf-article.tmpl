@@ -635,7 +635,7 @@
                         path = 'item.article.' + path.substring(dot+1);
                         inst.notifyPath(path, value, true);
                     } else {
-                        inst.__setProperty('item.article', value, true);
+                        inst.item.article = value;
                     }
                 }
             }
