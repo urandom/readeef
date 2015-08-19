@@ -166,7 +166,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                                     <paper-input class="search-input" placeholder="Search" no-label-float on-keypress="onSearchKeypress" autofocus></paper-input>
                                 </span>
 
-                                <paper-icon-button icon="search" hidden$="[[ searchVisible ]]" on-tap="toggleSearch"></paper-icon-button>
+                                <paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(tagOrId, searchVisible) ]]" on-tap="toggleSearch"></paper-icon-button>
                                 <paper-menu-button horizontal-align="right">
                                     <paper-icon-button icon="more-vert" class="dropdown-trigger"></paper-icon-button>
                                     {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
@@ -301,6 +301,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                         }
 
                         this.tagOrId = value;
+                        this.searchVisible = false;
 
                         if (value.indexOf("search:") == 0) {
                             this.searchVisible = true;
@@ -505,6 +506,10 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 return 'feeds-' + item.name;
             },
 
+            _computeHideSearchButton: function(tagOrId, searchVisible) {
+                return !this._searchAvailable(tagOrId) || searchVisible;
+            },
+
             _computeOptionsMenuSelectedValues: function(userRecord) {
                 var selected = [];
 
@@ -546,6 +551,12 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 term = decodeURIComponent(parts.join(":"));
 
                 return [sub, term];
+            },
+
+            _searchAvailable: function(tagOrId) {
+                return tagOrId != 'favorite' &&
+                    tagOrId.indexOf('popular:') != 0 &&
+                    tagOrId.indexOf('search:') != 0;
             },
         })
     </script>

@@ -17,6 +17,13 @@
     margin: 16px 0 8px;
 }
 
+.list-container .empty-list {
+    font-family: "Roboto Slab";
+    font-variant: small-caps;
+    font-size: 2em;
+    padding: 0.67em 2em;
+}
+
 .card,
 rf-article /deep/ .card {
     @apply(--card-style);
@@ -170,6 +177,9 @@ rf-article /deep/ .article-control {
                             </div>
                         </template>
                     </iron-list>
+                    <div class="card empty-list" hidden$="[[ articles.length ]]">
+                        <span>There are no articles in this section</span>
+                    </div>
                 </div>
                 <rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" articles="[[ articles ]]" on-next-article="onNextArticle" on-previous-article="onPreviousArticle">
                     <template>
