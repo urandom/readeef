@@ -248,9 +248,9 @@
                         dragStart: false,
                         ignoreTrack: false,
                         previousDx: 0,
-                        previous: this.querySelector('.previous-article'),
-                        active: this.querySelector('.active-article'),
-                        next: this.querySelector('.next-article'),
+                        previous: Polymer.dom(this.root).querySelector('.previous-article'),
+                        active: Polymer.dom(this.root).querySelector('.active-article'),
+                        next: Polymer.dom(this.root).querySelector('.next-article'),
                         containerWidth: this.$['article-container'].offsetWidth,
                     };
                     break;
@@ -425,7 +425,7 @@
             if (direction === 0) {
                 this._debounceTemplate(this._render);
                 this.debounce('animation', function() {
-                    slideFromTop(this.querySelector('.active-article'));
+                    slideFromTop(Polymer.dom(this.root).querySelector('.active-article'));
                 }.bind(this));
             } else {
                 if (this._trackState && index == this._trackState.selectedIndex) {
@@ -433,11 +433,11 @@
                         this._render(direction);
                     });
                 } else if (direction === 1) {
-                    slideFromRight(this.querySelector('.active-article'), this.querySelector('.next-article'), function() {
+                    slideFromRight(Polymer.dom(this.root).querySelector('.active-article'), Polymer.dom(this.root).querySelector('.next-article'), function() {
                         this._render(direction);
                     }.bind(this));
                 } else {
-                    slideFromLeft(this.querySelector('.previous-article'), this.querySelector('.active-article'), function() {
+                    slideFromLeft(Polymer.dom(this.root).querySelector('.previous-article'), Polymer.dom(this.root).querySelector('.active-article'), function() {
                         this._render(direction);
                     }.bind(this));
                 }
@@ -458,9 +458,9 @@
         },
 
         _render: function(direction) {
-            var active = this.querySelector('.active-article'),
-                previous = this.querySelector('.previous-article'),
-                next = this.querySelector('.next-article');
+            var active = Polymer.dom(this.root).querySelector('.active-article'),
+                previous = Polymer.dom(this.root).querySelector('.previous-article'),
+                next = Polymer.dom(this.root).querySelector('.next-article');
             if (direction === 1) {
                 active.classList.remove('active-article');
                 active.classList.add('previous-article');
@@ -491,7 +491,7 @@
 
             if (direction !== 1) {
                 if (this.index > 0) {
-                    var el = this.querySelector('.previous-article');
+                    var el = Polymer.dom(this.root).querySelector('.previous-article');
                     el.innerHTML = '';
 
                     var inst = this._generateArticle(this.articles[this.index-1], -1);
@@ -504,7 +504,7 @@
 
             if (direction !== -1) {
                 if (this.index < this.articles.length - 1) {
-                    var el = this.querySelector('.next-article');
+                    var el = Polymer.dom(this.root).querySelector('.next-article');
                     el.innerHTML = '';
 
                     var inst = this._generateArticle(this.articles[this.index+1], 1);
@@ -516,7 +516,7 @@
             }
 
             if (direction !== 1 && direction !== -1) {
-                var el = this.querySelector('.active-article');
+                var el = Polymer.dom(this.root).querySelector('.active-article');
                 el.innerHTML = '';
 
                 var inst = this._generateArticle(this.articles[this.index], 0);
@@ -527,7 +527,7 @@
             var oldHeight = window.getComputedStyle(this.$['article-container']).getPropertyValue('height');
 
             ['previous-article', 'active-article', 'next-article'].forEach(function(cls) {
-                var el = this.querySelector('.' + cls);
+                var el = Polymer.dom(this.root).querySelector('.' + cls);
                 el.removeAttribute('style');
                 if (cls == 'active-article') {
                     el.classList.add('height-provider');
