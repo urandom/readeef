@@ -85,6 +85,14 @@
             url: String,
             link: String,
             active: Boolean,
+            article: {
+                type: Object,
+                observer: '_articleChanged',
+            },
+            urlComposer: {
+                type: Function,
+                observer: '_urlComposerChanged',
+            },
         },
 
         attached: function() {
@@ -103,6 +111,18 @@
         _categoryChanged: function(category, old) {
             RfShareServices._unregister(this.name);
             RfShareServices.register(this);
+        },
+
+        _articleChanged: function(article) {
+            if (this.urlComposer && article) {
+                this.url = this.urlComposer.call(this, article);
+            }
+        },
+
+        _urlComposerChanged: function(composer) {
+            if (composer && this.article) {
+                this.url = composer.call(this, this.article);
+            }
         },
     })
 })(window);

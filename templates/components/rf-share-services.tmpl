@@ -1,20 +1,98 @@
 {% define "content" %}
 <link rel="import" href="/component/rf-share-service">
 
-<rf-share-service name="evernote" description="Evernote" category="Read-it-later" url="https://www.evernote.com/clip.action?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" link="https://www.evernote.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="instapaper" description="Instapaper" category="Read-it-later" url="http://www.instapaper.com/hello2?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" link="http://www.instapaper.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="readability" description="Readability" category="Read-it-later" url="https://www.readability.com/save?url={{ currentArticle.Link | encodeURIComponent }}" link="https://www.readability.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="pocket" description="Pocket" category="Read-it-later" url="https://getpocket.com/save?url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" link="https://getpocket.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="evernote" description="Evernote" category="Read-it-later" link="https://www.evernote.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="instapaper" description="Instapaper" category="Read-it-later" link="http://www.instapaper.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="readability" description="Readability" category="Read-it-later" link="https://www.readability.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="pocket" description="Pocket" category="Read-it-later" link="https://getpocket.com" article="{{ currentArticle }}"></rf-share-service>
 
-<rf-share-service name="googlep" description="Google+" category="Social network" url="https://plus.google.com/share?url={{ currentArticle.Link | encodeURIComponent }}" link="https://plus.google.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="facebook" description="Facebook" category="Social network" url="http://www.facebook.com/sharer.php?u={{ currentArticle.Link | encodeURIComponent }}&t={{ currentArticle.Title | encodeURIComponent }}" link="http://www.facebook.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="twitter" description="Twitter" category="Social network" url="https://twitter.com/intent/tweet?url={{ currentArticle.Link | encodeURIComponent }}&text={{ currentArticle.Title | encodeURIComponent }}" link="https://twitter.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="pinterest" description="Pinterest" category="Social network" url="http://pinterest.com/pin/find/?url={{ currentArticle.Link | encodeURIComponent  }}" link="http://pinterest.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="googlep" description="Google+" category="Social network" link="https://plus.google.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="facebook" description="Facebook" category="Social network" link="http://www.facebook.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="twitter" description="Twitter" category="Social network" link="https://twitter.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="pinterest" description="Pinterest" category="Social network" link="http://pinterest.com" article="{{ currentArticle }}"></rf-share-service>
 
-<rf-share-service name="tumblr" description="Tumblr" category="Blogging" url="http://www.tumblr.com/share?v=3&u={{ currentArticle.Link | encodeURIComponent }}&t={{ currentArticle.Title | encodeURIComponent }}" link="http://www.tumblr.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="flipboard" description="Flipboard" category="Blogging" url="https://share.flipboard.com/bookmarklet/popout?v=2&url={{ currentArticle.Link | encodeURIComponent }}&title={{ currentArticle.Title | encodeURIComponent }}" link="https://www.flipboard.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="tumblr" description="Tumblr" category="Blogging" link="http://www.tumblr.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="flipboard" description="Flipboard" category="Blogging" link="https://www.flipboard.com" article="{{ currentArticle }}"></rf-share-service>
 
-<rf-share-service name="email" description="Email" category="Email" url="mailto:?subject={{ currentArticle.Title | encodeURIComponent }}&body={{ currentArticle.Link | encodeURIComponent }}" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="gmail" description="Gmail" category="Email" url="https://mail.google.com/mail/?view=cm&su={{ currentArticle.Title | encodeURIComponent }}&body={{ currentArticle.Link | encodeURIComponent }}" link="https://mail.google.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="email" description="Email" category="Email" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="gmail" description="Gmail" category="Email" link="https://mail.google.com" article="{{ currentArticle }}"></rf-share-service>
 
+<script>
+RfShareServices.getAll().forEach(function(service) {
+    switch (service.name) {
+        case "evernote":
+            service.urlComposer = function(article) {
+                var link = encodeURIComponent(article.Link), title = encodeURIComponent(article.Title);
+                return "https://www.evernote.com/clip.action?url=" + link + "&title=" + title;
+            };
+            break;
+        case "instapaper":
+            service.urlComposer = function(article) {
+                var link = encodeURIComponent(article.Link), title = encodeURIComponent(article.Title);
+                return "http://www.instapaper.com/hello2?url=" + link + "&title=" + title
+            }
+            break;
+        case "readability":
+            service.urlComposer = function(article) {
+                var link = encodeURIComponent(article.Link);
+                return "https://www.readability.com/save?url=" + link;
+            }
+            break;
+        case "pocket":
+            service.urlComposer = function(article) {
+                var link = encodeURIComponent(article.Link), title = encodeURIComponent(article.Title);
+                return "https://getpocket.com/save?url=" + link + "&title=" + title;
+            }
+            break;
+        case "googlep":
+            service.urlComposer = function(article) {
+                var link = encodeURIComponent(article.Link);
+                return "https://plus.google.com/share?url=" + link;
+            }
+            break;
+        case "facebook":
+            service.urlComposer = function(article) {
+                var link = encodeURIComponent(article.Link), title = encodeURIComponent(article.Title);
+                return "http://www.facebook.com/sharer.php?u=" + link + "&t=" + title; 
+            }
+            break;
+        case "twitter":
+            service.urlComposer = function(article) {
+                var link = encodeURIComponent(article.Link), title = encodeURIComponent(article.Title);
+                return "https://twitter.com/intent/tweet?url=" + link + "&text=" + title;
+            }
+            break;
+        case "pinterest":
+            service.urlComposer = function(article) {
+                var link = encodeURIComponent(article.Link);
+                return "http://pinterest.com/pin/find/?url=" + link;
+            }
+            break;
+        case "tumblr":
+            service.urlComposer = function(article) {
+                var link = encodeURIComponent(article.Link), title = encodeURIComponent(article.Title);
+                return "http://www.tumblr.com/share?v=3&u=" + link + "&t=" + title;
+            }
+            break;
+        case "flipboard":
+            service.urlComposer = function(article) {
+                var link = encodeURIComponent(article.Link), title = encodeURIComponent(article.Title);
+                return "https://share.flipboard.com/bookmarklet/popout?v=2&url=" + link + "&title=" + title;
+            }
+            break;
+        case "email":
+            service.urlComposer = function(article) {
+                var link = encodeURIComponent(article.Link), title = encodeURIComponent(article.Title);
+                return "mailto:?subject=" + title + "&body=" + link;
+            }
+            break;
+        case "gmail":
+            service.urlComposer = function(article) {
+                var link = encodeURIComponent(article.Link), title = encodeURIComponent(article.Title);
+                return "https://mail.google.com/mail/?view=cm&su=" + title + "&body=" + link;
+            }
+            break;
+    }
+});
+</script>
 {% end %}
