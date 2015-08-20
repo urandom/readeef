@@ -1,42 +1,60 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
-<link rel="import" href="/dist/iron-signals/iron-signals.html">
-<link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
-<link rel="import" href="/dist/paper-input/paper-input.html">
 <link rel="import" href="/dist/paper-toggle-button/paper-toggle-button.html">
 
 <link rel="import" href="/component/rf-api">
 
 <dom-module id="rf-settings-share-services">
+    <style>
+.layout.horizontal.wrap .card {
+    margin-left: 8px;
+    margin-right: 8px;
+}
+.layout.horizontal.wrap .card:first-child {
+    margin-left: 0;
+    margin-right: 8px;
+}
+ul {
+    padding: 0;
+}
+.card ul li {
+    padding: 8px;
+    line-height: 24px;
+}
+.card paper-toggle-button {
+    margin-left: 0.67em;
+    padding: 8px;
+
+    --paper-toggle-button-checked-bar-color: var(--paper-toolbar-background);
+    --paper-toggle-button-checked-button-color: var(--paper-toolbar-background);
+    --paper-toggle-button-checked-ink-color: var(--paper-toolbar-background);
+}
+    </style>
     <template>
-        <div class="layout horizontal center wrap">
+        <div class="layout horizontal wrap">
             <template is="dom-repeat" items="[[ shareServiceCategories ]]">
                 <div class="card">
                     <h4>[[ item.name ]]</h4>
+                    <ul>
+                        <template is="dom-repeat" items="[[ item.services ]]" as="service">
+                            <li title$="[[ service.title ]]" class="layout horizontal center" data-service-name$="[[ service.name ]]">
+                                <div class="share-service-title flex">
+                                    <template is="dom-if" if="[[ service.link ]]">
+                                        <a href$="[[ service.link ]]">[[ service.description ]]</a>
+                                    </template>
+                                    <template is="dom-if" if="[[ !service.link ]]">
+                                        <span>[[ service.description ]]</span>
+                                    </template>
+                                </div>
+                                <paper-toggle-button checked="[[ service.active ]]" on-change="onShareServiceCheckChange"></paper-toggle-button>
+                            </li>
+                        </template>
+                    </ul>
                 </div>
-                <ul>
-                    <template is="dom-repeat" items="[[ item.services ]]" as="service">
-                        <li title$="[[ service.title ]]" class="layout horizontal center" data-service-id="[[ service.id ]]">
-                            <div class="share-service-title flex">
-                                <template is="dom-if" if="[[ service.link ]]">
-                                    <a href$="[[ service.link ]]">[[ service.description ]]</a>
-                                </template>
-                                <template is="dom-if" if="[[ !service.link ]]">
-                                    <span>[[ service.title ]]</span>
-                                </template>
-                            </div>
-                            <paper-toggle-button checked="[[ service.enabled ]]" on-change="onShareServiceCheckChange"></paper-toggle-button>
-                        </li>
-                    </template>
-                </ul>
             </template>
         </div>
 
-        <rf-api id="list-feeds" method="list-feeds" tag="settings" on-rf-api-message="onAllFeedsMessage" user="[[ user ]]"></rf-api>
-        <rf-api id="set-feed-tags" method="set-feed-tags" on-rf-api-message="onSetFeedTagsMessage" user="[[ user ]]"></rf-api>
-        <rf-api id="remove-feed" method="remove-feed" on-rf-api-message="onRemoveFeedMessage" user="[[ user ]]"></rf-api>
-
-        <iron-signals on-iron-signal-rf-feeds-added="onSignalFeedsAdded"></iron-signals>
+        <rf-api id="user-settings" method="set-user-attribute" tag="share-services" user="[[ user ]]"></rf-api>
     </template>
 
     <script>
@@ -47,81 +65,43 @@
                 user: Object,
                 shareServiceCategories: Array,
             },
-            _urlParser: document.createElement('a'),
 
             attached: function() {
-                this.$['list-feeds'].send();
+                var categories = [];
+                RfShareServices.getCategories().forEach(function(category) {
+                    var item = {name: category, services: []};
+                    categories.push(item);
+                    RfShareServices.getAllByCategory(category).forEach(function(service) {
+                        item.services.push(service);
+                    });
+                });
+
+                this.shareServiceCategories = categories;
             },
 
-            onAllFeedsMessage: function(event, detail) {
-                this.feeds = detail.arguments.Feeds;
-            },
+            onShareServiceCheckChange: function(event) {
+                var element = Polymer.dom(event).localTarget,
+                    checked = element.checked, service;
 
-            onDisplayFeedErrors: function(event) {
-                var element = event.target;
-                while (element.nodeName.toLowerCase() != "paper-icon-button") {
+                while (element && element.matches && !element.matches('[data-service-name]')) {
                     element = element.parentNode;
                 }
 
-                element.parentNode.querySelector('paper-toast').toggle();
-            },
-
-            onFeedTagsChange: function(event, detail, sender) {
-                if (typeof event.target.value != "string") {
+                if (!element || !element.dataset) {
                     return;
                 }
 
-                var tags = event.target.value.split(/\s*,\s*/);
+                service = RfShareServices.get(element.dataset.serviceName);
+                service.active = checked;
 
-                event.model.item.Tags = tags;
+                this.user.ProfileData.shareServices =
+                    RfShareServices.getActive().map(function(s) { return s.name });
 
-                this.$['set-feed-tags'].send({id: event.model.item.Id, tags: tags});
+                this.$['user-settings'].send({
+                    attribute: "ProfileData",
+                    value: this.user.ProfileData,
+                });
             },
-
-            onSetFeedTagsMessage: function(event, data) {
-                var feed = this.feeds.filter(function(feed) {
-                    if (feed.Id == data.arguments.Id) {
-                        return feed;
-                    }
-                })[0];
-                this.fire('iron-signal', {name: 'rf-feed-tags-changed', data: feed});
-            },
-
-            onRemoveFeed: function(event, detail) {
-                this.$['remove-feed'].send({id: event.model.item.Id});
-            },
-
-            onRemoveFeedMessage: function(event, data) {
-                this.$['list-feeds'].send();
-
-                this.fire('iron-signal', {name: 'rf-feeds-removed'});
-            },
-
-            onSignalFeedsAdded: function() {
-                this.$['list-feeds'].send();
-            },
-
-            _computeHideEmptyMessage: function(feeds) {
-                return !!feeds.length
-            },
-
-            _computeFavIconUrl: function(feed) {
-                this._urlParser.href = feed.Link
-
-                return "//www.google.com/s2/favicons?domain=" + this._urlParser.host;
-            },
-
-            _computeHideFeedErrors: function(feed) {
-                return !this.user.Admin || (!feed.UpdateError && !feed.SubscribeError);
-            },
-
-            _computeToastFeedErrorsText: function(feed) {
-                return feed.UpdateError + "\n" + feed.SubscribeError;
-            },
-
-            _computeFeedTags: function(feed) {
-                return feed.Tags ? feed.Tags.join(', ') : '';
-            }
 
         })
     </script>

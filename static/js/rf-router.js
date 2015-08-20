@@ -111,6 +111,12 @@
                 if (user.ProfileData.theme) {
                     document.body.classList.add('theme-' + user.ProfileData.theme);
                 }
+
+                if (user.ProfileData.shareServices) {
+                    user.ProfileData.shareServices.forEach(function(name) {
+                        RfShareServices.get(name).active = true;
+                    });
+                }
                 authCheck.removeEventListener('rf-api-message', validateMessage);
             }.bind(this);
 

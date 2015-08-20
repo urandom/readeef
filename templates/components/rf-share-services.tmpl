@@ -1,21 +1,21 @@
 {% define "content" %}
 <link rel="import" href="/component/rf-share-service">
 
-<rf-share-service name="evernote" description="Evernote" category="Read-it-later" link="https://www.evernote.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="instapaper" description="Instapaper" category="Read-it-later" link="http://www.instapaper.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="readability" description="Readability" category="Read-it-later" link="https://www.readability.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="pocket" description="Pocket" category="Read-it-later" link="https://getpocket.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="evernote" description="Evernote" category="Read-it-later" link="https://www.evernote.com"></rf-share-service>
+<rf-share-service name="instapaper" description="Instapaper" category="Read-it-later" link="http://www.instapaper.com"></rf-share-service>
+<rf-share-service name="readability" description="Readability" category="Read-it-later" link="https://www.readability.com"></rf-share-service>
+<rf-share-service name="pocket" description="Pocket" category="Read-it-later" link="https://getpocket.com"></rf-share-service>
 
-<rf-share-service name="googlep" description="Google+" category="Social network" link="https://plus.google.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="facebook" description="Facebook" category="Social network" link="http://www.facebook.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="twitter" description="Twitter" category="Social network" link="https://twitter.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="pinterest" description="Pinterest" category="Social network" link="http://pinterest.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="googlep" description="Google+" category="Social network" link="https://plus.google.com"></rf-share-service>
+<rf-share-service name="facebook" description="Facebook" category="Social network" link="http://www.facebook.com"></rf-share-service>
+<rf-share-service name="twitter" description="Twitter" category="Social network" link="https://twitter.com"></rf-share-service>
+<rf-share-service name="pinterest" description="Pinterest" category="Social network" link="http://pinterest.com"></rf-share-service>
 
-<rf-share-service name="tumblr" description="Tumblr" category="Blogging" link="http://www.tumblr.com" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="flipboard" description="Flipboard" category="Blogging" link="https://www.flipboard.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="tumblr" description="Tumblr" category="Blogging" link="http://www.tumblr.com"></rf-share-service>
+<rf-share-service name="flipboard" description="Flipboard" category="Blogging" link="https://www.flipboard.com"></rf-share-service>
 
-<rf-share-service name="email" description="Email" category="Email" article="{{ currentArticle }}"></rf-share-service>
-<rf-share-service name="gmail" description="Gmail" category="Email" link="https://mail.google.com" article="{{ currentArticle }}"></rf-share-service>
+<rf-share-service name="email" description="Email" category="Email"></rf-share-service>
+<rf-share-service name="gmail" description="Gmail" category="Email" link="https://mail.google.com"></rf-share-service>
 
 <script>
 RfShareServices.getAll().forEach(function(service) {

@@ -12,7 +12,9 @@
     var RfShareServices = scope.RfShareServices;
     if (!RfShareServices) {
         (function() {
-            var services = {}, categories = {};
+            var services = {}, categories = {}, comparator = function(a, b) {
+                return a.description.localeCompare(b.description);
+            };
 
             RfShareServices = scope.RfShareServices = {};
 
@@ -25,25 +27,25 @@
                 for (var key in services) {
                     ret.push(services[key]);
                 }
-                return ret;
+                return ret.sort(comparator);
+            };
+
+            RfShareServices.getCategories = function() {
+                return Object.keys(categories).sort();
             };
 
             RfShareServices.getAllByCategory = function(category) {
-                return (categories[category] || []).sort(function(a, b) {
-                    return a.localeCompare(b);
-                });
+                return (categories[category] || []).sort(comparator);
             };
 
             RfShareServices.getActive = function(category) {
                 var services = arguments.length ?
                     (categories[category] || []) :
-                    this.getAllServices();
+                    this.getAll();
 
                 return services.filter(function(s) {
                     return s.active;
-                }).sort(function(a, b) {
-                    return a.localeCompare(b);
-                });
+                }).sort(comparator);
             };
 
             RfShareServices.register = function(service) {
@@ -55,12 +57,12 @@
                 }
             };
 
-            RfShareServices._unregister = function(name) {
+            RfShareServices._unregister = function(name, category) {
                 var service = services[name];
                 if (service) {
                     delete services[name];
 
-                    var category = categories[service.category];
+                    var category = categories[category || service.category];
                     if (category) {
                         category.splice(category.indexOf(service), 1);
                     }
@@ -84,7 +86,10 @@
             description: String,
             url: String,
             link: String,
-            active: Boolean,
+            active: {
+                type: Boolean,
+                value: false,
+            },
             article: {
                 type: Object,
                 observer: '_articleChanged',
@@ -104,13 +109,17 @@
         },
 
         _nameChanged: function(name, old) {
-            RfShareServices._unregister(old);
-            RfShareServices.register(this);
+            if (name && this.category) {
+                RfShareServices._unregister(old);
+                RfShareServices.register(this);
+            }
         },
 
         _categoryChanged: function(category, old) {
-            RfShareServices._unregister(this.name);
-            RfShareServices.register(this);
+            if (this.name && category) {
+                RfShareServices._unregister(this.name, old);
+                RfShareServices.register(this);
+            }
         },
 
         _articleChanged: function(article) {
