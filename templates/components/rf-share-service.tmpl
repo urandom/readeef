@@ -1,10 +1,111 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
 
-<polymer-element name="rf-share-service" attributes="article url link category description enabled" constructor="RfSocialService" hidden>
+<dom-module id="rf-share-service">
     <template>
-        <a href="{{ url }}" target="_blank" id="link">{{ description }}</a>
+        <a href="[[ url ]]" target="_blank" id="link">[[ description ]]</a>
     </template>
-    <script src="/js/rf-share-service.js"></script>
-</polymer-element>
+    <script>
+(function(scope) {
+    "use strict";
+
+    var RfShareServices = scope.RfShareServices;
+    if (!RfShareServices) {
+        (function() {
+            var services = {}, categories = {};
+
+            RfShareServices = scope.RfShareServices = {};
+
+            RfShareServices.get = function(name) {
+                return services[name];
+            };
+
+            RfShareServices.getAll = function() {
+                var ret = [];
+                for (var key in services) {
+                    ret.push(services[key]);
+                }
+                return ret;
+            };
+
+            RfShareServices.getAllByCategory = function(category) {
+                return (categories[category] || []).sort(function(a, b) {
+                    return a.localeCompare(b);
+                });
+            };
+
+            RfShareServices.getActive = function(category) {
+                var services = arguments.length ?
+                    (categories[category] || []) :
+                    this.getAllServices();
+
+                return services.filter(function(s) {
+                    return s.active;
+                }).sort(function(a, b) {
+                    return a.localeCompare(b);
+                });
+            };
+
+            RfShareServices.register = function(service) {
+                services[service.name] = service;
+                if (service.category in categories) {
+                    categories[service.category].push(service);
+                } else {
+                    categories[service.category] = [service];
+                }
+            };
+
+            RfShareServices._unregister = function(name) {
+                var service = services[name];
+                if (service) {
+                    delete services[name];
+
+                    var category = categories[service.category];
+                    if (category) {
+                        category.splice(category.indexOf(service), 1);
+                    }
+                }
+            };
+
+        })();
+    }
+
+    Polymer({
+        is: 'rf-share-service',
+        properties: {
+            name: {
+                type: String,
+                observer: '_nameChanged',
+            },
+            category: {
+                type: String,
+                observer: '_categoryChanged',
+            },
+            description: String,
+            url: String,
+            link: String,
+            active: Boolean,
+        },
+
+        attached: function() {
+            RfShareServices.register(this);
+        },
+
+        go: function() {
+            this.$.link.click();
+        },
+
+        _nameChanged: function(name, old) {
+            RfShareServices._unregister(old);
+            RfShareServices.register(this);
+        },
+
+        _categoryChanged: function(category, old) {
+            RfShareServices._unregister(this.name);
+            RfShareServices.register(this);
+        },
+    })
+})(window);
+    </script>
+</dom-module>
 {% end %}

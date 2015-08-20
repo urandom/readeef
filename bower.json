@@ -45,6 +45,7 @@
     "iron-list": "PolymerElements/iron-list#~1.0.2",
     "iron-signals": "PolymerElements/iron-signals#~1.0.2",
     "paper-menu-button": "PolymerElements/paper-menu-button#~1.0.2",
-    "paper-item": "PolymerElements/paper-item#~1.0.2"
+    "paper-item": "PolymerElements/paper-item#~1.0.2",
+    "paper-toggle-button": "PolymerElements/paper-toggle-button#~1.0.6"
   }
 }

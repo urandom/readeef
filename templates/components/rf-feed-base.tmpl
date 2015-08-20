@@ -293,6 +293,22 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
             attached: function() {
                 this.defaultNestedRoute('feed-base', 'feed', {tagOrId: 'all'});
 
+                document.addEventListener('keypress', function(event) {
+                    if (!MoreRouting.isCurrentUrl('feed-base')) {
+                        return;
+                    }
+
+                    if (!this._searchAvailable(this.tagOrId) || this.searchVisible) {
+                        return;
+                    }
+
+                    var code = event.keyCode || event.charCode;
+
+                    if (code == 47) {
+                        this.toggleSearch();
+                    }
+                }.bind(this), false);
+
                 // Set the property async, or it might be set too early for the template
                 this.async(function() {
                     this.routeParamObserver('feed', 'tagOrId', function(value) {

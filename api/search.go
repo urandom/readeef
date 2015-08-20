@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -83,6 +84,14 @@ func (p searchProcessor) Process() responseError {
 }
 
 func search(user content.User, searchIndex readeef.SearchIndex, query, highlight, feedId string) (resp responseError) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			resp = newResponse()
+
+			resp.err = fmt.Errorf("Error during search: %s", rec)
+		}
+	}()
+
 	resp = newResponse()
 
 	if strings.HasPrefix(feedId, "tag:") {

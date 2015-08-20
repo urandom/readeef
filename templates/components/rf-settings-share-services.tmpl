@@ -3,46 +3,33 @@
 <link rel="import" href="/dist/iron-signals/iron-signals.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
+<link rel="import" href="/dist/paper-toggle-button/paper-toggle-button.html">
 
 <link rel="import" href="/component/rf-api">
 
-<dom-module id="rf-settings-manage-feeds">
-    <style>
-/deep/ .feed-favicon {
-    margin-right: 5px;
-}
-
-/deep/ .feed-title {
-    color: var(--text-primary-color);
-    font-size: 16px;
-    padding: 0 8px;
-}
-
-/deep/ .feed {
-    line-height: 16px;
-}
-
-    </style>
+<dom-module id="rf-settings-share-services">
     <template>
-        <div class="card layout vertical start">
-            <div hidden$="[[ _computeHideEmptyMessage(feeds) ]]">
-                You are not subscribed to any feeds yet
-            </div>
-
-            <ul>
-                <template is="dom-repeat" items="[[ feeds ]]">
-                    <li class="layout vertical feed" title="[[ item.Title ]]">
-                        <div class="layout horizontal center wrap">
-                            <img src="[[ _computeFavIconUrl(item) ]]" alt="favicon" class="feed-favicon">
-                            <span class="feed-title flex">[[ item.Title ]]</span>
-                            <paper-icon-button icon="warning" on-tap="onDisplayFeedErrors" hidden$="[[ _computeHideFeedErrors(item) ]]"></paper-icon-button>
-                            <paper-toast text="[[ _computeToastFeedErrorsText(item) ]]"></paper-toast>
-                            <paper-input value="[[ _computeFeedTags(item) ]]" on-change="onFeedTagsChange" placeholder="Comma-separated tag list" no-label-float="true"></paper-input>
-                            <paper-icon-button icon="remove" on-tap="onRemoveFeed"></paper-icon-button>
-                        </div>
-                    </li>
-                </template>
-            </ul>
+        <div class="layout horizontal center wrap">
+            <template is="dom-repeat" items="[[ shareServiceCategories ]]">
+                <div class="card">
+                    <h4>[[ item.name ]]</h4>
+                </div>
+                <ul>
+                    <template is="dom-repeat" items="[[ item.services ]]" as="service">
+                        <li title$="[[ service.title ]]" class="layout horizontal center" data-service-id="[[ service.id ]]">
+                            <div class="share-service-title flex">
+                                <template is="dom-if" if="[[ service.link ]]">
+                                    <a href$="[[ service.link ]]">[[ service.description ]]</a>
+                                </template>
+                                <template is="dom-if" if="[[ !service.link ]]">
+                                    <span>[[ service.title ]]</span>
+                                </template>
+                            </div>
+                            <paper-toggle-button checked="[[ service.enabled ]]" on-change="onShareServiceCheckChange"></paper-toggle-button>
+                        </li>
+                    </template>
+                </ul>
+            </template>
         </div>
 
         <rf-api id="list-feeds" method="list-feeds" tag="settings" on-rf-api-message="onAllFeedsMessage" user="[[ user ]]"></rf-api>
@@ -55,10 +42,10 @@
     <script>
         "use strict";
         Polymer({
-            is: "rf-settings-manage-feeds",
+            is: "rf-settings-share-services",
             properties: {
                 user: Object,
-                feeds: Array
+                shareServiceCategories: Array,
             },
             _urlParser: document.createElement('a'),
 
