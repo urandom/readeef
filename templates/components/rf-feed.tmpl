@@ -355,7 +355,7 @@ rf-article /deep/ .article-control {
                     article = this.articles[index];
 
                 if (arguments.length < 2) {
-                    return {Read: article.Read, Favorite: article.Favorite};
+                    return article;
                 }
 
                 if ('Read' in state) {

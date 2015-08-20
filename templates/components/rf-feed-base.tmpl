@@ -186,11 +186,11 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                                 <paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(_articleId, 'previous') ]]" on-tap="onPreviousArticle"></paper-icon-button>
                                 <paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(_articleId, 'next') ]]" on-tap="onNextArticle"></paper-icon-button>
 
-                                <paper-menu-button horizontal-align="right">
+                                <paper-menu-button horizontal-align="right" hidden$="[[ !_shareServices.length ]]">
                                     <paper-icon-button icon="social:share" class="dropdown-trigger"></paper-icon-button>
                                     {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
-                                    <paper-menu class="dropdown-content options-menu" attr-for-selected="name" on-iron-activate="onShareServiceActivate" style="background: #fff">
-                                        <template is="dom-repeat" items="[[ ]]">
+                                    <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onShareServiceActivate" style="background: #fff">
+                                        <template is="dom-repeat" items="[[ _shareServices ]]">
                                             <paper-item name="[[ item.name ]]">[[ item.description ]]</paper-item>
                                         </template>
                                     </paper-menu>
@@ -238,6 +238,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 },
                 _articleId: String,
                 _readState: Boolean,
+                _shareServices: Array,
             },
             observers: [
                 '_userProfileChanged(user.ProfileData.*)',
@@ -303,6 +304,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
 
             attached: function() {
                 this.defaultNestedRoute('feed-base', 'feed', {tagOrId: 'all'});
+                this._shareServices = RfShareServices.getActive();
 
                 document.addEventListener('keypress', function(event) {
                     if (!MoreRouting.isCurrentUrl('feed-base')) {
@@ -346,10 +348,14 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                             return;
                         }
 
+                        var article = this.$.feed.articleState(value);
                         this._articleId = value;
                         this.cancelDebouncer('article-read-state');
-                        this._readState = this.$.feed.articleState(value).Read;
+                        this._readState = article.Read;
                         this._ignoreReadDebouncer = false;
+                        this._shareServices.forEach(function(service) {
+                            service.article = article;
+                        }.bind(this));
                     }.bind(this));
                 });
             },
@@ -444,6 +450,17 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                         menu.select(name);
                     }
                     break;
+                }
+            },
+
+            onShareServiceActivate: function(event) {
+                var menu = Polymer.dom(event).localTarget,
+                    name = event.detail.selected,
+                    selected = (menu.selectedValues || []).indexOf(name) == -1;
+
+                if (selected) {
+                    menu.select(name);
+                    window.open(RfShareServices.get(name).url, '_blank');
                 }
             },
 
