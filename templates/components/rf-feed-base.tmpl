@@ -3,6 +3,7 @@
 <link rel="import" href="/dist/iron-icon/iron-icon.html">
 <link rel="import" href="/dist/iron-icons/iron-icons.html">
 <link rel="import" href="/dist/iron-icons/hardware-icons.html">
+<link rel="import" href="/dist/iron-icons/social-icons.html">
 <link rel="import" href="/dist/iron-pages/iron-pages.html">
 <link rel="import" href="/dist/iron-signals/iron-signals.html">
 <link rel="import" href="/dist/more-routing/more-route-template-helpers.html">
@@ -184,6 +185,16 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
 
                                 <paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(_articleId, 'previous') ]]" on-tap="onPreviousArticle"></paper-icon-button>
                                 <paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(_articleId, 'next') ]]" on-tap="onNextArticle"></paper-icon-button>
+
+                                <paper-menu-button horizontal-align="right">
+                                    <paper-icon-button icon="social:share" class="dropdown-trigger"></paper-icon-button>
+                                    {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
+                                    <paper-menu class="dropdown-content options-menu" attr-for-selected="name" on-iron-activate="onShareServiceActivate" style="background: #fff">
+                                        <template is="dom-repeat" items="[[ ]]">
+                                            <paper-item name="[[ item.name ]]">[[ item.description ]]</paper-item>
+                                        </template>
+                                    </paper-menu>
+                                </paper-menu-button>
                             </section>
                         </iron-pages>
                     </more-route-selector>
