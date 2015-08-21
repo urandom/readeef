@@ -4,14 +4,12 @@ self.addEventListener('message', function(event) {
     "use strict";
 
     var articles = event.data.current || [],
+        unshift = [], push = [],
         newArticles = event.data.newArticles,
         feeds = event.data.feeds,
         articleMap = {}, indexMap = {}, feedMap;
 
     for (var i = 0, a; a = articles[i]; ++i) {
-        delete a.First;
-        delete a.Last;
-
         articleMap[a.Id] = a;
     }
 
@@ -46,16 +44,16 @@ self.addEventListener('message', function(event) {
 
                 a.FeedOrigin = feedMap[a.FeedId].Title;
             }
-            articles.push(a);
+            push.push(a);
         }
     }
 
-    articles[0].First = true;
-    articles[articles.length - 1].Last = true;
+    var cumul = 0;
+    [unshift, articles, push].forEach(function(list) {
+        for (var i = 0, a; a = list[i]; ++i, ++cumul) {
+            indexMap[a.Id] = cumul;
+        }
+    });
 
-    for (var i = 0, a; a = articles[i]; ++i) {
-      indexMap[a.Id] = i
-    }
-
-    self.postMessage({articles: articles, indexMap: indexMap});
+    self.postMessage({push: push, unshift: unshift, indexMap: indexMap});
 });

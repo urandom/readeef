@@ -7,6 +7,7 @@
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/paper-spinner/paper-spinner.html">
+<link rel="import" href="/dist/iron-scroll-threshold/iron-scroll-threshold.html">
 
 <link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-article">
@@ -152,7 +153,8 @@ rf-article /deep/ .article-control {
         <more-route-selector>
             <iron-pages>
                 <div route="feed" class="list-container">
-                    <iron-list items="[[ articles ]]">
+                    <iron-scroll-threshold id="scroll-threshold" lower-threshold="100" on-lower-trigger="onLowerScrollThresholdTrigger"></iron-scroll-threshold>
+                    <iron-list items="[[ articles ]]" id="list">
                         <template>
                             <div class$="[[ _computeArticleClass(item.Read, item.Favorite) ]]" data-feed-id$="[[ item.FeedId ]]" data-article-id$="[[ item.Id ]]">
                                 <div class="card layout vertical" on-tap="onArticleActivate">
@@ -371,7 +373,9 @@ rf-article /deep/ .article-control {
             refresh: function() {
                 this.debounce('feed-refresh', function() {
                     this.loading = true;
+                    this.noMoreArticles = false;
                     this.articles = [];
+                    this.offset = 0;
                     this.$.article.index = -1;
                     this.$['feed-articles'].send();
                 });
@@ -388,7 +392,8 @@ rf-article /deep/ .article-control {
                 var el = Polymer.dom(this);
                 while (el = (el.parentNode || el.host)) {
                     if ('scroller' in el) {
-                        Polymer.dom(this.root).querySelector('.list-container').scroller = el.scroller;
+                        this.$['scroll-threshold'].scrollTarget =
+                            Polymer.dom(this.root).querySelector('.list-container').scroller = el.scroller;
                         break;
                     }
                 }
@@ -418,7 +423,19 @@ rf-article /deep/ .article-control {
                         };
 
                     worker.addEventListener('message', function(event) {
-                        this.articles = event.data.articles;
+                        if (event.data.push.length) {
+                            this.push.apply(this, ['articles'].concat(event.data.push));
+                        }
+                        if (event.data.unshift.length) {
+                            var firstVisible = this.$.list.firstVisibleIndex;
+                            this.unshift.apply(this, ['articles'].concat(event.data.unshift));
+                            this.async(function() {
+                                var newIndex = firstVisible + event.data.unshift.length;
+                                if (this.$.list.firstVisibleIndex != newIndex) {
+                                    this.$.list.scrollToIndex(newIndex);
+                                }
+                            });
+                        }
                         this._articleIndexMap = event.data.indexMap;
                         this.loading = false;
                     }.bind(this));
@@ -545,6 +562,18 @@ rf-article /deep/ .article-control {
                     case 63: // ?
                         break;
                 }
+            },
+
+            onLowerScrollThresholdTrigger: function(event) {
+                Polymer.dom(event).localTarget.clearLower();
+                if (this.noMoreArticles) {
+                    return;
+                }
+                this.debounce('feed-refresh', function() {
+                    this.loading = true;
+                    this.offset += this.limit;
+                    this.$['feed-articles'].send();
+                });
             },
 
             _tagOrIdChanged: function(tagOrId, oldValue) {
