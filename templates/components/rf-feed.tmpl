@@ -276,6 +276,7 @@ rf-article /deep/ .article-control {
             ],
             _lastUpdateTime: 0,
             _lastActivity: new Date().getTime(),
+            _firstVisibleIndex: 0,
             _tagStripper: document.createElement('div'),
 
             hasPreviousArticle: function(id) {
@@ -402,7 +403,8 @@ rf-article /deep/ .article-control {
                 var el = Polymer.dom(this);
                 while (el = (el.parentNode || el.host)) {
                     if ('scroller' in el) {
-                        this.$['scroll-threshold'].scrollTarget =
+                        this._scroller =
+                            this.$['scroll-threshold'].scrollTarget =
                             Polymer.dom(this.root).querySelector('.list-container').scroller = el.scroller;
                         break;
                     }
@@ -411,9 +413,12 @@ rf-article /deep/ .article-control {
                 this.routeParamObserver('article', 'articleId', function(id) {
                     if (id === null) {
                         this.$.article.index = -1;
+                        this.$.list.scrollToIndex(this._firstVisibleIndex);
                     } else {
                         var i = this._articleIndexMap[id];
                         this.$.article.index = i;
+                        this._scroller.scrollTop = 0;
+                        this._firstVisibleIndex = this.$.list.firstVisibleIndex;
 
                         if (!this.articles[i].Read) {
                             this.$['article-read'].send({id: id - 0, value: true});
@@ -603,7 +608,7 @@ rf-article /deep/ .article-control {
             },
 
             onLowerScrollThresholdTrigger: function(event) {
-                if (this.noMoreArticles) {
+                if (this.noMoreArticles || MoreRouting.isCurrentUrl('article')) {
                     return;
                 }
                 this.debounce('feed-refresh', function() {
