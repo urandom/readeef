@@ -27,7 +27,7 @@
                         Polymer.dom(document).querySelector('rf-router').connectionUnauthorized();
                     });
                 } else {
-                    if (r.instance.hasAttribute('on-rf-api-error')) {
+                    if (r.instance.handlesErrors) {
                         r.instance.fire('rf-api-error', data);
                     } else {
                         Polymer.dom(document).querySelector('rf-router').unhandledAPIError(data);
@@ -59,7 +59,8 @@
             tag: {
                 type: String,
                 value: ""
-            }
+            },
+            handlesErrors: Boolean,
         },
         listeners: {
             'nonce.response': 'onRequestResponse',

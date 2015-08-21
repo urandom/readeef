@@ -72,10 +72,10 @@ li paper-checkbox {
                         <section route="settings-add-feed-discover-select">
                             <p>Found the following feeds:</p>
                             <ul>
-                            <template is="dom-repeat" items="{{ discoveredFeeds }}">
+                            <template is="dom-repeat" items="[[ discoveredFeeds ]]">
                                 <li class="layout horizontal center">
-                                    <paper-checkbox checked="{{ item.selected }}"></paper-checkbox>
-                                    <a href="{{ item.Link }}">{{ item.Title }}<br><small>{{ item.Description}}</small></a>
+                                    <paper-checkbox checked="[[ item.selected ]]"></paper-checkbox>
+                                    <a href="[[ item.Link ]]">[[ item.Title ]]<br><small>[[ item.Description ]]</small></a>
                                 </li>
                             </template>
                             </ul>
@@ -101,7 +101,7 @@ li paper-checkbox {
                         </section>
 
                         <section route="settings-add-feed-discover-select-error">
-                            <p>Error adding selected feeds: <span>{{ addFeedError }}</span></p>
+                            <p>Error adding selected feeds: <span>[[ addFeedError ]]</span></p>
                             <div class="layout horizontal end-justified">
                                 <a is="pushstate-anchor" href="[[ urlFor('settings-add-feed-discover-select') ]]">
                                     <span>Back</span>
@@ -117,9 +117,9 @@ li paper-checkbox {
 
         <paper-toast id="add-feed-success" text="{% __ "Feed was added successfully" .base.lang %}"></paper-toast>
 
-        <rf-api user="[[ user ]]" id="discover-feeds" method="discover-feeds" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError"></rf-api>
-        <rf-api user="[[ user ]]" id="parse-opml" method="parse-opml" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError"></rf-api>
-        <rf-api user="[[ user ]]" id="add-feeds" method="add-feeds" on-rf-api-message="onAddFeedMessage" on-rf-api-error="onAddFeedError"></rf-api>
+        <rf-api user="[[ user ]]" id="discover-feeds" method="discover-feeds" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError" handles-errors></rf-api>
+        <rf-api user="[[ user ]]" id="parse-opml" method="parse-opml" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError" handles-errors></rf-api>
+        <rf-api user="[[ user ]]" id="add-feeds" method="add-feeds" on-rf-api-message="onAddFeedMessage" on-rf-api-error="onAddFeedError" handles-errors></rf-api>
     </template>
 
     <script>

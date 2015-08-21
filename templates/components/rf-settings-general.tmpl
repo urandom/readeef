@@ -198,14 +198,15 @@
             },
 
             onPasswordDialogKeypress: function(event) {
-                var code = event.keyCode || event.charCode, key = event.keyIdentifier;
+                var target = Polymer.dom(event).localTarget,
+                    code = event.keyCode || event.charCode, key = event.keyIdentifier;
 
                 if (key == 'Enter' || code == 13) {
-                    if (event.target === this.$.password.$.input) { 
+                    if (target === this.$.password) { 
                         this.$["new-password"].$.input.focus();
-                    } else if (event.target === this.$["new-password"].$.input) {
+                    } else if (target === this.$["new-password"]) {
                         this.$["confirm-new-password"].$.input.focus();
-                    } else if (event.target === this.$["confirm-new-password"].$.input) {
+                    } else if (target === this.$["confirm-new-password"]) {
                         this.onPasswordChangeApply();
                     }
                 }

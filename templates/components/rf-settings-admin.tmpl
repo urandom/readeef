@@ -1,14 +1,188 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/iron-validator-behavior/iron-validator-behavior.html">
+<link rel="import" href="/dist/paper-button/paper-button.html">
+<link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="/dist/paper-dialog/paper-dialog.html">
+<link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/dist/paper-input/paper-input.html">
+<link rel="import" href="/dist/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
+
+<link rel="import" href="/component/rf-api">
 
 <dom-module id="rf-settings-admin">
     <template>
-        <h1> admin </h1>
+        <template is="dom-if" if="[[ user.Admin ]]">
+            <div class="card layout vertical">
+                <div hidden$="[[ !users.length ]]">
+                    <template is="dom-repeat" items="[[ users ]]" as="user">
+                        <div class="layout horizontal center" title="[[ user.Login ]]">
+                            <paper-checkbox checked="[[ user.Active ]]" on-change="onToggleActiveUser"></paper-checkbox>
+                            <span>[[ _computeUserLabel(user) ]]</span>&nbsp;
+                            <em>[[ user.Login ]]</em>
+                            <paper-icon-button icon="remove" on-tap="onRemoveUser" tabindex="1"></paper-icon-button>
+                        </div>
+                    </template>
+                </div>
+
+                <h3 hidden$="[[ _computeHideNoUsersMessage(users.*) ]]">There are no other users</h3>
+                <paper-button on-tap="onCreateUser" class="self-end">Create user</paper-button>
+            </div>
+        </template>
+
+        <paper-dialog id="create-user-dialog" on-keypress="onCreateUserDialogKeypress" entry-animation="scale-up-animation" exit-animation="fade-out-animation" modal>
+            <h2>Add a new user</h2>
+
+            <paper-input id="create-user-login" label="Login" tabindex="2" data-required-message="Required" data-user-exists-message="User exists" required autofocus></paper-input>
+            <paper-input id="create-user-password" type="password" label="Password" tabindex="3" data-required-message="Required" required></paper-input>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss tabindex="5">Cancel</paper-button>
+                <paper-button autofocus on-click="onCreateUserApply" tabindex="4">Apply</paper-button>
+            </div>
+        </paper-dialog>
+
+        <rf-api user="[[ user ]]" id="list-users" method="list-users" on-rf-api-message="onListUsersMessage"></rf-api>
+        <rf-api user="[[ user ]]" id="add-user" method="add-user" on-rf-api-message="onCreateUserMessage" on-rf-api-error="onCreateUserError" handles-errors></rf-api>
+        <rf-api user="[[ user ]]" id="remove-user" method="remove-user" on-rf-api-message="onRemoveUserMessage"></rf-api>
+        <rf-api user="[[ user ]]" id="toggle-active-user" method="set-attribute-for-user" tag="active" on-rf-api-message="onToggleActiveUserMessage"></rf-api>
     </template>
     <script>
         "use strict";
         Polymer({
-            is: "rf-settings-admin"
+            is: "rf-settings-admin",
+            properties: {
+                user: Object,
+                users: {
+                    type: Array,
+                    value: function() { return [] },
+                },
+            },
+
+            attached: function() {
+                this.users = [];
+
+                if (this.user.Admin) {
+                    this.$['list-users'].send();
+                }
+            },
+
+            onListUsersMessage: function(event, data) {
+                this.users = data.arguments.Users.filter(function(user) {
+                    return user.Login != this.user.Login;
+                }.bind(this));
+            },
+
+            onCreateUser: function() {
+                this.$['create-user-dialog'].open();
+            },
+
+            onCreateUserDialogKeypress: function(event) {
+                var target = Polymer.dom(event).localTarget,
+                    code = event.keyCode || event.charCode, key = event.keyIdentifier;
+
+                if (key == 'Enter' || code == 13) {
+                    if (target === this.$['create-user-login']) { 
+                        this.$['create-user-password'].$.input.focus();
+                    } else if (target === this.$['create-user-password']) {
+                        this.onCreateUserApply();
+                    }
+                }
+            },
+
+
+            onCreateUserApply: function() {
+                if (!this.user.Admin) {
+                    return;
+                }
+
+                var invalid = ['login', 'password'].some(function(name) {
+                    var id = 'create-user-' + name;
+                    this.$[id].errorMessage = this.$[id].dataset.requiredMessage;
+
+                    return !this.$[id].validate();
+                }.bind(this));
+
+                if (invalid) {
+                    return;
+                }
+
+                this.$['add-user'].send({
+                    login: this.$['create-user-login'].value,
+                    password: this.$['create-user-password'].value,
+                });
+            },
+
+            onCreateUserMessage: function(event, data) {
+                if (!this.user.Admin) {
+                    return;
+                }
+
+                this.push('users', {Login: data.arguments.Login});
+                ['login', 'password'].forEach(function(name) {
+                    var id = 'create-user-' + name;
+                    this.$[id].value = "";
+                    this.$[id].invalid = false;
+                }.bind(this));
+
+                this.$['create-user-dialog'].close();
+            },
+
+            onCreateUserError: function(event, data) {
+                this.$['create-user-login'].errorMessage = this.$['create-user-login'].dataset.userExistsMessage;
+                this.$['create-user-login'].invalid = true;
+            },
+
+            onToggleActiveUser: function(event) {
+                if (!this.user.Admin) {
+                    return;
+                }
+
+                this.$['toggle-active-user'].send({
+                    login: event.model.user.Login,
+                    attribute: "Active",
+                    value: Polymer.dom(event).localTarget.checked,
+                });
+            },
+
+            onRemoveUser: function(event) {
+                if (!this.user.Admin) {
+                    return;
+                }
+
+
+                this.$['remove-user'].send({
+                    login: event.model.user.Login,
+                });
+            },
+
+            onToggleActiveUserMessage: function(event, data) {
+                for (var i = 0, u; u = this.users[i]; ++i) {
+                    if (u.Login == data.arguments.Login) {
+                        this.set("users." + i + ".Active", !u.Active);
+                        return;
+                    }
+                }
+            },
+
+            onRemoveUserMessage: function(event, data) {
+                for (var i = 0, u; u = this.users[i]; ++i) {
+                    if (u.Login == data.arguments.Login) {
+                        this.splice('users', i, 1);
+                        return;
+                    }
+                }
+            },
+
+            _computeUserLabel: function(user) {
+                return (user.FirstName || "") + " " + (user.LastName || "")
+            },
+
+            _computeHideNoUsersMessage: function(record) {
+                return this.users.length != 0;
+            },
+
         })
     </script>
 </dom-module>
