@@ -142,7 +142,7 @@
             attached: function() {
                 Polymer.dom(this.root).querySelectorAll('.theme').forEach(function(e) {
                     e.addEventListener('tap', function(event) {
-                        var theme = e.getAttribute('data-theme');
+                        var theme = e.dataset.theme;
 
                         this.user.ProfileData.theme = theme;
 
