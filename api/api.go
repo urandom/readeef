@@ -85,11 +85,6 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	multiPatternController = NewArticle(config)
 	dispatcher.Handle(multiPatternController)
 
-	if config.SearchIndex.BlevePath != "" {
-		patternController = NewSearch(si)
-		dispatcher.Handle(patternController)
-	}
-
 	multiPatternController = NewUser()
 	dispatcher.Handle(multiPatternController)
 

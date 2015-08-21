@@ -2,6 +2,7 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/iron-list/iron-list.html">
 <link rel="import" href="/dist/iron-pages/iron-pages.html">
+<link rel="import" href="/dist/more-routing/more-route-template-helpers.html">
 <link rel="import" href="/dist/more-routing/more-routing.html">
 <link rel="import" href="/dist/paper-button/paper-button.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
@@ -76,6 +77,10 @@ rf-article /deep/ .card {
 .misc-info {
     padding-left: 0.5em;
     padding-top: 0.5em;
+}
+
+.list-article {
+    text-decoration: none;
 }
 
 rf-article /deep/ .index {
@@ -156,27 +161,29 @@ rf-article /deep/ .article-control {
                     <iron-scroll-threshold id="scroll-threshold" lower-threshold="100" on-lower-trigger="onLowerScrollThresholdTrigger"></iron-scroll-threshold>
                     <iron-list items="[[ articles ]]" id="list">
                         <template>
-                            <div class$="[[ _computeArticleClass(item.Read, item.Favorite) ]]" data-feed-id$="[[ item.FeedId ]]" data-article-id$="[[ item.Id ]]">
-                                <div class="card layout vertical" on-tap="onArticleActivate">
-                                    <div class="title-wrapper layout horizontal center">
-                                        <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.Favorite) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
-                                        <span class="title" title$="[[ item.Title ]]" inner-h-t-m-l="[[ _computeArticleTitle(item) ]]"></span>
-                                    </div>
-                                    <div class="detail-wrapper layout horizontal center">
-                                        <span class="short-description flex">
-                                            <img src$="[[ item.Thumbnail ]]" class="top-image">
-                                            <span inner-h-t-m-l="[[ _computeArticleDescription(item) ]]"></span>
-                                            <br style="clear: both">
+                            <a is="pushstate-anchor" href="[[ _computeArticleLink(item.Id) ]]" class="list-article">
+                                <div class$="[[ _computeArticleClass(item.Read, item.Favorite) ]]" data-feed-id$="[[ item.FeedId ]]" data-article-id$="[[ item.Id ]]">
+                                    <div class="card layout vertical">
+                                        <div class="title-wrapper layout horizontal center">
+                                            <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.Favorite) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
+                                            <span class="title" title$="[[ item.Title ]]" inner-h-t-m-l="[[ _computeArticleTitle(item) ]]"></span>
+                                        </div>
+                                        <div class="detail-wrapper layout horizontal center">
+                                            <span class="short-description flex">
+                                                <img src$="[[ item.Thumbnail ]]" class="top-image">
+                                                <span inner-h-t-m-l="[[ _computeArticleDescription(item) ]]"></span>
+                                                <br style="clear: both">
+                                            </span>
+                                        </div>
+                                        <span class="misc-info layout horizontal center">
+                                            <span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
+                                            <span class="publish-date">[[ item.RelativeDate ]]</span>
                                         </span>
+                                        <!-- allow the inner elements to receiver pointer events -->
+                                        <paper-ripple style="pointer-events: none;"></paper-ripple>
                                     </div>
-                                    <span class="misc-info layout horizontal center">
-                                        <span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
-                                        <span class="publish-date" on-tap="onArticleActivate">[[ item.RelativeDate ]]</span>
-                                    </span>
-                                    <!-- allow the inner elements to receiver pointer events -->
-                                    <paper-ripple style="pointer-events: none;"></paper-ripple>
                                 </div>
-                            </div>
+                            </a>
                         </template>
                     </iron-list>
                     <div class="card empty-list" hidden$="[[ articles.length ]]">
@@ -234,6 +241,7 @@ rf-article /deep/ .article-control {
         <rf-api id="article-read" method="mark-article-as-read" tag="content-list" on-rf-api-message="onArticleStateMessage" user="[[ user ]]"></rf-api>
         <rf-api id="article-favorite" method="mark-article-as-favorite" tag="content-list"on-rf-api-message="onArticleStateMessage"  user="[[ user ]]"></rf-api>
         <rf-api id="feed-read-all" method="mark-feed-as-read" on-rf-api-message="onFeedReadAllMessage" user="[[ user ]]"></rf-api>
+        <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="onFeedUpdateNotify" user="[[ user ]]" receiver="true"></rf-api>
     </template>
 
     <script>
@@ -264,8 +272,10 @@ rf-article /deep/ .article-control {
             },
             behaviors: [
                 NestedRouteBehavior,
+                MoreRouting.TemplateHelpers,
             ],
             _lastUpdateTime: 0,
+            _lastActivity: new Date().getTime(),
             _tagStripper: document.createElement('div'),
 
             hasPreviousArticle: function(id) {
@@ -411,7 +421,14 @@ rf-article /deep/ .article-control {
                     }
                 }.bind(this));
 
+                this._focused = true;
+
+                window.addEventListener("focus", function() {this._focused = true}.bind(this), false);
+                window.addEventListener("blur", function() {this._focused = false}.bind(this), false);
+
                 document.addEventListener('keypress', this.onKeypress.bind(this), false);
+                document.addEventListener('track', this.onTrack.bind(this), false);
+                document.addEventListener('tap', this.onTrack.bind(this), false);
             },
 
             onFeedArticlesMessage: function(event, data) {
@@ -438,6 +455,7 @@ rf-article /deep/ .article-control {
                         }
                         this._articleIndexMap = event.data.indexMap;
                         this.loading = false;
+                        this.$['scroll-threshold'].clearLower();
                     }.bind(this));
 
                     if (isNaN(this.tagOrId)) {
@@ -474,26 +492,6 @@ rf-article /deep/ .article-control {
                 }
             },
 
-            onArticleActivate: function(event) {
-                event.stopPropagation();
-
-                var el = Polymer.dom(event).localTarget, feedId = null, articleId = null;
-
-                while (el = el.parentNode) {
-                    if (el.matches('[data-feed-id]')) {
-                        feedId = el.dataset.feedId;
-                        articleId = el.dataset.articleId;
-                        break;
-                    }
-                }
-
-                if (articleId !== null) {
-                    this.async(function() {
-                        MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: articleId});
-                    }.bind(this), 250);
-                }
-            },
-
             onFavoriteToggle: function(event) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -518,6 +516,36 @@ rf-article /deep/ .article-control {
                     for (var i = 0, a; a = this.articles[i]; ++i) {
                         this.set("articles." + i + ".Read", true);
                     }
+                }
+            },
+
+            onFeedUpdateNotify: function(event, data) {
+                var canUpdateImmediately = !this._focused ||
+                        !MoreRouting.isCurrentUrl('feed') ||
+                        new Date().getTime() - this._lastActivity > 300000, // 5 minutes
+                    updateAvailable = false;
+               
+                if (this.tagOrId.indexOf("tag:") == 0) {
+                    var tag = this.tagOrId.substring(4),
+                        active = this.feeds.filter(function(feed) {
+                            return feed.Tags && feed.Tags.indexOf(tag) != -1 
+                        });
+
+                    if (active.some(function(feed) { return feed.Id == data.arguments.Feed.Id })) {
+                        updateAvailable = true;
+                    }
+
+                } else if (this.tagOrId == "all" || this.tagOrId == data.arguments.Feed.Id) {
+                    updateAvailable = true;
+                }
+
+                if (!updateAvailable) {
+                    return;
+                }
+
+                if (canUpdateImmediately) {
+                } else {
+                    this.fire('feed-update-available', true);
                 }
             },
 
@@ -562,10 +590,19 @@ rf-article /deep/ .article-control {
                     case 63: // ?
                         break;
                 }
+
+                this._lastActivity = new Date().getTime();
+            },
+
+            onTrack: function(event) {
+                if (!MoreRouting.isCurrentUrl('feed')) {
+                    return;
+                }
+
+                this._lastActivity = new Date().getTime();
             },
 
             onLowerScrollThresholdTrigger: function(event) {
-                Polymer.dom(event).localTarget.clearLower();
                 if (this.noMoreArticles) {
                     return;
                 }
@@ -588,6 +625,11 @@ rf-article /deep/ .article-control {
                     this.$['loading-spinner'].active = false;
                 }
             },
+
+            _computeArticleLink: function(articleId) {
+                return this.urlFor('article', {tagOrId: this.tagOrId, articleId: articleId});
+            },
+
 
             _computeFeedArticlesArguments: function(userRecord, tagOrId, limit, offset) {
                 return {

@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -592,7 +593,7 @@ func getFeedArticles(user content.User, searchIndex readeef.SearchIndex, id stri
 			query = strings.Join(parts[1:], ":")
 		}
 
-		resp = search(user, searchIndex, query, "html", id)
+		resp = search(resp, user, searchIndex, query, "html", id, limit, offset)
 	} else if strings.HasPrefix(id, "tag:") {
 		tag := user.Repo().Tag(user)
 		tag.Value(data.TagValue(id[4:]))
@@ -660,4 +661,30 @@ func insertThumbnail(a content.Article) {
 
 	d.Thumbnail = t.Base64DataUri()
 	a.Data(d)
+}
+
+func search(resp responseError, user content.User, searchIndex readeef.SearchIndex, query, highlight, feedId string, limit, offset int) responseError {
+	defer func() {
+		if rec := recover(); rec != nil {
+			resp.err = fmt.Errorf("Error during search: %s", rec)
+		}
+	}()
+
+	if strings.HasPrefix(feedId, "tag:") {
+		tag := user.Repo().Tag(user)
+		tag.Value(data.TagValue(feedId[4:]))
+
+		tag.Highlight(highlight)
+		resp.val["Articles"], resp.err = tag.Query(query, searchIndex.Index, limit, offset), tag.Err()
+	} else {
+		if id, err := strconv.ParseInt(feedId, 10, 64); err == nil {
+			f := user.FeedById(data.FeedId(id))
+			resp.val["Articles"], resp.err = f.Query(query, searchIndex.Index, limit, offset), f.Err()
+		} else {
+			user.Highlight(highlight)
+			resp.val["Articles"], resp.err = user.Query(query, searchIndex.Index, limit, offset), user.Err()
+		}
+	}
+
+	return resp
 }

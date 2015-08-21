@@ -260,28 +260,6 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 }
             },
 
-            updateTags: function() {
-                var tagList = [], tags = {};
-
-                this.feeds.forEach(function(feed) {
-                    if (feed.Tags && feed.Tags.length) {
-                        for (var i = 0, tag; tag = feed.Tags[i]; ++i) {
-                            if (!tags[tag]) {
-                                tags[tag] = [];
-                            }
-
-                            tags[tag].push(feed);
-                        }
-                    }
-                });
-
-                Object.keys(tags).sort().forEach(function(tag) {
-                    tagList.push({name: tag, feeds: tags[tag]});
-                });
-
-                this.tags = tagList;
-            },
-
             toggleSearch: function() {
                 this.searchVisible = !this.searchVisible;
                 if (this.searchVisible) {
@@ -386,7 +364,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                     if (f.Id == detail.Id) {
                         f.Tags = detail.Tags;
 
-                        this.updateTags();
+                        this._updateTags();
                         this.set('feeds.' + i, f);
                     }
                 }
@@ -480,7 +458,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
 
 
             _feedsChanged: function(newValue, oldValue) {
-                this.updateTags();
+                this._updateTags();
             },
 
             _userProfileChanged: function(userProfileRecord) {
@@ -610,6 +588,29 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                     tagOrId.indexOf('popular:') != 0 &&
                     tagOrId.indexOf('search:') != 0;
             },
+
+            _updateTags: function() {
+                var tagList = [], tags = {};
+
+                this.feeds.forEach(function(feed) {
+                    if (feed.Tags && feed.Tags.length) {
+                        for (var i = 0, tag; tag = feed.Tags[i]; ++i) {
+                            if (!tags[tag]) {
+                                tags[tag] = [];
+                            }
+
+                            tags[tag].push(feed);
+                        }
+                    }
+                });
+
+                Object.keys(tags).sort().forEach(function(tag) {
+                    tagList.push({name: tag, feeds: tags[tag]});
+                });
+
+                this.tags = tagList;
+            },
+
         })
     </script>
 </dom-module>
