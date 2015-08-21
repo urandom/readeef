@@ -231,6 +231,7 @@ rf-article /deep/ .article-control {
         <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" user="[[ user ]]"></rf-api>
         <rf-api id="article-read" method="mark-article-as-read" tag="content-list" on-rf-api-message="onArticleStateMessage" user="[[ user ]]"></rf-api>
         <rf-api id="article-favorite" method="mark-article-as-favorite" tag="content-list"on-rf-api-message="onArticleStateMessage"  user="[[ user ]]"></rf-api>
+        <rf-api id="feed-read-all" method="mark-feed-as-read" on-rf-api-message="onFeedReadAllMessage" user="[[ user ]]"></rf-api>
     </template>
 
     <script>
@@ -376,6 +377,10 @@ rf-article /deep/ .article-control {
                 });
             },
 
+            markAllAsRead: function() {
+                this.$['feed-read-all'].send({id: this.tagOrId, timestamp: this._lastUpdateTime});
+            },
+
             attached: function() {
                 this._articleIndexMap = {};
 
@@ -488,6 +493,14 @@ rf-article /deep/ .article-control {
                 if (articleId !== null) {
                     this.articleState(articleId,
                         {Favorite: !this.articleState(articleId).Favorite});
+                }
+            },
+
+            onFeedReadAllMessage: function(event, data) {
+                if (data.success) {
+                    for (var i = 0, a; a = this.articles[i]; ++i) {
+                        this.set("articles." + i + ".Read", true);
+                    }
                 }
             },
 

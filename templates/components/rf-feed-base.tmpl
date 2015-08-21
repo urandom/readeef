@@ -449,6 +449,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                     if (selected) {
                         menu.select(name);
                     }
+                    this.$.feed.markAllAsRead();
                     break;
                 }
             },
