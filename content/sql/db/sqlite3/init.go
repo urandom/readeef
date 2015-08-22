@@ -2,8 +2,8 @@ package sqlite3
 
 var (
 	initSQL = []string{`
-PRAGMA foreign_keys = ON;`, `
-PRAGMA journal_mode = WAL;`, `
+PRAGMA foreign_keys = ON`, `
+PRAGMA journal_mode = WAL`, `
 CREATE TABLE IF NOT EXISTS readeef (
 	db_version INTEGER
 )`, `

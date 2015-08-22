@@ -16,6 +16,21 @@ self.addEventListener('message', function(event) {
 
     for (var i = 0, a, pre; a = newArticles[i]; ++i) {
         if (!articleMap[a.Id]) {
+            if (feeds && feeds.length) {
+                if (!feedMap) {
+                    feedMap = {};
+                    for (var j = 0, f; f = feeds[j]; ++j) {
+                        feedMap[f.Id] = f;
+                    }
+                }
+
+                var feed = feedMap[a.FeedId];
+                if (!feed) {
+                    continue;
+                }
+                a.FeedOrigin = feedMap[a.FeedId].Title;
+            }
+
             a.Description = a.Description.replace(/<!--.*?-->/g, '')
                 .replace(/<script.*?<\/script\s*>/g, '')
                 .replace(/(<a )(.*?<\/a\s*>)/g, '$1 target="feed-article" $2');
@@ -35,16 +50,6 @@ self.addEventListener('message', function(event) {
 
             a.RelativeDate = moment(a.Date).fromNow();
 
-            if (feeds && feeds.length) {
-                if (!feedMap) {
-                    feedMap = {};
-                    for (var j = 0, f; f = feeds[j]; ++j) {
-                        feedMap[f.Id] = f;
-                    }
-                }
-
-                a.FeedOrigin = feedMap[a.FeedId].Title;
-            }
             if (unshiftFirst) {
                 unshift.unshift(a);
             } else {

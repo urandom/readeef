@@ -184,18 +184,16 @@ func (fm *FeedManager) DiscoverFeeds(link string) ([]content.Feed, error) {
 		return feeds, f.Err()
 	} else {
 		if err != nil {
-			fm.logger.Infoln("Discovering feeds in " + link)
+			fm.logger.Debugln("Discovering feeds in " + link)
 
 			discovered, err := fm.discoverParserFeeds(link)
 			if err != nil {
 				return feeds, err
 			}
 
-			for _, f := range discovered {
-				feeds = append(feeds, f)
-			}
+			fm.logger.Debugf("Discovered %d feeds in %s\n", len(discovered), link)
+			feeds = append(feeds, discovered...)
 		}
-		feeds = append(feeds, f)
 	}
 
 	return feeds, nil
@@ -506,6 +504,7 @@ func (fm *FeedManager) scheduleFeeds() {
 }
 
 func (fm FeedManager) discoverParserFeeds(link string) ([]content.Feed, error) {
+	fm.logger.Debugf("Fetching feed link body %s\n", link)
 	resp, err := http.Get(link)
 	if err != nil {
 		return []content.Feed{}, err
@@ -518,6 +517,8 @@ func (fm FeedManager) discoverParserFeeds(link string) ([]content.Feed, error) {
 	buf.ReadFrom(resp.Body)
 
 	if parserFeed, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
+		fm.logger.Debugf("Discovering link %s contains feed data\n", link)
+
 		feed := fm.repo.Feed()
 
 		feed.Data(data.Feed{Link: link})
@@ -525,6 +526,8 @@ func (fm FeedManager) discoverParserFeeds(link string) ([]content.Feed, error) {
 
 		return []content.Feed{feed}, nil
 	} else {
+		fm.logger.Debugf("Searching for html links within the discovering link %s\n", link)
+
 		html := commentPattern.ReplaceAllString(buf.String(), "")
 		links := linkPattern.FindAllStringSubmatch(html, -1)
 
