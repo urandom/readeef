@@ -216,7 +216,7 @@ rf-article /deep/ .article-control {
                     <template>
                         <div class="article-detail" data-article-id$="[[ item.article.Id ]]">
                             <div class="card layout vertical">
-                                <a class="article-anchor title-wrapper" href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item) ]]">
+                                <a class="article-anchor title-wrapper" href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]">
                                     <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.article.Favorite) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
                                     <span class="title" title$="[[ item.article.Title ]]">[[ item.article.Title ]]</span>
                                     <small class="index">[[ item.ordinalPosition ]]</small>
@@ -240,7 +240,7 @@ rf-article /deep/ .article-control {
                                     </div>
 
                                     <div class="article-buttons layout horizontal">
-                                        <a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item) ]]" class="article-link flex article-control">
+                                        <a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]" class="article-link flex article-control">
                                             View
                                             <paper-ripple></paper-ripple>
                                         </a>
@@ -628,7 +628,8 @@ rf-article /deep/ .article-control {
                     return;
                 }
 
-                var code = event.keyCode || event.charCode;
+                var code = event.keyCode || event.charCode,
+                    articleRoute = MoreRouting.getRouteByName('article');
 
                 switch (code) {
                     case 74: // J
@@ -645,21 +646,50 @@ rf-article /deep/ .article-control {
                         break;
                     case 86: // V
                     case 118: // v
+                        if (!articleRoute.active) {
+                            return;
+                        }
+
+                        var index = this._articleIndexMap[articleRoute.params.articleId],
+                            article = this.articles[index];
+
+                        window.open(article.Link, this._computeArticleTarget(article));
                         break;
                     case 77: // M
                     case 109: // m
+                        if (!articleRoute.active) {
+                            return;
+                        }
+
+                        this.articleState(articleRoute.params.articleId,
+                            {Read: !this.articleState(articleRoute.params.articleId).Read});
                         break;
                     case 67: // C
                     case 99: // c
+                        if (!articleRoute.active) {
+                            return;
+                        }
+
                         break;
                     case 83: // S
                     case 115: // s
+                        if (!articleRoute.active) {
+                            return;
+                        }
+
                         break;
                     case 82: // R
                     case 114: // r
+                        this.refresh();
                         break;
                     case 70: // F
                     case 102: // f
+                        if (!articleRoute.active) {
+                            return;
+                        }
+
+                        this.articleState(articleRoute.params.articleId,
+                            {Favorite: !this.articleState(articleRoute.params.articleId).Favorite});
                         break;
                     case 63: // ?
                         this.$['shortcut-help-dialog'].open();
@@ -762,8 +792,8 @@ rf-article /deep/ .article-control {
                 return this._stripTags(item.Description);
             },
 
-            _computeArticleTarget: function(item) {
-                return "feed-article-" + item.article.Id;
+            _computeArticleTarget: function(article) {
+                return "feed-article-" + article.Id;
             },
 
             _stripTags: function(html) {
