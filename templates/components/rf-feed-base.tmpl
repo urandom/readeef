@@ -56,7 +56,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
     background: white;
 }
 
-rf-app-scaffold /deep/ .main-title-container paper-fab.notify {
+rf-app-scaffold.update-available /deep/ .main-title-container paper-fab {
     background: var(--paper-fab-notify-background);
     color: var(--text-primary-color-inverse);
 }
@@ -202,7 +202,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 </template>
             </div>
             <div class="main-content">
-                <rf-feed id="feed" user="[[ user ]]" feeds="[[ feeds ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]" on-feed-article-state="onFeedArticleState"></rf-feed>
+                <rf-feed id="feed" user="[[ user ]]" feeds="[[ feeds ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]" on-feed-article-state="onFeedArticleState" on-feed-update-available="onFeedUpdateAvailable"></rf-feed>
             </div>
         </rf-app-scaffold>
 
@@ -351,6 +351,16 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 }
             },
 
+            onFeedUpdateAvailable: function(event, detail) {
+                var scaffold = Polymer.dom(this.root).querySelector('rf-app-scaffold');
+
+                if (detail) {
+                    scaffold.classList.add('update-available');
+                } else {
+                    scaffold.classList.remove('update-available');
+                }
+            },
+
             onAllFeedsMessage: function(event, detail) {
                 this.feeds = detail.arguments.Feeds;
             },
@@ -462,10 +472,12 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
             },
 
             _userProfileChanged: function(userProfileRecord) {
-                this.$['user-settings'].send({
-                    attribute: "ProfileData",
-                    value: this.user.ProfileData
-                });
+                if (this.user) {
+                    this.$['user-settings'].send({
+                        attribute: "ProfileData",
+                        value: this.user.ProfileData
+                    });
+                }
             },
 
             _computeFeedTitle: function(tagOrId) {
@@ -537,6 +549,10 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
             },
 
             _computeOptionsMenuSelectedValues: function(userRecord) {
+                if (!this.user) {
+                    return;
+                }
+
                 var selected = [];
 
                 if (this.user.ProfileData.newerFirst) {

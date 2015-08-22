@@ -9,7 +9,9 @@
             element: String,
             propertyPayload: {
                 type: Object,
-                value: {},
+                value: function() {
+                    return {};
+                },
                 observer: '_onPropertyPayloadChanged',
             },
         },

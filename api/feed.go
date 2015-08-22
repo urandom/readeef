@@ -652,6 +652,9 @@ func getFeedArticles(user content.User, searchIndex readeef.SearchIndex, id stri
 		}
 	}
 
+	resp.val["Limit"] = limit
+	resp.val["Offset"] = offset
+
 	return
 }
 

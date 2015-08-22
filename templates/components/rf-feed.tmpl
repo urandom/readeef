@@ -276,8 +276,17 @@ rf-article /deep/ .article-control {
             ],
             _lastUpdateTime: 0,
             _lastActivity: new Date().getTime(),
+            _lastActivityDelay: 300000, // 5 minutes
             _firstVisibleIndex: 0,
+            _updateAvailable: false,
             _tagStripper: document.createElement('div'),
+
+            get _canUpdateImmediately() {
+                return !this._focused ||
+                    !MoreRouting.isCurrentUrl('feed') ||
+                    MoreRouting.isCurrentUrl('article') ||
+                    new Date().getTime() - this._lastActivity > this._lastActivityDelay;
+            },
 
             hasPreviousArticle: function(id) {
                 var index = this._articleIndexMap[id === undefined ?
@@ -441,7 +450,8 @@ rf-article /deep/ .article-control {
                     var worker = new Worker('/js/append-articles-worker.js'),
                         data = {
                             current: this.articles,
-                            newArticles: data.arguments.Articles
+                            newArticles: data.arguments.Articles,
+                            unshiftFirst: this.articles.length && data.arguments.Offset == 0,
                         };
 
                     worker.addEventListener('message', function(event) {
@@ -525,10 +535,7 @@ rf-article /deep/ .article-control {
             },
 
             onFeedUpdateNotify: function(event, data) {
-                var canUpdateImmediately = !this._focused ||
-                        !MoreRouting.isCurrentUrl('feed') ||
-                        new Date().getTime() - this._lastActivity > 300000, // 5 minutes
-                    updateAvailable = false;
+                this._updateAvailable = false;
                
                 if (this.tagOrId.indexOf("tag:") == 0) {
                     var tag = this.tagOrId.substring(4),
@@ -537,18 +544,19 @@ rf-article /deep/ .article-control {
                         });
 
                     if (active.some(function(feed) { return feed.Id == data.arguments.Feed.Id })) {
-                        updateAvailable = true;
+                        this._updateAvailable = true;
                     }
 
                 } else if (this.tagOrId == "all" || this.tagOrId == data.arguments.Feed.Id) {
-                    updateAvailable = true;
+                    this._updateAvailable = true;
                 }
 
-                if (!updateAvailable) {
+                if (!this._updateAvailable) {
                     return;
                 }
 
-                if (canUpdateImmediately) {
+                if (this._canUpdateImmediately) {
+                    this._updateList();
                 } else {
                     this.fire('feed-update-available', true);
                 }
@@ -597,6 +605,9 @@ rf-article /deep/ .article-control {
                 }
 
                 this._lastActivity = new Date().getTime();
+                this.debounce("last-activity-timeout", function() {
+                    this._updateList();
+                }, this._lastActivityDelay);
             },
 
             onTrack: function(event) {
@@ -605,6 +616,9 @@ rf-article /deep/ .article-control {
                 }
 
                 this._lastActivity = new Date().getTime();
+                this.debounce("last-activity-timeout", function() {
+                    this._updateList();
+                }, this._lastActivityDelay);
             },
 
             onLowerScrollThresholdTrigger: function(event) {
@@ -619,6 +633,7 @@ rf-article /deep/ .article-control {
             },
 
             _tagOrIdChanged: function(tagOrId, oldValue) {
+                this._firstVisibleIndex = 0;
                 this.refresh();
             },
 
@@ -637,6 +652,10 @@ rf-article /deep/ .article-control {
 
 
             _computeFeedArticlesArguments: function(userRecord, tagOrId, limit, offset) {
+                if (!this.user) {
+                    return {};
+                }
+
                 return {
                     id: tagOrId,
                     limit: limit,
@@ -689,6 +708,21 @@ rf-article /deep/ .article-control {
                 this._tagStripper.innerHTML = html;
 
                 return this._tagStripper.textContent || "";
+            },
+
+            _updateList: function() {
+                if (!this._updateAvailable) {
+                    return;
+                }
+
+                this.fire('feed-update-available', false);
+                this.$['feed-articles'].send({
+                    id: this.tagOrId,
+                    limit: this.limit,
+                    offset: 0,
+                    newerFirst: this.user.ProfileData.newerFirst || false,
+                    unreadOnly: this.user.ProfileData.unreadOnly || false,
+                });
             },
 
         })

@@ -6,6 +6,7 @@ self.addEventListener('message', function(event) {
     var articles = event.data.current || [],
         unshift = [], push = [],
         newArticles = event.data.newArticles,
+        unshiftFirst = event.data.unshiftFirst,
         feeds = event.data.feeds,
         articleMap = {}, indexMap = {}, feedMap;
 
@@ -44,7 +45,13 @@ self.addEventListener('message', function(event) {
 
                 a.FeedOrigin = feedMap[a.FeedId].Title;
             }
-            push.push(a);
+            if (unshiftFirst) {
+                unshift.unshift(a);
+            } else {
+                push.push(a);
+            }
+        } else {
+            unshiftFirst = false;
         }
     }
 
