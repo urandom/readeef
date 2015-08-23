@@ -32,7 +32,9 @@ neon-animated-pages {
                 <more-route name="logout" path="/logout"></more-route>
                 <more-route name="feed-base" path="/feed">
                     <more-route name="feed" path="/:tagOrId">
-                        <more-route name="article" path="/article/:articleId"></more-route>
+                        <more-route name="article" path="/article/:articleId">
+                            <more-route name="article-format" path="/:type"></more-route>
+                        </more-route>
                     </more-route>
                 </more-route>
                 <more-route name="settings-base" path="/settings">

@@ -225,6 +225,16 @@
                 debouncer = Polymer.Debounce(debouncer, cb.bind(this, route.params[param]));
             }
         },
+
+        isActiveUrl: function(routeName) {
+            var params = {};
+            for (var i = 1, p; p = arguments[i]; i += 2) {
+                params[arguments[i]] = arguments[i+1];
+            }
+
+            return MoreRouting.isCurrentUrl(routeName, params);
+        },
+
     };
 
 })(window);

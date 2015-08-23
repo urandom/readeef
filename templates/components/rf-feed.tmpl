@@ -183,17 +183,17 @@ rf-article /deep/ .article-control {
                     <iron-scroll-threshold id="scroll-threshold" lower-threshold="100" on-lower-trigger="onLowerScrollThresholdTrigger"></iron-scroll-threshold>
                     <iron-list items="[[ articles ]]" id="list">
                         <template>
-                            <a is="pushstate-anchor" href="[[ _computeArticleLink(item.Id) ]]" class="list-article">
+                            <a is="pushstate-anchor" href="[[ _computeArticleLink(item.Id, 'main') ]]" class="list-article">
                                 <div class$="[[ _computeArticleClass(item.Read, item.Favorite) ]]" data-feed-id$="[[ item.FeedId ]]" data-article-id$="[[ item.Id ]]">
                                     <div class="card layout vertical">
                                         <div class="title-wrapper layout horizontal center">
                                             <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.Favorite) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
-                                            <span class="title" title$="[[ item.Title ]]" inner-h-t-m-l="[[ _computeArticleTitle(item) ]]"></span>
+                                            <span class="title" title$="[[ item.Title ]]" inner-h-t-m-l="[[ _computeArticleTitle(item.Title, item.Hit.*) ]]"></span>
                                         </div>
                                         <div class="detail-wrapper layout horizontal center">
                                             <span class="short-description flex">
                                                 <img src$="[[ item.Thumbnail ]]" class="top-image">
-                                                <span inner-h-t-m-l="[[ _computeArticleDescription(item) ]]"></span>
+                                                <span inner-h-t-m-l="[[ _computeArticleDescription(item.Description, item.Hit.*) ]]"></span>
                                                 <br style="clear: both">
                                             </span>
                                         </div>
@@ -244,8 +244,16 @@ rf-article /deep/ .article-control {
                                             View
                                             <paper-ripple></paper-ripple>
                                         </a>
-                                        <paper-button class="flex article-control" on-tap="onArticleSummarize" toggles active="[[ _computeArticleToggleSummarize(item) ]]">Summarize</paper-button>
-                                        <paper-button class="flex article-control" on-tap="onArticleFormat" toggles active="[[ _computeArticleToggleFormat(item) ]]">Format</paper-button>
+                                        <paper-spinner class="loading-dependant" hidden="[[ !item.article.summarizing ]]"></paper-spinner>
+                                        <a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'summary') ]]" class="article-link article-control" hidden="[[ item.article.summarizing ]]">
+                                            Summarize
+                                            <paper-ripple></paper-ripple>
+                                        </a>
+                                        <paper-spinner class="loading-dependant" hidden="[[ !item.article.formatting ]]"></paper-spinner>
+                                        <a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'format') ]]" class="article-link article-control" hidden="[[ item.article.formatting ]]">
+                                            Format
+                                            <paper-ripple></paper-ripple>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -303,6 +311,7 @@ rf-article /deep/ .article-control {
         <rf-api id="article-favorite" method="mark-article-as-favorite" tag="content-list"on-rf-api-message="onArticleStateMessage"  user="[[ user ]]"></rf-api>
         <rf-api id="feed-read-all" method="mark-feed-as-read" on-rf-api-message="onFeedReadAllMessage" user="[[ user ]]"></rf-api>
         <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="onFeedUpdateNotify" user="[[ user ]]" receiver="true"></rf-api>
+        <rf-api id="article-format" method="format-article" on-rf-api-message="onArticleFormatMessage" user="[[ user ]]"></rf-api>
     </template>
 
     <script>
@@ -495,6 +504,26 @@ rf-article /deep/ .article-control {
                         if (!this.articles[i].Read) {
                             this.$['article-read'].send({id: id - 0, value: true});
                         }
+                    }
+                }.bind(this));
+
+                this.routeParamObserver('article-format', 'type', function(type) {
+                    var route = MoreRouting.getRouteByName('article-format'),
+                        articleId = route.params.articleId,
+                        article = this.articles[this._articleIndexMap[articleId]];
+
+                    switch (type) {
+                        case "format":
+                            break;
+                        case "summary":
+                            break;
+                        case null:
+                            break;
+                        default:
+                            return this.async(function() {
+                                MoreRouting.navigateTo('article',
+                                        {tagOrId: route.params.tagOrId, articleId: articleId});
+                            });
                     }
                 }.bind(this));
 
@@ -743,8 +772,14 @@ rf-article /deep/ .article-control {
                 }
             },
 
-            _computeArticleLink: function(articleId) {
-                return this.urlFor('article', {tagOrId: this.tagOrId, articleId: articleId});
+            _computeArticleLink: function(articleId, type) {
+                switch (type) {
+                    case "main":
+                        return this.urlFor('article', {tagOrId: this.tagOrId, articleId: articleId});
+                    case "summary":
+                    case "format":
+                        return this.urlFor('article-format', {tagOrId: this.tagOrId, articleId: articleId, type: type});
+                }
             },
 
 
@@ -779,22 +814,23 @@ rf-article /deep/ .article-control {
                 return favorite ? 'bookmark' : 'bookmark-border';
             },
 
-            _computeArticleTitle: function(item) {
-                if (item.Hit && item.Hit.fragments && item.Hit.fragments.Title) {
-                    this._tagStripper.innerHTML = item.Hit.fragments.Title;
+            _computeArticleTitle: function(title, hitRecord) {
+                if (hitRecord.base.fragments && hitRecord.base.fragments.Title) {
+                    this._tagStripper.innerHTML = hitRecord.base.fragments.Title;
 
                     return this._tagStripper.innerHTML;
                 }
-                return this._stripTags(item.Title);
+
+                return this._stripTags(title);
             },
 
-            _computeArticleDescription: function(item) {
-                if (item.Hit && item.Hit.fragments && item.Hit.fragments.Description) {
-                    this._tagStripper.innerHTML = item.Hit.fragments.Description;
+            _computeArticleDescription: function(description, hitRecord) {
+                if (hitRecord.base.fragments && hitRecord.base.fragments.Description) {
+                    this._tagStripper.innerHTML = hitRecord.base.fragments.Description;
 
                     return this._tagStripper.innerHTML;
                 }
-                return this._stripTags(item.Description);
+                return this._stripTags(description);
             },
 
             _computeArticleTarget: function(article) {
