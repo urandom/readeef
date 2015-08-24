@@ -208,7 +208,7 @@ rf-article /deep/ .article-control {
                             </a>
                         </template>
                     </iron-list>
-                    <div class="card empty-list" hidden$="[[ articles.length ]]">
+                    <div class="card empty-list" hidden$="[[ _computeHideEmptyMessage(articles, loading) ]]">
                         <span>There are no articles in this section</span>
                     </div>
                 </div>
@@ -337,7 +337,12 @@ rf-article /deep/ .article-control {
                     observer: '_loadingChanged',
                 },
                 feeds: Object,
-                articles: Array,
+                articles: {
+                    type: Array,
+                    value: function() {
+                        return this._createArticles();
+                    },
+                },
                 narrow: Boolean,
             },
             behaviors: [
@@ -350,28 +355,26 @@ rf-article /deep/ .article-control {
             _firstVisibleIndex: 0,
             _updateAvailable: false,
             _tagStripper: document.createElement('div'),
-            _appendArticleWorker: new Worker('/js/append-articles-worker.js'),
-            _relativeDateWorker: new Worker('/js/relative-date-worker.js'),
 
             get _canAutoUpdate() {
                 return !this._focused ||
                     !MoreRouting.isCurrentUrl('feed') ||
-                    !MoreRouting.isCurrentUrl('article') &&
+                    MoreRouting.isCurrentUrl('article') ||
                     new Date().getTime() - this._lastActivity > this._lastActivityDelay;
             },
 
             hasPreviousArticle: function(id) {
-                var index = this._articleIndexMap[id === undefined ?
+                var index = this.articles.findIndex(id === undefined ?
                     MoreRouting.getRouteByName('article').params.articleId :
-                    id];
+                    id);
 
                 return index > 0;
             },
 
             hasNextArticle: function(id) {
-                var index = this._articleIndexMap[id === undefined ?
+                var index = this.articles.findIndex(id === undefined ?
                     MoreRouting.getRouteByName('article').params.articleId :
-                    id];
+                    id);
 
                 return index < this.articles.length - 1;
             },
@@ -380,7 +383,7 @@ rf-article /deep/ .article-control {
                 var route = MoreRouting.getRouteByName('article'),
                     article;
                 if (route.active) {
-                    var index = this._articleIndexMap[route.params.articleId];
+                    var index = this.articles.findIndex(route.params.articleId);
 
                     if (unread) {
                         while (article = this.articles[--index]) {
@@ -413,7 +416,7 @@ rf-article /deep/ .article-control {
                 var route = MoreRouting.getRouteByName('article'),
                     article;
                 if (route.active) {
-                    var index = this._articleIndexMap[route.params.articleId];
+                    var index = this.articles.findIndex(route.params.articleId);
 
                     if (unread) {
                         while (article = this.articles[++index]) {
@@ -443,10 +446,10 @@ rf-article /deep/ .article-control {
             },
 
             articleState: function(articleId, state) {
-                var index = this._articleIndexMap[
+                var index = this.articles.findIndex(
                     arguments.length ?
                         articleId :
-                        MoreRouting.getRouteByName('article').params.articleId],
+                        MoreRouting.getRouteByName('article').params.articleId),
                     article = this.articles[index];
 
                 if (arguments.length < 2) {
@@ -466,7 +469,7 @@ rf-article /deep/ .article-control {
                 this.debounce('feed-refresh', function() {
                     this.loading = true;
                     this.noMoreArticles = false;
-                    this.articles = [];
+                    this.articles = this._createArticles();
                     this.offset = 0;
                     this.$.article.index = -1;
                     this.$['feed-articles'].send();
@@ -478,7 +481,12 @@ rf-article /deep/ .article-control {
             },
 
             attached: function() {
-                this._articleIndexMap = {};
+                this._appendArticleWorker = new Worker('/js/append-articles-worker.js');
+                this._appendArticleWorker.addEventListener('message', this._handleArticleWorkerMessage.bind(this));
+
+                this._relativeDateWorker = new Worker('/js/relative-date-worker.js');
+                this._relativeDateWorker.addEventListener('message', this._handleRelativeDateWorkerMessage.bind(this));
+
 
                 // Find the scroller that will be used by the list
                 var el = Polymer.dom(this);
@@ -496,7 +504,7 @@ rf-article /deep/ .article-control {
                         this.$.article.index = -1;
                         this.$.list.scrollToIndex(this._firstVisibleIndex);
                     } else {
-                        var i = this._articleIndexMap[id];
+                        var i = this.articles.findIndex(id);
                         this.$.article.index = i;
                         this._scroller.scrollTop = 0;
                         this._firstVisibleIndex = this.$.list.firstVisibleIndex;
@@ -510,7 +518,7 @@ rf-article /deep/ .article-control {
                 this.routeParamObserver('article-format', 'type', function(type) {
                     var route = MoreRouting.getRouteByName('article-format'),
                         articleId = route.params.articleId,
-                        article = this.articles[this._articleIndexMap[articleId]];
+                        article = this.articles.find(articleId);
 
                     switch (type) {
                         case "format":
@@ -546,29 +554,10 @@ rf-article /deep/ .article-control {
 
                 if (data.arguments.Articles && data.arguments.Articles.length) {
                     var data = {
-                        current: this.articles,
+                        current: [].concat(this.articles),
                         newArticles: data.arguments.Articles,
                         unshiftFirst: this.articles.length && data.arguments.Offset == 0,
                     };
-
-                    this._appendArticleWorker.addEventListener('message', function(event) {
-                        if (event.data.push.length) {
-                            this.push.apply(this, ['articles'].concat(event.data.push));
-                        }
-                        if (event.data.unshift.length) {
-                            var firstVisible = this.$.list.firstVisibleIndex;
-                            this.unshift.apply(this, ['articles'].concat(event.data.unshift));
-                            this.async(function() {
-                                var newIndex = firstVisible + event.data.unshift.length;
-                                if (this.$.list.firstVisibleIndex != newIndex) {
-                                    this.$.list.scrollToIndex(newIndex);
-                                }
-                            });
-                        }
-                        this._articleIndexMap = event.data.indexMap;
-                        this.loading = false;
-                        this.$['scroll-threshold'].clearLower();
-                    }.bind(this));
 
                     if (isNaN(this.tagOrId)) {
                         data.feeds = this.feeds;
@@ -580,14 +569,14 @@ rf-article /deep/ .article-control {
                     this.loading = false;
 
                     if (!this.offset) {
-                        this.articles = null;
+                        this.articles = this._createArticles();
                     }
                 }
                 this._lastUpdateTime = new Date().getTime();
             },
 
             onArticleStateMessage: function(event, data) {
-                var index = this._articleIndexMap[data.arguments.Id];
+                var index = this.articles.findIndex(data.arguments.Id);
                 if (index != -1) {
                     var type, args = {};
                     if ('Read' in data.arguments) {
@@ -689,8 +678,7 @@ rf-article /deep/ .article-control {
                             return;
                         }
 
-                        var index = this._articleIndexMap[articleRoute.params.articleId],
-                            article = this.articles[index];
+                        var article = this.articles.find(articleRoute.params.articleId);
 
                         window.open(article.Link, this._computeArticleTarget(article));
                         break;
@@ -838,6 +826,10 @@ rf-article /deep/ .article-control {
                 return this._stripTags(description);
             },
 
+            _computeHideEmptyMessage: function(articles, loading) {
+                return loading || articles && articles.length > 0;
+            },
+
             _computeArticleTarget: function(article) {
                 return "feed-article-" + article.Id;
             },
@@ -867,22 +859,59 @@ rf-article /deep/ .article-control {
                     return;
                 }
 
-                this._relativeDateWorker.addEventListener('message', function(event) {
-                    if (this.tagOrId == event.data.tagOrId) {
-
-                        var dates = event.data.dates;
-
-                        for (var i = 0, a, d; a = this.articles[i]; ++i) {
-                            d = dates[a.Id];
-                            if (d) {
-                                this.set("articles." + i + ".RelativeDate", d);
-                            }
-                        }
-                    }
-                }.bind(this));
-
                 this._relativeDateWorker.postMessage({
                     articles: this.articles, tagOrId: this.tagOrId});
+            },
+
+            _createArticles: function() {
+                var articles = [];
+
+                articles.indexMap = {};
+                articles.find = function(id) {
+                    return this[this.indexMap[id]];
+                };
+                articles.findIndex = function(id) {
+                    var index = this.indexMap[id];
+                    return index === undefined ? -1 : index;
+                };
+
+                return articles;
+            },
+
+            _handleArticleWorkerMessage: function(event) {
+                // Update the map first, the change callbacks might use it
+                this.articles.indexMap = event.data.indexMap;
+
+                if (event.data.push.length) {
+                    this.push.apply(this, ['articles'].concat(event.data.push));
+                }
+                if (event.data.unshift.length) {
+                    var firstVisible = this.$.list.firstVisibleIndex;
+                    this.unshift.apply(this, ['articles'].concat(event.data.unshift));
+                    this.async(function() {
+                        var newIndex = firstVisible + event.data.unshift.length;
+                        if (this.$.list.firstVisibleIndex != newIndex) {
+                            this.$.list.scrollToIndex(newIndex);
+                        }
+                    });
+                }
+
+                this.loading = false;
+                this.$['scroll-threshold'].clearLower();
+            },
+
+            _handleRelativeDateWorkerMessage: function(event) {
+                if (this.tagOrId == event.data.tagOrId) {
+
+                    var dates = event.data.dates;
+
+                    for (var i = 0, a, d; a = this.articles[i]; ++i) {
+                        d = dates[a.Id];
+                        if (d) {
+                            this.set("articles." + i + ".RelativeDate", d);
+                        }
+                    }
+                }
             },
 
         })

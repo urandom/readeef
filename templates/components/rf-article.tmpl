@@ -407,6 +407,11 @@
                 return;
             }
 
+            if (this._instances[1] && this._instances[1].item.article.Id == this.articles[this.index].Id) {
+                this._debounceTemplate(this._render);
+                return;
+            }
+
             if (stopRunningAnimations(function() {
                 this._indexChanged.call(this, index, oldValue);
             }.bind(this))) {
@@ -450,8 +455,18 @@
             }
 
             var parts = record.path.split('.'), article;
-            if (parts.length == 3 || parts[2] == 'Favorite') {
+            if (parts.length == 3 && parts[2] == 'Favorite') {
                 this._forwardItemPath(parts.slice(1).join('.'), record.value);
+            } else if (parts.length == 2 && parts[1] == 'splices') {
+                var newIndex = this.index;
+
+                for (var i = 0, s; s = record.value.indexSplices[i]; ++i) {
+                    if (s.index < this.index + 2) {
+                        newIndex = newIndex + s.addedCount - s.removed.length;
+                    }
+                }
+
+                this.index = newIndex;
             }
         },
 
