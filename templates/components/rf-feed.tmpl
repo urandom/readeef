@@ -353,10 +353,10 @@ rf-article /deep/ .article-control {
             _appendArticleWorker: new Worker('/js/append-articles-worker.js'),
             _relativeDateWorker: new Worker('/js/relative-date-worker.js'),
 
-            get _canUpdateImmediately() {
+            get _canAutoUpdate() {
                 return !this._focused ||
                     !MoreRouting.isCurrentUrl('feed') ||
-                    MoreRouting.isCurrentUrl('article') ||
+                    !MoreRouting.isCurrentUrl('article') &&
                     new Date().getTime() - this._lastActivity > this._lastActivityDelay;
             },
 
@@ -542,6 +542,8 @@ rf-article /deep/ .article-control {
             },
 
             onFeedArticlesMessage: function(event, data) {
+                this.fire('feed-update-available', false);
+
                 if (data.arguments.Articles && data.arguments.Articles.length) {
                     var data = {
                         current: this.articles,
@@ -650,8 +652,11 @@ rf-article /deep/ .article-control {
                     return;
                 }
 
-                if (this._canUpdateImmediately) {
-                    this._updateList();
+                if (this._canAutoUpdate) {
+                    // Give the thumbnailer some time to gather any thumbnails
+                    this.debounce("last-activity-timeout", function() {
+                        this._updateList();
+                    }, 30000); // 30s
                 } else {
                     this.fire('feed-update-available', true);
                 }
@@ -848,7 +853,6 @@ rf-article /deep/ .article-control {
                     return;
                 }
 
-                this.fire('feed-update-available', false);
                 this.$['feed-articles'].send({
                     id: this.tagOrId,
                     limit: this.limit,

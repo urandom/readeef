@@ -450,11 +450,9 @@
             }
 
             var parts = record.path.split('.'), article;
-            if (parts.length < 3 || parts[2] != 'Favorite') {
-                return;
+            if (parts.length == 3 || parts[2] == 'Favorite') {
+                this._forwardItemPath(parts.slice(1).join('.'), record.value);
             }
-
-            this._forwardItemPath(parts.slice(1).join('.'), record.value);
         },
 
         _render: function(direction) {
@@ -611,7 +609,7 @@
         _forwardParentProp: function(prop, value) {
             this._instances.forEach(function(inst) {
                 if (inst) {
-                    inst._templateInstance[prop] = value;
+                    inst[prop] = value;
                 }
             }.bind(this));
         },
@@ -619,7 +617,7 @@
         _forwardParentPath: function(path, value) {
             this._instances.forEach(function(inst) {
                 if (inst) {
-                    inst._templateInstance.notifyPath(path, value, true);
+                    inst.notifyPath(path, value, true);
                 }
             }, this);
         },
