@@ -641,7 +641,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
             },
 
             onLowerScrollThresholdTrigger: function(event) {
-                if (this.noMoreArticles || MoreRouting.isCurrentUrl('article')) {
+                if (this.noMoreArticles || MoreRouting.isCurrentUrl('article') || this.loading) {
                     return;
                 }
                 this.debounce('feed-refresh', function() {
