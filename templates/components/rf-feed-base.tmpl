@@ -482,11 +482,11 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                     return;
                 }
 
+                this._updateAvailable = true;
                 if (this._canAutoUpdate) {
                     // Give the thumbnailer some time to gather any thumbnails
-                    this._updateArticles(30000); // 30s
-                } else {
-                    this._updateAvailable = true;
+                    this.debounce('auto-update-timeout',
+                        this._updateArticles, 30000); // 30s
                 }
             },
 
@@ -613,7 +613,8 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 }
 
                 this._lastActivity = new Date().getTime();
-                this._updateArticles(this._lastActivityDelay);
+                this.debounce('last-activity-timeout',
+                    this._updateArticles, this._lastActivityDelay);
             },
 
             onTrack: function(event) {
@@ -622,7 +623,8 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 }
 
                 this._lastActivity = new Date().getTime();
-                this._updateArticles(this._lastActivityDelay);
+                this.debounce('last-activity-timeout',
+                    this._updateArticles, this._lastActivityDelay);
             },
 
             onSearchKeypress: function(event) {
@@ -847,20 +849,17 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
             },
 
             _updateArticles: function(delay) {
-                this.debounce('last-activity-timeout', function() {
-                    if (!this._updateAvailable) {
-                        return;
-                    }
+                if (!this._updateAvailable) {
+                    return;
+                }
 
-                    this.$['feed-articles'].send({
-                        id: this.tagOrId,
-                        limit: this.limit,
-                        offset: 0,
-                        newerFirst: this.user.ProfileData.newerFirst || false,
-                        unreadOnly: this.user.ProfileData.unreadOnly || false,
-                    });
-                }, delay); // 30s
-
+                this.$['feed-articles'].send({
+                    id: this.tagOrId,
+                    limit: this.limit,
+                    offset: 0,
+                    newerFirst: this.user.ProfileData.newerFirst || false,
+                    unreadOnly: this.user.ProfileData.unreadOnly || false,
+                });
             },
 
             _previousArticle: function(unread) {
