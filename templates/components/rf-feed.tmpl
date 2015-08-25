@@ -860,7 +860,7 @@ rf-article /deep/ .article-control {
                 }
 
                 this._relativeDateWorker.postMessage({
-                    articles: this.articles, tagOrId: this.tagOrId});
+                    articles: [].concat(this.articles), tagOrId: this.tagOrId});
             },
 
             _createArticles: function() {

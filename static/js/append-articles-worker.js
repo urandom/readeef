@@ -51,7 +51,7 @@ self.addEventListener('message', function(event) {
             a.RelativeDate = moment(a.Date).fromNow();
 
             if (unshiftFirst || event.data.unshiftFirst && !a.Read) {
-                unshift.unshift(a);
+                unshift.push(a);
             } else {
                 push.push(a);
             }
