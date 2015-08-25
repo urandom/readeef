@@ -455,7 +455,7 @@
             }
 
             var parts = record.path.split('.'), article;
-            if (parts.length == 3 && parts[2] == 'Favorite') {
+            if (parts.length == 3 && (parts[2] == 'Favorite' || parts[2] == 'RelativeDate')) {
                 this._forwardItemPath(parts.slice(1).join('.'), record.value);
             } else if (parts.length == 2 && parts[1] == 'splices') {
                 var newIndex = this.index;
