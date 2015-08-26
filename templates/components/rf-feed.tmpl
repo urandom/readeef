@@ -22,13 +22,6 @@
     margin: 16px 0 8px;
 }
 
-.list-container .empty-list {
-    font-family: "Roboto Slab";
-    font-variant: small-caps;
-    font-size: 2em;
-    padding: 0.67em 2em;
-}
-
 .card,
 rf-article /deep/ .card {
     @apply(--card-style);
@@ -180,7 +173,6 @@ rf-article /deep/ .article-control {
         <more-route-selector>
             <iron-pages>
                 <div route="feed" class="list-container">
-                    <iron-scroll-threshold id="scroll-threshold" lower-threshold="100" on-lower-trigger="onLowerScrollThresholdTrigger"></iron-scroll-threshold>
                     <iron-list items="[[ articles ]]" id="list">
                         <template>
                             <a is="pushstate-anchor" href="[[ _computeArticleLink(item.Id, 'main') ]]" class="list-article">
@@ -208,9 +200,6 @@ rf-article /deep/ .article-control {
                             </a>
                         </template>
                     </iron-list>
-                    <div class="card empty-list" hidden$="[[ _computeHideEmptyMessage(articles, loading) ]]">
-                        <span>There are no articles in this section</span>
-                    </div>
                 </div>
                 <rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" articles="[[ articles ]]" on-next-article="onNextArticle" on-previous-article="onPreviousArticle">
                     <template>
@@ -263,10 +252,6 @@ rf-article /deep/ .article-control {
             </iron-pages>
         </more-route-selector>
         
-        <div class="layout vertical center" hidden$="[[ !loading ]]">
-            <paper-spinner id="loading-spinner"></paper-spinner>
-        </div>
-
         <paper-dialog id="shortcut-help-dialog" entry-animation="scale-up-animation" exit-animation="fade-out-animation" modal>
             <h2>Keyboard shortcuts</h2>
 
@@ -306,11 +291,8 @@ rf-article /deep/ .article-control {
             </div>
         </paper-dialog>
 
-        <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" user="[[ user ]]"></rf-api>
         <rf-api id="article-read" method="mark-article-as-read" tag="content-list" on-rf-api-message="onArticleStateMessage" user="[[ user ]]"></rf-api>
         <rf-api id="article-favorite" method="mark-article-as-favorite" tag="content-list"on-rf-api-message="onArticleStateMessage"  user="[[ user ]]"></rf-api>
-        <rf-api id="feed-read-all" method="mark-feed-as-read" on-rf-api-message="onFeedReadAllMessage" user="[[ user ]]"></rf-api>
-        <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="onFeedUpdateNotify" user="[[ user ]]" receiver="true"></rf-api>
         <rf-api id="article-format" method="format-article" on-rf-api-message="onArticleFormatMessage" user="[[ user ]]"></rf-api>
     </template>
 
@@ -324,137 +306,22 @@ rf-article /deep/ .article-control {
                     observer: '_tagOrIdChanged',
                 },
                 user: Object,
-                limit: {
-                    type: Number,
-                    value: 200,
-                },
-                offset: {
-                    type: Number,
-                    value: 0,
-                },
-                loading: {
-                    type: Boolean,
-                    observer: '_loadingChanged',
-                },
                 feeds: Object,
-                articles: {
-                    type: Array,
-                    value: function() {
-                        return this._createArticles();
-                    },
-                },
+                articles: Array,
                 narrow: Boolean,
             },
             behaviors: [
                 NestedRouteBehavior,
                 MoreRouting.TemplateHelpers,
             ],
-            _lastUpdateTime: 0,
-            _lastActivity: new Date().getTime(),
-            _lastActivityDelay: 300000, // 5 minutes
+            observers: [
+                '_articlesChanged(articles.*)',
+            ],
             _firstVisibleIndex: 0,
-            _updateAvailable: false,
             _tagStripper: document.createElement('div'),
 
-            get _canAutoUpdate() {
-                return !this._focused ||
-                    !MoreRouting.isCurrentUrl('feed') ||
-                    MoreRouting.isCurrentUrl('article') ||
-                    new Date().getTime() - this._lastActivity > this._lastActivityDelay;
-            },
-
-            hasPreviousArticle: function(id) {
-                var index = this.articles.findIndex(id === undefined ?
-                    MoreRouting.getRouteByName('article').params.articleId :
-                    id);
-
-                return index > 0;
-            },
-
-            hasNextArticle: function(id) {
-                var index = this.articles.findIndex(id === undefined ?
-                    MoreRouting.getRouteByName('article').params.articleId :
-                    id);
-
-                return index < this.articles.length - 1;
-            },
-
-            previousArticle: function(unread) {
-                var route = MoreRouting.getRouteByName('article'),
-                    article;
-                if (route.active) {
-                    var index = this.articles.findIndex(route.params.articleId);
-
-                    if (unread) {
-                        while (article = this.articles[--index]) {
-                            if (!article.Read) {
-                                break;
-                            }
-                        }
-                    } else if (index > 0) {
-                        article = this.articles[index - 1];
-                    }
-                } else {
-                    if (unread) {
-                        var article, index = this.articles.length;
-                        while (article = this.articles[--index]) {
-                            if (!article.Read) {
-                                break;
-                            }
-                        }
-                    } else {
-                        article = this.articles[this.articles.length - 1];
-                    }
-                }
-
-                if (article) {
-                    MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: article.Id});
-                }
-            },
-
-            nextArticle: function(unread) {
-                var route = MoreRouting.getRouteByName('article'),
-                    article;
-                if (route.active) {
-                    var index = this.articles.findIndex(route.params.articleId);
-
-                    if (unread) {
-                        while (article = this.articles[++index]) {
-                            if (!article.Read) {
-                                break
-                            }
-                        }
-                    } else {
-                        article = this.articles[index+1]
-                    }
-                } else {
-                    var index = -1;
-                    if (unread) {
-                        while (article = this.articles[++index]) {
-                            if (!article.Read) {
-                                break
-                            }
-                        }
-                    } else {
-                        article = this.articles[0];
-                    }
-                }
-
-                if (article) {
-                    MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: article.Id});
-                }
-            },
-
             articleState: function(articleId, state) {
-                var index = this.articles.findIndex(
-                    arguments.length ?
-                        articleId :
-                        MoreRouting.getRouteByName('article').params.articleId),
-                    article = this.articles[index];
-
-                if (arguments.length < 2) {
-                    return article;
-                }
+                var index = this.articles.find(articleId);
 
                 if ('Read' in state) {
                     this.$['article-read'].send({id: articleId - 0, value: state.Read});
@@ -465,35 +332,15 @@ rf-article /deep/ .article-control {
                 }
             },
 
-            refresh: function() {
-                this.debounce('feed-refresh', function() {
-                    this.loading = true;
-                    this.noMoreArticles = false;
-                    this.articles = this._createArticles();
-                    this.offset = 0;
-                    this.$.article.index = -1;
-                    this.$['feed-articles'].send();
-                });
-            },
-
-            markAllAsRead: function() {
-                this.$['feed-read-all'].send({id: this.tagOrId, timestamp: this._lastUpdateTime});
-            },
-
             attached: function() {
-                this._appendArticleWorker = new Worker('/js/append-articles-worker.js');
-                this._appendArticleWorker.addEventListener('message', this._handleArticleWorkerMessage.bind(this));
-
                 this._relativeDateWorker = new Worker('/js/relative-date-worker.js');
                 this._relativeDateWorker.addEventListener('message', this._handleRelativeDateWorkerMessage.bind(this));
-
 
                 // Find the scroller that will be used by the list
                 var el = Polymer.dom(this);
                 while (el = (el.parentNode || el.host)) {
                     if ('scroller' in el) {
                         this._scroller =
-                            this.$['scroll-threshold'].scrollTarget =
                             Polymer.dom(this.root).querySelector('.list-container').scroller = el.scroller;
                         break;
                     }
@@ -535,44 +382,11 @@ rf-article /deep/ .article-control {
                     }
                 }.bind(this));
 
-                this._focused = true;
-
-                window.addEventListener("focus", function() {this._focused = true}.bind(this), false);
-                window.addEventListener("blur", function() {this._focused = false}.bind(this), false);
-
                 document.addEventListener('keypress', this.onKeypress.bind(this), false);
-                document.addEventListener('track', this.onTrack.bind(this), false);
-                document.addEventListener('tap', this.onTrack.bind(this), false);
 
                 setInterval(function() {
                     this._updateRelativeDates();
                 }.bind(this), 60000);
-            },
-
-            onFeedArticlesMessage: function(event, data) {
-                this.fire('feed-update-available', false);
-
-                if (data.arguments.Articles && data.arguments.Articles.length) {
-                    var data = {
-                        current: [].concat(this.articles),
-                        newArticles: data.arguments.Articles,
-                        unshiftFirst: this.articles.length && data.arguments.Offset == 0,
-                    };
-
-                    if (isNaN(this.tagOrId)) {
-                        data.feeds = this.feeds;
-                    }
-
-                    this._appendArticleWorker.postMessage(data);
-                } else {
-                    this.noMoreArticles = true;
-                    this.loading = false;
-
-                    if (!this.offset) {
-                        this.articles = this._createArticles();
-                    }
-                }
-                this._lastUpdateTime = new Date().getTime();
             },
 
             onArticleStateMessage: function(event, data) {
@@ -608,46 +422,7 @@ rf-article /deep/ .article-control {
 
                 if (articleId !== null) {
                     this.articleState(articleId,
-                        {Favorite: !this.articleState(articleId).Favorite});
-                }
-            },
-
-            onFeedReadAllMessage: function(event, data) {
-                if (data.success) {
-                    for (var i = 0, a; a = this.articles[i]; ++i) {
-                        this.set("articles." + i + ".Read", true);
-                    }
-                }
-            },
-
-            onFeedUpdateNotify: function(event, data) {
-                this._updateAvailable = false;
-               
-                if (this.tagOrId.indexOf("tag:") == 0) {
-                    var tag = this.tagOrId.substring(4),
-                        active = this.feeds.filter(function(feed) {
-                            return feed.Tags && feed.Tags.indexOf(tag) != -1 
-                        });
-
-                    if (active.some(function(feed) { return feed.Id == data.arguments.Feed.Id })) {
-                        this._updateAvailable = true;
-                    }
-
-                } else if (this.tagOrId == "all" || this.tagOrId == data.arguments.Feed.Id) {
-                    this._updateAvailable = true;
-                }
-
-                if (!this._updateAvailable) {
-                    return;
-                }
-
-                if (this._canAutoUpdate) {
-                    // Give the thumbnailer some time to gather any thumbnails
-                    this.debounce("last-activity-timeout", function() {
-                        this._updateList();
-                    }, 30000); // 30s
-                } else {
-                    this.fire('feed-update-available', true);
+                        {Favorite: !this.articles.find(articleId).Favorite});
                 }
             },
 
@@ -660,18 +435,6 @@ rf-article /deep/ .article-control {
                     articleRoute = MoreRouting.getRouteByName('article');
 
                 switch (code) {
-                    case 74: // J
-                    case 106: // j
-                        this.nextArticle(event.shiftKey);
-                        break;
-                    case 75: // K
-                    case 107: // k
-                        this.previousArticle(event.shiftKey);
-                        break;
-                    case 72: // H
-                    case 104: // h
-                        MoreRouting.navigateTo('feed', {tagOrId: this.tagOrId});
-                        break;
                     case 86: // V
                     case 118: // v
                         if (!articleRoute.active) {
@@ -689,7 +452,7 @@ rf-article /deep/ .article-control {
                         }
 
                         this.articleState(articleRoute.params.articleId,
-                            {Read: !this.articleState(articleRoute.params.articleId).Read});
+                            {Read: !this.articles.find(articleRoute.params.articleId).Read});
                         break;
                     case 67: // C
                     case 99: // c
@@ -705,10 +468,6 @@ rf-article /deep/ .article-control {
                         }
 
                         break;
-                    case 82: // R
-                    case 114: // r
-                        this.refresh();
-                        break;
                     case 70: // F
                     case 102: // f
                         if (!articleRoute.active) {
@@ -716,52 +475,43 @@ rf-article /deep/ .article-control {
                         }
 
                         this.articleState(articleRoute.params.articleId,
-                            {Favorite: !this.articleState(articleRoute.params.articleId).Favorite});
+                            {Favorite: !this.articles.find(articleRoute.params.articleId).Favorite});
                         break;
                     case 63: // ?
                         this.$['shortcut-help-dialog'].open();
                         break;
                 }
-
-                this._lastActivity = new Date().getTime();
-                this.debounce("last-activity-timeout", function() {
-                    this._updateList();
-                }, this._lastActivityDelay);
-            },
-
-            onTrack: function(event) {
-                if (!MoreRouting.isCurrentUrl('feed')) {
-                    return;
-                }
-
-                this._lastActivity = new Date().getTime();
-                this.debounce("last-activity-timeout", function() {
-                    this._updateList();
-                }, this._lastActivityDelay);
-            },
-
-            onLowerScrollThresholdTrigger: function(event) {
-                if (this.noMoreArticles || MoreRouting.isCurrentUrl('article')) {
-                    return;
-                }
-                this.debounce('feed-refresh', function() {
-                    this.loading = true;
-                    this.offset += this.limit;
-                    this.$['feed-articles'].send();
-                });
             },
 
             _tagOrIdChanged: function(tagOrId, oldValue) {
                 this._firstVisibleIndex = 0;
-                this.refresh();
             },
 
-            _loadingChanged: function(loading, old) {
-                if (loading) {
-                    this.$['loading-spinner'].reset();
-                    this.$['loading-spinner'].active = true;
-                } else {
-                    this.$['loading-spinner'].active = false;
+            _articlesChanged: function(record) {
+                if (!record.base.length) {
+                    this.$.article.index = -1;
+                } else if (record.path == 'articles.splices') {
+                    var articleActive = MoreRouting.isCurrentUrl('article'),
+                        newIndex = articleActive ? this._firstVisibleIndex : this.$.list.firstVisibleIndex,
+                        originalIndex = newIndex, changeCount = 0;
+
+                    for (var i = 0, s; s = record.value.indexSplices[i]; ++i) {
+                        if (s.index <= originalIndex) {
+                            changeCount += s.addedCount - s.removed.length;
+                            newIndex = newIndex + changeCount;
+                        }
+                    }
+
+                    if (articleActive) {
+                        this._firstVisibleIndex = newIndex;
+                    } else {
+                        this.async(function() {
+                            if (changeCount == record.base.length) {
+                                newIndex = 0;
+                            }
+                            this.$.list.scrollToIndex(newIndex);
+                        });
+                    }
                 }
             },
 
@@ -775,20 +525,6 @@ rf-article /deep/ .article-control {
                 }
             },
 
-
-            _computeFeedArticlesArguments: function(userRecord, tagOrId, limit, offset) {
-                if (!this.user) {
-                    return {};
-                }
-
-                return {
-                    id: tagOrId,
-                    limit: limit,
-                    offset: offset,
-                    newerFirst: userRecord.base.ProfileData.newerFirst || false,
-                    unreadOnly: userRecord.base.ProfileData.unreadOnly || false,
-                };
-            },
 
             _computeArticleClass: function(read, favorite) {
                 var classList = ["article"]
@@ -826,10 +562,6 @@ rf-article /deep/ .article-control {
                 return this._stripTags(description);
             },
 
-            _computeHideEmptyMessage: function(articles, loading) {
-                return loading || articles && articles.length > 0;
-            },
-
             _computeArticleTarget: function(article) {
                 return "feed-article-" + article.Id;
             },
@@ -840,20 +572,6 @@ rf-article /deep/ .article-control {
                 return this._tagStripper.textContent || "";
             },
 
-            _updateList: function() {
-                if (!this._updateAvailable) {
-                    return;
-                }
-
-                this.$['feed-articles'].send({
-                    id: this.tagOrId,
-                    limit: this.limit,
-                    offset: 0,
-                    newerFirst: this.user.ProfileData.newerFirst || false,
-                    unreadOnly: this.user.ProfileData.unreadOnly || false,
-                });
-            },
-
             _updateRelativeDates: function() {
                 if (!MoreRouting.isCurrentUrl('feed') || !this.articles || !this.articles.length) {
                     return;
@@ -861,43 +579,6 @@ rf-article /deep/ .article-control {
 
                 this._relativeDateWorker.postMessage({
                     articles: [].concat(this.articles), tagOrId: this.tagOrId});
-            },
-
-            _createArticles: function() {
-                var articles = [];
-
-                articles.indexMap = {};
-                articles.find = function(id) {
-                    return this[this.indexMap[id]];
-                };
-                articles.findIndex = function(id) {
-                    var index = this.indexMap[id];
-                    return index === undefined ? -1 : index;
-                };
-
-                return articles;
-            },
-
-            _handleArticleWorkerMessage: function(event) {
-                // Update the map first, the change callbacks might use it
-                this.articles.indexMap = event.data.indexMap;
-
-                if (event.data.push.length) {
-                    this.push.apply(this, ['articles'].concat(event.data.push));
-                }
-                if (event.data.unshift.length) {
-                    var firstVisible = this.$.list.firstVisibleIndex;
-                    this.unshift.apply(this, ['articles'].concat(event.data.unshift));
-                    this.async(function() {
-                        var newIndex = firstVisible + event.data.unshift.length;
-                        if (this.$.list.firstVisibleIndex != newIndex) {
-                            this.$.list.scrollToIndex(newIndex);
-                        }
-                    });
-                }
-
-                this.loading = false;
-                this.$['scroll-threshold'].clearLower();
             },
 
             _handleRelativeDateWorkerMessage: function(event) {

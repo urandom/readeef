@@ -61,7 +61,7 @@ paper-header-panel[main] /deep/ .main-title-container {
                     <content select=".drawer-menu"></content>
                 </div>
             </paper-header-panel>
-            <paper-header-panel main mode="[[_computeMainPanelMode(narrow)]]">
+            <paper-header-panel id="main-panel" main mode="[[_computeMainPanelMode(narrow)]]">
                 <paper-toolbar>
                     <div class="main-narrow-title-container flex" hidden$="{{ !narrow }}">
                     </div>
@@ -91,6 +91,10 @@ paper-header-panel[main] /deep/ .main-title-container {
                 }
             },
             _titleInstances: [],
+
+            get mainScroller() {
+                return this.$['main-panel'].scroller;
+            },
 
             ready: function() {
                 this._insertTitle();

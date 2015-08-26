@@ -16,6 +16,7 @@
 <link rel="import" href="/dist/paper-menu-button/paper-menu-button.html">
 <link rel="import" href="/dist/paper-menu/paper-menu.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
+<link rel="import" href="/dist/paper-spinner/paper-spinner.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
 
@@ -33,6 +34,20 @@
 
     @apply(--layout-horizontal);
     @apply(--layout-center);
+}
+
+.card {
+    @apply(--card-style);
+    @apply(--shadow-elevation-4dp);
+    padding: 8px;
+    margin-bottom: 16px;
+}
+
+.empty-list {
+    font-family: "Roboto Slab";
+    font-variant: small-caps;
+    font-size: 2em;
+    padding: 0.67em 2em;
 }
 
 .drawer-menu .submenu {
@@ -80,7 +95,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
 }
     </style>
     <template>
-        <rf-app-scaffold narrow="{{ narrow }}">
+        <rf-app-scaffold narrow="{{ narrow }}" class$="[[ _computeScaffoldClass(_updateAvailable) ]]">
             <div class="drawer-title">Feeds</div>
             <div class="drawer-menu">
                 <div hidden$="[[  _computeHideFeedItems(feeds) ]]">
@@ -202,12 +217,26 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 </template>
             </div>
             <div class="main-content">
-                <rf-feed id="feed" user="[[ user ]]" feeds="[[ feeds ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]" on-feed-article-state="onFeedArticleState" on-feed-update-available="onFeedUpdateAvailable"></rf-feed>
+                <iron-scroll-threshold id="scroll-threshold" lower-threshold="100" on-lower-trigger="onLowerScrollThresholdTrigger"></iron-scroll-threshold>
+
+                <rf-feed id="feed" user="[[ user ]]" feeds="[[ feeds ]]" articles="[[ articles ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]" on-feed-article-state="onFeedArticleState"></rf-feed>
+
+                <div class="card empty-list" hidden$="[[ _computeHideEmptyMessage(articles.*, loading) ]]">
+                    <span>There are no articles in this section</span>
+                </div>
+
+                <div class="layout vertical center" hidden$="[[ !loading ]]">
+                    <paper-spinner id="loading-spinner"></paper-spinner>
+                </div>
+
             </div>
         </rf-app-scaffold>
 
         <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage" user="{{ user }}"></rf-api>
         <rf-api id="user-settings" method="set-user-attribute" tag="feed-base" user="[[ user ]]"></rf-api>
+        <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" user="[[ user ]]"></rf-api>
+        <rf-api id="feed-read-all" method="mark-feed-as-read" on-rf-api-message="onFeedReadAllMessage" user="[[ user ]]"></rf-api>
+        <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="onFeedUpdateNotify" user="[[ user ]]" receiver="true"></rf-api>
 
         <iron-signals on-iron-signal-rf-feeds-added="onSignalFeedsChanged"></iron-signals>
         <iron-signals on-iron-signal-rf-feed-removed="onSignalFeedsChanged"></iron-signals>
@@ -225,24 +254,60 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
             ],
             properties: {
                 user: Object,
-                tagOrId: String,
+                tagOrId: {
+                    type: String,
+                    observer: '_tagOrIdChanged',
+                },
                 feeds: {
                     type: Array,
                     notify: true,
                     observer: '_feedsChanged',
+                },
+                articles: {
+                    type: Array,
+                    value: function() {
+                        return this._createArticles();
+                    },
+                },
+                loading: {
+                    type: Boolean,
+                    observer: '_loadingChanged',
                 },
                 tags: Array,
                 searchVisible: {
                     type: Boolean,
                     value: false,
                 },
+                limit: {
+                    type: Number,
+                    value: 200,
+                },
+                offset: {
+                    type: Number,
+                    value: 0,
+                },
                 _articleId: String,
                 _readState: Boolean,
                 _shareServices: Array,
+                _updateAvailable: {
+                    type: Boolean,
+                    value: false,
+                },
             },
             observers: [
                 '_userProfileChanged(user.ProfileData.*)',
             ],
+
+            get _canAutoUpdate() {
+                return !this._focused ||
+                    !MoreRouting.isCurrentUrl('feed') ||
+                    MoreRouting.isCurrentUrl('article') ||
+                    new Date().getTime() - this._lastActivity > this._lastActivityDelay;
+            },
+            _lastUpdateTime: 0,
+            _lastActivity: new Date().getTime(),
+            _lastActivityDelay: 300000, // 5 minutes
+            _focused: true,
             _urlParser: document.createElement('a'),
 
             feedUrlFor: function(tagOrId, prefix) {
@@ -276,29 +341,37 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 }
             },
 
+            refresh: function() {
+                this.debounce('feed-refresh', function() {
+                    this.loading = true;
+                    this.noMoreArticles = false;
+                    this.articles = this._createArticles();
+                    this.offset = 0;
+                    this.$['feed-articles'].send();
+                });
+            },
+
             ready: function() {
                 this.$['list-feeds'].send();
             },
 
             attached: function() {
                 this.defaultNestedRoute('feed-base', 'feed', {tagOrId: 'all'});
+
+                this._appendArticleWorker = new Worker('/js/append-articles-worker.js');
+                this._appendArticleWorker.addEventListener('message', this._handleArticleWorkerMessage.bind(this));
+
                 this._shareServices = RfShareServices.getActive();
 
-                document.addEventListener('keypress', function(event) {
-                    if (!MoreRouting.isCurrentUrl('feed-base')) {
-                        return;
-                    }
+                this.$['scroll-threshold'].scrollTarget =
+                    Polymer.dom(this.root).querySelector('rf-app-scaffold').mainScroller;
 
-                    if (!this._searchAvailable(this.tagOrId) || this.searchVisible) {
-                        return;
-                    }
+                window.addEventListener("focus", function() {this._focused = true}.bind(this), false);
+                window.addEventListener("blur", function() {this._focused = false}.bind(this), false);
 
-                    var code = event.keyCode || event.charCode;
-
-                    if (code == 47) {
-                        this.toggleSearch();
-                    }
-                }.bind(this), false);
+                document.addEventListener('keypress', this.onKeypress.bind(this), false);
+                document.addEventListener('track', this.onTrack.bind(this), false);
+                document.addEventListener('tap', this.onTrack.bind(this), false);
 
                 // Set the property async, or it might be set too early for the template
                 this.async(function() {
@@ -326,7 +399,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                             return;
                         }
 
-                        var article = this.$.feed.articleState(value);
+                        var article = this.articles.find(value);
                         this._articleId = value;
                         this.cancelDebouncer('article-read-state');
                         this._readState = article.Read;
@@ -351,18 +424,70 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 }
             },
 
-            onFeedUpdateAvailable: function(event, detail) {
-                var scaffold = Polymer.dom(this.root).querySelector('rf-app-scaffold');
+            onAllFeedsMessage: function(event, detail) {
+                this.feeds = detail.arguments.Feeds;
+            },
 
-                if (detail) {
-                    scaffold.classList.add('update-available');
+            onFeedArticlesMessage: function(event, data) {
+                this._updateAvailable = false;
+                if (data.arguments.Articles && data.arguments.Articles.length) {
+                    var data = {
+                        current: [].concat(this.articles),
+                        newArticles: data.arguments.Articles,
+                        unshiftFirst: this.articles.length && data.arguments.Offset == 0,
+                    };
+
+                    if (isNaN(this.tagOrId)) {
+                        data.feeds = this.feeds;
+                    }
+
+                    this._appendArticleWorker.postMessage(data);
                 } else {
-                    scaffold.classList.remove('update-available');
+                    this.noMoreArticles = true;
+                    this.loading = false;
+
+                    if (!this.offset) {
+                        this.articles = this._createArticles();
+                    }
+                }
+                this._lastUpdateTime = new Date().getTime();
+            },
+
+            onFeedReadAllMessage: function(event, data) {
+                if (data.success) {
+                    for (var i = 0, a; a = this.articles[i]; ++i) {
+                        this.set("articles." + i + ".Read", true);
+                    }
                 }
             },
 
-            onAllFeedsMessage: function(event, detail) {
-                this.feeds = detail.arguments.Feeds;
+            onFeedUpdateNotify: function(event, data) {
+                var updateAvailable = false;
+               
+                if (this.tagOrId.indexOf("tag:") == 0) {
+                    var tag = this.tagOrId.substring(4),
+                        active = this.feeds.filter(function(feed) {
+                            return feed.Tags && feed.Tags.indexOf(tag) != -1 
+                        });
+
+                    if (active.some(function(feed) { return feed.Id == data.arguments.Feed.Id })) {
+                        updateAvailable = true;
+                    }
+
+                } else if (this.tagOrId == "all" || this.tagOrId == data.arguments.Feed.Id) {
+                    updateAvailable = true;
+                }
+
+                if (!updateAvailable) {
+                    return;
+                }
+
+                this._updateAvailable = true;
+                if (this._canAutoUpdate) {
+                    // Give the thumbnailer some time to gather any thumbnails
+                    this.debounce('auto-update-timeout',
+                        this._updateArticles, 30000); // 30s
+                }
             },
 
             onSignalFeedsChanged: function() {
@@ -402,20 +527,20 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 this._ignoreReadDebouncer = true;
                 this.flushDebouncer('article-read-state');
                 this.$.feed.articleState(this._articleId,
-                    {Read: !this.$.feed.articleState(this._articleId).Read});
+                    {Read: !this.articles.find(this._articleId).Read});
             },
 
             onPreviousArticle: function() {
-                this.$.feed.previousArticle();
+                this._previousArticle();
             },
 
             onNextArticle: function() {
-                this.$.feed.nextArticle();
+                this._nextArticle();
             },
 
             onRefresh: function() {
                 MoreRouting.navigateTo('feed', {tagOrId: MoreRouting.getRoute('feed').params.tagOrId});
-                this.$.feed.refresh();
+                this.refresh();
             },
 
             onFeedMenuItemActivate: function(event) {
@@ -427,17 +552,17 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 switch (name) {
                 case "newer-first":
                     this.set("user.ProfileData.newerFirst", selected)
-                    this.$.feed.refresh();
+                    this.refresh();
                     break;
                 case "unread-only":
                     this.set("user.ProfileData.unreadOnly", selected)
-                    this.$.feed.refresh();
+                    this.refresh();
                     break;
                 case "mark-all-as-read":
                     if (selected) {
                         menu.select(name);
                     }
-                    this.$.feed.markAllAsRead();
+                    this.$._markAllAsRead();
                     break;
                 }
             },
@@ -453,6 +578,55 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 }
             },
 
+            onKeypress: function(event) {
+                if (!MoreRouting.isCurrentUrl('feed-base')) {
+                    return;
+                }
+
+                var code = event.keyCode || event.charCode,
+                    articleRoute = MoreRouting.getRouteByName('article');
+
+                switch (code) {
+                    case 74: // J
+                    case 106: // j
+                        this._nextArticle(event.shiftKey);
+                        break;
+                    case 75: // K
+                    case 107: // k
+                        this._previousArticle(event.shiftKey);
+                        break;
+                    case 72: // H
+                    case 104: // h
+                        MoreRouting.navigateTo('feed', {tagOrId: this.tagOrId});
+                        break;
+                    case 82: // R
+                    case 114: // r
+                        this.refresh();
+                        break;
+                    case 47:
+                        if (!this._searchAvailable(this.tagOrId) || this.searchVisible) {
+                            return;
+                        }
+
+                        this.toggleSearch();
+                        break;
+                }
+
+                this._lastActivity = new Date().getTime();
+                this.debounce('last-activity-timeout',
+                    this._updateArticles, this._lastActivityDelay);
+            },
+
+            onTrack: function(event) {
+                if (!MoreRouting.isCurrentUrl('feed')) {
+                    return;
+                }
+
+                this._lastActivity = new Date().getTime();
+                this.debounce('last-activity-timeout',
+                    this._updateArticles, this._lastActivityDelay);
+            },
+
             onSearchKeypress: function(event) {
                 var code = event.keyCode || event.charCode, key = event.keyIdentifier,
                     target = Polymer.dom(event).localTarget;
@@ -466,9 +640,32 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 event.stopPropagation();
             },
 
+            onLowerScrollThresholdTrigger: function(event) {
+                if (this.noMoreArticles || MoreRouting.isCurrentUrl('article') || this.loading) {
+                    return;
+                }
+                this.debounce('feed-refresh', function() {
+                    this.loading = true;
+                    this.offset += this.limit;
+                    this.$['feed-articles'].send();
+                });
+            },
+
+            _tagOrIdChanged: function(tagOrId, oldValue) {
+                this.refresh();
+            },
 
             _feedsChanged: function(newValue, oldValue) {
                 this._updateTags();
+            },
+
+            _loadingChanged: function(loading, old) {
+                if (loading) {
+                    this.$['loading-spinner'].reset();
+                    this.$['loading-spinner'].active = true;
+                } else {
+                    this.$['loading-spinner'].active = false;
+                }
             },
 
             _userProfileChanged: function(userProfileRecord) {
@@ -478,6 +675,10 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                         value: this.user.ProfileData
                     });
                 }
+            },
+
+            _computeScaffoldClass: function(updateAvailable) {
+                return updateAvailable ? 'update-available' : '';
             },
 
             _computeFeedTitle: function(tagOrId) {
@@ -572,10 +773,30 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
 
             _computeHideArticleArrow(articleId, direction) {
                 if (direction == 'previous') {
-                    return this.$.feed.hasPreviousArticle(articleId) ? "" : "visibility: hidden";
+                    return this.articles.findIndex(articleId) > 0 ? "" : "visibility: hidden";
                 } else {
-                    return this.$.feed.hasNextArticle(articleId) ? "" : "visibility: hidden";
+                    return this.articles.findIndex(articleId) < this.articles.length ?
+                        "" : "visibility: hidden";
                 }
+            },
+
+            _computeHideEmptyMessage: function(articleRecord, loading) {
+                return loading || articleRecord.base.length > 0;
+            },
+
+
+            _computeFeedArticlesArguments: function(userRecord, tagOrId, limit, offset) {
+                if (!this.user) {
+                    return {};
+                }
+
+                return {
+                    id: tagOrId,
+                    limit: limit,
+                    offset: offset,
+                    newerFirst: userRecord.base.ProfileData.newerFirst || false,
+                    unreadOnly: userRecord.base.ProfileData.unreadOnly || false,
+                };
             },
 
             _extractSearchTokens: function(tagOrId) {
@@ -625,6 +846,120 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 });
 
                 this.tags = tagList;
+            },
+
+            _updateArticles: function(delay) {
+                if (!this._updateAvailable) {
+                    return;
+                }
+
+                this.$['feed-articles'].send({
+                    id: this.tagOrId,
+                    limit: this.limit,
+                    offset: 0,
+                    newerFirst: this.user.ProfileData.newerFirst || false,
+                    unreadOnly: this.user.ProfileData.unreadOnly || false,
+                });
+            },
+
+            _previousArticle: function(unread) {
+                var route = MoreRouting.getRouteByName('article'),
+                    article;
+                if (route.active) {
+                    var index = this.articles.findIndex(route.params.articleId);
+
+                    if (unread) {
+                        while (article = this.articles[--index]) {
+                            if (!article.Read) {
+                                break;
+                            }
+                        }
+                    } else if (index > 0) {
+                        article = this.articles[index - 1];
+                    }
+                } else {
+                    if (unread) {
+                        var article, index = this.articles.length;
+                        while (article = this.articles[--index]) {
+                            if (!article.Read) {
+                                break;
+                            }
+                        }
+                    } else {
+                        article = this.articles[this.articles.length - 1];
+                    }
+                }
+
+                if (article) {
+                    MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: article.Id});
+                }
+            },
+
+            _nextArticle: function(unread) {
+                var route = MoreRouting.getRouteByName('article'),
+                    article;
+                if (route.active) {
+                    var index = this.articles.findIndex(route.params.articleId);
+
+                    if (unread) {
+                        while (article = this.articles[++index]) {
+                            if (!article.Read) {
+                                break
+                            }
+                        }
+                    } else {
+                        article = this.articles[index+1]
+                    }
+                } else {
+                    var index = -1;
+                    if (unread) {
+                        while (article = this.articles[++index]) {
+                            if (!article.Read) {
+                                break
+                            }
+                        }
+                    } else {
+                        article = this.articles[0];
+                    }
+                }
+
+                if (article) {
+                    MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: article.Id});
+                }
+            },
+
+            _markAllAsRead: function() {
+                this.$['feed-read-all'].send({id: this.tagOrId, timestamp: this._lastUpdateTime});
+            },
+
+            _createArticles: function() {
+                var articles = [];
+
+                articles.indexMap = {};
+                articles.find = function(id) {
+                    return this[this.indexMap[id]];
+                };
+                articles.findIndex = function(id) {
+                    var index = this.indexMap[id];
+                    return index === undefined ? -1 : index;
+                };
+
+                return articles;
+            },
+
+            _handleArticleWorkerMessage: function(event) {
+                // Update the map first, the change callbacks might use it
+                this.articles.indexMap = event.data.indexMap;
+
+                if (event.data.push.length) {
+                    this.push.apply(this, ['articles'].concat(event.data.push));
+                }
+                if (event.data.unshift.length) {
+                    this.unshift.apply(this, ['articles'].concat(event.data.unshift));
+                }
+
+                this.loading = false;
+                this.$['scroll-threshold'].clearLower();
             },
 
         })
