@@ -61,14 +61,19 @@ paper-header-panel[main] /deep/ .main-title-container {
                     <content select=".drawer-menu"></content>
                 </div>
             </paper-header-panel>
-            <paper-header-panel id="main-panel" main mode="[[_computeMainPanelMode(narrow)]]">
+            <paper-header-panel id="main-panel" main mode="[[_computeMainPanelMode(narrow)]]" on-tap="onPanelTap">
                 <paper-toolbar>
-                    <div class="main-narrow-title-container flex" hidden$="{{ !narrow }}">
+                    <div class="main-narrow-title-container flex">
+                        <template is="dom-if" if="[[ narrow ]]" restamp>
+                            <content select=".main-title"></content>
+                        </template>
                     </div>
                 </paper-toolbar>
                 <div class$="[[_computeContentClass(narrow)]]">
-                    <div class="main-title-container" hidden$="{{ narrow }}">
-                        <content select=".main-title"></content>
+                    <div class="main-title-container">
+                        <template is="dom-if" if="[[ !narrow ]]" restamp>
+                            <content select=".main-title"></content>
+                        </template>
                     </div>
                     <content select=".main-content"></content>
                 </div>
@@ -79,9 +84,6 @@ paper-header-panel[main] /deep/ .main-title-container {
         "use strict";
         Polymer({
             is: "rf-app-scaffold",
-            behaviors: [
-                Polymer.Templatizer
-            ],
             properties: {
                 narrow: {
                     type: Boolean,
@@ -97,11 +99,20 @@ paper-header-panel[main] /deep/ .main-title-container {
             },
 
             ready: function() {
-                this._insertTitle();
             },
 
             onResponsiveChange: function(event, detail) {
                 this._setNarrow(detail.narrow);
+            },
+
+            onPanelTap: function(event) {
+                var path = Polymer.dom(event).path;
+                for (var i = 0, e; e = path[i]; ++i) {
+                    if (e.hasAttribute && e.hasAttribute('paper-drawer-toggle')) {
+                        this.$.drawer.togglePanel();
+                        break;
+                    }
+                }
             },
 
             _computeDrawerClass: function(narrow) {
@@ -119,48 +130,6 @@ paper-header-panel[main] /deep/ .main-title-container {
             _computeMainPanelMode: function(narrow) {
                 return narrow ? 'standard' : 'cover';
             },
-
-            _ensureTemplatized: function() {
-                if (!this.ctor) {
-                    this._userTemplate = Polymer.dom(this).querySelector('.main-title template');
-                    if (this._userTemplate) {
-                        this.templatize(this._userTemplate);
-                    }
-                }
-            },
- 
-            _insertTitle: function() {
-                this._ensureTemplatized();
-
-                var el = Polymer.dom(this.root);
-
-                ['.main-narrow-title-container', '.main-title-container'].forEach(function(cls) {
-                    var container = el.querySelector(cls),
-                        inst = this.stamp(null);
-
-                    this._titleInstances.push(inst.root.querySelector('*'));
-                    container.innerHTML = "";
-                    container.appendChild(inst.root);
-
-                    for (var prop in inst._parentProps) {
-                        inst[prop] = this[prop];
-                    }
-                }.bind(this));
-
-                el.flush();
-            },
-
-            _forwardParentProp: function(prop, value) {
-                this._titleInstances.forEach(function(inst) {
-                    inst._templateInstance[prop] = value;
-                }.bind(this));
-            },
-
-            _forwardParentPath: function(path, value) {
-                this._titleInstances.forEach(function(inst) {
-                    inst._templateInstance.notifyPath(path, value, true);
-                }, this);
-            }
 
         })
     </script>
