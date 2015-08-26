@@ -37,7 +37,9 @@
         onRouteChange: function(event, detail) {
             // For some reason, MoreRouting keeps logout active for some time after redirecting
             if (MoreRouting.isCurrentUrl('logout') && !MoreRouting.isCurrentUrl('login')) {
-                this.logout();
+                this.async(function() {
+                    this.logout();
+                });
                 return;
             }
 
