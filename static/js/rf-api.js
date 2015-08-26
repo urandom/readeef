@@ -142,7 +142,11 @@
                                 throw new Error("Too many missed hearbeats.");
                             }
 
-                            webSocket.send(JSON.stringify({method: "heartbeat"}));
+                            if (webSocket && webSocket.readyState == WebSocket.OPEN) {
+                                webSocket.send(JSON.stringify({method: "heartbeat"}));
+                            } else {
+                                throw new Error("WebSocket is closed");
+                            }
                         } catch (e) {
                             clearInterval(heartbeatInterval);
                             heartbeatInterval = null;
