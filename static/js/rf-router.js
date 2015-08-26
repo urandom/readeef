@@ -20,7 +20,7 @@
             Polymer.updateStyles();
         }
     };
-    setInterval(randomTheme, 900000);
+    setInterval(randomTheme, 1800000);
 
     Polymer({
         is: "rf-router",

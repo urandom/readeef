@@ -182,6 +182,7 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                             </span>
 
                             <paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(tagOrId, searchVisible) ]]" on-tap="toggleSearch"></paper-icon-button>
+                            <paper-icon-button icon="refresh" on-tap="onRefresh" hidden$="[[ !narrow ]]"></paper-icon-button>
                             <paper-menu-button horizontal-align="right">
                                 <paper-icon-button icon="more-vert" class="dropdown-trigger"></paper-icon-button>
                                 {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
