@@ -25,6 +25,9 @@
     margin: 8px;
     position: relative;
     float: left;
+
+    --iron-icon-width: 48px;
+    --iron-icon-height: 48px;
 }
 
 .theme[data-theme="blue"] {
@@ -72,6 +75,12 @@
 .theme[data-theme="grey"] {
     background: var(--paper-grey-500);
 }
+.theme[data-theme="__random__"] {
+    font-size: 40px;
+    text-align: center;
+    color: var(--paper-yellow-900);
+    background: var(--paper-blue-grey-100);
+}
 
     </style>
     <template>
@@ -102,6 +111,7 @@
                 <div class="theme" data-theme="amber"><paper-ripple/></div>
                 <div class="theme" data-theme="deep-orange"><paper-ripple/></div>
                 <div class="theme" data-theme="grey"><paper-ripple/></div>
+                <div class="theme" data-theme="__random__">?<paper-ripple/></div>
                 <br style="clear: both">
             </div>
 
@@ -142,14 +152,13 @@
             attached: function() {
                 Polymer.dom(this.root).querySelectorAll('.theme').forEach(function(e) {
                     e.addEventListener('tap', function(event) {
-                        var theme = e.dataset.theme;
+                        var theme = e.dataset.theme, classes = document.body.classList;
 
                         this.user.ProfileData.theme = theme;
 
-                        for (var i = 0, c; c = document.body.classList[i]; ++i) {
+                        for (var i = 0, c; c = classes[i]; ++i) {
                             if (c.indexOf('theme-') == 0) {
                                 document.body.classList.remove(c);
-                                break;
                             }
                         }
 
