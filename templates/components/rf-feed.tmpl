@@ -179,7 +179,7 @@ rf-article /deep/ .article-control {
                                 <div class$="[[ _computeArticleClass(item.Read, item.Favorite) ]]" data-feed-id$="[[ item.FeedId ]]" data-article-id$="[[ item.Id ]]">
                                     <div class="card layout vertical">
                                         <div class="title-wrapper layout horizontal center">
-                                            <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.Favorite) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
+                                            <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.Favorite) ]]" on-tap="onFavoriteToggle" on-click="onFavoriteClick"></paper-icon-button>
                                             <span class="title" title$="[[ item.Title ]]" inner-h-t-m-l="[[ _computeArticleTitle(item.Title, item.Hit.*) ]]"></span>
                                         </div>
                                         <div class="detail-wrapper layout horizontal center">
@@ -405,6 +405,12 @@ rf-article /deep/ .article-control {
                     this.set("articles." + index + "." + type, data.arguments[type]);
                     this.fire('feed-article-state', args);
                 }
+            },
+
+            onFavoriteClick: function(event) {
+                // Stop the pushstate-anchor from activating
+                event.preventDefault();
+                event.stopPropagation();
             },
 
             onFavoriteToggle: function(event) {
