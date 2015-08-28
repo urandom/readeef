@@ -600,6 +600,13 @@
             description.innerHTML = article.formatted ?
                 article.formattedDescription : article.Description;
 
+            if (article.topImage) {
+                var topImage = description.querySelector('[src="' + article.topImage + '"]');
+                if (topImage) {
+                    topImage.parentNode.removeChild(topImage);
+                }
+            }
+
             image = description.querySelector('img');
 
             if (image) {
@@ -608,6 +615,10 @@
                 } else {
                     image.addEventListener('load', imageStyler);
                 }
+            } else if (article.topImage) {
+                var image = document.createElement('img');
+                image.src = article.topImage;
+                description.insertBefore(image, description.firstChild);
             }
 
             Array.prototype.forEach.call(
