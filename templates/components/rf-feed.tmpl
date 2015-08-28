@@ -237,12 +237,12 @@ rf-article /deep/ .article-top-image {
                                             View
                                             <paper-ripple></paper-ripple>
                                         </a>
-                                        <paper-spinner class="loading-dependant" hidden="[[ !item.article.summarizing ]]"></paper-spinner>
+                                        <paper-spinner active="[[ item.article.summarizing ]]"></paper-spinner>
                                         <a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'summary') ]]" class="article-link article-control" hidden="[[ item.article.summarizing ]]">
                                             Summarize
                                             <paper-ripple></paper-ripple>
                                         </a>
-                                        <paper-spinner class="loading-dependant" hidden="[[ !item.article.formatting ]]"></paper-spinner>
+                                        <paper-spinner active="[[ item.article.formatting ]]"></paper-spinner>
                                         <a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'format') ]]" class="article-link article-control" hidden="[[ item.article.formatting ]]">
                                             Format
                                             <paper-ripple></paper-ripple>
