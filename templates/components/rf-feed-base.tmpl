@@ -370,7 +370,10 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 this.$['scroll-threshold'].scrollTarget =
                     Polymer.dom(this.root).querySelector('rf-app-scaffold').mainScroller;
 
-                window.addEventListener("focus", function() {this._focused = true}.bind(this), false);
+                window.addEventListener("focus", function() {
+                    this._focused = true;
+                    document.title = this._originalTitle;
+                }.bind(this), false);
                 window.addEventListener("blur", function() {this._focused = false}.bind(this), false);
 
                 document.addEventListener('keypress', this.onKeypress.bind(this), false);
@@ -413,6 +416,8 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                         }.bind(this));
                     }.bind(this));
                 });
+
+                this._originalTitle = document.title;
             },
 
             onFeedArticleState: function(event, detail) {
@@ -487,10 +492,16 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                 }
 
                 this._updateAvailable = true;
+
                 if (this._canAutoUpdate) {
                     // Give the thumbnailer some time to gather any thumbnails
                     this.debounce('auto-update-timeout',
                         this._updateArticles, 30000); // 30s
+                }
+
+                if (!this._focused) {
+                    // Highlight a pinned tab
+                    document.title = this._originalTitle + " (New content available)";
                 }
             },
 
