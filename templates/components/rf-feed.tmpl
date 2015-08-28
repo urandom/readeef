@@ -427,6 +427,25 @@ rf-article /deep/ .article-control {
                 }
             },
 
+            onArticleFormatMessage: function(event, data) {
+                var index = this.articles.findIndex(data.arguments.Id),
+                    article = this.articles[index];
+
+                this.set("articles." + index + ".formattedDescription", data.arguments.Content);
+                this.set("articles." + index + ".keyPoints", data.arguments.KeyPoints);
+                this.set("articles." + index + ".topImage", data.arguments.TopImage);
+
+                if (article.summarizing) {
+                    this.set("articles." + index + ".summarizing", false);
+                    this.set("articles." + index + ".summarized", true);
+                }
+
+                if (article.formatting) {
+                    this.set("articles." + index + ".formatting", false);
+                    this.set("articles." + index + ".formatted", true);
+                }
+            },
+
             onFavoriteClick: function(event) {
                 // Stop the pushstate-anchor from activating
                 event.preventDefault();

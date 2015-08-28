@@ -455,7 +455,7 @@
             }
 
             var parts = record.path.split('.'), article;
-            if (parts.length == 3 && (parts[2] == 'Favorite' || parts[2] == 'RelativeDate')) {
+            if (parts.length == 3 && parts[0] == "articles" && !isNaN(parts[1])) {
                 this._forwardItemPath(parts.slice(1).join('.'), record.value);
             } else if (parts.length == 2 && parts[1] == 'splices') {
                 var newIndex = this.index;
@@ -508,7 +508,7 @@
                     el.innerHTML = '';
 
                     var inst = this._generateArticle(this.articles[this.index-1], -1);
-                    this._instances[0] = inst;
+                    this._instances[0] = inst.root.querySelector('*');
                     Polymer.dom(el).appendChild(inst.root);
                 } else {
                     this._instances[0] = null;
@@ -521,7 +521,7 @@
                     el.innerHTML = '';
 
                     var inst = this._generateArticle(this.articles[this.index+1], 1);
-                    this._instances[2] = inst;
+                    this._instances[2] = inst.root.querySelector('*');
                     Polymer.dom(el).appendChild(inst.root);
                 } else {
                     this._instances[2] = null;
@@ -533,7 +533,7 @@
                 el.innerHTML = '';
 
                 var inst = this._generateArticle(this.articles[this.index], 0);
-                this._instances[1] = inst;
+                this._instances[1] = inst.root.querySelector('*');
                 Polymer.dom(el).appendChild(inst.root);
             }
 
@@ -576,17 +576,17 @@
             var inst = this.stamp(null);
             inst.item = model;
 
-            this._stylizeArticleDescription(inst, model);
+            this._stylizeArticleDescription(inst.root.querySelector('*'), article);
 
             return inst;
         },
 
-        _stylizeArticleDescription: function(inst, model) {
-            if (model.summarized) {
+        _stylizeArticleDescription: function(inst, article) {
+            if (article.summarized) {
                 return;
             }
 
-            var description = inst.root.querySelector('.article-description'),
+            var description = inst.querySelector('.article-description'),
                 imageStyler = function() {
                     if (image.width * image.height < 240 * 180) {
                         (image.parentNode || description).classList.add('clearfix');
@@ -597,7 +597,9 @@
                     }
                 }, image;
 
-            description.innerHTML = model.formatted ? model.formattedDescription : model.article.Description;
+            description.innerHTML = article.formatted ?
+                article.formattedDescription : article.Description;
+
             image = description.querySelector('img');
 
             if (image) {
@@ -626,16 +628,16 @@
 
         _forwardParentProp: function(prop, value) {
             this._instances.forEach(function(inst) {
-                if (inst) {
-                    inst[prop] = value;
+                if (inst && inst._templateInstance) {
+                    inst._templateInstance[prop] = value;
                 }
             }.bind(this));
         },
 
         _forwardParentPath: function(path, value) {
             this._instances.forEach(function(inst) {
-                if (inst) {
-                    inst.notifyPath(path, value, true);
+                if (inst && inst._templateInstance) {
+                    inst._templateInstance.notifyPath(path, value, true);
                 }
             }, this);
         },
@@ -646,12 +648,20 @@
                 var key = path.substring(0, dot < 0 ? path.length : dot);
                 var idx = key - this.index + 1;
                 var inst = this._instances[idx];
-                if (inst) {
+                if (inst && inst._templateInstance) {
                     if (dot >= 0) {
-                        path = 'item.article.' + path.substring(dot+1);
-                        inst.notifyPath(path, value, true);
+                        var propName = path.substring(dot+1),
+                            article = inst._templateInstance.item.article;
+
+                        if (propName == 'formattedDescription' && article.formatted ||
+                                propName == 'formatted' && article.formattedDescription && value) {
+                            this._stylizeArticleDescription(inst, article);
+                        } else {
+                            path = 'item.article.' + propName;
+                            inst._templateInstance.notifyPath(path, value, true);
+                        }
                     } else {
-                        inst.item.article = value;
+                        inst._templateInstance.item.article = value;
                     }
                 }
             }
