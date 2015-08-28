@@ -374,6 +374,7 @@ rf-article /deep/ .article-top-image {
 
                     switch (type) {
                         case "format":
+                            this.set('articles.' + index + '.summarized', false);
                             if (article.formatted || article.formattedDescription) {
                                 this.set('articles.' + index + '.formatted', !article.formatted);
                                 return;
@@ -385,6 +386,7 @@ rf-article /deep/ .article-top-image {
                             }
                             break;
                         case "summary":
+                            this.set('articles.' + index + '.formatted', false);
                             if (article.summarized || article.keyPoints) {
                                 this.set('articles.' + index + '.summarized', !article.summarized);
                                 return;
