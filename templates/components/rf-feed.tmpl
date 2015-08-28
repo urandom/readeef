@@ -365,12 +365,32 @@ rf-article /deep/ .article-control {
                 this.routeParamObserver('article-format', 'type', function(type) {
                     var route = MoreRouting.getRouteByName('article-format'),
                         articleId = route.params.articleId,
-                        article = this.articles.find(articleId);
+                        index = this.articles.findIndex(articleId),
+                        article = this.articles[index];
 
                     switch (type) {
                         case "format":
+                            if (article.formatted || article.formattedDescription) {
+                                this.set('articles.' + index + '.formatted', !article.formatted);
+                                return;
+                            }
+
+                            if (!article.formatted && !article.formatting) {
+                                this.set('articles.' + index + '.formatting', true);
+                                this.$['article-format'].send({id: articleId - 0});
+                            }
                             break;
                         case "summary":
+                            if (article.summarized || article.keyPoints) {
+                                this.set('articles.' + index + '.summarized', !article.summarized);
+                                return;
+                            }
+
+                            if (!article.summarized && !article.summarizing) {
+                                this.set('articles.' + index + '.summarizing', true);
+                                this.$['article-format'].send({id: articleId - 0});
+                            }
+                            break;
                             break;
                         case null:
                             break;

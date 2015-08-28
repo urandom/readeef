@@ -588,9 +588,12 @@
 
             var description = inst.root.querySelector('.article-description'),
                 imageStyler = function() {
-                    if (image.width < 300) {
+                    if (image.width * image.height < 240 * 180) {
                         (image.parentNode || description).classList.add('clearfix');
                         image.style.float = "right";
+                    } else {
+                        image.style.display = "block";
+                        image.style.margin = "0 auto";
                     }
                 }, image;
 
