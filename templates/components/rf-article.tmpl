@@ -407,7 +407,7 @@
                 return;
             }
 
-            if (this._instances[1] && this._instances[1].item.article.Id == this.articles[this.index].Id) {
+            if (this._instances[1] && this._instances[1]._templateInstance && this._instances[1]._templateInstance.item.article.Id == this.articles[this.index].Id) {
                 this._debounceTemplate(this._render);
                 return;
             }
