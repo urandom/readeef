@@ -136,6 +136,10 @@ rf-article /deep/ .article-control {
     font-family: "Roboto Condensed", sans-serif;
 }
 
+rf-article /deep/ .article-top-image {
+    text-align: center;
+}
+
 #shortcut-help-dialog ul {
     padding: 0;
 }
@@ -215,14 +219,14 @@ rf-article /deep/ .article-control {
                                     <span class="publish-date">[[ item.article.RelativeDate ]]</span>
                                 </div>
                                 <div class="article-content">
-                                    <div class="article-description" hidden$="[[ item.summarized ]]"></div>
+                                    <div class="article-description" hidden$="[[ item.article.summarized ]]"></div>
 
-                                    <div hidden$="[[ !item.summarized ]]">
-                                        <div class="article-top-image" hidden$="[[ !item.topImage ]]">
-                                            <img src$="[[ item.topImage ]]">
+                                    <div hidden$="[[ !item.article.summarized ]]">
+                                        <div class="article-top-image" hidden$="[[ !item.article.topImage ]]">
+                                            <img src$="[[ item.article.topImage ]]">
                                         </div>
                                         <ul class="article-summary">
-                                            <template is="dom-repeat" as="point" items="[[ item.keyPoints ]]">
+                                            <template is="dom-repeat" as="point" items="[[ item.article.keyPoints ]]">
                                                 <li>[[ point ]]</li>
                                             </template>
                                         </ul>
@@ -505,6 +509,8 @@ rf-article /deep/ .article-control {
                             return;
                         }
 
+                        MoreRouting.navigateTo('article-format',
+                                {tagOrId: this.tagOrId, articleId: articleRoute.params.articleId, type: 'format'});
                         break;
                     case 83: // S
                     case 115: // s
@@ -512,6 +518,8 @@ rf-article /deep/ .article-control {
                             return;
                         }
 
+                        MoreRouting.navigateTo('article-format',
+                                {tagOrId: this.tagOrId, articleId: articleRoute.params.articleId, type: 'summary'});
                         break;
                     case 70: // F
                     case 102: // f
