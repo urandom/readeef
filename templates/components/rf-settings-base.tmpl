@@ -34,6 +34,13 @@
     margin: 16px 0 8px;
     max-width: 50em;
 }
+
+.main-title .title-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
     </style>
     <template>
         <rf-app-scaffold>
@@ -69,13 +76,13 @@
                     <paper-ripple></paper-ripple>
                 </a>
             </div>
-            <div class="main-title">
+            <div class="main-title layout horizontal center">
                 <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-general') }}">General</span>
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-add-feed') }}">Add Feed</span>
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-manage-feeds') }}">Manage Feeds</span>
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-share-services') }}">Share Services</span>
-                <span hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-admin') }}">Administration</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-general') }}">General</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-add-feed') }}">Add Feed</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-manage-feeds') }}">Manage Feeds</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-share-services') }}">Share Services</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-admin') }}">Administration</span>
             </div>
             <div class="main-content">
                 <more-route-selector on-more-route-change="onRouteChange">

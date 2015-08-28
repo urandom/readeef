@@ -71,27 +71,32 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
     background: white;
 }
 
-rf-app-scaffold.update-available /deep/ .main-title-container paper-fab,
-rf-app-scaffold.update-available /deep/ .main-narrow-title-container paper-icon-button[icon="refresh"] {
+.main-title .title-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.update-available .main-title [icon="refresh"] {
     background: var(--paper-fab-notify-background);
     color: var(--text-primary-color-inverse);
 }
 
-rf-app-scaffold /deep/ .main-title-container [route="feed"] {
+.main-title [route="feed"] {
     margin-top: -16px;
     margin-left: -8px;
     margin-bottom: -16px;
 }
-rf-app-scaffold /deep/ .main-title-container [route="article"] {
+.main-title [route="article"] {
     margin-top: -8px;
     margin-left: -8px;
 }
 
-/deep/ .feed-favicon {
+.feed-favicon {
     margin-right: 5px;
 }
 
-rf-app-scaffold /deep/ [icon="arrow-back"] {
+.main-title [icon="arrow-back"] {
     margin-right: 24px;
 }
     </style>
@@ -173,10 +178,8 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
                     <iron-pages>
                         <section route="feed" class="layout horizontal center flex">
                             <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-                            <span class="title-text-feed flex" hidden$="[[ searchVisible ]]">
-                                <paper-icon-button icon="arrow-back" style="visibility: hidden;" hidden$="[[ narrow ]]"></paper-icon-button>
-                                <span>[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
-                            </span>
+                            <paper-icon-button icon="arrow-back" style="visibility: hidden;" hidden$="[[ _computeHidePlaceholderIcon(searchVisible, narrow) ]]"></paper-icon-button>
+                            <span class="flex title-text" hidden$="[[ searchVisible ]]">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
                             <span class="search-feed flex layout horizontal center" hidden$="[[ !searchVisible ]]">
                                 <paper-icon-button icon="clear" on-tap="toggleSearch"></paper-icon-button>
                                 <paper-input class="search-input" placeholder="Search" no-label-float on-keypress="onSearchKeypress" autofocus></paper-input>
@@ -694,6 +697,10 @@ rf-app-scaffold /deep/ [icon="arrow-back"] {
 
             _computeScaffoldClass: function(updateAvailable) {
                 return updateAvailable ? 'update-available' : '';
+            },
+
+            _computeHidePlaceholderIcon: function(searchVisible, narrow) {
+                return searchVisible || narrow;
             },
 
             _computeFeedTitle: function(tagOrId) {
