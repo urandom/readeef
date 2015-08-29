@@ -406,13 +406,15 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                         }
 
                         var article = this.articles.find(value);
-                        this._articleId = value;
-                        this.cancelDebouncer('article-read-state');
-                        this._readState = article.Read;
-                        this._ignoreReadDebouncer = false;
-                        this._shareServices.forEach(function(service) {
-                            service.article = article;
-                        }.bind(this));
+                        if (article) {
+                            this._articleId = value;
+                            this.cancelDebouncer('article-read-state');
+                            this._readState = article.Read;
+                            this._ignoreReadDebouncer = false;
+                            this._shareServices.forEach(function(service) {
+                                service.article = article;
+                            }.bind(this));
+                        }
                     }.bind(this));
                 });
 

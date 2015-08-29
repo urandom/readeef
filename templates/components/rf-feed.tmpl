@@ -361,7 +361,8 @@ rf-article /deep/ .article-summary {
                 }
 
                 this.routeParamObserver('article', 'articleId', function(id) {
-                    var prevIndex = this.articles.findIndex(this._articleId);
+                    var prevIndex = this.articles.findIndex(this._articleId),
+                        index = this.articles.findIndex(id);
                     if (prevIndex != -1) {
                         var article = this.articles[prevIndex];
                         if (article.summarized) {
@@ -373,16 +374,20 @@ rf-article /deep/ .article-summary {
                         }
                     }
 
-                    if (id === null) {
+                    if (id === null || index === -1) {
                         this.$.article.index = -1;
                         this.$.list.scrollToIndex(this._firstVisibleIndex);
+                        if (id !== null) {
+                            this.async(function() {
+                                MoreRouting.navigateTo('feed', {tagOrId: this.tagOrId});
+                            });
+                        }
                     } else {
-                        var i = this.articles.findIndex(id);
-                        this.$.article.index = i;
+                        this.$.article.index = index;
                         this._scroller.scrollTop = 0;
                         this._firstVisibleIndex = this.$.list.firstVisibleIndex;
 
-                        if (!this.articles[i].Read) {
+                        if (!this.articles[index].Read) {
                             this.$['article-read'].send({id: id - 0, value: true});
                         }
                     }
