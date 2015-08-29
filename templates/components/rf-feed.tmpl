@@ -361,6 +361,18 @@ rf-article /deep/ .article-summary {
                 }
 
                 this.routeParamObserver('article', 'articleId', function(id) {
+                    var prevIndex = this.articles.findIndex(this._articleId);
+                    if (prevIndex != -1) {
+                        var article = this.articles[prevIndex];
+                        if (article.summarized) {
+                            this.set('articles.' + prevIndex + '.summarized', false);
+                        }
+
+                        if (article.formatted) {
+                            this.set('articles.' + prevIndex + '.formatted', false);
+                        }
+                    }
+
                     if (id === null) {
                         this.$.article.index = -1;
                         this.$.list.scrollToIndex(this._firstVisibleIndex);
@@ -374,6 +386,8 @@ rf-article /deep/ .article-summary {
                             this.$['article-read'].send({id: id - 0, value: true});
                         }
                     }
+
+                    this._articleId = id;
                 }.bind(this));
 
                 this.routeParamObserver('article-format', 'type', function(type) {
@@ -406,7 +420,6 @@ rf-article /deep/ .article-summary {
                                 this.set('articles.' + index + '.summarizing', true);
                                 this.$['article-format'].send({id: articleId - 0});
                             }
-                            break;
                             break;
                         case null:
                             break;

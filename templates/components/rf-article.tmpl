@@ -665,7 +665,7 @@
                             article = inst._templateInstance.item.article;
 
                         if (propName == 'formattedDescription' && article.formatted ||
-                                propName == 'formatted' && article.formattedDescription && value) {
+                                propName == 'formatted' && article.formattedDescription) {
                             this._stylizeArticleDescription(inst, article);
                         } else {
                             path = 'item.article.' + propName;
