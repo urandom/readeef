@@ -4,12 +4,12 @@ self.addEventListener('message', function(event) {
     "use strict";
 
     var articles = event.data.current || [],
-        inserts = [], insertIndex = 0,
+        inserts = [], insertIndex = 0, cumulativeIndex = 0,
         newArticles = event.data.newArticles,
         newerFirst = event.data.newerFirst,
         unreadOnly = event.data.unreadOnly,
         feeds = event.data.feeds,
-        articleMap = {}, indexMap = {}, feedMap;
+        articleMap = {}, indexMap = {}, feedMap, response;
 
     for (var i = 0, a; a = articles[i]; ++i) {
         articleMap[a.Id] = a;
@@ -52,7 +52,7 @@ self.addEventListener('message', function(event) {
             a.Date = new Date(a.Date);
             a.RelativeDate = moment(a.Date).fromNow();
 
-            for (var o; o = articles[insertIndex]; ++insertIndex) {
+            for (var o; o = articles[insertIndex]; ++insertIndex, ++cumulativeIndex) {
                 if (newerFirst) {
                     if (o.Date <= a.Date) {
                         break;
@@ -64,11 +64,12 @@ self.addEventListener('message', function(event) {
                 }
             }
 
-            if (!inserts[inserts.length - 1] || inserts[inserts.length - 1].index != insertIndex) {
-                inserts.push({index: insertIndex, articles: []});
+            if (!inserts[inserts.length - 1] || inserts[inserts.length - 1].index != cumulativeIndex - inserts[inserts.length - 1].articles.length) {
+                inserts.push({index: cumulativeIndex, articles: []});
             }
 
             inserts[inserts.length - 1].articles.push(a);
+            ++cumulativeIndex;
         }
     }
 
@@ -80,5 +81,9 @@ self.addEventListener('message', function(event) {
         indexMap[a.Id] = i;
     }
 
-    self.postMessage({inserts: inserts, indexMap: indexMap});
+    response = {inserts: inserts, indexMap: indexMap, requestedArticle: event.data.requestedArticle};
+    if ('requestedArticle' in event.data) {
+        response.requestedArticle = event.data.requestedArticle;
+    }
+    self.postMessage(response);
 });

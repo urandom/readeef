@@ -345,13 +345,20 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 }
             },
 
-            refresh: function() {
+            refresh: function(type) {
                 this.debounce('feed-refresh', function() {
                     this.loading = true;
                     this.noMoreArticles = false;
                     this.articles = this._createArticles();
                     this.offset = 0;
-                    this.$['feed-articles'].send();
+
+                    switch (type) {
+                        case 'get-article':
+                            this.$['get-article'].send();
+                            break;
+                        default:
+                            this.$['feed-articles'].send();
+                    }
                 });
             },
 
@@ -415,8 +422,11 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                             this._shareServices.forEach(function(service) {
                                 service.article = article;
                             }.bind(this));
-                        } else {
-                            this.$['get-article'].send({id: value});
+                        } else if (!this.articles.length) {
+                            this.cancelDebouncer('feed-refresh');
+
+                            this.$['get-article'].args = {id: value - 0};
+                            this.refresh('get-article');
                         }
                     }.bind(this));
                 });
@@ -477,6 +487,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                         newArticles: [article],
                         newerFirst: this.user.ProfileData.newerFirst,
                         unreadOnly: this.user.ProfileData.unreadOnly,
+                        requestedArticle: article.Id,
                     };
 
                     if (isNaN(this.tagOrId)) {
@@ -1001,6 +1012,12 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
                 this.loading = false;
                 this.$['scroll-threshold'].clearLower();
+
+                if (event.data.requestedArticle !== undefined) {
+                    this.$['feed-articles'].send();
+                    MoreRouting.navigateTo('article',
+                            {tagOrId: this.tagOrId, articleId: event.data.requestedArticle});
+                }
             },
 
         })
