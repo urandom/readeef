@@ -238,6 +238,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
         <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage" user="{{ user }}"></rf-api>
         <rf-api id="user-settings" method="set-user-attribute" tag="feed-base" user="[[ user ]]"></rf-api>
         <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" user="[[ user ]]"></rf-api>
+        <rf-api id="get-article" method="get-article" on-rf-api-message="onGetArticleMessage" user="[[ user ]]"></rf-api>
         <rf-api id="feed-read-all" method="mark-feed-as-read" on-rf-api-message="onFeedReadAllMessage" user="[[ user ]]"></rf-api>
         <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="onFeedUpdateNotify" user="[[ user ]]" receiver="true"></rf-api>
 
@@ -414,6 +415,8 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                             this._shareServices.forEach(function(service) {
                                 service.article = article;
                             }.bind(this));
+                        } else {
+                            this.$['get-article'].send({id: value});
                         }
                     }.bind(this));
                 });
@@ -440,11 +443,13 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
             onFeedArticlesMessage: function(event, data) {
                 this._updateAvailable = false;
+
                 if (data.arguments.Articles && data.arguments.Articles.length) {
                     var data = {
                         current: [].concat(this.articles),
                         newArticles: data.arguments.Articles,
-                        unshiftFirst: this.articles.length && data.arguments.Offset == 0,
+                        newerFirst: this.user.ProfileData.newerFirst,
+                        unreadOnly: this.user.ProfileData.unreadOnly,
                     };
 
                     if (isNaN(this.tagOrId)) {
@@ -461,6 +466,25 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     }
                 }
                 this._lastUpdateTime = new Date().getTime();
+            },
+
+            onGetArticleMessage: function(event, data) {
+                var article = event.detail.arguments.Article;
+
+                if (article) {
+                    var data = {
+                        current: [].concat(this.articles),
+                        newArticles: [article],
+                        newerFirst: this.user.ProfileData.newerFirst,
+                        unreadOnly: this.user.ProfileData.unreadOnly,
+                    };
+
+                    if (isNaN(this.tagOrId)) {
+                        data.feeds = this.feeds;
+                    }
+
+                    this._appendArticleWorker.postMessage(data);
+                }
             },
 
             onFeedReadAllMessage: function(event, data) {
@@ -971,11 +995,8 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 // Update the map first, the change callbacks might use it
                 this.articles.indexMap = event.data.indexMap;
 
-                if (event.data.push.length) {
-                    this.push.apply(this, ['articles'].concat(event.data.push));
-                }
-                if (event.data.unshift.length) {
-                    this.unshift.apply(this, ['articles'].concat(event.data.unshift));
+                for (var i = 0, insert; insert = event.data.inserts[i]; ++i) {
+                    this.splice.apply(this, ['articles', insert.index, 0].concat(insert.articles));
                 }
 
                 this.loading = false;

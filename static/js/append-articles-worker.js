@@ -4,9 +4,10 @@ self.addEventListener('message', function(event) {
     "use strict";
 
     var articles = event.data.current || [],
-        unshift = [], push = [],
+        inserts = [], insertIndex = 0,
         newArticles = event.data.newArticles,
-        unshiftFirst = event.data.unshiftFirst,
+        newerFirst = event.data.newerFirst,
+        unreadOnly = event.data.unreadOnly,
         feeds = event.data.feeds,
         articleMap = {}, indexMap = {}, feedMap;
 
@@ -48,24 +49,36 @@ self.addEventListener('message', function(event) {
             a.ShortDescription = a.Description
                 .replace(/<\w[^>]*>/g, '').replace(/<\/[^>]*>/g, '').trim().replace(/\s\s+/g, ' ');
 
+            a.Date = new Date(a.Date);
             a.RelativeDate = moment(a.Date).fromNow();
 
-            if (unshiftFirst || event.data.unshiftFirst && !a.Read) {
-                unshift.push(a);
-            } else {
-                push.push(a);
+            for (var o; o = articles[insertIndex]; ++insertIndex) {
+                if (newerFirst) {
+                    if (o.Date <= a.Date) {
+                        break;
+                    }
+                } else {
+                    if (o.Date > a.Date) {
+                        break;
+                    }
+                }
             }
-        } else {
-            unshiftFirst = false;
+
+            if (!inserts[inserts.length - 1] || inserts[inserts.length - 1].index != insertIndex) {
+                inserts.push({index: insertIndex, articles: []});
+            }
+
+            inserts[inserts.length - 1].articles.push(a);
         }
     }
 
-    var cumul = 0;
-    [unshift, articles, push].forEach(function(list) {
-        for (var i = 0, a; a = list[i]; ++i, ++cumul) {
-            indexMap[a.Id] = cumul;
-        }
-    });
+    for (var i = 0, insert; insert = inserts[i]; ++i) {
+        articles.splice.apply(articles, [insert.index, 0].concat(insert.articles));
+    }
 
-    self.postMessage({push: push, unshift: unshift, indexMap: indexMap});
+    for (var i = 0, a; a = articles[i]; ++i) {
+        indexMap[a.Id] = i;
+    }
+
+    self.postMessage({inserts: inserts, indexMap: indexMap});
 });
