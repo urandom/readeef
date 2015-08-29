@@ -401,6 +401,10 @@ rf-article /deep/ .article-summary {
                         index = this.articles.findIndex(articleId),
                         article = this.articles[index];
 
+                    if (index == -1) {
+                        type = null;
+                    }
+
                     switch (type) {
                         case "format":
                             this.set('articles.' + index + '.summarized', false);
