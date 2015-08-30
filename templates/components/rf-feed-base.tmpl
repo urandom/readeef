@@ -183,7 +183,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                             <span class="flex title-text" hidden$="[[ searchVisible ]]">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
                             <span class="search-feed flex layout horizontal center" hidden$="[[ !searchVisible ]]">
                                 <paper-icon-button icon="clear" on-tap="toggleSearch"></paper-icon-button>
-                                <paper-input class="search-input" placeholder="Search" no-label-float on-keypress="onSearchKeypress" autofocus></paper-input>
+                                <paper-input class="search-input" placeholder="Search" no-label-float on-keyup="onSearchKeyUp" autofocus></paper-input>
                             </span>
 
                             <paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(tagOrId, searchVisible) ]]" on-tap="toggleSearch"></paper-icon-button>
@@ -678,14 +678,21 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     this._updateArticles, this._lastActivityDelay);
             },
 
-            onSearchKeypress: function(event) {
-                var code = event.keyCode || event.charCode, key = event.keyIdentifier,
+            onSearchKeyUp: function(event) {
+                var code = event.keyCode || event.charCode,
                     target = Polymer.dom(event).localTarget;
 
-                if (key == 'Enter' || code == 13) {
-                    MoreRouting.navigateTo('feed', {
-                        tagOrId: "search:" + this._extractSearchTokens(this.tagOrId)[0] + ":" + target.value,
-                    });
+                switch (code) {
+                    case 13: // Enter
+                        if (target.value !== "") {
+                            MoreRouting.navigateTo('feed', {
+                                tagOrId: "search:" + this._extractSearchTokens(this.tagOrId)[0] + ":" + target.value,
+                            });
+                        }
+                        break;
+                    case 27: // Esc
+                        this.toggleSearch();
+                        break;
                 }
 
                 event.stopPropagation();
