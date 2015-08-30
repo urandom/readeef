@@ -43,35 +43,6 @@
                         </template>
                     </ul>
                 </template>
-
-                <ul>
-                    <li><h4>Article list</h4></li>
-                    <li><span class="key">/</span> Search </li>
-                    <li><span class="key">j</span> Open the first loaded article </li>
-                    <li><span class="key">Shift + j</span> Open the first loaded unread article </li>
-                    <li><span class="key">k</span> Open the last loaded article </li>
-                    <li><span class="key">Shift + k</span> Open the last loaded unread article </li>
-                </ul>
-
-                <ul>
-                    <li><h4>Article</h4></li>
-                    <li><span class="key">j</span> Go to the next loaded article </li>
-                    <li><span class="key">Shift + j</span> Go to the next unread loaded article </li>
-                    <li><span class="key">k</span> Go to the previous loaded article </li>
-                    <li><span class="key">Shift + k</span> Go to the previous loaded unread article </li>
-                    <li><span class="key">h</span> Go back to the article list </li>
-                    <li><span class="key">v</span> Open the article's link in a new tab </li>
-                    <li><span class="key">m</span> Toggle the read state of the article </li>
-                    <li><span class="key">f</span> Toggle the favorite state of the article </li>
-                    <li><span class="key">c</span> Format the article's content </li>
-                    <li><span class="key">s</span> Summarize the article </li>
-                </ul>
-
-                <ul>
-                    <li><h4>Article list or article </h4></li>
-                    <li><span class="key">?</span> Keyboard shortcut help </li>
-                    <li><span class="key">r</span> Fetch the latest articles and refresh the list </li>
-                </ul>
             </div>
 
             <div class="buttons">
@@ -79,7 +50,7 @@
             </div>
         </paper-dialog>
 
-        <rf-keyboard-shortcut route-name="feed-base" key-code="63" label="?" description="Keyboard shortcut list" on-press="onShortcutHelp"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="splash" key-code="63" label="?" description="Keyboard shortcut list" on-press="onShortcutHelp"></rf-keyboard-shortcut>
 
     </template>
 
@@ -88,6 +59,17 @@ Polymer({
     is: 'rf-keyboard-shortcuts',
     properties: {
         shortcutCategories: Array,
+    },
+
+    attached: function() {
+        var notify = function() {
+            this.debounce("shortcut-categories", function() {
+                this.shortcutCategories = RfKeyboardShortcuts.categorize();
+            });
+        }.bind(this);
+
+        notify();
+        RfKeyboardShortcuts.__notify = notify;
     },
 
     onShortcutHelp: function(event) {
@@ -106,9 +88,46 @@ Polymer({
         (function() {
             var shortcuts = {};
 
-            RfKeyboardShortcuts = scope.RfKeyboardShortcuts = {};
+            RfKeyboardShortcuts = scope.RfKeyboardShortcuts = {__notify: null};
 
-            RfKeyboardShortcuts.getAllCategories = function() {
+            RfKeyboardShortcuts.categorize = function() {
+                var categories = [], indices = {}, unique = {};
+
+                for (var keyCode in shortcuts) {
+                    for (var routeName in shortcuts[keyCode]) {
+                        var shortcut = shortcuts[keyCode][routeName], category;
+                        if (!(routeName in indices)) {
+                            indices[routeName] = categories.length;
+                            category = {route: routeName, shortcuts: []};
+                            categories.push(category);
+
+                            switch (routeName) {
+                                case "feed":
+                                    category.description = "Articles list";
+                                    break;
+                                case "article":
+                                    category.description = "Article";
+                                    break;
+                                case "splash":
+                                    category.description = "General";
+                                    break;
+                            }
+                        }
+
+                        if (!unique[routeName + '_' + shortcut.label]) {
+                            category = categories[indices[routeName]];
+                            category.shortcuts.push({label: shortcut.label, description: shortcut.description});
+                            unique[routeName + '_' + shortcut.label] = true;
+                        }
+                    }
+                }
+
+                categories.sort(function(a, b) { return a.route.localeCompare(b.route); });
+                for (var i = 0, c; c = categories[i]; ++i) {
+                    categories[i].shortcuts.sort(function(a, b) { return a.description.localeCompare(b.description); });
+                }
+
+                return categories;
             };
 
             RfKeyboardShortcuts.register = function(shortcut) {
@@ -116,6 +135,9 @@ Polymer({
                     shortcuts[shortcut.keyCode] = {};
                 }
                 shortcuts[shortcut.keyCode][shortcut.routeName] = shortcut;
+                if (this.__notify !== null) {
+                    this.__notify(shortcut);
+                }
             };
 
             RfKeyboardShortcuts._unregister = function(keyCode, routeName) {

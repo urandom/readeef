@@ -11,6 +11,7 @@
 
 <link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-article">
+<link rel="import" href="/component/rf-keyboard-shortcuts">
 
 <dom-module id="rf-feed">
     <style>
@@ -246,6 +247,21 @@ rf-article /deep/ .article-summary {
         <rf-api id="article-read" method="mark-article-as-read" tag="content-list" on-rf-api-message="onArticleStateMessage" user="[[ user ]]"></rf-api>
         <rf-api id="article-favorite" method="mark-article-as-favorite" tag="content-list"on-rf-api-message="onArticleStateMessage"  user="[[ user ]]"></rf-api>
         <rf-api id="article-format" method="format-article" on-rf-api-message="onArticleFormatMessage" user="[[ user ]]"></rf-api>
+
+        <rf-keyboard-shortcut route-name="article" key-code="86" label="v" description="Open the article's link in a new tab" on-press="onOpenArticleLink"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="118" label="v" description="Open the article's link in a new tab" on-press="onOpenArticleLink"></rf-keyboard-shortcut>
+
+        <rf-keyboard-shortcut route-name="article" key-code="77" label="m" description="Toggle the read state of the article" on-press="onToggleArticleRead"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="109" label="m" description="Toggle the read state of the article" on-press="onToggleArticleRead"></rf-keyboard-shortcut>
+
+        <rf-keyboard-shortcut route-name="article" key-code="70" label="f" description="Toggle the favorite state of the article" on-press="onToggleArticleFavorite"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="102" label="f" description="Toggle the favorite state of the article" on-press="onToggleArticleFavorite"></rf-keyboard-shortcut>
+
+        <rf-keyboard-shortcut route-name="article" key-code="83" label="s" description="Summarize the article" on-press="onToggleArticleSummary"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="115" label="s" description="Summarize the article" on-press="onToggleArticleSummary"></rf-keyboard-shortcut>
+
+        <rf-keyboard-shortcut route-name="article" key-code="67" label="c" description="Format the article's content" on-press="onToggleArticleFormat"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="99" label="c" description="Format the article's content" on-press="onToggleArticleFormat"></rf-keyboard-shortcut>
     </template>
 
     <script>
@@ -378,8 +394,6 @@ rf-article /deep/ .article-summary {
                     }
                 }.bind(this));
 
-                document.addEventListener('keypress', this.onKeypress.bind(this), false);
-
                 setInterval(function() {
                     this._updateRelativeDates();
                 }.bind(this), 60000);
@@ -447,62 +461,29 @@ rf-article /deep/ .article-summary {
                 }
             },
 
-            onKeypress: function(event) {
-                if (!MoreRouting.isCurrentUrl('feed')) {
-                    return;
-                }
+            onOpenArticleLink: function() {
+                var article = this.articles.find(articleRoute.params.articleId);
+                window.open(article.Link, this._computeArticleTarget(article));
+            },
 
-                var code = event.keyCode || event.charCode,
-                    articleRoute = MoreRouting.getRouteByName('article');
+            onToggleArticleRead: function() {
+                this.articleState(articleRoute.params.articleId,
+                        {Read: !this.articles.find(articleRoute.params.articleId).Read});
+            },
 
-                switch (code) {
-                    case 86: // V
-                    case 118: // v
-                        if (!articleRoute.active) {
-                            return;
-                        }
+            onToggleArticleFavorite: function() {
+                this.articleState(articleRoute.params.articleId,
+                        {Favorite: !this.articles.find(articleRoute.params.articleId).Favorite});
+            },
 
-                        var article = this.articles.find(articleRoute.params.articleId);
+            onToggleArticleSummary: function() {
+                MoreRouting.navigateTo('article-format',
+                        {tagOrId: this.tagOrId, articleId: articleRoute.params.articleId, type: 'summary'});
+            },
 
-                        window.open(article.Link, this._computeArticleTarget(article));
-                        break;
-                    case 77: // M
-                    case 109: // m
-                        if (!articleRoute.active) {
-                            return;
-                        }
-
-                        this.articleState(articleRoute.params.articleId,
-                            {Read: !this.articles.find(articleRoute.params.articleId).Read});
-                        break;
-                    case 67: // C
-                    case 99: // c
-                        if (!articleRoute.active) {
-                            return;
-                        }
-
-                        MoreRouting.navigateTo('article-format',
-                                {tagOrId: this.tagOrId, articleId: articleRoute.params.articleId, type: 'format'});
-                        break;
-                    case 83: // S
-                    case 115: // s
-                        if (!articleRoute.active) {
-                            return;
-                        }
-
-                        MoreRouting.navigateTo('article-format',
-                                {tagOrId: this.tagOrId, articleId: articleRoute.params.articleId, type: 'summary'});
-                        break;
-                    case 70: // F
-                    case 102: // f
-                        if (!articleRoute.active) {
-                            return;
-                        }
-
-                        this.articleState(articleRoute.params.articleId,
-                            {Favorite: !this.articles.find(articleRoute.params.articleId).Favorite});
-                        break;
-                }
+            onToggleArticleFormat: function() {
+                MoreRouting.navigateTo('article-format',
+                        {tagOrId: this.tagOrId, articleId: articleRoute.params.articleId, type: 'format'});
             },
 
             _tagOrIdChanged: function(tagOrId, oldValue) {
