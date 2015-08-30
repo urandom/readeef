@@ -1,0 +1,192 @@
+{% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/paper-button/paper-button.html">
+<link rel="import" href="/dist/paper-dialog/paper-dialog.html">
+<link rel="import" href="/dist/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
+
+<dom-module id="rf-keyboard-shortcuts">
+    <style>
+#shortcut-help-dialog ul {
+    padding: 0;
+}
+
+#shortcut-help-dialog li {
+    padding: 8px;
+    list-style: none;
+}
+#shortcut-help-dialog h4 {
+    margin: 0;
+    margin-top: 1em;
+}
+#shortcut-help-dialog .key {
+    padding: 0.3em;
+    background-color: #eee;
+    box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16);
+    border-radius: 3px;
+}
+
+    </style>
+    <template>
+        <paper-dialog id="shortcut-help-dialog" entry-animation="scale-up-animation" exit-animation="fade-out-animation" modal>
+            <h2>Keyboard shortcuts</h2>
+
+            <div class="layout horizontal wrap">
+                <template is="dom-repeat" items="[[ shortcutCategories ]]" as="category">
+                    <ul>
+                        <li><h4>[[ category.description ]]</h4></li>
+                        <template is="dom-repeat" items="[[ category.shortcuts ]]" as="shortcut">
+                            <li>
+                                <span class="key">[[ shortcut.label ]]</span>
+                                <span>[[ shortcut.description ]]</span>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+
+                <ul>
+                    <li><h4>Article list</h4></li>
+                    <li><span class="key">/</span> Search </li>
+                    <li><span class="key">j</span> Open the first loaded article </li>
+                    <li><span class="key">Shift + j</span> Open the first loaded unread article </li>
+                    <li><span class="key">k</span> Open the last loaded article </li>
+                    <li><span class="key">Shift + k</span> Open the last loaded unread article </li>
+                </ul>
+
+                <ul>
+                    <li><h4>Article</h4></li>
+                    <li><span class="key">j</span> Go to the next loaded article </li>
+                    <li><span class="key">Shift + j</span> Go to the next unread loaded article </li>
+                    <li><span class="key">k</span> Go to the previous loaded article </li>
+                    <li><span class="key">Shift + k</span> Go to the previous loaded unread article </li>
+                    <li><span class="key">h</span> Go back to the article list </li>
+                    <li><span class="key">v</span> Open the article's link in a new tab </li>
+                    <li><span class="key">m</span> Toggle the read state of the article </li>
+                    <li><span class="key">f</span> Toggle the favorite state of the article </li>
+                    <li><span class="key">c</span> Format the article's content </li>
+                    <li><span class="key">s</span> Summarize the article </li>
+                </ul>
+
+                <ul>
+                    <li><h4>Article list or article </h4></li>
+                    <li><span class="key">?</span> Keyboard shortcut help </li>
+                    <li><span class="key">r</span> Fetch the latest articles and refresh the list </li>
+                </ul>
+            </div>
+
+            <div class="buttons">
+                <paper-button dialog-dismiss autofocus>Close</paper-button>
+            </div>
+        </paper-dialog>
+
+        <rf-keyboard-shortcut route-name="feed-base" key-code="63" label="?" description="Keyboard shortcut list" on-press="onShortcutHelp"></rf-keyboard-shortcut>
+
+    </template>
+
+    <script>
+Polymer({
+    is: 'rf-keyboard-shortcuts',
+    properties: {
+        shortcutCategories: Array,
+    },
+
+    onShortcutHelp: function(event) {
+        this.$['shortcut-help-dialog'].open();
+    },
+});
+    </script>
+</dom-module>
+
+<script>
+(function(scope) {
+    "use strict";
+
+    var RfKeyboardShortcuts = scope.RfKeyboardShortcuts;
+    if (!RfKeyboardShortcuts) {
+        (function() {
+            var shortcuts = {};
+
+            RfKeyboardShortcuts = scope.RfKeyboardShortcuts = {};
+
+            RfKeyboardShortcuts.getAllCategories = function() {
+            };
+
+            RfKeyboardShortcuts.register = function(shortcut) {
+                if (!shortcuts[shortcut.keyCode]) {
+                    shortcuts[shortcut.keyCode] = {};
+                }
+                shortcuts[shortcut.keyCode][shortcut.routeName] = shortcut;
+            };
+
+            RfKeyboardShortcuts._unregister = function(keyCode, routeName) {
+                if (shortcut[keyCode]) {
+                    delete shortcuts[keyCode][routeName];
+                }
+            };
+
+            scope.document.addEventListener('keypress', function(event) {
+                var code = event.keyCode || event.charCode,
+                    shortcut = shortcuts[code];
+
+                if (!shortcut) {
+                    return;
+                }
+
+                for (var routeName in shortcut) {
+                    if (MoreRouting.isCurrentUrl(routeName)) {
+                        shortcut[routeName].fire('press', {keypress: event});
+                        break;
+                    }
+                }
+            });
+        })();
+    }
+
+    Polymer({
+        is: 'rf-keyboard-shortcut',
+        properties: {
+            callback: Function,
+            routeName: {
+                type: String,
+                observer: '_routeNameChanged',
+            },
+            keyCode: {
+                type: Number,
+                observer: '_keyCodeChanged',
+            },
+            label: String,
+            description: String,
+        },
+        _isAttached: false,
+
+        attached: function() {
+            RfKeyboardShortcuts.register(this);
+            this._isAttached = true;
+        },
+
+        _routeNameChanged: function(routeName, old) {
+            if (!this._isAttached) {
+                return;
+            }
+
+            if (this.keyCode && routeName) {
+                RfKeyboardShortcuts._unregister(this.keyCode, old);
+                RfKeyboardShortcuts.register(this);
+            }
+        },
+
+        _keyCodeChanged: function(keyCode, old) {
+            if (!this._isAttached) {
+                return;
+            }
+
+            if (keyCode && this.routeName) {
+                RfKeyboardShortcuts._unregister(old, this.routeName);
+                RfKeyboardShortcuts.register(this);
+            }
+        },
+
+    })
+})(window);
+</script>
+{% end %}

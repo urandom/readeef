@@ -14,6 +14,7 @@
 <link rel="import" href="/component/rf-splash">
 <link rel="import" href="/component/rf-api">
 <link rel="import" href="/component/rf-share-services">
+<link rel="import" href="/component/rf-keyboard-shortcuts">
 
 <dom-module id="rf-router">
     <style>
@@ -78,6 +79,8 @@ neon-animated-pages {
         </neon-animated-pages>
 
         <paper-toast id="api-error"></paper-toast>
+
+        <rf-keyboard-shortcuts></rf-keyboard-shortcuts>
             
         <rf-api id="auth-check" method="get-auth-data"></rf-api>
     </template>
