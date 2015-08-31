@@ -13,6 +13,9 @@ func init() {
 	sql["get_article_thumbnail"] = getArticleThumbnail
 	sql["create_article_thumbnail"] = createArticleThumbnail
 	sql["update_article_thumbnail"] = updateArticleThumbnail
+	sql["get_article_extract"] = getArticleExtract
+	sql["create_article_extract"] = createArticleExtract
+	sql["update_article_extract"] = updateArticleExtract
 }
 
 const (
@@ -66,4 +69,16 @@ INSERT INTO articles_thumbnails(article_id, thumbnail, link, mime_type, processe
 `
 	updateArticleThumbnail = `
 UPDATE articles_thumbnails SET thumbnail = $1, link = $2, mime_type = $3, processed = $4 WHERE article_id = $5`
+
+	getArticleExtract = `
+SELECT ae.title, ae.content, ae.top_image, ae.language
+FROM articles_extracts ae
+WHERE ae.article_id = $1
+`
+	createArticleExtract = `
+INSERT INTO articles_extracts(article_id, title, content, top_image, language)
+	SELECT $1, $2, $3, $4, $5 EXCEPT SELECT article_id, title, content, top_image, language FROM articles_extracts WHERE article_id = $1
+`
+	updateArticleExtract = `
+UPDATE articles_extracts SET title = $1, content = $2, top_image = $3, language = $4 WHERE article_id = $5`
 )

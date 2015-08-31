@@ -54,10 +54,10 @@ type Article interface {
 
 	Update()
 	Thumbnail() ArticleThumbnail
-
-	Format(templateDir, readabilityKey string) data.ArticleFormatting
+	Extract() ArticleExtract
 }
 
+// TODO: merge with Article
 type ScoredArticle interface {
 	Article
 
@@ -94,6 +94,19 @@ type ArticleThumbnail interface {
 
 	Data(data ...data.ArticleThumbnail) data.ArticleThumbnail
 	Base64DataUri() string
+
+	Validate() error
+
+	Update()
+}
+
+type ArticleExtract interface {
+	Error
+	RepoRelated
+
+	fmt.Stringer
+
+	Data(data ...data.ArticleExtract) data.ArticleExtract
 
 	Validate() error
 

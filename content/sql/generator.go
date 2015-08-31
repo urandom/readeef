@@ -45,6 +45,14 @@ func (r *Repo) ArticleThumbnail() content.ArticleThumbnail {
 	return at
 }
 
+func (r *Repo) ArticleExtract() content.ArticleExtract {
+	ae := &ArticleExtract{db: r.db, logger: r.logger}
+
+	ae.Repo(r)
+
+	return ae
+}
+
 func (r *Repo) Feed() content.Feed {
 	f := r.feed()
 

@@ -76,6 +76,35 @@ func (a *Article) Thumbnail() (at content.ArticleThumbnail) {
 	return
 }
 
+func (a *Article) Extract() (ae content.ArticleExtract) {
+	ae = a.Repo().ArticleExtract()
+	if a.HasErr() {
+		ae.Err(a.Err())
+		return
+	}
+
+	id := a.Data().Id
+	if id == 0 {
+		a.Err(content.NewValidationError(errors.New("Invalid article id")))
+		return
+	}
+
+	a.logger.Infof("Getting article '%d' scores\n", id)
+
+	var i data.ArticleExtract
+	if err := a.db.Get(&i, a.db.SQL("get_article_extract"), id); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
+		ae.Err(err)
+	}
+
+	i.ArticleId = id
+	ae.Data(i)
+
+	return
+}
+
 func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logger) {
 	if a.HasErr() {
 		return

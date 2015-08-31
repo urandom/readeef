@@ -15,11 +15,12 @@ import (
 )
 
 type Article struct {
-	config readeef.Config
+	config    readeef.Config
+	extractor content.Extractor
 }
 
-func NewArticle(config readeef.Config) Article {
-	return Article{config}
+func NewArticle(config readeef.Config, extractor content.Extractor) Article {
+	return Article{config, extractor}
 }
 
 type Readability struct {
@@ -44,6 +45,7 @@ type formatArticleProcessor struct {
 	Id data.ArticleId `json:"id"`
 
 	user          content.User
+	extractor     content.Extractor
 	webfwConfig   webfw.Config
 	readeefConfig readeef.Config
 }
@@ -90,7 +92,7 @@ func (con Article) Handler(c context.Context) http.Handler {
 			case "favorite":
 				resp = markArticleAsFavorite(user, id, params["value"] == "true")
 			case "format":
-				resp = formatArticle(user, id, webfw.GetConfig(c), con.config)
+				resp = formatArticle(user, id, con.extractor, webfw.GetConfig(c), con.config)
 			}
 		}
 
@@ -122,7 +124,7 @@ func (p markArticleAsFavoriteProcessor) Process() responseError {
 }
 
 func (p formatArticleProcessor) Process() responseError {
-	return formatArticle(p.user, p.Id, p.webfwConfig, p.readeefConfig)
+	return formatArticle(p.user, p.Id, p.extractor, p.webfwConfig, p.readeefConfig)
 }
 
 func (p getArticleProcessor) Process() responseError {
@@ -194,7 +196,7 @@ func markArticleAsFavorite(user content.User, id data.ArticleId, favorite bool) 
 	return
 }
 
-func formatArticle(user content.User, id data.ArticleId, webfwConfig webfw.Config, readeefConfig readeef.Config) (resp responseError) {
+func formatArticle(user content.User, id data.ArticleId, extractor content.Extractor, webfwConfig webfw.Config, readeefConfig readeef.Config) (resp responseError) {
 	resp = newResponse()
 
 	article := user.ArticleById(id)
@@ -203,10 +205,32 @@ func formatArticle(user content.User, id data.ArticleId, webfwConfig webfw.Confi
 		return
 	}
 
-	formatting := article.Format(webfwConfig.Renderer.Dir, readeefConfig.ArticleFormatter.ReadabilityKey)
+	extract := article.Extract()
 	if article.HasErr() {
-		resp.err = user.Err()
+		resp.err = article.Err()
 		return
+	}
+
+	formatting := extract.Data()
+	if extract.HasErr() {
+		switch err := extract.Err(); err {
+		case content.ErrNoContent:
+			formatting, resp.err = extractor.Extract(article.Data().Link)
+			if resp.err != nil {
+				return
+			}
+
+			formatting.ArticleId = article.Data().Id
+			extract.Data(formatting)
+			extract.Update()
+			if extract.HasErr() {
+				resp.err = extract.Err()
+				return
+			}
+		default:
+			resp.err = err
+			return
+		}
 	}
 
 	s := summarize.NewFromString(formatting.Title, readeef.StripTags(formatting.Content))

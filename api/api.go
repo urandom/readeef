@@ -6,6 +6,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/webfw"
@@ -69,6 +70,16 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		fm.SetSearchIndex(si)
 	}
 
+	var ce content.Extractor
+	switch config.ContentExtractor.Extractor {
+	case "readability":
+		ce = base.NewReadabilityExtractor(config.ContentExtractor.ReadabilityKey)
+	case "goose":
+		fallthrough
+	default:
+		ce = base.NewGooseExtractor(dispatcher.Config.Renderer.Dir)
+	}
+
 	fm.Start()
 
 	nonce := readeef.NewNonce()
@@ -82,7 +93,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	multiPatternController = NewFeed(fm, si)
 	dispatcher.Handle(multiPatternController)
 
-	multiPatternController = NewArticle(config)
+	multiPatternController = NewArticle(config, ce)
 	dispatcher.Handle(multiPatternController)
 
 	multiPatternController = NewUser()
@@ -99,7 +110,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		dispatcher.Handle(patternController)
 	}
 
-	webSocket := NewWebSocket(fm, si)
+	webSocket := NewWebSocket(fm, si, ce)
 	dispatcher.Handle(webSocket)
 	um.AddUpdateReceiver(webSocket)
 

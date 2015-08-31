@@ -18,6 +18,7 @@ type WebSocket struct {
 	webfw.BasePatternController
 	fm         *readeef.FeedManager
 	si         readeef.SearchIndex
+	extractor  content.Extractor
 	updateFeed chan content.Feed
 }
 
@@ -59,11 +60,12 @@ var (
 	errResourceNotFound   = errors.New("Resource not found")
 )
 
-func NewWebSocket(fm *readeef.FeedManager, si readeef.SearchIndex) WebSocket {
+func NewWebSocket(fm *readeef.FeedManager, si readeef.SearchIndex, extractor content.Extractor) WebSocket {
 	return WebSocket{
 		BasePatternController: webfw.NewBasePatternController("/v:version/", webfw.MethodGet, ""),
 		fm:         fm,
 		si:         si,
+		extractor:  extractor,
 		updateFeed: make(chan content.Feed),
 	}
 }
@@ -121,7 +123,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 					var err error
 					var processor Processor
 
-					if processor, err = data.processor(c, user, con.fm, con.si, []byte(cfg.Auth.Secret)); err == nil {
+					if processor, err = data.processor(c, user, con.fm, con.si, con.extractor, []byte(cfg.Auth.Secret)); err == nil {
 						if len(data.Arguments) > 0 {
 							err = json.Unmarshal([]byte(data.Arguments), processor)
 						}
@@ -229,6 +231,7 @@ func (a apiRequest) processor(
 	user content.User,
 	fm *readeef.FeedManager,
 	si readeef.SearchIndex,
+	extractor content.Extractor,
 	secret []byte,
 ) (Processor, error) {
 
@@ -244,6 +247,7 @@ func (a apiRequest) processor(
 	case "format-article":
 		return &formatArticleProcessor{
 			user:          user,
+			extractor:     extractor,
 			webfwConfig:   webfw.GetConfig(c),
 			readeefConfig: readeef.GetConfig(c),
 		}, nil

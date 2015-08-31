@@ -62,11 +62,12 @@ type ArticleThumbnail struct {
 	Processed bool
 }
 
-type ArticleFormatting struct {
-	Content  string
-	Title    string
-	TopImage string
-	Language string
+type ArticleExtract struct {
+	ArticleId ArticleId
+	Title     string
+	Content   string
+	TopImage  string `db:"top_image"`
+	Language  string
 }
 
 func (id *ArticleId) Scan(src interface{}) error {

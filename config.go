@@ -50,8 +50,7 @@ type Config struct {
 		}
 	}
 	ArticleFormatter struct {
-		ReadabilityKey                 string `gcfg:"readability-key"`
-		ConvertLinksToProtocolRelative bool   `gcfg:"convert-links-to-protocol-relative"`
+		ConvertLinksToProtocolRelative bool `gcfg:"convert-links-to-protocol-relative"`
 	} `gcfg:"article-formatter"`
 
 	SearchIndex struct {
@@ -67,6 +66,10 @@ type Config struct {
 			Delay time.Duration
 		}
 	}
+	ContentExtractor struct {
+		Extractor      string
+		ReadabilityKey string `gcfg:"readability-key"`
+	} `gcfg:"content-extractor"`
 }
 
 func ReadConfig(path ...string) (Config, error) {
@@ -155,4 +158,6 @@ var cfg string = `
 	providers = Reddit
 	providers = Linkedin
 	providers = StumbleUpon
+[content-extractor]
+	Extractor = goose # readability
 `
