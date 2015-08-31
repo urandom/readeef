@@ -91,7 +91,7 @@ Polymer({
             RfKeyboardShortcuts = scope.RfKeyboardShortcuts = {__notify: null};
 
             RfKeyboardShortcuts.categorize = function() {
-                var categories = [], indices = {}, unique = {};
+                var categories = [], indices = {}, unique = [];
 
                 for (var keyCode in shortcuts) {
                     for (var routeName in shortcuts[keyCode]) {
@@ -114,11 +114,13 @@ Polymer({
                             }
                         }
 
-                        if (!unique[routeName + '_' + shortcut.label]) {
-                            category = categories[indices[routeName]];
-                            category.shortcuts.push({label: shortcut.label, description: shortcut.description});
-                            unique[routeName + '_' + shortcut.label] = true;
+                        if (unique.indexOf(shortcut) != -1) {
+                            break;
                         }
+
+                        category = categories[indices[routeName]];
+                        category.shortcuts.push({label: shortcut.label, description: shortcut.description});
+                        unique.push(shortcut);
                     }
                 }
 
@@ -131,32 +133,46 @@ Polymer({
             };
 
             RfKeyboardShortcuts.register = function(shortcut) {
-                if (!shortcuts[shortcut.keyCode]) {
-                    shortcuts[shortcut.keyCode] = {};
+                for (var i = 0, k; k = shortcut._keyCodes[i]; ++i) {
+                    if (!shortcuts[k]) {
+                        shortcuts[k] = {};
+                    }
+                    for (var j = 0, r; r = shortcut._routes[j]; ++j) {
+                        shortcuts[k][r] = shortcut;
+                    }
                 }
-                shortcuts[shortcut.keyCode][shortcut.routeName] = shortcut;
                 if (this.__notify !== null) {
                     this.__notify(shortcut);
                 }
             };
 
-            RfKeyboardShortcuts._unregister = function(keyCode, routeName) {
-                if (shortcut[keyCode]) {
-                    delete shortcuts[keyCode][routeName];
+            RfKeyboardShortcuts._unregister = function(keyCodes, routes) {
+                for (var i = 0, k; k = keyCodes[i]; ++i) {
+                    if (shortcut[k]) {
+                        for (var j = 0, r; r = routes[j]; ++j) {
+                            delete shortcuts[k][r];
+                        }
+                    }
                 }
             };
 
             scope.document.addEventListener('keypress', function(event) {
                 var code = event.keyCode || event.charCode,
-                    shortcut = shortcuts[code];
+                    routed = shortcuts[code];
 
-                if (!shortcut) {
+                if (!routed) {
                     return;
                 }
 
-                for (var routeName in shortcut) {
+                for (var routeName in routed) {
                     if (MoreRouting.isCurrentUrl(routeName)) {
-                        shortcut[routeName].fire('press', {keypress: event});
+                        var shortcut = routed[routeName], ignore = false;
+                        if (shortcut._notRoutes.some(function(r) {
+                            return MoreRouting.isCurrentUrl(r);
+                        })) {
+                            return;
+                        }
+                        shortcut.fire('press', {keypress: event});
                         break;
                     }
                 }
@@ -173,15 +189,20 @@ Polymer({
                 observer: '_routeNameChanged',
             },
             keyCode: {
-                type: Number,
+                type: String,
                 observer: '_keyCodeChanged',
             },
             label: String,
             description: String,
+            _keyCodes: Array,
+            _routes: Array,
+            _notRoutes: Array,
         },
         _isAttached: false,
 
         attached: function() {
+            this._convertKeyCodes();
+            this._convertRoutes();
             RfKeyboardShortcuts.register(this);
             this._isAttached = true;
         },
@@ -191,8 +212,11 @@ Polymer({
                 return;
             }
 
+            var oldRoutes = this._routes;
+            this._convertRoutes();
+
             if (this.keyCode && routeName) {
-                RfKeyboardShortcuts._unregister(this.keyCode, old);
+                RfKeyboardShortcuts._unregister(this._keyCodes, oldRoutes);
                 RfKeyboardShortcuts.register(this);
             }
         },
@@ -202,10 +226,38 @@ Polymer({
                 return;
             }
 
+            var oldKeyCodes = this._keyCodes;
+            this._convertKeyCodes();
+
             if (keyCode && this.routeName) {
-                RfKeyboardShortcuts._unregister(old, this.routeName);
+                RfKeyboardShortcuts._unregister(oldKeyCodes, this._routes);
                 RfKeyboardShortcuts.register(this);
             }
+        },
+
+        _convertRoutes: function() {
+            this._routes = [];
+            this._notRoutes = [];
+            if (!this.routeName) {
+                return;
+            }
+
+            this.routeName.toString().split(/\s*,\s*/).forEach(function(r) {
+                if (r.indexOf('!') == 0) {
+                    this._notRoutes.push(r.substring(1));
+                } else {
+                    this._routes.push(r);
+                }
+            }.bind(this));
+        },
+
+        _convertKeyCodes: function() {
+            this._keyCodes = [];
+            if (!this.keyCode) {
+                return;
+            }
+
+            this._keyCodes = this.keyCode.toString().split(/\s*,\s*/);
         },
 
     })

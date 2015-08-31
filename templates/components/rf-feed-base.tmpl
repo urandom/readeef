@@ -247,17 +247,17 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
         <iron-signals on-iron-signal-rf-feed-removed="onSignalFeedsChanged"></iron-signals>
         <iron-signals on-iron-signal-rf-feed-tags-changed="onSignalFeedTagsChanged"></iron-signals>
 
-        <rf-keyboard-shortcut route-name="article" key-code="72" label="h" description="Go back to the article list" on-press="onArticleUp"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="article" key-code="104" label="h" description="Go back to the article list" on-press="onArticleUp"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="72, 104" label="h" description="Go back to the article list" on-press="onArticleUp"></rf-keyboard-shortcut>
 
         <rf-keyboard-shortcut route-name="feed" key-code="106" label="j" description="Go to the next loaded article" on-press="onNextArticle"></rf-keyboard-shortcut>
         <rf-keyboard-shortcut route-name="feed" key-code="74" label="Shift + j" description="Go to the next unread loaded article" on-press="onNextUnreadArticle"></rf-keyboard-shortcut>
+
         <rf-keyboard-shortcut route-name="feed" key-code="107" label="k" description="Go to the previous loaded article" on-press="onPreviousArticle"></rf-keyboard-shortcut>
         <rf-keyboard-shortcut route-name="feed" key-code="75" label="Shift + k" description="Go to the previous loaded unread article" on-press="onPreviousUnreadArticle"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="feed" key-code="47" label="/" description="Search" on-press="onToggleSearch"></rf-keyboard-shortcut>
 
-        <rf-keyboard-shortcut route-name="feed" key-code="82" label="r" description="Fetch the latest articles and refresh the list" on-press="refresh"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="feed" key-code="114" label="r" description="Fetch the latest articles and refresh the list" on-press="refresh"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="feed, !article" key-code="47" label="/" description="Search" on-press="onToggleSearch"></rf-keyboard-shortcut>
+
+        <rf-keyboard-shortcut route-name="feed" key-code="82, 114" label="r" description="Fetch the latest articles and refresh the list" on-press="refresh"></rf-keyboard-shortcut>
     </template>
 
     <script>
