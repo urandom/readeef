@@ -10,6 +10,9 @@
 <link rel="import" href="/dist/paper-toast/paper-toast.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
+<link rel="import" href="/component/rf-api">
+<link rel="import" href="/component/rf-keyboard-shortcuts">
+
 <dom-module id="rf-settings-add-feed">
     <style>
 a[is="pushstate-anchor"] {
@@ -76,9 +79,9 @@ li paper-checkbox {
                             <div hidden$="[[ _computeHideDiscoveredFeeds(discoveredFeeds, 1) ]]">
                                 <p>Found the following feeds:</p>
                                 <ul>
-                                <template is="dom-repeat" items="[[ discoveredFeeds ]]">
+                                <template is="dom-repeat" items="{{ discoveredFeeds }}">
                                     <li class="layout horizontal center">
-                                        <paper-checkbox checked="[[ item.selected ]]"></paper-checkbox>
+                                        <paper-checkbox checked="{{ item.selected }}"></paper-checkbox>
                                         <a href="[[ item.Link ]]">[[ item.Title ]]<br><small>[[ item.Description ]]</small></a>
                                     </li>
                                 </template>
@@ -125,6 +128,8 @@ li paper-checkbox {
         <rf-api user="[[ user ]]" id="discover-feeds" method="discover-feeds" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError" handles-errors></rf-api>
         <rf-api user="[[ user ]]" id="parse-opml" method="parse-opml" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError" handles-errors></rf-api>
         <rf-api user="[[ user ]]" id="add-feeds" method="add-feeds" on-rf-api-message="onAddFeedMessage" on-rf-api-error="onAddFeedError" handles-errors></rf-api>
+
+        <rf-keyboard-shortcut route-name="settings-add-feed-discover-select" key-code="13" on-press="onAddFeeds"></rf-keyboard-shortcut>
     </template>
 
     <script>

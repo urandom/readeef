@@ -96,6 +96,10 @@ Polymer({
                 for (var keyCode in shortcuts) {
                     for (var routeName in shortcuts[keyCode]) {
                         var shortcut = shortcuts[keyCode][routeName], category;
+                        if (!shortcut.label) {
+                            break;
+                        }
+
                         if (!(routeName in indices)) {
                             indices[routeName] = categories.length;
                             category = {route: routeName, shortcuts: []};
