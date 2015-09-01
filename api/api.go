@@ -7,6 +7,7 @@ import (
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base/extractor"
+	"github.com/urandom/readeef/content/base/thumbnailer"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/webfw"
@@ -79,6 +80,18 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	default:
 		ce = extractor.NewGooseExtractor(dispatcher.Config.Renderer.Dir)
 	}
+
+	var t content.Thumbnailer
+	switch config.ContentExtractor.Extractor {
+	case "extract":
+		t = thumbnailer.NewExtract(ce, logger)
+	case "description":
+		fallthrough
+	default:
+		t = thumbnailer.NewDescription(logger)
+	}
+
+	fm.SetThumbnailer(t)
 
 	fm.Start()
 

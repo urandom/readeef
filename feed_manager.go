@@ -9,7 +9,6 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/base/thumbnailer"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/popularity"
@@ -55,7 +54,6 @@ func NewFeedManager(repo content.Repo, c Config, l webfw.Logger, um *UpdateFeedR
 		scoreArticle: make(chan content.ScoredArticle), done: make(chan bool),
 		activeFeeds: map[data.FeedId]bool{},
 		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite),
-		thumbnailer: thumbnailer.NewDescription(l),
 	}
 }
 
@@ -65,6 +63,10 @@ func (fm *FeedManager) SetHubbub(hubbub *Hubbub) {
 
 func (fm *FeedManager) SetSearchIndex(si SearchIndex) {
 	fm.searchIndex = si
+}
+
+func (fm *FeedManager) SetThumbnailer(t content.Thumbnailer) {
+	fm.thumbnailer = t
 }
 
 func (fm *FeedManager) SetClient(c *http.Client) {

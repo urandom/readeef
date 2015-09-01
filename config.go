@@ -70,6 +70,9 @@ type Config struct {
 		Extractor      string
 		ReadabilityKey string `gcfg:"readability-key"`
 	} `gcfg:"content-extractor"`
+	ContentThumbnailer struct {
+		Thumbnailer string
+	} `gcfg:"content-thumbnailer"`
 }
 
 func ReadConfig(path ...string) (Config, error) {

@@ -99,6 +99,35 @@ func generateThumbnailFromDescription(description io.Reader) (b []byte, mimeType
 	return
 }
 
+func generateThumbnailFromImageLink(link string) (b []byte, mimeType string) {
+	u, err := url.Parse(link)
+	if err != nil || !u.IsAbs() {
+		return
+	}
+
+	resp, err := http.Get(u.String())
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	buf := util.BufferPool.GetBuffer()
+	defer util.BufferPool.Put(buf)
+
+	if _, err := buf.ReadFrom(resp.Body); err != nil {
+		return
+	}
+
+	b, mimeType, err = generateThumbnail(buf)
+	if err == nil {
+		link = u.String()
+	} else {
+		return
+	}
+
+	return
+}
+
 func generateThumbnailProcessors(articles []content.Article) <-chan content.Article {
 	processors := make(chan content.Article)
 
