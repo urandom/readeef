@@ -73,7 +73,7 @@ func (e Elastic) UpdateFeed(feed content.Feed) {
 	}
 
 	var articles []content.Article
-	for _, a := range feed.ParsedArticles() {
+	for _, a := range feed.NewArticles() {
 		if newArticleLinks[a.Data().Link] {
 			articles = append(articles, a)
 		}
