@@ -585,7 +585,11 @@ func (fm FeedManager) updateFeed(f content.Feed) {
 
 		if len(articles) > 0 {
 			go fm.formatArticles(articles)
-			go fm.thumbnailer.Process(articles)
+			go func() {
+				if err := fm.thumbnailer.Process(articles); err != nil {
+					fm.logger.Print("Error generating thumbnails: %v\n", err)
+				}
+			}()
 		}
 	}
 }

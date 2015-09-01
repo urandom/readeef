@@ -87,7 +87,8 @@ func (t Extract) processThumbnail(done <-chan struct{}, processors <-chan conten
 				if extract.HasErr() {
 					switch err := extract.Err(); err {
 					case content.ErrNoContent:
-						extractData, err := t.extractor.Extract(a.Data().Link)
+						t.logger.Debugf("Generating article extract for %s\n", a)
+						extractData, err = t.extractor.Extract(a.Data().Link)
 						if err != nil {
 							return err
 						}
@@ -103,7 +104,9 @@ func (t Extract) processThumbnail(done <-chan struct{}, processors <-chan conten
 					}
 				}
 
-				if extractData.TopImage != "" {
+				if extractData.TopImage == "" {
+					t.logger.Debugf("Extract for %s doesn't contain a top image\n", a)
+				} else {
 					t.logger.Debugf("Generating thumbnail from top image %s of %s\n", extractData.TopImage, a)
 					td.Thumbnail, td.MimeType = generateThumbnailFromImageLink(extractData.TopImage)
 					td.Link = extractData.TopImage
