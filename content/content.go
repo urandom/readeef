@@ -11,6 +11,7 @@ type Thumbnailer interface {
 }
 
 type SearchProvider interface {
+	ArticleSorting
 	IsNewIndex() bool
 	IndexAllArticles(repo Repo) error
 	UpdateFeed(feed Feed)

@@ -58,10 +58,14 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	var sp content.SearchProvider
 
 	switch config.Content.SearchProvider {
+	case "elastic":
+		if sp, err = search.NewElastic(config.Content.ElasticURL, config.Content.SearchBatchSize, logger); err != nil {
+			return fmt.Errorf("Error initializing Elastic search: %v\n", err)
+		}
 	case "bleve":
 		fallthrough
 	default:
-		if sp, err = search.NewBleve(config.Content.BlevePath, config.Content.BleveBatchSize, logger); err != nil {
+		if sp, err = search.NewBleve(config.Content.BlevePath, config.Content.SearchBatchSize, logger); err != nil {
 			return fmt.Errorf("Error initializing Bleve search: %v\n", err)
 		}
 	}

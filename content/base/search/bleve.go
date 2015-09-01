@@ -12,11 +12,13 @@ import (
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/search"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw"
 )
 
 type Bleve struct {
+	base.ArticleSorting
 	index     bleve.Index
 	logger    webfw.Logger
 	newIndex  bool
@@ -24,19 +26,19 @@ type Bleve struct {
 }
 
 type indexArticle struct {
-	FeedId      string
-	ArticleId   string
-	Title       string
-	Description string
-	Link        string
-	Date        time.Time
+	FeedId      string    `json:"feed_id"`
+	ArticleId   string    `json:"article_id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Link        string    `json:"link"`
+	Date        time.Time `json:"date"`
 }
 
-func NewBleve(path string, size int64, logger webfw.Logger) (Bleve, error) {
+func NewBleve(path string, size int64, logger webfw.Logger) (*Bleve, error) {
 	var err error
 	var index bleve.Index
 
-	b := Bleve{}
+	b := &Bleve{}
 
 	_, err = os.Stat(path)
 	if err == nil {
@@ -44,7 +46,7 @@ func NewBleve(path string, size int64, logger webfw.Logger) (Bleve, error) {
 		index, err = bleve.Open(path)
 
 		if err != nil {
-			return Bleve{}, errors.New(fmt.Sprintf("Error opening search index: %v\n", err))
+			return b, errors.New(fmt.Sprintf("Error opening search index: %v\n", err))
 		}
 	} else if os.IsNotExist(err) {
 		mapping := bleve.NewIndexMapping()
@@ -61,12 +63,12 @@ func NewBleve(path string, size int64, logger webfw.Logger) (Bleve, error) {
 		index, err = bleve.NewUsing(path, mapping, "goleveldb", nil)
 
 		if err != nil {
-			return Bleve{}, errors.New(fmt.Sprintf("Error creating search index: %v\n", err))
+			return b, errors.New(fmt.Sprintf("Error creating search index: %v\n", err))
 		}
 
 		b.newIndex = true
 	} else {
-		return Bleve{}, errors.New(
+		return b, errors.New(
 			fmt.Sprintf("Error getting stat of '%s': %v\n", path, err))
 	}
 
@@ -263,14 +265,15 @@ func (b Bleve) batchDelete(articles []content.Article) {
 }
 
 func prepareArticle(data data.Article) (string, indexArticle) {
-	ia := indexArticle{FeedId: strconv.FormatInt(int64(data.FeedId), 10),
+	id := strconv.FormatInt(int64(data.FeedId), 10)
+	ia := indexArticle{FeedId: id,
 		ArticleId:   strconv.FormatInt(int64(data.Id), 10),
 		Title:       html.UnescapeString(StripTags(data.Title)),
 		Description: html.UnescapeString(StripTags(data.Description)),
 		Link:        data.Link, Date: data.Date,
 	}
 
-	return strconv.FormatInt(int64(data.Id), 10), ia
+	return id, ia
 }
 
 func StripTags(text string) string {

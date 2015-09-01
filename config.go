@@ -69,9 +69,10 @@ type Config struct {
 		Thumbnailer    string
 		SearchProvider string `gcfg:"search-provider"`
 
-		ReadabilityKey string `gcfg:"readability-key"`
-		BlevePath      string `gcfg:"bleve-path"`
-		BleveBatchSize int64  `gcfg:"bleve-batch-size"`
+		SearchBatchSize int64  `gcfg:"search-batch-size"`
+		ReadabilityKey  string `gcfg:"readability-key"`
+		BlevePath       string `gcfg:"bleve-path"`
+		ElasticURL      string `gcfg:"elastic-url"`
 	}
 }
 
@@ -162,5 +163,6 @@ var cfg string = `
 	extractor = goose # readability
 	thumbnailer = description
 	bleve-path = ./readeef.bleve
-	bleve-batch-size = 100
+	search-batch-size = 100
+	elastic-url = http://localhost:9200
 `
