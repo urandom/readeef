@@ -20,6 +20,9 @@ type readability struct {
 }
 
 func NewReadabilityExtractor(key string) ReadabilityExtractor {
+	if key == "" {
+		panic("Readability API key cannot be empty")
+	}
 	return ReadabilityExtractor{key: key}
 }
 
