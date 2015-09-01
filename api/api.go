@@ -6,7 +6,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/base"
+	"github.com/urandom/readeef/content/base/extractor"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/webfw"
@@ -73,11 +73,11 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	var ce content.Extractor
 	switch config.ContentExtractor.Extractor {
 	case "readability":
-		ce = base.NewReadabilityExtractor(config.ContentExtractor.ReadabilityKey)
+		ce = extractor.NewReadabilityExtractor(config.ContentExtractor.ReadabilityKey)
 	case "goose":
 		fallthrough
 	default:
-		ce = base.NewGooseExtractor(dispatcher.Config.Renderer.Dir)
+		ce = extractor.NewGooseExtractor(dispatcher.Config.Renderer.Dir)
 	}
 
 	fm.Start()
