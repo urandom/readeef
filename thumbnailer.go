@@ -2,6 +2,7 @@ package readeef
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/gif"
 	"image/jpeg"
@@ -31,12 +32,13 @@ func NewThumbnailer(c Config, l webfw.Logger) Thumbnailer {
 	return Thumbnailer{logger: l}
 }
 
-func (t Thumbnailer) Process(articles []content.Article) {
+func (t Thumbnailer) Process(articles []content.Article) error {
 	t.logger.Debugln("Generating thumbnailer processors")
 
 	processors := t.generateThumbnailProcessors(articles)
 	numProcessors := 20
 	done := make(chan struct{})
+	errc := make(chan error)
 
 	defer close(done)
 
@@ -45,20 +47,31 @@ func (t Thumbnailer) Process(articles []content.Article) {
 	wg.Add(numProcessors)
 	for i := 0; i < numProcessors; i++ {
 		go func() {
-			t.processThumbnail(done, processors)
+			err := t.processThumbnail(done, processors)
+			if err != nil {
+				errc <- err
+			}
 			wg.Done()
 		}()
 	}
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(errc)
+	}()
 
+	for err := range errc {
+		return err
+	}
+
+	return nil
 }
 
-func (t Thumbnailer) processThumbnail(done <-chan struct{}, processors <-chan content.Article) {
+func (t Thumbnailer) processThumbnail(done <-chan struct{}, processors <-chan content.Article) error {
 	for a := range processors {
 		select {
 		case <-done:
-			return
+			return nil
 		default:
 			ad := a.Data()
 
@@ -145,10 +158,12 @@ func (t Thumbnailer) processThumbnail(done <-chan struct{}, processors <-chan co
 
 			thumbnail.Data(td)
 			if thumbnail.Update(); thumbnail.HasErr() {
-				t.logger.Printf("Error saving thumbnail of %s to database :%v\n", a, thumbnail.Err())
+				return fmt.Errorf("Error saving thumbnail of %s to database :%v\n", a, thumbnail.Err())
 			}
 		}
 	}
+
+	return nil
 }
 
 func (t Thumbnailer) generateThumbnailProcessors(articles []content.Article) <-chan content.Article {
