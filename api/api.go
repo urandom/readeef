@@ -82,7 +82,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	}
 
 	var t content.Thumbnailer
-	switch config.ContentExtractor.Extractor {
+	switch config.ContentThumbnailer.Thumbnailer {
 	case "extract":
 		t = thumbnailer.NewExtract(ce, logger)
 	case "description":

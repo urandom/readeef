@@ -163,4 +163,6 @@ var cfg string = `
 	providers = StumbleUpon
 [content-extractor]
 	Extractor = goose # readability
+[content-thumbnailer]
+	thumbnailer = description
 `

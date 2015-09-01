@@ -75,9 +75,13 @@ func (t Extract) processThumbnail(done <-chan struct{}, processors <-chan conten
 				generateThumbnailFromDescription(strings.NewReader(ad.Description))
 
 			if td.Link == "" {
+				t.logger.Debugf("%s description doesn't contain suitable link, getting extract\n", a)
+
 				extract, err := t.extractor.Extract(a.Data().Link)
 				if err == nil && extract.TopImage != "" {
-					generateThumbnailFromImageLink(extract.TopImage)
+					t.logger.Debugf("Generating thumbnail from top image %s of %s\n", extract.TopImage, a)
+					td.Thumbnail, td.MimeType = generateThumbnailFromImageLink(extract.TopImage)
+					td.Link = extract.TopImage
 				}
 			}
 
