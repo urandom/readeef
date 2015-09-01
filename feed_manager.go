@@ -9,6 +9,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/base/thumbnailer"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/popularity"
@@ -33,7 +34,7 @@ type FeedManager struct {
 	activeFeeds  map[data.FeedId]bool
 	hubbub       *Hubbub
 	searchIndex  SearchIndex
-	thumbnailer  Thumbnailer
+	thumbnailer  content.Thumbnailer
 }
 
 var (
@@ -54,7 +55,7 @@ func NewFeedManager(repo content.Repo, c Config, l webfw.Logger, um *UpdateFeedR
 		scoreArticle: make(chan content.ScoredArticle), done: make(chan bool),
 		activeFeeds: map[data.FeedId]bool{},
 		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite),
-		thumbnailer: NewThumbnailer(c, l),
+		thumbnailer: thumbnailer.NewDescription(l),
 	}
 }
 

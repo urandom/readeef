@@ -7,5 +7,5 @@ type Extractor interface {
 }
 
 type Thumbnailer interface {
-	Process(articles []Article)
+	Process(articles []Article) error
 }
