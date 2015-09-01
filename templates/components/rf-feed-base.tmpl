@@ -183,7 +183,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                             <span class="flex title-text" hidden$="[[ searchVisible ]]">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
                             <span class="search-feed flex layout horizontal center" hidden$="[[ !searchVisible ]]">
                                 <paper-icon-button icon="clear" on-tap="toggleSearch"></paper-icon-button>
-                                <paper-input class="search-input" placeholder="Search" no-label-float on-keyup="onSearchKeyUp" autofocus></paper-input>
+                                <paper-input class="search-input" placeholder="Search" no-label-float on-keyup="onSearchKeyUp" on-keypress="onSearchKeyPress" autofocus></paper-input>
                             </span>
 
                             <paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(tagOrId, searchVisible) ]]" on-tap="toggleSearch"></paper-icon-button>
@@ -695,6 +695,10 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                         break;
                 }
 
+                event.stopPropagation();
+            },
+
+            onSearchKeyPress: function(event) {
                 event.stopPropagation();
             },
 
