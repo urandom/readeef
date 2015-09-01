@@ -54,8 +54,6 @@ type Config struct {
 	} `gcfg:"article-formatter"`
 
 	SearchIndex struct {
-		BlevePath string `gcfg:"bleve-path"`
-		BatchSize int64  `gcfg:"batch-size"`
 	} `gcfg:"search-index"`
 
 	Popularity struct {
@@ -66,13 +64,15 @@ type Config struct {
 			Delay time.Duration
 		}
 	}
-	ContentExtractor struct {
+	Content struct {
 		Extractor      string
+		Thumbnailer    string
+		SearchProvider string `gcfg:"search-provider"`
+
 		ReadabilityKey string `gcfg:"readability-key"`
-	} `gcfg:"content-extractor"`
-	ContentThumbnailer struct {
-		Thumbnailer string
-	} `gcfg:"content-thumbnailer"`
+		BlevePath      string `gcfg:"bleve-path"`
+		BleveBatchSize int64  `gcfg:"bleve-batch-size"`
+	}
 }
 
 func ReadConfig(path ...string) (Config, error) {
@@ -149,9 +149,6 @@ var cfg string = `
 [hubbub]
 	relative-path = /hubbub
 	from = readeef
-[search-index]
-	bleve-path = ./readeef.bleve
-	batch-size = 100
 [popularity]
 	delay = 5s
 	providers
@@ -161,8 +158,9 @@ var cfg string = `
 	providers = Reddit
 	providers = Linkedin
 	providers = StumbleUpon
-[content-extractor]
-	Extractor = goose # readability
-[content-thumbnailer]
+[content]
+	extractor = goose # readability
 	thumbnailer = description
+	bleve-path = ./readeef.bleve
+	bleve-batch-size = 100
 `

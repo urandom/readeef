@@ -7,6 +7,7 @@ import (
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base/extractor"
+	"github.com/urandom/readeef/content/base/search"
 	"github.com/urandom/readeef/content/base/thumbnailer"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
@@ -54,35 +55,44 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		dispatcher.Handle(readeef.NewHubbubController(hubbub))
 	}
 
-	var si readeef.SearchIndex
-	if config.SearchIndex.BlevePath != "" {
-		var err error
-		si, err = readeef.NewSearchIndex(repo, config, logger)
-		if err != nil {
-			return fmt.Errorf("Error initializing bleve search: %v", err)
-		}
+	var sp content.SearchProvider
 
-		if si.IsNewIndex() {
+	switch config.Content.SearchProvider {
+	case "bleve":
+		fallthrough
+	default:
+		if sp, err = search.NewBleve(config.Content.BlevePath, config.Content.BleveBatchSize, logger); err != nil {
+			return fmt.Errorf("Error initializing Bleve search: %v\n", err)
+		}
+	}
+
+	if sp != nil {
+		if sp.IsNewIndex() {
 			go func() {
-				si.IndexAllArticles()
+				sp.IndexAllArticles(repo)
 			}()
 		}
 
-		fm.SetSearchIndex(si)
+		fm.SetSearchProvider(sp)
 	}
 
 	var ce content.Extractor
-	switch config.ContentExtractor.Extractor {
+
+	switch config.Content.Extractor {
 	case "readability":
-		ce = extractor.NewReadabilityExtractor(config.ContentExtractor.ReadabilityKey)
+		if ce, err = extractor.NewReadability(config.Content.ReadabilityKey); err != nil {
+			return fmt.Errorf("Error initializing Readability extractor: %v\n", err)
+		}
 	case "goose":
 		fallthrough
 	default:
-		ce = extractor.NewGooseExtractor(dispatcher.Config.Renderer.Dir)
+		if ce, err = extractor.NewGoose(dispatcher.Config.Renderer.Dir); err != nil {
+			return fmt.Errorf("Error initializing Goose extractor: %v\n", err)
+		}
 	}
 
 	var t content.Thumbnailer
-	switch config.ContentThumbnailer.Thumbnailer {
+	switch config.Content.Thumbnailer {
 	case "extract":
 		t = thumbnailer.NewExtract(ce, logger)
 	case "description":
@@ -103,7 +113,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	patternController = NewAuth()
 	dispatcher.Handle(patternController)
 
-	multiPatternController = NewFeed(fm, si)
+	multiPatternController = NewFeed(fm, sp)
 	dispatcher.Handle(multiPatternController)
 
 	multiPatternController = NewArticle(config, ce)
@@ -123,7 +133,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		dispatcher.Handle(patternController)
 	}
 
-	webSocket := NewWebSocket(fm, si, ce)
+	webSocket := NewWebSocket(fm, sp, ce)
 	dispatcher.Handle(webSocket)
 	um.AddUpdateReceiver(webSocket)
 

@@ -13,24 +13,24 @@ import (
 	"github.com/urandom/webfw/util"
 )
 
-type GooseExtractor struct {
+type Goose struct {
 	renderer renderer.Renderer
 }
 
-func NewGooseExtractor(templateDir string) GooseExtractor {
+func NewGoose(templateDir string) (Goose, error) {
 	rawTmpl := "raw.tmpl"
 	f, err := fs.DefaultFS.OpenRoot(templateDir, rawTmpl)
 	if err != nil {
-		panic(fmt.Errorf("Goose extractor requires %s template in %s: %v\n", rawTmpl, templateDir, err))
+		return Goose{}, fmt.Errorf("Goose extractor requires %s template in %s: %v\n", rawTmpl, templateDir, err)
 	}
 	f.Close()
 	renderer := renderer.NewRenderer(templateDir, rawTmpl)
 	renderer.Delims("{%", "%}")
 
-	return GooseExtractor{renderer: renderer}
+	return Goose{renderer: renderer}, nil
 }
 
-func (e GooseExtractor) Extract(link string) (data data.ArticleExtract, err error) {
+func (e Goose) Extract(link string) (data data.ArticleExtract, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New(fmt.Sprintf("%v", r))

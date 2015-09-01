@@ -11,7 +11,6 @@ import (
 
 type Tag struct {
 	ArticleSorting
-	ArticleSearch
 	Error
 	UserRelated
 	RepoRelated

@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blevesearch/bleve"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
@@ -507,7 +506,7 @@ func (u *User) FavoriteArticles(paging ...int) (ua []content.UserArticle) {
 	return
 }
 
-func (u *User) Query(term string, index bleve.Index, paging ...int) (ua []content.UserArticle) {
+func (u *User) Query(term string, sp content.SearchProvider, paging ...int) (ua []content.UserArticle) {
 	if u.HasErr() {
 		return
 	}
@@ -519,7 +518,8 @@ func (u *User) Query(term string, index bleve.Index, paging ...int) (ua []conten
 
 	var err error
 
-	ua, err = query(term, u.Highlight(), index, u, []data.FeedId{}, paging...)
+	limit, offset := pagingLimit(paging)
+	ua, err = sp.Search(term, u, []data.FeedId{}, limit, offset)
 	u.Err(err)
 
 	return

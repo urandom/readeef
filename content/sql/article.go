@@ -4,10 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strconv"
 
-	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/search"
 	"github.com/jmoiron/sqlx"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
@@ -282,78 +279,5 @@ func (sa *ScoredArticle) Scores() (asc content.ArticleScores) {
 	i.ArticleId = id
 	asc.Data(i)
 
-	return
-}
-
-func query(term, highlight string, index bleve.Index, u content.User, feedIds []data.FeedId, paging ...int) (ua []content.UserArticle, err error) {
-	var query bleve.Query
-
-	query = bleve.NewQueryStringQuery(term)
-
-	if len(feedIds) > 0 {
-		queries := make([]bleve.Query, len(feedIds))
-		conjunct := make([]bleve.Query, 2)
-
-		for i, id := range feedIds {
-			q := bleve.NewTermQuery(strconv.FormatInt(int64(id), 10))
-			q.SetField("FeedId")
-
-			queries[i] = q
-		}
-
-		disjunct := bleve.NewDisjunctionQuery(queries)
-
-		conjunct[0] = query
-		conjunct[1] = disjunct
-
-		query = bleve.NewConjunctionQuery(conjunct)
-	}
-
-	searchRequest := bleve.NewSearchRequest(query)
-
-	if highlight != "" {
-		searchRequest.Highlight = bleve.NewHighlightWithStyle(highlight)
-	}
-
-	limit, offset := pagingLimit(paging)
-	searchRequest.Size = limit
-	searchRequest.From = offset
-
-	searchResult, err := index.Search(searchRequest)
-
-	if err != nil {
-		return
-	}
-
-	if len(searchResult.Hits) == 0 {
-		return
-	}
-
-	articleIds := []data.ArticleId{}
-	hitMap := map[data.ArticleId]*search.DocumentMatch{}
-
-	for _, hit := range searchResult.Hits {
-		if articleId, err := strconv.ParseInt(hit.ID, 10, 64); err == nil {
-			id := data.ArticleId(articleId)
-			articleIds = append(articleIds, id)
-			hitMap[id] = hit
-		}
-	}
-
-	ua = u.ArticlesById(articleIds)
-	if u.HasErr() {
-		return ua, u.Err()
-	}
-
-	for i := range ua {
-		data := ua[i].Data()
-
-		hit := hitMap[data.Id]
-
-		if len(hit.Fragments) > 0 {
-			data.Hit.Fragments = hit.Fragments
-			ua[i].Data(data)
-		}
-	}
 	return
 }

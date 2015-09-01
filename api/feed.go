@@ -21,12 +21,12 @@ import (
 )
 
 type Feed struct {
-	fm          *readeef.FeedManager
-	searchIndex readeef.SearchIndex
+	fm *readeef.FeedManager
+	sp content.SearchProvider
 }
 
-func NewFeed(fm *readeef.FeedManager, searchIndex readeef.SearchIndex) Feed {
-	return Feed{fm: fm, searchIndex: searchIndex}
+func NewFeed(fm *readeef.FeedManager, sp content.SearchProvider) Feed {
+	return Feed{fm: fm, sp: sp}
 }
 
 type listFeedsProcessor struct {
@@ -89,7 +89,7 @@ type getFeedArticlesProcessor struct {
 	UnreadOnly bool   `json:"unreadOnly"`
 
 	user content.User
-	si   readeef.SearchIndex
+	sp   content.SearchProvider
 }
 
 var (
@@ -173,7 +173,7 @@ func (con Feed) Handler(c context.Context) http.Handler {
 
 				if limit, resp.err = strconv.Atoi(params["limit"]); resp.err == nil {
 					if offset, resp.err = strconv.Atoi(params["offset"]); resp.err == nil {
-						resp = getFeedArticles(user, con.searchIndex, params["feed-id"], limit, offset,
+						resp = getFeedArticles(user, con.sp, params["feed-id"], limit, offset,
 							params["newer-first"] == "true", params["unread-only"] == "true")
 					}
 				}
@@ -244,7 +244,7 @@ func (p markFeedAsReadProcessor) Process() responseError {
 }
 
 func (p getFeedArticlesProcessor) Process() responseError {
-	return getFeedArticles(p.user, p.si, p.Id, p.Limit, p.Offset, p.NewerFirst, p.UnreadOnly)
+	return getFeedArticles(p.user, p.sp, p.Id, p.Limit, p.Offset, p.NewerFirst, p.UnreadOnly)
 }
 
 func listFeeds(user content.User) (resp responseError) {
@@ -519,7 +519,7 @@ func markFeedAsRead(user content.User, id string, timestamp int64) (resp respons
 	return
 }
 
-func getFeedArticles(user content.User, searchIndex readeef.SearchIndex, id string, limit int, offset int, newerFirst bool, unreadOnly bool) (resp responseError) {
+func getFeedArticles(user content.User, sp content.SearchProvider, id string, limit int, offset int, newerFirst bool, unreadOnly bool) (resp responseError) {
 	resp = newResponse()
 
 	if limit > 200 {
@@ -580,7 +580,7 @@ func getFeedArticles(user content.User, searchIndex readeef.SearchIndex, id stri
 
 			resp.val["Articles"], resp.err = f.ScoredArticles(time.Now().AddDate(0, 0, -5), time.Now(), limit, offset), f.Err()
 		}
-	} else if strings.HasPrefix(id, "search:") && searchIndex != readeef.EmptySearchIndex {
+	} else if strings.HasPrefix(id, "search:") && sp != nil {
 		var query string
 		id = id[7:]
 		parts := strings.Split(id, ":")
@@ -593,7 +593,7 @@ func getFeedArticles(user content.User, searchIndex readeef.SearchIndex, id stri
 			query = strings.Join(parts[1:], ":")
 		}
 
-		resp = search(resp, user, searchIndex, query, "html", id, limit, offset)
+		resp = performSearch(resp, user, sp, query, id, limit, offset)
 	} else if strings.HasPrefix(id, "tag:") {
 		tag := user.Repo().Tag(user)
 		tag.Value(data.TagValue(id[4:]))
@@ -666,7 +666,7 @@ func insertThumbnail(a content.Article) {
 	a.Data(d)
 }
 
-func search(resp responseError, user content.User, searchIndex readeef.SearchIndex, query, highlight, feedId string, limit, offset int) responseError {
+func performSearch(resp responseError, user content.User, sp content.SearchProvider, query, feedId string, limit, offset int) responseError {
 	defer func() {
 		if rec := recover(); rec != nil {
 			resp.err = fmt.Errorf("Error during search: %s", rec)
@@ -677,15 +677,13 @@ func search(resp responseError, user content.User, searchIndex readeef.SearchInd
 		tag := user.Repo().Tag(user)
 		tag.Value(data.TagValue(feedId[4:]))
 
-		tag.Highlight(highlight)
-		resp.val["Articles"], resp.err = tag.Query(query, searchIndex.Index, limit, offset), tag.Err()
+		resp.val["Articles"], resp.err = tag.Query(query, sp, limit, offset), tag.Err()
 	} else {
 		if id, err := strconv.ParseInt(feedId, 10, 64); err == nil {
 			f := user.FeedById(data.FeedId(id))
-			resp.val["Articles"], resp.err = f.Query(query, searchIndex.Index, limit, offset), f.Err()
+			resp.val["Articles"], resp.err = f.Query(query, sp, limit, offset), f.Err()
 		} else {
-			user.Highlight(highlight)
-			resp.val["Articles"], resp.err = user.Query(query, searchIndex.Index, limit, offset), user.Err()
+			resp.val["Articles"], resp.err = user.Query(query, sp, limit, offset), user.Err()
 		}
 	}
 

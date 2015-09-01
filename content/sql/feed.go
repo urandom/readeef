@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blevesearch/bleve"
 	"github.com/jmoiron/sqlx"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
@@ -565,7 +564,7 @@ func (uf *UserFeed) getArticles(where, order string, paging ...int) (ua []conten
 	return
 }
 
-func (uf *UserFeed) Query(term string, index bleve.Index, paging ...int) (ua []content.UserArticle) {
+func (uf *UserFeed) Query(term string, sp content.SearchProvider, paging ...int) (ua []content.UserArticle) {
 	if uf.HasErr() {
 		return
 	}
@@ -583,7 +582,8 @@ func (uf *UserFeed) Query(term string, index bleve.Index, paging ...int) (ua []c
 
 	var err error
 
-	ua, err = query(term, uf.Highlight(), index, uf.User(), []data.FeedId{id}, paging...)
+	limit, offset := pagingLimit(paging)
+	ua, err = sp.Search(term, uf.User(), []data.FeedId{id}, limit, offset)
 	uf.Err(err)
 
 	return

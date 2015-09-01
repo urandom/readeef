@@ -17,7 +17,7 @@ import (
 type WebSocket struct {
 	webfw.BasePatternController
 	fm         *readeef.FeedManager
-	si         readeef.SearchIndex
+	sp         content.SearchProvider
 	extractor  content.Extractor
 	updateFeed chan content.Feed
 }
@@ -60,11 +60,11 @@ var (
 	errResourceNotFound   = errors.New("Resource not found")
 )
 
-func NewWebSocket(fm *readeef.FeedManager, si readeef.SearchIndex, extractor content.Extractor) WebSocket {
+func NewWebSocket(fm *readeef.FeedManager, sp content.SearchProvider, extractor content.Extractor) WebSocket {
 	return WebSocket{
 		BasePatternController: webfw.NewBasePatternController("/v:version/", webfw.MethodGet, ""),
 		fm:         fm,
-		si:         si,
+		sp:         sp,
 		extractor:  extractor,
 		updateFeed: make(chan content.Feed),
 	}
@@ -123,7 +123,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 					var err error
 					var processor Processor
 
-					if processor, err = data.processor(c, user, con.fm, con.si, con.extractor, []byte(cfg.Auth.Secret)); err == nil {
+					if processor, err = data.processor(c, user, con.fm, con.sp, con.extractor, []byte(cfg.Auth.Secret)); err == nil {
 						if len(data.Arguments) > 0 {
 							err = json.Unmarshal([]byte(data.Arguments), processor)
 						}
@@ -230,7 +230,7 @@ func (a apiRequest) processor(
 	c context.Context,
 	user content.User,
 	fm *readeef.FeedManager,
-	si readeef.SearchIndex,
+	sp content.SearchProvider,
 	extractor content.Extractor,
 	secret []byte,
 ) (Processor, error) {
@@ -270,7 +270,7 @@ func (a apiRequest) processor(
 	case "mark-feed-as-read":
 		return &markFeedAsReadProcessor{user: user}, nil
 	case "get-feed-articles":
-		return &getFeedArticlesProcessor{user: user, si: si}, nil
+		return &getFeedArticlesProcessor{user: user, sp: sp}, nil
 	case "get-user-attribute":
 		return &getUserAttributeProcessor{user: user}, nil
 	case "set-user-attribute":

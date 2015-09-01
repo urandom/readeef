@@ -8,6 +8,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/base/search"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/text-summary/summarize"
 	"github.com/urandom/webfw"
@@ -233,7 +234,7 @@ func formatArticle(user content.User, id data.ArticleId, extractor content.Extra
 		}
 	}
 
-	s := summarize.NewFromString(extractData.Title, readeef.StripTags(extractData.Content))
+	s := summarize.NewFromString(extractData.Title, search.StripTags(extractData.Content))
 
 	s.Language = extractData.Language
 	keyPoints := s.KeyPoints()

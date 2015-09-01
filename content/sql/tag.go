@@ -3,7 +3,6 @@ package sql
 import (
 	"time"
 
-	"github.com/blevesearch/bleve"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
@@ -184,7 +183,7 @@ func (t *Tag) ScoredArticles(from, to time.Time, paging ...int) (sa []content.Sc
 	return
 }
 
-func (t *Tag) Query(term string, index bleve.Index, paging ...int) (ua []content.UserArticle) {
+func (t *Tag) Query(term string, sp content.SearchProvider, paging ...int) (ua []content.UserArticle) {
 	if t.HasErr() {
 		return
 	}
@@ -206,7 +205,8 @@ func (t *Tag) Query(term string, index bleve.Index, paging ...int) (ua []content
 		ids = append(ids, feeds[i].Data().Id)
 	}
 
-	ua, err = query(term, t.Highlight(), index, t.User(), ids, paging...)
+	limit, offset := pagingLimit(paging)
+	ua, err = sp.Search(term, t.User(), ids, limit, offset)
 	t.Err(err)
 
 	return

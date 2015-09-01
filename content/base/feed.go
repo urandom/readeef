@@ -22,7 +22,6 @@ type Feed struct {
 }
 
 type UserFeed struct {
-	ArticleSearch
 	UserRelated
 }
 

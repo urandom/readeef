@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blevesearch/bleve"
 	"github.com/urandom/readeef/content/data"
 )
 
@@ -37,8 +36,7 @@ type ArticleRepo interface {
 }
 
 type ArticleSearch interface {
-	Highlight(highlight ...string) string
-	Query(query string, index bleve.Index, paging ...int) []UserArticle
+	Query(query string, sp SearchProvider, paging ...int) []UserArticle
 }
 
 type Article interface {

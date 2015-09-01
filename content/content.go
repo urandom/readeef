@@ -9,3 +9,11 @@ type Extractor interface {
 type Thumbnailer interface {
 	Process(articles []Article) error
 }
+
+type SearchProvider interface {
+	IsNewIndex() bool
+	IndexAllArticles(repo Repo) error
+	UpdateFeed(feed Feed)
+	DeleteFeed(feed Feed) error
+	Search(term string, u User, feedIds []data.FeedId, limit, offset int) ([]UserArticle, error)
+}

@@ -32,7 +32,7 @@ type FeedManager struct {
 	logger       webfw.Logger
 	activeFeeds  map[data.FeedId]bool
 	hubbub       *Hubbub
-	searchIndex  SearchIndex
+	search       content.SearchProvider
 	thumbnailer  content.Thumbnailer
 }
 
@@ -61,8 +61,8 @@ func (fm *FeedManager) SetHubbub(hubbub *Hubbub) {
 	fm.hubbub = hubbub
 }
 
-func (fm *FeedManager) SetSearchIndex(si SearchIndex) {
-	fm.searchIndex = si
+func (fm *FeedManager) SetSearchProvider(sp content.SearchProvider) {
+	fm.search = sp
 }
 
 func (fm *FeedManager) SetThumbnailer(t content.Thumbnailer) {
@@ -137,8 +137,8 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 			return f, f.Err()
 		}
 
-		if fm.searchIndex != EmptySearchIndex {
-			go fm.searchIndex.UpdateFeed(f)
+		if fm.search != nil {
+			go fm.search.UpdateFeed(f)
 		}
 	}
 
@@ -296,8 +296,8 @@ func (fm *FeedManager) stopUpdatingFeed(f content.Feed) {
 		if len(users) == 0 {
 			fm.logger.Infoln("Removing orphan feed " + f.String() + " from the database")
 
-			if fm.searchIndex != EmptySearchIndex {
-				if err := fm.searchIndex.DeleteFeed(f); err != nil {
+			if fm.search != nil {
+				if err := fm.search.DeleteFeed(f); err != nil {
 					fm.logger.Printf(
 						"Error deleting articles for feed '%s' from the search index: %v\n",
 						f, err)
@@ -363,8 +363,8 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 		}
 
 		if len(f.NewArticles()) > 0 {
-			if fm.searchIndex != EmptySearchIndex {
-				fm.searchIndex.UpdateFeed(f)
+			if fm.search != nil {
+				fm.search.UpdateFeed(f)
 			}
 
 			fm.logger.Infoln("New articles notification for " + f.String())

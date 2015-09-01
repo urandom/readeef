@@ -18,7 +18,6 @@ type User struct {
 	ArticleSorting
 	Error
 	RepoRelated
-	ArticleSearch
 
 	data data.User
 }
