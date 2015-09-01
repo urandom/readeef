@@ -211,17 +211,17 @@ func formatArticle(user content.User, id data.ArticleId, extractor content.Extra
 		return
 	}
 
-	formatting := extract.Data()
+	extractData := extract.Data()
 	if extract.HasErr() {
 		switch err := extract.Err(); err {
 		case content.ErrNoContent:
-			formatting, resp.err = extractor.Extract(article.Data().Link)
+			extractData, resp.err = extractor.Extract(article.Data().Link)
 			if resp.err != nil {
 				return
 			}
 
-			formatting.ArticleId = article.Data().Id
-			extract.Data(formatting)
+			extractData.ArticleId = article.Data().Id
+			extract.Data(extractData)
 			extract.Update()
 			if extract.HasErr() {
 				resp.err = extract.Err()
@@ -233,9 +233,9 @@ func formatArticle(user content.User, id data.ArticleId, extractor content.Extra
 		}
 	}
 
-	s := summarize.NewFromString(formatting.Title, readeef.StripTags(formatting.Content))
+	s := summarize.NewFromString(extractData.Title, readeef.StripTags(extractData.Content))
 
-	s.Language = formatting.Language
+	s.Language = extractData.Language
 	keyPoints := s.KeyPoints()
 
 	for i := range keyPoints {
@@ -243,8 +243,8 @@ func formatArticle(user content.User, id data.ArticleId, extractor content.Extra
 	}
 
 	resp.val["KeyPoints"] = keyPoints
-	resp.val["Content"] = formatting.Content
-	resp.val["TopImage"] = formatting.TopImage
+	resp.val["Content"] = extractData.Content
+	resp.val["TopImage"] = extractData.TopImage
 	resp.val["Id"] = id
 	return
 }
