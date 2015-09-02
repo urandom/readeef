@@ -265,9 +265,9 @@ func (b Bleve) batchDelete(articles []content.Article) {
 }
 
 func prepareArticle(data data.Article) (string, indexArticle) {
-	id := strconv.FormatInt(int64(data.FeedId), 10)
-	ia := indexArticle{FeedId: id,
-		ArticleId:   strconv.FormatInt(int64(data.Id), 10),
+	id := strconv.FormatInt(int64(data.Id), 10)
+	ia := indexArticle{FeedId: strconv.FormatInt(int64(data.FeedId), 10),
+		ArticleId:   id,
 		Title:       html.UnescapeString(StripTags(data.Title)),
 		Description: html.UnescapeString(StripTags(data.Description)),
 		Link:        data.Link, Date: data.Date,
