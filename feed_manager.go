@@ -7,14 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/popularity"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/util"
-	"golang.org/x/net/html"
 )
 import (
 	"net/http"
@@ -23,19 +21,20 @@ import (
 
 type FeedManager struct {
 	*UpdateFeedReceiverManager
-	config       Config
-	repo         content.Repo
-	addFeed      chan content.Feed
-	removeFeed   chan content.Feed
-	scoreArticle chan content.ScoredArticle
-	done         chan bool
-	client       *http.Client
-	logger       webfw.Logger
-	activeFeeds  map[data.FeedId]bool
-	hubbub       *Hubbub
-	search       content.SearchProvider
-	thumbnailer  content.Thumbnailer
-	popularity   popularity.Popularity
+	config           Config
+	repo             content.Repo
+	addFeed          chan content.Feed
+	removeFeed       chan content.Feed
+	scoreArticle     chan content.ScoredArticle
+	done             chan bool
+	client           *http.Client
+	logger           webfw.Logger
+	activeFeeds      map[data.FeedId]bool
+	hubbub           *Hubbub
+	search           content.SearchProvider
+	thumbnailer      content.Thumbnailer
+	popularity       popularity.Popularity
+	parserProcessors []parser.Processor
 }
 
 var (
@@ -74,6 +73,10 @@ func (fm *FeedManager) SetThumbnailer(t content.Thumbnailer) {
 
 func (fm *FeedManager) SetClient(c *http.Client) {
 	fm.client = c
+}
+
+func (fm *FeedManager) SetParserProcessors(p []parser.Processor) {
+	fm.parserProcessors = p
 }
 
 func (fm FeedManager) Start() {
@@ -597,52 +600,11 @@ func (fm FeedManager) updateFeed(f content.Feed) {
 }
 
 func (fm FeedManager) processParserFeed(pf parser.Feed) parser.Feed {
-	if fm.config.ArticleFormatter.ConvertLinksToProtocolRelative {
-		for i := range pf.Articles {
-			if d, err := goquery.NewDocumentFromReader(strings.NewReader(pf.Articles[i].Description)); err == nil {
-				if fm.convertArticleLinks(d) {
-					if content, err := d.Html(); err == nil {
-						// net/http tries to provide valid html, adding html, head and body tags
-						content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
-
-						pf.Articles[i].Description = content
-					}
-				}
-			}
-		}
+	for _, p := range fm.parserProcessors {
+		pf = p.Process(pf)
 	}
 
 	return pf
-}
-
-func (fm FeedManager) convertArticleLinks(d *goquery.Document) bool {
-	fm.logger.Infoln("Converting feed urls to be protocol-relative")
-
-	changed := false
-	d.Find("[src]").Each(func(i int, s *goquery.Selection) {
-		var val string
-		var ok bool
-
-		if val, ok = s.Attr("src"); !ok {
-			return
-		}
-
-		u, err := url.Parse(val)
-		if err != nil || !u.IsAbs() {
-			return
-		}
-
-		u.Scheme = ""
-		s.SetAttr("src", u.String())
-		if n := s.Get(0); n.Type == html.ElementNode && n.Data == "img" {
-			s.SetAttr("onerror", "this.src = '"+val+"'")
-		}
-
-		changed = true
-		return
-	})
-
-	return changed
 }
 
 func ageInDays(published time.Time) int {

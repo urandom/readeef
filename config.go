@@ -49,12 +49,6 @@ type Config struct {
 			Interval time.Duration
 		}
 	}
-	ArticleFormatter struct {
-		ConvertLinksToProtocolRelative bool `gcfg:"convert-links-to-protocol-relative"`
-	} `gcfg:"article-formatter"`
-
-	SearchIndex struct {
-	} `gcfg:"search-index"`
 
 	Popularity struct {
 		Delay     string
@@ -64,6 +58,11 @@ type Config struct {
 			Delay time.Duration
 		}
 	}
+
+	FeedParser struct {
+		Processors []string
+	} `gcfg:"feed-parser"`
+
 	Content struct {
 		Extractor      string
 		Thumbnailer    string
@@ -160,6 +159,9 @@ var cfg string = `
 	providers = Reddit
 	providers = Linkedin
 	providers = StumbleUpon
+[feed-parser]
+	processors
+	# processors = 'relative-url'
 [content]
 	extractor = goose # readability
 	thumbnailer = description

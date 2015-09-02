@@ -11,6 +11,8 @@ import (
 	"github.com/urandom/readeef/content/base/thumbnailer"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/parser"
+	"github.com/urandom/readeef/parser/processor"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/middleware"
@@ -108,6 +110,16 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	}
 
 	fm.SetThumbnailer(t)
+
+	var processors []parser.Processor
+	for _, p := range config.FeedParser.Processors {
+		switch p {
+		case "relative-url":
+			processors = append(processors, processor.NewRelativeUrl(logger))
+		}
+	}
+
+	fm.SetParserProcessors(processors)
 
 	fm.Start()
 
