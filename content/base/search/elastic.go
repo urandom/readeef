@@ -168,10 +168,10 @@ func (e Elastic) Search(
 		if highlight, ok := highlightMap[data.Id]; ok {
 			data.Hit.Fragments = map[string][]string{}
 			if len(highlight["title"]) > 0 {
-				data.Hit.Fragments["Title"] = []string{highlight["title"][0]}
+				data.Hit.Fragments["Title"] = highlight["title"]
 			}
 			if len(highlight["description"]) > 0 {
-				data.Hit.Fragments["Description"] = []string{highlight["description"][0]}
+				data.Hit.Fragments["Description"] = highlight["description"]
 			}
 			ua[i].Data(data)
 		}

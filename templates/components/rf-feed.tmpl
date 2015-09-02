@@ -545,7 +545,7 @@ rf-article /deep/ .article-summary {
 
             _computeArticleTitle: function(title, hitRecord) {
                 if (hitRecord.base.fragments && hitRecord.base.fragments.Title) {
-                    this._tagStripper.innerHTML = hitRecord.base.fragments.Title;
+                    this._tagStripper.innerHTML = hitRecord.base.fragments.Title.join(" &hellip; ");
 
                     return this._tagStripper.innerHTML;
                 }
@@ -555,7 +555,7 @@ rf-article /deep/ .article-summary {
 
             _computeArticleDescription: function(description, hitRecord) {
                 if (hitRecord.base.fragments && hitRecord.base.fragments.Description) {
-                    this._tagStripper.innerHTML = hitRecord.base.fragments.Description;
+                    this._tagStripper.innerHTML = hitRecord.base.fragments.Description.join(" &hellip; ");
 
                     return this._tagStripper.innerHTML;
                 }
