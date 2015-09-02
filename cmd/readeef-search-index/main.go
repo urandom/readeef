@@ -6,6 +6,8 @@ import (
 	"os"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/base/search"
 	"github.com/urandom/readeef/content/repo"
 	_ "github.com/urandom/readeef/content/sql/db/postgres"
 )
@@ -20,25 +22,30 @@ func main() {
 		exitWithError(fmt.Sprintf("Error reading config from path '%s': %v", *confpath, err))
 	}
 
-	if cfg.SearchIndex.BlevePath == "" {
-		exitWithError("No bleve-path in search-index section of the config")
-	}
-
 	logger := readeef.NewLogger(cfg)
 	repo, err := repo.New(cfg.DB.Driver, cfg.DB.Connect, logger)
 	if err != nil {
 		exitWithError(fmt.Sprintf("Error connecting to database: %v", err))
 	}
 
-	si, err := readeef.NewSearchIndex(repo, cfg, logger)
+	var sp content.SearchProvider
 
-	if err != nil {
-		exitWithError(fmt.Sprintf("Error creating search index: %v", err))
+	switch cfg.Content.SearchProvider {
+	case "elastic":
+		if sp, err = search.NewElastic(cfg.Content.ElasticURL, cfg.Content.SearchBatchSize, logger); err != nil {
+			exitWithError(fmt.Sprintf("Error initializing Elastic search: %v\n", err))
+		}
+	case "bleve":
+		fallthrough
+	default:
+		if sp, err = search.NewBleve(cfg.Content.BlevePath, cfg.Content.SearchBatchSize, logger); err != nil {
+			exitWithError(fmt.Sprintf("Error initializing Bleve search: %v\n", err))
+		}
 	}
 
 	logger.Infoln("Getting all articles")
 
-	if err := si.IndexAllArticles(); err != nil {
+	if err := sp.IndexAllArticles(repo); err != nil {
 		exitWithError(fmt.Sprintf("Error indexing all articles: %v", err))
 	}
 }
