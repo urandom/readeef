@@ -30,6 +30,8 @@ type UserArticle struct {
 }
 
 func (a *Article) Update() {
+	a.logger.Infof("Updating article %d\n", a.Data().Id)
+
 	tx, err := a.db.Beginx()
 	if err != nil {
 		a.Err(err)
@@ -116,7 +118,6 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logge
 
 	d := a.Data()
 
-	fmt.Println(db.SQL("update_feed_article"), d.Title, d.Description, d.Date, d.Guid, d.Link, d.FeedId)
 	stmt, err := tx.Preparex(db.SQL("update_feed_article"))
 	if err != nil {
 		a.Err(err)
