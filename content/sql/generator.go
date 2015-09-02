@@ -100,14 +100,6 @@ func (r *Repo) User() content.User {
 	return u
 }
 
-func (r *Repo) Domain(u string) content.Domain {
-	d := &Domain{db: r.db, logger: r.logger}
-	d.Repo(r)
-	d.URL(u)
-
-	return d
-}
-
 func (r *Repo) userArticle(u content.User) UserArticle {
 	ua := &base.UserArticle{}
 	ua.User(u)

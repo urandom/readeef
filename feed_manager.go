@@ -14,6 +14,7 @@ import (
 	"github.com/urandom/readeef/popularity"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/util"
+	"golang.org/x/net/html"
 )
 import (
 	"net/http"
@@ -586,7 +587,9 @@ func (fm FeedManager) updateFeed(f content.Feed) {
 		articles = f.NewArticles()
 
 		if len(articles) > 0 {
-			go fm.formatArticles(articles)
+			if fm.config.ArticleFormatter.ConvertLinksToProtocolRelative {
+				go fm.formatArticles(articles)
+			}
 			if fm.thumbnailer != nil {
 				go func() {
 					if err := fm.thumbnailer.Process(articles); err != nil {
@@ -603,18 +606,13 @@ func (fm FeedManager) formatArticles(articles []content.Article) {
 		for i := range articles {
 			data := articles[i].Data()
 			if d, err := goquery.NewDocumentFromReader(strings.NewReader(data.Description)); err == nil {
-				changed := false
-
-				if fm.config.ArticleFormatter.ConvertLinksToProtocolRelative {
-					changed = fm.convertArticleLinks(d)
-				}
-
-				if changed {
+				if fm.convertArticleLinks(d) {
 					if content, err := d.Html(); err == nil {
 						// net/http tries to provide valid html, adding html, head and body tags
 						content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
 
 						data.Description = content
+						data.Title = "Change"
 
 						articles[i].Data(data)
 
@@ -646,18 +644,14 @@ func (fm FeedManager) convertArticleLinks(d *goquery.Document) bool {
 			return
 		}
 
-		domain := fm.repo.Domain(val)
-		fm.logger.Infof("Testing %s for HTTPS support\n", val)
-		if domain.SupportsHTTPS() && domain.URL().Scheme != u.Scheme {
-			changed = true
-			src := domain.URL().String()
-			fm.logger.Infof("%s supports HTTPS, changing [src] attribute to %s\n", val, src)
-			s.SetAttr("src", src)
-		} else if domain.HasErr() {
-			fm.logger.Debugf("Error checking '%s' for domain HTTPS support: %v\n", domain.URL(), domain.Err())
-		} else {
-			fm.logger.Infof("%s has no support for HTTPS, or is already an HTTPS link\n", domain.URL())
+		u.Scheme = ""
+		s.SetAttr("src", u.String())
+		if n := s.Get(0); n.Type == html.ElementNode && n.Data == "img" {
+			s.SetAttr("onerror", "this.src = '"+val+"'")
 		}
+
+		changed = true
+		return
 	})
 
 	return changed
