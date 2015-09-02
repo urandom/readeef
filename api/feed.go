@@ -593,7 +593,7 @@ func getFeedArticles(user content.User, sp content.SearchProvider, id string, li
 			query = strings.Join(parts[1:], ":")
 		}
 
-		resp = performSearch(resp, user, sp, query, id, limit, offset)
+		performSearch(&resp, user, sp, query, id, limit, offset)
 	} else if strings.HasPrefix(id, "tag:") {
 		tag := user.Repo().Tag(user)
 		tag.Value(data.TagValue(id[4:]))
@@ -666,7 +666,7 @@ func insertThumbnail(a content.Article) {
 	a.Data(d)
 }
 
-func performSearch(resp responseError, user content.User, sp content.SearchProvider, query, feedId string, limit, offset int) responseError {
+func performSearch(resp *responseError, user content.User, sp content.SearchProvider, query, feedId string, limit, offset int) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			resp.err = fmt.Errorf("Error during search: %s", rec)
@@ -686,6 +686,4 @@ func performSearch(resp responseError, user content.User, sp content.SearchProvi
 			resp.val["Articles"], resp.err = user.Query(query, sp, limit, offset), user.Err()
 		}
 	}
-
-	return resp
 }

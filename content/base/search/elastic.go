@@ -1,6 +1,7 @@
 package search
 
 import (
+	"net/url"
 	"reflect"
 	"strconv"
 
@@ -102,19 +103,20 @@ func (e Elastic) Search(
 
 	var query elastic.Query
 
+	if t, err := url.QueryUnescape(term); err == nil {
+		term = t
+	}
 	query = elastic.NewCommonQuery("_all", term)
 
 	if len(feedIds) > 0 {
 		idFilter := elastic.NewOrFilter()
 
 		for _, id := range feedIds {
-			idFilter.Add(elastic.NewTermFilter("feed_id", int64(id)))
+			idFilter = idFilter.Add(elastic.NewTermFilter("feed_id", int64(id)))
 		}
 
 		filteredQuery := elastic.NewFilteredQuery(query)
-		filteredQuery.Filter(idFilter)
-
-		query = filteredQuery
+		query = filteredQuery.Filter(idFilter)
 	}
 
 	search.Query(query)
