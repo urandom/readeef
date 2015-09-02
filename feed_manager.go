@@ -340,7 +340,7 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 
 		if _, err := buf.ReadFrom(resp.Body); err == nil {
 			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
-				f.Refresh(pf)
+				f.Refresh(fm.processParserFeed(pf))
 			} else {
 				data.UpdateError = err.Error()
 			}
@@ -528,7 +528,7 @@ func (fm FeedManager) discoverParserFeeds(link string) ([]content.Feed, error) {
 		feed := fm.repo.Feed()
 
 		feed.Data(data.Feed{Link: link})
-		feed.Refresh(parserFeed)
+		feed.Refresh(fm.processParserFeed(parserFeed))
 
 		return []content.Feed{feed}, nil
 	} else {
@@ -586,45 +586,33 @@ func (fm FeedManager) updateFeed(f content.Feed) {
 		var articles []content.Article
 		articles = f.NewArticles()
 
-		if len(articles) > 0 {
-			if fm.config.ArticleFormatter.ConvertLinksToProtocolRelative {
-				go fm.formatArticles(articles)
-			}
-			if fm.thumbnailer != nil {
-				go func() {
-					if err := fm.thumbnailer.Process(articles); err != nil {
-						fm.logger.Print("Error generating thumbnails: %v\n", err)
-					}
-				}()
-			}
+		if len(articles) > 0 && fm.thumbnailer != nil {
+			go func() {
+				if err := fm.thumbnailer.Process(articles); err != nil {
+					fm.logger.Print("Error generating thumbnails: %v\n", err)
+				}
+			}()
 		}
 	}
 }
 
-func (fm FeedManager) formatArticles(articles []content.Article) {
-	if len(articles) > 0 {
-		for i := range articles {
-			data := articles[i].Data()
-			if d, err := goquery.NewDocumentFromReader(strings.NewReader(data.Description)); err == nil {
+func (fm FeedManager) processParserFeed(pf parser.Feed) parser.Feed {
+	if fm.config.ArticleFormatter.ConvertLinksToProtocolRelative {
+		for i := range pf.Articles {
+			if d, err := goquery.NewDocumentFromReader(strings.NewReader(pf.Articles[i].Description)); err == nil {
 				if fm.convertArticleLinks(d) {
 					if content, err := d.Html(); err == nil {
 						// net/http tries to provide valid html, adding html, head and body tags
 						content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
 
-						data.Description = content
-						data.Title = "Change"
-
-						articles[i].Data(data)
-
-						articles[i].Update()
-						if articles[i].HasErr() {
-							fm.logger.Debugf("Error updating article '%s': %v\n", articles[i], articles[i].Err())
-						}
+						pf.Articles[i].Description = content
 					}
 				}
 			}
 		}
 	}
+
+	return pf
 }
 
 func (fm FeedManager) convertArticleLinks(d *goquery.Document) bool {
