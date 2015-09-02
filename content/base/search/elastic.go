@@ -1,8 +1,8 @@
 package search
 
 import (
+	"encoding/json"
 	"net/url"
-	"reflect"
 	"strconv"
 
 	"github.com/urandom/readeef/content"
@@ -120,7 +120,7 @@ func (e Elastic) Search(
 	}
 
 	search.Query(query)
-	search.Highlight(elastic.NewHighlight().PreTags("<mark>").PostTags("</mark>").Field("_all"))
+	search.Highlight(elastic.NewHighlight().PreTags("<mark>").PostTags("</mark>").Field("title").Field("description"))
 	search.From(offset).Size(limit)
 
 	switch e.Field() {
@@ -142,14 +142,17 @@ func (e Elastic) Search(
 	}
 
 	articleIds := []data.ArticleId{}
-	hitMap := map[data.ArticleId]indexArticle{}
+	highlightMap := map[data.ArticleId]elastic.SearchHitHighlight{}
 
-	for _, item := range res.Each(reflect.TypeOf(indexArticle{})) {
-		if a, ok := item.(indexArticle); ok {
-			if id, err := strconv.ParseInt(a.ArticleId, 10, 64); err == nil {
-				articleId := data.ArticleId(id)
-				articleIds = append(articleIds, articleId)
-				hitMap[articleId] = a
+	if res.Hits != nil && res.Hits.Hits != nil {
+		for _, hit := range res.Hits.Hits {
+			a := indexArticle{}
+			if err := json.Unmarshal(*hit.Source, &a); err == nil {
+				if id, err := strconv.ParseInt(a.ArticleId, 10, 64); err == nil {
+					articleId := data.ArticleId(id)
+					articleIds = append(articleIds, articleId)
+					highlightMap[articleId] = hit.Highlight
+				}
 			}
 		}
 	}
@@ -162,10 +165,13 @@ func (e Elastic) Search(
 	for i := range ua {
 		data := ua[i].Data()
 
-		if hit, ok := hitMap[data.Id]; ok {
-			data.Hit.Fragments = map[string][]string{
-				"Title":       []string{hit.Title},
-				"Description": []string{hit.Description},
+		if highlight, ok := highlightMap[data.Id]; ok {
+			data.Hit.Fragments = map[string][]string{}
+			if len(highlight["title"]) > 0 {
+				data.Hit.Fragments["Title"] = []string{highlight["title"][0]}
+			}
+			if len(highlight["description"]) > 0 {
+				data.Hit.Fragments["Description"] = []string{highlight["description"][0]}
 			}
 			ua[i].Data(data)
 		}
