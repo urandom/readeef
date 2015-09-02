@@ -34,6 +34,7 @@ type FeedManager struct {
 	hubbub       *Hubbub
 	search       content.SearchProvider
 	thumbnailer  content.Thumbnailer
+	popularity   popularity.Popularity
 }
 
 var (
@@ -54,6 +55,7 @@ func NewFeedManager(repo content.Repo, c Config, l webfw.Logger, um *UpdateFeedR
 		scoreArticle: make(chan content.ScoredArticle), done: make(chan bool),
 		activeFeeds: map[data.FeedId]bool{},
 		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite),
+		popularity:  popularity.New(c.Popularity.Providers),
 	}
 }
 
@@ -447,7 +449,7 @@ func (fm *FeedManager) scoreArticles() {
 			data := sa.Data()
 
 			fm.logger.Infof("Scoring '%s' using %+v\n", sa, fm.config.Popularity.Providers)
-			score, err := popularity.Score(data.Link, data.Description, fm.config.Popularity.Providers)
+			score, err := fm.popularity.Score(data.Link, data.Description)
 			if err != nil {
 				fm.logger.Printf("Error getting article popularity: %v\n", err)
 				continue

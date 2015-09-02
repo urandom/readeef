@@ -5,6 +5,10 @@ import (
 	"sync"
 )
 
+type Popularity struct {
+	scoreProviders []scoreProvider
+}
+
 type scoreProvider interface {
 	Score(link string) (int64, error)
 }
@@ -19,9 +23,8 @@ type scoreResponse struct {
 	err   error
 }
 
-func Score(link, text string, providers []string) (int64, error) {
-	done := make(chan struct{})
-	defer close(done)
+func New(providers []string) Popularity {
+	p := Popularity{}
 
 	scoreProviders := []scoreProvider{}
 	for _, p := range providers {
@@ -41,7 +44,16 @@ func Score(link, text string, providers []string) (int64, error) {
 		}
 	}
 
-	requests := generateRequests(realLink(link, text), scoreProviders)
+	p.scoreProviders = scoreProviders
+
+	return p
+}
+
+func (p Popularity) Score(link, text string) (int64, error) {
+	done := make(chan struct{})
+	defer close(done)
+
+	requests := p.generateRequests(realLink(link, text))
 	response := make(chan scoreResponse)
 
 	var wg sync.WaitGroup
@@ -77,13 +89,13 @@ func Score(link, text string, providers []string) (int64, error) {
 	return score + 1, nil
 }
 
-func generateRequests(link string, scoreProviders []scoreProvider) <-chan scoreRequest {
+func (p Popularity) generateRequests(link string) <-chan scoreRequest {
 	providers := make(chan scoreRequest)
 
 	go func() {
 		defer close(providers)
 
-		for _, p := range scoreProviders {
+		for _, p := range p.scoreProviders {
 			providers <- scoreRequest{scoreProvider: p, link: link}
 		}
 	}()
