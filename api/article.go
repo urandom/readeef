@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"html"
 	"net/http"
 	"strconv"
@@ -216,6 +217,11 @@ func formatArticle(user content.User, id data.ArticleId, extractor content.Extra
 	if extract.HasErr() {
 		switch err := extract.Err(); err {
 		case content.ErrNoContent:
+			if extractor == nil {
+				resp.err = fmt.Errorf("Error formatting article: A valid extractor is reequired")
+				return
+			}
+
 			extractData, resp.err = extractor.Extract(article.Data().Link)
 			if resp.err != nil {
 				return

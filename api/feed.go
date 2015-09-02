@@ -527,14 +527,12 @@ func getFeedArticles(user content.User, sp content.SearchProvider, id string, li
 	}
 
 	user.SortingByDate()
-	sp.SortingByDate()
 	if newerFirst {
 		user.Order(data.DescendingOrder)
-		sp.Order(data.DescendingOrder)
 	} else {
 		user.Order(data.AscendingOrder)
-		sp.Order(data.AscendingOrder)
 	}
+
 	if id == "favorite" {
 		resp.val["Articles"], resp.err = user.FavoriteArticles(limit, offset), user.Err()
 	} else if id == "popular:all" {
@@ -594,6 +592,13 @@ func getFeedArticles(user content.User, sp content.SearchProvider, id string, li
 		} else {
 			id = strings.Join(parts[:1], ":")
 			query = strings.Join(parts[1:], ":")
+		}
+
+		sp.SortingByDate()
+		if newerFirst {
+			sp.Order(data.DescendingOrder)
+		} else {
+			sp.Order(data.AscendingOrder)
 		}
 
 		performSearch(&resp, user, sp, query, id, limit, offset)

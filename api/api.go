@@ -98,7 +98,9 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	var t content.Thumbnailer
 	switch config.Content.Thumbnailer {
 	case "extract":
-		t = thumbnailer.NewExtract(ce, logger)
+		if t, err = thumbnailer.NewExtract(ce, logger); err != nil {
+			return fmt.Errorf("Error initializing Extract thumbnailer: %v\n", err)
+		}
 	case "description":
 		fallthrough
 	default:
