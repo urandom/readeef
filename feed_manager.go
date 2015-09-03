@@ -146,10 +146,6 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 		if f.HasErr() {
 			return f, f.Err()
 		}
-
-		if fm.search != nil {
-			go fm.search.UpdateFeed(f)
-		}
 	}
 
 	fm.logger.Infoln("Adding feed " + f.String() + " to manager")
@@ -379,18 +375,6 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 			fm.logger.Printf("Error updating feed '%s' database record: %v\n", f, f.Err())
 		}
 
-		if len(f.NewArticles()) > 0 {
-			if fm.search != nil {
-				fm.search.UpdateFeed(f)
-			}
-
-			fm.logger.Infoln("New articles notification for " + f.String())
-
-			fm.NotifyReceivers(f)
-		} else {
-			fm.logger.Infoln("No new articles for " + f.String())
-		}
-
 		return
 	}
 }
@@ -600,12 +584,24 @@ func (fm FeedManager) updateFeed(f content.Feed) {
 		var articles []content.Article
 		articles = f.NewArticles()
 
-		if len(articles) > 0 && fm.thumbnailer != nil {
-			go func() {
-				if err := fm.thumbnailer.Process(articles); err != nil {
-					fm.logger.Print("Error generating thumbnails: %v\n", err)
-				}
-			}()
+		if len(articles) > 0 {
+			if fm.search != nil {
+				fm.search.UpdateFeed(f)
+			}
+
+			if fm.thumbnailer != nil {
+				go func() {
+					if err := fm.thumbnailer.Process(articles); err != nil {
+						fm.logger.Print("Error generating thumbnails: %v\n", err)
+					}
+				}()
+			}
+
+			fm.logger.Infoln("New articles notification for " + f.String())
+
+			fm.NotifyReceivers(f)
+		} else {
+			fm.logger.Infoln("No new articles for " + f.String())
 		}
 	}
 }
