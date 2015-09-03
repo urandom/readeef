@@ -32,20 +32,6 @@ self.addEventListener('message', function(event) {
                 a.FeedOrigin = feedMap[a.FeedId].Title;
             }
 
-            a.Description = a.Description.replace(/<!--.*?-->/g, '')
-                .replace(/<script.*?<\/script\s*>/g, '')
-                .replace(/(<a )(.*?<\/a\s*>)/g, '$1 target="feed-article" $2');
-
-            pre = "";
-            while (pre != a.Description) {
-                if (pre) {
-                    a.Description = pre;
-                }
-
-                pre = a.Description.replace(/(<\w[^>]*?["'])javascript:([^>]*>)/g, '$1$2')
-                    .replace(/(<\w[^>]*?)\s+on\w+=(['"]).*?\2([^>]*>)/g, '$1$3');
-            }
-
             a.ShortDescription = a.Description
                 .replace(/<\w[^>]*>/g, '').replace(/<\/[^>]*>/g, '').trim().replace(/\s\s+/g, ' ');
 
