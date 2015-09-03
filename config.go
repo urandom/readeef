@@ -161,6 +161,7 @@ var cfg string = `
 	providers = StumbleUpon
 [feed-parser]
 	processors
+	processors = cleanup
 	# processors = 'relative-url'
 [content]
 	extractor = goose # readability

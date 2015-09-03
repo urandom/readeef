@@ -1,7 +1,6 @@
 package base
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -38,16 +37,4 @@ func (at ArticleThumbnail) Validate() error {
 	}
 
 	return nil
-}
-
-func (at ArticleThumbnail) Base64DataUri() string {
-	if at.HasErr() {
-		return ""
-	}
-
-	if len(at.data.Thumbnail) == 0 {
-		return ""
-	}
-
-	return "data:" + at.data.MimeType + ";base64," + base64.StdEncoding.EncodeToString(at.data.Thumbnail)
 }

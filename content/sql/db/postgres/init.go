@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
 	email TEXT,
 	admin BOOLEAN DEFAULT 'f',
 	active BOOLEAN DEFAULT 't',
-	profile_data BYTEA,
+	profile_data TEXT,
 	hash_type TEXT,
 	salt BYTEA,
 	hash BYTEA,
@@ -97,9 +97,8 @@ CREATE TABLE IF NOT EXISTS articles_scores (
 )`, `
 CREATE TABLE IF NOT EXISTS articles_thumbnails (
 	article_id BIGINT,
-	thumbnail BYTEA,
+	thumbnail TEXT NOT NULL DEFAULT '',
 	link TEXT,
-	mime_type TEXT,
 	processed BOOLEAN DEFAULT 'f',
 
 	PRIMARY KEY(article_id),

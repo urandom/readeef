@@ -51,7 +51,8 @@ ORDER BY LOWER(f.title)
 	getArticleColumns  = `
 SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
-CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite
+CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite,
+COALESCE(at.thumbnail, '') as thumbnail
 `
 
 	getArticleTables = `
@@ -64,6 +65,8 @@ LEFT OUTER JOIN users_articles_read ar
 	ON a.id = ar.article_id AND uf.user_login = ar.user_login
 LEFT OUTER JOIN users_articles_fav af
 	ON a.id = af.article_id AND uf.user_login = af.user_login
+LEFT OUTER JOIN articles_thumbnails at
+    ON a.id = at.article_id
 WHERE uf.user_login = $1
 `
 	getAllUnreadUserArticleIds = `

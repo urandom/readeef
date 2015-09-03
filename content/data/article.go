@@ -32,12 +32,12 @@ type Article struct {
 	Link        string
 	Date        time.Time
 
-	Read     bool
-	Favorite bool
-	Score    int64
-
-	IsNew     bool   `json:"-"`
+	Read      bool
+	Favorite  bool
+	Score     int64
 	Thumbnail string `json:",omitempty"`
+
+	IsNew bool `json:"-"`
 
 	Hit struct {
 		Fragments map[string][]string `json:"fragments,omitempty"`
@@ -56,9 +56,8 @@ type ArticleScores struct {
 
 type ArticleThumbnail struct {
 	ArticleId ArticleId
-	Thumbnail []byte
+	Thumbnail string
 	Link      string
-	MimeType  string `db:"mime_type"`
 	Processed bool
 }
 

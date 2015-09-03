@@ -16,9 +16,9 @@ CREATE TABLE IF NOT EXISTS users (
 	active INTEGER DEFAULT 1,
 	profile_data TEXT,
 	hash_type TEXT,
-	salt TEXT,
-	hash TEXT,
-	md5_api TEXT
+	salt BLOB,
+	hash BLOB,
+	md5_api BLOB
 )`, `
 CREATE TABLE IF NOT EXISTS feeds (
 	id INTEGER PRIMARY KEY,
@@ -99,9 +99,8 @@ CREATE TABLE IF NOT EXISTS articles_scores (
 )`, `
 CREATE TABLE IF NOT EXISTS articles_thumbnails (
 	article_id BIGINT,
-	thumbnail BLOB,
+	thumbnail TEXT NOT NULL DEFAULT '',
 	link TEXT,
-	mime_type TEXT,
 	processed INTEGER DEFAULT 0,
 
 	PRIMARY KEY(article_id),

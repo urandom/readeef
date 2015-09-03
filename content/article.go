@@ -91,7 +91,6 @@ type ArticleThumbnail interface {
 	fmt.Stringer
 
 	Data(data ...data.ArticleThumbnail) data.ArticleThumbnail
-	Base64DataUri() string
 
 	Validate() error
 

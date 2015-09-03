@@ -649,29 +649,10 @@ func getFeedArticles(user content.User, sp content.SearchProvider, id string, li
 		}
 	}
 
-	switch articles := resp.val["Articles"].(type) {
-	case []content.UserArticle:
-		for _, a := range articles {
-			insertThumbnail(a)
-		}
-	case []content.ScoredArticle:
-		for _, a := range articles {
-			insertThumbnail(a)
-		}
-	}
-
 	resp.val["Limit"] = limit
 	resp.val["Offset"] = offset
 
 	return
-}
-
-func insertThumbnail(a content.Article) {
-	d := a.Data()
-	t := a.Thumbnail()
-
-	d.Thumbnail = t.Base64DataUri()
-	a.Data(d)
 }
 
 func performSearch(resp *responseError, user content.User, sp content.SearchProvider, query, feedId string, limit, offset int) {

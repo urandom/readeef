@@ -2,6 +2,7 @@ package thumbnailer
 
 import (
 	"bytes"
+	"encoding/base64"
 	"image"
 	"image/gif"
 	"image/jpeg"
@@ -48,7 +49,7 @@ func generateThumbnail(r io.Reader) (b []byte, mimeType string, err error) {
 	return
 }
 
-func generateThumbnailFromDescription(description io.Reader) (b []byte, mimeType, link string) {
+func generateThumbnailFromDescription(description io.Reader) (t, link string) {
 	if d, err := goquery.NewDocumentFromReader(description); err == nil {
 		d.Find("img").EachWithBreak(func(i int, s *goquery.Selection) bool {
 			if src, ok := s.Attr("src"); ok {
@@ -80,9 +81,10 @@ func generateThumbnailFromDescription(description io.Reader) (b []byte, mimeType
 				if imgCfg.Width*imgCfg.Height > minTopImageArea {
 					r.Seek(0, 0)
 
-					b, mimeType, err = generateThumbnail(r)
+					b, mimeType, err := generateThumbnail(r)
 					if err == nil {
 						link = u.String()
+						t = base64DataUri(b, mimeType)
 					} else {
 						return true
 					}
@@ -99,7 +101,7 @@ func generateThumbnailFromDescription(description io.Reader) (b []byte, mimeType
 	return
 }
 
-func generateThumbnailFromImageLink(link string) (b []byte, mimeType string) {
+func generateThumbnailFromImageLink(link string) (t string) {
 	u, err := url.Parse(link)
 	if err != nil || !u.IsAbs() {
 		return
@@ -118,9 +120,10 @@ func generateThumbnailFromImageLink(link string) (b []byte, mimeType string) {
 		return
 	}
 
-	b, mimeType, err = generateThumbnail(buf)
+	b, mimeType, err := generateThumbnail(buf)
 	if err == nil {
 		link = u.String()
+		t = base64DataUri(b, mimeType)
 	} else {
 		return
 	}
@@ -140,4 +143,8 @@ func generateThumbnailProcessors(articles []content.Article) <-chan content.Arti
 	}()
 
 	return processors
+}
+
+func base64DataUri(b []byte, mimeType string) string {
+	return "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(b)
 }

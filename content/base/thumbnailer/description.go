@@ -70,7 +70,7 @@ func (t Description) processThumbnail(done <-chan struct{}, processors <-chan co
 
 			t.logger.Debugf("Generating thumbnail for article %s\n", a)
 
-			td.Thumbnail, td.MimeType, td.Link =
+			td.Thumbnail, td.Link =
 				generateThumbnailFromDescription(strings.NewReader(ad.Description))
 
 			thumbnail.Data(td)
