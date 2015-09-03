@@ -1,6 +1,8 @@
 package readeef
 
 import (
+	"bytes"
+	"crypto/md5"
 	"errors"
 	"regexp"
 	"strconv"
@@ -30,6 +32,7 @@ type FeedManager struct {
 	client           *http.Client
 	logger           webfw.Logger
 	activeFeeds      map[data.FeedId]bool
+	lastUpdateHash   map[data.FeedId][md5.Size]byte
 	hubbub           *Hubbub
 	search           content.SearchProvider
 	thumbnailer      content.Thumbnailer
@@ -53,9 +56,10 @@ func NewFeedManager(repo content.Repo, c Config, l webfw.Logger, um *UpdateFeedR
 		repo: repo, config: c, logger: l,
 		addFeed: make(chan content.Feed, 2), removeFeed: make(chan content.Feed, 2),
 		scoreArticle: make(chan content.ScoredArticle), done: make(chan bool),
-		activeFeeds: map[data.FeedId]bool{},
-		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite),
-		popularity:  popularity.New(c.Popularity.Providers),
+		activeFeeds:    map[data.FeedId]bool{},
+		lastUpdateHash: map[data.FeedId][md5.Size]byte{},
+		client:         NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite),
+		popularity:     popularity.New(c.Popularity.Providers),
 	}
 }
 
@@ -342,6 +346,13 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 		defer util.BufferPool.Put(buf)
 
 		if _, err := buf.ReadFrom(resp.Body); err == nil {
+			hash := md5.Sum(buf.Bytes())
+			if b, ok := fm.lastUpdateHash[data.Id]; ok && bytes.Equal(b[:], hash[:]) {
+				fm.logger.Infof("Content of feed %s is the same as the previous update\n", f)
+				return
+			}
+			fm.lastUpdateHash[data.Id] = hash
+
 			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
 				f.Refresh(fm.processParserFeed(pf))
 			} else {
