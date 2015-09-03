@@ -59,7 +59,7 @@ func (a *Article) Thumbnail() (at content.ArticleThumbnail) {
 		return
 	}
 
-	a.logger.Infof("Getting article '%d' scores\n", id)
+	a.logger.Infof("Getting article '%d' thumbnail\n", id)
 
 	var i data.ArticleThumbnail
 	if err := a.db.Get(&i, a.db.SQL("get_article_thumbnail"), id); err != nil {
@@ -88,7 +88,7 @@ func (a *Article) Extract() (ae content.ArticleExtract) {
 		return
 	}
 
-	a.logger.Infof("Getting article '%d' scores\n", id)
+	a.logger.Infof("Getting article '%d' extract\n", id)
 
 	var i data.ArticleExtract
 	if err := a.db.Get(&i, a.db.SQL("get_article_extract"), id); err != nil {
