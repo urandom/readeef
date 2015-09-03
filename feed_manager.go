@@ -371,9 +371,6 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 		return
 	default:
 		fm.updateFeed(f)
-		if f.HasErr() {
-			fm.logger.Printf("Error updating feed '%s' database record: %v\n", f, f.Err())
-		}
 
 		return
 	}
@@ -580,7 +577,9 @@ func (fm FeedManager) discoverParserFeeds(link string) ([]content.Feed, error) {
 func (fm FeedManager) updateFeed(f content.Feed) {
 	f.Update()
 
-	if !f.HasErr() {
+	if f.HasErr() {
+		fm.logger.Printf("Error updating feed '%s' database record: %v\n", f, f.Err())
+	} else {
 		var articles []content.Article
 		articles = f.NewArticles()
 
