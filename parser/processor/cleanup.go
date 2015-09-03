@@ -19,13 +19,12 @@ func NewCleanup(l webfw.Logger) Cleanup {
 }
 
 func (p Cleanup) Process(f parser.Feed) parser.Feed {
-	p.logger.Infof("Converting urls of feed '%s' to protocol-relative schemes\n", f.Title)
+	p.logger.Infof("Cleaning up feed '%s'\n", f.Title)
 
 	for i := range f.Articles {
 		f.Articles[i].Description = strings.TrimSpace(f.Articles[i].Description)
 
 		if nodes, err := html.ParseFragment(strings.NewReader(f.Articles[i].Description), nil); err == nil {
-
 			if nodesCleanup(nodes) {
 				if len(nodes) == 0 {
 					break
@@ -34,12 +33,10 @@ func (p Cleanup) Process(f parser.Feed) parser.Feed {
 				buf := util.BufferPool.GetBuffer()
 				defer util.BufferPool.Put(buf)
 
-				if len(nodes) > 0 {
-					for _, n := range nodes {
-						err = html.Render(buf, n)
-						if err != nil {
-							break
-						}
+				for _, n := range nodes {
+					err = html.Render(buf, n)
+					if err != nil {
+						break
 					}
 				}
 
@@ -126,7 +123,9 @@ func nodesCleanup(nodes []*html.Node) bool {
 		}
 
 		if len(children) > 0 {
-			changed = nodesCleanup(children)
+			if nodesCleanup(children) {
+				changed = true
+			}
 		}
 	}
 
