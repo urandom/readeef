@@ -101,19 +101,7 @@ func (b Bleve) IndexAllArticles(repo content.Repo) error {
 func (b Bleve) UpdateFeed(feed content.Feed) {
 	b.logger.Infof("Updating article search index for feed '%s'\n", feed)
 
-	newArticleLinks := map[string]bool{}
-	for _, a := range feed.NewArticles() {
-		newArticleLinks[a.Data().Link] = true
-	}
-
-	var articles []content.Article
-	for _, a := range feed.NewArticles() {
-		if newArticleLinks[a.Data().Link] {
-			articles = append(articles, a)
-		}
-	}
-
-	b.batchIndex(articles)
+	b.batchIndex(feed.NewArticles())
 }
 
 func (b Bleve) DeleteFeed(feed content.Feed) error {

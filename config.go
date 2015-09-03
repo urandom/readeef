@@ -162,7 +162,7 @@ var cfg string = `
 [feed-parser]
 	processors
 	processors = cleanup
-	# processors = 'relative-url'
+	# processors = relative-url
 [content]
 	extractor = goose # readability
 	thumbnailer = description
