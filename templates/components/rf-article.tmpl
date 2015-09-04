@@ -455,7 +455,9 @@
 
             var parts = record.path.split('.'), article;
             if (parts.length == 3 && parts[0] == "articles" && !isNaN(parts[1])) {
-                this._forwardItemPath(parts.slice(1).splice(1, 0, 'article').join('.'), record.value);
+                parts = parts.splice(1);
+                parts.splice(1, 0, 'article')
+                this._forwardItemPath(parts.join('.'), record.value);
             } else if (parts.length == 2 && parts[1] == 'splices') {
                 var index = this.articles.findIndex(this.selectedId);
 
@@ -650,11 +652,11 @@
         },
 
         _forwardItemPath: function(path, value) {
-            var index = this.articles.findIndex(this.selectedId);
-            if (this.articles.length && index != -1) {
+            if (this.articles.length) {
                 var dot = path.indexOf('.'),
                     key = path.substring(0, dot < 0 ? path.length : dot),
-                    inst = this._instances[key - index + 1];
+                    index = this.articles.findIndex(Polymer.Collection.get(this.articles).getItem(key).Id),
+                    inst = this._instances[index + 1];
 
                 if (inst && inst._templateInstance) {
                     if (dot >= 0) {
