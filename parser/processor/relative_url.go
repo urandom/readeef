@@ -55,7 +55,7 @@ func convertArticleLinks(d *goquery.Document) bool {
 		u.Scheme = ""
 		s.SetAttr("src", u.String())
 		if n := s.Get(0); n.Type == html.ElementNode && n.Data == "img" {
-			s.SetAttr("onerror", "this.src = '"+val+"'")
+			s.SetAttr("onerror", "this.onerror = null; this.src = '"+val+"'")
 		}
 
 		changed = true
