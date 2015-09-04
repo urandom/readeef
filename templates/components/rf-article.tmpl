@@ -655,8 +655,17 @@
             if (this.articles.length) {
                 var dot = path.indexOf('.'),
                     key = path.substring(0, dot < 0 ? path.length : dot),
-                    index = this.articles.findIndex(Polymer.Collection.get(this.articles).getItem(key).Id),
-                    inst = this._instances[index + 1];
+                    article = Polymer.Collection.get(this.articles).getItem(key),
+                    index, inst;
+
+                if (!article) {
+                    return;
+                }
+
+                index = this.articles.findIndex(article.Id);
+                inst = this._instances[article.Id == this.selectedId ? 1 :
+                    (this.articles[index - 1] || {}).Id == this.selectedId ? 2 :
+                    (this.articles[index + 1] || {}).Id == this.selectedId ? 0 : -1];
 
                 if (inst && inst._templateInstance) {
                     if (dot >= 0) {
