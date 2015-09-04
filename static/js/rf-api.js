@@ -44,6 +44,13 @@
         return false;
     }
 
+    function clearHeartbeat() {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+        webSocket.close();
+        webSocket = null;
+    }
+
     Polymer({
         is: 'rf-api',
         properties: {
@@ -103,6 +110,14 @@
         },
 
         onRequestResponse: function(event) {
+            if (!event.detail.response) {
+                initializing = false;
+                if (webSocket != null) {
+                    clearHeartbeat();
+                }
+                return;
+            }
+
             if (!this.url) {
                 this.url = this.$.nonce.getAttribute('data-api-pattern') + "v" + this.version + "/";
             }
@@ -148,10 +163,7 @@
                                 throw new Error("WebSocket is closed");
                             }
                         } catch (e) {
-                            clearInterval(heartbeatInterval);
-                            heartbeatInterval = null;
-                            webSocket.close();
-                            webSocket = null;
+                            clearHeartbeat();
                         }
                     }, 5000);
                 }
@@ -204,7 +216,7 @@
             }
 
             if (webSocket != null) {
-                webSocket.close();
+                clearHeartbeat();
             }
 
             initializing = true;
