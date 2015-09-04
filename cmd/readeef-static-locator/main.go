@@ -146,8 +146,8 @@ func parseHTMLFile(path string) (static []string, err error) {
 			}
 		}
 
-		// Template expansion
-		if val[0] == '{' {
+		// Template expansion or other undesirables
+		if val[0] == '{' || val[0] == '[' || val[0] == '#' || strings.Index(val, "://") != -1 {
 			return
 		}
 
@@ -177,9 +177,38 @@ func parseHTMLFile(path string) (static []string, err error) {
 		}
 	})
 
+	d.Find("style").Each(func(i int, s *goquery.Selection) {
+		var st []string
+
+		st, err = parseCSSContent(path, s.Text())
+		if err == nil {
+			static = append(static, st...)
+		}
+	})
+
+	if err != nil {
+		return
+	}
+
+	d.Find("script").Each(func(i int, s *goquery.Selection) {
+		if _, ok := s.Attr("src"); ok {
+			return
+		}
+
+		var st []string
+
+		st, err = parseJSContent(path, s.Text())
+		if err == nil {
+			static = append(static, st...)
+		}
+	})
+
+	if err != nil {
+		return
+	}
+
 	for _, p := range static {
 		var s []string
-		var err error
 
 		if strings.HasSuffix(p, ".html") {
 			s, err = parseHTMLFile(p)
@@ -190,7 +219,8 @@ func parseHTMLFile(path string) (static []string, err error) {
 		}
 
 		if err != nil {
-			return nil, err
+			err = fmt.Errorf("Error while parsing '%s': %v\n", path, err)
+			return
 		}
 
 		static = append(static, s...)
@@ -213,8 +243,27 @@ func parseJSFile(path string) (static []string, err error) {
 		return
 	}
 
-	content := string(b)
+	return parseJSContent(path, string(b))
+}
 
+func parseCSSFile(path string) (static []string, err error) {
+	if parsed[path] {
+		return
+	}
+	parsed[path] = true
+
+	var b []byte
+
+	b, err = ioutil.ReadFile(path)
+	if err != nil {
+		err = errors.New(fmt.Sprintf("Error opening '%s': %v\n", path, err))
+		return
+	}
+
+	return parseCSSContent(path, string(b))
+}
+
+func parseJSContent(path, content string) (static []string, err error) {
 	matches := importScripts.FindAllStringSubmatch(content, -1)
 	matches = append(matches, worker.FindAllStringSubmatch(content, -1)...)
 	for _, match := range matches {
@@ -262,6 +311,7 @@ func parseJSFile(path string) (static []string, err error) {
 		}
 
 		if err != nil {
+			err = fmt.Errorf("Error while parsing '%s': %v\n", path, err)
 			return
 		}
 
@@ -271,22 +321,7 @@ func parseJSFile(path string) (static []string, err error) {
 	return
 }
 
-func parseCSSFile(path string) (static []string, err error) {
-	if parsed[path] {
-		return
-	}
-	parsed[path] = true
-
-	var b []byte
-
-	b, err = ioutil.ReadFile(path)
-	if err != nil {
-		err = errors.New(fmt.Sprintf("Error opening '%s': %v\n", path, err))
-		return
-	}
-
-	content := string(b)
-
+func parseCSSContent(path, content string) (static []string, err error) {
 	matches := cssURL.FindAllStringSubmatch(content, -1)
 	for _, match := range matches {
 		if len(match) > 1 {
@@ -333,6 +368,7 @@ func parseCSSFile(path string) (static []string, err error) {
 		}
 
 		if err != nil {
+			err = fmt.Errorf("Error while parsing '%s': %v\n", path, err)
 			return
 		}
 

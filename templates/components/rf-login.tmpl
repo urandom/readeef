@@ -10,7 +10,36 @@
 <link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
 
 <dom-module id="rf-login">
-    <link rel="import" type="css" href="/css/rf-login.css">
+    <style>
+.overlay {
+    background: #eee;
+    @apply(--layout-fit);
+}
+.main {
+    @apply(--layout-fit);
+    @apply(--layout-vertical);
+    @apply(--layout-center);
+}
+.card-container {
+    height: 100%;
+    background: transparent;
+    @apply(--layout-horizontal);
+    @apply(--layout-center);
+}
+
+.card {
+    @apply(--card-style);
+    padding: 20px 16px;
+    max-width: 512px;
+    max-height: 512px;
+    min-width: 288px;
+}
+
+#submit {
+    background: #259b24;
+}
+    </style>
+
     <template>
         <div class="overlay"></div>
 
