@@ -891,7 +891,8 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
             _searchAvailable: function(tagOrId) {
-                return tagOrId != 'favorite' &&
+                return this.user.capabilities.Search &&
+                    tagOrId != 'favorite' &&
                     tagOrId.indexOf('popular:') != 0 &&
                     tagOrId.indexOf('search:') != 0;
             },

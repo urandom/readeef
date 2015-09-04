@@ -99,6 +99,7 @@
 
                 var user = event.detail.arguments.User;
                 user.authTime = new Date().getTime();
+                user.capabilities = event.detail.arguments.Capabilities;
 
                 this._setUser(user);
                 this._state &= ~state.VALIDATING;

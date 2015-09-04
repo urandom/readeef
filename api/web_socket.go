@@ -16,10 +16,11 @@ import (
 
 type WebSocket struct {
 	webfw.BasePatternController
-	fm         *readeef.FeedManager
-	sp         content.SearchProvider
-	extractor  content.Extractor
-	updateFeed chan content.Feed
+	fm           *readeef.FeedManager
+	sp           content.SearchProvider
+	extractor    content.Extractor
+	capabilities capabilities
+	updateFeed   chan content.Feed
 }
 
 type apiRequest struct {
@@ -60,13 +61,14 @@ var (
 	errResourceNotFound   = errors.New("Resource not found")
 )
 
-func NewWebSocket(fm *readeef.FeedManager, sp content.SearchProvider, extractor content.Extractor) WebSocket {
+func NewWebSocket(fm *readeef.FeedManager, sp content.SearchProvider, extractor content.Extractor, capabilities capabilities) WebSocket {
 	return WebSocket{
 		BasePatternController: webfw.NewBasePatternController("/v:version/", webfw.MethodGet, ""),
-		fm:         fm,
-		sp:         sp,
-		extractor:  extractor,
-		updateFeed: make(chan content.Feed),
+		fm:           fm,
+		sp:           sp,
+		extractor:    extractor,
+		capabilities: capabilities,
+		updateFeed:   make(chan content.Feed),
 	}
 }
 
@@ -123,7 +125,8 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 					var err error
 					var processor Processor
 
-					if processor, err = data.processor(c, user, con.fm, con.sp, con.extractor, []byte(cfg.Auth.Secret)); err == nil {
+					if processor, err = data.processor(c, user, con.fm, con.sp, con.extractor,
+						con.capabilities, []byte(cfg.Auth.Secret)); err == nil {
 						if len(data.Arguments) > 0 {
 							err = json.Unmarshal([]byte(data.Arguments), processor)
 						}
@@ -232,6 +235,7 @@ func (a apiRequest) processor(
 	fm *readeef.FeedManager,
 	sp content.SearchProvider,
 	extractor content.Extractor,
+	capabilities capabilities,
 	secret []byte,
 ) (Processor, error) {
 
@@ -239,7 +243,7 @@ func (a apiRequest) processor(
 	case "heartbeat":
 		return &heartbeatProcessor{}, nil
 	case "get-auth-data":
-		return &getAuthDataProcessor{user: user}, nil
+		return &getAuthDataProcessor{user: user, capabilities: capabilities}, nil
 	case "mark-article-as-read":
 		return &markArticleAsReadProcessor{user: user}, nil
 	case "mark-article-as-favorite":

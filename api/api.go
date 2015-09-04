@@ -58,6 +58,8 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		dispatcher.Handle(readeef.NewHubbubController(hubbub))
 	}
 
+	capabilities := capabilities{}
+
 	var sp content.SearchProvider
 
 	switch config.Content.SearchProvider {
@@ -114,6 +116,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		case "index":
 			if sp != nil {
 				monitors = append(monitors, monitor.NewIndex(sp, logger))
+				capabilities.Search = true
 			}
 		case "thumbnailer":
 			if t != nil {
@@ -143,7 +146,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	var patternController webfw.PatternController
 	var multiPatternController webfw.MultiPatternController
 
-	patternController = NewAuth()
+	patternController = NewAuth(capabilities)
 	dispatcher.Handle(patternController)
 
 	multiPatternController = NewFeed(fm, sp)
@@ -166,7 +169,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		dispatcher.Handle(patternController)
 	}
 
-	webSocket := NewWebSocket(fm, sp, ce)
+	webSocket := NewWebSocket(fm, sp, ce, capabilities)
 	dispatcher.Handle(webSocket)
 	um.AddUpdateReceiver(webSocket)
 
