@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"errors"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -34,10 +35,9 @@ type FeedManager struct {
 	activeFeeds      map[data.FeedId]bool
 	lastUpdateHash   map[data.FeedId][md5.Size]byte
 	hubbub           *Hubbub
-	search           content.SearchProvider
-	thumbnailer      content.Thumbnailer
 	popularity       popularity.Popularity
 	parserProcessors []parser.Processor
+	feedMonitors     []content.FeedMonitor
 }
 
 var (
@@ -63,24 +63,36 @@ func NewFeedManager(repo content.Repo, c Config, l webfw.Logger, um *UpdateFeedR
 	}
 }
 
-func (fm *FeedManager) SetHubbub(hubbub *Hubbub) {
-	fm.hubbub = hubbub
+func (fm *FeedManager) Hubbub(hubbub ...*Hubbub) *Hubbub {
+	if len(hubbub) > 0 {
+		fm.hubbub = hubbub[0]
+	}
+
+	return fm.hubbub
 }
 
-func (fm *FeedManager) SetSearchProvider(sp content.SearchProvider) {
-	fm.search = sp
+func (fm *FeedManager) Client(c ...*http.Client) *http.Client {
+	if len(c) > 0 {
+		fm.client = c[0]
+	}
+
+	return fm.client
 }
 
-func (fm *FeedManager) SetThumbnailer(t content.Thumbnailer) {
-	fm.thumbnailer = t
+func (fm *FeedManager) ParserProcessors(p ...[]parser.Processor) []parser.Processor {
+	if len(p) > 0 {
+		fm.parserProcessors = p[0]
+	}
+
+	return fm.parserProcessors
 }
 
-func (fm *FeedManager) SetClient(c *http.Client) {
-	fm.client = c
-}
+func (fm *FeedManager) FeedMonitors(m ...[]content.FeedMonitor) []content.FeedMonitor {
+	if len(m) > 0 {
+		fm.feedMonitors = m[0]
+	}
 
-func (fm *FeedManager) SetParserProcessors(p []parser.Processor) {
-	fm.parserProcessors = p
+	return fm.feedMonitors
 }
 
 func (fm FeedManager) Start() {
@@ -243,11 +255,11 @@ func (fm *FeedManager) startUpdatingFeed(f content.Feed) {
 	}
 
 	d := 30 * time.Minute
-	if fm.config.Updater.Converted.Interval != 0 {
-		if data.TTL != 0 && data.TTL > fm.config.Updater.Converted.Interval {
+	if fm.config.FeedManager.Converted.UpdateInterval != 0 {
+		if data.TTL != 0 && data.TTL > fm.config.FeedManager.Converted.UpdateInterval {
 			d = data.TTL
 		} else {
-			d = fm.config.Updater.Converted.Interval
+			d = fm.config.FeedManager.Converted.UpdateInterval
 		}
 	}
 
@@ -302,11 +314,11 @@ func (fm *FeedManager) stopUpdatingFeed(f content.Feed) {
 		if len(users) == 0 {
 			fm.logger.Infoln("Removing orphan feed " + f.String() + " from the database")
 
-			if fm.search != nil {
-				if err := fm.search.DeleteFeed(f); err != nil {
+			for _, m := range fm.feedMonitors {
+				if err := m.FeedDeleted(f); err != nil {
 					fm.logger.Printf(
-						"Error deleting articles for feed '%s' from the search index: %v\n",
-						f, err)
+						"Error invoking monitor '%s' on deleted feed '%s': %v\n",
+						reflect.TypeOf(m), f, err)
 				}
 			}
 			f.Delete()
@@ -584,16 +596,11 @@ func (fm FeedManager) updateFeed(f content.Feed) {
 		articles = f.NewArticles()
 
 		if len(articles) > 0 {
-			if fm.search != nil {
-				fm.search.UpdateFeed(f)
-			}
-
-			if fm.thumbnailer != nil {
-				go func() {
-					if err := fm.thumbnailer.Process(articles); err != nil {
-						fm.logger.Print("Error generating thumbnails: %v\n", err)
-					}
-				}()
+			for _, m := range fm.feedMonitors {
+				if err := m.FeedUpdated(f); err != nil {
+					fm.logger.Print("Error invoking monitor '%s' on updated feed '%s': %v\n",
+						reflect.TypeOf(m), f, err)
+				}
 			}
 
 			fm.logger.Infoln("New articles notification for " + f.String())

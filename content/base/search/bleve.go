@@ -83,7 +83,7 @@ func (b Bleve) IsNewIndex() bool {
 	return b.newIndex
 }
 
-func (b Bleve) IndexAllArticles(repo content.Repo) error {
+func (b Bleve) IndexAllFeeds(repo content.Repo) error {
 	b.logger.Infoln("Indexing all articles")
 
 	for _, f := range repo.AllFeeds() {
@@ -92,29 +92,12 @@ func (b Bleve) IndexAllArticles(repo content.Repo) error {
 			return f.Err()
 		}
 
-		b.batchIndex(articles)
+		if err := b.BatchIndex(articles, data.BatchAdd); err != nil {
+			return err
+		}
 	}
 
 	return repo.Err()
-}
-
-func (b Bleve) UpdateFeed(feed content.Feed) {
-	b.logger.Infof("Updating article search index for feed '%s'\n", feed)
-
-	b.batchIndex(feed.NewArticles())
-}
-
-func (b Bleve) DeleteFeed(feed content.Feed) error {
-	articles := feed.AllArticles()
-
-	if !feed.HasErr() {
-		b.logger.Infof("Removing all articles from the search index for feed '%s'\n", feed)
-
-		b.batchDelete(articles)
-	} else {
-		return feed.Err()
-	}
-	return nil
 }
 
 func (b Bleve) Search(term string, u content.User, feedIds []data.FeedId, limit, offset int) (ua []content.UserArticle, err error) {
@@ -188,25 +171,35 @@ func (b Bleve) Search(term string, u content.User, feedIds []data.FeedId, limit,
 	return
 }
 
-func (b Bleve) batchIndex(articles []content.Article) {
+func (b Bleve) BatchIndex(articles []content.Article, op data.IndexOperation) error {
 	if len(articles) == 0 {
-		return
+		return nil
 	}
 
 	batch := b.index.NewBatch()
 	count := int64(0)
 
 	for i := range articles {
-		data := articles[i].Data()
+		d := articles[i].Data()
 
-		b.logger.Debugf("Indexing article '%d' from feed id '%d'\n", data.Id, data.FeedId)
+		switch op {
+		case data.BatchAdd:
+			b.logger.Debugf("Indexing article '%d' of feed id '%d'\n", d.Id, d.FeedId)
 
-		batch.Index(prepareArticle(data))
+			batch.Index(prepareArticle(d))
+		case data.BatchDelete:
+			b.logger.Debugf("Removing article '%d' of feed id '%d' from index\n", d.Id, d.FeedId)
+
+			batch.Delete(strconv.FormatInt(int64(d.Id), 10))
+		default:
+			return fmt.Errorf("Unknown operation type %v", op)
+		}
+
 		count++
 
 		if count >= b.batchSize {
 			if err := b.index.Batch(batch); err != nil {
-				b.logger.Printf("Error indexing article batch: %v\n", err)
+				return fmt.Errorf("Error indexing article batch: %v\n", err)
 			}
 			batch = b.index.NewBatch()
 			count = 0
@@ -215,41 +208,11 @@ func (b Bleve) batchIndex(articles []content.Article) {
 
 	if count > 0 {
 		if err := b.index.Batch(batch); err != nil {
-			b.logger.Printf("Error indexing article batch: %v\n", err)
-		}
-	}
-}
-
-func (b Bleve) batchDelete(articles []content.Article) {
-	if len(articles) == 0 {
-		return
-	}
-
-	batch := b.index.NewBatch()
-	count := int64(0)
-
-	for i := range articles {
-		data := articles[i].Data()
-
-		b.logger.Debugf("Indexing article '%d' from feed id '%d'\n", data.Id, data.FeedId)
-
-		batch.Delete(strconv.FormatInt(int64(data.Id), 10))
-		count++
-
-		if count >= b.batchSize {
-			if err := b.index.Batch(batch); err != nil {
-				b.logger.Printf("Error indexing article batch: %v\n", err)
-			}
-			batch = b.index.NewBatch()
-			count = 0
+			return fmt.Errorf("Error indexing article batch: %v\n", err)
 		}
 	}
 
-	if count > 0 {
-		if err := b.index.Batch(batch); err != nil {
-			b.logger.Printf("Error indexing article batch: %v\n", err)
-		}
-	}
+	return nil
 }
 
 func prepareArticle(data data.Article) (string, indexArticle) {

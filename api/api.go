@@ -7,6 +7,7 @@ import (
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base/extractor"
+	"github.com/urandom/readeef/content/base/monitor"
 	"github.com/urandom/readeef/content/base/search"
 	"github.com/urandom/readeef/content/base/thumbnailer"
 	"github.com/urandom/readeef/content/data"
@@ -53,7 +54,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 			return fmt.Errorf("Error initializing hubbub subscriptions: %v", err)
 		}
 
-		fm.SetHubbub(hubbub)
+		fm.Hubbub(hubbub)
 		dispatcher.Handle(readeef.NewHubbubController(hubbub))
 	}
 
@@ -75,11 +76,9 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	if sp != nil {
 		if sp.IsNewIndex() {
 			go func() {
-				sp.IndexAllArticles(repo)
+				sp.IndexAllFeeds(repo)
 			}()
 		}
-
-		fm.SetSearchProvider(sp)
 	}
 
 	var ce content.Extractor
@@ -109,7 +108,21 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		t = thumbnailer.NewDescription(logger)
 	}
 
-	fm.SetThumbnailer(t)
+	var monitors []content.FeedMonitor
+	for _, m := range config.FeedManager.Monitors {
+		switch m {
+		case "index":
+			if sp != nil {
+				monitors = append(monitors, monitor.NewIndex(sp, logger))
+			}
+		case "thumbnailer":
+			if t != nil {
+				monitors = append(monitors, monitor.NewThumbnailer(t, logger))
+			}
+		}
+	}
+
+	fm.FeedMonitors(monitors)
 
 	var processors []parser.Processor
 	for _, p := range config.FeedParser.Processors {
@@ -121,7 +134,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		}
 	}
 
-	fm.SetParserProcessors(processors)
+	fm.ParserProcessors(processors)
 
 	fm.Start()
 

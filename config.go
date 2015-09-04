@@ -42,13 +42,6 @@ type Config struct {
 		RelativePath string `gcfg:"relative-path"`
 		From         string
 	}
-	Updater struct {
-		Interval string
-
-		Converted struct {
-			Interval time.Duration
-		}
-	}
 
 	Popularity struct {
 		Delay     string
@@ -62,6 +55,16 @@ type Config struct {
 	FeedParser struct {
 		Processors []string
 	} `gcfg:"feed-parser"`
+
+	FeedManager struct {
+		UpdateInterval string `gcfg:"update-interval"`
+
+		Monitors []string
+
+		Converted struct {
+			UpdateInterval time.Duration
+		}
+	} `gcfg:"feed-manager"`
 
 	Content struct {
 		Extractor      string
@@ -107,10 +110,10 @@ func ReadConfig(path ...string) (Config, error) {
 		c.Timeout.Converted.ReadWrite = time.Second
 	}
 
-	if d, err := time.ParseDuration(c.Updater.Interval); err == nil {
-		c.Updater.Converted.Interval = d
+	if d, err := time.ParseDuration(c.FeedManager.UpdateInterval); err == nil {
+		c.FeedManager.Converted.UpdateInterval = d
 	} else {
-		c.Updater.Converted.Interval = 30 * time.Minute
+		c.FeedManager.Converted.UpdateInterval = 30 * time.Minute
 	}
 
 	if d, err := time.ParseDuration(c.Popularity.Delay); err == nil {
@@ -144,6 +147,11 @@ var cfg string = `
 [db]
 	driver = sqlite3
 	connect = file:./readeef.sqlite3?cache=shared&mode=rwc
+[feed-manager]
+	update-interval = 30m
+	monitors
+	monitors = index
+	monitors = thumbnailer
 [timeout]
 	connect = 1s
 	read-write = 2s

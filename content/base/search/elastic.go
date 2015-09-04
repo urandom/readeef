@@ -2,6 +2,7 @@ package search
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strconv"
 
@@ -50,7 +51,7 @@ func (e Elastic) IsNewIndex() bool {
 	return e.newIndex
 }
 
-func (e Elastic) IndexAllArticles(repo content.Repo) error {
+func (e Elastic) IndexAllFeeds(repo content.Repo) error {
 	e.logger.Infoln("Indexing all articles")
 
 	for _, f := range repo.AllFeeds() {
@@ -59,29 +60,12 @@ func (e Elastic) IndexAllArticles(repo content.Repo) error {
 			return f.Err()
 		}
 
-		e.batchIndex(articles)
+		if err := e.BatchIndex(articles, data.BatchAdd); err != nil {
+			return err
+		}
 	}
 
 	return repo.Err()
-}
-
-func (e Elastic) UpdateFeed(feed content.Feed) {
-	e.logger.Infof("Updating article search index for feed '%s'\n", feed)
-
-	e.batchIndex(feed.NewArticles())
-}
-
-func (e Elastic) DeleteFeed(feed content.Feed) error {
-	articles := feed.AllArticles()
-
-	if !feed.HasErr() {
-		e.logger.Infof("Removing all articles from the search index for feed '%s'\n", feed)
-
-		e.batchDelete(articles)
-	} else {
-		return feed.Err()
-	}
-	return nil
 }
 
 func (e Elastic) Search(
@@ -168,27 +152,38 @@ func (e Elastic) Search(
 	return
 }
 
-func (e Elastic) batchIndex(articles []content.Article) {
+func (e Elastic) BatchIndex(articles []content.Article, op data.IndexOperation) error {
 	if len(articles) == 0 {
-		return
+		return nil
 	}
 
 	bulk := e.client.Bulk()
 	count := int64(0)
 
 	for i := range articles {
-		data := articles[i].Data()
+		d := articles[i].Data()
 
-		e.logger.Debugf("Indexing article '%d' from feed id '%d'\n", data.Id, data.FeedId)
+		var req elastic.BulkableRequest
+		switch op {
+		case data.BatchAdd:
+			e.logger.Debugf("Indexing article '%d' of feed id '%d'\n", d.Id, d.FeedId)
 
-		id, doc := prepareArticle(data)
-		req := elastic.NewBulkIndexRequest().Index(elasticIndexName).Type(elasticArticleType).Id(id).Doc(doc)
+			id, doc := prepareArticle(d)
+			req = elastic.NewBulkIndexRequest().Index(elasticIndexName).Type(elasticArticleType).Id(id).Doc(doc)
+		case data.BatchDelete:
+			e.logger.Debugf("Removing article '%d' of feed id '%d' from the index\n", d.Id, d.FeedId)
+
+			req = elastic.NewBulkDeleteRequest().Index(elasticIndexName).Type(elasticArticleType).Id(strconv.FormatInt(int64(d.Id), 10))
+		default:
+			return fmt.Errorf("Unknown operation type %v", op)
+		}
+
 		bulk.Add(req)
 		count++
 
 		if count >= e.batchSize {
 			if _, err := bulk.Do(); err != nil {
-				e.logger.Printf("Error indexing article batch: %v\n", err)
+				return fmt.Errorf("Error indexing article batch: %v\n", err)
 			}
 			bulk = e.client.Bulk()
 			count = 0
@@ -197,40 +192,9 @@ func (e Elastic) batchIndex(articles []content.Article) {
 
 	if count > 0 {
 		if _, err := bulk.Do(); err != nil {
-			e.logger.Printf("Error indexing article batch: %v\n", err)
-		}
-	}
-}
-
-func (e Elastic) batchDelete(articles []content.Article) {
-	if len(articles) == 0 {
-		return
-	}
-
-	bulk := e.client.Bulk()
-	count := int64(0)
-
-	for i := range articles {
-		data := articles[i].Data()
-
-		e.logger.Debugf("Indexing article '%d' from feed id '%d'\n", data.Id, data.FeedId)
-
-		req := elastic.NewBulkDeleteRequest().Index(elasticIndexName).Type(elasticArticleType).Id(strconv.FormatInt(int64(data.Id), 10))
-		bulk.Add(req)
-		count++
-
-		if count >= e.batchSize {
-			if _, err := bulk.Do(); err != nil {
-				e.logger.Printf("Error indexing article batch: %v\n", err)
-			}
-			bulk = e.client.Bulk()
-			count = 0
+			return fmt.Errorf("Error indexing article batch: %v\n", err)
 		}
 	}
 
-	if count > 0 {
-		if _, err := bulk.Do(); err != nil {
-			e.logger.Printf("Error indexing article batch: %v\n", err)
-		}
-	}
+	return nil
 }
