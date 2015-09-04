@@ -459,10 +459,30 @@
                 parts.splice(1, 0, 'article')
                 this._forwardItemPath(parts.join('.'), record.value);
             } else if (parts.length == 2 && parts[1] == 'splices') {
-                var index = this.articles.findIndex(this.selectedId);
+                var index = this.articles.findIndex(this.selectedId),
+                    needsUpdate = false;
+
+                for (var i = 0, s; s = record.value.indexSplices[i]; ++i) {
+                    if (s.index <= index + 1) {
+                        needsUpdate = true;
+                        break;
+                    }
+                }
+
+                if (!needsUpdate) {
+                    return;
+                }
 
                 [-1, 0, 1].forEach(function(i) {
                     var localIndex = index + i;
+                    if (localIndex == -1) {
+                        return;
+                    }
+
+                    if (!this._instances[i + 1]) {
+                        return this._renderInstance(index, i);
+                    }
+
                     this._forwardItemPath(localIndex + '.index', localIndex);
                     this._forwardItemPath(localIndex + '.ordinalPosition', ordinal(localIndex + 1));
                 }.bind(this));
@@ -475,6 +495,7 @@
                 next = Polymer.dom(this.root).querySelector('.next-article'),
                 index = this.articles.findIndex(this.selectedId);
 
+            // Shift the instances when the selection moves to the left or right
             if (direction === 1) {
                 active.classList.remove('active-article');
                 active.classList.add('previous-article');
@@ -504,38 +525,15 @@
             }
 
             if (direction !== 1) {
-                if (index > 0) {
-                    var el = Polymer.dom(this.root).querySelector('.previous-article');
-                    el.innerHTML = '';
-
-                    var inst = this._generateArticle(index-1, -1);
-                    this._instances[0] = inst.root.querySelector('*');
-                    Polymer.dom(el).appendChild(inst.root);
-                } else {
-                    this._instances[0] = null;
-                }
+                this._renderInstance(index, -1);
             }
 
             if (direction !== -1) {
-                if (index < this.articles.length - 1) {
-                    var el = Polymer.dom(this.root).querySelector('.next-article');
-                    el.innerHTML = '';
-
-                    var inst = this._generateArticle(index+1, 1);
-                    this._instances[2] = inst.root.querySelector('*');
-                    Polymer.dom(el).appendChild(inst.root);
-                } else {
-                    this._instances[2] = null;
-                }
+                this._renderInstance(index, 1);
             }
 
             if (direction !== 1 && direction !== -1) {
-                var el = Polymer.dom(this.root).querySelector('.active-article');
-                el.innerHTML = '';
-
-                var inst = this._generateArticle(index, 0);
-                this._instances[1] = inst.root.querySelector('*');
-                Polymer.dom(el).appendChild(inst.root);
+                this._renderInstance(index, 0);
             }
 
             var oldHeight = window.getComputedStyle(this.$['article-container']).getPropertyValue('height');
@@ -561,6 +559,36 @@
             }
 
             Polymer.dom.flush();
+        },
+
+        _renderInstance: function(index, offset) {
+            var condition, selector;
+
+            switch (offset) {
+                case -1:
+                    condition = index > 0;
+                    selector = '.previous-article';
+                    break;
+                case 1:
+                    condition = index < this.articles.length - 1;
+                    selector = '.next-article';
+                    break;
+                case 0:
+                    condition = true;
+                    selector = '.active-article';
+                    break;
+            }
+
+            if (condition) {
+                var el = Polymer.dom(this.root).querySelector(selector);
+                el.innerHTML = '';
+
+                var inst = this._generateArticle(index + offset, offset);
+                this._instances[offset + 1] = inst.root.querySelector('*');
+                Polymer.dom(el).appendChild(inst.root);
+            } else {
+                this._instances[offset + 1] = null;
+            }
         },
 
         _generateArticle: function(index, direction) {
@@ -655,11 +683,19 @@
             if (this.articles.length) {
                 var dot = path.indexOf('.'),
                     key = path.substring(0, dot < 0 ? path.length : dot),
-                    article = Polymer.Collection.get(this.articles).getItem(key),
+                    article = this.articles[key],
                     index, inst;
 
                 if (!article) {
                     return;
+                }
+
+                // https://github.com/Polymer/polymer/issues/2411
+                if (article.Id != this.selectedId) {
+                    article = Polymer.Collection.get(this.articles).getItem(key);
+                    if (!article || article.Id != this.selectedId) {
+                        return;
+                    }
                 }
 
                 index = this.articles.findIndex(article.Id);
