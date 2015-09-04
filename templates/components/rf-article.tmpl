@@ -215,10 +215,10 @@
                 type: Boolean,
                 reflectToAttribute: true,
             },
-            index: {
+            selectedId: {
                 type: Number,
-                observer: '_indexChanged',
-                value: -1,
+                observer: '_selectedIdChanged',
+                value: 0,
             },
             articles: Array,
         },
@@ -294,7 +294,8 @@
                         console.log('switching dir', this._trackState.direction);
                     }
 
-                    if (((this.index < this.articles.length - 1 && dx < 0) || (this.index > 0 && dx > 0)) && absDx < this._trackState.containerWidth) {
+                    var index = this.articles.findIndex(this.selectedId);
+                    if (((index < this.articles.length - 1 && dx < 0) || (index > 0 && dx > 0)) && absDx < this._trackState.containerWidth) {
                         var tD = now - this._trackState.dragStartTime,
                             d = now - this._trackState.previousTick;
 
@@ -360,16 +361,16 @@
                                 if (direction > 0) {
                                     this.translate3d(0, 0, 0, this._trackState.previous);
 
-                                    this._trackState.selectedIndex = this.index - 1;
+                                    this._trackState.selectedId = this.articles[index - 1].Id;
                                 } else {
                                     this.translate3d(0, 0, 0, this._trackState.next);
 
-                                    this._trackState.selectedIndex = this.index + 1;
+                                    this._trackState.selectedId = this.articles[index + 1].Id;
                                 }
 
                                 MoreRouting.navigateTo('article', {
                                     tagOrId: MoreRouting.getRoute('article').params.tagOrId,
-                                    articleId: this.articles[this._trackState.selectedIndex].Id,
+                                    articleId: this._trackState.selectedId,
                                 });
                             });
                         }.bind(this);
@@ -402,27 +403,25 @@
             }
         },
 
-        _indexChanged: function(index, oldValue) {
-            if (index == -1) {
-                return;
-            }
-
-            if (this._instances[1] && this._instances[1]._templateInstance && this._instances[1]._templateInstance.item.article.Id == this.articles[this.index].Id) {
-                this._debounceTemplate(this._render);
+        _selectedIdChanged: function(id, oldValue) {
+            if (!id) {
                 return;
             }
 
             if (stopRunningAnimations(function() {
-                this._indexChanged.call(this, index, oldValue);
+                this._selectedIdChanged.call(this, id, oldValue);
             }.bind(this))) {
                 return;
             }
 
-            var direction = 0;
-            if (oldValue != -1) {
-                if (oldValue == index - 1) {
+            var index = this.articles.findIndex(id),
+                oldIndex = this.articles.findIndex(oldValue),
+                direction = 0;
+
+            if (oldIndex != -1) {
+                if (oldIndex == index - 1) {
                     direction = 1;
-                } else if (oldValue == index + 1) {
+                } else if (oldIndex == index + 1) {
                     direction = -1;
                 }
             }
@@ -433,7 +432,7 @@
                     slideFromTop(Polymer.dom(this.root).querySelector('.active-article'));
                 }.bind(this));
             } else {
-                if (this._trackState && index == this._trackState.selectedIndex) {
+                if (this._trackState && id == this._trackState.selectedId) {
                     this._debounceTemplate(function() {
                         this._render(direction);
                     });
@@ -450,30 +449,30 @@
         },
 
         _articlesChanged: function(record) {
-            if (this.index == -1) {
+            if (!this.selectedId) {
                 return;
             }
 
             var parts = record.path.split('.'), article;
             if (parts.length == 3 && parts[0] == "articles" && !isNaN(parts[1])) {
-                this._forwardItemPath(parts.slice(1).join('.'), record.value);
+                this._forwardItemPath(parts.slice(1).splice(1, 0, 'article').join('.'), record.value);
             } else if (parts.length == 2 && parts[1] == 'splices') {
-                var newIndex = this.index;
+                var index = this.articles.findIndex(this.selectedId);
 
-                for (var i = 0, s; s = record.value.indexSplices[i]; ++i) {
-                    if (s.index <= this.index) {
-                        newIndex = newIndex + s.addedCount - s.removed.length;
-                    }
-                }
-
-                this.index = newIndex;
+                [-1, 0, 1].forEach(function(i) {
+                    var localIndex = index + i;
+                    this._forwardItemPath(localIndex + '.index', localIndex);
+                    this._forwardItemPath(localIndex + '.ordinalPosition', ordinal(localIndex + 1));
+                }.bind(this));
             }
         },
 
         _render: function(direction) {
             var active = Polymer.dom(this.root).querySelector('.active-article'),
                 previous = Polymer.dom(this.root).querySelector('.previous-article'),
-                next = Polymer.dom(this.root).querySelector('.next-article');
+                next = Polymer.dom(this.root).querySelector('.next-article'),
+                index = this.articles.findIndex(this.selectedId);
+
             if (direction === 1) {
                 active.classList.remove('active-article');
                 active.classList.add('previous-article');
@@ -503,11 +502,11 @@
             }
 
             if (direction !== 1) {
-                if (this.index > 0) {
+                if (index > 0) {
                     var el = Polymer.dom(this.root).querySelector('.previous-article');
                     el.innerHTML = '';
 
-                    var inst = this._generateArticle(this.articles[this.index-1], -1);
+                    var inst = this._generateArticle(index-1, -1);
                     this._instances[0] = inst.root.querySelector('*');
                     Polymer.dom(el).appendChild(inst.root);
                 } else {
@@ -516,11 +515,11 @@
             }
 
             if (direction !== -1) {
-                if (this.index < this.articles.length - 1) {
+                if (index < this.articles.length - 1) {
                     var el = Polymer.dom(this.root).querySelector('.next-article');
                     el.innerHTML = '';
 
-                    var inst = this._generateArticle(this.articles[this.index+1], 1);
+                    var inst = this._generateArticle(index+1, 1);
                     this._instances[2] = inst.root.querySelector('*');
                     Polymer.dom(el).appendChild(inst.root);
                 } else {
@@ -532,7 +531,7 @@
                 var el = Polymer.dom(this.root).querySelector('.active-article');
                 el.innerHTML = '';
 
-                var inst = this._generateArticle(this.articles[this.index], 0);
+                var inst = this._generateArticle(index, 0);
                 this._instances[1] = inst.root.querySelector('*');
                 Polymer.dom(el).appendChild(inst.root);
             }
@@ -562,13 +561,10 @@
             Polymer.dom.flush();
         },
 
-        _generateArticle: function(article, direction) {
-            var index = this.index + direction;
+        _generateArticle: function(index, direction) {
+            var article = this.articles[index];
             var model = {
                 article: article,
-                summarized: false,
-                topImage: null,
-                keyPoints: [],
                 index: index,
                 ordinalPosition: ordinal(index + 1),
             }
@@ -654,21 +650,22 @@
         },
 
         _forwardItemPath: function(path, value) {
-            if (this.articles.length) {
-                var dot = path.indexOf('.');
-                var key = path.substring(0, dot < 0 ? path.length : dot);
-                var idx = key - this.index + 1;
-                var inst = this._instances[idx];
+            var index = this.articles.findIndex(this.selectedId);
+            if (this.articles.length && index != -1) {
+                var dot = path.indexOf('.'),
+                    key = path.substring(0, dot < 0 ? path.length : dot),
+                    inst = this._instances[key - index + 1];
+
                 if (inst && inst._templateInstance) {
                     if (dot >= 0) {
                         var propName = path.substring(dot+1),
                             article = inst._templateInstance.item.article;
 
-                        if (propName == 'formattedDescription' && article.formatted ||
-                                propName == 'formatted' && article.formattedDescription) {
+                        if (propName == 'article.formattedDescription' && article.formatted ||
+                                propName == 'article.formatted' && article.formattedDescription) {
                             this._stylizeArticleDescription(inst, article);
                         } else {
-                            path = 'item.article.' + propName;
+                            path = 'item.' + propName;
                             inst._templateInstance.notifyPath(path, value, true);
                         }
                     } else {

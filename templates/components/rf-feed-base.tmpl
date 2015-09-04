@@ -238,7 +238,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
         <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage" user="{{ user }}"></rf-api>
         <rf-api id="user-settings" method="set-user-attribute" tag="feed-base" user="[[ user ]]"></rf-api>
-        <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" user="[[ user ]]"></rf-api>
+        <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" on-rf-api-error="onFeedArticlesError" user="[[ user ]]"></rf-api>
         <rf-api id="get-article" method="get-article" on-rf-api-message="onGetArticleMessage" user="[[ user ]]"></rf-api>
         <rf-api id="feed-read-all" method="mark-feed-as-read" on-rf-api-message="onFeedReadAllMessage" user="[[ user ]]"></rf-api>
         <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="onFeedUpdateNotify" user="[[ user ]]" receiver="true"></rf-api>
@@ -489,6 +489,10 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     }
                 }
                 this._lastUpdateTime = new Date().getTime();
+            },
+
+            onFeedArticlesError: function(event, detail) {
+                this.loading = false;
             },
 
             onGetArticleMessage: function(event, data) {

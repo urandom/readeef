@@ -320,7 +320,7 @@ rf-article /deep/ .article-summary {
                     }
 
                     if (id === null || index === -1) {
-                        this.$.article.index = -1;
+                        this.$.article.selectedId = 0;
                         this.$.list.scrollToIndex(this._firstVisibleIndex);
                         if (id !== null) {
                             this.async(function() {
@@ -328,7 +328,7 @@ rf-article /deep/ .article-summary {
                             });
                         }
                     } else {
-                        this.$.article.index = index;
+                        this.$.article.selectedId = id - 0;
                         this._scroller.scrollTop = 0;
                         this._firstVisibleIndex = this.$.list.firstVisibleIndex;
 
@@ -489,7 +489,7 @@ rf-article /deep/ .article-summary {
 
             _articlesChanged: function(record) {
                 if (!record.base.length) {
-                    this.$.article.index = -1;
+                    this.$.article.selectedId = 0;
                 } else if (record.path == 'articles.splices') {
                     var articleActive = MoreRouting.isCurrentUrl('article'),
                         newIndex = articleActive ? this._firstVisibleIndex : this.$.list.firstVisibleIndex,

@@ -115,6 +115,7 @@
                 if (webSocket != null) {
                     clearHeartbeat();
                 }
+                this.fire('rf-api-error', 'closed');
                 return;
             }
 
