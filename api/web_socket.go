@@ -72,8 +72,13 @@ func NewWebSocket(fm *readeef.FeedManager, sp content.SearchProvider, extractor 
 	}
 }
 
-func (con WebSocket) UpdateFeedChannel() chan<- content.Feed {
-	return con.updateFeed
+func (con WebSocket) FeedUpdated(f content.Feed) error {
+	con.updateFeed <- f
+	return nil
+}
+
+func (con WebSocket) FeedDeleted(f content.Feed) error {
+	return nil
 }
 
 func (con WebSocket) Handler(c context.Context) http.Handler {
@@ -86,6 +91,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 		for {
 			select {
 			case feed := <-con.updateFeed:
+				logger.Infoln("New articles notification for " + feed.String())
 				mutex.RLock()
 
 				for receiver, _ := range receivers {

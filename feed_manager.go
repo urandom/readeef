@@ -23,7 +23,6 @@ import (
 )
 
 type FeedManager struct {
-	*UpdateFeedReceiverManager
 	config           Config
 	repo             content.Repo
 	addFeed          chan content.Feed
@@ -50,9 +49,8 @@ var (
 	httpStatusPrefix = "HTTP Status: "
 )
 
-func NewFeedManager(repo content.Repo, c Config, l webfw.Logger, um *UpdateFeedReceiverManager) *FeedManager {
+func NewFeedManager(repo content.Repo, c Config, l webfw.Logger) *FeedManager {
 	return &FeedManager{
-		UpdateFeedReceiverManager: um,
 		repo: repo, config: c, logger: l,
 		addFeed: make(chan content.Feed, 2), removeFeed: make(chan content.Feed, 2),
 		scoreArticle: make(chan content.ScoredArticle), done: make(chan bool),
@@ -383,8 +381,6 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 		return
 	default:
 		fm.updateFeed(f)
-
-		return
 	}
 }
 
@@ -602,10 +598,6 @@ func (fm FeedManager) updateFeed(f content.Feed) {
 						reflect.TypeOf(m), f, err)
 				}
 			}
-
-			fm.logger.Infoln("New articles notification for " + f.String())
-
-			fm.NotifyReceivers(f)
 		} else {
 			fm.logger.Infoln("No new articles for " + f.String())
 		}

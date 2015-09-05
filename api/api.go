@@ -44,19 +44,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	dispatcher.Context.SetGlobal(context.BaseCtxKey("readeefConfig"), config)
 	dispatcher.Context.SetGlobal(readeef.CtxKey("repo"), repo)
 
-	um := &readeef.UpdateFeedReceiverManager{}
-
-	fm := readeef.NewFeedManager(repo, config, logger, um)
-
-	if config.Hubbub.CallbackURL != "" {
-		hubbub := readeef.NewHubbub(repo, config, logger, dispatcher.Pattern, fm.RemoveFeedChannel(), fm.AddFeedChannel(), um)
-		if err := hubbub.InitSubscriptions(); err != nil {
-			return fmt.Errorf("Error initializing hubbub subscriptions: %v", err)
-		}
-
-		fm.Hubbub(hubbub)
-		dispatcher.Handle(readeef.NewHubbubController(hubbub))
-	}
+	fm := readeef.NewFeedManager(repo, config, logger)
 
 	capabilities := capabilities{}
 
@@ -125,6 +113,22 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		}
 	}
 
+	webSocket := NewWebSocket(fm, sp, ce, capabilities)
+	dispatcher.Handle(webSocket)
+
+	monitors = append(monitors, webSocket)
+
+	if config.Hubbub.CallbackURL != "" {
+		hubbub := readeef.NewHubbub(repo, config, logger, dispatcher.Pattern, fm.RemoveFeedChannel(), fm.AddFeedChannel())
+		if err := hubbub.InitSubscriptions(); err != nil {
+			return fmt.Errorf("Error initializing hubbub subscriptions: %v", err)
+		}
+
+		hubbub.FeedMonitors(monitors)
+		fm.Hubbub(hubbub)
+		dispatcher.Handle(readeef.NewHubbubController(hubbub))
+	}
+
 	fm.FeedMonitors(monitors)
 
 	var processors []parser.Processor
@@ -168,10 +172,6 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		patternController = NewFever(fm)
 		dispatcher.Handle(patternController)
 	}
-
-	webSocket := NewWebSocket(fm, sp, ce, capabilities)
-	dispatcher.Handle(webSocket)
-	um.AddUpdateReceiver(webSocket)
 
 	middleware.InitializeDefault(dispatcher)
 	dispatcher.RegisterMiddleware(readeef.Auth{Pattern: dispatcher.Pattern, Nonce: nonce, IgnoreURLPrefix: config.Auth.IgnoreURLPrefix})

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -17,14 +18,14 @@ import (
 )
 
 type Hubbub struct {
-	*UpdateFeedReceiverManager
-	config     Config
-	repo       content.Repo
-	pattern    string
-	addFeed    chan<- content.Feed
-	removeFeed chan<- content.Feed
-	client     *http.Client
-	logger     webfw.Logger
+	config       Config
+	repo         content.Repo
+	pattern      string
+	addFeed      chan<- content.Feed
+	removeFeed   chan<- content.Feed
+	client       *http.Client
+	logger       webfw.Logger
+	feedMonitors []content.FeedMonitor
 }
 
 type SubscriptionError struct {
@@ -43,16 +44,27 @@ var (
 	ErrSubscribed    = errors.New("Feed already subscribed")
 )
 
-func NewHubbub(repo content.Repo, c Config, l webfw.Logger, pattern string, addFeed chan<- content.Feed, removeFeed chan<- content.Feed, um *UpdateFeedReceiverManager) *Hubbub {
+func NewHubbub(repo content.Repo, c Config, l webfw.Logger, pattern string, addFeed chan<- content.Feed, removeFeed chan<- content.Feed) *Hubbub {
 	return &Hubbub{
-		UpdateFeedReceiverManager: um,
 		repo: repo, config: c, logger: l, pattern: pattern,
 		addFeed: addFeed, removeFeed: removeFeed,
 		client: NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 
-func (h *Hubbub) SetClient(c *http.Client) {
-	h.client = c
+func (h *Hubbub) Client(c ...*http.Client) *http.Client {
+	if len(c) > 0 {
+		h.client = c[0]
+	}
+
+	return h.client
+}
+
+func (h *Hubbub) FeedMonitors(m ...[]content.FeedMonitor) []content.FeedMonitor {
+	if len(m) > 0 {
+		h.feedMonitors = m[0]
+	}
+
+	return h.feedMonitors
 }
 
 func (h *Hubbub) Subscribe(f content.Feed) error {
@@ -243,7 +255,12 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 			}
 
 			if newArticles {
-				con.hubbub.NotifyReceivers(f)
+				for _, m := range con.hubbub.feedMonitors {
+					if err := m.FeedUpdated(f); err != nil {
+						logger.Print("Error invoking monitor '%s' on updated feed '%s': %v\n",
+							reflect.TypeOf(m), f, err)
+					}
+				}
 			}
 
 			return
