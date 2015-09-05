@@ -474,7 +474,9 @@
                 }
 
                 [-1, 0, 1].forEach(function(i) {
-                    var localIndex = index + i;
+                    var localIndex = index + i,
+                        key = Polymer.Collection.get(this.articles).getKey(this.articles[localIndex]);
+
                     if (localIndex == -1) {
                         return;
                     }
@@ -483,8 +485,8 @@
                         return this._renderInstance(index, i);
                     }
 
-                    this._forwardItemPath(localIndex + '.index', localIndex);
-                    this._forwardItemPath(localIndex + '.ordinalPosition', ordinal(localIndex + 1));
+                    this._forwardItemPath(key + '.index', localIndex);
+                    this._forwardItemPath(key + '.ordinalPosition', ordinal(localIndex + 1));
                 }.bind(this));
             }
         },
@@ -683,19 +685,11 @@
             if (this.articles.length) {
                 var dot = path.indexOf('.'),
                     key = path.substring(0, dot < 0 ? path.length : dot),
-                    article = this.articles[key],
+                    article = Polymer.Collection.get(this.articles).getItem(key),
                     index, inst;
 
                 if (!article) {
                     return;
-                }
-
-                // https://github.com/Polymer/polymer/issues/2411
-                if (article.Id != this.selectedId) {
-                    article = Polymer.Collection.get(this.articles).getItem(key);
-                    if (!article || article.Id != this.selectedId) {
-                        return;
-                    }
                 }
 
                 index = this.articles.findIndex(article.Id);
