@@ -16,7 +16,7 @@ self.addEventListener('message', function(event) {
     }
 
     for (var i = 0, a, pre; a = newArticles[i]; ++i) {
-        if (!articleMap[a.Id]) {
+        if (!articleMap[a.Id] && !(unreadOnly && a.Read)) {
             if (feeds && feeds.length) {
                 if (!feedMap) {
                     feedMap = {};
