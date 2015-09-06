@@ -122,6 +122,9 @@ func (fm *FeedManager) AddFeed(f content.Feed) {
 }
 
 func (fm *FeedManager) RemoveFeed(f content.Feed) {
+	if f.Data().HubLink != "" && fm.hubbub != nil {
+		fm.hubbub.Unsubscribe(f)
+	}
 	fm.removeFeed <- f
 }
 

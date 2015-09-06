@@ -119,14 +119,14 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	monitors = append(monitors, webSocket)
 
 	if config.Hubbub.CallbackURL != "" {
-		hubbub := readeef.NewHubbub(repo, config, logger, dispatcher.Pattern, fm.RemoveFeedChannel(), fm.AddFeedChannel())
+		hubbub := readeef.NewHubbub(repo, config, logger, dispatcher.Pattern,
+			fm.RemoveFeedChannel())
 		if err := hubbub.InitSubscriptions(); err != nil {
 			return fmt.Errorf("Error initializing hubbub subscriptions: %v", err)
 		}
 
 		hubbub.FeedMonitors(monitors)
 		fm.Hubbub(hubbub)
-		dispatcher.Handle(readeef.NewHubbubController(hubbub))
 	}
 
 	fm.FeedMonitors(monitors)
@@ -167,6 +167,12 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	patternController = NewNonce(nonce)
 	dispatcher.Handle(patternController)
+
+	if fm.Hubbub() != nil {
+		patternController = NewHubbubController(fm.Hubbub(), config.Hubbub.RelativePath,
+			fm.AddFeedChannel(), fm.RemoveFeedChannel())
+		dispatcher.Handle(patternController)
+	}
 
 	if config.API.Fever {
 		patternController = NewFever(fm)

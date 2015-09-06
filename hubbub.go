@@ -5,27 +5,25 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"reflect"
-	"strconv"
 	"time"
 
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
-	"github.com/urandom/readeef/parser"
 	"github.com/urandom/webfw"
-	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/util"
 )
 
 type Hubbub struct {
-	config       Config
-	repo         content.Repo
-	pattern      string
-	addFeed      chan<- content.Feed
-	removeFeed   chan<- content.Feed
-	client       *http.Client
-	logger       webfw.Logger
-	feedMonitors []content.FeedMonitor
+	config        Config
+	repo          content.Repo
+	pattern       string
+	removeFeed    chan<- content.Feed
+	subscribe     chan content.Subscription
+	unsubscribe   chan content.Subscription
+	client        *http.Client
+	logger        webfw.Logger
+	subscriptions []content.Subscription
+	feedMonitors  []content.FeedMonitor
 }
 
 type SubscriptionError struct {
@@ -33,21 +31,20 @@ type SubscriptionError struct {
 	Subscription content.Subscription
 }
 
-type HubbubController struct {
-	webfw.BasePatternController
-	hubbub *Hubbub
-}
-
 var (
 	ErrNotConfigured = errors.New("Hubbub callback URL is not set")
 	ErrNoFeedHubLink = errors.New("Feed does not contain a hub link")
 	ErrSubscribed    = errors.New("Feed already subscribed")
+	ErrNotSubscribed = errors.New("Feed is not subscribed")
 )
 
-func NewHubbub(repo content.Repo, c Config, l webfw.Logger, pattern string, addFeed chan<- content.Feed, removeFeed chan<- content.Feed) *Hubbub {
+func NewHubbub(repo content.Repo, c Config, l webfw.Logger, pattern string,
+	removeFeed chan<- content.Feed) *Hubbub {
+
 	return &Hubbub{
 		repo: repo, config: c, logger: l, pattern: pattern,
-		addFeed: addFeed, removeFeed: removeFeed,
+		removeFeed: removeFeed,
+		subscribe:  make(chan content.Subscription), unsubscribe: make(chan content.Subscription),
 		client: NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
 }
 
@@ -67,7 +64,7 @@ func (h *Hubbub) FeedMonitors(m ...[]content.FeedMonitor) []content.FeedMonitor 
 	return h.feedMonitors
 }
 
-func (h *Hubbub) Subscribe(f content.Feed) error {
+func (h Hubbub) Subscribe(f content.Feed) error {
 	if u, err := url.Parse(h.config.Hubbub.CallbackURL); err != nil {
 		return ErrNotConfigured
 	} else {
@@ -108,13 +105,47 @@ func (h *Hubbub) Subscribe(f content.Feed) error {
 	}
 
 	go func() {
-		h.subscribe(s, f, true)
+		h.subscription(s, f, true)
 	}()
 
 	return nil
 }
 
-func (h *Hubbub) InitSubscriptions() error {
+func (h Hubbub) Unsubscribe(f content.Feed) error {
+	if u, err := url.Parse(h.config.Hubbub.CallbackURL); err != nil {
+		return ErrNotConfigured
+	} else {
+		if !u.IsAbs() {
+			return ErrNotConfigured
+		}
+	}
+
+	fdata := f.Data()
+	if u, err := url.Parse(fdata.HubLink); err != nil {
+		return ErrNoFeedHubLink
+	} else {
+		if !u.IsAbs() {
+			return ErrNoFeedHubLink
+		}
+	}
+
+	s := f.Subscription()
+	if s.HasErr() {
+		return s.Err()
+	}
+
+	if s.Data().FeedId != fdata.Id {
+		h.logger.Infoln("Not subscribed to " + fdata.HubLink)
+		return ErrNotSubscribed
+	}
+
+	go func() {
+		h.subscription(s, f, false)
+	}()
+	return nil
+}
+
+func (h Hubbub) InitSubscriptions() error {
 	h.repo.FailSubscriptions()
 	subscriptions := h.repo.AllSubscriptions()
 
@@ -127,14 +158,46 @@ func (h *Hubbub) InitSubscriptions() error {
 				continue
 			}
 
-			h.subscribe(s, f, true)
+			h.subscription(s, f, true)
+		}
+	}()
+
+	go func() {
+		after := time.After(h.config.FeedManager.Converted.UpdateInterval)
+		subscriptions := []content.Subscription{}
+
+		for {
+			select {
+			case s := <-h.subscribe:
+				subscriptions = append(subscriptions, s)
+			case s := <-h.unsubscribe:
+				filtered := []content.Subscription{}
+				for i := range subscriptions {
+					if subscriptions[i] != s {
+						filtered = append(filtered, subscriptions[i])
+					}
+				}
+
+				subscriptions = filtered
+			case <-after:
+				for _, s := range subscriptions {
+					if s.Data().VerificationTime.Add(time.Duration(s.Data().LeaseDuration)).Before(time.Now().Add(-30 * time.Minute)) {
+						f := h.repo.FeedById(s.Data().FeedId)
+						if f.Err() != nil {
+							continue
+						}
+
+						h.subscription(s, f, true)
+					}
+				}
+			}
 		}
 	}()
 
 	return h.repo.Err()
 }
 
-func (h *Hubbub) subscribe(s content.Subscription, f content.Feed, subscribe bool) {
+func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe bool) {
 	var err error
 
 	fdata := f.Data()
@@ -167,7 +230,15 @@ func (h *Hubbub) subscribe(s content.Subscription, f content.Feed, subscribe boo
 		err = SubscriptionError{error: errors.New("Expected response status 202, got " + resp.Status), Subscription: s}
 	}
 
-	if err != nil {
+	h.logger.Debugf("Response header: %v\n", resp.Header)
+
+	if err == nil {
+		if subscribe {
+			h.subscribe <- s
+		} else {
+			h.unsubscribe <- s
+		}
+	} else {
 		fdata.SubscribeError = err.Error()
 		h.logger.Printf("Error subscribing to hub feed '%s': %s\n", f, err)
 
@@ -179,113 +250,6 @@ func (h *Hubbub) subscribe(s content.Subscription, f content.Feed, subscribe boo
 
 		h.removeFeed <- f
 	}
-}
-
-func NewHubbubController(h *Hubbub) HubbubController {
-	return HubbubController{
-		webfw.NewBasePatternController(h.config.Hubbub.RelativePath+"/:feed-id", webfw.MethodGet|webfw.MethodPost, "hubbub-callback"),
-		h}
-}
-
-func (con HubbubController) Handler(c context.Context) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		params := r.URL.Query()
-		pathParams := webfw.GetParams(c, r)
-		logger := webfw.GetLogger(c)
-		feedId, err := strconv.ParseInt(pathParams["feed-id"], 10, 64)
-
-		if err != nil {
-			webfw.GetLogger(c).Print(err)
-			return
-		}
-
-		repo := con.hubbub.repo
-		f := repo.FeedById(data.FeedId(feedId))
-		s := f.Subscription()
-
-		err = s.Err()
-
-		if err != nil {
-			webfw.GetLogger(c).Print(err)
-			return
-		}
-
-		logger.Infoln("Receiving hubbub event " + params.Get("hub.mode") + " for " + f.String())
-
-		data := s.Data()
-		switch params.Get("hub.mode") {
-		case "subscribe":
-			if lease, err := strconv.Atoi(params.Get("hub.lease_seconds")); err == nil {
-				data.LeaseDuration = int64(lease) * int64(time.Second)
-			}
-			data.VerificationTime = time.Now()
-
-			w.Write([]byte(params.Get("hub.challenge")))
-		case "unsubscribe":
-			w.Write([]byte(params.Get("hub.challenge")))
-		case "denied":
-			w.Write([]byte{})
-			webfw.GetLogger(c).Printf("Unable to subscribe to '%s': %s\n", params.Get("hub.topic"), params.Get("hub.reason"))
-		default:
-			w.Write([]byte{})
-
-			buf := util.BufferPool.GetBuffer()
-			defer util.BufferPool.Put(buf)
-
-			if _, err := buf.ReadFrom(r.Body); err != nil {
-				webfw.GetLogger(c).Print(err)
-				return
-			}
-
-			newArticles := false
-
-			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
-				f.Refresh(pf)
-				f.Update()
-
-				if f.HasErr() {
-					webfw.GetLogger(c).Print(f.Err())
-					return
-				}
-
-				newArticles = len(f.NewArticles()) > 0
-			} else {
-				webfw.GetLogger(c).Print(err)
-				return
-			}
-
-			if newArticles {
-				for _, m := range con.hubbub.feedMonitors {
-					if err := m.FeedUpdated(f); err != nil {
-						logger.Print("Error invoking monitor '%s' on updated feed '%s': %v\n",
-							reflect.TypeOf(m), f, err)
-					}
-				}
-			}
-
-			return
-		}
-
-		switch params.Get("hub.mode") {
-		case "subscribe":
-			data.SubscriptionFailure = false
-		case "unsubscribe", "denied":
-			data.SubscriptionFailure = true
-		}
-
-		s.Data(data)
-		s.Update()
-		if s.HasErr() {
-			webfw.GetLogger(c).Print(s.Err())
-			return
-		}
-
-		if data.SubscriptionFailure {
-			con.hubbub.removeFeed <- f
-		} else {
-			con.hubbub.addFeed <- f
-		}
-	})
 }
 
 func callbackURL(c Config, pattern string, feedId data.FeedId) string {
