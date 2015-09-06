@@ -187,6 +187,7 @@ func (h Hubbub) InitSubscriptions() error {
 							continue
 						}
 
+						h.logger.Infof("Renewing subscription to %s\n", s)
 						h.subscription(s, f, true)
 					}
 				}

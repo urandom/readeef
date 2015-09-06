@@ -39,13 +39,20 @@ self.addEventListener('message', function(event) {
             a.RelativeDate = moment(a.Date).fromNow();
 
             for (var o; o = articles[insertIndex]; ++insertIndex, ++cumulativeIndex) {
-                if (newerFirst) {
-                    if (o.Date <= a.Date) {
-                        break;
-                    }
-                } else {
-                    if (o.Date > a.Date) {
-                        break;
+                // Unread articles are always first
+                if (!a.Read && o.Read) {
+                    break;
+                }
+
+                if (a.Read == o.Read) {
+                    if (newerFirst) {
+                        if (o.Date <= a.Date) {
+                            break;
+                        }
+                    } else {
+                        if (o.Date > a.Date) {
+                            break;
+                        }
                     }
                 }
             }
