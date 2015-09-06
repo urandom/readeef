@@ -310,6 +310,7 @@ func (f *Feed) Subscription() (s content.Subscription) {
 		s.Err(err)
 	}
 
+	in.FeedId = id
 	s.Data(in)
 
 	return

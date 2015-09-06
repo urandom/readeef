@@ -230,8 +230,6 @@ func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe b
 		err = SubscriptionError{error: errors.New("Expected response status 202, got " + resp.Status), Subscription: s}
 	}
 
-	h.logger.Debugf("Response header: %v\n", resp.Header)
-
 	if err == nil {
 		if subscribe {
 			h.subscribe <- s

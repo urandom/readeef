@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS articles_extracts (
 CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 	feed_id INTEGER,
 	link TEXT,
-	lease_duration INTEGER,
+	lease_duration BIGINT,
 	verification_time TIMESTAMP WITH TIME ZONE,
 	subscription_failure BOOLEAN DEFAULT 'f',
 

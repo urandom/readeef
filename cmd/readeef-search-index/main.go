@@ -45,7 +45,7 @@ func main() {
 
 	logger.Infoln("Getting all articles")
 
-	if err := sp.IndexAllArticles(repo); err != nil {
+	if err := sp.IndexAllFeeds(repo); err != nil {
 		exitWithError(fmt.Sprintf("Error indexing all articles: %v", err))
 	}
 }

@@ -101,6 +101,8 @@
                 user.authTime = new Date().getTime();
                 user.capabilities = event.detail.arguments.Capabilities;
 
+                user.ProfileData = user.ProfileData || {};
+
                 this._setUser(user);
                 this._state &= ~state.VALIDATING;
 

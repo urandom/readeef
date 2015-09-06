@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -28,7 +29,8 @@ func NewHubbubController(h *readeef.Hubbub, relativePath string,
 
 	return HubbubController{
 		BasePatternController: webfw.NewBasePatternController(
-			relativePath+"/:feed-id", webfw.MethodGet|webfw.MethodPost, "hubbub-callback",
+			"/v:version"+relativePath+"/:feed-id",
+			webfw.MethodGet|webfw.MethodPost, "hubbub-callback",
 		),
 		hubbub: h, addFeed: addFeed, removeFeed: removeFeed}
 }
@@ -43,7 +45,7 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 		feedId, err := strconv.ParseInt(pathParams["feed-id"], 10, 64)
 
 		if err != nil {
-			webfw.GetLogger(c).Print(err)
+			logger.Print(err)
 			return
 		}
 
@@ -53,7 +55,7 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 		err = s.Err()
 
 		if err != nil {
-			webfw.GetLogger(c).Print(err)
+			logger.Print(err)
 			return
 		}
 
@@ -73,7 +75,7 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 			w.Write([]byte(params.Get("hub.challenge")))
 		case "denied":
 			w.Write([]byte{})
-			webfw.GetLogger(c).Printf("Unable to subscribe to '%s': %s\n", params.Get("hub.topic"), params.Get("hub.reason"))
+			logger.Printf("Unable to subscribe to '%s': %s\n", params.Get("hub.topic"), params.Get("hub.reason"))
 		default:
 			w.Write([]byte{})
 
@@ -81,7 +83,7 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 			defer util.BufferPool.Put(buf)
 
 			if _, err := buf.ReadFrom(r.Body); err != nil {
-				webfw.GetLogger(c).Print(err)
+				logger.Print(err)
 				return
 			}
 
@@ -92,13 +94,13 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 				f.Update()
 
 				if f.HasErr() {
-					webfw.GetLogger(c).Print(f.Err())
+					logger.Print(f.Err())
 					return
 				}
 
 				newArticles = len(f.NewArticles()) > 0
 			} else {
-				webfw.GetLogger(c).Print(err)
+				logger.Print(err)
 				return
 			}
 
@@ -124,7 +126,7 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 		s.Data(data)
 		s.Update()
 		if s.HasErr() {
-			webfw.GetLogger(c).Print(s.Err())
+			logger.Print(fmt.Errorf("Error updating subscription %s: %v\n", s, s.Err()))
 			return
 		}
 
