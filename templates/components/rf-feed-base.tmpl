@@ -489,15 +489,13 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                         newArticles: data.arguments.Articles,
                         newerFirst: this.user.ProfileData.newerFirst,
                         unreadOnly: this.user.ProfileData.unreadOnly,
+                        treatAsUnread: this._treatAsUnread,
                     };
+
+                    delete this._treatAsUnread;
 
                     if (isNaN(this.tagOrId)) {
                         data.feeds = this.feeds;
-                    }
-
-                    if (this._treatAsUnread) {
-                        data.current[this._treatAsUnread].Read = false;
-                        delete this._treatAsUnread;
                     }
 
                     this._appendArticleWorker.postMessage(data);

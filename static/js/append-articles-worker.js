@@ -4,7 +4,7 @@ self.addEventListener('message', function(event) {
     "use strict";
 
     var articles = event.data.current || [],
-        inserts = [], insertIndex = 0, cumulativeIndex = 0,
+        inserts = [], insertIndex = 0, cumulativeIndex = 0, lastUnreadIndex = 0,
         newArticles = event.data.newArticles,
         newerFirst = event.data.newerFirst,
         unreadOnly = event.data.unreadOnly,
@@ -12,8 +12,15 @@ self.addEventListener('message', function(event) {
         articleMap = {}, indexMap = {}, stateChange = {},
         feedMap, response;
 
+    if (event.data.treatAsUnread) {
+        articles[event.data.treatAsUnread].Read = false;
+    }
+
     for (var i = 0, a; a = articles[i]; ++i) {
         articleMap[a.Id] = a;
+        if (!a.Read) {
+            lastUnreadIndex = i;
+        }
     }
 
     for (var i = 0, a, o, pre; a = newArticles[i]; ++i) {
@@ -54,7 +61,7 @@ self.addEventListener('message', function(event) {
 
             for (var o; o = articles[insertIndex]; ++insertIndex, ++cumulativeIndex) {
                 // Unread articles are always first
-                if (!a.Read && o.Read) {
+                if (!a.Read && insertIndex > lastUnreadIndex) {
                     break;
                 }
 
