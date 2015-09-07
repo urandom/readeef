@@ -43,7 +43,7 @@ func NewElastic(url string, size int64, logger webfw.Logger) (e *Elastic, err er
 		}
 	}
 
-	e = &Elastic{client: client, logger: logger, batchSize: size}
+	e = &Elastic{client: client, logger: logger, batchSize: size, newIndex: !exists}
 	return
 }
 
