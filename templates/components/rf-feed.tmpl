@@ -261,10 +261,7 @@ rf-article /deep/ .article-summary {
         Polymer({
             is: "rf-feed",
             properties: {
-                tagOrId: {
-                    type: String,
-                    observer: '_tagOrIdChanged',
-                },
+                tagOrId: String,
                 user: Object,
                 feeds: Object,
                 articles: Array,
@@ -277,7 +274,6 @@ rf-article /deep/ .article-summary {
             observers: [
                 '_articlesChanged(articles.*)',
             ],
-            _firstVisibleIndex: 0,
             _tagStripper: document.createElement('div'),
 
             articleState: function(articleId, state) {
@@ -322,7 +318,7 @@ rf-article /deep/ .article-summary {
 
                     if (id === null || index === -1) {
                         this.$.article.selectedId = 0;
-                        this.$.list.scrollToIndex(this._firstVisibleIndex);
+                        this.$.list.scrollToIndex(prevIndex);
                         if (id !== null) {
                             this.async(function() {
                                 MoreRouting.navigateTo('feed', {tagOrId: this.tagOrId});
@@ -331,7 +327,6 @@ rf-article /deep/ .article-summary {
                     } else {
                         this.$.article.selectedId = id - 0;
                         this._scroller.scrollTop = 0;
-                        this._firstVisibleIndex = this.$.list.firstVisibleIndex;
 
                         if (!this.articles[index].Read) {
                             this.$['article-read'].send({id: id - 0, value: true});
@@ -484,29 +479,23 @@ rf-article /deep/ .article-summary {
                         type: 'format'});
             },
 
-            _tagOrIdChanged: function(tagOrId, oldValue) {
-                this._firstVisibleIndex = 0;
-            },
-
             _articlesChanged: function(record) {
                 if (!record.base.length) {
                     this.$.article.selectedId = 0;
                 } else if (record.path == 'articles.splices') {
-                    var articleActive = MoreRouting.isCurrentUrl('article'),
-                        newIndex = articleActive ? this._firstVisibleIndex : this.$.list.firstVisibleIndex,
-                        originalIndex = newIndex, changeCount = 0;
+                    if (!MoreRouting.isCurrentUrl('article')) {
+                        var newIndex = this.$.list.firstVisibleIndex,
+                            originalIndex = newIndex, changeCount = 0;
 
-                    for (var i = 0, s; s = record.value.indexSplices[i]; ++i) {
-                        if (s.index <= originalIndex) {
-                            changeCount += s.addedCount - s.removed.length;
-                            newIndex = newIndex + changeCount;
+                        for (var i = 0, s; s = record.value.indexSplices[i]; ++i) {
+                            if (s.index <= originalIndex) {
+                                changeCount += s.addedCount - s.removed.length;
+                                newIndex = newIndex + changeCount;
+                            }
                         }
-                    }
 
-                    if (articleActive) {
-                        this._firstVisibleIndex = newIndex;
-                    } else {
                         this.async(function() {
+                            // A brand new list of articles
                             if (changeCount == record.base.length) {
                                 newIndex = 0;
                             }
