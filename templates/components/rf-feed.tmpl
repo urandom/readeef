@@ -318,6 +318,8 @@ rf-article /deep/ .article-summary {
 
                     if (id === null || index === -1) {
                         this.$.article.selectedId = 0;
+                        // FIXME: https://github.com/PolymerElements/iron-list/issues/71
+                        this.$.list._scroller = this._scroller;
                         this.$.list.scrollToIndex(prevIndex);
                         if (id !== null) {
                             this.async(function() {
@@ -327,6 +329,8 @@ rf-article /deep/ .article-summary {
                     } else {
                         this.$.article.selectedId = id - 0;
                         this._scroller.scrollTop = 0;
+                        // FIXME: https://github.com/PolymerElements/iron-list/issues/71
+                        this.$.list._scroller = null;
 
                         if (!this.articles[index].Read) {
                             this.$['article-read'].send({id: id - 0, value: true});
