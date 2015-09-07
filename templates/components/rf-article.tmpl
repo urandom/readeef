@@ -291,7 +291,6 @@
                         this._trackState.previousTick = now;
                         this._trackState.previousV = 0;
                         this._trackState.direction = distance > 0 ? 1 : -1;
-                        console.log('switching dir', this._trackState.direction);
                     }
 
                     var index = this.articles.findIndex(this.selectedId);
@@ -427,23 +426,17 @@
             }
 
             if (direction === 0) {
-                this._debounceTemplate(this._render);
+                this._debounceTemplate(function() { this._render(id) });
                 this.debounce('animation', function() {
                     slideFromTop(Polymer.dom(this.root).querySelector('.active-article'));
                 }.bind(this));
             } else {
                 if (this._trackState && id == this._trackState.selectedId) {
-                    this._debounceTemplate(function() {
-                        this._render(direction);
-                    });
+                    this._debounceTemplate(function() { this._render(id) });
                 } else if (direction === 1) {
-                    slideFromRight(Polymer.dom(this.root).querySelector('.active-article'), Polymer.dom(this.root).querySelector('.next-article'), function() {
-                        this._render(direction);
-                    }.bind(this));
+                    slideFromRight(Polymer.dom(this.root).querySelector('.active-article'), Polymer.dom(this.root).querySelector('.next-article'), function() { this._render(id) }.bind(this));
                 } else {
-                    slideFromLeft(Polymer.dom(this.root).querySelector('.previous-article'), Polymer.dom(this.root).querySelector('.active-article'), function() {
-                        this._render(direction);
-                    }.bind(this));
+                    slideFromLeft(Polymer.dom(this.root).querySelector('.previous-article'), Polymer.dom(this.root).querySelector('.active-article'), function() { this._render(id) }.bind(this));
                 }
             }
         },
@@ -491,11 +484,18 @@
             }
         },
 
-        _render: function(direction) {
+        _render: function(activeId) {
             var active = Polymer.dom(this.root).querySelector('.active-article'),
                 previous = Polymer.dom(this.root).querySelector('.previous-article'),
                 next = Polymer.dom(this.root).querySelector('.next-article'),
-                index = this.articles.findIndex(this.selectedId);
+                index = this.articles.findIndex(activeId),
+                direction = 0;
+
+            if (this._instances[0] && this._instances[0]._templateInstance.item.article.Id == activeId) {
+                direction = -1;
+            } else if (this._instances[2] && this._instances[2]._templateInstance.item.article.Id == activeId) {
+                direction = 1;
+            }
 
             // Shift the instances when the selection moves to the left or right
             if (direction === 1) {

@@ -33,6 +33,7 @@ static/dist/iron-ajax/iron-ajax.html
 static/dist/iron-ajax/iron-request.html
 static/dist/iron-behaviors/iron-button-state.html
 static/dist/iron-behaviors/iron-control-state.html
+static/dist/iron-checked-element-behavior/iron-checked-element-behavior.html
 static/dist/iron-collapse/iron-collapse.html
 static/dist/iron-dropdown/iron-dropdown-scroll-manager.html
 static/dist/iron-dropdown/iron-dropdown.html
@@ -64,7 +65,6 @@ static/dist/iron-selector/iron-selection.html
 static/dist/iron-selector/iron-selector.html
 static/dist/iron-signals/iron-signals.html
 static/dist/iron-validatable-behavior/iron-validatable-behavior.html
-static/dist/iron-validator-behavior/iron-validator-behavior.html
 static/dist/moment/min/moment.min.js
 static/dist/more-routing/driver.html
 static/dist/more-routing/driver/hash.html
@@ -96,7 +96,6 @@ static/dist/neon-animation/web-animations.html
 static/dist/paper-behaviors/paper-button-behavior.html
 static/dist/paper-behaviors/paper-inky-focus-behavior.html
 static/dist/paper-button/paper-button.html
-static/dist/paper-checkbox/paper-checkbox.css
 static/dist/paper-checkbox/paper-checkbox.html
 static/dist/paper-dialog-behavior/paper-dialog-behavior.html
 static/dist/paper-dialog-behavior/paper-dialog-common.css
@@ -118,6 +117,7 @@ static/dist/paper-item/paper-item.html
 static/dist/paper-material/paper-material.html
 static/dist/paper-menu-button/paper-menu-button-animations.html
 static/dist/paper-menu-button/paper-menu-button.html
+static/dist/paper-menu/paper-menu-shared.css
 static/dist/paper-menu/paper-menu.html
 static/dist/paper-ripple/paper-ripple.html
 static/dist/paper-spinner/paper-spinner.css
@@ -128,7 +128,6 @@ static/dist/paper-styles/paper-styles.html
 static/dist/paper-styles/shadow.html
 static/dist/paper-styles/typography.html
 static/dist/paper-toast/paper-toast.html
-static/dist/paper-toggle-button/paper-toggle-button.css
 static/dist/paper-toggle-button/paper-toggle-button.html
 static/dist/paper-toolbar/paper-toolbar.html
 static/dist/polymer/polymer-micro.html
