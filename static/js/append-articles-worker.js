@@ -9,14 +9,28 @@ self.addEventListener('message', function(event) {
         newerFirst = event.data.newerFirst,
         unreadOnly = event.data.unreadOnly,
         feeds = event.data.feeds,
-        articleMap = {}, indexMap = {}, feedMap, response;
+        articleMap = {}, indexMap = {}, stateChange = {},
+        feedMap, response;
 
     for (var i = 0, a; a = articles[i]; ++i) {
         articleMap[a.Id] = a;
     }
 
-    for (var i = 0, a, pre; a = newArticles[i]; ++i) {
-        if (!articleMap[a.Id] && !(unreadOnly && a.Read)) {
+    for (var i = 0, a, o, pre; a = newArticles[i]; ++i) {
+        o = articleMap[a.Id];
+        if (o) {
+            if (o.Read != a.Read) {
+                stateChange[a.Id] = {Read: a.Read};
+            }
+
+            if (o.Favorite != a.Favorite) {
+                if (stateChange[a.Id]) {
+                    stateChange[a.Id].Favorite = a.Favorite;
+                } else {
+                    stateChange[a.Id] = {Favorite: a.Favorite};
+                }
+            }
+        } else if (!unreadOnly || !a.Read) {
             if (feeds && feeds.length) {
                 if (!feedMap) {
                     feedMap = {};
@@ -74,7 +88,7 @@ self.addEventListener('message', function(event) {
         indexMap[a.Id] = i;
     }
 
-    response = {inserts: inserts, indexMap: indexMap, requestedArticle: event.data.requestedArticle};
+    response = {inserts: inserts, indexMap: indexMap, stateChange: stateChange};
     if ('requestedArticle' in event.data) {
         response.requestedArticle = event.data.requestedArticle;
     }

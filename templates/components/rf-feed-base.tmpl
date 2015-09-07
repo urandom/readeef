@@ -1026,6 +1026,19 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     this.splice.apply(this, ['articles', insert.index, 0].concat(insert.articles));
                 }
 
+                for (var id in event.data.stateChange) {
+                    var state = event.data.stateChange[id],
+                        index = this.articles.findIndex(id);
+
+                    if ('Read' in state) {
+                        this.set('articles.' + index + '.Read', state.Read);
+                    }
+
+                    if ('Favorite' in state) {
+                        this.set('articles.' + index + '.Favorite', state.Favorite);
+                    }
+                }
+
                 this.loading = false;
                 this.$['scroll-threshold'].clearLower();
 
