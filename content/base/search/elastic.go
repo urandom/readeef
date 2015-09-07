@@ -26,25 +26,24 @@ type Elastic struct {
 	batchSize int64
 }
 
-func NewElastic(url string, size int64, logger webfw.Logger) (e *Elastic, err error) {
+func NewElastic(url string, size int64, logger webfw.Logger) (content.SearchProvider, error) {
 	var client *elastic.Client
 	var exists bool
 
-	client, err = elastic.NewClient(elastic.SetURL(url))
+	client, err := elastic.NewClient(elastic.SetURL(url))
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	if exists, err = client.IndexExists(elasticIndexName).Do(); err != nil {
-		return
+		return nil, err
 	} else if !exists {
 		if _, err = client.CreateIndex(elasticIndexName).Do(); err != nil {
-			return
+			return nil, err
 		}
 	}
 
-	e = &Elastic{client: client, logger: logger, batchSize: size, newIndex: !exists}
-	return
+	return &Elastic{client: client, logger: logger, batchSize: size, newIndex: !exists}, nil
 }
 
 func (e Elastic) IsNewIndex() bool {

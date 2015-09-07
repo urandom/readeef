@@ -34,11 +34,10 @@ type indexArticle struct {
 	Date        time.Time `json:"date"`
 }
 
-func NewBleve(path string, size int64, logger webfw.Logger) (*Bleve, error) {
+func NewBleve(path string, size int64, logger webfw.Logger) (content.SearchProvider, error) {
 	var err error
+	var exists bool
 	var index bleve.Index
-
-	b := &Bleve{}
 
 	_, err = os.Stat(path)
 	if err == nil {
@@ -46,8 +45,10 @@ func NewBleve(path string, size int64, logger webfw.Logger) (*Bleve, error) {
 		index, err = bleve.Open(path)
 
 		if err != nil {
-			return b, errors.New(fmt.Sprintf("Error opening search index: %v\n", err))
+			return nil, errors.New(fmt.Sprintf("Error opening search index: %v\n", err))
 		}
+
+		exists = true
 	} else if os.IsNotExist(err) {
 		mapping := bleve.NewIndexMapping()
 		docMapping := bleve.NewDocumentMapping()
@@ -63,20 +64,14 @@ func NewBleve(path string, size int64, logger webfw.Logger) (*Bleve, error) {
 		index, err = bleve.NewUsing(path, mapping, "goleveldb", nil)
 
 		if err != nil {
-			return b, errors.New(fmt.Sprintf("Error creating search index: %v\n", err))
+			return nil, errors.New(fmt.Sprintf("Error creating search index: %v\n", err))
 		}
-
-		b.newIndex = true
 	} else {
-		return b, errors.New(
+		return nil, errors.New(
 			fmt.Sprintf("Error getting stat of '%s': %v\n", path, err))
 	}
 
-	b.logger = logger
-	b.index = index
-	b.batchSize = size
-
-	return b, nil
+	return &Bleve{logger: logger, index: index, batchSize: size, newIndex: !exists}, nil
 }
 
 func (b Bleve) IsNewIndex() bool {

@@ -15,9 +15,9 @@ type Extract struct {
 	logger    webfw.Logger
 }
 
-func NewExtract(e content.Extractor, l webfw.Logger) (Extract, error) {
+func NewExtract(e content.Extractor, l webfw.Logger) (content.Thumbnailer, error) {
 	if e == nil {
-		return Extract{}, fmt.Errorf("A valid extractor is required")
+		return nil, fmt.Errorf("A valid extractor is required")
 	}
 	return Extract{extractor: e, logger: l}, nil
 }

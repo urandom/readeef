@@ -13,7 +13,7 @@ type Description struct {
 	logger webfw.Logger
 }
 
-func NewDescription(l webfw.Logger) Description {
+func NewDescription(l webfw.Logger) content.Thumbnailer {
 	return Description{logger: l}
 }
 

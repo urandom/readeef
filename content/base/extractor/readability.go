@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 )
 
@@ -19,9 +20,9 @@ type readability struct {
 	LeadImage string `json:"lead_image_url"`
 }
 
-func NewReadability(key string) (Readability, error) {
+func NewReadability(key string) (content.Extractor, error) {
 	if key == "" {
-		return Readability{}, fmt.Errorf("Readability API key cannot be empty")
+		return nil, fmt.Errorf("Readability API key cannot be empty")
 	}
 	return Readability{key: key}, nil
 }

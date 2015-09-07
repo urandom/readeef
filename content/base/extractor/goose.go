@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/advancedlogic/GoOse"
+	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw/fs"
 	"github.com/urandom/webfw/renderer"
@@ -17,11 +18,11 @@ type Goose struct {
 	renderer renderer.Renderer
 }
 
-func NewGoose(templateDir string) (Goose, error) {
+func NewGoose(templateDir string) (content.Extractor, error) {
 	rawTmpl := "raw.tmpl"
 	f, err := fs.DefaultFS.OpenRoot(templateDir, rawTmpl)
 	if err != nil {
-		return Goose{}, fmt.Errorf("Goose extractor requires %s template in %s: %v\n", rawTmpl, templateDir, err)
+		return nil, fmt.Errorf("Goose extractor requires %s template in %s: %v\n", rawTmpl, templateDir, err)
 	}
 	f.Close()
 	renderer := renderer.NewRenderer(templateDir, rawTmpl)
