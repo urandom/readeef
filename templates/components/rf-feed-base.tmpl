@@ -426,7 +426,8 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                             return;
                         }
 
-                        var article = this.articles.find(value);
+                        var index = this.articles.findIndex(value),
+                            article = this.articles[index];
                         if (article) {
                             this._articleId = value;
                             this.cancelDebouncer('article-read-state');
@@ -435,6 +436,21 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                             this._shareServices.forEach(function(service) {
                                 service.article = article;
                             }.bind(this));
+
+                            if (index == 0) {
+                                this.debounce('auto-update-timeout', this._updateArticles);
+                            } else if (index == this.articles.length - 1) {
+                                // Force the article to be treated as unread,
+                                // so that newly received articles that are
+                                // older than it can be placed at the end
+                                this._treatAsUnread = index;
+
+                                this.debounce('feed-refresh', function() {
+                                    this.loading = true;
+                                    this.offset += this.limit;
+                                    this.$['feed-articles'].send();
+                                });
+                            }
                         } else if (!this.articles.length) {
                             this.cancelDebouncer('feed-refresh');
 
@@ -477,6 +493,11 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
                     if (isNaN(this.tagOrId)) {
                         data.feeds = this.feeds;
+                    }
+
+                    if (this._treatAsUnread) {
+                        data.current[this._treatAsUnread].Read = false;
+                        delete this._treatAsUnread;
                     }
 
                     this._appendArticleWorker.postMessage(data);
@@ -708,6 +729,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
             onLowerScrollThresholdTrigger: function(event) {
                 if (this.noMoreArticles || MoreRouting.isCurrentUrl('article') || this.loading) {
+                    this.$['scroll-threshold'].clearLower();
                     return;
                 }
                 this.debounce('feed-refresh', function() {
@@ -919,7 +941,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 this.tags = tagList;
             },
 
-            _updateArticles: function(delay) {
+            _updateArticles: function() {
                 if (!this._updateAvailable) {
                     return;
                 }
