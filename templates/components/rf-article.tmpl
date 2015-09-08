@@ -637,6 +637,45 @@
 
             image = description.querySelector('img');
 
+            if (article.ThumbnailLink) {
+                var hasTopImage = false;
+                if (image) {
+                    var ancestor = image, totalText = 0, next;
+                    do {
+                        var next = ancestor;
+                        while (next = next.nextSibling) {
+                            var text = next.textContent;
+                            if (text.trim) {
+                                text = text.trim();
+                            }
+                            totalText += text.length;
+
+                            if (totalText > 20) {
+                                hasTopImage = true;
+                                break;
+                            }
+                        }
+
+                        if (hasTopImage) {
+                            break;
+                        }
+                    } while (ancestor = ancestor.parentNode);
+                }
+
+                if (!hasTopImage) {
+                    var topImage = document.createElement('img');
+                    topImage.src = article.ThumbnailLink.replace(/^https?:/, '');
+                    if (topImage.src != article.ThumbnailLink) {
+                        topImage.onerror = function() {
+                            this.onerror = null;
+                            this.src = article.ThumbnailLink;
+                        }
+                    }
+
+                    description.insertBefore(topImage, description.firstChild);
+                }
+            }
+
             if (image) {
                 if (image.complete) {
                     imageStyler();

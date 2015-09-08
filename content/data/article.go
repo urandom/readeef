@@ -32,10 +32,11 @@ type Article struct {
 	Link        string
 	Date        time.Time
 
-	Read      bool
-	Favorite  bool
-	Score     int64
-	Thumbnail string `json:",omitempty"`
+	Read          bool
+	Favorite      bool
+	Score         int64
+	Thumbnail     string `json:",omitempty"`
+	ThumbnailLink string `db:"thumbnail_link" json:",omitempty"`
 
 	IsNew bool `json:"-"`
 

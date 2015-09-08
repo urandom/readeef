@@ -52,7 +52,8 @@ ORDER BY LOWER(f.title)
 SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
 CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite,
-COALESCE(at.thumbnail, '') as thumbnail
+COALESCE(at.thumbnail, '') as thumbnail,
+COALESCE(at.link, '') as thumbnail_link
 `
 
 	getArticleTables = `
