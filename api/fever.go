@@ -309,6 +309,9 @@ func (con Fever) Handler(c context.Context) http.Handler {
 					to = time.Now().AddDate(0, 0, int(-1*offset))
 				}
 
+				user.SortingByDate()
+				user.Order(data.DescendingOrder)
+
 				articles, err = user.ScoredArticles(from, to, 50, 50*int(page-1)), user.Err()
 				if err != nil {
 					break

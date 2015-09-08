@@ -3,10 +3,13 @@ package popularity
 import (
 	"runtime"
 	"sync"
+
+	"github.com/urandom/webfw"
 )
 
 type Popularity struct {
 	scoreProviders []scoreProvider
+	logger         webfw.Logger
 }
 
 type scoreProvider interface {
@@ -23,8 +26,8 @@ type scoreResponse struct {
 	err   error
 }
 
-func New(providers []string) Popularity {
-	p := Popularity{}
+func New(providers []string, logger webfw.Logger) Popularity {
+	p := Popularity{logger: logger}
 
 	scoreProviders := []scoreProvider{}
 	for _, p := range providers {
@@ -86,7 +89,11 @@ func (p Popularity) Score(link, text string) (int64, error) {
 		return score, err
 	}
 
-	return score + 1, nil
+	score++
+
+	p.logger.Debugf("Popularity score of '%s' is %d\n", link, score)
+
+	return score, nil
 }
 
 func (p Popularity) generateRequests(link string) <-chan scoreRequest {

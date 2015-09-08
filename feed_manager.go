@@ -57,7 +57,7 @@ func NewFeedManager(repo content.Repo, c Config, l webfw.Logger) *FeedManager {
 		activeFeeds:    map[data.FeedId]bool{},
 		lastUpdateHash: map[data.FeedId][md5.Size]byte{},
 		client:         NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite),
-		popularity:     popularity.New(c.Popularity.Providers),
+		popularity:     popularity.New(c.Popularity.Providers, l),
 	}
 }
 
