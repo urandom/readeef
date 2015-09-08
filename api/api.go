@@ -138,6 +138,8 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 			processors = append(processors, processor.NewRelativeUrl(logger))
 		case "cleanup":
 			processors = append(processors, processor.NewCleanup(logger))
+		case "top-image-marker":
+			processors = append(processors, processor.NewTopImageMarker(logger))
 		}
 	}
 

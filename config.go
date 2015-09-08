@@ -170,6 +170,7 @@ var cfg string = `
 [feed-parser]
 	processors
 	processors = cleanup
+	processors = top-image-marker
 	# processors = relative-url
 [content]
 	extractor = goose # readability

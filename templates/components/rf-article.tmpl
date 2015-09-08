@@ -638,31 +638,7 @@
             image = description.querySelector('img');
 
             if (article.ThumbnailLink) {
-                var hasTopImage = false;
-                if (image && image.src.replace(httpRe, '') != article.ThumbnailLink.replace(httpRe, '')) {
-                    var ancestor = image, totalText = 0, next;
-                    do {
-                        var next = ancestor;
-                        while (next = next.nextSibling) {
-                            var text = next.textContent;
-                            if (text.trim) {
-                                text = text.trim();
-                            }
-                            totalText += text.length;
-
-                            if (totalText > 20) {
-                                hasTopImage = true;
-                                break;
-                            }
-                        }
-
-                        if (hasTopImage) {
-                            break;
-                        }
-                    } while ((ancestor = ancestor.parentNode) && ancestor != description);
-                }
-
-                if (!hasTopImage) {
+                if (!description.querySelector('.top-image')) {
                     image = document.createElement('img');
                     image.src = article.ThumbnailLink.replace(httpRe, '');
                     if (image.src != article.ThumbnailLink) {
