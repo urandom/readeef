@@ -32,7 +32,7 @@ type ArticleRepo interface {
 
 	ReadBefore(date time.Time, read bool)
 
-	ScoredArticles(from, to time.Time, paging ...int) []ScoredArticle
+	ScoredArticles(from, to time.Time, paging ...int) []UserArticle
 }
 
 type ArticleSearch interface {
@@ -51,13 +51,9 @@ type Article interface {
 	Validate() error
 
 	Update()
+
 	Thumbnail() ArticleThumbnail
 	Extract() ArticleExtract
-}
-
-type ScoredArticle interface {
-	Article
-
 	Scores() ArticleScores
 }
 

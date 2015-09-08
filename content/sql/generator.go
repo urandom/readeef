@@ -13,14 +13,6 @@ func (r *Repo) Article() content.Article {
 	return &a
 }
 
-func (r *Repo) ScoredArticle() content.ScoredArticle {
-	sa := &ScoredArticle{Article: r.article()}
-
-	sa.Repo(r)
-
-	return sa
-}
-
 func (r *Repo) UserArticle(u content.User) content.UserArticle {
 	ua := r.userArticle(u)
 

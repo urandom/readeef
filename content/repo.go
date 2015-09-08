@@ -23,7 +23,6 @@ type Repo interface {
 
 type Generator interface {
 	Article() Article
-	ScoredArticle() ScoredArticle
 	UserArticle(u User) UserArticle
 
 	ArticleThumbnail() ArticleThumbnail

@@ -151,7 +151,7 @@ func (t *Tag) ReadBefore(date time.Time, read bool) {
 	tx.Commit()
 }
 
-func (t *Tag) ScoredArticles(from, to time.Time, paging ...int) (sa []content.ScoredArticle) {
+func (t *Tag) ScoredArticles(from, to time.Time, paging ...int) (ua []content.UserArticle) {
 	if t.HasErr() {
 		return
 	}
@@ -168,17 +168,11 @@ func (t *Tag) ScoredArticles(from, to time.Time, paging ...int) (sa []content.Sc
 		order = "asco.score DESC"
 	}
 
-	ua := getArticles(t.User(), t.db, t.logger, t,
+	ua = getArticles(t.User(), t.db, t.logger, t,
 		"asco.score", `INNER JOIN articles_scores asco ON a.id = asco.article_id
 		INNER JOIN users_feeds_tags uft ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login`,
 		"uft.tag = $2 AND a.date > $3 AND a.date <= $4", order,
 		[]interface{}{t.String(), from, to}, paging...)
-
-	sa = make([]content.ScoredArticle, len(ua))
-	for i := range ua {
-		sa[i] = t.Repo().ScoredArticle()
-		sa[i].Data(ua[i].Data())
-	}
 
 	return
 }

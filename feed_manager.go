@@ -27,7 +27,7 @@ type FeedManager struct {
 	repo             content.Repo
 	addFeed          chan content.Feed
 	removeFeed       chan content.Feed
-	scoreArticle     chan content.ScoredArticle
+	scoreArticle     chan content.Article
 	done             chan bool
 	client           *http.Client
 	logger           webfw.Logger
@@ -53,7 +53,7 @@ func NewFeedManager(repo content.Repo, c Config, l webfw.Logger) *FeedManager {
 	return &FeedManager{
 		repo: repo, config: c, logger: l,
 		addFeed: make(chan content.Feed, 2), removeFeed: make(chan content.Feed, 2),
-		scoreArticle: make(chan content.ScoredArticle), done: make(chan bool),
+		scoreArticle: make(chan content.Article), done: make(chan bool),
 		activeFeeds:    map[data.FeedId]bool{},
 		lastUpdateHash: map[data.FeedId][md5.Size]byte{},
 		client:         NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite),
@@ -414,7 +414,7 @@ func (fm *FeedManager) scoreFeedContent(f content.Feed) {
 	}
 
 	for i := range articles {
-		sa := fm.repo.ScoredArticle()
+		sa := fm.repo.Article()
 		sa.Data(articles[i].Data())
 		fm.scoreArticle <- sa
 	}

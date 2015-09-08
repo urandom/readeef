@@ -20,10 +20,6 @@ type Article struct {
 	db     *db.DB
 }
 
-type ScoredArticle struct {
-	Article
-}
-
 type UserArticle struct {
 	base.UserArticle
 	Article
@@ -100,6 +96,35 @@ func (a *Article) Extract() (ae content.ArticleExtract) {
 
 	i.ArticleId = id
 	ae.Data(i)
+
+	return
+}
+
+func (a *Article) Scores() (as content.ArticleScores) {
+	as = a.Repo().ArticleScores()
+	if a.HasErr() {
+		as.Err(a.Err())
+		return
+	}
+
+	id := a.Data().Id
+	if id == 0 {
+		a.Err(content.NewValidationError(errors.New("Invalid article id")))
+		return
+	}
+
+	a.logger.Infof("Getting article '%d' scores\n", id)
+
+	var i data.ArticleScores
+	if err := a.db.Get(&i, a.db.SQL("get_article_scores"), id); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
+		as.Err(err)
+	}
+
+	i.ArticleId = id
+	as.Data(i)
 
 	return
 }
@@ -253,33 +278,4 @@ func (ua *UserArticle) Favorite(favorite bool) {
 	tx.Commit()
 
 	ua.Data(d)
-}
-
-func (sa *ScoredArticle) Scores() (asc content.ArticleScores) {
-	asc = sa.Repo().ArticleScores()
-	if sa.HasErr() {
-		asc.Err(sa.Err())
-		return
-	}
-
-	id := sa.Data().Id
-	if id == 0 {
-		sa.Err(content.NewValidationError(errors.New("Invalid article id")))
-		return
-	}
-
-	sa.logger.Infof("Getting article '%d' scores\n", id)
-
-	var i data.ArticleScores
-	if err := sa.db.Get(&i, sa.db.SQL("get_article_scores"), id); err != nil {
-		if err == sql.ErrNoRows {
-			err = content.ErrNoContent
-		}
-		asc.Err(err)
-	}
-
-	i.ArticleId = id
-	asc.Data(i)
-
-	return
 }

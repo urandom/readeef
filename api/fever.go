@@ -298,7 +298,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 					break
 				}
 
-				var articles []content.ScoredArticle
+				var articles []content.UserArticle
 				var from, to time.Time
 
 				if offset == 0 {

@@ -632,7 +632,7 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 	return
 }
 
-func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.ScoredArticle) {
+func (u *User) ScoredArticles(from, to time.Time, paging ...int) (ua []content.UserArticle) {
 	if u.HasErr() {
 		return
 	}
@@ -650,18 +650,12 @@ func (u *User) ScoredArticles(from, to time.Time, paging ...int) (sa []content.S
 		order = "asco.score DESC"
 	}
 
-	ua := getArticles(u, u.db, u.logger, u, "asco.score",
+	ua = getArticles(u, u.db, u.logger, u, "asco.score",
 		"INNER JOIN articles_scores asco ON a.id = asco.article_id",
 		"a.date > $2 AND a.date <= $3", order,
 		[]interface{}{from, to}, paging...)
 
-	sa = make([]content.ScoredArticle, len(ua))
-	for i := range ua {
-		sa[i] = u.Repo().ScoredArticle()
-		sa[i].Data(ua[i].Data())
-	}
-
-	return sa
+	return
 }
 
 func (u *User) Tags() (tags []content.Tag) {

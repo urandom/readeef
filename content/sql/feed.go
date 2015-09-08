@@ -506,7 +506,7 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 	tx.Commit()
 }
 
-func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []content.ScoredArticle) {
+func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (ua []content.UserArticle) {
 	if uf.HasErr() {
 		return
 	}
@@ -530,16 +530,10 @@ func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (sa []cont
 	if uf.Order() == data.DescendingOrder {
 		order = " DESC"
 	}
-	ua := getArticles(u, uf.db, uf.logger, uf, "asco.score",
+	ua = getArticles(u, uf.db, uf.logger, uf, "asco.score",
 		"INNER JOIN articles_scores asco ON a.id = asco.article_id",
 		"uf.feed_id = $2 AND a.date > $3 AND a.date <= $4", "asco.score"+order,
 		[]interface{}{id, from, to}, paging...)
-
-	sa = make([]content.ScoredArticle, len(ua))
-	for i := range ua {
-		sa[i] = uf.Repo().ScoredArticle()
-		sa[i].Data(ua[i].Data())
-	}
 
 	return
 }
