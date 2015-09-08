@@ -4,7 +4,7 @@ self.addEventListener('message', function(event) {
     "use strict";
 
     var articles = event.data.current || [],
-        inserts = [], insertIndex = 0, cumulativeIndex = 0, lastUnreadIndex = 0,
+        inserts = [], insertIndex = 0, cumulativeIndex = 0, lastUnreadIndex = -1,
         newArticles = event.data.newArticles,
         newerFirst = event.data.newerFirst,
         unreadOnly = event.data.unreadOnly,
