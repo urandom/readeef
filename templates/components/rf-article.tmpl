@@ -73,7 +73,7 @@
 (function() {
     "use strict";
 
-    var animations = {};
+    var animations = {}, httpRe = /^https?:/;
 
     function ordinal(value) {
         var str = value.toString(), suff = str.slice(-1), ord = '';
@@ -639,7 +639,7 @@
 
             if (article.ThumbnailLink) {
                 var hasTopImage = false;
-                if (image) {
+                if (image && image.src.replace(httpRe, '') != article.ThumbnailLink.replace(httpRe, '')) {
                     var ancestor = image, totalText = 0, next;
                     do {
                         var next = ancestor;
@@ -664,7 +664,7 @@
 
                 if (!hasTopImage) {
                     image = document.createElement('img');
-                    image.src = article.ThumbnailLink.replace(/^https?:/, '');
+                    image.src = article.ThumbnailLink.replace(httpRe, '');
                     if (image.src != article.ThumbnailLink) {
                         image.onerror = function() {
                             this.onerror = null;
@@ -755,7 +755,7 @@
             }
         },
 
-    })
+    });
 })()
     </script>
 </dom-module>
