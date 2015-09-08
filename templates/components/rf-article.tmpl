@@ -659,20 +659,20 @@
                         if (hasTopImage) {
                             break;
                         }
-                    } while (ancestor = ancestor.parentNode);
+                    } while ((ancestor = ancestor.parentNode) && ancestor != description);
                 }
 
                 if (!hasTopImage) {
-                    var topImage = document.createElement('img');
-                    topImage.src = article.ThumbnailLink.replace(/^https?:/, '');
-                    if (topImage.src != article.ThumbnailLink) {
-                        topImage.onerror = function() {
+                    image = document.createElement('img');
+                    image.src = article.ThumbnailLink.replace(/^https?:/, '');
+                    if (image.src != article.ThumbnailLink) {
+                        image.onerror = function() {
                             this.onerror = null;
                             this.src = article.ThumbnailLink;
                         }
                     }
 
-                    description.insertBefore(topImage, description.firstChild);
+                    description.insertBefore(image, description.firstChild);
                 }
             }
 
