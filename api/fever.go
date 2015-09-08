@@ -317,13 +317,16 @@ func (con Fever) Handler(c context.Context) http.Handler {
 				links := make([]feverLink, len(articles))
 				for i := range articles {
 					in := articles[i].Data()
-					if in.Score == 0 {
-						continue
-					}
 
 					link := feverLink{
-						Id: in.Id, FeedId: in.FeedId, ItemId: in.Id, Temperature: math.Log10(float64(in.Score)) / math.Log10(1.1),
-						IsItem: 1, IsLocal: 1, Title: in.Title, Url: in.Link, ItemIds: fmt.Sprintf("%d", in.Id),
+						Id: in.Id, FeedId: in.FeedId, ItemId: in.Id, IsItem: 1,
+						IsLocal: 1, Title: in.Title, Url: in.Link, ItemIds: fmt.Sprintf("%d", in.Id),
+					}
+
+					if in.Score == 0 {
+						link.Temperature = 0
+					} else {
+						link.Temperature = math.Log10(float64(in.Score)) / math.Log10(1.1)
 					}
 
 					if in.Favorite {
