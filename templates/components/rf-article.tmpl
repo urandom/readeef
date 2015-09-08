@@ -204,6 +204,14 @@
         container.appendChild(iframe);
     }
 
+    function onImageReady(image, cb) {
+        if (image.complete) {
+            cb.call(image);
+        } else {
+            image.addEventListener('load', cb);
+        }
+    }
+
     Polymer({
         is: "rf-article",
         behaviors: [
@@ -616,12 +624,24 @@
 
             var description = inst.querySelector('.article-description'),
                 imageStyler = function() {
-                    if (image.width * image.height < 240 * 180) {
-                        (image.parentNode || description).classList.add('clearfix');
-                        image.style.float = "right";
+                    if (this.width * this.height < 240 * 180) {
+                        var floater = this;
+                        if (!this.nextElementSibling && !this.previousElementSibling) {
+                            floater = this.parentNode;
+                            if (floater == description) {
+                                this.style.display = "block";
+                                this.style.margin = "0 auto";
+                                return;
+                            }
+                        }
+                        if (floater.parentNode) {
+                            floater.parentNode.classList.add('clearfix');
+                        }
+                        floater.style.float = "right";
+                        floater.style.margin = "0.7em";
                     } else {
-                        image.style.display = "block";
-                        image.style.margin = "0 auto";
+                        this.style.display = "block";
+                        this.style.margin = "0 auto";
                     }
                 }, image;
 
@@ -653,11 +673,9 @@
             }
 
             if (image) {
-                if (image.complete) {
-                    imageStyler();
-                } else {
-                    image.addEventListener('load', imageStyler);
-                }
+                Array.prototype.forEach.call(description.querySelectorAll('img'), function(img) {
+                    onImageReady(img, imageStyler);
+                });
             } else if (article.topImage) {
                 var image = document.createElement('img');
                 image.src = article.topImage;

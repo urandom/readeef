@@ -25,7 +25,7 @@
     "iron-scroll-threshold": "~1.0.1",
     "iron-signals": "PolymerElements/iron-signals",
     "moment": "~2.8.2",
-    "more-routing": "PolymerLabs/more-routing",
+    "more-routing": "urandom/more-routing#fix-for-issue-60",
     "neon-animation": "PolymerElements/neon-animated-pages",
     "paper-button": "PolymerElements/paper-button",
     "paper-checkbox": "PolymerElements/paper-checkbox",
@@ -50,7 +50,7 @@
     "pushstate-anchor": "erikringsmuth/pushstate-anchor"
   },
   "resolutions": {
-    "more-routing": "master",
+    "more-routing": "fix-for-issue-60",
     "polymer": "~1.1"
   }
 }
