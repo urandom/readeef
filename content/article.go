@@ -55,7 +55,6 @@ type Article interface {
 	Extract() ArticleExtract
 }
 
-// TODO: merge with Article
 type ScoredArticle interface {
 	Article
 
