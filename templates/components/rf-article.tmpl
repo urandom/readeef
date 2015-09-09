@@ -340,8 +340,12 @@
                     }
 
                     var direction = this._trackState.direction,
-                        ratio = Math.abs(this._trackState.previousDx) / this._trackState.containerWidth;
+                        ratio = Math.abs(this._trackState.previousDx) / this._trackState.containerWidth,
+                        index = this.articles.findIndex(this.selectedId);
 
+                    if ((index == 0 && direction > 0) || (index == this.articles.length - 1 && direction < 0)) {
+                        return;
+                    }
                     if (this._trackState.a > 0.001 || ratio > 0.6) {
                         var duration, easing;
 
@@ -377,7 +381,6 @@
                                 this._trackState.active.removeAttribute('style');
                                 this._trackState.next.removeAttribute('style');
 
-                                var index = this.articles.findIndex(this.selectedId);
                                 if (direction > 0) {
                                     this.translate3d(0, 0, 0, this._trackState.previous);
 
