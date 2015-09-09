@@ -212,6 +212,18 @@
         }
     }
 
+    function isSingleImage(element) {
+        if (element.nextElementSibling || element.previousElementSibling) {
+            return false;
+        }
+
+        if (element.parentNode && element.parentNode.textContent.trim() != "") {
+            return false
+        }
+
+        return true;
+    }
+
     Polymer({
         is: "rf-article",
         behaviors: [
@@ -626,14 +638,18 @@
                 imageStyler = function() {
                     if (this.width * this.height < 240 * 180) {
                         var floater = this;
-                        if (!this.nextElementSibling && !this.previousElementSibling) {
-                            floater = this.parentNode;
+                        do {
+                            if (!isSingleImage(floater)) {
+                                break;
+                            }
+
                             if (floater == description) {
                                 this.style.display = "block";
                                 this.style.margin = "0 auto";
                                 return;
                             }
-                        }
+                        } while (floater = floater.parentNode);
+
                         if (floater.parentNode) {
                             floater.parentNode.classList.add('clearfix');
                         }
