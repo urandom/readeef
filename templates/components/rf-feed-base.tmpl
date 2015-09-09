@@ -945,11 +945,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 }
 
                 this.$['feed-articles'].send({
-                    id: this.tagOrId,
-                    limit: this.limit,
                     offset: 0,
-                    newerFirst: this.user.ProfileData.newerFirst || false,
-                    unreadOnly: this.user.ProfileData.unreadOnly || false,
                 });
             },
 

@@ -94,16 +94,21 @@
 
             requestPool.push({instance: this, method: this.method, tag: this.tag});
 
-            var payload = {method: this.method, tag: this.tag};
+            var payload = {method: this.method, tag: this.tag},
+                arguments = {}, hasArguments = false;
 
-            if (!data && this.args) {
-                data = this.args;
-                try {
-                    data = JSON.parse(this.args);
-                } catch (e) {}
+            if (this.args) {
+                hasArguments = true;
+                Polymer.Base.mixin(arguments, this.args)
             }
+
             if (data) {
-                payload.arguments = data;
+                hasArguments = true;
+                Polymer.Base.mixin(arguments, data)
+            }
+
+            if (hasArguments) {
+                payload.arguments = arguments;
             }
 
             webSocket.send(JSON.stringify(payload));
