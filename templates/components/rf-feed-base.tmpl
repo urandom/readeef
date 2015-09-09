@@ -186,10 +186,10 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                                 <paper-input class="search-input" placeholder="Search" no-label-float on-keyup="onSearchKeyUp" on-keypress="onSearchKeyPress" autofocus></paper-input>
                             </span>
 
-                            <paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(tagOrId, searchVisible) ]]" on-tap="toggleSearch"></paper-icon-button>
-                            <paper-icon-button icon="refresh" on-tap="onRefresh" hidden$="[[ !narrow ]]"></paper-icon-button>
+                            <paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(tagOrId, searchVisible) ]]" title="Search" on-tap="toggleSearch"></paper-icon-button>
+                            <paper-icon-button icon="refresh" title="Refresh" on-tap="onRefresh" hidden$="[[ !narrow ]]"></paper-icon-button>
                             <paper-menu-button horizontal-align="right">
-                                <paper-icon-button icon="more-vert" class="dropdown-trigger"></paper-icon-button>
+                                <paper-icon-button icon="more-vert" class="dropdown-trigger" title="More options"></paper-icon-button>
                                 {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
                                 <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selected-values="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
                                     <paper-item name="newer-first">Newer first</paper-item>
@@ -201,13 +201,13 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                         <section route="article" class="layout horizontal center flex">
                             <paper-icon-button icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
                             <span class="title-text-article flex">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
-                            <paper-icon-button icon="[[ _computeReadStateIcon(_readState) ]]" on-tap="onReadStateTap"></paper-icon-button>
+                            <paper-icon-button icon="[[ _computeReadStateIcon(_readState) ]]" title="Mark article as read/unread" on-tap="onReadStateTap"></paper-icon-button>
 
-                            <paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(_articleId, articles.splices, 'previous') ]]" on-tap="onPreviousArticle"></paper-icon-button>
-                            <paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(_articleId, articles.splices, 'next') ]]" on-tap="onNextArticle"></paper-icon-button>
+                            <paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(_articleId, articles.splices, 'previous') ]]" title="Previous article" on-tap="onPreviousArticle"></paper-icon-button>
+                            <paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(_articleId, articles.splices, 'next') ]]" title="Next article" on-tap="onNextArticle"></paper-icon-button>
 
                             <paper-menu-button horizontal-align="right" hidden$="[[ !_shareServices.length ]]">
-                                <paper-icon-button icon="social:share" class="dropdown-trigger"></paper-icon-button>
+                                <paper-icon-button icon="social:share" title="Share article" class="dropdown-trigger"></paper-icon-button>
                                 {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
                                 <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onShareServiceActivate" style="background: #fff">
                                     <template is="dom-repeat" items="[[ _shareServices ]]">
