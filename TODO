@@ -1,6 +1,3 @@
-* Parallelize feed discovery and adding
-* More tests
 * I18N
 * Non-fatal API errors
 * TinyRSS API emulation
-* Consider porting https://github.com/xiaoxu193/PyTeaser to go for article summaries
