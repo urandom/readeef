@@ -1,6 +1,282 @@
 [
     {
-        "id": "",
+        "id": "Add",
+        "translation": "Добави"
+    },
+    {
+        "id": "Add a new user",
+        "translation": "Добави нов потребител"
+    },
+    {
+        "id": "Add Feed",
+        "translation": ""
+    },
+    {
+        "id": "Administration",
+        "translation": "Администрация"
+    },
+    {
+        "id": "All feed articles",
+        "translation": ""
+    },
+    {
+        "id": "Alternatively, you may provide an OPML file that contains a list of feeds.",
+        "translation": ""
+    },
+    {
+        "id": "Apply",
+        "translation": ""
+    },
+    {
+        "id": "Articles from { Tag }",
+        "translation": ""
+    },
+    {
+        "id": "A successfull change will force a re-log",
+        "translation": ""
+    },
+    {
+        "id": "Back",
+        "translation": "Назад"
+    },
+    {
+        "id": "Back to feeds",
+        "translation": ""
+    },
+    {
+        "id": "Blogging",
+        "translation": ""
+    },
+    {
+        "id": "Cancel",
+        "translation": "Отказ"
+    },
+    {
+        "id": "Change password",
+        "translation": "Промяна на парола"
+    },
+    {
+        "id": "Change your password",
+        "translation": ""
+    },
+    {
+        "id": "Comma-separated tag list",
+        "translation": ""
+    },
+    {
+        "id": "Confirm new password",
+        "translation": ""
+    },
+    {
+        "id": "Create user",
+        "translation": ""
+    },
+    {
+        "id": "Current password",
+        "translation": ""
+    },
+    {
+        "id": "Email",
+        "translation": ""
+    },
+    {
+        "id": "Enter the address of a feed, or a website that might contain one or more feeds.",
+        "translation": ""
+    },
+    {
+        "id": "Error adding selected feeds: ",
+        "translation": ""
+    },
+    {
+        "id": "Favorite",
+        "translation": "Любими"
+    },
+    {
+        "id": "Favorite feed articles",
+        "translation": ""
+    },
+    {
+        "id": "Feeds",
+        "translation": ""
+    },
+    {
+        "id": "Feed was added successfully",
+        "translation": ""
+    },
+    {
+        "id": "Find",
+        "translation": ""
+    },
+    {
+        "id": "First name",
+        "translation": ""
+    },
+    {
+        "id": "Format",
+        "translation": ""
+    },
+    {
+        "id": "Found the following feeds:",
+        "translation": ""
+    },
+    {
+        "id": "General",
+        "translation": ""
+    },
+    {
+        "id": "Last name",
+        "translation": ""
+    },
+    {
+        "id": "Logout",
+        "translation": "Изход"
+    },
+    {
+        "id": "Manage Feeds",
+        "translation": ""
+    },
+    {
+        "id": "Mark all as read",
+        "translation": ""
+    },
+    {
+        "id": "Mark article as read/unread",
+        "translation": ""
+    },
+    {
+        "id": "More options",
+        "translation": ""
+    },
+    {
+        "id": "Newer first",
+        "translation": ""
+    },
+    {
+        "id": "New password",
+        "translation": ""
+    },
+    {
+        "id": "Next article",
+        "translation": ""
+    },
+    {
+        "id": "No feeds found",
+        "translation": ""
+    },
+    {
+        "id": "No feeds were selected",
+        "translation": ""
+    },
+    {
+        "id": "Password",
+        "translation": ""
+    },
+    {
+        "id": "Personalize your feed reader",
+        "translation": ""
+    },
+    {
+        "id": "Pick your style",
+        "translation": ""
+    },
+    {
+        "id": "Popular",
+        "translation": ""
+    },
+    {
+        "id": "Popular articles from { Tag }",
+        "translation": ""
+    },
+    {
+        "id": "Popular feed articles",
+        "translation": ""
+    },
+    {
+        "id": "Previous article",
+        "translation": ""
+    },
+    {
+        "id": "Readeef: Your feed reader",
+        "translation": ""
+    },
+    {
+        "id": "Read-it-later",
+        "translation": ""
+    },
+    {
+        "id": "Refresh",
+        "translation": ""
+    },
+    {
+        "id": "Remove",
+        "translation": ""
+    },
+    {
+        "id": "Required",
+        "translation": ""
+    },
+    {
+        "id": "Search",
+        "translation": ""
+    },
+    {
+        "id": "Search results for { Term }",
+        "translation": ""
+    },
+    {
+        "id": "Search results for { Term } from { Tag }",
+        "translation": ""
+    },
+    {
+        "id": "Settings",
+        "translation": ""
+    },
+    {
+        "id": "Share article",
+        "translation": ""
+    },
+    {
+        "id": "Share Services",
+        "translation": ""
+    },
+    {
+        "id": "Social network",
+        "translation": ""
+    },
+    {
+        "id": "Summarize",
+        "translation": ""
+    },
+    {
+        "id": "The login credentials are incorrect",
+        "translation": ""
+    },
+    {
+        "id": "There are no articles in this section",
+        "translation": ""
+    },
+    {
+        "id": "There are no other users",
+        "translation": ""
+    },
+    {
+        "id": "There was an error processing the request",
+        "translation": ""
+    },
+    {
+        "id": "Unread only",
+        "translation": ""
+    },
+    {
+        "id": "User exists",
+        "translation": ""
+    },
+    {
+        "id": "View",
+        "translation": ""
+    },
+    {
+        "id": "You are not subscribed to any feeds yet",
         "translation": ""
     }
 ]

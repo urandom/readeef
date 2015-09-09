@@ -249,11 +249,11 @@ rf-article /deep/ .article-summary {
         <rf-api id="article-favorite" method="mark-article-as-favorite" tag="content-list"on-rf-api-message="onArticleStateMessage"  user="[[ user ]]"></rf-api>
         <rf-api id="article-format" method="format-article" on-rf-api-message="onArticleFormatMessage" user="[[ user ]]"></rf-api>
 
-        <rf-keyboard-shortcut route-name="article" key-code="86, 118" label="{% __ "v" .base.lang %}" description="Open the article's link in a new tab" on-press="onOpenArticleLink"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="article" key-code="77, 109" label="{% __ "m" .base.lang %}" description="Toggle the read state of the article" on-press="onToggleArticleRead"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="article" key-code="70, 102" label="{% __ "f" .base.lang %}" description="Toggle the favorite state of the article" on-press="onToggleArticleFavorite"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="article" key-code="83, 115" label="{% __ "s" .base.lang %}" description="Summarize the article" on-press="onToggleArticleSummary"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="article" key-code="67, 99" label="{% __ "c" .base.lang %}" description="Format the article's content" on-press="onToggleArticleFormat"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="86, 118" label="v" description="Open the article's link in a new tab" on-press="onOpenArticleLink"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="77, 109" label="m" description="Toggle the read state of the article" on-press="onToggleArticleRead"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="70, 102" label="f" description="Toggle the favorite state of the article" on-press="onToggleArticleFavorite"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="83, 115" label="s" description="Summarize the article" on-press="onToggleArticleSummary"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="67, 99" label="c" description="Format the article's content" on-press="onToggleArticleFormat"></rf-keyboard-shortcut>
     </template>
 
     <script>
