@@ -377,6 +377,7 @@
                                 this._trackState.active.removeAttribute('style');
                                 this._trackState.next.removeAttribute('style');
 
+                                var index = this.articles.findIndex(this.selectedId);
                                 if (direction > 0) {
                                     this.translate3d(0, 0, 0, this._trackState.previous);
 
