@@ -1,5 +1,5 @@
 {% define "content" %}
-<link rel="import" href="/component/rf-share-service">
+<link rel="import" href="{% url "/component/rf-share-service" .base.r %}">
 
 <rf-share-service name="evernote" description="Evernote" category="Read-it-later" link="https://www.evernote.com"></rf-share-service>
 <rf-share-service name="instapaper" description="Instapaper" category="Read-it-later" link="http://www.instapaper.com"></rf-share-service>

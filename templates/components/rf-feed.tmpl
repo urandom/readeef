@@ -9,9 +9,9 @@
 <link rel="import" href="/dist/paper-spinner/paper-spinner.html">
 <link rel="import" href="/dist/iron-scroll-threshold/iron-scroll-threshold.html">
 
-<link rel="import" href="/component/rf-api">
-<link rel="import" href="/component/rf-article">
-<link rel="import" href="/component/rf-keyboard-shortcuts">
+<link rel="import" href="{% url "/component/rf-api" .base.r %}">
+<link rel="import" href="{% url "/component/rf-article" .base.r %}">
+<link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
 
 <dom-module id="rf-feed">
     <style>

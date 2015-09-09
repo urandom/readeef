@@ -10,11 +10,11 @@
 <link rel="import" href="/dist/paper-toast/paper-toast.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
-<link rel="import" href="/component/rf-lazy-loader">
-<link rel="import" href="/component/rf-splash">
-<link rel="import" href="/component/rf-api">
-<link rel="import" href="/component/rf-share-services">
-<link rel="import" href="/component/rf-keyboard-shortcuts">
+<link rel="import" href="{% url "/component/rf-lazy-loader" .base.r %}">
+<link rel="import" href="{% url "/component/rf-splash" .base.r %}">
+<link rel="import" href="{% url "/component/rf-api" .base.r %}">
+<link rel="import" href="{% url "/component/rf-share-services" .base.r %}">
+<link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
 
 <dom-module id="rf-router">
     <style>

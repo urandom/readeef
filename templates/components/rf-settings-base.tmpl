@@ -6,8 +6,8 @@
 <link rel="import" href="/dist/more-routing/more-route-template-helpers.html">
 <link rel="import" href="/dist/more-routing/more-routing.html">
 
-<link rel="import" href="/component/rf-app-scaffold">
-<link rel="import" href="/component/rf-lazy-loader">
+<link rel="import" href="{% url "/component/rf-app-scaffold" .base.r %}">
+<link rel="import" href="{% url "/component/rf-lazy-loader" .base.r %}">
 
 <dom-module id="rf-settings-base">
     <style>

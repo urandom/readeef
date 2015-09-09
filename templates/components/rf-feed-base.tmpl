@@ -20,10 +20,10 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
 
-<link rel="import" href="/component/rf-api">
-<link rel="import" href="/component/rf-app-scaffold">
-<link rel="import" href="/component/rf-feed">
-<link rel="import" href="/component/rf-keyboard-shortcuts">
+<link rel="import" href="{% url "/component/rf-api" .base.r %}">
+<link rel="import" href="{% url "/component/rf-app-scaffold" .base.r %}">
+<link rel="import" href="{% url "/component/rf-feed" .base.r %}">
+<link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
 
 <dom-module id="rf-feed-base">
     <style>
@@ -103,11 +103,11 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
     </style>
     <template>
         <rf-app-scaffold narrow="{{ narrow }}" class$="[[ _computeScaffoldClass(_updateAvailable) ]]">
-            <div class="drawer-title">Feeds</div>
+            <div class="drawer-title">{% __ "Feeds" .base.lang %}</div>
             <div class="drawer-menu">
                 <div hidden$="[[  _computeHideFeedItems(feeds) ]]">
                     <a is="pushstate-anchor" href="[[ feedUrlFor('favorite') ]]" class="item">
-                        <span>Favorite</span>
+                        <span>{% __ "Favorite" .base.lang %}</span>
                         <paper-ripple></paper-ripple>
                     </a>
 
@@ -115,7 +115,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                         <paper-icon-button icon="expand-more" expands="popular-feeds" class="item" on-tap="onToggleExpand"></paper-icon-button>
                         <a is="pushstate-anchor" href="[[ feedUrlFor('popular:all') ]]" class="layout horizontal flex">
                             <div style="position: relative" class="flex item">
-                                Popular
+                                {% __ "Popular" .base.lang %}
                                 <paper-ripple></paper-ripple>
                             </div>
                         </a>
@@ -166,11 +166,11 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     <hr>
                 </div>
                 <a is="pushstate-anchor" href="[[ urlFor('settings-general') ]]" class="item">
-                    <span>Settings</span>
+                    <span>{% __ "Settings" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
                 <a is="pushstate-anchor" href="[[ urlFor('logout') ]]" class="item">
-                    <span>Logout</span>
+                    <span>{% __ "Logout" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
             </div>
@@ -192,22 +192,22 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                                 <paper-icon-button icon="more-vert" class="dropdown-trigger" title="More options"></paper-icon-button>
                                 {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
                                 <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selected-values="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
-                                    <paper-item name="newer-first">Newer first</paper-item>
-                                    <paper-item name="unread-only">Unread only</paper-item>
-                                    <paper-item name="mark-all-as-read">Mark all as read</paper-item>
+                                    <paper-item name="newer-first">{% __ "Newer first" .base.lang %}</paper-item>
+                                    <paper-item name="unread-only">{% __ "Unread only" .base.lang %}</paper-item>
+                                    <paper-item name="mark-all-as-read">{% __ "Mark all as read" .base.lang %}</paper-item>
                                 </paper-menu>
                             </paper-menu-button>
                         </section>
                         <section route="article" class="layout horizontal center flex">
                             <paper-icon-button icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
                             <span class="title-text-article flex">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
-                            <paper-icon-button icon="[[ _computeReadStateIcon(_readState) ]]" title="Mark article as read/unread" on-tap="onReadStateTap"></paper-icon-button>
+                            <paper-icon-button icon="[[ _computeReadStateIcon(_readState) ]]" title="{% __ "Mark article as read/unread" .base.lang %}" on-tap="onReadStateTap"></paper-icon-button>
 
-                            <paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(_articleId, articles.splices, 'previous') ]]" title="Previous article" on-tap="onPreviousArticle"></paper-icon-button>
-                            <paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(_articleId, articles.splices, 'next') ]]" title="Next article" on-tap="onNextArticle"></paper-icon-button>
+                            <paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(_articleId, articles.splices, 'previous') ]]" title="{% __ "Previous article" .base.lang %}" on-tap="onPreviousArticle"></paper-icon-button>
+                            <paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(_articleId, articles.splices, 'next') ]]" title="{% __ "Next article" .base.lang %}" on-tap="onNextArticle"></paper-icon-button>
 
                             <paper-menu-button horizontal-align="right" hidden$="[[ !_shareServices.length ]]">
-                                <paper-icon-button icon="social:share" title="Share article" class="dropdown-trigger"></paper-icon-button>
+                                <paper-icon-button icon="social:share" title="{% __ "Share article" .base.lang %}" class="dropdown-trigger"></paper-icon-button>
                                 {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
                                 <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onShareServiceActivate" style="background: #fff">
                                     <template is="dom-repeat" items="[[ _shareServices ]]">
@@ -226,7 +226,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 <rf-feed id="feed" user="[[ user ]]" feeds="[[ feeds ]]" articles="[[ articles ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]" on-feed-article-state="onFeedArticleState"></rf-feed>
 
                 <div class="card empty-list" hidden$="[[ _computeHideEmptyMessage(articles.*, loading) ]]">
-                    <span>There are no articles in this section</span>
+                    <span>{% __ "There are no articles in this section" .base.lang %}</span>
                 </div>
 
                 <div class="layout vertical center" hidden$="[[ !loading ]]">
@@ -773,14 +773,14 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
             _computeFeedTitle: function(tagOrId) {
                 if (tagOrId == "all") {
-                    return "All feed articles";
+                    return '{% __ "All feed articles" .base.lang %}';
                 } else if (tagOrId == "favorite") {
-                    return "Favorite feed articles";
+                    return '{% __ "Favorite feed articles" .base.lang %}';
                 } else if (tagOrId.indexOf("popular:") == 0) {
                     var sub = tagOrId.substring("popular:".length);
 
                     if (sub == "all") {
-                        return "Popular feed articles";
+                        return '{% __ "Popular feed articles" .base.lang %}';
                     } else if (sub.indexOf("tag:") == 0) {
                         return "Popular articles from " + tagOrId.substring("tag:".length);
                     } else if (!isNaN(sub)) {

@@ -40,6 +40,17 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		return err
 	}
 
+	mw := make([]string, 0, len(dispatcher.Config.Dispatcher.Middleware))
+	for _, m := range dispatcher.Config.Dispatcher.Middleware {
+		switch m {
+		case "I18N", "Static", "Session", "Url", "Sitemap":
+		default:
+			mw = append(mw, m)
+		}
+	}
+
+	dispatcher.Config.Dispatcher.Middleware = mw
+
 	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
 	dispatcher.Context.SetGlobal(context.BaseCtxKey("readeefConfig"), config)
 	dispatcher.Context.SetGlobal(readeef.CtxKey("repo"), repo)

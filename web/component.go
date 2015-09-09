@@ -25,7 +25,8 @@ func NewComponent(dispatcher *webfw.Dispatcher, apiPattern string) Component {
 }
 
 func (con Component) Handler(c context.Context) http.Handler {
-	mw, i18nFound := con.dispatcher.Middleware("I18N")
+	i18nmw, i18nFound := con.dispatcher.Middleware("I18N")
+	urlmw, urlFound := con.dispatcher.Middleware("Url")
 	logger := webfw.GetLogger(c)
 	cfg := readeef.GetConfig(c)
 
@@ -37,11 +38,19 @@ func (con Component) Handler(c context.Context) http.Handler {
 	}
 
 	if i18nFound {
-		if i18n, ok := mw.(middleware.I18N); ok {
+		if i18n, ok := i18nmw.(middleware.I18N); ok {
 			rnd.Funcs(i18n.TemplateFuncMap())
 		}
 	} else {
 		logger.Infoln("I18N middleware not found")
+	}
+
+	if urlFound {
+		if url, ok := urlmw.(middleware.Url); ok {
+			rnd.Funcs(url.TemplateFuncMap(c))
+		}
+	} else {
+		logger.Infoln("Url middleware not found")
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
