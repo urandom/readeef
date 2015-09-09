@@ -183,13 +183,13 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                             <span class="flex title-text" hidden$="[[ searchVisible ]]">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
                             <span class="search-feed flex layout horizontal center" hidden$="[[ !searchVisible ]]">
                                 <paper-icon-button icon="clear" on-tap="toggleSearch"></paper-icon-button>
-                                <paper-input class="search-input" placeholder="Search" no-label-float on-keyup="onSearchKeyUp" on-keypress="onSearchKeyPress" autofocus></paper-input>
+                                <paper-input class="search-input" placeholder="{% __ "Search" .base.lang %}" no-label-float on-keyup="onSearchKeyUp" on-keypress="onSearchKeyPress" autofocus></paper-input>
                             </span>
 
-                            <paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(tagOrId, searchVisible) ]]" title="Search" on-tap="toggleSearch"></paper-icon-button>
-                            <paper-icon-button icon="refresh" title="Refresh" on-tap="onRefresh" hidden$="[[ !narrow ]]"></paper-icon-button>
+                            <paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(tagOrId, searchVisible) ]]" title="{% __ "Search" .base.lang %}" on-tap="toggleSearch"></paper-icon-button>
+                            <paper-icon-button icon="refresh" title="{% __ "Refresh" .base.lang %}" on-tap="onRefresh" hidden$="[[ !narrow ]]"></paper-icon-button>
                             <paper-menu-button horizontal-align="right">
-                                <paper-icon-button icon="more-vert" class="dropdown-trigger" title="More options"></paper-icon-button>
+                                <paper-icon-button icon="more-vert" class="dropdown-trigger" title="{% __ "More options" .base.lang %}"></paper-icon-button>
                                 {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
                                 <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selected-values="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
                                     <paper-item name="newer-first">{% __ "Newer first" .base.lang %}</paper-item>
@@ -247,17 +247,17 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
         <iron-signals on-iron-signal-rf-feed-removed="onSignalFeedsChanged"></iron-signals>
         <iron-signals on-iron-signal-rf-feed-tags-changed="onSignalFeedTagsChanged"></iron-signals>
 
-        <rf-keyboard-shortcut route-name="article" key-code="72, 104" label="h" description="Go back to the article list" on-press="onArticleUp"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="72, 104" label="{% __ "h" .base.lang %}" description="Go back to the article list" on-press="onArticleUp"></rf-keyboard-shortcut>
 
-        <rf-keyboard-shortcut route-name="feed" key-code="106" label="j" description="Go to the next loaded article" on-press="onNextArticle"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="feed" key-code="74" label="Shift + j" description="Go to the next unread loaded article" on-press="onNextUnreadArticle"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="feed" key-code="106" label="{% __ "j" .base.lang %}" description="Go to the next loaded article" on-press="onNextArticle"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="feed" key-code="74" label="{% __ "Shift + j" .base.lang %}" description="Go to the next unread loaded article" on-press="onNextUnreadArticle"></rf-keyboard-shortcut>
 
-        <rf-keyboard-shortcut route-name="feed" key-code="107" label="k" description="Go to the previous loaded article" on-press="onPreviousArticle"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="feed" key-code="75" label="Shift + k" description="Go to the previous loaded unread article" on-press="onPreviousUnreadArticle"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="feed" key-code="107" label="{% __ "k" .base.lang %}" description="Go to the previous loaded article" on-press="onPreviousArticle"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="feed" key-code="75" label="{% __ "Shift + k" .base.lang %}" description="Go to the previous loaded unread article" on-press="onPreviousUnreadArticle"></rf-keyboard-shortcut>
 
-        <rf-keyboard-shortcut route-name="feed, !article" key-code="47" label="/" description="Search" on-press="onToggleSearch"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="feed, !article" key-code="47" label="{% __ "/" .base.lang %}" description="Search" on-press="onToggleSearch"></rf-keyboard-shortcut>
 
-        <rf-keyboard-shortcut route-name="feed" key-code="82, 114" label="r" description="Fetch the latest articles and refresh the list" on-press="refresh"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="feed" key-code="82, 114" label="{% __ "r" .base.lang %}" description="Fetch the latest articles and refresh the list" on-press="refresh"></rf-keyboard-shortcut>
     </template>
 
     <script>
@@ -782,33 +782,32 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     if (sub == "all") {
                         return '{% __ "Popular feed articles" .base.lang %}';
                     } else if (sub.indexOf("tag:") == 0) {
-                        return "Popular articles from " + tagOrId.substring("tag:".length);
+                        return '{% __ "Popular articles from { Tag }" .base.lang %}'.replace(/{\s*Tag\s*}/, tagOrId.substring("tag:".length));
                     } else if (!isNaN(sub)) {
                         var feed = this.feeds.filter(function(f) { return f.Id == sub })[0];
                         if (feed) {
-                            return "Popular articles from " + feed.Title;
+                            return '{% __ "Popular articles from { Tag }" .base.lang %}'.replace(/{\s*Tag\s*}/, feed.Title);
                         }
                     }
                 } else if (tagOrId.indexOf("search:") == 0) {
                     var parts = this._extractSearchTokens(tagOrId),
                         sub = parts[0],
-                        term = parts[1],
-                        base = "Search results for " + term;;
+                        term = parts[1];
 
                     if (sub == "all") {
-                        return base;
+                        return '{% __ "Search results for { Term }" .base.lang %}'.replace(/{\s*Term\s*}/, term);
                     } else if (sub.indexOf("tag:") == 0) {
-                        return base + "  from " + tagOrId.substring("tag:".length);
+                        return '{% __ "Search results for { Term } from { Tag }" .base.lang %}'.replace(/{\s*Term\s*}/, term).replace(/{\s*Tag\s*}/, tagOrId.substring("tag:".length));
                     } else if (!isNaN(sub)) {
                         var feed = this.feeds.filter(function(f) { return f.Id == sub })[0];
                         if (feed) {
-                            return base + " from " + feed.Title;
+                            return '{% __ "Search results for { Term } from { Tag }" .base.lang %}'.replace(/{\s*Term\s*}/, term).replace(/{\s*Tag\s*}/, feed.Title);
                         }
                     }
                 } else if (tagOrId.indexOf("tag:") == 0) {
                     var sub = tagOrId.substring("tag:".length);
 
-                    return "Articles from " + sub;
+                    return '{% __ "Articles from { Tag }" .base.lang %}'.replace(/{\s*Tag\s*}/, tagOrId.substring("tag:".length));
                 } else if (!isNaN(tagOrId)) {
                     var feed = (this.feeds || []).filter(function(f) { return f.Id == tagOrId })[0];
                     if (feed) {

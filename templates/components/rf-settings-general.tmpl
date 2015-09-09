@@ -86,14 +86,14 @@
     <template>
         <div class="card" class="layout vertical start">
             <h2>
-                Personalize your feed reader
+                {% __ "Personalize your feed reader" .base.lang %}
             </h2>
-            <paper-input id="first-name" label="First name" tabindex="1" value="{{ user.FirstName }}" on-bind-value-changed="onFirstNameChange"></paper-input>
-            <paper-input id="last-name" label="Last name" tabindex="2" value="{{ user.LastName }}"  on-bind-value-changed="onLastNameChange"></paper-input>
-            <paper-input id="email" label="Email" tabindex="3" type="email" value="{{ user.Email }}"  on-bind-value-changed="onEmailChange"></paper-input>
+            <paper-input id="first-name" label="{% __ "First name" .base.lang %}" tabindex="1" value="{{ user.FirstName }}" on-bind-value-changed="onFirstNameChange"></paper-input>
+            <paper-input id="last-name" label="{% __ "Last name" .base.lang %}" tabindex="2" value="{{ user.LastName }}"  on-bind-value-changed="onLastNameChange"></paper-input>
+            <paper-input id="email" label="{% __ "Email" .base.lang %}" tabindex="3" type="email" value="{{ user.Email }}"  on-bind-value-changed="onEmailChange"></paper-input>
 
             <h3>
-                Pick your style
+                {% __ "Pick your style" .base.lang %}
             </h3>
             <div class="theme-bubbles" class="layout horizontal justified">
                 <div class="theme" data-theme="blue"><paper-ripple/></div>
@@ -115,22 +115,22 @@
                 <br style="clear: both">
             </div>
 
-            <paper-button on-tap="onChangePassword" class="self-end">Change password</paper-button>
+            <paper-button on-tap="onChangePassword" class="self-end">{% __ "Change password" .base.lang %}</paper-button>
         </div>
 
         <paper-dialog id="set-password-dialog" on-keypress="onPasswordDialogKeypress" on-iron-overlay-closed="onPasswordDialogClosed" entry-animation="scale-up-animation" exit-animation="fade-out-animation" modal>
-            <h2>Change your password</h2>
+            <h2>{% __ "Change your password" .base.lang %}</h2>
 
             <div>
-                <small>A successfull change will force a re-log</small>
-                <paper-input id="password" type="password" label="Current password" tabindex="4"></paper-input>
-                <paper-input id="new-password" type="password" label="New password" tabindex="5"></paper-input>
-                <paper-input id="confirm-new-password" type="password" label="Confirm new password" tabindex="6"></paper-input>
+                <small>{% __ "A successfull change will force a re-log" .base.lang %}</small>
+                <paper-input id="password" type="password" label="{% __ "Current password" .base.lang %}" tabindex="4"></paper-input>
+                <paper-input id="new-password" type="password" label="{% __ "New password" .base.lang %}" tabindex="5"></paper-input>
+                <paper-input id="confirm-new-password" type="password" label="{% __ "Confirm new password" .base.lang %}" tabindex="6"></paper-input>
             </div>
 
             <div class="buttons">
-                <paper-button dialog-dismiss autofocus>Cancel</paper-button>
-                <paper-button autofocus on-click="onPasswordChangeApply">Apply</paper-button>
+                <paper-button dialog-dismiss autofocus>{% __ "Cancel" .base.lang %}</paper-button>
+                <paper-button autofocus on-click="onPasswordChangeApply">{% __ "Apply" .base.lang %}</paper-button>
             </div>
         </paper-dialog>
 

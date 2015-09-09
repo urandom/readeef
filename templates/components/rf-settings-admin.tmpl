@@ -20,25 +20,25 @@
                             <paper-checkbox checked="[[ user.Active ]]" on-change="onToggleActiveUser"></paper-checkbox>
                             <span>[[ _computeUserLabel(user) ]]</span>&nbsp;
                             <em>[[ user.Login ]]</em>
-                            <paper-icon-button icon="remove" on-tap="onRemoveUser" tabindex="1"></paper-icon-button>
+                            <paper-icon-button icon="remove" on-tap="onRemoveUser" tabindex="1" title="{% __ "Remove" .base.lang %}"></paper-icon-button>
                         </div>
                     </template>
                 </div>
 
-                <h3 hidden$="[[ _computeHideNoUsersMessage(users.*) ]]">There are no other users</h3>
-                <paper-button on-tap="onCreateUser" class="self-end">Create user</paper-button>
+                <h3 hidden$="[[ _computeHideNoUsersMessage(users.*) ]]">{% __ "There are no other users" .base.lang %}</h3>
+                <paper-button on-tap="onCreateUser" class="self-end">{% __ "Create user" .base.lang %}</paper-button>
             </div>
         </template>
 
         <paper-dialog id="create-user-dialog" on-keypress="onCreateUserDialogKeypress" entry-animation="scale-up-animation" exit-animation="fade-out-animation" modal>
-            <h2>Add a new user</h2>
+            <h2>{% __ "Add a new user" .base.lang %}</h2>
 
-            <paper-input id="create-user-login" label="Login" tabindex="2" data-required-message="Required" data-user-exists-message="User exists" required autofocus></paper-input>
-            <paper-input id="create-user-password" type="password" label="Password" tabindex="3" data-required-message="Required" required></paper-input>
+            <paper-input id="create-user-login" label="{% __ "Login" .base.lang %}" tabindex="2" data-required-message="{% __ "Required" .base.lang %}" data-user-exists-message="{% __ "User exists" .base.lang %}" required autofocus></paper-input>
+            <paper-input id="create-user-password" type="password" label="{% __ "Password" .base.lang %}" tabindex="3" data-required-message="{% __ "Required" .base.lang %}" required></paper-input>
 
             <div class="buttons">
-                <paper-button dialog-dismiss tabindex="5">Cancel</paper-button>
-                <paper-button autofocus on-click="onCreateUserApply" tabindex="4">Apply</paper-button>
+                <paper-button dialog-dismiss tabindex="5">{% __ "Cancel" .base.lang %}</paper-button>
+                <paper-button autofocus on-click="onCreateUserApply" tabindex="4">{% __ "Apply" .base.lang %}</paper-button>
             </div>
         </paper-dialog>
 

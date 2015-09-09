@@ -47,8 +47,8 @@
             <div class="card-container {{ {wide: wide} | tokenList }}" on-keypress="onKeypress">
                 <div class="card" id="login-card">
                     <div class="layout vertical">
-                        <paper-input id="login" label="Login" invalid="{{ invalid }}" error-message="The login credentials are incorrect" tabindex="1" required></paper-input>
-                        <paper-input id="password" type="password" label="Password" tabindex="2" required></paper-input>
+                        <paper-input id="login" label="{% __ "Login" .base.lang %}" invalid="{{ invalid }}" error-message="{% __ "The login credentials are incorrect" .base.lang %}" tabindex="1" required></paper-input>
+                        <paper-input id="password" type="password" label="{% __ "Password" .base.lang %}" tabindex="2" required></paper-input>
                     </div>
                     <div class="layout horizontal">
                         <div class="flex"></div>

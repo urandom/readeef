@@ -25,7 +25,7 @@ neon-animated-pages {
 
     <template>
         <more-routing-config driver="path"></more-routing-config>
-        <more-route name="splash" path="/">
+        <more-route name="splash" path="{% url "/" .base.r %}">
             <more-route path="/web">
                 <more-route name="login" path="/login">
                     <more-route name="login-from" path="/from/:url"></more-route>

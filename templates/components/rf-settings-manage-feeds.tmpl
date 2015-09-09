@@ -27,7 +27,7 @@
     <template>
         <div class="card layout vertical start">
             <div hidden$="[[ _computeHideEmptyMessage(feeds) ]]">
-                You are not subscribed to any feeds yet
+                {% __ "You are not subscribed to any feeds yet" .base.lang %}
             </div>
 
             <ul>
@@ -38,7 +38,7 @@
                             <span class="feed-title flex">[[ item.Title ]]</span>
                             <paper-icon-button icon="warning" on-tap="onDisplayFeedErrors" hidden$="[[ _computeHideFeedErrors(item) ]]"></paper-icon-button>
                             <paper-toast text="[[ _computeToastFeedErrorsText(item) ]]"></paper-toast>
-                            <paper-input value="[[ _computeFeedTags(item) ]]" on-change="onFeedTagsChange" placeholder="Comma-separated tag list" no-label-float="true"></paper-input>
+                            <paper-input value="[[ _computeFeedTags(item) ]]" on-change="onFeedTagsChange" placeholder="{% __ "Comma-separated tag list" .base.lang %}" no-label-float="true"></paper-input>
                             <paper-icon-button icon="remove" on-tap="onRemoveFeed"></paper-icon-button>
                         </div>
                     </li>
