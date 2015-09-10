@@ -21,7 +21,6 @@ import (
 
 type Fever struct {
 	webfw.BasePatternController
-	fm *readeef.FeedManager
 }
 
 type feverFeed struct {
@@ -68,10 +67,9 @@ type feverLink struct {
 	ItemIds     string         `json:"item_ids"`
 }
 
-func NewFever(fm *readeef.FeedManager) Fever {
+func NewFever() Fever {
 	return Fever{
 		webfw.NewBasePatternController("/v:version/fever/", webfw.MethodPost, ""),
-		fm,
 	}
 }
 

@@ -59,6 +59,23 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	capabilities := capabilities{I18N: len(dispatcher.Config.I18n.Languages) > 1}
 
+	var processors []parser.Processor
+	for _, p := range config.FeedParser.Processors {
+		switch p {
+		case "relative-url":
+			processors = append(processors, processor.NewRelativeUrl(logger))
+		case "proxy-http":
+			processors = append(processors, processor.NewProxyHTTP(logger))
+			capabilities.ProxyHTTP = true
+		case "cleanup":
+			processors = append(processors, processor.NewCleanup(logger))
+		case "top-image-marker":
+			processors = append(processors, processor.NewTopImageMarker(logger))
+		}
+	}
+
+	fm.ParserProcessors(processors)
+
 	var sp content.SearchProvider
 
 	switch config.Content.SearchProvider {
@@ -142,56 +159,35 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	fm.FeedMonitors(monitors)
 
-	var processors []parser.Processor
-	for _, p := range config.FeedParser.Processors {
-		switch p {
-		case "relative-url":
-			processors = append(processors, processor.NewRelativeUrl(logger))
-		case "proxy-http":
-			processors = append(processors, processor.NewProxyHTTP(logger))
-		case "cleanup":
-			processors = append(processors, processor.NewCleanup(logger))
-		case "top-image-marker":
-			processors = append(processors, processor.NewTopImageMarker(logger))
-		}
-	}
-
-	fm.ParserProcessors(processors)
-
 	fm.Start()
 
 	nonce := readeef.NewNonce()
 
-	var patternController webfw.PatternController
-	var multiPatternController webfw.MultiPatternController
-
-	multiPatternController = NewAuth(capabilities)
-	dispatcher.Handle(multiPatternController)
-
-	multiPatternController = NewFeed(fm, sp)
-	dispatcher.Handle(multiPatternController)
-
-	multiPatternController = NewArticle(config, ce)
-	dispatcher.Handle(multiPatternController)
-
-	multiPatternController = NewUser()
-	dispatcher.Handle(multiPatternController)
-
-	patternController = NewUserSettings()
-	dispatcher.Handle(patternController)
-
-	patternController = NewNonce(nonce)
-	dispatcher.Handle(patternController)
-
-	if fm.Hubbub() != nil {
-		patternController = NewHubbubController(fm.Hubbub(), config.Hubbub.RelativePath,
-			fm.AddFeedChannel(), fm.RemoveFeedChannel())
-		dispatcher.Handle(patternController)
+	controllers := []webfw.Controller{
+		NewAuth(capabilities),
+		NewFeed(fm, sp),
+		NewArticle(config, ce),
+		NewUser(),
+		NewUserSettings(),
+		NewNonce(nonce),
 	}
 
-	if config.API.Fever {
-		patternController = NewFever(fm)
-		dispatcher.Handle(patternController)
+	if fm.Hubbub() != nil {
+		controllers = append(controllers, NewHubbubController(fm.Hubbub(), config.Hubbub.RelativePath,
+			fm.AddFeedChannel(), fm.RemoveFeedChannel()))
+	}
+
+	for _, e := range config.API.Emulators {
+		switch e {
+		case "tt-rss":
+			controllers = append(controllers, NewTtRss())
+		case "fever":
+			controllers = append(controllers, NewFever())
+		}
+	}
+
+	for _, c := range controllers {
+		dispatcher.Handle(c)
 	}
 
 	middleware.InitializeDefault(dispatcher)

@@ -17,8 +17,8 @@ type Config struct {
 		Formatter  string
 	}
 	API struct {
-		Version int
-		Fever   bool
+		Version   int
+		Emulators []string
 	}
 	Timeout struct {
 		Connect   string
@@ -144,6 +144,10 @@ var cfg string = `
 	file = - # stderr, or a filename
 	formatter = text # text, json
 	access-file = - # stdout or a filename
+[api]
+	emulators
+	# emulators = tt-rss
+	# emulators = fever
 [db]
 	driver = sqlite3
 	connect = file:./readeef.sqlite3?cache=shared&mode=rwc
