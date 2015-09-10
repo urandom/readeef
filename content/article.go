@@ -30,6 +30,8 @@ type ArticleRepo interface {
 	Articles(paging ...int) []UserArticle
 	UnreadArticles(paging ...int) []UserArticle
 
+	UnreadCount() int64
+
 	ReadBefore(date time.Time, read bool)
 
 	ScoredArticles(from, to time.Time, paging ...int) []UserArticle

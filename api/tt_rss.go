@@ -35,16 +35,26 @@ type ttRssRequest struct {
 }
 
 type ttRssResponse struct {
-	Seq     int64 `json:"seq"`
-	Status  int   `json:"status"`
-	Content struct {
-		Error     string      `json:"error,omitempty"`
-		Level     int         `json:"level,omitempty"`
-		ApiLevel  int         `json:"api_level,omitempty"`
-		Version   string      `json:"version,omitempty"`
-		SessionId string      `json:"session_id,omitempty"`
-		Status    interface{} `json:"status,omitempty"`
-	} `json:"content"`
+	Seq     int64           `json:"seq"`
+	Status  int             `json:"status"`
+	Content json.RawMessage `json:"content"`
+}
+
+type ttRssGenericContent struct {
+	Error     string      `json:"error,omitempty"`
+	Level     int         `json:"level,omitempty"`
+	ApiLevel  int         `json:"api_level,omitempty"`
+	Version   string      `json:"version,omitempty"`
+	SessionId string      `json:"session_id,omitempty"`
+	Status    interface{} `json:"status,omitempty"`
+	Unread    int64       `json:"unread,omitempty"`
+}
+
+type ttRssCountersContent []ttRssCounter
+
+type ttRssCounter struct {
+	Id      string `json:"id"`
+	Counter int64  `json:"counter"`
 }
 
 func NewTtRss() TtRss {
@@ -69,6 +79,7 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 		var err error
 		var errType string
 		var user content.User
+		var content interface{}
 
 		switch {
 		default:
@@ -109,9 +120,9 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 
 			switch req.Op {
 			case "getApiLevel":
-				resp.Content.Level = TTRSS_API_LEVEL
+				content = ttRssGenericContent{Level: TTRSS_API_LEVEL}
 			case "getVersion":
-				resp.Content.Version = TTRSS_VERSION
+				content = ttRssGenericContent{Version: TTRSS_VERSION}
 			case "login":
 				user = repo.UserByLogin(data.Login(req.User))
 				if repo.Err() != nil {
@@ -128,19 +139,51 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 				sess.Set(TTRSS_SESSION_ID, sessId)
 				sess.Set(TTRSS_USER_NAME, req.User)
 
-				resp.Content.ApiLevel = TTRSS_API_LEVEL
-				resp.Content.SessionId = sessId
+				content = ttRssGenericContent{
+					ApiLevel:  TTRSS_API_LEVEL,
+					SessionId: sessId,
+				}
 			case "logout":
 				sess.Delete(TTRSS_SESSION_ID)
 				sess.Delete(TTRSS_USER_NAME)
 
-				resp.Content.Status = "OK"
+				content = ttRssGenericContent{Status: "OK"}
 			case "isLoggedIn":
 				if id, ok := sess.Get(TTRSS_SESSION_ID); ok && id != "" && id == req.Sid {
-					resp.Content.Status = true
+					content = ttRssGenericContent{Status: true}
 				} else {
-					resp.Content.Status = false
+					content = ttRssGenericContent{Status: false}
 				}
+			case "getUnread":
+				var count int64
+				counted := false
+
+				if fid := r.Form.Get("feed_id"); fid != "" {
+					// Can't handle categories, they are integer ids
+					if isTag := r.Form.Get("is_cat"); isTag == "" {
+						if feedId, err := strconv.ParseInt(fid, 10, 64); err == nil {
+							feed := user.FeedById(data.FeedId(feedId))
+							count = feed.UnreadCount()
+							if feed.HasErr() {
+								err = feed.Err()
+								break
+							}
+
+							counted = true
+						}
+					}
+				}
+
+				if !counted {
+					count = user.UnreadCount()
+					if user.HasErr() {
+						err = fmt.Errorf("Error getting all unread article ids: %v\n", user.Err())
+					}
+				}
+
+				content = ttRssGenericContent{Unread: count}
+			case "getCounters":
+				content = ttRssCountersContent{}
 			}
 		}
 
@@ -148,11 +191,19 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 			resp.Status = TTRSS_API_STATUS_OK
 		} else {
 			resp.Status = TTRSS_API_STATUS_ERR
-			resp.Content.Error = errType
+			switch v := content.(type) {
+			case ttRssGenericContent:
+				v.Error = errType
+			}
 		}
 
 		var b []byte
-		b, err = json.Marshal(resp)
+		b, err = json.Marshal(content)
+		if err == nil {
+			resp.Content = json.RawMessage(b)
+		}
+
+		b, err = json.Marshal(&resp)
 
 		if err == nil {
 			w.Header().Set("Content-Type", "text/json")

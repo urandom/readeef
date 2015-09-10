@@ -19,6 +19,7 @@ func init() {
 	sql["delete_all_user_articles_read_by_date"] = deleteAllUserArticlesReadByDate
 	sql["create_newer_user_articles_read_by_date"] = createNewerUserArticlesReadByDate
 	sql["delete_newer_user_articles_read_by_date"] = deleteNewerUserArticlesReadByDate
+	sql["get_user_unread_count"] = getUserUnreadCount
 }
 
 const (
@@ -114,5 +115,14 @@ INSERT INTO users_articles_read
 DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
 	SELECT id FROM articles WHERE date > $2
 )
+`
+	getUserUnreadCount = `
+SELECT count(a.id)
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id
+	AND uf.user_login = $1
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
+WHERE ar.article_id IS NULL
 `
 )

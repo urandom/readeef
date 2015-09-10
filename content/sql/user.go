@@ -452,6 +452,27 @@ func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 	return
 }
 
+func (u *User) UnreadCount() (count int64) {
+	if u.HasErr() {
+		return
+	}
+
+	if err := u.Validate(); err != nil {
+		u.Err(err)
+		return
+	}
+
+	login := u.Data().Login
+	u.logger.Infof("Getting user %s unread count\n", login)
+
+	if err := u.db.Get(&count, u.db.SQL("get_user_unread_count"), login); err != nil {
+		u.Err(err)
+		return
+	}
+
+	return
+}
+
 func (u *User) ArticlesOrderedById(pivot data.ArticleId, paging ...int) (ua []content.UserArticle) {
 	if u.HasErr() {
 		return

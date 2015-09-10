@@ -449,6 +449,28 @@ func (uf *UserFeed) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 	return
 }
 
+func (uf *UserFeed) UnreadCount() (count int64) {
+	if uf.HasErr() {
+		return
+	}
+
+	if err := uf.Validate(); err != nil {
+		uf.Err(err)
+		return
+	}
+
+	login := uf.User().Data().Login
+	id := uf.Data().Id
+	uf.logger.Infof("Getting user %s feed %d unread count\n", login, id)
+
+	if err := uf.db.Get(&count, uf.db.SQL("get_user_feed_unread_count"), login, id); err != nil {
+		uf.Err(err)
+		return
+	}
+
+	return
+}
+
 func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 	if uf.HasErr() {
 		return

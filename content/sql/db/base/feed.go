@@ -14,6 +14,7 @@ func init() {
 	sql["create_user_feed_tag"] = createUserFeedTag
 	sql["delete_user_feed_tags"] = deleteUserFeedTags
 	sql["get_user_feed_tags"] = getUserFeedTags
+	sql["get_user_feed_unread_count"] = getUserFeedUnreadCount
 }
 
 const (
@@ -65,5 +66,15 @@ INSERT INTO users_feeds_tags(user_login, feed_id, tag)
 `
 	deleteUserFeedTags = `
 DELETE FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2
+`
+	getUserFeedUnreadCount = `
+SELECT count(a.id)
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id
+	AND uf.user_login = $1
+	AND uf.feed_id = $2
+LEFT OUTER JOIN users_articles_read ar
+	ON a.id = ar.article_id AND uf.user_login = ar.user_login
+WHERE ar.article_id IS NULL
 `
 )

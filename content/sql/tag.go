@@ -99,6 +99,28 @@ func (t *Tag) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 	return
 }
 
+func (t *Tag) UnreadCount() (count int64) {
+	if t.HasErr() {
+		return
+	}
+
+	if err := t.Validate(); err != nil {
+		t.Err(err)
+		return
+	}
+
+	login := t.User().Data().Login
+	tag := t.Value()
+	t.logger.Infof("Getting user %s tag %s unread count\n", login, tag)
+
+	if err := t.db.Get(&count, t.db.SQL("get_tag_unread_count"), login, tag); err != nil {
+		t.Err(err)
+		return
+	}
+
+	return
+}
+
 func (t *Tag) ReadBefore(date time.Time, read bool) {
 	if t.HasErr() {
 		return
