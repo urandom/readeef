@@ -6,7 +6,7 @@ import (
 	"html/template"
 	"strings"
 
-	"github.com/advancedlogic/GoOse"
+	goose "github.com/advancedlogic/GoOse"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw/fs"
