@@ -147,6 +147,8 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		switch p {
 		case "relative-url":
 			processors = append(processors, processor.NewRelativeUrl(logger))
+		case "proxy-http":
+			processors = append(processors, processor.NewProxyHTTP(logger))
 		case "cleanup":
 			processors = append(processors, processor.NewCleanup(logger))
 		case "top-image-marker":
