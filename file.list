@@ -150,3 +150,5 @@ static/js/rf-button-link.js
 static/js/rf-login.js
 static/js/rf-router.js
 
+locale/bg.all.json
+locale/en.all.json

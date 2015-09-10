@@ -1,39 +1,43 @@
 [
     {
         "id": "Add",
-        "translation": "Добави"
+        "translation": "Добавяне"
     },
     {
         "id": "Add a new user",
-        "translation": "Добави нов потребител"
+        "translation": "Добавяне на нов потребител"
     },
     {
         "id": "Add Feed",
-        "translation": ""
+        "translation": "Добавяне на емисия"
     },
     {
         "id": "Administration",
         "translation": "Администрация"
     },
     {
+        "id": "All",
+        "translation": "Всички"
+    },
+    {
         "id": "All feed articles",
-        "translation": ""
+        "translation": "Всички статии"
     },
     {
         "id": "Alternatively, you may provide an OPML file that contains a list of feeds.",
-        "translation": ""
+        "translation": "Алтернативно, може да се осигури OPML файл, който съдържа списък с емисии."
     },
     {
         "id": "Apply",
-        "translation": ""
+        "translation": "Прилагане"
     },
     {
         "id": "Articles from { Tag }",
-        "translation": ""
+        "translation": "Статии от { Tag }"
     },
     {
         "id": "A successfull change will force a re-log",
-        "translation": ""
+        "translation": "Успешна промяна ще принуди повторно влизане"
     },
     {
         "id": "Back",
@@ -41,11 +45,11 @@
     },
     {
         "id": "Back to feeds",
-        "translation": ""
+        "translation": "Назад към емисиите"
     },
     {
         "id": "Blogging",
-        "translation": ""
+        "translation": "Блогове"
     },
     {
         "id": "Cancel",
@@ -57,35 +61,35 @@
     },
     {
         "id": "Change your password",
-        "translation": ""
+        "translation": "Промяна на вашата парола"
     },
     {
         "id": "Comma-separated tag list",
-        "translation": ""
+        "translation": "Списък, разделен със запетаи"
     },
     {
         "id": "Confirm new password",
-        "translation": ""
+        "translation": "Потвърждаване новата парола"
     },
     {
         "id": "Create user",
-        "translation": ""
+        "translation": "Създаване на потребител"
     },
     {
         "id": "Current password",
-        "translation": ""
+        "translation": "Текуща парола"
     },
     {
         "id": "Email",
-        "translation": ""
+        "translation": "Е-поща"
     },
     {
         "id": "Enter the address of a feed, or a website that might contain one or more feeds.",
-        "translation": ""
+        "translation": "Въведете адрес на емисия, или сайт който може да съдържа такива."
     },
     {
         "id": "Error adding selected feeds: ",
-        "translation": ""
+        "translation": "Грешка при добавяне на избраните емисии: "
     },
     {
         "id": "Favorite",
@@ -93,39 +97,39 @@
     },
     {
         "id": "Favorite feed articles",
-        "translation": ""
+        "translation": "Любими статии"
     },
     {
         "id": "Feeds",
-        "translation": ""
+        "translation": "Емисии"
     },
     {
         "id": "Feed was added successfully",
-        "translation": ""
+        "translation": "Емисията е добавена успешно"
     },
     {
         "id": "Find",
-        "translation": ""
+        "translation": "Търсене"
     },
     {
         "id": "First name",
-        "translation": ""
+        "translation": "Първо име"
     },
     {
         "id": "Format",
-        "translation": ""
+        "translation": "Формат"
     },
     {
         "id": "Found the following feeds:",
-        "translation": ""
+        "translation": "Намерени са следните емисии: "
     },
     {
         "id": "General",
-        "translation": ""
+        "translation": "Общи"
     },
     {
         "id": "Last name",
-        "translation": ""
+        "translation": "Последно име"
     },
     {
         "id": "Logout",
@@ -133,150 +137,150 @@
     },
     {
         "id": "Manage Feeds",
-        "translation": ""
+        "translation": "Управление на емисии"
     },
     {
         "id": "Mark all as read",
-        "translation": ""
+        "translation": "Маркиране всички като прочетени"
     },
     {
         "id": "Mark article as read/unread",
-        "translation": ""
+        "translation": "Маркиране статията като прочетена/непрочетена"
     },
     {
         "id": "More options",
-        "translation": ""
+        "translation": "Още опции"
     },
     {
         "id": "Newer first",
-        "translation": ""
+        "translation": "Нови отпред"
     },
     {
         "id": "New password",
-        "translation": ""
+        "translation": "Нова парола"
     },
     {
         "id": "Next article",
-        "translation": ""
+        "translation": "Следваща статия"
     },
     {
         "id": "No feeds found",
-        "translation": ""
+        "translation": "Няма намерени емисии"
     },
     {
         "id": "No feeds were selected",
-        "translation": ""
+        "translation": "Няма избрани емисии"
     },
     {
         "id": "Password",
-        "translation": ""
+        "translation": "Парола"
     },
     {
         "id": "Personalize your feed reader",
-        "translation": ""
+        "translation": "Персонализиране"
     },
     {
         "id": "Pick your style",
-        "translation": ""
+        "translation": "Избор на стил"
     },
     {
         "id": "Popular",
-        "translation": ""
+        "translation": "Популярни"
     },
     {
         "id": "Popular articles from { Tag }",
-        "translation": ""
+        "translation": "Популярни статии от { Tag }"
     },
     {
         "id": "Popular feed articles",
-        "translation": ""
+        "translation": "Популярни статии"
     },
     {
         "id": "Previous article",
-        "translation": ""
+        "translation": "Предишна статия"
     },
     {
         "id": "Readeef: Your feed reader",
-        "translation": ""
+        "translation": "Readeef: твоят четец на новини"
     },
     {
         "id": "Read-it-later",
-        "translation": ""
+        "translation": "Прочети-ме-по-късно"
     },
     {
         "id": "Refresh",
-        "translation": ""
+        "translation": "Опресняване"
     },
     {
         "id": "Remove",
-        "translation": ""
+        "translation": "Премахване"
     },
     {
         "id": "Required",
-        "translation": ""
+        "translation": "Задължително"
     },
     {
         "id": "Search",
-        "translation": ""
+        "translation": "Търсене"
     },
     {
         "id": "Search results for { Term }",
-        "translation": ""
+        "translation": "Резултати при търсене на { Term }"
     },
     {
         "id": "Search results for { Term } from { Tag }",
-        "translation": ""
+        "translation": "Резултат при търсене на { Term } от { Tag }"
     },
     {
         "id": "Settings",
-        "translation": ""
+        "translation": "Настройки"
     },
     {
         "id": "Share article",
-        "translation": ""
+        "translation": "Споделяне на статия"
     },
     {
         "id": "Share Services",
-        "translation": ""
+        "translation": "Канали за споделяне"
     },
     {
         "id": "Social network",
-        "translation": ""
+        "translation": "Социални мрежи"
     },
     {
         "id": "Summarize",
-        "translation": ""
+        "translation": "Обобщаване"
     },
     {
         "id": "The login credentials are incorrect",
-        "translation": ""
+        "translation": "Данните за вход са неверни"
     },
     {
         "id": "There are no articles in this section",
-        "translation": ""
+        "translation": "Няма статии в тази секция"
     },
     {
         "id": "There are no other users",
-        "translation": ""
+        "translation": "Няма други потребители"
     },
     {
         "id": "There was an error processing the request",
-        "translation": ""
+        "translation": "Има грешка при обработка"
     },
     {
         "id": "Unread only",
-        "translation": ""
+        "translation": "Само непрочетени"
     },
     {
         "id": "User exists",
-        "translation": ""
+        "translation": "Потребителят съществува"
     },
     {
         "id": "View",
-        "translation": ""
+        "translation": "Отваряне"
     },
     {
         "id": "You are not subscribed to any feeds yet",
-        "translation": ""
+        "translation": "Нямате абонамент към никакви емисии все още"
     }
 ]

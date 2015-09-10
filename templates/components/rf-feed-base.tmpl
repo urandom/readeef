@@ -335,7 +335,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
             repeaterTagUrl: function(name) {
-                if (name == 'All') {
+                if (name == "{% __ "All" .base.lang %}") {
                     return this.feedUrlFor('all');
                 } else {
                     return this.feedUrlFor(name, 'tag');
@@ -827,7 +827,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
             _computeNavigationTags: function(tags) {
-                return [].concat({name: 'All', feeds: this.feeds}, this.tags);
+                return [].concat({name: '{% __ "All" .base.lang %}', feeds: this.feeds}, this.tags);
             },
 
             _computeNavigationExpandTag: function(item) {
