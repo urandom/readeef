@@ -106,6 +106,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 	cfg := readeef.GetConfig(c)
 	return websocket.Handler(func(ws *websocket.Conn) {
 		user := readeef.GetUser(c, ws.Request())
+		sess := webfw.GetSession(c, ws.Request())
 
 		msg := make(chan apiRequest)
 		resp := make(chan apiResponse)
@@ -131,7 +132,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 					var err error
 					var processor Processor
 
-					if processor, err = data.processor(c, user, con.fm, con.sp, con.extractor,
+					if processor, err = data.processor(c, sess, user, con.fm, con.sp, con.extractor,
 						con.capabilities, []byte(cfg.Auth.Secret)); err == nil {
 						if len(data.Arguments) > 0 {
 							err = json.Unmarshal([]byte(data.Arguments), processor)
@@ -237,6 +238,7 @@ func (con WebSocket) AuthReject(c context.Context, r *http.Request) {
 
 func (a apiRequest) processor(
 	c context.Context,
+	s context.Session,
 	user content.User,
 	fm *readeef.FeedManager,
 	sp content.SearchProvider,
@@ -249,7 +251,9 @@ func (a apiRequest) processor(
 	case "heartbeat":
 		return &heartbeatProcessor{}, nil
 	case "get-auth-data":
-		return &getAuthDataProcessor{user: user, capabilities: capabilities}, nil
+		return &getAuthDataProcessor{user: user, session: s, capabilities: capabilities}, nil
+	case "logout":
+		return &logoutProcessor{session: s}, nil
 	case "mark-article-as-read":
 		return &markArticleAsReadProcessor{user: user}, nil
 	case "mark-article-as-favorite":

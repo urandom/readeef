@@ -43,7 +43,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	mw := make([]string, 0, len(dispatcher.Config.Dispatcher.Middleware))
 	for _, m := range dispatcher.Config.Dispatcher.Middleware {
 		switch m {
-		case "I18N", "Static", "Session", "Url", "Sitemap":
+		case "I18N", "Static", "Url", "Sitemap":
 		default:
 			mw = append(mw, m)
 		}
@@ -163,8 +163,8 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	var patternController webfw.PatternController
 	var multiPatternController webfw.MultiPatternController
 
-	patternController = NewAuth(capabilities)
-	dispatcher.Handle(patternController)
+	multiPatternController = NewAuth(capabilities)
+	dispatcher.Handle(multiPatternController)
 
 	multiPatternController = NewFeed(fm, sp)
 	dispatcher.Handle(multiPatternController)

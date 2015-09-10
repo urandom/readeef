@@ -46,8 +46,8 @@ func (con Login) Handler(c context.Context) http.HandlerFunc {
 				sess.SetFlash("form-error", "login-incorrect")
 				formError = true
 			} else {
-				sess.Set(authkey, u)
-				sess.Set(namekey, username)
+				sess.Set(AuthUserKey, u)
+				sess.Set(AuthNameKey, username)
 			}
 
 			if formError {

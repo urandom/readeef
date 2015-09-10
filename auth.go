@@ -20,8 +20,8 @@ import (
 	"github.com/urandom/webfw/util"
 )
 
-const authkey = "AUTHUSER"
-const namekey = "AUTHNAME"
+const AuthUserKey = "AUTHUSER"
+const AuthNameKey = "AUTHNAME"
 
 type AuthController interface {
 	LoginRequired(context.Context, *http.Request) bool
@@ -90,14 +90,14 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 
 			var u content.User
 			validUser := false
-			if uv, ok := sess.Get(authkey); ok {
+			if uv, ok := sess.Get(AuthUserKey); ok {
 				if u, ok = uv.(content.User); ok {
 					validUser = true
 				}
 			}
 
 			if !validUser {
-				if uv, ok := sess.Get(namekey); ok {
+				if uv, ok := sess.Get(AuthNameKey); ok {
 					if n, ok := uv.(data.Login); ok {
 						u = repo.UserByLogin(n)
 
@@ -105,7 +105,7 @@ func (mw Auth) Handler(ph http.Handler, c context.Context) http.Handler {
 							logger.Print(u.Err())
 						} else {
 							validUser = true
-							sess.Set(authkey, u)
+							sess.Set(AuthUserKey, u)
 						}
 					}
 				}

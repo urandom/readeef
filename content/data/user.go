@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql/driver"
+	"encoding/gob"
 	"fmt"
 )
 
@@ -37,4 +38,8 @@ func (val *Login) Scan(src interface{}) error {
 
 func (val Login) Value() (driver.Value, error) {
 	return string(val), nil
+}
+
+func init() {
+	gob.Register(Login(""))
 }

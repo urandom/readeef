@@ -125,57 +125,55 @@ func (con Feed) Handler(c context.Context) http.Handler {
 
 		params := webfw.GetParams(c, r)
 
-		if resp.err == nil {
-			switch action {
-			case "list":
-				resp = listFeeds(user)
-			case "discover":
-				link := r.FormValue("url")
-				resp = discoverFeeds(user, con.fm, link)
-			case "opml":
-				buf := util.BufferPool.GetBuffer()
-				defer util.BufferPool.Put(buf)
+		switch action {
+		case "list":
+			resp = listFeeds(user)
+		case "discover":
+			link := r.FormValue("url")
+			resp = discoverFeeds(user, con.fm, link)
+		case "opml":
+			buf := util.BufferPool.GetBuffer()
+			defer util.BufferPool.Put(buf)
 
-				buf.ReadFrom(r.Body)
+			buf.ReadFrom(r.Body)
 
-				resp = parseOpml(user, con.fm, buf.Bytes())
-			case "add":
-				links := r.Form["url"]
-				resp = addFeeds(user, con.fm, links)
-			case "remove":
-				if feedId, resp.err = strconv.ParseInt(params["feed-id"], 10, 64); resp.err == nil {
-					resp = removeFeed(user, con.fm, data.FeedId(feedId))
-				}
-			case "tags":
-				if feedId, resp.err = strconv.ParseInt(params["feed-id"], 10, 64); resp.err == nil {
-					if r.Method == "GET" {
-						resp = getFeedTags(user, data.FeedId(feedId))
-					} else if r.Method == "POST" {
-						decoder := json.NewDecoder(r.Body)
+			resp = parseOpml(user, con.fm, buf.Bytes())
+		case "add":
+			links := r.Form["url"]
+			resp = addFeeds(user, con.fm, links)
+		case "remove":
+			if feedId, resp.err = strconv.ParseInt(params["feed-id"], 10, 64); resp.err == nil {
+				resp = removeFeed(user, con.fm, data.FeedId(feedId))
+			}
+		case "tags":
+			if feedId, resp.err = strconv.ParseInt(params["feed-id"], 10, 64); resp.err == nil {
+				if r.Method == "GET" {
+					resp = getFeedTags(user, data.FeedId(feedId))
+				} else if r.Method == "POST" {
+					decoder := json.NewDecoder(r.Body)
 
-						tags := []data.TagValue{}
-						if resp.err = decoder.Decode(&tags); resp.err != nil && resp.err != io.EOF {
-							break
-						}
-
-						resp.err = nil
-						resp = setFeedTags(user, data.FeedId(feedId), tags)
+					tags := []data.TagValue{}
+					if resp.err = decoder.Decode(&tags); resp.err != nil && resp.err != io.EOF {
+						break
 					}
-				}
-			case "read":
-				var timestamp int64
 
-				if timestamp, resp.err = strconv.ParseInt(params["timestamp"], 10, 64); resp.err == nil {
-					resp = markFeedAsRead(user, params["feed-id"], timestamp)
+					resp.err = nil
+					resp = setFeedTags(user, data.FeedId(feedId), tags)
 				}
-			case "articles":
-				var limit, offset int
+			}
+		case "read":
+			var timestamp int64
 
-				if limit, resp.err = strconv.Atoi(params["limit"]); resp.err == nil {
-					if offset, resp.err = strconv.Atoi(params["offset"]); resp.err == nil {
-						resp = getFeedArticles(user, con.sp, params["feed-id"], limit, offset,
-							params["newer-first"] == "true", params["unread-only"] == "true")
-					}
+			if timestamp, resp.err = strconv.ParseInt(params["timestamp"], 10, 64); resp.err == nil {
+				resp = markFeedAsRead(user, params["feed-id"], timestamp)
+			}
+		case "articles":
+			var limit, offset int
+
+			if limit, resp.err = strconv.Atoi(params["limit"]); resp.err == nil {
+				if offset, resp.err = strconv.Atoi(params["offset"]); resp.err == nil {
+					resp = getFeedArticles(user, con.sp, params["feed-id"], limit, offset,
+						params["newer-first"] == "true", params["unread-only"] == "true")
 				}
 			}
 		}

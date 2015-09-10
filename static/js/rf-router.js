@@ -154,6 +154,7 @@
         },
 
         logout: function() {
+            this.$.logout.send();
             this._setUser(null);
             MoreRouting.navigateTo('login');
         },

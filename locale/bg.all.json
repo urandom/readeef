@@ -288,6 +288,10 @@
         "translation": "Потребителят съществува"
     },
     {
+        "id": "User name",
+        "translation": "Потребителско име"
+    },
+    {
         "id": "View",
         "translation": "Отваряне"
     },
