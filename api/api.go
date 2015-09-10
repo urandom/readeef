@@ -57,7 +57,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	fm := readeef.NewFeedManager(repo, config, logger)
 
-	capabilities := capabilities{}
+	capabilities := capabilities{I18N: len(dispatcher.Config.I18n.Languages) > 1}
 
 	var sp content.SearchProvider
 

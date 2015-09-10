@@ -2,8 +2,11 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/paper-button/paper-button.html">
 <link rel="import" href="/dist/paper-dialog/paper-dialog.html">
+<link rel="import" href="/dist/paper-dropdown-menu/paper-dropdown-menu.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
+<link rel="import" href="/dist/paper-item/paper-item.html">
+<link rel="import" href="/dist/paper-menu/paper-menu.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/neon-animation/animations/scale-up-animation.html">
 <link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
@@ -28,6 +31,24 @@
 
     --iron-icon-width: 48px;
     --iron-icon-height: 48px;
+}
+
+a[data-language] {
+    display: block;
+    position: relative;
+    padding: 16px;
+    border-radius: 3px;
+    color: var(--text-primary-color);
+    text-decoration: none;
+    min-height: 20px;
+    font-size: 16px;
+
+    @apply(--layout-horizontal);
+    @apply(--layout-center);
+}
+
+paper-dropdown-menu /deep/ paper-menu-button {
+    padding: 0;
 }
 
 .theme[data-theme="blue"] {
@@ -91,27 +112,42 @@
             <paper-input id="first-name" label="{% __ "First name" .base.lang %}" tabindex="1" value="{{ user.FirstName }}" on-bind-value-changed="onFirstNameChange"></paper-input>
             <paper-input id="last-name" label="{% __ "Last name" .base.lang %}" tabindex="2" value="{{ user.LastName }}"  on-bind-value-changed="onLastNameChange"></paper-input>
             <paper-input id="email" label="{% __ "Email" .base.lang %}" tabindex="3" type="email" value="{{ user.Email }}"  on-bind-value-changed="onEmailChange"></paper-input>
+            <paper-dropdown-menu label="{% __ "Language" .base.lang %}">
+                <paper-menu class="dropdown-content">
+                    {% $r := .base.r %}
+                    {% range .base.langs %}
+                        <a href="{% localizedUrl "/web/settings/general" . $r %}" on-tap="onLanguageSelect" data-language="{% . %}">
+                            {% if eq . "en" %}
+                                {% __ "English" . %}
+                            {% else %}
+                                {% __ "Bulgarian" . %}
+                            {% end %}
+                            <paper-ripple></paper-ripple>
+                        </a>
+                    {% end %}
+                </paper-menu>
+            </paper-dropdown-menu>
 
             <h3>
                 {% __ "Pick your style" .base.lang %}
             </h3>
             <div class="theme-bubbles" class="layout horizontal justified">
-                <div class="theme" data-theme="blue"><paper-ripple/></div>
-                <div class="theme" data-theme="indigo"><paper-ripple/></div>
-                <div class="theme" data-theme="cyan"><paper-ripple/></div>
-                <div class="theme" data-theme="teal"><paper-ripple/></div>
-                <div class="theme" data-theme="green"><paper-ripple/></div>
-                <div class="theme" data-theme="light-green"><paper-ripple/></div>
-                <div class="theme" data-theme="lime"><paper-ripple/></div>
-                <div class="theme" data-theme="red"><paper-ripple/></div>
-                <div class="theme" data-theme="pink"><paper-ripple/></div>
-                <div class="theme" data-theme="purple"><paper-ripple/></div>
-                <div class="theme" data-theme="deep-purple"><paper-ripple/></div>
-                <div class="theme" data-theme="yellow"><paper-ripple/></div>
-                <div class="theme" data-theme="amber"><paper-ripple/></div>
-                <div class="theme" data-theme="deep-orange"><paper-ripple/></div>
-                <div class="theme" data-theme="grey"><paper-ripple/></div>
-                <div class="theme" data-theme="__random__">?<paper-ripple/></div>
+                <div class="theme" data-theme="blue"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="indigo"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="cyan"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="teal"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="green"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="light-green"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="lime"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="red"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="pink"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="purple"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="deep-purple"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="yellow"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="amber"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="deep-orange"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="grey"><paper-ripple></paper-ripple></div>
+                <div class="theme" data-theme="__random__">?<paper-ripple></paper-ripple></div>
                 <br style="clear: both">
             </div>
 
@@ -191,6 +227,23 @@
                 this.$['user-settings'].send({
                     attribute: "Email",
                     value: detail.value
+                });
+            },
+
+            onLanguageSelect: function(event) {
+                event.preventDefault();
+
+                var element = Polymer.dom(event).localTarget,
+                    language = element.dataset.language;
+
+                this.user.ProfileData.language = language;
+                this.$['user-settings'].send({
+                    attribute: "ProfileData",
+                    value: this.user.ProfileData
+                });
+
+                this.debounce('change-language', function() {
+                    location.href = element.href;
                 });
             },
 

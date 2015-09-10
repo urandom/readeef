@@ -103,6 +103,10 @@
 
                 user.ProfileData = user.ProfileData || {};
 
+                if (('language' in user.ProfileData) && user.ProfileData.language != this.dataset.language) {
+                    location.href = location.href.replace('/' + this.dataset.language + '/', '/' + user.ProfileData.language + '/');
+                }
+
                 this._setUser(user);
                 this._state &= ~state.VALIDATING;
 

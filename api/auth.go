@@ -21,6 +21,7 @@ type getAuthDataProcessor struct {
 }
 
 type capabilities struct {
+	I18N   bool
 	Search bool
 }
 
