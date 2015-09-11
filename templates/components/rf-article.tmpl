@@ -689,11 +689,14 @@
                         image.src = link;
                     } else {
                         image.src = article.ThumbnailLink.replace(httpRe, '');
-                    }
-                    if (image.src != article.ThumbnailLink) {
-                        image.onerror = function() {
-                            this.onerror = null;
-                            this.src = article.ThumbnailLink;
+                        // If the image doesn't load, ignore the 'mixed
+                        // content' warning due to https and load the original
+                        // link
+                        if (image.src != article.ThumbnailLink) {
+                            image.onerror = function() {
+                                this.onerror = null;
+                                this.src = article.ThumbnailLink;
+                            }
                         }
                     }
 
