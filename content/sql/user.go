@@ -443,7 +443,7 @@ func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 	login := u.Data().Login
 	u.logger.Infof("Getting unread articles for paging %q and user %s\n", paging, login)
 
-	articles := getArticles(u, u.db, u.logger, u, "", "", "ar.article_id IS NULL", "", nil, paging...)
+	articles := getArticles(u, u.db, u.logger, u, "", "", "uas.article_id IS NULL OR NOT uas.read", "", nil, paging...)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -518,7 +518,7 @@ func (u *User) FavoriteArticles(paging ...int) (ua []content.UserArticle) {
 	login := u.Data().Login
 	u.logger.Infof("Getting favorite articles for paging %q and user %s\n", paging, login)
 
-	articles := getArticles(u, u.db, u.logger, u, "", "", "af.article_id IS NOT NULL", "", nil, paging...)
+	articles := getArticles(u, u.db, u.logger, u, "", "", "uas.favorite", "", nil, paging...)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -566,7 +566,7 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(u.db.SQL("delete_all_user_articles_read_by_date"))
+	stmt, err := tx.Preparex(u.db.SQL("create_missing_user_article_state_by_date"))
 	if err != nil {
 		u.Err(err)
 		return
@@ -579,23 +579,23 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 		return
 	}
 
-	if read {
-		stmt, err = tx.Preparex(u.db.SQL("create_all_user_articles_read_by_date"))
+	stmt, err = tx.Preparex(u.db.SQL("update_all_user_article_state_by_date"))
 
-		if err != nil {
-			u.Err(err)
-			return
-		}
-		defer stmt.Close()
+	if err != nil {
+		u.Err(err)
+		return
+	}
+	defer stmt.Close()
 
-		_, err = stmt.Exec(login, date)
-		if err != nil {
-			u.Err(err)
-			return
-		}
+	_, err = stmt.Exec(read, login, date)
+	if err != nil {
+		u.Err(err)
+		return
 	}
 
-	tx.Commit()
+	if err = tx.Commit(); err != nil {
+		u.Err(err)
+	}
 }
 
 func (u *User) ReadAfter(date time.Time, read bool) {
@@ -618,7 +618,7 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(u.db.SQL("delete_newer_user_articles_read_by_date"))
+	stmt, err := tx.Preparex(u.db.SQL("create_newer_missing_user_article_state_by_date"))
 
 	if err != nil {
 		u.Err(err)
@@ -632,25 +632,23 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 		return
 	}
 
-	if read {
-		stmt, err = tx.Preparex(u.db.SQL("create_newer_user_articles_read_by_date"))
+	stmt, err = tx.Preparex(u.db.SQL("update_all_newer_user_article_state_by_date"))
 
-		if err != nil {
-			u.Err(err)
-			return
-		}
-		defer stmt.Close()
+	if err != nil {
+		u.Err(err)
+		return
+	}
+	defer stmt.Close()
 
-		_, err := stmt.Exec(login, date)
-		if err != nil {
-			u.Err(err)
-			return
-		}
+	_, err = stmt.Exec(read, login, date)
+	if err != nil {
+		u.Err(err)
+		return
 	}
 
-	tx.Commit()
-
-	return
+	if err = tx.Commit(); err != nil {
+		u.Err(err)
+	}
 }
 
 func (u *User) ScoredArticles(from, to time.Time, paging ...int) (ua []content.UserArticle) {

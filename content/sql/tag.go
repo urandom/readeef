@@ -89,7 +89,7 @@ func (t *Tag) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 
 	articles := getArticles(t.User(), t.db, t.logger, t,
 		"", "INNER JOIN users_feeds_tags uft ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login",
-		"uft.tag = $2 AND ar.article_id IS NULL", "", []interface{}{t.String()}, paging...)
+		"uft.tag = $2 AND uas.article_id IS NULL OR NOT uas.read", "", []interface{}{t.String()}, paging...)
 
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
@@ -131,7 +131,8 @@ func (t *Tag) ReadBefore(date time.Time, read bool) {
 		return
 	}
 
-	t.logger.Infof("Marking articles for tag %s before %v as read\n", t, date)
+	login := t.User().Data().Login
+	t.logger.Infof("Marking user %s articles for tag %s before %v as read\n", login, t, date)
 
 	tx, err := t.db.Beginx()
 	if err != nil {
@@ -140,7 +141,7 @@ func (t *Tag) ReadBefore(date time.Time, read bool) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(t.db.SQL("delete_all_user_tag_articles_read_by_date"))
+	stmt, err := tx.Preparex(t.db.SQL("create_missing_user_article_state_by_tag_date"))
 
 	if err != nil {
 		t.Err(err)
@@ -148,29 +149,29 @@ func (t *Tag) ReadBefore(date time.Time, read bool) {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(t.User().Data().Login, t.String(), date)
+	_, err = stmt.Exec(login, t.String(), date)
 	if err != nil {
 		t.Err(err)
 		return
 	}
 
-	if read {
-		stmt, err = tx.Preparex(t.db.SQL("create_all_user_tag_articles_read_by_date"))
+	stmt, err = tx.Preparex(t.db.SQL("update_all_user_article_state_by_tag_date"))
 
-		if err != nil {
-			t.Err(err)
-			return
-		}
-		defer stmt.Close()
+	if err != nil {
+		t.Err(err)
+		return
+	}
+	defer stmt.Close()
 
-		_, err = stmt.Exec(t.User().Data().Login, t.String(), date)
-		if err != nil {
-			t.Err(err)
-			return
-		}
+	_, err = stmt.Exec(read, login, t.String(), date)
+	if err != nil {
+		t.Err(err)
+		return
 	}
 
-	tx.Commit()
+	if err = tx.Commit(); err != nil {
+		t.Err(err)
+	}
 }
 
 func (t *Tag) ScoredArticles(from, to time.Time, paging ...int) (ua []content.UserArticle) {

@@ -15,7 +15,7 @@ type DB struct {
 }
 
 var (
-	dbVersion        = 1
+	dbVersion        = 2
 	errAlreadyFrozen = errors.New("DB already frozen")
 	errNotFrozen     = errors.New("DB not frozen")
 

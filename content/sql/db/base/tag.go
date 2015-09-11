@@ -2,8 +2,8 @@ package base
 
 func init() {
 	sql["get_user_tag_feeds"] = getUserTagFeeds
-	sql["create_all_user_tag_articles_read_by_date"] = createAllUserTagArticlesByDate
-	sql["delete_all_user_tag_articles_read_by_date"] = deleteAllUserTagArticlesByDate
+	sql["create_missing_user_article_state_by_tag_date"] = createMissingUserArticleStateByTagDate
+	sql["update_all_user_article_state_by_tag_date"] = updateAllUserArticleReadStateByTagDate
 	sql["get_tag_unread_count"] = getTagUnreadCount
 }
 
@@ -15,24 +15,31 @@ WHERE f.id = uft.feed_id
 	AND uft.user_login = $1 AND uft.tag = $2
 ORDER BY LOWER(f.title)
 `
-	createAllUserTagArticlesByDate = `
-INSERT INTO users_articles_read
-	SELECT uf.user_login, a.id
-	FROM users_feeds uf INNER JOIN users_feeds_tags uft
-		ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login
-			AND uft.user_login = $1 AND uft.tag = $2
-	INNER JOIN articles a
-		ON uf.feed_id = a.feed_id
-		AND a.id IN (SELECT id FROM articles WHERE date IS NULL OR date < $3)
-`
-
-	deleteAllUserTagArticlesByDate = `
-DELETE FROM users_articles_read WHERE user_login = $1
-	AND article_id IN (
-		SELECT feed_id FROM users_feeds_tags WHERE user_login = $1 AND tag = $2
-	) AND article_id IN (
-		SELECT id FROM articles WHERE date IS NULL OR date < $3
+	createMissingUserArticleStateByTagDate = `
+INSERT INTO users_articles_states (user_login, article_id)
+SELECT uf.user_login, a.id
+FROM users_feeds uf INNER JOIN users_feeds_tags uft
+	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login
+		AND uft.user_login = $1 AND uft.tag = $2
+INNER JOIN articles a
+	ON uf.feed_id = a.feed_id
+	AND a.id IN (
+		SELECT id FROM articles where date IS NULL OR date < $3
 	)
+EXCEPT SELECT uas.user_login, uas.article_id
+FROM articles a INNER JOIN users_feeds_tags uft
+	ON a.feed_id = uft.feed_id
+INNER JOIN users_articles_states uas
+	ON a.id = uas.article_id
+WHERE uas.user_login = $1 AND uft.tag = $2
+`
+	updateAllUserArticleReadStateByTagDate = `
+UPDATE users_articles_states SET read = $1 WHERE user_login = $2 AND article_id IN (
+	SELECT a.id
+	FROM articles a INNER JOIN users_feeds_tags uft
+		ON a.feed_id = uft.feed_id
+	WHERE uft.tag = $3 AND (date IS NULL OR date < $4)
+)
 `
 	getTagUnreadCount = `
 SELECT count(a.id)
@@ -43,8 +50,8 @@ INNER JOIN users_feeds_tags uft
 	ON uft.feed_id = uf.feed_id
 	AND uft.user_login = uf.user_login
 	AND uft.tag = $2
-LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND uf.user_login = ar.user_login
-WHERE ar.article_id IS NULL
+LEFT OUTER JOIN users_articles_states uas
+	ON a.id = uas.article_id AND uf.user_login = uas.user_login
+WHERE uas.article_id IS NULL OR NOT uas.read
 `
 )

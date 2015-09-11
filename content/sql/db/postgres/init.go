@@ -67,17 +67,11 @@ CREATE TABLE IF NOT EXISTS users_feeds_tags (
 	PRIMARY KEY(user_login, feed_id, tag),
 	FOREIGN KEY(user_login, feed_id) REFERENCES users_feeds(user_login, feed_id) ON DELETE CASCADE
 )`, `
-CREATE TABLE IF NOT EXISTS users_articles_read (
+CREATE TABLE IF NOT EXISTS users_articles_states (
 	user_login TEXT,
 	article_id BIGINT,
-
-	PRIMARY KEY(user_login, article_id),
-	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
-	FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
-)`, `
-CREATE TABLE IF NOT EXISTS users_articles_fav (
-	user_login TEXT,
-	article_id BIGINT,
+	read BOOLEAN DEFAULT 'f',
+	favorite BOOLEAN DEFAULT 'f',
 
 	PRIMARY KEY(user_login, article_id),
 	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,

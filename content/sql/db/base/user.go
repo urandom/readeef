@@ -15,10 +15,10 @@ func init() {
 	sql["get_all_unread_user_article_ids"] = getAllUnreadUserArticleIds
 	sql["get_all_favorite_user_article_ids"] = getAllFavoriteUserArticleIds
 	sql["get_user_article_count"] = getUserArticleCount
-	sql["create_all_user_articles_read_by_date"] = createAllUserArticlesReadByDate
-	sql["delete_all_user_articles_read_by_date"] = deleteAllUserArticlesReadByDate
-	sql["create_newer_user_articles_read_by_date"] = createNewerUserArticlesReadByDate
-	sql["delete_newer_user_articles_read_by_date"] = deleteNewerUserArticlesReadByDate
+	sql["create_missing_user_article_state_by_date"] = createMissingUserArticleStateByDate
+	sql["update_all_user_article_state_by_date"] = updateAllUserArticleReadStateByDate
+	sql["create_newer_missing_user_article_state_by_date"] = createNewerMissingUserArticleStateByDate
+	sql["update_all_newer_user_article_state_by_date"] = updateAllNewerUserArticleReadStateByDate
 	sql["get_user_unread_count"] = getUserUnreadCount
 }
 
@@ -51,8 +51,8 @@ ORDER BY LOWER(f.title)
 	getUserTags        = `SELECT DISTINCT tag FROM users_feeds_tags WHERE user_login = $1`
 	getArticleColumns  = `
 SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
-CASE WHEN ar.article_id IS NULL THEN 0 ELSE 1 END AS read,
-CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite,
+CASE WHEN uas.article_id IS NULL OR NOT uas.read THEN 0 ELSE 1 END AS read,
+CASE WHEN uas.article_id IS NULL OR NOT uas.favorite THEN 0 ELSE 1 END AS favorite,
 COALESCE(at.thumbnail, '') as thumbnail,
 COALESCE(at.link, '') as thumbnail_link
 `
@@ -63,10 +63,8 @@ FROM users_feeds uf INNER JOIN articles a
 `
 
 	getArticleJoins = `
-LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND uf.user_login = ar.user_login
-LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND uf.user_login = af.user_login
+LEFT OUTER JOIN users_articles_states uas
+	ON a.id = uas.article_id AND uf.user_login = uas.user_login
 LEFT OUTER JOIN articles_thumbnails at
     ON a.id = at.article_id
 WHERE uf.user_login = $1
@@ -75,45 +73,55 @@ WHERE uf.user_login = $1
 SELECT a.id
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND uf.user_login = ar.user_login
-WHERE ar.article_id IS NULL
+LEFT OUTER JOIN users_articles_states uas
+	ON a.id = uas.article_id AND uf.user_login = uas.user_login
+WHERE uas.article_id IS NULL OR NOT uas.read
 `
 	getAllFavoriteUserArticleIds = `
 SELECT a.id
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-LEFT OUTER JOIN users_articles_fav af
-	ON a.id = af.article_id AND uf.user_login = af.user_login
-WHERE af.article_id IS NOT NULL
+LEFT OUTER JOIN users_articles_states uas
+	ON a.id = uas.article_id AND uf.user_login = uas.user_login
+WHERE uas.favorite
 `
 	getUserArticleCount = `
 SELECT count(a.id)
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
 `
-	createAllUserArticlesReadByDate = `
-INSERT INTO users_articles_read
-	SELECT uf.user_login, a.id
-	FROM users_feeds uf INNER JOIN articles a
-		ON uf.feed_id = a.feed_id AND uf.user_login = $1
-		AND a.id IN (SELECT id FROM articles WHERE date IS NULL OR date < $2)
+	createMissingUserArticleStateByDate = `
+INSERT INTO users_articles_states (user_login, article_id)
+SELECT uf.user_login, a.id
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+	AND a.id IN (
+		SELECT id FROM articles where date IS NULL OR date < $2
+	)
+EXCEPT SELECT uas.user_login, uas.article_id
+FROM users_articles_states uas
+WHERE uas.user_login = $1
 `
-	deleteAllUserArticlesReadByDate = `
-DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
-	SELECT id FROM articles WHERE date IS NULL OR date < $2
+	updateAllUserArticleReadStateByDate = `
+UPDATE users_articles_states SET read = $1 WHERE user_login = $2 AND article_id IN (
+	SELECT id FROM articles WHERE date IS NULL OR date < $3
 )
 `
-	createNewerUserArticlesReadByDate = `
-INSERT INTO users_articles_read
-	SELECT uf.user_login, a.id
-	FROM users_feeds uf INNER JOIN articles a
-		ON uf.feed_id = a.feed_id AND uf.user_login = $1
-		AND a.id IN (SELECT id FROM articles WHERE date > $2)
+	createNewerMissingUserArticleStateByDate = `
+INSERT INTO users_articles_states (user_login, article_id)
+SELECT uf.user_login, a.id
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+	AND a.id IN (
+		SELECT id FROM articles where date > $2
+	)
+EXCEPT SELECT uas.user_login, uas.article_id
+FROM users_articles_states uas
+WHERE uas.user_login = $1
 `
-	deleteNewerUserArticlesReadByDate = `
-DELETE FROM users_articles_read WHERE user_login = $1 AND article_id IN (
-	SELECT id FROM articles WHERE date > $2
+	updateAllNewerUserArticleReadStateByDate = `
+UPDATE users_articles_states SET read = $1 WHERE user_login = $2 AND article_id IN (
+	SELECT id FROM articles WHERE date > $3
 )
 `
 	getUserUnreadCount = `
@@ -121,8 +129,8 @@ SELECT count(a.id)
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id
 	AND uf.user_login = $1
-LEFT OUTER JOIN users_articles_read ar
-	ON a.id = ar.article_id AND uf.user_login = ar.user_login
-WHERE ar.article_id IS NULL
+LEFT OUTER JOIN users_articles_states uas
+	ON a.id = uas.article_id AND uf.user_login = uas.user_login
+WHERE uas.article_id IS NULL OR NOT uas.read
 `
 )

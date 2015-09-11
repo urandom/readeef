@@ -28,7 +28,7 @@ func TestScoredArticle(t *testing.T) {
 	asc1 := createArticleScores(data.ArticleScores{ArticleId: id1, Score1: 2, Score2: 2})
 	asc2 := createArticleScores(data.ArticleScores{ArticleId: id3, Score1: 1, Score2: 3})
 
-	sa := repo.ScoredArticle()
+	sa := repo.Article()
 	sa.Data(data.Article{Id: id1})
 
 	tests.CheckInt64(t, asc1.Calculate(), sa.Scores().Calculate())
@@ -96,7 +96,7 @@ func createUserArticle(u content.User, d data.Article) (ua content.Article) {
 }
 
 func createScoredArticle(u content.User, d data.Article) (sa content.Article) {
-	sa = repo.ScoredArticle()
+	sa = repo.Article()
 	sa.Data(d)
 
 	return sa

@@ -440,7 +440,7 @@ func (uf *UserFeed) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 
 	uf.logger.Infof("Getting unread articles for feed %d\n", id)
 
-	articles := uf.getArticles("ar.article_id IS NULL", "", paging...)
+	articles := uf.getArticles("uas.article_id IS NULL OR NOT uas.read", "", paging...)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -497,7 +497,7 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(uf.db.SQL("delete_all_users_articles_read_by_feed_date"))
+	stmt, err := tx.Preparex(uf.db.SQL("create_missing_user_article_state_by_feed_date"))
 	if err != nil {
 		uf.Err(err)
 		return
@@ -510,22 +510,23 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 		return
 	}
 
-	if read {
-		stmt, err = tx.Preparex(uf.db.SQL("create_all_users_articles_read_by_feed_date"))
-		if err != nil {
-			uf.Err(err)
-			return
-		}
-		defer stmt.Close()
+	stmt, err = tx.Preparex(uf.db.SQL("update_all_user_article_state_by_feed_date"))
+	if err != nil {
+		uf.Err(err)
+		return
+	}
+	defer stmt.Close()
 
-		_, err = stmt.Exec(login, id, date)
-		if err != nil {
-			uf.Err(err)
-			return
-		}
+	_, err = stmt.Exec(read, login, id, date)
+	if err != nil {
+		uf.Err(err)
+		return
 	}
 
-	tx.Commit()
+	if err = tx.Commit(); err != nil {
+		uf.Err(err)
+	}
+
 }
 
 func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (ua []content.UserArticle) {
@@ -721,7 +722,6 @@ func (tf *TaggedFeed) UpdateTags() {
 				tf.Err(err)
 				return
 			}
-			fmt.Println(tags[i])
 
 			_, err = stmt.Exec(login, id, tags[i].Value())
 			if err != nil {

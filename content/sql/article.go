@@ -174,60 +174,14 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logge
 }
 
 func (ua *UserArticle) Read(read bool) {
-	if ua.HasErr() {
-		return
-	}
-
-	d := ua.Data()
-	if d.Id == 0 {
-		ua.Err(content.NewValidationError(errors.New("Invalid article id")))
-		return
-	}
-
-	login := ua.User().Data().Login
-	ua.logger.Infof("Marking user '%s' article '%d' as read: %v\n", login, d.Id, read)
-
-	tx, err := ua.db.Beginx()
-	if err != nil {
-		ua.Err(err)
-		return
-	}
-	defer tx.Rollback()
-
-	stmt, err := tx.Preparex(ua.db.SQL("delete_user_article_read"))
-
-	if err != nil {
-		ua.Err(err)
-		return
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(login, d.Id)
-	if err != nil {
-		ua.Err(err)
-		return
-	}
-
-	d.Read = read
-
-	if read {
-		stmt, err = tx.Preparex(ua.db.SQL("create_user_article_read"))
-		if err != nil {
-			ua.Err(err)
-			return
-		}
-		defer stmt.Close()
-
-		_, err = stmt.Exec(login, d.Id)
-		ua.Err(err)
-	}
-
-	tx.Commit()
-
-	ua.Data(d)
+	ua.updateState(read, ua.Data().Favorite)
 }
 
 func (ua *UserArticle) Favorite(favorite bool) {
+	ua.updateState(ua.Data().Read, favorite)
+}
+
+func (ua *UserArticle) updateState(read, favorite bool) {
 	if ua.HasErr() {
 		return
 	}
@@ -239,7 +193,7 @@ func (ua *UserArticle) Favorite(favorite bool) {
 	}
 
 	login := ua.User().Data().Login
-	ua.logger.Infof("Marking user '%s' article '%d' as favorite: %v\n", login, d.Id, favorite)
+	ua.logger.Infof("Updating user '%s' article '%d' state: read = %v, fav = %v\n", login, d.Id, read, favorite)
 
 	tx, err := ua.db.Beginx()
 	if err != nil {
@@ -248,34 +202,40 @@ func (ua *UserArticle) Favorite(favorite bool) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(ua.db.SQL("delete_user_article_favorite"))
+	stmt, err := tx.Preparex(ua.db.SQL("update_user_article_state"))
 
 	if err != nil {
-		ua.Err(err)
+		ua.Err(fmt.Errorf("Error updating article %s state: %v", ua, err))
 		return
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(login, d.Id)
+	res, err := stmt.Exec(read, favorite, login, d.Id)
 	if err != nil {
 		ua.Err(err)
 		return
 	}
 
-	d.Favorite = favorite
+	if num, err := res.RowsAffected(); err != nil || num == 0 {
+		stmt, err := tx.Preparex(ua.db.SQL("create_user_article_state"))
+		if err != nil {
+			ua.Err(fmt.Errorf("Error creating article %s state: %v", ua, err))
+			return
+		}
+		defer stmt.Close()
 
-	if favorite {
-		stmt, err = tx.Preparex(ua.db.SQL("create_user_article_favorite"))
+		_, err = stmt.Exec(login, d.Id, read, favorite)
 		if err != nil {
 			ua.Err(err)
 			return
 		}
-		defer stmt.Close()
-		_, err = stmt.Exec(login, d.Id)
-		ua.Err(err)
 	}
 
-	tx.Commit()
-
-	ua.Data(d)
+	if err := tx.Commit(); err == nil {
+		d.Read = read
+		d.Favorite = favorite
+		ua.Data(d)
+	} else {
+		ua.Err(err)
+	}
 }

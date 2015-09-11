@@ -20,8 +20,7 @@ func TestMain(m *testing.M) {
 	db.Exec("TRUNCATE feeds CASCADE")
 	db.Exec("TRUNCATE hubbub_subscriptions CASCADE")
 	db.Exec("TRUNCATE users CASCADE")
-	db.Exec("TRUNCATE users_articles_fav CASCADE")
-	db.Exec("TRUNCATE users_articles_read CASCADE")
+	db.Exec("TRUNCATE users_articles_states CASCADE")
 	db.Exec("TRUNCATE users_feeds CASCADE")
 	db.Exec("TRUNCATE users_feeds_tags CASCADE")
 

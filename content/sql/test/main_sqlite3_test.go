@@ -21,8 +21,7 @@ func TestMain(m *testing.M) {
 	db.Exec("DELETE FROM feeds")
 	db.Exec("DELETE FROM hubbub_subscriptions")
 	db.Exec("DELETE FROM users")
-	db.Exec("DELETE FROM users_articles_fav")
-	db.Exec("DELETE FROM users_articles_read")
+	db.Exec("DELETE FROM users_articles_states")
 	db.Exec("DELETE FROM users_feeds")
 	db.Exec("DELETE FROM users_feeds_tags")
 

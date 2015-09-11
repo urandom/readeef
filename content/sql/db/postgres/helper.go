@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"fmt"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/urandom/readeef/content/sql/db"
@@ -38,6 +40,45 @@ func (h Helper) CreateWithId(tx *sqlx.Tx, name string, args ...interface{}) (int
 	return id, nil
 }
 
+func (h Helper) Upgrade(db *db.DB, old, new int) error {
+	for old < new {
+		switch old {
+		case 1:
+			if err := upgrade1to2(db); err != nil {
+				return fmt.Errorf("Error upgrading db from %d to %d: %v\n", old, new, err)
+			}
+		}
+		old++
+	}
+
+	return nil
+}
+
+func upgrade1to2(db *db.DB) error {
+	tx, err := db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(upgrade1To2MergeReadAndFav)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("DROP TABLE users_articles_read")
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("DROP TABLE users_articles_fav")
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func init() {
 	helper := &Helper{Helper: base.NewHelper()}
 
@@ -61,5 +102,15 @@ FROM feeds f, users_feeds_tags uft
 WHERE f.id = uft.feed_id
 	AND uft.user_login = $1 AND uft.tag = $2
 ORDER BY f.title COLLATE "default"
+`
+
+	upgrade1To2MergeReadAndFav = `
+INSERT INTO users_articles_states
+SELECT COALESCE(ar.user_login, af.user_login), COALESCE(ar.article_id, af.article_id),
+	CASE WHEN ar.article_id IS NULL THEN 'f'::BOOLEAN ELSE 't'::BOOLEAN END AS read,
+	CASE WHEN af.article_id IS NULL THEN 'f'::BOOLEAN ELSE 't'::BOOLEAN END AS favorite
+FROM users_articles_read ar FULL OUTER JOIN users_articles_fav af
+	ON ar.article_id = af.article_id AND ar.user_login = af.user_login
+ORDER BY ar.article_id
 `
 )
