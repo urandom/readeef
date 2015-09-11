@@ -183,7 +183,16 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 
 				content = ttRssGenericContent{Unread: count}
 			case "getCounters":
-				content = ttRssCountersContent{}
+				cContent := ttRssCountersContent{}
+
+				cContent = append(cContent,
+					ttRssCounter{Id: "global-unread", Counter: user.UnreadCount()})
+
+				feeds := user.AllFeeds()
+				cContent = append(cContent,
+					ttRssCounter{Id: "subscribed-feeds", Counter: int64(len(feeds))})
+
+				content = cContent
 			}
 		}
 
