@@ -709,8 +709,13 @@
                     onImageReady(img, imageStyler);
                 });
             } else if (article.topImage) {
-                var image = document.createElement('img');
-                image.src = article.topImage;
+                var image = document.createElement('img'),
+                    link = article.topImage;
+
+                if (this.user.capabilities.ProxyHTTP && link.indexOf("http:") == 0) {
+                    link = '/proxy?url=' + encodeURIComponent(link);
+                }
+                image.src = link;
                 description.insertBefore(image, description.firstChild);
             }
 
