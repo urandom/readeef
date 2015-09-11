@@ -123,6 +123,23 @@ CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 
 	PRIMARY KEY(feed_id),
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
-)`,
+)`, `
+CREATE OR REPLACE FUNCTION create_index_if_not_exists(tblname text, colname text) RETURNS void AS $$
+DECLARE
+	idxname text := quote_ident(tblname) || '_' || quote_ident(colname) || '_idx';
+BEGIN
+	IF NOT EXISTS (
+		SELECT 1
+		FROM   pg_class c
+		JOIN   pg_namespace n ON n.oid = c.relnamespace
+		WHERE  c.relname = idxname
+		AND    n.nspname = 'public' -- 'public' by default
+		) THEN
+
+		EXECUTE 'CREATE INDEX ' || idxname || ' ON ' || quote_ident(tblname) || ' (' || quote_ident(colname) || ')';
+	END IF;
+END;
+$$ LANGUAGE plpgsql;
+`,
 	}
 )
