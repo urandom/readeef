@@ -1,2 +1,4 @@
+* Merge users_articles_read and users_articles_fav into a single table
+* Create indexes for foreign key columns that are used in queries
 * Non-fatal API errors
 * TinyRSS API emulation
