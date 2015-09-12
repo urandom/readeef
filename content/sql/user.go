@@ -598,12 +598,12 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 	}
 
 	if !opts.BeforeDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf(" AND a.date <= $%d", len(args)+1))
+		whereSlice = append(whereSlice, fmt.Sprintf("a.date <= $%d", len(args)+1))
 		args = append(args, opts.BeforeDate)
 	}
 
 	if !opts.AfterDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf(" AND a.date > $%d", len(args)+1))
+		whereSlice = append(whereSlice, fmt.Sprintf("a.date > $%d", len(args)+1))
 		args = append(args, opts.AfterDate)
 	}
 
