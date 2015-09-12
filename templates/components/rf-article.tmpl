@@ -73,7 +73,7 @@
 (function() {
     "use strict";
 
-    var animations = {}, httpRe = /^https?:/;
+    var animations = {}, httpRe = /^https?:/, templateRe = /\{\{\s*\.\s*\}\}/;
 
     function ordinal(value) {
         var str = value.toString(), suff = str.slice(-1), ord = '';
@@ -684,7 +684,10 @@
                         var link = article.ThumbnailLink;
 
                         if (link.indexOf('http:') == 0) {
-                            link = '/proxy?url=' + encodeURIComponent(link);
+                            var template = decodeURIComponent(
+                                    this.dataset.proxyHttpUrlTemplate || '/proxy?url={{ . }}');
+
+                            link = template.replace(templateRe, encodeURIComponent(link));
                         }
                         image.src = link;
                     } else {
