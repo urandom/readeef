@@ -508,7 +508,7 @@ func markFeedAsRead(user content.User, id string, timestamp int64) (resp respons
 	}
 
 	if ar != nil {
-		ar.MarkRead(true, o)
+		ar.ReadState(true, o)
 
 		if e, ok := ar.(content.Error); ok && e.HasErr() {
 			resp.err = e.Err()

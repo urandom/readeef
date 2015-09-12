@@ -358,7 +358,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 				logger.Infoln("Marking recently read fever items as unread")
 
 				t := time.Now().Add(-24 * time.Hour)
-				user.MarkRead(false, data.ArticleUpdateStateOptions{
+				user.ReadState(false, data.ArticleUpdateStateOptions{
 					BeforeDate: time.Now(),
 					AfterDate:  t,
 				})
@@ -427,13 +427,13 @@ func (con Fever) Handler(c context.Context) http.Handler {
 							break
 						}
 
-						feed.MarkRead(true, data.ArticleUpdateStateOptions{
+						feed.ReadState(true, data.ArticleUpdateStateOptions{
 							BeforeDate: t,
 						})
 						err = feed.Err()
 					} else if val == "group" {
 						if id == 1 || id == 0 {
-							user.MarkRead(true, data.ArticleUpdateStateOptions{
+							user.ReadState(true, data.ArticleUpdateStateOptions{
 								BeforeDate: t,
 							})
 							err = user.Err()

@@ -112,7 +112,7 @@ func (t *Tag) Count(o ...data.ArticleCountOptions) (count int64) {
 	return
 }
 
-func (t *Tag) MarkRead(read bool, o ...data.ArticleUpdateStateOptions) {
+func (t *Tag) ReadState(read bool, o ...data.ArticleUpdateStateOptions) {
 	if t.HasErr() {
 		return
 	}
@@ -143,7 +143,7 @@ INNER JOIN users_feeds_tags uft ON a.feed_id = uft.feed_id
 `
 
 	args := []interface{}{tag}
-	markRead(u, t.db, t.logger, opts, read, insertInnerJoin, "",
+	readState(u, t.db, t.logger, opts, read, insertInnerJoin, "",
 		exceptJoin, "uft.tag = $2",
 		"INNER JOIN users_feeds_tags uft ON a.feed_id = uft.feed_id", "uft.tag = $3",
 		args, args)

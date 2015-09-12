@@ -30,7 +30,7 @@ type ArticleRepo interface {
 
 	Articles(...data.ArticleQueryOptions) []UserArticle
 	Count(...data.ArticleCountOptions) int64
-	MarkRead(read bool, o ...data.ArticleUpdateStateOptions)
+	ReadState(read bool, o ...data.ArticleUpdateStateOptions)
 }
 
 type ArticleSearch interface {

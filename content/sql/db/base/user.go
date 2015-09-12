@@ -15,8 +15,8 @@ func init() {
 	sql["get_user_article_unread_count"] = getUserArticleUnreadCount
 
 	sql["get_articles_template"] = getArticlesTemplate
-	sql["mark_read_insert_template"] = markReadInsertTemplate
-	sql["mark_read_update_template"] = markReadUpdateTemplate
+	sql["read_state_insert_template"] = readStateInsertTemplate
+	sql["read_state_update_template"] = readStateUpdateTemplate
 }
 
 const (
@@ -98,7 +98,7 @@ WHERE uf.user_login = $1
 {{ .Limit }}
 `
 
-	markReadInsertTemplate = `
+	readStateInsertTemplate = `
 INSERT INTO users_articles_states (user_login, article_id)
 SELECT uf.user_login, a.id
 FROM users_feeds uf
@@ -115,7 +115,7 @@ FROM users_articles_states uas
 WHERE uas.user_login = $1
 {{ .ExceptWhere }}
 `
-	markReadUpdateTemplate = `
+	readStateUpdateTemplate = `
 UPDATE users_articles_states SET read = $1 WHERE user_login = $2 AND article_id IN (
 	SELECT id FROM articles {{ .InnerJoin }}
 	{{ .InnerWhere }}

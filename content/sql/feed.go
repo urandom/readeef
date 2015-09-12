@@ -463,7 +463,7 @@ func (uf *UserFeed) Count(o ...data.ArticleCountOptions) (count int64) {
 	return
 }
 
-func (uf *UserFeed) MarkRead(read bool, o ...data.ArticleUpdateStateOptions) {
+func (uf *UserFeed) ReadState(read bool, o ...data.ArticleUpdateStateOptions) {
 	if uf.HasErr() {
 		return
 	}
@@ -484,7 +484,7 @@ func (uf *UserFeed) MarkRead(read bool, o ...data.ArticleUpdateStateOptions) {
 	uf.logger.Infof("Getting articles for user %s feed %d with opts: %#v\n", login, id, opts)
 
 	args := []interface{}{id}
-	markRead(u, uf.db, uf.logger, opts, read, "", "uf.feed_id = $2",
+	readState(u, uf.db, uf.logger, opts, read, "", "uf.feed_id = $2",
 		"INNER JOIN articles a ON uas.article_id = a.id", "a.feed_id = $2",
 		"", "feed_id = $3", args, args)
 	if u.HasErr() {

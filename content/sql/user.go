@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	getArticlesTemplate    *template.Template
-	markReadInsertTemplate *template.Template
-	markReadUpdateTemplate *template.Template
+	getArticlesTemplate     *template.Template
+	readStateInsertTemplate *template.Template
+	readStateUpdateTemplate *template.Template
 )
 
 type getArticlesData struct {
@@ -494,7 +494,7 @@ func (u *User) Query(term string, sp content.SearchProvider, paging ...int) (ua 
 	return
 }
 
-func (u *User) MarkRead(read bool, o ...data.ArticleUpdateStateOptions) {
+func (u *User) ReadState(read bool, o ...data.ArticleUpdateStateOptions) {
 	if u.HasErr() {
 		return
 	}
@@ -512,7 +512,7 @@ func (u *User) MarkRead(read bool, o ...data.ArticleUpdateStateOptions) {
 	login := u.Data().Login
 	u.logger.Infof("Getting articles for user %s with options: %#v\n", login, opts)
 
-	markRead(u, u.db, u.logger, opts, read, "", "", "", "", "", "", nil, nil)
+	readState(u, u.db, u.logger, opts, read, "", "", "", "", "", "", nil, nil)
 }
 
 func (u *User) Tags() (tags []content.Tag) {
@@ -553,7 +553,7 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 
 	var err error
 	if getArticlesTemplate == nil {
-		getArticlesTemplate, err = template.New("mark-read-update-sql").
+		getArticlesTemplate, err = template.New("read-state-update-sql").
 			Parse(dbo.SQL("get_articles_template"))
 
 		if err != nil {
@@ -672,27 +672,27 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 	return
 }
 
-func markRead(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleUpdateStateOptions, read bool, insertJoin, insertJoinPredicate, exceptJoin, exceptWhere, updateInnerJoin, updateInnerWhere string, insertArgs, updateArgs []interface{}) {
+func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleUpdateStateOptions, read bool, insertJoin, insertJoinPredicate, exceptJoin, exceptWhere, updateInnerJoin, updateInnerWhere string, insertArgs, updateArgs []interface{}) {
 	if u.HasErr() {
 		return
 	}
 
 	var err error
-	if markReadInsertTemplate == nil {
-		markReadInsertTemplate, err = template.New("mark-read-insert-sql").
-			Parse(dbo.SQL("mark_read_insert_template"))
+	if readStateInsertTemplate == nil {
+		readStateInsertTemplate, err = template.New("read-state-insert-sql").
+			Parse(dbo.SQL("read_state_insert_template"))
 
 		if err != nil {
-			u.Err(fmt.Errorf("Error generating mark-read-insert template: %v", err))
+			u.Err(fmt.Errorf("Error generating read-state-insert template: %v", err))
 			return
 		}
 	}
-	if markReadUpdateTemplate == nil {
-		markReadUpdateTemplate, err = template.New("mark-read-update-sql").
-			Parse(dbo.SQL("mark_read_update_template"))
+	if readStateUpdateTemplate == nil {
+		readStateUpdateTemplate, err = template.New("read-state-update-sql").
+			Parse(dbo.SQL("read_state_update_template"))
 
 		if err != nil {
-			u.Err(fmt.Errorf("Error generating mark-read-update template: %v", err))
+			u.Err(fmt.Errorf("Error generating read-state-update template: %v", err))
 			return
 		}
 	}
@@ -752,13 +752,13 @@ func markRead(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Article
 			data.ExceptWhere = " AND " + exceptWhere
 		}
 
-		if err := markReadInsertTemplate.Execute(buf, data); err != nil {
-			u.Err(fmt.Errorf("Error executing mark-read-insert template: %v", err))
+		if err := readStateInsertTemplate.Execute(buf, data); err != nil {
+			u.Err(fmt.Errorf("Error executing read-state-insert template: %v", err))
 			return
 		}
 
 		sql := buf.String()
-		logger.Debugf("Mark Insert SQL:\n%s\nArgs:%q\n", sql, args)
+		logger.Debugf("Read state insert SQL:\n%s\nArgs:%q\n", sql, args)
 
 		stmt, err := tx.Preparex(sql)
 
@@ -814,13 +814,13 @@ func markRead(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Article
 		data.InnerWhere = " WHERE " + strings.Join(where, " AND ")
 	}
 
-	if err := markReadUpdateTemplate.Execute(buf, data); err != nil {
-		u.Err(fmt.Errorf("Error executing mark-read-update template: %v", err))
+	if err := readStateUpdateTemplate.Execute(buf, data); err != nil {
+		u.Err(fmt.Errorf("Error executing read-state-update template: %v", err))
 		return
 	}
 
 	sql := buf.String()
-	logger.Debugf("Mark Update SQL:\n%s\nArgs:%q\n", sql, args)
+	logger.Debugf("Read state update SQL:\n%s\nArgs:%q\n", sql, args)
 
 	stmt, err := tx.Preparex(sql)
 
