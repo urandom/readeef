@@ -530,7 +530,7 @@ func getFeedArticles(user content.User, sp content.SearchProvider, id string, li
 	var as content.ArticleSorting
 	var ar content.ArticleRepo
 
-	o := data.ArticleQueryOptions{Limit: limit, Offset: offset, UnreadOnly: unreadOnly}
+	o := data.ArticleQueryOptions{Limit: limit, Offset: offset, UnreadOnly: unreadOnly, UnreadFirst: true}
 
 	if id == "favorite" {
 		o.FavoriteOnly = true
@@ -541,6 +541,7 @@ func getFeedArticles(user content.User, sp content.SearchProvider, id string, li
 		as = user
 	} else if strings.HasPrefix(id, "popular:") {
 		o.IncludeScores = true
+		o.UnreadFirst = false
 		o.BeforeDate = time.Now()
 		o.AfterDate = time.Now().AddDate(0, 0, -5)
 
