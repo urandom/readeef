@@ -51,8 +51,8 @@ ORDER BY LOWER(f.title)
 	getUserTags        = `SELECT DISTINCT tag FROM users_feeds_tags WHERE user_login = $1`
 	getArticleColumns  = `
 SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
-CASE WHEN uas.article_id IS NULL OR NOT uas.read THEN 0 ELSE 1 END AS read,
-CASE WHEN uas.article_id IS NULL OR NOT uas.favorite THEN 0 ELSE 1 END AS favorite,
+COALESCE(uas.read, CAST(0 AS BOOLEAN)) as read,
+COALESCE(uas.favorite, CAST(0 AS BOOLEAN)) as favorite,
 COALESCE(at.thumbnail, '') as thumbnail,
 COALESCE(at.link, '') as thumbnail_link
 `

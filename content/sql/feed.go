@@ -497,20 +497,22 @@ func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(uf.db.SQL("create_missing_user_article_state_by_feed_date"))
-	if err != nil {
-		uf.Err(err)
-		return
-	}
-	defer stmt.Close()
+	if read {
+		stmt, err := tx.Preparex(uf.db.SQL("create_missing_user_article_state_by_feed_date"))
+		if err != nil {
+			uf.Err(err)
+			return
+		}
+		defer stmt.Close()
 
-	_, err = stmt.Exec(login, id, date)
-	if err != nil {
-		uf.Err(err)
-		return
+		_, err = stmt.Exec(login, id, date)
+		if err != nil {
+			uf.Err(err)
+			return
+		}
 	}
 
-	stmt, err = tx.Preparex(uf.db.SQL("update_all_user_article_state_by_feed_date"))
+	stmt, err := tx.Preparex(uf.db.SQL("update_all_user_article_state_by_feed_date"))
 	if err != nil {
 		uf.Err(err)
 		return

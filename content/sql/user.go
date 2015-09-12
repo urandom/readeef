@@ -566,20 +566,22 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(u.db.SQL("create_missing_user_article_state_by_date"))
-	if err != nil {
-		u.Err(err)
-		return
-	}
-	defer stmt.Close()
+	if read {
+		stmt, err := tx.Preparex(u.db.SQL("create_missing_user_article_state_by_date"))
+		if err != nil {
+			u.Err(err)
+			return
+		}
+		defer stmt.Close()
 
-	_, err = stmt.Exec(login, date)
-	if err != nil {
-		u.Err(err)
-		return
+		_, err = stmt.Exec(login, date)
+		if err != nil {
+			u.Err(err)
+			return
+		}
 	}
 
-	stmt, err = tx.Preparex(u.db.SQL("update_all_user_article_state_by_date"))
+	stmt, err := tx.Preparex(u.db.SQL("update_all_user_article_state_by_date"))
 
 	if err != nil {
 		u.Err(err)
@@ -618,21 +620,23 @@ func (u *User) ReadAfter(date time.Time, read bool) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(u.db.SQL("create_newer_missing_user_article_state_by_date"))
+	if read {
+		stmt, err := tx.Preparex(u.db.SQL("create_newer_missing_user_article_state_by_date"))
 
-	if err != nil {
-		u.Err(err)
-		return
+		if err != nil {
+			u.Err(err)
+			return
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(login, date)
+		if err != nil {
+			u.Err(err)
+			return
+		}
 	}
-	defer stmt.Close()
 
-	_, err = stmt.Exec(login, date)
-	if err != nil {
-		u.Err(err)
-		return
-	}
-
-	stmt, err = tx.Preparex(u.db.SQL("update_all_newer_user_article_state_by_date"))
+	stmt, err := tx.Preparex(u.db.SQL("update_all_newer_user_article_state_by_date"))
 
 	if err != nil {
 		u.Err(err)

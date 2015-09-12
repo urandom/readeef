@@ -141,21 +141,23 @@ func (t *Tag) ReadBefore(date time.Time, read bool) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(t.db.SQL("create_missing_user_article_state_by_tag_date"))
+	if read {
+		stmt, err := tx.Preparex(t.db.SQL("create_missing_user_article_state_by_tag_date"))
 
-	if err != nil {
-		t.Err(err)
-		return
+		if err != nil {
+			t.Err(err)
+			return
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(login, t.String(), date)
+		if err != nil {
+			t.Err(err)
+			return
+		}
 	}
-	defer stmt.Close()
 
-	_, err = stmt.Exec(login, t.String(), date)
-	if err != nil {
-		t.Err(err)
-		return
-	}
-
-	stmt, err = tx.Preparex(t.db.SQL("update_all_user_article_state_by_tag_date"))
+	stmt, err := tx.Preparex(t.db.SQL("update_all_user_article_state_by_tag_date"))
 
 	if err != nil {
 		t.Err(err)

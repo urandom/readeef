@@ -93,6 +93,7 @@ INSERT INTO users_articles_states(user_login, article_id, read, favorite)
 		SELECT user_login, article_id, CAST($3 AS INTEGER), CAST($4 AS INTEGER)
 		FROM users_articles_states WHERE user_login = $1 AND article_id = $2
 `
+
 	upgrade1To2MergeReadAndFav = `
 INSERT INTO users_articles_states
 SELECT ar.user_login, ar.article_id, 1 as read,
