@@ -17,6 +17,7 @@ type ProxyHTTP struct {
 }
 
 func NewProxyHTTP(l webfw.Logger, urlTemplate string) (ProxyHTTP, error) {
+	l.Infof("URL Template: %s\n", urlTemplate)
 	t, err := template.New("proxy-http-url-template").Parse(urlTemplate)
 	if err != nil {
 		return ProxyHTTP{}, err

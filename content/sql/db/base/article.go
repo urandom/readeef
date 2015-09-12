@@ -20,7 +20,7 @@ const (
 	createFeedArticle = `
 INSERT INTO articles(feed_id, link, guid, title, description, date)
 	SELECT $1, $2, $3, $4, $5, $6 EXCEPT
-		SELECT feed_id, link, guid, title, description, date
+		SELECT feed_id, link, CAST($3 AS TEXT), CAST($4 as TEXT), CAST($5 AS TEXT), CAST($6 AS TIMESTAMP)
 		FROM articles WHERE feed_id = $1 AND link = $2
 `
 
