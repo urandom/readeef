@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
@@ -21,6 +23,9 @@ const (
 	TTRSS_API_LEVEL      = 12
 	TTRSS_SESSION_ID     = "TTRSS_SESSION_ID"
 	TTRSS_USER_NAME      = "TTRSS_USER_NAME"
+
+	TTRSS_FAVORITE_ID = -1
+	TTRSS_ALL_ID      = -4
 )
 
 type TtRss struct {
@@ -28,10 +33,25 @@ type TtRss struct {
 }
 
 type ttRssRequest struct {
-	Op       string `json:"op"`
-	Sid      string `json:"sid"`
-	User     string `json:"user"`
-	Password string `json:"password"`
+	Op            string         `json:"op"`
+	Sid           string         `json:"sid"`
+	User          string         `json:"user"`
+	Password      string         `json:"password"`
+	OutputMode    string         `json:"output_mode"`
+	UnreadOnly    bool           `json:"unread_only"`
+	Limit         int            `json:"limit"`
+	Offset        int            `json:"offset"`
+	CatId         int            `json:"cat_id"`
+	FeedId        data.FeedId    `json:"feed_id"`
+	Skip          int            `json:"skip"`
+	IsCat         bool           `json:"is_cat"`
+	ShowContent   bool           `json:"show_content"`
+	ShowExcerpt   bool           `json:"show_excerpt"`
+	ViewMode      string         `json:"view_mode"`
+	SinceId       data.ArticleId `json:"since_id"`
+	Sanitize      bool           `json:"sanitize"`
+	HasSandbox    bool           `json:"has_sandbox"`
+	IncludeHeader bool           `json:"include_header"`
 }
 
 type ttRssResponse struct {
@@ -53,13 +73,26 @@ type ttRssGenericContent struct {
 type ttRssCountersContent []ttRssCounter
 
 type ttRssCounter struct {
-	Id      string `json:"id"`
-	Counter int64  `json:"counter"`
+	Id         string `json:"id"`
+	Counter    int64  `json:"counter"`
+	AuxCounter int64  `json:"auxcounter,omitempty"`
+}
+
+type ttRssFeedsContent []ttRssFeed
+
+type ttRssFeed struct {
+	Id          data.FeedId `json:"id"`
+	Title       string      `json:"title"`
+	Unread      int64       `json:"unread"`
+	CatId       int         `json:"cat_id"`
+	FeedUrl     string      `json:"feed_url,omitempty"`
+	LastUpdated int64       `json:"last_updated,omitempty"`
+	OrderId     int         `json:"order_id,omitempty"`
 }
 
 func NewTtRss() TtRss {
 	return TtRss{
-		webfw.NewBasePatternController("/v:version/tt-rss/", webfw.MethodPost, ""),
+		webfw.NewBasePatternController("/v"+strconv.Itoa(TTRSS_API_LEVEL)+"/tt-rss/", webfw.MethodPost, ""),
 	}
 }
 
@@ -149,7 +182,7 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 
 				content = ttRssGenericContent{Status: "OK"}
 			case "isLoggedIn":
-				if id, ok := sess.Get(TTRSS_SESSION_ID); ok && id != "" && id == req.Sid {
+				if id, ok := sess.Get(TTRSS_SESSION_ID); ok && id != "" {
 					content = ttRssGenericContent{Status: true}
 				} else {
 					content = ttRssGenericContent{Status: false}
@@ -183,16 +216,106 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 
 				content = ttRssGenericContent{Unread: count}
 			case "getCounters":
+				if req.OutputMode == "" {
+					req.OutputMode = "flc"
+				}
 				cContent := ttRssCountersContent{}
 
+				unreadCount := user.UnreadCount()
 				cContent = append(cContent,
-					ttRssCounter{Id: "global-unread", Counter: user.UnreadCount()})
+					ttRssCounter{Id: "global-unread", Counter: unreadCount})
 
 				feeds := user.AllFeeds()
 				cContent = append(cContent,
 					ttRssCounter{Id: "subscribed-feeds", Counter: int64(len(feeds))})
 
+				cContent = append(cContent,
+					ttRssCounter{Id: strconv.Itoa(TTRSS_FAVORITE_ID),
+						Counter:    0,
+						AuxCounter: int64(len(user.AllFavoriteArticleIds()))})
+
+				cContent = append(cContent,
+					ttRssCounter{Id: strconv.Itoa(TTRSS_ALL_ID),
+						Counter:    user.ArticleCount(),
+						AuxCounter: unreadCount})
+
+				if strings.Contains(req.OutputMode, "f") {
+					for _, f := range feeds {
+						cContent = append(cContent,
+							ttRssCounter{Id: strconv.FormatInt(int64(f.Data().Id), 10), Counter: f.UnreadCount()},
+						)
+
+					}
+				}
+
+				if user.HasErr() {
+					err = fmt.Errorf("Error getting user counters: %v\n", user.Err())
+				}
+
 				content = cContent
+			case "getFeeds":
+				fContent := ttRssFeedsContent{}
+
+				if req.CatId == TTRSS_FAVORITE_ID || req.CatId == TTRSS_ALL_ID {
+					if !req.UnreadOnly {
+						fContent = append(fContent, ttRssFeed{
+							Id:     TTRSS_FAVORITE_ID,
+							Title:  "Starred articles",
+							Unread: 0,
+							CatId:  TTRSS_FAVORITE_ID,
+						})
+					}
+
+					unread := user.UnreadCount()
+
+					if unread > 0 || !req.UnreadOnly {
+						fContent = append(fContent, ttRssFeed{
+							Id:     TTRSS_ALL_ID,
+							Title:  "All articles",
+							Unread: unread,
+							CatId:  TTRSS_FAVORITE_ID,
+						})
+					}
+				}
+
+				if req.CatId == 0 || req.CatId == TTRSS_ALL_ID {
+					feeds := user.AllFeeds()
+					for i := range feeds {
+						if req.Limit > 0 {
+							if i < req.Offset || i >= req.Limit+req.Offset {
+								continue
+							}
+						}
+
+						d := feeds[i].Data()
+						unread := feeds[i].UnreadCount()
+
+						if unread > 0 || !req.UnreadOnly {
+							fContent = append(fContent, ttRssFeed{
+								Id:          d.Id,
+								Title:       d.Title,
+								FeedUrl:     d.Link,
+								CatId:       0,
+								Unread:      unread,
+								LastUpdated: time.Now().Unix(),
+								OrderId:     0,
+							})
+						}
+					}
+				}
+
+				if user.HasErr() {
+					err = fmt.Errorf("Error getting user feeds: %v\n", user.Err())
+				}
+
+				content = fContent
+			case "getCategories":
+				content = ttRssFeedsContent{}
+			case "getHeadlines":
+				if req.FeedId == 0 {
+					errType = "INCORRECT_USAGE"
+					break
+				}
 			}
 		}
 
