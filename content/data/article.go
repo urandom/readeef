@@ -70,6 +70,31 @@ type ArticleExtract struct {
 	Language  string
 }
 
+type ArticleQueryOptions struct {
+	Limit         int
+	Offset        int
+	UnreadOnly    bool
+	UnreadFirst   bool
+	FavoriteOnly  bool
+	IncludeScores bool
+	BeforeId      ArticleId
+	AfterId       ArticleId
+	BeforeDate    time.Time
+	AfterDate     time.Time
+}
+
+type ArticleCountOptions struct {
+	UnreadOnly bool
+}
+
+type ArticleUpdateStateOptions struct {
+	FavoriteOnly bool
+	BeforeId     ArticleId
+	AfterId      ArticleId
+	BeforeDate   time.Time
+	AfterDate    time.Time
+}
+
 func (id *ArticleId) Scan(src interface{}) error {
 	asInt, ok := src.(int64)
 	if !ok {

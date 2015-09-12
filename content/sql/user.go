@@ -4,14 +4,42 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
+	"text/template"
 
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/db"
 	"github.com/urandom/webfw"
+	"github.com/urandom/webfw/util"
 )
+
+var (
+	getArticlesTemplate    *template.Template
+	markReadInsertTemplate *template.Template
+	markReadUpdateTemplate *template.Template
+)
+
+type getArticlesData struct {
+	Columns string
+	Join    string
+	Where   string
+	Order   string
+	Limit   string
+}
+
+type markReadInsertData struct {
+	InnerWhere          string
+	InsertJoin          string
+	InsertJoinPredicate string
+	ExceptJoin          string
+	ExceptWhere         string
+}
+
+type markReadUpdateData struct {
+	InnerJoin  string
+	InnerWhere string
+}
 
 type User struct {
 	base.User
@@ -291,7 +319,8 @@ func (u *User) ArticleById(id data.ArticleId) (ua content.UserArticle) {
 	login := u.Data().Login
 	u.logger.Infof("Getting article '%d' for user %s\n", id, login)
 
-	articles := getArticles(u, u.db, u.logger, u, "", "", "a.id = $2", "", []interface{}{id})
+	articles := getArticles(u, u.db, u.logger, data.ArticleQueryOptions{}, u,
+		"", "a.id = $2", []interface{}{id})
 
 	if len(articles) > 0 {
 		if u.HasErr() {
@@ -334,7 +363,7 @@ func (u *User) ArticlesById(ids []data.ArticleId) (ua []content.UserArticle) {
 
 	where += ")"
 
-	articles := getArticles(u, u.db, u.logger, u, "", "", where, "", args)
+	articles := getArticles(u, u.db, u.logger, data.ArticleQueryOptions{}, u, "", where, args)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -385,7 +414,7 @@ func (u *User) AllFavoriteArticleIds() (ids []data.ArticleId) {
 	return
 }
 
-func (u *User) ArticleCount() (c int64) {
+func (u *User) Articles(o ...data.ArticleQueryOptions) (ua []content.UserArticle) {
 	if u.HasErr() {
 		return
 	}
@@ -395,33 +424,15 @@ func (u *User) ArticleCount() (c int64) {
 		return
 	}
 
-	login := u.Data().Login
-	u.logger.Infof("Getting article count for user %s\n", login)
-
-	if err := u.db.Get(&c, u.db.SQL("get_user_article_count"), login); err != nil && err != sql.ErrNoRows {
-		u.Err(err)
-		return
-	}
-
-	return
-}
-
-func (u *User) Articles(paging ...int) (ua []content.UserArticle) {
-	if u.HasErr() {
-		return
-	}
-
-	if err := u.Validate(); err != nil {
-		u.Err(err)
-		return
+	var opts data.ArticleQueryOptions
+	if len(o) > 0 {
+		opts = o[0]
 	}
 
 	login := u.Data().Login
-	u.logger.Infof("Getting articles for paging %q and user %s\n", paging, login)
+	u.logger.Infof("Getting articles for user %s with options: %#v\n", login, opts)
 
-	order := "read"
-
-	articles := getArticles(u, u.db, u.logger, u, "", "", "", order, nil, paging...)
+	articles := getArticles(u, u.db, u.logger, opts, u, "", "", nil)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -430,7 +441,7 @@ func (u *User) Articles(paging ...int) (ua []content.UserArticle) {
 	return
 }
 
-func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
+func (u *User) Count(o ...data.ArticleCountOptions) (count int64) {
 	if u.HasErr() {
 		return
 	}
@@ -440,88 +451,25 @@ func (u *User) UnreadArticles(paging ...int) (ua []content.UserArticle) {
 		return
 	}
 
-	login := u.Data().Login
-	u.logger.Infof("Getting unread articles for paging %q and user %s\n", paging, login)
-
-	articles := getArticles(u, u.db, u.logger, u, "", "", "uas.article_id IS NULL OR NOT uas.read", "", nil, paging...)
-	ua = make([]content.UserArticle, len(articles))
-	for i := range articles {
-		ua[i] = articles[i]
-	}
-
-	return
-}
-
-func (u *User) UnreadCount() (count int64) {
-	if u.HasErr() {
-		return
-	}
-
-	if err := u.Validate(); err != nil {
-		u.Err(err)
-		return
+	var opts data.ArticleCountOptions
+	if len(o) > 0 {
+		opts = o[0]
 	}
 
 	login := u.Data().Login
-	u.logger.Infof("Getting user %s unread count\n", login)
+	u.logger.Infof("Getting user %s article count using options: %#v\n", login, opts)
 
-	if err := u.db.Get(&count, u.db.SQL("get_user_unread_count"), login); err != nil {
-		u.Err(err)
-		return
-	}
+	if opts.UnreadOnly {
+		if err := u.db.Get(&count, u.db.SQL("get_user_article_unread_count"), login); err != nil {
+			u.Err(err)
+			return
+		}
+	} else {
+		if err := u.db.Get(&count, u.db.SQL("get_user_article_count"), login); err != nil && err != sql.ErrNoRows {
+			u.Err(err)
+			return
+		}
 
-	return
-}
-
-func (u *User) ArticlesOrderedById(pivot data.ArticleId, paging ...int) (ua []content.UserArticle) {
-	if u.HasErr() {
-		return
-	}
-
-	if err := u.Validate(); err != nil {
-		u.Err(err)
-		return
-	}
-
-	login := u.Data().Login
-	u.logger.Infof("Getting articles order by id for paging %q and user %s\n", paging, login)
-
-	u.SortingById()
-
-	var where string
-	switch u.Order() {
-	case data.AscendingOrder:
-		where = "a.id > $2"
-	case data.DescendingOrder:
-		where = "a.id < $2"
-	}
-
-	articles := getArticles(u, u.db, u.logger, u, "", "", where, "", []interface{}{pivot}, paging...)
-	ua = make([]content.UserArticle, len(articles))
-	for i := range articles {
-		ua[i] = articles[i]
-	}
-
-	return
-}
-
-func (u *User) FavoriteArticles(paging ...int) (ua []content.UserArticle) {
-	if u.HasErr() {
-		return
-	}
-
-	if err := u.Validate(); err != nil {
-		u.Err(err)
-		return
-	}
-
-	login := u.Data().Login
-	u.logger.Infof("Getting favorite articles for paging %q and user %s\n", paging, login)
-
-	articles := getArticles(u, u.db, u.logger, u, "", "", "uas.favorite", "", nil, paging...)
-	ua = make([]content.UserArticle, len(articles))
-	for i := range articles {
-		ua[i] = articles[i]
 	}
 
 	return
@@ -546,7 +494,7 @@ func (u *User) Query(term string, sp content.SearchProvider, paging ...int) (ua 
 	return
 }
 
-func (u *User) ReadBefore(date time.Time, read bool) {
+func (u *User) MarkRead(read bool, o ...data.ArticleUpdateStateOptions) {
 	if u.HasErr() {
 		return
 	}
@@ -556,129 +504,15 @@ func (u *User) ReadBefore(date time.Time, read bool) {
 		return
 	}
 
-	login := u.Data().Login
-	u.logger.Infof("Marking user %s articles before %v as read: %v\n", login, date, read)
-
-	tx, err := u.db.Beginx()
-	if err != nil {
-		u.Err(err)
-		return
-	}
-	defer tx.Rollback()
-
-	if read {
-		stmt, err := tx.Preparex(u.db.SQL("create_missing_user_article_state_by_date"))
-		if err != nil {
-			u.Err(err)
-			return
-		}
-		defer stmt.Close()
-
-		_, err = stmt.Exec(login, date)
-		if err != nil {
-			u.Err(err)
-			return
-		}
-	}
-
-	stmt, err := tx.Preparex(u.db.SQL("update_all_user_article_state_by_date"))
-
-	if err != nil {
-		u.Err(err)
-		return
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(read, login, date)
-	if err != nil {
-		u.Err(err)
-		return
-	}
-
-	if err = tx.Commit(); err != nil {
-		u.Err(err)
-	}
-}
-
-func (u *User) ReadAfter(date time.Time, read bool) {
-	if u.HasErr() {
-		return
-	}
-
-	if err := u.Validate(); err != nil {
-		u.Err(err)
-		return
+	var opts data.ArticleUpdateStateOptions
+	if len(o) > 0 {
+		opts = o[0]
 	}
 
 	login := u.Data().Login
-	u.logger.Infof("Marking user %s articles after %v as read: %v\n", login, date, read)
+	u.logger.Infof("Getting articles for user %s with options: %#v\n", login, opts)
 
-	tx, err := u.db.Beginx()
-	if err != nil {
-		u.Err(err)
-		return
-	}
-	defer tx.Rollback()
-
-	if read {
-		stmt, err := tx.Preparex(u.db.SQL("create_newer_missing_user_article_state_by_date"))
-
-		if err != nil {
-			u.Err(err)
-			return
-		}
-		defer stmt.Close()
-
-		_, err = stmt.Exec(login, date)
-		if err != nil {
-			u.Err(err)
-			return
-		}
-	}
-
-	stmt, err := tx.Preparex(u.db.SQL("update_all_newer_user_article_state_by_date"))
-
-	if err != nil {
-		u.Err(err)
-		return
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(read, login, date)
-	if err != nil {
-		u.Err(err)
-		return
-	}
-
-	if err = tx.Commit(); err != nil {
-		u.Err(err)
-	}
-}
-
-func (u *User) ScoredArticles(from, to time.Time, paging ...int) (ua []content.UserArticle) {
-	if u.HasErr() {
-		return
-	}
-
-	if err := u.Validate(); err != nil {
-		u.Err(err)
-		return
-	}
-
-	login := u.Data().Login
-	u.logger.Infof("Getting scored articles for paging %q and user %s\n", paging, login)
-
-	order := "asco.score"
-	if u.Order() == data.DescendingOrder {
-		order = "asco.score DESC"
-	}
-
-	ua = getArticles(u, u.db, u.logger, u, "asco.score",
-		"INNER JOIN articles_scores asco ON a.id = asco.article_id",
-		"a.date > $2 AND a.date <= $3", order,
-		[]interface{}{from, to}, paging...)
-
-	return
+	markRead(u, u.db, u.logger, opts, read, "", "", "", "", "", "", nil, nil)
 }
 
 func (u *User) Tags() (tags []content.Tag) {
@@ -712,35 +546,88 @@ func (u *User) Tags() (tags []content.Tag) {
 	return
 }
 
-func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting content.ArticleSorting, columns, join, where, order string, args []interface{}, paging ...int) (ua []content.UserArticle) {
+func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleQueryOptions, sorting content.ArticleSorting, join, where string, args []interface{}) (ua []content.UserArticle) {
 	if u.HasErr() {
 		return
 	}
 
-	sql := dbo.SQL("get_article_columns")
-	if columns != "" {
-		sql += ", " + columns
+	var err error
+	if getArticlesTemplate == nil {
+		getArticlesTemplate, err = template.New("mark-read-update-sql").
+			Parse(dbo.SQL("get_articles_template"))
+
+		if err != nil {
+			u.Err(fmt.Errorf("Error generating get-articles-update template: %v", err))
+			return
+		}
 	}
 
-	sql += dbo.SQL("get_article_tables")
+	renderData := getArticlesData{}
+	if opts.IncludeScores {
+		renderData.Columns += ", asco.score"
+		renderData.Join += " INNER JOIN articles_scores asco ON a.id = asco.article_id"
+	}
+
 	if join != "" {
-		sql += " " + join
+		renderData.Join += " " + join
 	}
-
-	sql += dbo.SQL("get_article_joins")
 
 	args = append([]interface{}{u.Data().Login}, args...)
+
+	whereSlice := []string{}
+
+	if opts.UnreadOnly {
+		whereSlice = append(whereSlice, "uas.article_id IS NULL OR NOT uas.read")
+	}
+
 	if where != "" {
-		sql += " AND " + where
+		whereSlice = append(whereSlice, where)
+	}
+
+	if opts.BeforeId > 0 {
+		whereSlice = append(whereSlice, fmt.Sprintf("a.id < $%d", len(args)+1))
+		args = append(args, opts.BeforeId)
+	}
+	if opts.AfterId > 0 {
+		whereSlice = append(whereSlice, fmt.Sprintf("a.id > $%d", len(args)+1))
+		args = append(args, opts.AfterId)
+	}
+
+	if opts.FavoriteOnly {
+		whereSlice = append(whereSlice, "uas.favorite")
+	}
+
+	if !opts.BeforeDate.IsZero() {
+		whereSlice = append(whereSlice, fmt.Sprintf(" AND a.date <= $%d", len(args)+1))
+		args = append(args, opts.BeforeDate)
+	}
+
+	if !opts.AfterDate.IsZero() {
+		whereSlice = append(whereSlice, fmt.Sprintf(" AND a.date > $%d", len(args)+1))
+		args = append(args, opts.AfterDate)
+	}
+
+	if len(whereSlice) > 0 {
+		renderData.Where = " AND " + strings.Join(whereSlice, " AND ")
 	}
 
 	sortingField := sorting.Field()
 	sortingOrder := sorting.Order()
 
 	fields := []string{}
-	if order != "" {
-		fields = append(fields, order)
+
+	if opts.UnreadFirst {
+		fields = append(fields, "read")
 	}
+
+	if opts.IncludeScores {
+		field := "asco.score"
+		if sortingOrder == data.DescendingOrder {
+			field += " DESC"
+		}
+		fields = append(fields, field)
+	}
+
 	switch sortingField {
 	case data.SortById:
 		fields = append(fields, "a.id")
@@ -748,22 +635,27 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting conten
 		fields = append(fields, "a.date")
 	}
 	if len(fields) > 0 {
-		sql += " ORDER BY "
-
-		sql += strings.Join(fields, ",")
+		renderData.Order = " ORDER BY " + strings.Join(fields, ", ")
 
 		if sortingOrder == data.DescendingOrder {
-			sql += " DESC"
+			renderData.Order += " DESC"
 		}
 	}
 
-	if len(paging) > 0 {
-		limit, offset := pagingLimit(paging)
-
-		sql += fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
-		args = append(args, limit, offset)
+	if opts.Limit > 0 {
+		renderData.Limit = fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
+		args = append(args, opts.Limit, opts.Offset)
 	}
 
+	buf := util.BufferPool.GetBuffer()
+	defer util.BufferPool.Put(buf)
+
+	if err := getArticlesTemplate.Execute(buf, renderData); err != nil {
+		u.Err(fmt.Errorf("Error executing get-articles template: %v", err))
+		return
+	}
+
+	sql := buf.String()
 	var data []data.Article
 	logger.Debugf("Articles SQL:\n%s\nArgs:%q\n", sql, args)
 	if err := dbo.Select(&data, sql, args...); err != nil {
@@ -778,4 +670,173 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, sorting conten
 	}
 
 	return
+}
+
+func markRead(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleUpdateStateOptions, read bool, insertJoin, insertJoinPredicate, exceptJoin, exceptWhere, updateInnerJoin, updateInnerWhere string, insertArgs, updateArgs []interface{}) {
+	if u.HasErr() {
+		return
+	}
+
+	var err error
+	if markReadInsertTemplate == nil {
+		markReadInsertTemplate, err = template.New("mark-read-insert-sql").
+			Parse(dbo.SQL("mark_read_insert_template"))
+
+		if err != nil {
+			u.Err(fmt.Errorf("Error generating mark-read-insert template: %v", err))
+			return
+		}
+	}
+	if markReadUpdateTemplate == nil {
+		markReadUpdateTemplate, err = template.New("mark-read-update-sql").
+			Parse(dbo.SQL("mark_read_update_template"))
+
+		if err != nil {
+			u.Err(fmt.Errorf("Error generating mark-read-update template: %v", err))
+			return
+		}
+	}
+
+	tx, err := dbo.Beginx()
+	if err != nil {
+		u.Err(err)
+		return
+	}
+	defer tx.Rollback()
+
+	if read {
+		args := append([]interface{}{u.Data().Login}, insertArgs...)
+
+		buf := util.BufferPool.GetBuffer()
+		defer util.BufferPool.Put(buf)
+
+		data := markReadInsertData{}
+
+		if insertJoin != "" {
+			data.InsertJoin = insertJoinPredicate
+		}
+
+		if insertJoinPredicate != "" {
+			data.InsertJoinPredicate = " AND " + insertJoinPredicate
+		}
+
+		innerWhere := []string{}
+
+		if !opts.BeforeDate.IsZero() {
+			innerWhere = append(innerWhere, fmt.Sprintf("(date IS NULL OR date < $%d)", len(args)+1))
+			args = append(args, opts.BeforeDate)
+		}
+		if !opts.AfterDate.IsZero() {
+			innerWhere = append(innerWhere, fmt.Sprintf("date > $%d", len(args)+1))
+			args = append(args, opts.AfterDate)
+		}
+
+		if opts.BeforeId > 0 {
+			innerWhere = append(innerWhere, fmt.Sprintf("id < $%d", len(args)+1))
+			args = append(args, opts.BeforeId)
+		}
+		if opts.AfterId > 0 {
+			innerWhere = append(innerWhere, fmt.Sprintf("id > $%d", len(args)+1))
+			args = append(args, opts.AfterId)
+		}
+
+		if len(innerWhere) > 0 {
+			data.InnerWhere = " WHERE " + strings.Join(innerWhere, " AND ")
+		}
+
+		if exceptJoin != "" {
+			data.ExceptJoin = exceptJoin
+		}
+
+		if exceptWhere != "" {
+			data.ExceptWhere = " AND " + exceptWhere
+		}
+
+		if err := markReadInsertTemplate.Execute(buf, data); err != nil {
+			u.Err(fmt.Errorf("Error executing mark-read-insert template: %v", err))
+			return
+		}
+
+		sql := buf.String()
+		logger.Debugf("Mark Insert SQL:\n%s\nArgs:%q\n", sql, args)
+
+		stmt, err := tx.Preparex(sql)
+
+		if err != nil {
+			u.Err(err)
+			return
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(args...)
+		if err != nil {
+			u.Err(err)
+			return
+		}
+	}
+
+	args := append([]interface{}{read, u.Data().Login}, updateArgs...)
+
+	buf := util.BufferPool.GetBuffer()
+	defer util.BufferPool.Put(buf)
+
+	data := markReadUpdateData{}
+
+	if updateInnerJoin != "" {
+		data.InnerJoin = updateInnerJoin
+	}
+
+	where := []string{}
+
+	if updateInnerWhere != "" {
+		where = append(where, updateInnerWhere)
+	}
+
+	if !opts.BeforeDate.IsZero() {
+		where = append(where, fmt.Sprintf("(date IS NULL OR date < $%d)", len(args)+1))
+		args = append(args, opts.BeforeDate)
+	}
+	if !opts.AfterDate.IsZero() {
+		where = append(where, fmt.Sprintf("date > $%d", len(args)+1))
+		args = append(args, opts.AfterDate)
+	}
+
+	if opts.BeforeId > 0 {
+		where = append(where, fmt.Sprintf("id < $%d", len(args)+1))
+		args = append(args, opts.BeforeId)
+	}
+	if opts.AfterId > 0 {
+		where = append(where, fmt.Sprintf("id > $%d", len(args)+1))
+		args = append(args, opts.AfterId)
+	}
+
+	if len(where) > 0 {
+		data.InnerWhere = " WHERE " + strings.Join(where, " AND ")
+	}
+
+	if err := markReadUpdateTemplate.Execute(buf, data); err != nil {
+		u.Err(fmt.Errorf("Error executing mark-read-update template: %v", err))
+		return
+	}
+
+	sql := buf.String()
+	logger.Debugf("Mark Update SQL:\n%s\nArgs:%q\n", sql, args)
+
+	stmt, err := tx.Preparex(sql)
+
+	if err != nil {
+		u.Err(err)
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(args...)
+	if err != nil {
+		u.Err(err)
+		return
+	}
+
+	if err = tx.Commit(); err != nil {
+		u.Err(err)
+	}
 }

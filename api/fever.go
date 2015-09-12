@@ -206,7 +206,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 
 				var count, since, max int64
 
-				count, err = user.ArticleCount(), user.Err()
+				count, err = user.Count(), user.Err()
 				if err != nil {
 					break
 				}
@@ -245,10 +245,18 @@ func (con Fever) Handler(c context.Context) http.Handler {
 						articles, err = user.ArticlesById(ids), user.Err()
 					} else if max > 0 {
 						user.Order(data.DescendingOrder)
-						articles, err = user.ArticlesOrderedById(data.ArticleId(max), 50, 0), user.Err()
+						articles, err = user.Articles(data.ArticleQueryOptions{
+							BeforeId: data.ArticleId(max),
+							Limit:    50,
+							Offset:   0,
+						}), user.Err()
 					} else {
 						user.Order(data.AscendingOrder)
-						articles, err = user.ArticlesOrderedById(data.ArticleId(since), 50, 0), user.Err()
+						articles, err = user.Articles(data.ArticleQueryOptions{
+							AfterId: data.ArticleId(since),
+							Limit:   50,
+							Offset:  0,
+						}), user.Err()
 					}
 
 					if err != nil {
@@ -310,7 +318,13 @@ func (con Fever) Handler(c context.Context) http.Handler {
 				user.SortingByDate()
 				user.Order(data.DescendingOrder)
 
-				articles, err = user.ScoredArticles(from, to, 50, 50*int(page-1)), user.Err()
+				articles, err = user.Articles(data.ArticleQueryOptions{
+					BeforeDate:    to,
+					AfterDate:     from,
+					Limit:         50,
+					Offset:        50 * int(page-1),
+					IncludeScores: true,
+				}), user.Err()
 				if err != nil {
 					break
 				}
@@ -344,7 +358,10 @@ func (con Fever) Handler(c context.Context) http.Handler {
 				logger.Infoln("Marking recently read fever items as unread")
 
 				t := time.Now().Add(-24 * time.Hour)
-				user.ReadAfter(t, true)
+				user.MarkRead(false, data.ArticleUpdateStateOptions{
+					BeforeDate: time.Now(),
+					AfterDate:  t,
+				})
 				err = user.Err()
 				if err != nil {
 					break
@@ -410,11 +427,15 @@ func (con Fever) Handler(c context.Context) http.Handler {
 							break
 						}
 
-						feed.ReadBefore(t, true)
+						feed.MarkRead(true, data.ArticleUpdateStateOptions{
+							BeforeDate: t,
+						})
 						err = feed.Err()
 					} else if val == "group" {
 						if id == 1 || id == 0 {
-							user.ReadBefore(t, true)
+							user.MarkRead(true, data.ArticleUpdateStateOptions{
+								BeforeDate: t,
+							})
 							err = user.Err()
 						} else {
 							err = errors.New(fmt.Sprintf("Unknown group %d\n", id))

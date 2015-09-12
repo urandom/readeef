@@ -9,7 +9,6 @@ import (
 
 type Feed interface {
 	Error
-	ArticleSorting
 
 	fmt.Stringer
 

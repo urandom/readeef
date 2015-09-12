@@ -9,7 +9,6 @@ import (
 
 type Tag interface {
 	Error
-	ArticleSorting
 	ArticleSearch
 	ArticleRepo
 	RepoRelated

@@ -13,7 +13,6 @@ import (
 )
 
 type Feed struct {
-	ArticleSorting
 	Error
 	RepoRelated
 
@@ -22,6 +21,7 @@ type Feed struct {
 }
 
 type UserFeed struct {
+	ArticleSorting
 	UserRelated
 }
 

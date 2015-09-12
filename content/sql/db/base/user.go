@@ -9,17 +9,14 @@ func init() {
 	sql["get_user_feeds"] = getUserFeeds
 	sql["get_user_feed_ids_tags"] = getUserFeedIdsTags
 	sql["get_user_tags"] = getUserTags
-	sql["get_article_columns"] = getArticleColumns
-	sql["get_article_tables"] = getArticleTables
-	sql["get_article_joins"] = getArticleJoins
 	sql["get_all_unread_user_article_ids"] = getAllUnreadUserArticleIds
 	sql["get_all_favorite_user_article_ids"] = getAllFavoriteUserArticleIds
 	sql["get_user_article_count"] = getUserArticleCount
-	sql["create_missing_user_article_state_by_date"] = createMissingUserArticleStateByDate
-	sql["update_all_user_article_state_by_date"] = updateAllUserArticleReadStateByDate
-	sql["create_newer_missing_user_article_state_by_date"] = createNewerMissingUserArticleStateByDate
-	sql["update_all_newer_user_article_state_by_date"] = updateAllNewerUserArticleReadStateByDate
-	sql["get_user_unread_count"] = getUserUnreadCount
+	sql["get_user_article_unread_count"] = getUserArticleUnreadCount
+
+	sql["get_articles_template"] = getArticlesTemplate
+	sql["mark_read_insert_template"] = markReadInsertTemplate
+	sql["mark_read_update_template"] = markReadUpdateTemplate
 }
 
 const (
@@ -49,26 +46,7 @@ ORDER BY LOWER(f.title)
 `
 	getUserFeedIdsTags = `SELECT feed_id, tag FROM users_feeds_tags WHERE user_login = $1 ORDER BY feed_id`
 	getUserTags        = `SELECT DISTINCT tag FROM users_feeds_tags WHERE user_login = $1`
-	getArticleColumns  = `
-SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
-COALESCE(uas.read, CAST(0 AS BOOLEAN)) as read,
-COALESCE(uas.favorite, CAST(0 AS BOOLEAN)) as favorite,
-COALESCE(at.thumbnail, '') as thumbnail,
-COALESCE(at.link, '') as thumbnail_link
-`
 
-	getArticleTables = `
-FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_id = a.feed_id
-`
-
-	getArticleJoins = `
-LEFT OUTER JOIN users_articles_states uas
-	ON a.id = uas.article_id AND uf.user_login = uas.user_login
-LEFT OUTER JOIN articles_thumbnails at
-    ON a.id = at.article_id
-WHERE uf.user_login = $1
-`
 	getAllUnreadUserArticleIds = `
 SELECT a.id
 FROM users_feeds uf INNER JOIN articles a
@@ -90,41 +68,7 @@ SELECT count(a.id)
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
 `
-	createMissingUserArticleStateByDate = `
-INSERT INTO users_articles_states (user_login, article_id)
-SELECT uf.user_login, a.id
-FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-	AND a.id IN (
-		SELECT id FROM articles where date IS NULL OR date < $2
-	)
-EXCEPT SELECT uas.user_login, uas.article_id
-FROM users_articles_states uas
-WHERE uas.user_login = $1
-`
-	updateAllUserArticleReadStateByDate = `
-UPDATE users_articles_states SET read = $1 WHERE user_login = $2 AND article_id IN (
-	SELECT id FROM articles WHERE date IS NULL OR date < $3
-)
-`
-	createNewerMissingUserArticleStateByDate = `
-INSERT INTO users_articles_states (user_login, article_id)
-SELECT uf.user_login, a.id
-FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-	AND a.id IN (
-		SELECT id FROM articles where date > $2
-	)
-EXCEPT SELECT uas.user_login, uas.article_id
-FROM users_articles_states uas
-WHERE uas.user_login = $1
-`
-	updateAllNewerUserArticleReadStateByDate = `
-UPDATE users_articles_states SET read = $1 WHERE user_login = $2 AND article_id IN (
-	SELECT id FROM articles WHERE date > $3
-)
-`
-	getUserUnreadCount = `
+	getUserArticleUnreadCount = `
 SELECT count(a.id)
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id
@@ -132,5 +76,49 @@ FROM users_feeds uf INNER JOIN articles a
 LEFT OUTER JOIN users_articles_states uas
 	ON a.id = uas.article_id AND uf.user_login = uas.user_login
 WHERE uas.article_id IS NULL OR NOT uas.read
+`
+
+	getArticlesTemplate = `
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
+	COALESCE(uas.read, CAST(0 AS BOOLEAN)) as read,
+	COALESCE(uas.favorite, CAST(0 AS BOOLEAN)) as favorite,
+	COALESCE(at.thumbnail, '') as thumbnail,
+	COALESCE(at.link, '') as thumbnail_link
+	{{ .Columns }}
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id
+{{ .Join }}
+LEFT OUTER JOIN users_articles_states uas
+	ON a.id = uas.article_id AND uf.user_login = uas.user_login
+LEFT OUTER JOIN articles_thumbnails at
+    ON a.id = at.article_id
+WHERE uf.user_login = $1
+{{ .Where }}
+{{ .Order }}
+{{ .Limit }}
+`
+
+	markReadInsertTemplate = `
+INSERT INTO users_articles_states (user_login, article_id)
+SELECT uf.user_login, a.id
+FROM users_feeds uf
+{{ .InsertJoin }}
+INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+	{{ .InsertJoinPredicate }}
+	AND a.id IN (
+		SELECT id FROM articles {{ .InnerWhere }}
+	)
+EXCEPT SELECT uas.user_login, uas.article_id
+FROM users_articles_states uas
+{{ .ExceptJoin }}
+WHERE uas.user_login = $1
+{{ .ExceptWhere }}
+`
+	markReadUpdateTemplate = `
+UPDATE users_articles_states SET read = $1 WHERE user_login = $2 AND article_id IN (
+	SELECT id FROM articles {{ .InnerJoin }}
+	{{ .InnerWhere }}
+)
 `
 )

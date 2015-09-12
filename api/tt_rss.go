@@ -10,6 +10,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/base/search"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/context"
@@ -30,6 +31,7 @@ const (
 
 type TtRss struct {
 	webfw.BasePatternController
+	sp content.SearchProvider
 }
 
 type ttRssRequest struct {
@@ -52,6 +54,8 @@ type ttRssRequest struct {
 	Sanitize      bool           `json:"sanitize"`
 	HasSandbox    bool           `json:"has_sandbox"`
 	IncludeHeader bool           `json:"include_header"`
+	OrderBy       string         `json:"order_by"`
+	Search        string         `json:"search"`
 }
 
 type ttRssResponse struct {
@@ -90,13 +94,40 @@ type ttRssFeed struct {
 	OrderId     int         `json:"order_id,omitempty"`
 }
 
-func NewTtRss() TtRss {
+type ttRssHeadlinesHeaderContent []interface{}
+type ttRssHeadlinesContent []ttRssHeadline
+
+type ttRssHeadline struct {
+	Id        data.ArticleId `json:"id"`
+	Unread    bool           `json:"unread"`
+	Marked    bool           `json:"marked"`
+	Updated   int64          `json:"updated"`
+	IsUpdated bool           `json:"is_updated"`
+	Title     string         `json:"title"`
+	Link      string         `json:"link"`
+	FeedId    data.FeedId    `json:"feed_id"`
+	Excerpt   string         `json:"excerpt"`
+	Content   string         `json:"content"`
+	FeedTitle string         `json:"feed_title"`
+
+	Tags   []string `json:"tags"`
+	Labels []string `json:"labels"`
+}
+
+type ttRssHeadlinesHeader struct {
+	Id      data.FeedId    `json:"id"`
+	FirstId data.ArticleId `json:"first_id"`
+	IsCat   bool           `json:"is_cat"`
+}
+
+func NewTtRss(sp content.SearchProvider) TtRss {
 	return TtRss{
 		webfw.NewBasePatternController("/v"+strconv.Itoa(TTRSS_API_LEVEL)+"/tt-rss/", webfw.MethodPost, ""),
+		sp,
 	}
 }
 
-func (con TtRss) Handler(c context.Context) http.Handler {
+func (controller TtRss) Handler(c context.Context) http.Handler {
 	repo := readeef.GetRepo(c)
 	logger := webfw.GetLogger(c)
 	config := readeef.GetConfig(c)
@@ -112,7 +143,7 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 		var err error
 		var errType string
 		var user content.User
-		var content interface{}
+		var con interface{}
 
 		switch {
 		default:
@@ -153,9 +184,9 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 
 			switch req.Op {
 			case "getApiLevel":
-				content = ttRssGenericContent{Level: TTRSS_API_LEVEL}
+				con = ttRssGenericContent{Level: TTRSS_API_LEVEL}
 			case "getVersion":
-				content = ttRssGenericContent{Version: TTRSS_VERSION}
+				con = ttRssGenericContent{Version: TTRSS_VERSION}
 			case "login":
 				user = repo.UserByLogin(data.Login(req.User))
 				if repo.Err() != nil {
@@ -172,7 +203,7 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 				sess.Set(TTRSS_SESSION_ID, sessId)
 				sess.Set(TTRSS_USER_NAME, req.User)
 
-				content = ttRssGenericContent{
+				con = ttRssGenericContent{
 					ApiLevel:  TTRSS_API_LEVEL,
 					SessionId: sessId,
 				}
@@ -180,12 +211,12 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 				sess.Delete(TTRSS_SESSION_ID)
 				sess.Delete(TTRSS_USER_NAME)
 
-				content = ttRssGenericContent{Status: "OK"}
+				con = ttRssGenericContent{Status: "OK"}
 			case "isLoggedIn":
 				if id, ok := sess.Get(TTRSS_SESSION_ID); ok && id != "" {
-					content = ttRssGenericContent{Status: true}
+					con = ttRssGenericContent{Status: true}
 				} else {
-					content = ttRssGenericContent{Status: false}
+					con = ttRssGenericContent{Status: false}
 				}
 			case "getUnread":
 				var count int64
@@ -196,7 +227,7 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 					if isTag := r.Form.Get("is_cat"); isTag == "" {
 						if feedId, err := strconv.ParseInt(fid, 10, 64); err == nil {
 							feed := user.FeedById(data.FeedId(feedId))
-							count = feed.UnreadCount()
+							count = feed.Count(data.ArticleCountOptions{UnreadOnly: true})
 							if feed.HasErr() {
 								err = feed.Err()
 								break
@@ -208,20 +239,21 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 				}
 
 				if !counted {
-					count = user.UnreadCount()
+					count = user.Count(data.ArticleCountOptions{UnreadOnly: true})
 					if user.HasErr() {
 						err = fmt.Errorf("Error getting all unread article ids: %v\n", user.Err())
 					}
 				}
 
-				content = ttRssGenericContent{Unread: count}
+				con = ttRssGenericContent{Unread: count}
 			case "getCounters":
 				if req.OutputMode == "" {
 					req.OutputMode = "flc"
 				}
 				cContent := ttRssCountersContent{}
 
-				unreadCount := user.UnreadCount()
+				o := data.ArticleCountOptions{UnreadOnly: true}
+				unreadCount := user.Count(o)
 				cContent = append(cContent,
 					ttRssCounter{Id: "global-unread", Counter: unreadCount})
 
@@ -236,13 +268,13 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 
 				cContent = append(cContent,
 					ttRssCounter{Id: strconv.Itoa(TTRSS_ALL_ID),
-						Counter:    user.ArticleCount(),
+						Counter:    user.Count(),
 						AuxCounter: unreadCount})
 
 				if strings.Contains(req.OutputMode, "f") {
 					for _, f := range feeds {
 						cContent = append(cContent,
-							ttRssCounter{Id: strconv.FormatInt(int64(f.Data().Id), 10), Counter: f.UnreadCount()},
+							ttRssCounter{Id: strconv.FormatInt(int64(f.Data().Id), 10), Counter: f.Count(o)},
 						)
 
 					}
@@ -252,7 +284,7 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 					err = fmt.Errorf("Error getting user counters: %v\n", user.Err())
 				}
 
-				content = cContent
+				con = cContent
 			case "getFeeds":
 				fContent := ttRssFeedsContent{}
 
@@ -266,7 +298,7 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 						})
 					}
 
-					unread := user.UnreadCount()
+					unread := user.Count(data.ArticleCountOptions{UnreadOnly: true})
 
 					if unread > 0 || !req.UnreadOnly {
 						fContent = append(fContent, ttRssFeed{
@@ -280,6 +312,7 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 
 				if req.CatId == 0 || req.CatId == TTRSS_ALL_ID {
 					feeds := user.AllFeeds()
+					o := data.ArticleCountOptions{UnreadOnly: true}
 					for i := range feeds {
 						if req.Limit > 0 {
 							if i < req.Offset || i >= req.Limit+req.Offset {
@@ -288,7 +321,7 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 						}
 
 						d := feeds[i].Data()
-						unread := feeds[i].UnreadCount()
+						unread := feeds[i].Count(o)
 
 						if unread > 0 || !req.UnreadOnly {
 							fContent = append(fContent, ttRssFeed{
@@ -308,13 +341,81 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 					err = fmt.Errorf("Error getting user feeds: %v\n", user.Err())
 				}
 
-				content = fContent
+				con = fContent
 			case "getCategories":
-				content = ttRssFeedsContent{}
+				con = ttRssFeedsContent{}
 			case "getHeadlines":
 				if req.FeedId == 0 {
 					errType = "INCORRECT_USAGE"
 					break
+				}
+
+				limit := req.Limit
+				if limit == 0 {
+					limit = 200
+				}
+
+				var articles []content.UserArticle
+				var articleRepo content.ArticleRepo
+				var feedTitle string
+				firstId := data.ArticleId(0)
+				o := data.ArticleQueryOptions{Limit: limit, Offset: req.Skip}
+
+				if req.FeedId == TTRSS_FAVORITE_ID {
+					ttRssSetupSorting(req, user)
+					o.FavoriteOnly = true
+					articleRepo = user
+					feedTitle = "Starred articles"
+				} else if req.FeedId == TTRSS_ALL_ID {
+					ttRssSetupSorting(req, user)
+					articleRepo = user
+					feedTitle = "All articles"
+				} else if req.FeedId > 0 {
+					feed := user.FeedById(req.FeedId)
+
+					ttRssSetupSorting(req, feed)
+					articleRepo = feed
+					feedTitle = feed.Data().Title
+				}
+
+				if articleRepo != nil {
+					if req.Search != "" {
+						if controller.sp != nil {
+							if as, ok := articleRepo.(content.ArticleSearch); ok {
+								articles = as.Query(req.Search, controller.sp, limit, req.Skip)
+							}
+						}
+					} else {
+						var skip bool
+
+						switch req.ViewMode {
+						case "all_articles":
+						case "unread":
+							o.UnreadOnly = true
+						default:
+							skip = true
+						}
+
+						if !skip {
+							articles = articleRepo.Articles(o)
+						}
+					}
+				}
+
+				if len(articles) > 0 {
+					firstId = articles[0].Data().Id
+				}
+
+				if req.IncludeHeader {
+					header := ttRssHeadlinesHeader{Id: req.FeedId, FirstId: firstId}
+					hContent := ttRssHeadlinesHeaderContent{}
+
+					hContent = append(hContent, header)
+					hContent = append(hContent, ttRssHeadlinesFromArticles(req, articles, feedTitle))
+
+					con = hContent
+				} else {
+					con = ttRssHeadlinesFromArticles(req, articles, feedTitle)
 				}
 			}
 		}
@@ -323,14 +424,14 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 			resp.Status = TTRSS_API_STATUS_OK
 		} else {
 			resp.Status = TTRSS_API_STATUS_ERR
-			switch v := content.(type) {
+			switch v := con.(type) {
 			case ttRssGenericContent:
 				v.Error = errType
 			}
 		}
 
 		var b []byte
-		b, err = json.Marshal(content)
+		b, err = json.Marshal(con)
 		if err == nil {
 			resp.Content = json.RawMessage(b)
 		}
@@ -347,4 +448,47 @@ func (con TtRss) Handler(c context.Context) http.Handler {
 		}
 
 	})
+}
+
+func ttRssSetupSorting(req ttRssRequest, sorting content.ArticleSorting) {
+	switch req.OrderBy {
+	case "date_reverse":
+		sorting.SortingByDate()
+		sorting.Order(data.AscendingOrder)
+	default:
+		sorting.SortingByDate()
+		sorting.Order(data.DescendingOrder)
+	}
+}
+
+func ttRssHeadlinesFromArticles(req ttRssRequest, articles []content.UserArticle, feedTitle string) (c ttRssHeadlinesContent) {
+	for _, a := range articles {
+		d := a.Data()
+		h := ttRssHeadline{
+			Id:        d.Id,
+			Unread:    !d.Read,
+			Marked:    d.Favorite,
+			IsUpdated: !d.Read,
+			Title:     d.Title,
+			Link:      d.Link,
+			FeedId:    d.FeedId,
+			FeedTitle: feedTitle,
+		}
+
+		if req.ShowExcerpt {
+			excerpt := search.StripTags(d.Description)
+			if len(excerpt) > 100 {
+				excerpt = excerpt[:100]
+			}
+
+			h.Excerpt = excerpt
+		}
+
+		if req.ShowContent {
+			h.Content = d.Description
+		}
+
+		c = append(c, h)
+	}
+	return
 }

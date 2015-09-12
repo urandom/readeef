@@ -9,12 +9,11 @@ func init() {
 	sql["get_hubbub_subscription"] = getHubbubSubscription
 	sql["get_feed_users"] = getFeedUsers
 	sql["delete_user_feed"] = deleteUserFeed
-	sql["create_missing_user_article_state_by_feed_date"] = createMissingUserArticleStateByFeedDate
-	sql["update_all_user_article_state_by_feed_date"] = updateAllUserArticleReadStateByFeedDate
 	sql["create_user_feed_tag"] = createUserFeedTag
 	sql["delete_user_feed_tags"] = deleteUserFeedTags
 	sql["get_user_feed_tags"] = getUserFeedTags
-	sql["get_user_feed_unread_count"] = getUserFeedUnreadCount
+	sql["get_user_feed_article_count"] = getUserFeedArticleCount
+	sql["get_user_feed_article_unread_count"] = getUserFeedArticleUnreadCount
 }
 
 const (
@@ -45,25 +44,6 @@ WHERE u.login = uf.user_login AND uf.feed_id = $1
 `
 	deleteUserFeed = `DELETE FROM users_feeds WHERE user_login = $1 AND feed_id = $2`
 
-	createMissingUserArticleStateByFeedDate = `
-INSERT INTO users_articles_states (user_login, article_id)
-SELECT uf.user_login, a.id
-FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_id = a.feed_id AND uf.user_login = $1 AND uf.feed_id = $2
-	AND a.id IN (
-		SELECT id FROM articles where date IS NULL OR date < $3
-	)
-EXCEPT SELECT uas.user_login, uas.article_id
-FROM articles a INNER JOIN users_articles_states uas
-	ON a.id = uas.article_id
-WHERE uas.user_login = $1 AND a.feed_id = $2
-`
-	updateAllUserArticleReadStateByFeedDate = `
-UPDATE users_articles_states SET read = $1 WHERE user_login = $2 AND article_id IN (
-	SELECT id FROM articles WHERE feed_id = $3 AND (date IS NULL OR date < $4)
-)
-`
-
 	getUserFeedTags   = `SELECT tag FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2`
 	createUserFeedTag = `
 INSERT INTO users_feeds_tags(user_login, feed_id, tag)
@@ -74,7 +54,14 @@ INSERT INTO users_feeds_tags(user_login, feed_id, tag)
 	deleteUserFeedTags = `
 DELETE FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2
 `
-	getUserFeedUnreadCount = `
+	getUserFeedArticleCount = `
+SELECT count(a.id)
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id
+	AND uf.user_login = $1
+	AND uf.feed_id = $2
+`
+	getUserFeedArticleUnreadCount = `
 SELECT count(a.id)
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id

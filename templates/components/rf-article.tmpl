@@ -640,7 +640,10 @@
 
             var description = inst.querySelector('.article-description'),
                 imageStyler = function() {
-                    if (this.width * this.height < 240 * 180) {
+                    this.removeAttribute('style');
+                    this.removeAttribute('width');
+                    this.removeAttribute('height');
+                    if (this.naturalWidth * this.naturalHeight < 240 * 180) {
                         var floater = this;
                         do {
                             if (!isSingleImage(floater)) {

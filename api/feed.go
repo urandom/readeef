@@ -482,23 +482,21 @@ func setFeedTags(user content.User, id data.FeedId, tagValues []data.TagValue) (
 func markFeedAsRead(user content.User, id string, timestamp int64) (resp responseError) {
 	resp = newResponse()
 
+	var ar content.ArticleRepo
+
 	t := time.Unix(timestamp/1000, 0)
+	o := data.ArticleUpdateStateOptions{BeforeDate: t}
 
 	switch {
 	case id == "all":
-		if user.ReadBefore(t, true); user.HasErr() {
-			resp.err = user.Err()
-			return
-		}
+		ar = user
 	case id == "favorite" || strings.HasPrefix(id, "popular:"):
 		// Favorites are assumbed to have been read already
 	case strings.HasPrefix(id, "tag:"):
 		tag := user.Repo().Tag(user)
 		tag.Value(data.TagValue(id[4:]))
-		if tag.ReadBefore(t, true); tag.HasErr() {
-			resp.err = tag.Err()
-			return
-		}
+
+		ar = tag
 	default:
 		var feedId int64
 		if feedId, resp.err = strconv.ParseInt(id, 10, 64); resp.err != nil {
@@ -506,9 +504,14 @@ func markFeedAsRead(user content.User, id string, timestamp int64) (resp respons
 			return
 		}
 
-		feed := user.FeedById(data.FeedId(feedId))
-		if feed.ReadBefore(t, true); feed.HasErr() {
-			resp.err = feed.Err()
+		ar = user.FeedById(data.FeedId(feedId))
+	}
+
+	if ar != nil {
+		ar.MarkRead(true, o)
+
+		if e, ok := ar.(content.Error); ok && e.HasErr() {
+			resp.err = e.Err()
 			return
 		}
 	}
@@ -524,35 +527,32 @@ func getFeedArticles(user content.User, sp content.SearchProvider, id string, li
 		limit = 200
 	}
 
-	user.SortingByDate()
-	if newerFirst {
-		user.Order(data.DescendingOrder)
-	} else {
-		user.Order(data.AscendingOrder)
-	}
+	var as content.ArticleSorting
+	var ar content.ArticleRepo
+
+	o := data.ArticleQueryOptions{Limit: limit, Offset: offset, UnreadOnly: unreadOnly}
 
 	if id == "favorite" {
-		resp.val["Articles"], resp.err = user.FavoriteArticles(limit, offset), user.Err()
-	} else if id == "popular:all" {
-		resp.val["Articles"], resp.err = user.ScoredArticles(time.Now().AddDate(0, 0, -5), time.Now(), limit, offset), user.Err()
+		o.FavoriteOnly = true
+		ar = user
+		as = user
 	} else if id == "all" {
-		if unreadOnly {
-			resp.val["Articles"], resp.err = user.UnreadArticles(limit, offset), user.Err()
-		} else {
-			resp.val["Articles"], resp.err = user.Articles(limit, offset), user.Err()
-		}
+		ar = user
+		as = user
 	} else if strings.HasPrefix(id, "popular:") {
-		if strings.HasPrefix(id, "popular:tag:") {
+		o.IncludeScores = true
+		o.BeforeDate = time.Now()
+		o.AfterDate = time.Now().AddDate(0, 0, -5)
+
+		if id == "popular:all" {
+			ar = user
+			as = user
+		} else if strings.HasPrefix(id, "popular:tag:") {
 			tag := user.Repo().Tag(user)
 			tag.Value(data.TagValue(id[12:]))
 
-			tag.SortingByDate()
-			if newerFirst {
-				tag.Order(data.DescendingOrder)
-			} else {
-				tag.Order(data.AscendingOrder)
-			}
-			resp.val["Articles"], resp.err = tag.ScoredArticles(time.Now().AddDate(0, 0, -5), time.Now(), limit, offset), tag.Err()
+			ar = tag
+			as = tag
 		} else {
 			var f content.UserFeed
 
@@ -570,14 +570,8 @@ func getFeedArticles(user content.User, sp content.SearchProvider, id string, li
 				return
 			}
 
-			f.SortingByDate()
-			if newerFirst {
-				f.Order(data.DescendingOrder)
-			} else {
-				f.Order(data.AscendingOrder)
-			}
-
-			resp.val["Articles"], resp.err = f.ScoredArticles(time.Now().AddDate(0, 0, -5), time.Now(), limit, offset), f.Err()
+			ar = f
+			as = f
 		}
 	} else if strings.HasPrefix(id, "search:") && sp != nil {
 		var query string
@@ -604,18 +598,8 @@ func getFeedArticles(user content.User, sp content.SearchProvider, id string, li
 		tag := user.Repo().Tag(user)
 		tag.Value(data.TagValue(id[4:]))
 
-		tag.SortingByDate()
-		if newerFirst {
-			tag.Order(data.DescendingOrder)
-		} else {
-			tag.Order(data.AscendingOrder)
-		}
-
-		if unreadOnly {
-			resp.val["Articles"], resp.err = tag.UnreadArticles(limit, offset), tag.Err()
-		} else {
-			resp.val["Articles"], resp.err = tag.Articles(limit, offset), tag.Err()
-		}
+		as = tag
+		ar = tag
 	} else {
 		var f content.UserFeed
 
@@ -633,17 +617,24 @@ func getFeedArticles(user content.User, sp content.SearchProvider, id string, li
 			return
 		}
 
-		if newerFirst {
-			f.Order(data.DescendingOrder)
-		} else {
-			f.Order(data.AscendingOrder)
-		}
+		as = f
+		ar = f
+	}
 
-		f.SortingByDate()
-		if unreadOnly {
-			resp.val["Articles"], resp.err = f.UnreadArticles(limit, offset), f.Err()
+	if as != nil {
+		as.SortingByDate()
+		if newerFirst {
+			as.Order(data.DescendingOrder)
 		} else {
-			resp.val["Articles"], resp.err = f.Articles(limit, offset), f.Err()
+			as.Order(data.AscendingOrder)
+		}
+	}
+
+	if ar != nil {
+		resp.val["Articles"] = ar.Articles(o)
+
+		if e, ok := ar.(content.Error); ok && e.HasErr() {
+			resp.err = e.Err()
 		}
 	}
 

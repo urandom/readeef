@@ -3,7 +3,6 @@ package content
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/urandom/readeef/content/data"
 )
@@ -27,14 +26,11 @@ type ArticleSorting interface {
 }
 
 type ArticleRepo interface {
-	Articles(paging ...int) []UserArticle
-	UnreadArticles(paging ...int) []UserArticle
+	ArticleSorting
 
-	UnreadCount() int64
-
-	ReadBefore(date time.Time, read bool)
-
-	ScoredArticles(from, to time.Time, paging ...int) []UserArticle
+	Articles(...data.ArticleQueryOptions) []UserArticle
+	Count(...data.ArticleCountOptions) int64
+	MarkRead(read bool, o ...data.ArticleUpdateStateOptions)
 }
 
 type ArticleSearch interface {

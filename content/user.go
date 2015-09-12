@@ -3,14 +3,12 @@ package content
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/urandom/readeef/content/data"
 )
 
 type User interface {
 	Error
-	ArticleSorting
 	RepoRelated
 	ArticleSearch
 	ArticleRepo
@@ -41,13 +39,6 @@ type User interface {
 
 	AllUnreadArticleIds() []data.ArticleId
 	AllFavoriteArticleIds() []data.ArticleId
-
-	ArticleCount() int64
-
-	ArticlesOrderedById(pivot data.ArticleId, paging ...int) []UserArticle
-	FavoriteArticles(paging ...int) []UserArticle
-
-	ReadAfter(date time.Time, read bool)
 
 	Tags() []Tag
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/urandom/readeef/content"
@@ -394,7 +393,7 @@ func (uf *UserFeed) Detach() {
 	tx.Commit()
 }
 
-func (uf *UserFeed) Articles(paging ...int) (ua []content.UserArticle) {
+func (uf *UserFeed) Articles(o ...data.ArticleQueryOptions) (ua []content.UserArticle) {
 	if uf.HasErr() {
 		return
 	}
@@ -410,178 +409,87 @@ func (uf *UserFeed) Articles(paging ...int) (ua []content.UserArticle) {
 		return
 	}
 
-	uf.logger.Infof("Getting articles for feed %d\n", id)
-
-	order := "read"
-	articles := uf.getArticles("", order, paging...)
-	ua = make([]content.UserArticle, len(articles))
-	for i := range articles {
-		ua[i] = articles[i]
+	var opts data.ArticleQueryOptions
+	if len(o) > 0 {
+		opts = o[0]
 	}
 
-	return
-}
+	uf.logger.Infof("Getting articles for feed %d with options: %#v\n", id, opts)
 
-func (uf *UserFeed) UnreadArticles(paging ...int) (ua []content.UserArticle) {
-	if uf.HasErr() {
-		return
-	}
-
-	if err := uf.Validate(); err != nil {
-		uf.Err(err)
-		return
-	}
-
-	id := uf.Data().Id
-	if id == 0 {
-		uf.Err(content.NewValidationError(errors.New("Invalid feed id")))
-		return
-	}
-
-	uf.logger.Infof("Getting unread articles for feed %d\n", id)
-
-	articles := uf.getArticles("uas.article_id IS NULL OR NOT uas.read", "", paging...)
-	ua = make([]content.UserArticle, len(articles))
-	for i := range articles {
-		ua[i] = articles[i]
-	}
-
-	return
-}
-
-func (uf *UserFeed) UnreadCount() (count int64) {
-	if uf.HasErr() {
-		return
-	}
-
-	if err := uf.Validate(); err != nil {
-		uf.Err(err)
-		return
-	}
-
-	login := uf.User().Data().Login
-	id := uf.Data().Id
-	uf.logger.Infof("Getting user %s feed %d unread count\n", login, id)
-
-	if err := uf.db.Get(&count, uf.db.SQL("get_user_feed_unread_count"), login, id); err != nil {
-		uf.Err(err)
-		return
-	}
-
-	return
-}
-
-func (uf *UserFeed) ReadBefore(date time.Time, read bool) {
-	if uf.HasErr() {
-		return
-	}
-
-	if err := uf.Validate(); err != nil {
-		uf.Err(err)
-		return
-	}
-
-	id := uf.Data().Id
-	if id == 0 {
-		uf.Err(content.NewValidationError(errors.New("Invalid feed id")))
-		return
-	}
-
-	login := uf.User().Data().Login
-	uf.logger.Infof("Marking user %s feed %d articles before %v as read: %v\n", login, id, date, read)
-
-	tx, err := uf.db.Beginx()
-	if err != nil {
-		uf.Err(err)
-		return
-	}
-	defer tx.Rollback()
-
-	if read {
-		stmt, err := tx.Preparex(uf.db.SQL("create_missing_user_article_state_by_feed_date"))
-		if err != nil {
-			uf.Err(err)
-			return
-		}
-		defer stmt.Close()
-
-		_, err = stmt.Exec(login, id, date)
-		if err != nil {
-			uf.Err(err)
-			return
-		}
-	}
-
-	stmt, err := tx.Preparex(uf.db.SQL("update_all_user_article_state_by_feed_date"))
-	if err != nil {
-		uf.Err(err)
-		return
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(read, login, id, date)
-	if err != nil {
-		uf.Err(err)
-		return
-	}
-
-	if err = tx.Commit(); err != nil {
-		uf.Err(err)
-	}
-
-}
-
-func (uf *UserFeed) ScoredArticles(from, to time.Time, paging ...int) (ua []content.UserArticle) {
-	if uf.HasErr() {
-		return
-	}
-
-	if err := uf.Validate(); err != nil {
-		uf.Err(err)
-		return
-	}
+	where := "uf.feed_id = $2"
 
 	u := uf.User()
-	id := uf.Data().Id
-	if id == 0 {
-		uf.Err(content.NewValidationError(errors.New("Invalid feed id")))
-		return
-	}
-
-	login := u.Data().Login
-	uf.logger.Infof("Getting scored articles for user %s feed %d between %v and %v\n", login, id, from, to)
-
-	order := ""
-	if uf.Order() == data.DescendingOrder {
-		order = " DESC"
-	}
-	ua = getArticles(u, uf.db, uf.logger, uf, "asco.score",
-		"INNER JOIN articles_scores asco ON a.id = asco.article_id",
-		"uf.feed_id = $2 AND a.date > $3 AND a.date <= $4", "asco.score"+order,
-		[]interface{}{id, from, to}, paging...)
-
-	return
-}
-
-func (uf *UserFeed) getArticles(where, order string, paging ...int) (ua []content.UserArticle) {
-	if uf.HasErr() {
-		return
-	}
-
-	if where == "" {
-		where = "uf.feed_id = $2"
-	} else {
-		where = "uf.feed_id = $2 AND " + where
-	}
-
-	u := uf.User()
-	ua = getArticles(u, uf.db, uf.logger, uf, "", "", where, order, []interface{}{uf.Data().Id}, paging...)
+	ua = getArticles(u, uf.db, uf.logger, opts, uf, "", where, []interface{}{uf.Data().Id})
 
 	if u.HasErr() {
 		uf.Err(u.Err())
 	}
 
 	return
+}
+
+func (uf *UserFeed) Count(o ...data.ArticleCountOptions) (count int64) {
+	if uf.HasErr() {
+		return
+	}
+
+	if err := uf.Validate(); err != nil {
+		uf.Err(err)
+		return
+	}
+
+	login := uf.User().Data().Login
+	id := uf.Data().Id
+
+	var opts data.ArticleCountOptions
+	if len(o) > 0 {
+		opts = o[0]
+	}
+
+	uf.logger.Infof("Getting user %s feed %d article count with options %#v\n", login, id, opts)
+
+	if opts.UnreadOnly {
+		if err := uf.db.Get(&count, uf.db.SQL("get_user_feed_article_unread_count"), login, id); err != nil {
+			uf.Err(err)
+			return
+		}
+	} else {
+		if err := uf.db.Get(&count, uf.db.SQL("get_user_feed_article_count"), login, id); err != nil {
+			uf.Err(err)
+			return
+		}
+	}
+
+	return
+}
+
+func (uf *UserFeed) MarkRead(read bool, o ...data.ArticleUpdateStateOptions) {
+	if uf.HasErr() {
+		return
+	}
+
+	if err := uf.Validate(); err != nil {
+		uf.Err(err)
+		return
+	}
+
+	var opts data.ArticleUpdateStateOptions
+	if len(o) > 0 {
+		opts = o[0]
+	}
+
+	u := uf.User()
+	login := u.Data().Login
+	id := uf.Data().Id
+	uf.logger.Infof("Getting articles for user %s feed %d with opts: %#v\n", login, id, opts)
+
+	args := []interface{}{id}
+	markRead(u, uf.db, uf.logger, opts, read, "", "uf.feed_id = $2",
+		"INNER JOIN articles a ON uas.article_id = a.id", "a.feed_id = $2",
+		"", "feed_id = $3", args, args)
+	if u.HasErr() {
+		uf.Err(u.Err())
+	}
 }
 
 func (uf *UserFeed) Query(term string, sp content.SearchProvider, paging ...int) (ua []content.UserArticle) {
