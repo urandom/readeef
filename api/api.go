@@ -65,8 +65,16 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		case "relative-url":
 			processors = append(processors, processor.NewRelativeUrl(logger))
 		case "proxy-http":
-			processors = append(processors, processor.NewProxyHTTP(logger))
-			capabilities.ProxyHTTP = true
+			template := config.FeedParser.ProxyHTTPURLTemplate
+
+			if template != "" {
+				p, err := processor.NewProxyHTTP(logger, template)
+				if err != nil {
+					return fmt.Errorf("Error initializing Proxy HTTP processor: %v", err)
+				}
+				processors = append(processors, p)
+				capabilities.ProxyHTTP = true
+			}
 		case "cleanup":
 			processors = append(processors, processor.NewCleanup(logger))
 		case "top-image-marker":
@@ -180,7 +188,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	for _, e := range config.API.Emulators {
 		switch e {
 		case "tt-rss":
-			controllers = append(controllers, NewTtRss())
+			controllers = append(controllers, NewTtRss(sp))
 		case "fever":
 			controllers = append(controllers, NewFever())
 		}

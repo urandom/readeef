@@ -54,6 +54,8 @@ type Config struct {
 
 	FeedParser struct {
 		Processors []string
+
+		ProxyHTTPURLTemplate string `gcfg:"proxy-http-url-template"`
 	} `gcfg:"feed-parser"`
 
 	FeedManager struct {
@@ -176,6 +178,8 @@ var cfg string = `
 	processors = cleanup
 	processors = top-image-marker
 	# processors = relative-url
+
+	proxy-http-url-template = "/proxy?url={{ . }}"
 [content]
 	extractor = goose # readability
 	thumbnailer = description
