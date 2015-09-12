@@ -57,6 +57,7 @@ func upgrade1to2(db *db.DB) error {
 func init() {
 	helper := &Helper{Helper: base.NewHelper()}
 
+	helper.Set("create_feed_article", createFeedArticle)
 	helper.Set("get_user_feeds", getUserFeeds)
 	helper.Set("get_user_tag_feeds", getUserTagFeeds)
 	helper.Set("get_latest_feed_articles", getLatestFeedArticles)
@@ -66,6 +67,13 @@ func init() {
 }
 
 const (
+	// Casting to timestamp produces only the year
+	createFeedArticle = `
+INSERT INTO articles(feed_id, link, guid, title, description, date)
+	SELECT $1, $2, $3, $4, $5, $6 EXCEPT
+		SELECT feed_id, link, $3, $4, $5, $6
+		FROM articles WHERE feed_id = $1 AND link = $2
+`
 	getUserFeeds = `
 SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
 FROM feeds f, users_feeds uf
