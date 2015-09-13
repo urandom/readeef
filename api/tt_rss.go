@@ -155,7 +155,7 @@ func NewTtRss(fm *readeef.FeedManager, sp content.SearchProvider, processors []A
 	}
 
 	return TtRss{
-		webfw.NewBasePatternController(fmt.Sprintf("/v%d/tt-rss/", TTRSS_API_LEVEL), webfw.MethodPost, ""),
+		webfw.NewBasePatternController(fmt.Sprintf("/v%d/tt-rss/api/", TTRSS_API_LEVEL), webfw.MethodPost, ""),
 		fm, sp, ap,
 	}
 }
