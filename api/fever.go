@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/api/processor"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw"
@@ -21,6 +22,7 @@ import (
 
 type Fever struct {
 	webfw.BasePatternController
+	ap []ArticleProcessor
 }
 
 type feverFeed struct {
@@ -67,9 +69,16 @@ type feverLink struct {
 	ItemIds     string         `json:"item_ids"`
 }
 
-func NewFever() Fever {
+func NewFever(processors []ArticleProcessor) Fever {
+	ap := make([]ArticleProcessor, 0, len(processors))
+	for _, p := range processors {
+		if _, ok := p.(processor.ProxyHTTP); !ok {
+			ap = append(ap, p)
+		}
+	}
+
 	return Fever{
-		webfw.NewBasePatternController("/v:version/fever/", webfw.MethodPost, ""),
+		webfw.NewBasePatternController("/v:version/fever/", webfw.MethodPost, ""), ap,
 	}
 }
 
@@ -230,6 +239,9 @@ func (con Fever) Handler(c context.Context) http.Handler {
 					}
 
 					var articles []content.UserArticle
+					// Fever clients do their own paging
+					o := data.ArticleQueryOptions{Limit: 50, Offset: 0}
+
 					if withIds, ok := r.Form["with_ids"]; ok {
 						stringIds := strings.Split(withIds[0], ",")
 						ids := make([]data.ArticleId, 0, len(stringIds))
@@ -245,22 +257,22 @@ func (con Fever) Handler(c context.Context) http.Handler {
 						articles, err = user.ArticlesById(ids), user.Err()
 					} else if max > 0 {
 						user.Order(data.DescendingOrder)
-						articles, err = user.Articles(data.ArticleQueryOptions{
-							BeforeId: data.ArticleId(max),
-							Limit:    50,
-							Offset:   0,
-						}), user.Err()
+						o.BeforeId = data.ArticleId(max)
+						articles, err = user.Articles(o), user.Err()
 					} else {
 						user.Order(data.AscendingOrder)
-						articles, err = user.Articles(data.ArticleQueryOptions{
-							AfterId: data.ArticleId(since),
-							Limit:   50,
-							Offset:  0,
-						}), user.Err()
+						o.AfterId = data.ArticleId(since)
+						articles, err = user.Articles(o), user.Err()
 					}
 
 					if err != nil {
 						break
+					}
+
+					if len(articles) > 0 && len(con.ap) > 0 {
+						for _, p := range con.ap {
+							articles = p.ProcessArticles(articles)
+						}
 					}
 
 					for i := range articles {

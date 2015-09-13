@@ -31,7 +31,7 @@ func (p ProxyHTTP) Process(f parser.Feed) parser.Feed {
 
 	for i := range f.Articles {
 		if d, err := goquery.NewDocumentFromReader(strings.NewReader(f.Articles[i].Description)); err == nil {
-			if proxyArticleLinks(d, p.urlTemplate) {
+			if ProxyArticleLinks(d, p.urlTemplate) {
 				if content, err := d.Html(); err == nil {
 					// net/http tries to provide valid html, adding html, head and body tags
 					content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
@@ -45,7 +45,7 @@ func (p ProxyHTTP) Process(f parser.Feed) parser.Feed {
 	return f
 }
 
-func proxyArticleLinks(d *goquery.Document, urlTemplate *template.Template) bool {
+func ProxyArticleLinks(d *goquery.Document, urlTemplate *template.Template) bool {
 	changed := false
 	d.Find("[src]").Each(func(i int, s *goquery.Selection) {
 		var val string

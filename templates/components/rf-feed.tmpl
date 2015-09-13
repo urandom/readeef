@@ -194,7 +194,7 @@ rf-article /deep/ .article-summary {
                         </template>
                     </iron-list>
                 </div>
-                <rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" articles="[[ articles ]]" on-next-article="onNextArticle" on-previous-article="onPreviousArticle" data-proxy-http-url-template="{% .config.FeedParser.ProxyHTTPURLTemplate %}">
+                <rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" articles="[[ articles ]]" on-next-article="onNextArticle" on-previous-article="onPreviousArticle">
                     <template>
                         <div class="article-detail" data-article-id$="[[ item.article.Id ]]">
                             <div class="card layout vertical">

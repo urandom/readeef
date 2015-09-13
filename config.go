@@ -19,6 +19,10 @@ type Config struct {
 	API struct {
 		Version   int
 		Emulators []string
+
+		ArticleProcessors []string `gcfg:"article-processors"`
+
+		ProxyHTTPURLTemplate string `gcfg:"proxy-http-url-template"`
 	}
 	Timeout struct {
 		Connect   string
@@ -150,6 +154,13 @@ var cfg string = `
 	emulators
 	# emulators = tt-rss
 	# emulators = fever
+
+	article-processors
+	article-processors = insert-thumbnail-target
+	# article-processors = relative-url
+	# article-processors = proxy-http
+
+	proxy-http-url-template = "/proxy?url={{ . }}"
 [db]
 	driver = sqlite3
 	connect = file:./readeef.sqlite3?cache=shared&mode=rwc
@@ -178,6 +189,7 @@ var cfg string = `
 	processors = cleanup
 	processors = top-image-marker
 	# processors = relative-url
+	# processors = proxy-http
 
 	proxy-http-url-template = "/proxy?url={{ . }}"
 [content]

@@ -18,6 +18,7 @@ type WebSocket struct {
 	webfw.BasePatternController
 	fm           *readeef.FeedManager
 	sp           content.SearchProvider
+	ap           []ArticleProcessor
 	extractor    content.Extractor
 	capabilities capabilities
 	updateFeed   chan content.Feed
@@ -61,11 +62,13 @@ var (
 	errResourceNotFound   = errors.New("Resource not found")
 )
 
-func NewWebSocket(fm *readeef.FeedManager, sp content.SearchProvider, extractor content.Extractor, capabilities capabilities) WebSocket {
+func NewWebSocket(fm *readeef.FeedManager, sp content.SearchProvider, ap []ArticleProcessor,
+	extractor content.Extractor, capabilities capabilities) WebSocket {
 	return WebSocket{
 		BasePatternController: webfw.NewBasePatternController("/v:version/", webfw.MethodGet, ""),
 		fm:           fm,
 		sp:           sp,
+		ap:           ap,
 		extractor:    extractor,
 		capabilities: capabilities,
 		updateFeed:   make(chan content.Feed),
@@ -132,7 +135,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 					var err error
 					var processor Processor
 
-					if processor, err = data.processor(c, sess, user, con.fm, con.sp, con.extractor,
+					if processor, err = data.processor(c, sess, user, con.fm, con.sp, con.ap, con.extractor,
 						con.capabilities, []byte(cfg.Auth.Secret)); err == nil {
 						if len(data.Arguments) > 0 {
 							err = json.Unmarshal([]byte(data.Arguments), processor)
@@ -242,6 +245,7 @@ func (a apiRequest) processor(
 	user content.User,
 	fm *readeef.FeedManager,
 	sp content.SearchProvider,
+	ap []ArticleProcessor,
 	extractor content.Extractor,
 	capabilities capabilities,
 	secret []byte,
@@ -284,7 +288,7 @@ func (a apiRequest) processor(
 	case "mark-feed-as-read":
 		return &markFeedAsReadProcessor{user: user}, nil
 	case "get-feed-articles":
-		return &getFeedArticlesProcessor{user: user, sp: sp}, nil
+		return &getFeedArticlesProcessor{user: user, sp: sp, ap: ap}, nil
 	case "get-user-attribute":
 		return &getUserAttributeProcessor{user: user}, nil
 	case "set-user-attribute":

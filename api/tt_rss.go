@@ -32,6 +32,7 @@ const (
 type TtRss struct {
 	webfw.BasePatternController
 	sp content.SearchProvider
+	ap []ArticleProcessor
 }
 
 type ttRssRequest struct {
@@ -120,10 +121,10 @@ type ttRssHeadlinesHeader struct {
 	IsCat   bool           `json:"is_cat"`
 }
 
-func NewTtRss(sp content.SearchProvider) TtRss {
+func NewTtRss(sp content.SearchProvider, ap []ArticleProcessor) TtRss {
 	return TtRss{
 		webfw.NewBasePatternController("/v"+strconv.Itoa(TTRSS_API_LEVEL)+"/tt-rss/", webfw.MethodPost, ""),
-		sp,
+		sp, ap,
 	}
 }
 

@@ -23,10 +23,11 @@ import (
 type Feed struct {
 	fm *readeef.FeedManager
 	sp content.SearchProvider
+	ap []ArticleProcessor
 }
 
-func NewFeed(fm *readeef.FeedManager, sp content.SearchProvider) Feed {
-	return Feed{fm: fm, sp: sp}
+func NewFeed(fm *readeef.FeedManager, sp content.SearchProvider, ap []ArticleProcessor) Feed {
+	return Feed{fm: fm, sp: sp, ap: ap}
 }
 
 type listFeedsProcessor struct {
@@ -90,6 +91,7 @@ type getFeedArticlesProcessor struct {
 
 	user content.User
 	sp   content.SearchProvider
+	ap   []ArticleProcessor
 }
 
 var (
@@ -172,7 +174,7 @@ func (con Feed) Handler(c context.Context) http.Handler {
 
 			if limit, resp.err = strconv.Atoi(params["limit"]); resp.err == nil {
 				if offset, resp.err = strconv.Atoi(params["offset"]); resp.err == nil {
-					resp = getFeedArticles(user, con.sp, params["feed-id"], limit, offset,
+					resp = getFeedArticles(user, con.sp, con.ap, params["feed-id"], limit, offset,
 						params["newer-first"] == "true", params["unread-only"] == "true")
 				}
 			}
@@ -242,7 +244,7 @@ func (p markFeedAsReadProcessor) Process() responseError {
 }
 
 func (p getFeedArticlesProcessor) Process() responseError {
-	return getFeedArticles(p.user, p.sp, p.Id, p.Limit, p.Offset, p.NewerFirst, p.UnreadOnly)
+	return getFeedArticles(p.user, p.sp, p.ap, p.Id, p.Limit, p.Offset, p.NewerFirst, p.UnreadOnly)
 }
 
 func listFeeds(user content.User) (resp responseError) {
@@ -520,7 +522,9 @@ func markFeedAsRead(user content.User, id string, timestamp int64) (resp respons
 	return
 }
 
-func getFeedArticles(user content.User, sp content.SearchProvider, id string, limit int, offset int, newerFirst bool, unreadOnly bool) (resp responseError) {
+func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleProcessor,
+	id string, limit int, offset int, newerFirst bool, unreadOnly bool) (resp responseError) {
+
 	resp = newResponse()
 
 	if limit > 200 {
@@ -529,6 +533,7 @@ func getFeedArticles(user content.User, sp content.SearchProvider, id string, li
 
 	var as content.ArticleSorting
 	var ar content.ArticleRepo
+	var ua []content.UserArticle
 
 	o := data.ArticleQueryOptions{Limit: limit, Offset: offset, UnreadOnly: unreadOnly, UnreadFirst: true}
 
@@ -594,7 +599,7 @@ func getFeedArticles(user content.User, sp content.SearchProvider, id string, li
 			sp.Order(data.AscendingOrder)
 		}
 
-		performSearch(&resp, user, sp, query, id, limit, offset)
+		ua = performSearch(&resp, user, sp, query, id, limit, offset)
 	} else if strings.HasPrefix(id, "tag:") {
 		tag := user.Repo().Tag(user)
 		tag.Value(data.TagValue(id[4:]))
@@ -632,20 +637,27 @@ func getFeedArticles(user content.User, sp content.SearchProvider, id string, li
 	}
 
 	if ar != nil {
-		resp.val["Articles"] = ar.Articles(o)
+		ua = ar.Articles(o)
 
 		if e, ok := ar.(content.Error); ok && e.HasErr() {
 			resp.err = e.Err()
 		}
 	}
 
+	if len(ua) > 0 && len(ap) > 0 {
+		for _, p := range ap {
+			ua = p.ProcessArticles(ua)
+		}
+	}
+
+	resp.val["Articles"] = ua
 	resp.val["Limit"] = limit
 	resp.val["Offset"] = offset
 
 	return
 }
 
-func performSearch(resp *responseError, user content.User, sp content.SearchProvider, query, feedId string, limit, offset int) {
+func performSearch(resp *responseError, user content.User, sp content.SearchProvider, query, feedId string, limit, offset int) (ua []content.UserArticle) {
 	defer func() {
 		if rec := recover(); rec != nil {
 			resp.err = fmt.Errorf("Error during search: %s", rec)
@@ -656,13 +668,15 @@ func performSearch(resp *responseError, user content.User, sp content.SearchProv
 		tag := user.Repo().Tag(user)
 		tag.Value(data.TagValue(feedId[4:]))
 
-		resp.val["Articles"], resp.err = tag.Query(query, sp, limit, offset), tag.Err()
+		ua, resp.err = tag.Query(query, sp, limit, offset), tag.Err()
 	} else {
 		if id, err := strconv.ParseInt(feedId, 10, 64); err == nil {
 			f := user.FeedById(data.FeedId(id))
-			resp.val["Articles"], resp.err = f.Query(query, sp, limit, offset), f.Err()
+			ua, resp.err = f.Query(query, sp, limit, offset), f.Err()
 		} else {
-			resp.val["Articles"], resp.err = user.Query(query, sp, limit, offset), user.Err()
+			ua, resp.err = user.Query(query, sp, limit, offset), user.Err()
 		}
 	}
+
+	return
 }

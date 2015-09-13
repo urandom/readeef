@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/urandom/readeef"
+	apiProcessor "github.com/urandom/readeef/api/processor"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base/extractor"
 	"github.com/urandom/readeef/content/base/monitor"
@@ -84,6 +85,27 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	fm.ParserProcessors(processors)
 
+	var ap []ArticleProcessor
+	for _, p := range config.API.ArticleProcessors {
+		switch p {
+		case "relative-url":
+			ap = append(ap, apiProcessor.NewRelativeUrl(logger))
+		case "proxy-http":
+			template := config.API.ProxyHTTPURLTemplate
+
+			if template != "" {
+				p, err := apiProcessor.NewProxyHTTP(logger, template)
+				if err != nil {
+					return fmt.Errorf("Error initializing Proxy HTTP article processor: %v", err)
+				}
+				ap = append(ap, p)
+				capabilities.ProxyHTTP = true
+			}
+		case "insert-thumbnail-target":
+			ap = append(ap, apiProcessor.NewInsertThumbnailTarget(logger))
+		}
+	}
+
 	var sp content.SearchProvider
 
 	switch config.Content.SearchProvider {
@@ -149,7 +171,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		}
 	}
 
-	webSocket := NewWebSocket(fm, sp, ce, capabilities)
+	webSocket := NewWebSocket(fm, sp, ap, ce, capabilities)
 	dispatcher.Handle(webSocket)
 
 	monitors = append(monitors, webSocket)
@@ -173,7 +195,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	controllers := []webfw.Controller{
 		NewAuth(capabilities),
-		NewFeed(fm, sp),
+		NewFeed(fm, sp, ap),
 		NewArticle(config, ce),
 		NewUser(),
 		NewUserSettings(),
@@ -188,9 +210,9 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	for _, e := range config.API.Emulators {
 		switch e {
 		case "tt-rss":
-			controllers = append(controllers, NewTtRss(sp))
+			controllers = append(controllers, NewTtRss(sp, ap))
 		case "fever":
-			controllers = append(controllers, NewFever())
+			controllers = append(controllers, NewFever(ap))
 		}
 	}
 

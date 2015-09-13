@@ -23,7 +23,7 @@ func (p RelativeUrl) Process(f parser.Feed) parser.Feed {
 
 	for i := range f.Articles {
 		if d, err := goquery.NewDocumentFromReader(strings.NewReader(f.Articles[i].Description)); err == nil {
-			if convertArticleLinks(d) {
+			if RelativizeArticleLinks(d) {
 				if content, err := d.Html(); err == nil {
 					// net/http tries to provide valid html, adding html, head and body tags
 					content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
@@ -37,7 +37,7 @@ func (p RelativeUrl) Process(f parser.Feed) parser.Feed {
 	return f
 }
 
-func convertArticleLinks(d *goquery.Document) bool {
+func RelativizeArticleLinks(d *goquery.Document) bool {
 	changed := false
 	d.Find("[src]").Each(func(i int, s *goquery.Selection) {
 		var val string

@@ -21,10 +21,24 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, ap
 	dispatcher.Handle(NewApp())
 	dispatcher.Handle(NewComponent(dispatcher, apiPattern))
 
+	hasProxy := false
 	for _, p := range config.FeedParser.Processors {
 		if p == "proxy-http" {
-			dispatcher.Handle(NewProxy())
+			hasProxy = true
 			break
 		}
+	}
+
+	if !hasProxy {
+		for _, p := range config.API.ArticleProcessors {
+			if p == "proxy-http" {
+				hasProxy = true
+				break
+			}
+		}
+	}
+
+	if hasProxy {
+		dispatcher.Handle(NewProxy())
 	}
 }
