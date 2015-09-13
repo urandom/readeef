@@ -210,7 +210,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	for _, e := range config.API.Emulators {
 		switch e {
 		case "tt-rss":
-			controllers = append(controllers, NewTtRss(sp, ap))
+			controllers = append(controllers, NewTtRss(fm, sp, ap))
 		case "fever":
 			controllers = append(controllers, NewFever(ap))
 		}
