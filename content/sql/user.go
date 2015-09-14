@@ -29,6 +29,7 @@ type getArticlesData struct {
 }
 
 type markReadInsertData struct {
+	InnerJoin           string
 	InnerWhere          string
 	InsertJoin          string
 	InsertJoinPredicate string
@@ -720,6 +721,11 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 			data.InsertJoinPredicate = " AND " + insertJoinPredicate
 		}
 
+		if opts.FavoriteOnly {
+			data.InnerJoin = ` LEFT OUTER JOIN users_articles_states uas
+				ON a.id = uas.article_id AND uas.user_login = $1`
+		}
+
 		innerWhere := []string{}
 
 		if !opts.BeforeDate.IsZero() {
@@ -738,6 +744,10 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 		if opts.AfterId > 0 {
 			innerWhere = append(innerWhere, fmt.Sprintf("id > $%d", len(args)+1))
 			args = append(args, opts.AfterId)
+		}
+
+		if opts.FavoriteOnly {
+			innerWhere = append(innerWhere, "uas.favorite")
 		}
 
 		if len(innerWhere) > 0 {
@@ -786,6 +796,12 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 		data.InnerJoin = updateInnerJoin
 	}
 
+	if opts.FavoriteOnly {
+		data.InnerJoin += `
+LEFT OUTER JOIN users_articles_states uas
+	ON a.id = uas.article_id AND uas.user_login = $2`
+	}
+
 	where := []string{}
 
 	if updateInnerWhere != "" {
@@ -808,6 +824,10 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 	if opts.AfterId > 0 {
 		where = append(where, fmt.Sprintf("id > $%d", len(args)+1))
 		args = append(args, opts.AfterId)
+	}
+
+	if opts.FavoriteOnly {
+		where = append(where, "uas.favorite")
 	}
 
 	if len(where) > 0 {

@@ -23,10 +23,9 @@ const (
 	TTRSS_API_STATUS_ERR = 1
 	TTRSS_VERSION        = "1.8.0"
 	TTRSS_API_LEVEL      = 12
-	TTRSS_SESSION_ID     = "TTRSS_SESSION_ID"
-	TTRSS_USER_NAME      = "TTRSS_USER_NAME"
 
 	TTRSS_FAVORITE_ID = -1
+	TTRSS_FRESH_ID    = -4
 	TTRSS_ALL_ID      = -4
 )
 
@@ -40,7 +39,7 @@ type TtRss struct {
 type ttRssRequest struct {
 	Op            string           `json:"op"`
 	Sid           string           `json:"sid"`
-	Seq           int64            `json:"seq"`
+	Seq           int              `json:"seq"`
 	User          string           `json:"user"`
 	Password      string           `json:"password"`
 	OutputMode    string           `json:"output_mode"`
@@ -70,7 +69,7 @@ type ttRssRequest struct {
 }
 
 type ttRssResponse struct {
-	Seq     int64           `json:"seq"`
+	Seq     int             `json:"seq"`
 	Status  int             `json:"status"`
 	Content json.RawMessage `json:"content"`
 }
@@ -146,6 +145,15 @@ type ttRssSubscribeContent struct {
 	} `json:"status"`
 }
 
+type ttRssSession struct {
+	login     data.Login
+	lastVisit time.Time
+}
+
+var (
+	ttRssSessions = map[string]ttRssSession{}
+)
+
 func NewTtRss(fm *readeef.FeedManager, sp content.SearchProvider, processors []ArticleProcessor) TtRss {
 	ap := make([]ArticleProcessor, 0, len(processors))
 	for _, p := range processors {
@@ -153,6 +161,15 @@ func NewTtRss(fm *readeef.FeedManager, sp content.SearchProvider, processors []A
 			ap = append(ap, p)
 		}
 	}
+
+	go func() {
+		fiveDaysAgo := time.Now().AddDate(0, 0, -5)
+		for id, sess := range ttRssSessions {
+			if sess.lastVisit.Before(fiveDaysAgo) {
+				delete(ttRssSessions, id)
+			}
+		}
+	}()
 
 	return TtRss{
 		webfw.NewBasePatternController(fmt.Sprintf("/v%d/tt-rss/api/", TTRSS_API_LEVEL), webfw.MethodPost, ""),
@@ -168,7 +185,6 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		req := ttRssRequest{}
 		dec := json.NewDecoder(r.Body)
-		sess := webfw.GetSession(c, r)
 
 		resp := ttRssResponse{}
 
@@ -179,24 +195,27 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 		switch {
 		default:
-			err = dec.Decode(&req)
+			in := map[string]interface{}{}
+			err = dec.Decode(&in)
 			if err != nil {
 				err = fmt.Errorf("Error decoding JSON request: %v", err)
 				break
 			}
 
+			req = ttRssConvertRequest(in)
+
+			logger.Debugf("Request: %#v\n", req)
+
 			resp.Seq = req.Seq
 
 			if req.Op != "login" && req.Op != "isLoggedIn" {
-				if id, ok := sess.Get(TTRSS_SESSION_ID); ok && id != "" && id == req.Sid {
-					userName, _ := sess.Get(TTRSS_USER_NAME)
-					if login, ok := userName.(string); ok {
-						user = repo.UserByLogin(data.Login(login))
-						if repo.Err() != nil {
-							errType = "NOT_LOGGED_IN"
-						}
-					} else {
+				if sess, ok := ttRssSessions[req.Sid]; ok {
+					user = repo.UserByLogin(data.Login(sess.login))
+					if repo.Err() != nil {
 						errType = "NOT_LOGGED_IN"
+					} else {
+						sess.lastVisit = time.Now()
+						ttRssSessions[req.Sid] = sess
 					}
 				} else {
 					errType = "NOT_LOGGED_IN"
@@ -225,21 +244,30 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					break
 				}
 
-				sessId := util.UUID()
-				sess.Set(TTRSS_SESSION_ID, sessId)
-				sess.Set(TTRSS_USER_NAME, req.User)
+				var sessId string
+
+				login := user.Data().Login
+
+				for id, sess := range ttRssSessions {
+					if sess.login == login {
+						sessId = id
+					}
+				}
+
+				if sessId == "" {
+					sessId = util.UUID()
+					ttRssSessions[sessId] = ttRssSession{login: login, lastVisit: time.Now()}
+				}
 
 				con = ttRssGenericContent{
 					ApiLevel:  TTRSS_API_LEVEL,
 					SessionId: sessId,
 				}
 			case "logout":
-				sess.Delete(TTRSS_SESSION_ID)
-				sess.Delete(TTRSS_USER_NAME)
-
+				delete(ttRssSessions, req.Sid)
 				con = ttRssGenericContent{Status: "OK"}
 			case "isLoggedIn":
-				if id, ok := sess.Get(TTRSS_SESSION_ID); ok && id != "" {
+				if _, ok := ttRssSessions[req.Sid]; ok {
 					con = ttRssGenericContent{Status: true}
 				} else {
 					con = ttRssGenericContent{Status: false}
@@ -690,6 +718,130 @@ func ttRssHeadlinesFromArticles(req ttRssRequest, articles []content.UserArticle
 		}
 
 		c = append(c, h)
+	}
+	return
+}
+
+func ttRssConvertRequest(in map[string]interface{}) (req ttRssRequest) {
+	for key, v := range in {
+		switch key {
+		case "op":
+			req.Op = ttRssParseString(v)
+		case "sid":
+			req.Sid = ttRssParseString(v)
+		case "seq":
+			req.Seq = ttRssParseInt(v)
+		case "user":
+			req.User = ttRssParseString(v)
+		case "password":
+			req.Password = ttRssParseString(v)
+		case "output_mode":
+			req.OutputMode = ttRssParseString(v)
+		case "unread_only":
+			req.UnreadOnly = ttRssParseBool(v)
+		case "limit":
+			req.Limit = ttRssParseInt(v)
+		case "offset":
+			req.Offset = ttRssParseInt(v)
+		case "cat_id":
+			req.CatId = ttRssParseInt(v)
+		case "feed_id":
+			req.FeedId = data.FeedId(ttRssParseInt64(v))
+		case "skip":
+			req.Skip = ttRssParseInt(v)
+		case "is_cat":
+			req.IsCat = ttRssParseBool(v)
+		case "show_content":
+			req.ShowContent = ttRssParseBool(v)
+		case "show_excerpt":
+			req.ShowExcerpt = ttRssParseBool(v)
+		case "view_mode":
+			req.ViewMode = ttRssParseString(v)
+		case "since_id":
+			req.SinceId = data.ArticleId(ttRssParseInt64(v))
+		case "sanitize":
+			req.Sanitize = ttRssParseBool(v)
+		case "has_sandbox":
+			req.HasSandbox = ttRssParseBool(v)
+		case "include_header":
+			req.IncludeHeader = ttRssParseBool(v)
+		case "order_by":
+			req.OrderBy = ttRssParseString(v)
+		case "search":
+			req.Search = ttRssParseString(v)
+		case "article_ids":
+			req.ArticleIds = ttRssParseArticleIds(v)
+		case "mode":
+			req.Mode = ttRssParseInt(v)
+		case "field":
+			req.Field = ttRssParseInt(v)
+		case "data":
+			req.Data = ttRssParseString(v)
+		case "article_id":
+			req.ArticleId = ttRssParseArticleIds(v)
+		case "pref_name":
+			req.PrefName = ttRssParseString(v)
+		case "feed_url":
+			req.FeedUrl = ttRssParseString(v)
+		}
+	}
+
+	return
+}
+
+func ttRssParseString(vv interface{}) string {
+	if v, ok := vv.(string); ok {
+		return v
+	}
+	return fmt.Sprintf("%v", vv)
+}
+
+func ttRssParseBool(vv interface{}) bool {
+	switch v := vv.(type) {
+	case string:
+	case int, int64:
+		return v == 1
+	case bool:
+		return v
+	}
+	return false
+}
+
+func ttRssParseInt(vv interface{}) int {
+	switch v := vv.(type) {
+	case string:
+		i, _ := strconv.Atoi(v)
+		return i
+	case float64:
+		return int(v)
+	}
+	return 0
+}
+
+func ttRssParseInt64(vv interface{}) int64 {
+	switch v := vv.(type) {
+	case string:
+		i, _ := strconv.ParseInt(v, 10, 64)
+		return i
+	case float64:
+		return int64(v)
+	}
+	return 0
+}
+
+func ttRssParseArticleIds(vv interface{}) (ids []data.ArticleId) {
+	switch v := vv.(type) {
+	case string:
+		parts := strings.Split(v, ",")
+		for _, p := range parts {
+			if i, err := strconv.ParseInt(strings.TrimSpace(p), 10, 64); err == nil {
+				ids = append(ids, data.ArticleId(i))
+			}
+		}
+	case []float64:
+		for _, p := range v {
+			ids = append(ids, data.ArticleId(int64(p)))
+		}
 	}
 	return
 }

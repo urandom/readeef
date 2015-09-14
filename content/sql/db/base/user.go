@@ -107,7 +107,9 @@ INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
 	{{ .InsertJoinPredicate }}
 	AND a.id IN (
-		SELECT id FROM articles {{ .InnerWhere }}
+		SELECT a.id FROM articles a
+		{{ .InnerJoin }}
+		{{ .InnerWhere }}
 	)
 EXCEPT SELECT uas.user_login, uas.article_id
 FROM users_articles_states uas
@@ -117,7 +119,7 @@ WHERE uas.user_login = $1
 `
 	readStateUpdateTemplate = `
 UPDATE users_articles_states SET read = $1 WHERE user_login = $2 AND article_id IN (
-	SELECT id FROM articles {{ .InnerJoin }}
+	SELECT a.id FROM articles a {{ .InnerJoin }}
 	{{ .InnerWhere }}
 )
 `

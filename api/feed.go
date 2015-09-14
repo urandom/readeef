@@ -492,8 +492,11 @@ func markFeedAsRead(user content.User, id string, timestamp int64) (resp respons
 	switch {
 	case id == "all":
 		ar = user
-	case id == "favorite" || strings.HasPrefix(id, "popular:"):
-		// Favorites are assumbed to have been read already
+	case id == "favorite":
+		o.FavoriteOnly = true
+		ar = user
+	case strings.HasPrefix(id, "popular:"):
+		// Can't bulk set state to popular articles
 	case strings.HasPrefix(id, "tag:"):
 		tag := user.Repo().Tag(user)
 		tag.Value(data.TagValue(id[4:]))
