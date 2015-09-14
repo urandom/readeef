@@ -911,7 +911,7 @@ func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Art
 	}
 
 	if len(whereSlice) > 0 {
-		renderData.Where = " AND " + strings.Join(whereSlice, " AND ")
+		renderData.Where = "WHERE " + strings.Join(whereSlice, " AND ")
 	}
 
 	buf := util.BufferPool.GetBuffer()
