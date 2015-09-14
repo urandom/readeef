@@ -225,6 +225,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 			}
 
 			if errType != "" {
+				logger.Debugf("TT-RSS Sessions: %#v\n", ttRssSessions)
 				con = ttRssGenericContent{}
 				break
 			}
