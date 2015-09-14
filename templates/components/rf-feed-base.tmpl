@@ -192,7 +192,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                                 <paper-icon-button icon="more-vert" class="dropdown-trigger" title="{% __ "More options" .base.lang %}"></paper-icon-button>
                                 {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
                                 <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selected-values="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
-                                    <paper-item name="newer-first">{% __ "Newer first" .base.lang %}</paper-item>
+                                    <paper-item name="older-first">{% __ "Older first" .base.lang %}</paper-item>
                                     <paper-item name="unread-only">{% __ "Unread only" .base.lang %}</paper-item>
                                     <paper-item name="mark-all-as-read">{% __ "Mark all as read" .base.lang %}</paper-item>
                                 </paper-menu>
@@ -487,7 +487,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     var data = {
                         current: [].concat(this.articles),
                         newArticles: data.arguments.Articles,
-                        newerFirst: this.user.ProfileData.newerFirst,
+                        olderFirst: this.user.ProfileData.olderFirst,
                         unreadOnly: this.user.ProfileData.unreadOnly,
                         treatAsUnread: this._treatAsUnread,
                     };
@@ -521,7 +521,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     var data = {
                         current: [].concat(this.articles),
                         newArticles: [article],
-                        newerFirst: this.user.ProfileData.newerFirst,
+                        olderFirst: this.user.ProfileData.olderFirst,
                         unreadOnly: this.user.ProfileData.unreadOnly,
                         requestedArticle: article.Id,
                     };
@@ -653,8 +653,8 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     selected = (menu.selectedValues || []).indexOf(name) == -1;
 
                 switch (name) {
-                case "newer-first":
-                    this.set("user.ProfileData.newerFirst", selected)
+                case "older-first":
+                    this.set("user.ProfileData.olderFirst", selected)
                     this.refresh();
                     break;
                 case "unread-only":
@@ -845,8 +845,8 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
                 var selected = [];
 
-                if (this.user.ProfileData.newerFirst) {
-                    selected.push("newer-first");
+                if (this.user.ProfileData.olderFirst) {
+                    selected.push("older-first");
                 }
 
                 if (this.user.ProfileData.unreadOnly) {
@@ -883,7 +883,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     id: tagOrId,
                     limit: limit,
                     offset: offset,
-                    newerFirst: userRecord.base.ProfileData.newerFirst || false,
+                    olderFirst: userRecord.base.ProfileData.olderFirst || false,
                     unreadOnly: userRecord.base.ProfileData.unreadOnly || false,
                 };
             },

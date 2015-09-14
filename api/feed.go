@@ -86,7 +86,7 @@ type getFeedArticlesProcessor struct {
 	Id         string `json:"id"`
 	Limit      int    `json:"limit"`
 	Offset     int    `json:"offset"`
-	NewerFirst bool   `json:"newerFirst"`
+	OlderFirst bool   `json:"olderFirst"`
 	UnreadOnly bool   `json:"unreadOnly"`
 
 	user content.User
@@ -108,7 +108,7 @@ func (con Feed) Patterns() []webfw.MethodIdentifierTuple {
 		webfw.MethodIdentifierTuple{prefix + ":feed-id", webfw.MethodDelete, "remove"},
 		webfw.MethodIdentifierTuple{prefix + ":feed-id/tags", webfw.MethodGet | webfw.MethodPost, "tags"},
 		webfw.MethodIdentifierTuple{prefix + ":feed-id/read/:timestamp", webfw.MethodPost, "read"},
-		webfw.MethodIdentifierTuple{prefix + ":feed-id/articles/:limit/:offset/:newer-first/:unread-only", webfw.MethodGet, "articles"},
+		webfw.MethodIdentifierTuple{prefix + ":feed-id/articles/:limit/:offset/:older-first/:unread-only", webfw.MethodGet, "articles"},
 
 		webfw.MethodIdentifierTuple{prefix + "discover", webfw.MethodGet, "discover"},
 		webfw.MethodIdentifierTuple{prefix + "opml", webfw.MethodPost, "opml"},
@@ -175,7 +175,7 @@ func (con Feed) Handler(c context.Context) http.Handler {
 			if limit, resp.err = strconv.Atoi(params["limit"]); resp.err == nil {
 				if offset, resp.err = strconv.Atoi(params["offset"]); resp.err == nil {
 					resp = getFeedArticles(user, con.sp, con.ap, params["feed-id"], limit, offset,
-						params["newer-first"] == "true", params["unread-only"] == "true")
+						params["older-first"] == "true", params["unread-only"] == "true")
 				}
 			}
 		}
@@ -244,7 +244,7 @@ func (p markFeedAsReadProcessor) Process() responseError {
 }
 
 func (p getFeedArticlesProcessor) Process() responseError {
-	return getFeedArticles(p.user, p.sp, p.ap, p.Id, p.Limit, p.Offset, p.NewerFirst, p.UnreadOnly)
+	return getFeedArticles(p.user, p.sp, p.ap, p.Id, p.Limit, p.Offset, p.OlderFirst, p.UnreadOnly)
 }
 
 func listFeeds(user content.User) (resp responseError) {
@@ -523,7 +523,7 @@ func markFeedAsRead(user content.User, id string, timestamp int64) (resp respons
 }
 
 func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleProcessor,
-	id string, limit int, offset int, newerFirst bool, unreadOnly bool) (resp responseError) {
+	id string, limit int, offset int, olderFirst bool, unreadOnly bool) (resp responseError) {
 
 	resp = newResponse()
 
@@ -593,10 +593,10 @@ func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleP
 		}
 
 		sp.SortingByDate()
-		if newerFirst {
-			sp.Order(data.DescendingOrder)
-		} else {
+		if olderFirst {
 			sp.Order(data.AscendingOrder)
+		} else {
+			sp.Order(data.DescendingOrder)
 		}
 
 		ua = performSearch(&resp, user, sp, query, id, limit, offset)
@@ -629,10 +629,10 @@ func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleP
 
 	if as != nil {
 		as.SortingByDate()
-		if newerFirst {
-			as.Order(data.DescendingOrder)
-		} else {
+		if olderFirst {
 			as.Order(data.AscendingOrder)
+		} else {
+			as.Order(data.DescendingOrder)
 		}
 	}
 

@@ -6,7 +6,7 @@ self.addEventListener('message', function(event) {
     var articles = event.data.current || [],
         inserts = [], insertIndex = 0, cumulativeIndex = 0, lastUnreadIndex = -1,
         newArticles = event.data.newArticles,
-        newerFirst = event.data.newerFirst,
+        olderFirst = event.data.olderFirst,
         unreadOnly = event.data.unreadOnly,
         feeds = event.data.feeds,
         articleMap = {}, indexMap = {}, stateChange = {},
@@ -66,12 +66,12 @@ self.addEventListener('message', function(event) {
                 }
 
                 if (a.Read == o.Read) {
-                    if (newerFirst) {
-                        if (o.Date <= a.Date) {
+                    if (olderFirst) {
+                        if (o.Date > a.Date) {
                             break;
                         }
                     } else {
-                        if (o.Date > a.Date) {
+                        if (o.Date <= a.Date) {
                             break;
                         }
                     }
