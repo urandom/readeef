@@ -430,10 +430,8 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				if len(articles) > 0 {
 					firstId = articles[0].Data().Id
 
-					if len(controller.ap) > 0 {
-						for _, p := range controller.ap {
-							articles = p.ProcessArticles(articles)
-						}
+					for _, p := range controller.ap {
+						articles = p.ProcessArticles(articles)
 					}
 				}
 

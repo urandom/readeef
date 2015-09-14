@@ -69,6 +69,10 @@ type feverLink struct {
 	ItemIds     string         `json:"item_ids"`
 }
 
+const (
+	FEVER_API_VERSION = 2
+)
+
 func NewFever(processors []ArticleProcessor) Fever {
 	ap := make([]ArticleProcessor, 0, len(processors))
 	for _, p := range processors {
@@ -78,15 +82,11 @@ func NewFever(processors []ArticleProcessor) Fever {
 	}
 
 	return Fever{
-		webfw.NewBasePatternController("/v:version/fever/", webfw.MethodPost, ""), ap,
+		BasePatternController: webfw.NewBasePatternController(
+			fmt.Sprintf("/v%d/fever/", FEVER_API_VERSION), webfw.MethodPost, ""),
+		ap: ap,
 	}
 }
-
-var (
-	counter  int64 = 0
-	tagIdMap       = map[string]int64{}
-	idTagMap       = map[int64]string{}
-)
 
 func (con Fever) Handler(c context.Context) http.Handler {
 	repo := readeef.GetRepo(c)
@@ -102,7 +102,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 			user = getReadeefUser(repo, r.FormValue("api_key"), webfw.GetLogger(c))
 		}
 
-		resp := map[string]interface{}{"api_version": 2}
+		resp := map[string]interface{}{"api_version": FEVER_API_VERSION}
 		var reqType string
 
 		switch {
@@ -269,10 +269,8 @@ func (con Fever) Handler(c context.Context) http.Handler {
 						break
 					}
 
-					if len(articles) > 0 && len(con.ap) > 0 {
-						for _, p := range con.ap {
-							articles = p.ProcessArticles(articles)
-						}
+					for _, p := range con.ap {
+						articles = p.ProcessArticles(articles)
 					}
 
 					for i := range articles {

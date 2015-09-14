@@ -644,10 +644,8 @@ func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleP
 		}
 	}
 
-	if len(ua) > 0 && len(ap) > 0 {
-		for _, p := range ap {
-			ua = p.ProcessArticles(ua)
-		}
+	for _, p := range ap {
+		ua = p.ProcessArticles(ua)
 	}
 
 	resp.val["Articles"] = ua
