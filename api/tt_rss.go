@@ -27,6 +27,8 @@ const (
 	TTRSS_FAVORITE_ID = -1
 	TTRSS_FRESH_ID    = -3
 	TTRSS_ALL_ID      = -4
+
+	TTRSS_FRESH_DURATION = -24 * time.Hour
 )
 
 type TtRss struct {
@@ -223,6 +225,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 			}
 
 			if errType != "" {
+				con = ttRssGenericContent{}
 				break
 			}
 
@@ -273,28 +276,41 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					con = ttRssGenericContent{Status: false}
 				}
 			case "getUnread":
-				var count int64
-				counted := false
-
 				if !req.IsCat {
-					feed := user.FeedById(req.FeedId)
-					count = feed.Count(data.ArticleCountOptions{UnreadOnly: true})
-					if feed.HasErr() {
-						err = feed.Err()
-						break
+					var ar content.ArticleRepo
+					o := data.ArticleCountOptions{UnreadOnly: true}
+
+					switch req.FeedId {
+					case TTRSS_FAVORITE_ID:
+						ar = user
+						o.FavoriteOnly = true
+					case TTRSS_FRESH_ID:
+						ar = user
+						o.AfterDate = time.Now().Add(TTRSS_FRESH_DURATION)
+					case TTRSS_ALL_ID:
+						ar = user
+					default:
+						if req.FeedId > 0 {
+							feed := user.FeedById(req.FeedId)
+							if feed.HasErr() {
+								err = feed.Err()
+								break
+							}
+
+							ar = feed
+						}
+
 					}
 
-					counted = true
-				}
-
-				if !counted {
-					count = user.Count(data.ArticleCountOptions{UnreadOnly: true})
-					if user.HasErr() {
-						err = fmt.Errorf("Error getting all unread article ids: %v\n", user.Err())
+					if ar != nil {
+						con = ttRssGenericContent{Unread: ar.Count(o)}
 					}
+
 				}
 
-				con = ttRssGenericContent{Unread: count}
+				if con == nil {
+					con = ttRssGenericContent{Unread: 0}
+				}
 			case "getCounters":
 				if req.OutputMode == "" {
 					req.OutputMode = "flc"
@@ -312,8 +328,14 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 				cContent = append(cContent,
 					ttRssCounter{Id: strconv.Itoa(TTRSS_FAVORITE_ID),
-						Counter:    0,
-						AuxCounter: int64(len(user.AllFavoriteArticleIds()))})
+						Counter:    user.Count(data.ArticleCountOptions{UnreadOnly: true, FavoriteOnly: true}),
+						AuxCounter: user.Count(data.ArticleCountOptions{FavoriteOnly: true})})
+
+				freshTime := time.Now().Add(TTRSS_FRESH_DURATION)
+				cContent = append(cContent,
+					ttRssCounter{Id: strconv.Itoa(TTRSS_FRESH_ID),
+						Counter:    user.Count(data.ArticleCountOptions{UnreadOnly: true, AfterDate: freshTime}),
+						AuxCounter: user.Count(data.ArticleCountOptions{AfterDate: freshTime})})
 
 				cContent = append(cContent,
 					ttRssCounter{Id: strconv.Itoa(TTRSS_ALL_ID),
@@ -338,28 +360,42 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				fContent := ttRssFeedsContent{}
 
 				if req.CatId == TTRSS_FAVORITE_ID || req.CatId == TTRSS_ALL_ID {
-					if !req.UnreadOnly {
+					unreadFav := user.Count(data.ArticleCountOptions{UnreadOnly: true, FavoriteOnly: true})
+
+					if unreadFav > 0 || !req.UnreadOnly {
 						fContent = append(fContent, ttRssFeed{
 							Id:     TTRSS_FAVORITE_ID,
 							Title:  "Starred articles",
-							Unread: 0,
+							Unread: unreadFav,
 							CatId:  TTRSS_FAVORITE_ID,
 						})
 					}
 
-					unread := user.Count(data.ArticleCountOptions{UnreadOnly: true})
+					freshTime := time.Now().Add(TTRSS_FRESH_DURATION)
+					unreadFresh := user.Count(data.ArticleCountOptions{UnreadOnly: true, AfterDate: freshTime})
 
-					if unread > 0 || !req.UnreadOnly {
+					if unreadFresh > 0 || !req.UnreadOnly {
+						fContent = append(fContent, ttRssFeed{
+							Id:     TTRSS_FRESH_ID,
+							Title:  "Fresh articles",
+							Unread: unreadFresh,
+							CatId:  TTRSS_FAVORITE_ID,
+						})
+					}
+
+					unreadAll := user.Count(data.ArticleCountOptions{UnreadOnly: true})
+
+					if unreadAll > 0 || !req.UnreadOnly {
 						fContent = append(fContent, ttRssFeed{
 							Id:     TTRSS_ALL_ID,
 							Title:  "All articles",
-							Unread: unread,
+							Unread: unreadAll,
 							CatId:  TTRSS_FAVORITE_ID,
 						})
 					}
 				}
 
-				if req.CatId == 0 || req.CatId == TTRSS_ALL_ID {
+				if req.CatId == 0 || req.CatId == TTRSS_FRESH_ID || req.CatId == TTRSS_ALL_ID {
 					feeds := user.AllFeeds()
 					o := data.ArticleCountOptions{UnreadOnly: true}
 					for i := range feeds {
@@ -415,6 +451,11 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					o.FavoriteOnly = true
 					articleRepo = user
 					feedTitle = "Starred articles"
+				} else if req.FeedId == TTRSS_FRESH_ID {
+					ttRssSetupSorting(req, user)
+					o.AfterDate = time.Now().Add(TTRSS_FRESH_DURATION)
+					articleRepo = user
+					feedTitle = "Fresh articles"
 				} else if req.FeedId == TTRSS_ALL_ID {
 					ttRssSetupSorting(req, user)
 					articleRepo = user
@@ -443,8 +484,11 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 						switch req.ViewMode {
 						case "all_articles":
+						case "adaptive":
 						case "unread":
 							o.UnreadOnly = true
+						case "marked":
+							o.FavoriteOnly = true
 						default:
 							skip = true
 						}
@@ -585,6 +629,8 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					con = ttRssGenericContent{Value: user.Data().ProfileData["unreadOnly"]}
 				case "FEEDS_SORT_BY_UNREAD":
 					con = ttRssGenericContent{Value: true}
+				case "FRESH_ARTICLE_MAX_AGE":
+					con = ttRssGenericContent{Value: (-1 * TTRSS_FRESH_DURATION).Hours()}
 				}
 			case "getLabels":
 				con = []interface{}{}
@@ -649,8 +695,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 		} else {
 			logger.Infof("Error processing TT-RSS API request: %s %v\n", errType, err)
 			resp.Status = TTRSS_API_STATUS_ERR
-			switch v := con.(type) {
-			case ttRssGenericContent:
+			if v, ok := con.(ttRssGenericContent); ok {
 				v.Error = errType
 			}
 		}
