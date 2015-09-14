@@ -93,20 +93,14 @@ func (t *Tag) Count(o ...data.ArticleCountOptions) (count int64) {
 		opts = o[0]
 	}
 
-	login := t.User().Data().Login
+	u := t.User()
 	tag := t.Value()
-	t.logger.Infof("Getting user %s tag %s count with options %#v\n", login, tag, opts)
+	t.logger.Infof("Getting user %s tag %s count with options %#v\n", u.Data().Login, tag, opts)
 
-	if opts.UnreadOnly {
-		if err := t.db.Get(&count, t.db.SQL("get_tag_article_unread_count"), login, tag); err != nil {
-			t.Err(err)
-			return
-		}
-	} else {
-		if err := t.db.Get(&count, t.db.SQL("get_tag_article_count"), login, tag); err != nil {
-			t.Err(err)
-			return
-		}
+	articleCount(u, t.db, t.logger, opts, t.db.SQL("article_count_tag_join"), "", []interface{}{tag})
+
+	if u.HasErr() {
+		t.Err(u.Err())
 	}
 
 	return

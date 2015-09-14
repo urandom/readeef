@@ -18,6 +18,7 @@ var (
 	getArticlesTemplate     *template.Template
 	readStateInsertTemplate *template.Template
 	readStateUpdateTemplate *template.Template
+	articleCountTemplate    *template.Template
 )
 
 type getArticlesData struct {
@@ -40,6 +41,11 @@ type markReadInsertData struct {
 type markReadUpdateData struct {
 	InnerJoin  string
 	InnerWhere string
+}
+
+type articleCountData struct {
+	Join  string
+	Where string
 }
 
 type User struct {
@@ -457,23 +463,9 @@ func (u *User) Count(o ...data.ArticleCountOptions) (count int64) {
 		opts = o[0]
 	}
 
-	login := u.Data().Login
-	u.logger.Infof("Getting user %s article count using options: %#v\n", login, opts)
+	u.logger.Infof("Getting user %s article count using options: %#v\n", u.Data().Login, opts)
 
-	if opts.UnreadOnly {
-		if err := u.db.Get(&count, u.db.SQL("get_user_article_unread_count"), login); err != nil {
-			u.Err(err)
-			return
-		}
-	} else {
-		if err := u.db.Get(&count, u.db.SQL("get_user_article_count"), login); err != nil && err != sql.ErrNoRows {
-			u.Err(err)
-			return
-		}
-
-	}
-
-	return
+	return articleCount(u, u.db, u.logger, opts, "", "", nil)
 }
 
 func (u *User) Query(term string, sp content.SearchProvider, paging ...int) (ua []content.UserArticle) {
@@ -566,7 +558,7 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 	renderData := getArticlesData{}
 	if opts.IncludeScores {
 		renderData.Columns += ", asco.score"
-		renderData.Join += " INNER JOIN articles_scores asco ON a.id = asco.article_id"
+		renderData.Join += dbo.SQL("get_articles_score_join")
 	}
 
 	if join != "" {
@@ -722,8 +714,7 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 		}
 
 		if opts.FavoriteOnly {
-			data.InnerJoin = ` LEFT OUTER JOIN users_articles_states uas
-				ON a.id = uas.article_id AND uas.user_login = $1`
+			data.InnerJoin = dbo.SQL("read_state_insert_state_inner_join")
 		}
 
 		innerWhere := []string{}
@@ -797,9 +788,7 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 	}
 
 	if opts.FavoriteOnly {
-		data.InnerJoin += `
-LEFT OUTER JOIN users_articles_states uas
-	ON a.id = uas.article_id AND uas.user_login = $2`
+		data.InnerJoin += dbo.SQL("read_state_update_state_inner_join")
 	}
 
 	where := []string{}
@@ -859,4 +848,87 @@ LEFT OUTER JOIN users_articles_states uas
 	if err = tx.Commit(); err != nil {
 		u.Err(err)
 	}
+}
+
+func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleCountOptions, join, where string, args []interface{}) (count int64) {
+	if u.HasErr() {
+		return
+	}
+
+	var err error
+	if articleCountTemplate == nil {
+		articleCountTemplate, err = template.New("article-count-sql").
+			Parse(dbo.SQL("article_count_template"))
+
+		if err != nil {
+			u.Err(fmt.Errorf("Error generating article-count template: %v", err))
+			return
+		}
+	}
+
+	renderData := articleCountData{}
+	if opts.UnreadOnly || opts.FavoriteOnly {
+		renderData.Join += dbo.SQL("article_count_state_join")
+	}
+
+	if join != "" {
+		renderData.Join += " " + join
+	}
+
+	args = append([]interface{}{u.Data().Login}, args...)
+
+	whereSlice := []string{}
+
+	if opts.UnreadOnly {
+		whereSlice = append(whereSlice, "(uas.article_id IS NULL OR NOT uas.read)")
+	}
+
+	if opts.FavoriteOnly {
+		whereSlice = append(whereSlice, "uas.favorite")
+	}
+
+	if where != "" {
+		whereSlice = append(whereSlice, where)
+	}
+
+	if opts.BeforeId > 0 {
+		whereSlice = append(whereSlice, fmt.Sprintf("a.id < $%d", len(args)+1))
+		args = append(args, opts.BeforeId)
+	}
+	if opts.AfterId > 0 {
+		whereSlice = append(whereSlice, fmt.Sprintf("a.id > $%d", len(args)+1))
+		args = append(args, opts.AfterId)
+	}
+
+	if !opts.BeforeDate.IsZero() {
+		whereSlice = append(whereSlice, fmt.Sprintf("a.date <= $%d", len(args)+1))
+		args = append(args, opts.BeforeDate)
+	}
+
+	if !opts.AfterDate.IsZero() {
+		whereSlice = append(whereSlice, fmt.Sprintf("a.date > $%d", len(args)+1))
+		args = append(args, opts.AfterDate)
+	}
+
+	if len(whereSlice) > 0 {
+		renderData.Where = " AND " + strings.Join(whereSlice, " AND ")
+	}
+
+	buf := util.BufferPool.GetBuffer()
+	defer util.BufferPool.Put(buf)
+
+	if err := articleCountTemplate.Execute(buf, renderData); err != nil {
+		u.Err(fmt.Errorf("Error executing article-count template: %v", err))
+		return
+	}
+
+	sql := buf.String()
+
+	logger.Debugf("Article count SQL:\n%s\nArgs:%q\n", sql, args)
+	if err := dbo.Get(&count, sql, args...); err != nil {
+		u.Err(err)
+		return
+	}
+
+	return
 }

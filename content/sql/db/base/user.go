@@ -11,12 +11,19 @@ func init() {
 	sql["get_user_tags"] = getUserTags
 	sql["get_all_unread_user_article_ids"] = getAllUnreadUserArticleIds
 	sql["get_all_favorite_user_article_ids"] = getAllFavoriteUserArticleIds
-	sql["get_user_article_count"] = getUserArticleCount
-	sql["get_user_article_unread_count"] = getUserArticleUnreadCount
 
 	sql["get_articles_template"] = getArticlesTemplate
+	sql["get_articles_score_join"] = getArticlesScoreJoin
+
 	sql["read_state_insert_template"] = readStateInsertTemplate
+	sql["read_state_insert_state_inner_join"] = readStateInsertStateInnerJoin
+
 	sql["read_state_update_template"] = readStateUpdateTemplate
+	sql["read_state_update_state_inner_join"] = readStateUpdateStateInnerJoin
+
+	sql["article_count_template"] = articleCountTemplate
+	sql["article_count_state_join"] = articleCountStateJoin
+
 }
 
 const (
@@ -63,20 +70,6 @@ LEFT OUTER JOIN users_articles_states uas
 	ON a.id = uas.article_id AND uf.user_login = uas.user_login
 WHERE uas.favorite
 `
-	getUserArticleCount = `
-SELECT count(a.id)
-FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-`
-	getUserArticleUnreadCount = `
-SELECT count(a.id)
-FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_id = a.feed_id
-	AND uf.user_login = $1
-LEFT OUTER JOIN users_articles_states uas
-	ON a.id = uas.article_id AND uf.user_login = uas.user_login
-WHERE uas.article_id IS NULL OR NOT uas.read
-`
 
 	getArticlesTemplate = `
 SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
@@ -96,6 +89,9 @@ WHERE uf.user_login = $1
 {{ .Where }}
 {{ .Order }}
 {{ .Limit }}
+`
+	getArticlesScoreJoin = `
+	INNER JOIN articles_scores asco ON a.id = asco.article_id
 `
 
 	readStateInsertTemplate = `
@@ -117,10 +113,33 @@ FROM users_articles_states uas
 WHERE uas.user_login = $1
 {{ .ExceptWhere }}
 `
+	readStateInsertStateInnerJoin = `
+LEFT OUTER JOIN users_articles_states uas
+	ON a.id = uas.article_id AND uas.user_login = $1
+`
+
 	readStateUpdateTemplate = `
 UPDATE users_articles_states SET read = $1 WHERE user_login = $2 AND article_id IN (
 	SELECT a.id FROM articles a {{ .InnerJoin }}
 	{{ .InnerWhere }}
 )
+`
+	readStateUpdateStateInnerJoin = `
+LEFT OUTER JOIN users_articles_states uas
+	ON a.id = uas.article_id AND uas.user_login = $2
+`
+
+	articleCountTemplate = `
+SELECT count(a.id)
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id
+	AND uf.user_login = $1
+{{ .Join }}
+{{ .Where }}
+`
+	articleCountStateJoin = `
+LEFT OUTER JOIN users_articles_states uas
+	ON a.id = uas.article_id
+	AND uf.user_login = uas.user_login
 `
 )

@@ -25,7 +25,7 @@ const (
 	TTRSS_API_LEVEL      = 12
 
 	TTRSS_FAVORITE_ID = -1
-	TTRSS_FRESH_ID    = -4
+	TTRSS_FRESH_ID    = -3
 	TTRSS_ALL_ID      = -4
 )
 

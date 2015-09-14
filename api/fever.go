@@ -217,6 +217,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 
 				count, err = user.Count(), user.Err()
 				if err != nil {
+					err = fmt.Errorf("Error getting user article count: %v", err)
 					break
 				}
 

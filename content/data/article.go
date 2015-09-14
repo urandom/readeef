@@ -84,7 +84,12 @@ type ArticleQueryOptions struct {
 }
 
 type ArticleCountOptions struct {
-	UnreadOnly bool
+	UnreadOnly   bool
+	FavoriteOnly bool
+	BeforeId     ArticleId
+	AfterId      ArticleId
+	BeforeDate   time.Time
+	AfterDate    time.Time
 }
 
 type ArticleUpdateStateOptions struct {

@@ -438,7 +438,7 @@ func (uf *UserFeed) Count(o ...data.ArticleCountOptions) (count int64) {
 		return
 	}
 
-	login := uf.User().Data().Login
+	u := uf.User()
 	id := uf.Data().Id
 
 	var opts data.ArticleCountOptions
@@ -446,18 +446,12 @@ func (uf *UserFeed) Count(o ...data.ArticleCountOptions) (count int64) {
 		opts = o[0]
 	}
 
-	uf.logger.Infof("Getting user %s feed %d article count with options %#v\n", login, id, opts)
+	uf.logger.Infof("Getting user %s feed %d article count with options %#v\n", u.Data().Login, id, opts)
 
-	if opts.UnreadOnly {
-		if err := uf.db.Get(&count, uf.db.SQL("get_user_feed_article_unread_count"), login, id); err != nil {
-			uf.Err(err)
-			return
-		}
-	} else {
-		if err := uf.db.Get(&count, uf.db.SQL("get_user_feed_article_count"), login, id); err != nil {
-			uf.Err(err)
-			return
-		}
+	articleCount(u, uf.db, uf.logger, opts, "", "uf.feed_id = $2", []interface{}{id})
+
+	if u.HasErr() {
+		uf.Err(u.Err())
 	}
 
 	return
