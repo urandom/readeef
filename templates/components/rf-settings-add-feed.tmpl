@@ -144,11 +144,13 @@ li paper-checkbox {
                 user: Object,
                 discoveredFeeds: {
                     type: Array,
-                    value: null
+                    value: function() {
+                        return null;
+                    },
                 },
                 addFeedError: {
                     type: String,
-                    value: ""
+                    value: "",
                 },
                 loading: {
                     type: Boolean,
@@ -267,6 +269,7 @@ li paper-checkbox {
                 this.fire('iron-signal', {name: 'rf-feeds-added'});
                 this.$['feed-url'].value = "";
                 this.$['feed-url'].invalid = false;
+                this.discoveredFeeds = null;
 
                 this.$['add-feed-success'].show();
                 MoreRouting.navigateTo('settings-add-feed-discover');
