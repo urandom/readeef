@@ -300,7 +300,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 },
                 limit: {
                     type: Number,
-                    value: 200,
+                    value: 100,
                 },
                 offset: {
                     type: Number,
@@ -320,7 +320,6 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
             _focused: true,
             _urlParser: document.createElement('a'),
-            _maxArticleId: null,
 
             feedUrlFor: function(tagOrId, prefix) {
                 if (prefix) {
@@ -359,17 +358,12 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     this.noMoreArticles = false;
                     this.offset = 0;
 
-                    if (!this._maxArticleId) {
-                        this.articles = this._createArticles();
-                    }
-
                     switch (type) {
                         case 'get-article':
                             this.$['get-article'].send();
                             break;
                         default:
-                            this.$['feed-articles'].send(
-                                    this._maxArticleId ? {afterId: this._maxArticleId} : null);
+                            this.$['feed-articles'].send();
                     }
                 });
             },
@@ -564,9 +558,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
                 this._updateAvailable = true;
 
-                // Give the thumbnailer some time to gather any thumbnails
-                this.debounce('auto-update-timeout',
-                        this._updateArticles, 30000); // 30s
+                this.debounce('auto-update-timeout', this._updateArticles);
 
                 if (!this._focused) {
                     // Highlight a pinned tab
@@ -651,12 +643,12 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 switch (name) {
                 case "older-first":
                     this.set("user.ProfileData.olderFirst", !this.user.ProfileData.olderFirst);
-                    this._maxArticleId = null;
+                    this.articles = this._createArticles();
                     this.refresh();
                     break;
                 case "unread-only":
                     this.set("user.ProfileData.unreadOnly", !this.user.ProfileData.unreadOnly);
-                    this._maxArticleId = null;
+                    this.articles = this._createArticles();
                     this.refresh();
                     break;
                 case "mark-all-as-read":
@@ -716,7 +708,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
             _tagOrIdChanged: function(tagOrId, oldValue) {
-                this._maxArticleId = null;
+                this.articles = this._createArticles();
                 this.refresh();
             },
 
@@ -922,12 +914,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     return;
                 }
 
-                var args = {offset: 0};
-                if (this._maxArticleId) {
-                    args.afterId = this._maxArticleId;
-                }
-
-                this.$['feed-articles'].send(args);
+                this.$['feed-articles'].send({offset: 0});
             },
 
             _previousArticle: function(unread) {
@@ -1014,6 +1001,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     return index === undefined ? -1 : index;
                 };
 
+                this._maxArticleId = null;
                 return articles;
             },
 
@@ -1021,8 +1009,10 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 // Update the map first, the change callbacks might use it
                 this.articles.indexMap = event.data.indexMap;
 
+                var updated = false;
                 for (var i = 0, insert; insert = event.data.inserts[i]; ++i) {
                     this.splice.apply(this, ['articles', insert.index, 0].concat(insert.articles));
+                    updated = true;
                 }
 
                 for (var id in event.data.stateChange) {
@@ -1036,6 +1026,8 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     if ('Favorite' in state) {
                         this.set('articles.' + index + '.Favorite', state.Favorite);
                     }
+
+                    updated = true;
                 }
 
                 this.$['scroll-threshold'].clearLower();
@@ -1047,6 +1039,10 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 } else {
                     this._maxArticleId = event.data.maxId;
                     this.loading = false;
+                }
+
+                if (!updated) {
+                    this.$['no-new-articles'].show();
                 }
             },
 
