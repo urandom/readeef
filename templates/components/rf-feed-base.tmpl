@@ -649,25 +649,24 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             onFeedMenuItemActivate: function(event) {
                 // Event is fired before the actual selection takes place
                 var menu = Polymer.dom(event).localTarget,
-                    name = event.detail.selected,
-                    selected = (menu.selectedValues || []).indexOf(name) == -1;
+                    name = event.detail.selected;
 
                 switch (name) {
                 case "older-first":
-                    this.set("user.ProfileData.olderFirst", selected)
+                    this.set("user.ProfileData.olderFirst", !this.user.ProfileData.olderFirst);
                     this.refresh();
                     break;
                 case "unread-only":
-                    this.set("user.ProfileData.unreadOnly", selected)
+                    this.set("user.ProfileData.unreadOnly", !this.user.ProfileData.unreadOnly);
                     this.refresh();
                     break;
                 case "mark-all-as-read":
-                    if (selected) {
-                        menu.select(name);
-                    }
                     this._markAllAsRead();
                     break;
                 }
+
+                event.preventDefault();
+                Polymer.dom(menu).parentNode.close();
             },
 
             onShareServiceActivate: function(event) {
@@ -850,7 +849,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 }
 
                 if (this.user.ProfileData.unreadOnly) {
-                    selected.push("unreadOnly");
+                    selected.push("unread-only");
                 }
 
                 return selected;
