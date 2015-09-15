@@ -120,12 +120,12 @@ type ttRssHeadline struct {
 	Title     string         `json:"title"`
 	Link      string         `json:"link"`
 	FeedId    data.FeedId    `json:"feed_id"`
-	Excerpt   string         `json:"excerpt"`
-	Content   string         `json:"content"`
+	Excerpt   string         `json:"excerpt,omitempty"`
+	Content   string         `json:"content,omitempty"`
 	FeedTitle string         `json:"feed_title"`
 
-	Tags   []string `json:"tags"`
-	Labels []string `json:"labels"`
+	Tags   []string `json:"tags,omitempty"`
+	Labels []string `json:"labels,omitempty"`
 }
 
 type ttRssHeadlinesHeader struct {
@@ -744,6 +744,7 @@ func ttRssHeadlinesFromArticles(req ttRssRequest, articles []content.UserArticle
 			Id:        d.Id,
 			Unread:    !d.Read,
 			Marked:    d.Favorite,
+			Updated:   d.Date.Unix(),
 			IsUpdated: !d.Read,
 			Title:     d.Title,
 			Link:      d.Link,
