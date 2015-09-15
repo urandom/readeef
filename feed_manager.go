@@ -155,10 +155,13 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 
 		f = feeds[0]
 
-		fm.updateFeed(f)
+		f.Update()
 		if f.HasErr() {
 			return f, f.Err()
 		}
+
+		// Do not halt the adding process due to slow monitors
+		go fm.processFeedUpdateMonitors(f)
 	}
 
 	fm.logger.Infoln("Adding feed " + f.String() + " to manager")
@@ -591,19 +594,20 @@ func (fm FeedManager) updateFeed(f content.Feed) {
 	if f.HasErr() {
 		fm.logger.Printf("Error updating feed '%s' database record: %v\n", f, f.Err())
 	} else {
-		var articles []content.Article
-		articles = f.NewArticles()
+		fm.processFeedUpdateMonitors(f)
+	}
+}
 
-		if len(articles) > 0 {
-			for _, m := range fm.feedMonitors {
-				if err := m.FeedUpdated(f); err != nil {
-					fm.logger.Print("Error invoking monitor '%s' on updated feed '%s': %v\n",
-						reflect.TypeOf(m), f, err)
-				}
+func (fm FeedManager) processFeedUpdateMonitors(f content.Feed) {
+	if len(f.NewArticles()) > 0 {
+		for _, m := range fm.feedMonitors {
+			if err := m.FeedUpdated(f); err != nil {
+				fm.logger.Print("Error invoking monitor '%s' on updated feed '%s': %v\n",
+					reflect.TypeOf(m), f, err)
 			}
-		} else {
-			fm.logger.Infoln("No new articles for " + f.String())
 		}
+	} else {
+		fm.logger.Infoln("No new articles for " + f.String())
 	}
 }
 
