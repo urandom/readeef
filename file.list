@@ -65,7 +65,7 @@ static/dist/iron-selector/iron-selection.html
 static/dist/iron-selector/iron-selector.html
 static/dist/iron-signals/iron-signals.html
 static/dist/iron-validatable-behavior/iron-validatable-behavior.html
-static/dist/moment/min/moment.min.js
+static/dist/moment/min/moment-with-locales.min.js
 static/dist/more-routing/driver.html
 static/dist/more-routing/driver/hash.html
 static/dist/more-routing/driver/mock.html

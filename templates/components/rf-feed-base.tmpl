@@ -485,6 +485,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                         olderFirst: this.user.ProfileData.olderFirst,
                         unreadOnly: this.user.ProfileData.unreadOnly,
                         treatAsUnread: this._treatAsUnread,
+                        lang: "{% .base.lang %}",
                     };
 
                     delete this._treatAsUnread;

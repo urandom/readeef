@@ -572,7 +572,10 @@ rf-article /deep/ .article-summary {
                 }
 
                 this._relativeDateWorker.postMessage({
-                    articles: [].concat(this.articles), tagOrId: this.tagOrId});
+                    articles: [].concat(this.articles),
+                    tagOrId: this.tagOrId,
+                    lang: "{% .base.lang %}",
+                });
             },
 
             _handleRelativeDateWorkerMessage: function(event) {

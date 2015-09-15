@@ -69,13 +69,24 @@
         </div>
     </template>
 
+    {% if .base.langs %}
+    <script src="/dist/moment/min/moment-with-locales.min.js"></script>
+    {% end %}
+
     <script>
 (function() {
     "use strict";
 
     var animations = {}, httpRe = /^https?:/, templateRe = /\{\{\s*\.\s*\}\}/;
 
+    {% if .base.langs %}
+    moment.locale('{% .base.lang %}');
+    {% end %}
+
     function ordinal(value) {
+        {% if .base.langs %}
+        return moment.localeData().ordinal(value);
+        {% else %}
         var str = value.toString(), suff = str.slice(-1), ord = '';
 
         switch (suff) {
@@ -99,6 +110,7 @@
                 break;
         }
         return value + ord;
+        {% end %}
     }
 
     function slideFromTop(element) {

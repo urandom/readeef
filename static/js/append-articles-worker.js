@@ -1,4 +1,4 @@
-importScripts("/dist/moment/min/moment.min.js");
+importScripts("/dist/moment/min/moment-with-locales.min.js");
 
 self.addEventListener('message', function(event) {
     "use strict";
@@ -12,6 +12,10 @@ self.addEventListener('message', function(event) {
         maxId = 0,
         articleMap = {}, indexMap = {}, stateChange = {},
         feedMap, response;
+
+    if (event.data.lang) {
+        moment.locale(event.data.lang);
+    }
 
     if (event.data.treatAsUnread) {
         articles[event.data.treatAsUnread].Read = false;
