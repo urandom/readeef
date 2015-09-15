@@ -112,21 +112,23 @@ paper-dropdown-menu /deep/ paper-menu-button {
             <paper-input id="first-name" label="{% __ "First name" .base.lang %}" tabindex="1" value="{{ user.FirstName }}" on-bind-value-changed="onFirstNameChange"></paper-input>
             <paper-input id="last-name" label="{% __ "Last name" .base.lang %}" tabindex="2" value="{{ user.LastName }}"  on-bind-value-changed="onLastNameChange"></paper-input>
             <paper-input id="email" label="{% __ "Email" .base.lang %}" tabindex="3" type="email" value="{{ user.Email }}"  on-bind-value-changed="onEmailChange"></paper-input>
-            <paper-dropdown-menu label="{% __ "Language" .base.lang %}">
-                <paper-menu class="dropdown-content">
-                    {% $r := .base.r %}
-                    {% range .base.langs %}
-                        <a href="{% localizedUrl "/web/settings/general" . $r %}" on-tap="onLanguageSelect" data-language="{% . %}">
-                            {% if eq . "en" %}
-                                {% __ "English" . %}
-                            {% else %}
-                                {% __ "Bulgarian" . %}
-                            {% end %}
-                            <paper-ripple></paper-ripple>
-                        </a>
-                    {% end %}
-                </paper-menu>
-            </paper-dropdown-menu>
+            {% if .base.langs %}
+                <paper-dropdown-menu label="{% __ "Language" .base.lang %}">
+                    <paper-menu class="dropdown-content">
+                        {% $r := .base.r %}
+                        {% range .base.langs %}
+                            <a href="{% localizedUrl "/web/settings/general" . $r %}" on-tap="onLanguageSelect" data-language="{% . %}">
+                                {% if eq . "en" %}
+                                    {% __ "English" . %}
+                                {% else %}
+                                    {% __ "Bulgarian" . %}
+                                {% end %}
+                                <paper-ripple></paper-ripple>
+                            </a>
+                        {% end %}
+                    </paper-menu>
+                </paper-dropdown-menu>
+            {% end %}
 
             <h3>
                 {% __ "Pick your style" .base.lang %}

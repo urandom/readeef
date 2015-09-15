@@ -17,6 +17,7 @@
 <link rel="import" href="/dist/paper-menu/paper-menu.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/paper-spinner/paper-spinner.html">
+<link rel="import" href="/dist/paper-toast/paper-toast.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
 
@@ -235,6 +236,8 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
             </div>
         </rf-app-scaffold>
+
+        <paper-toast id="no-new-articles" text="{% __ "Articles are up-to-date" .base.lang %}"></paper-toast>
 
         <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage" user="{{ user }}"></rf-api>
         <rf-api id="user-settings" method="set-user-attribute" tag="feed-base" user="[[ user ]]"></rf-api>
@@ -494,7 +497,9 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 } else {
                     this.loading = false;
 
-                    if (!data.arguments.AfterId) {
+                    if (data.arguments.AfterId) {
+                        this.$['no-new-articles'].show();
+                    } else {
                         this.noMoreArticles = true;
                         if (!this.offset) {
                             this.articles = this._createArticles();

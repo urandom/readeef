@@ -32,6 +32,10 @@
         "translation": "Прилагане"
     },
     {
+        "id": "Articles are up-to-date",
+        "translation": "Статиите са актуални"
+    },
+    {
         "id": "Articles from { Tag }",
         "translation": "Статии от { Tag }"
     },
