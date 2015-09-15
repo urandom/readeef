@@ -49,6 +49,12 @@ func main() {
 		server.Port = *port
 	}
 
+	if *serverconfpath == "" {
+		server.Config.Session.IgnoreURLPrefix = []string{"/v2/fever", "/v12/tt-rss"}
+		server.Config.I18n.Languages = []string{"en", "bg"}
+		server.Config.I18n.IgnoreURLPrefix = []string{"/dist", "/js", "/css", "/images", "/proxy"}
+	}
+
 	var accessWriter io.Writer
 	if cfg.Logger.AccessFile == "-" {
 		accessWriter = os.Stdout
