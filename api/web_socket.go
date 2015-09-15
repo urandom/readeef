@@ -285,8 +285,8 @@ func (a apiRequest) processor(
 		return &getFeedTagsProcessor{user: user}, nil
 	case "set-feed-tags":
 		return &setFeedTagsProcessor{user: user}, nil
-	case "mark-feed-as-read":
-		return &markFeedAsReadProcessor{user: user}, nil
+	case "read-state":
+		return &readStateProcessor{user: user}, nil
 	case "get-feed-articles":
 		return &getFeedArticlesProcessor{user: user, sp: sp, ap: ap}, nil
 	case "get-user-attribute":

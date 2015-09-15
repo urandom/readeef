@@ -240,7 +240,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
         <rf-api id="user-settings" method="set-user-attribute" tag="feed-base" user="[[ user ]]"></rf-api>
         <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" on-rf-api-error="onFeedArticlesError" user="[[ user ]]"></rf-api>
         <rf-api id="get-article" method="get-article" on-rf-api-message="onGetArticleMessage" user="[[ user ]]"></rf-api>
-        <rf-api id="feed-read-all" method="mark-feed-as-read" on-rf-api-message="onFeedReadAllMessage" user="[[ user ]]"></rf-api>
+        <rf-api id="feed-read-all" method="read-state" on-rf-api-message="onFeedReadAllMessage" user="[[ user ]]"></rf-api>
         <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="onFeedUpdateNotify" user="[[ user ]]" receiver="true"></rf-api>
 
         <iron-signals on-iron-signal-rf-feeds-added="onSignalFeedsChanged"></iron-signals>
@@ -315,17 +315,9 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 '_userProfileChanged(user.ProfileData.*)',
             ],
 
-            get _canAutoUpdate() {
-                return !this._focused ||
-                    !MoreRouting.isCurrentUrl('feed') ||
-                    MoreRouting.isCurrentUrl('article') ||
-                    new Date().getTime() - this._lastActivity > this._lastActivityDelay;
-            },
-            _lastUpdateTime: 0,
-            _lastActivity: new Date().getTime(),
-            _lastActivityDelay: 300000, // 5 minutes
             _focused: true,
             _urlParser: document.createElement('a'),
+            _maxArticleId: null,
 
             feedUrlFor: function(tagOrId, prefix) {
                 if (prefix) {
@@ -362,15 +354,19 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 this.debounce('feed-refresh', function() {
                     this.loading = true;
                     this.noMoreArticles = false;
-                    this.articles = this._createArticles();
                     this.offset = 0;
+
+                    if (!this._maxArticleId) {
+                        this.articles = this._createArticles();
+                    }
 
                     switch (type) {
                         case 'get-article':
                             this.$['get-article'].send();
                             break;
                         default:
-                            this.$['feed-articles'].send();
+                            this.$['feed-articles'].send(
+                                    this._maxArticleId ? {afterId: this._maxArticleId} : null);
                     }
                 });
             },
@@ -395,10 +391,6 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     document.title = this._originalTitle;
                 }.bind(this), false);
                 window.addEventListener("blur", function() {this._focused = false}.bind(this), false);
-
-                document.addEventListener('keypress', this.onKeypress.bind(this), false);
-                document.addEventListener('track', this.onTrack.bind(this), false);
-                document.addEventListener('tap', this.onTrack.bind(this), false);
 
                 // Set the property async, or it might be set too early for the template
                 this.async(function() {
@@ -500,14 +492,15 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
                     this._appendArticleWorker.postMessage(data);
                 } else {
-                    this.noMoreArticles = true;
                     this.loading = false;
 
-                    if (!this.offset) {
-                        this.articles = this._createArticles();
+                    if (!data.arguments.AfterId) {
+                        this.noMoreArticles = true;
+                        if (!this.offset) {
+                            this.articles = this._createArticles();
+                        }
                     }
                 }
-                this._lastUpdateTime = new Date().getTime();
             },
 
             onFeedArticlesError: function(event, detail) {
@@ -565,11 +558,9 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
                 this._updateAvailable = true;
 
-                if (this._canAutoUpdate) {
-                    // Give the thumbnailer some time to gather any thumbnails
-                    this.debounce('auto-update-timeout',
+                // Give the thumbnailer some time to gather any thumbnails
+                this.debounce('auto-update-timeout',
                         this._updateArticles, 30000); // 30s
-                }
 
                 if (!this._focused) {
                     // Highlight a pinned tab
@@ -654,10 +645,12 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 switch (name) {
                 case "older-first":
                     this.set("user.ProfileData.olderFirst", !this.user.ProfileData.olderFirst);
+                    this._maxArticleId = null;
                     this.refresh();
                     break;
                 case "unread-only":
                     this.set("user.ProfileData.unreadOnly", !this.user.ProfileData.unreadOnly);
+                    this._maxArticleId = null;
                     this.refresh();
                     break;
                 case "mark-all-as-read":
@@ -678,26 +671,6 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     menu.select(name);
                     window.open(RfShareServices.get(name).url, '_blank');
                 }
-            },
-
-            onKeypress: function(event) {
-                if (!MoreRouting.isCurrentUrl('feed-base')) {
-                    return;
-                }
-
-                this._lastActivity = new Date().getTime();
-                this.debounce('last-activity-timeout',
-                    this._updateArticles, this._lastActivityDelay);
-            },
-
-            onTrack: function(event) {
-                if (!MoreRouting.isCurrentUrl('feed-base')) {
-                    return;
-                }
-
-                this._lastActivity = new Date().getTime();
-                this.debounce('last-activity-timeout',
-                    this._updateArticles, this._lastActivityDelay);
             },
 
             onSearchKeyUp: function(event) {
@@ -737,6 +710,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
             _tagOrIdChanged: function(tagOrId, oldValue) {
+                this._maxArticleId = null;
                 this.refresh();
             },
 
@@ -942,9 +916,12 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     return;
                 }
 
-                this.$['feed-articles'].send({
-                    offset: 0,
-                });
+                var args = {offset: 0};
+                if (this._maxArticleId) {
+                    args.afterId = this._maxArticleId;
+                }
+
+                this.$['feed-articles'].send(args);
             },
 
             _previousArticle: function(unread) {
@@ -1014,7 +991,9 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
             _markAllAsRead: function() {
-                this.$['feed-read-all'].send({id: this.tagOrId, timestamp: this._lastUpdateTime});
+                if (this._maxArticleId) {
+                    this.$['feed-read-all'].send({id: this.tagOrId, beforeId: this._maxArticleId + 1});
+                }
             },
 
             _createArticles: function() {
@@ -1053,13 +1032,15 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     }
                 }
 
-                this.loading = false;
                 this.$['scroll-threshold'].clearLower();
 
                 if (event.data.requestedArticle !== undefined) {
                     this.$['feed-articles'].send();
                     MoreRouting.navigateTo('article',
                             {tagOrId: this.tagOrId, articleId: event.data.requestedArticle});
+                } else {
+                    this._maxArticleId = event.data.maxId;
+                    this.loading = false;
                 }
             },
 

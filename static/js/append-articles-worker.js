@@ -9,6 +9,7 @@ self.addEventListener('message', function(event) {
         olderFirst = event.data.olderFirst,
         unreadOnly = event.data.unreadOnly,
         feeds = event.data.feeds,
+        maxId = 0,
         articleMap = {}, indexMap = {}, stateChange = {},
         feedMap, response;
 
@@ -20,6 +21,10 @@ self.addEventListener('message', function(event) {
         articleMap[a.Id] = a;
         if (!a.Read) {
             lastUnreadIndex = i;
+        }
+
+        if (a.Id > maxId) {
+            maxId = a.Id
         }
     }
 
@@ -84,6 +89,10 @@ self.addEventListener('message', function(event) {
 
             inserts[inserts.length - 1].articles.push(a);
             ++cumulativeIndex;
+
+            if (a.Id > maxId) {
+                maxId = a.Id
+            }
         }
     }
 
@@ -95,7 +104,7 @@ self.addEventListener('message', function(event) {
         indexMap[a.Id] = i;
     }
 
-    response = {inserts: inserts, indexMap: indexMap, stateChange: stateChange};
+    response = {inserts: inserts, indexMap: indexMap, stateChange: stateChange, maxId: maxId};
     if ('requestedArticle' in event.data) {
         response.requestedArticle = event.data.requestedArticle;
     }

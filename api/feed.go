@@ -75,19 +75,21 @@ type setFeedTagsProcessor struct {
 	user content.User
 }
 
-type markFeedAsReadProcessor struct {
-	Id        string `json:"id"`
-	Timestamp int64  `json:"timestamp"`
+type readStateProcessor struct {
+	Id        string         `json:"id"`
+	Timestamp int64          `json:"timestamp"`
+	BeforeId  data.ArticleId `json:"beforeId"`
 
 	user content.User
 }
 
 type getFeedArticlesProcessor struct {
-	Id         string `json:"id"`
-	Limit      int    `json:"limit"`
-	Offset     int    `json:"offset"`
-	OlderFirst bool   `json:"olderFirst"`
-	UnreadOnly bool   `json:"unreadOnly"`
+	Id         string         `json:"id"`
+	AfterId    data.ArticleId `json:"afterId"`
+	Limit      int            `json:"limit"`
+	Offset     int            `json:"offset"`
+	OlderFirst bool           `json:"olderFirst"`
+	UnreadOnly bool           `json:"unreadOnly"`
 
 	user content.User
 	sp   content.SearchProvider
@@ -108,7 +110,9 @@ func (con Feed) Patterns() []webfw.MethodIdentifierTuple {
 		webfw.MethodIdentifierTuple{prefix + ":feed-id", webfw.MethodDelete, "remove"},
 		webfw.MethodIdentifierTuple{prefix + ":feed-id/tags", webfw.MethodGet | webfw.MethodPost, "tags"},
 		webfw.MethodIdentifierTuple{prefix + ":feed-id/read/:timestamp", webfw.MethodPost, "read"},
+		webfw.MethodIdentifierTuple{prefix + ":feed-id/read/before/:before-id", webfw.MethodPost, "read"},
 		webfw.MethodIdentifierTuple{prefix + ":feed-id/articles/:limit/:offset/:older-first/:unread-only", webfw.MethodGet, "articles"},
+		webfw.MethodIdentifierTuple{prefix + ":feed-id/articles/after/:after-id/:limit/:offset/:older-first/:unread-only", webfw.MethodGet, "articles"},
 
 		webfw.MethodIdentifierTuple{prefix + "discover", webfw.MethodGet, "discover"},
 		webfw.MethodIdentifierTuple{prefix + "opml", webfw.MethodPost, "opml"},
@@ -164,18 +168,26 @@ func (con Feed) Handler(c context.Context) http.Handler {
 				}
 			}
 		case "read":
-			var timestamp int64
+			var timestamp, beforeId int64
 
-			if timestamp, resp.err = strconv.ParseInt(params["timestamp"], 10, 64); resp.err == nil {
-				resp = markFeedAsRead(user, params["feed-id"], timestamp)
+			if bid, ok := params["before-id"]; ok {
+				beforeId, resp.err = strconv.ParseInt(bid, 10, 64)
+			} else {
+				timestamp, resp.err = strconv.ParseInt(params["timestamp"], 10, 64)
+			}
+
+			if resp.err == nil {
+				resp = readState(user, params["feed-id"], data.ArticleId(beforeId), timestamp)
 			}
 		case "articles":
 			var limit, offset int
 
 			if limit, resp.err = strconv.Atoi(params["limit"]); resp.err == nil {
 				if offset, resp.err = strconv.Atoi(params["offset"]); resp.err == nil {
-					resp = getFeedArticles(user, con.sp, con.ap, params["feed-id"], limit, offset,
-						params["older-first"] == "true", params["unread-only"] == "true")
+					afterId, _ := strconv.ParseInt(params["after-id"], 10, 64)
+
+					resp = getFeedArticles(user, con.sp, con.ap, params["feed-id"], data.ArticleId(afterId),
+						limit, offset, params["older-first"] == "true", params["unread-only"] == "true")
 				}
 			}
 		}
@@ -239,12 +251,12 @@ func (p setFeedTagsProcessor) Process() responseError {
 	return setFeedTags(p.user, p.Id, p.Tags)
 }
 
-func (p markFeedAsReadProcessor) Process() responseError {
-	return markFeedAsRead(p.user, p.Id, p.Timestamp)
+func (p readStateProcessor) Process() responseError {
+	return readState(p.user, p.Id, p.BeforeId, p.Timestamp)
 }
 
 func (p getFeedArticlesProcessor) Process() responseError {
-	return getFeedArticles(p.user, p.sp, p.ap, p.Id, p.Limit, p.Offset, p.OlderFirst, p.UnreadOnly)
+	return getFeedArticles(p.user, p.sp, p.ap, p.Id, p.AfterId, p.Limit, p.Offset, p.OlderFirst, p.UnreadOnly)
 }
 
 func listFeeds(user content.User) (resp responseError) {
@@ -481,13 +493,21 @@ func setFeedTags(user content.User, id data.FeedId, tagValues []data.TagValue) (
 	return
 }
 
-func markFeedAsRead(user content.User, id string, timestamp int64) (resp responseError) {
+func readState(user content.User, id string, beforeId data.ArticleId, timestamp int64) (resp responseError) {
 	resp = newResponse()
 
 	var ar content.ArticleRepo
 
-	t := time.Unix(timestamp/1000, 0)
-	o := data.ArticleUpdateStateOptions{BeforeDate: t}
+	o := data.ArticleUpdateStateOptions{}
+
+	if timestamp > 0 {
+		t := time.Unix(timestamp/1000, 0)
+		o.BeforeDate = t
+	}
+
+	if beforeId > 0 {
+		o.BeforeId = beforeId
+	}
 
 	switch {
 	case id == "all":
@@ -526,7 +546,8 @@ func markFeedAsRead(user content.User, id string, timestamp int64) (resp respons
 }
 
 func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleProcessor,
-	id string, limit int, offset int, olderFirst bool, unreadOnly bool) (resp responseError) {
+	id string, afterId data.ArticleId, limit int, offset int, olderFirst bool,
+	unreadOnly bool) (resp responseError) {
 
 	resp = newResponse()
 
@@ -540,6 +561,11 @@ func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleP
 
 	o := data.ArticleQueryOptions{Limit: limit, Offset: offset, UnreadOnly: unreadOnly, UnreadFirst: true}
 
+	if afterId > 0 {
+		o.AfterId = afterId
+		resp.val["AfterId"] = afterId
+	}
+
 	if id == "favorite" {
 		o.FavoriteOnly = true
 		ar = user
@@ -549,7 +575,7 @@ func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleP
 		as = user
 	} else if strings.HasPrefix(id, "popular:") {
 		o.IncludeScores = true
-		o.UnreadFirst = false
+		o.HighScoredFirst = true
 		o.BeforeDate = time.Now()
 		o.AfterDate = time.Now().AddDate(0, 0, -5)
 
@@ -602,7 +628,7 @@ func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleP
 			sp.Order(data.DescendingOrder)
 		}
 
-		ua = performSearch(&resp, user, sp, query, id, limit, offset)
+		ua, resp.err = performSearch(user, sp, query, id, limit, offset)
 	} else if strings.HasPrefix(id, "tag:") {
 		tag := user.Repo().Tag(user)
 		tag.Value(data.TagValue(id[4:]))
@@ -658,10 +684,10 @@ func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleP
 	return
 }
 
-func performSearch(resp *responseError, user content.User, sp content.SearchProvider, query, feedId string, limit, offset int) (ua []content.UserArticle) {
+func performSearch(user content.User, sp content.SearchProvider, query, feedId string, limit, offset int) (ua []content.UserArticle, err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			resp.err = fmt.Errorf("Error during search: %s", rec)
+			err = fmt.Errorf("Error during search: %s", rec)
 		}
 	}()
 
@@ -669,13 +695,13 @@ func performSearch(resp *responseError, user content.User, sp content.SearchProv
 		tag := user.Repo().Tag(user)
 		tag.Value(data.TagValue(feedId[4:]))
 
-		ua, resp.err = tag.Query(query, sp, limit, offset), tag.Err()
+		ua, err = tag.Query(query, sp, limit, offset), tag.Err()
 	} else {
 		if id, err := strconv.ParseInt(feedId, 10, 64); err == nil {
 			f := user.FeedById(data.FeedId(id))
-			ua, resp.err = f.Query(query, sp, limit, offset), f.Err()
+			ua, err = f.Query(query, sp, limit, offset), f.Err()
 		} else {
-			ua, resp.err = user.Query(query, sp, limit, offset), user.Err()
+			ua, err = user.Query(query, sp, limit, offset), user.Err()
 		}
 	}
 

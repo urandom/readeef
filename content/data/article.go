@@ -71,16 +71,17 @@ type ArticleExtract struct {
 }
 
 type ArticleQueryOptions struct {
-	Limit         int
-	Offset        int
-	UnreadOnly    bool
-	UnreadFirst   bool
-	FavoriteOnly  bool
-	IncludeScores bool
-	BeforeId      ArticleId
-	AfterId       ArticleId
-	BeforeDate    time.Time
-	AfterDate     time.Time
+	Limit           int
+	Offset          int
+	UnreadOnly      bool
+	UnreadFirst     bool
+	FavoriteOnly    bool
+	IncludeScores   bool
+	HighScoredFirst bool
+	BeforeId        ArticleId
+	AfterId         ArticleId
+	BeforeDate      time.Time
+	AfterDate       time.Time
 }
 
 type ArticleCountOptions struct {

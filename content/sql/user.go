@@ -591,7 +591,7 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 	}
 
 	if !opts.BeforeDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf("a.date <= $%d", len(args)+1))
+		whereSlice = append(whereSlice, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+1))
 		args = append(args, opts.BeforeDate)
 	}
 
@@ -609,16 +609,16 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 
 	fields := []string{}
 
-	if opts.UnreadFirst {
-		fields = append(fields, "read")
-	}
-
-	if opts.IncludeScores {
+	if opts.IncludeScores && opts.HighScoredFirst {
 		field := "asco.score"
 		if sortingOrder == data.DescendingOrder {
 			field += " DESC"
 		}
 		fields = append(fields, field)
+	}
+
+	if opts.UnreadFirst {
+		fields = append(fields, "read")
 	}
 
 	switch sortingField {
@@ -720,20 +720,20 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 		innerWhere := []string{}
 
 		if !opts.BeforeDate.IsZero() {
-			innerWhere = append(innerWhere, fmt.Sprintf("(date IS NULL OR date < $%d)", len(args)+1))
+			innerWhere = append(innerWhere, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+1))
 			args = append(args, opts.BeforeDate)
 		}
 		if !opts.AfterDate.IsZero() {
-			innerWhere = append(innerWhere, fmt.Sprintf("date > $%d", len(args)+1))
+			innerWhere = append(innerWhere, fmt.Sprintf("a.date > $%d", len(args)+1))
 			args = append(args, opts.AfterDate)
 		}
 
 		if opts.BeforeId > 0 {
-			innerWhere = append(innerWhere, fmt.Sprintf("id < $%d", len(args)+1))
+			innerWhere = append(innerWhere, fmt.Sprintf("a.id < $%d", len(args)+1))
 			args = append(args, opts.BeforeId)
 		}
 		if opts.AfterId > 0 {
-			innerWhere = append(innerWhere, fmt.Sprintf("id > $%d", len(args)+1))
+			innerWhere = append(innerWhere, fmt.Sprintf("a.id > $%d", len(args)+1))
 			args = append(args, opts.AfterId)
 		}
 
@@ -798,20 +798,20 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 	}
 
 	if !opts.BeforeDate.IsZero() {
-		where = append(where, fmt.Sprintf("(date IS NULL OR date < $%d)", len(args)+1))
+		where = append(where, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+1))
 		args = append(args, opts.BeforeDate)
 	}
 	if !opts.AfterDate.IsZero() {
-		where = append(where, fmt.Sprintf("date > $%d", len(args)+1))
+		where = append(where, fmt.Sprintf("a.date > $%d", len(args)+1))
 		args = append(args, opts.AfterDate)
 	}
 
 	if opts.BeforeId > 0 {
-		where = append(where, fmt.Sprintf("id < $%d", len(args)+1))
+		where = append(where, fmt.Sprintf("a.id < $%d", len(args)+1))
 		args = append(args, opts.BeforeId)
 	}
 	if opts.AfterId > 0 {
-		where = append(where, fmt.Sprintf("id > $%d", len(args)+1))
+		where = append(where, fmt.Sprintf("a.id > $%d", len(args)+1))
 		args = append(args, opts.AfterId)
 	}
 
@@ -901,7 +901,7 @@ func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Art
 	}
 
 	if !opts.BeforeDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf("a.date <= $%d", len(args)+1))
+		whereSlice = append(whereSlice, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+1))
 		args = append(args, opts.BeforeDate)
 	}
 
