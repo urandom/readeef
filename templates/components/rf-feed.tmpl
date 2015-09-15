@@ -245,8 +245,8 @@ rf-article /deep/ .article-summary {
             </iron-pages>
         </more-route-selector>
         
-        <rf-api id="article-read" method="mark-article-as-read" tag="content-list" on-rf-api-message="onArticleStateMessage" user="[[ user ]]"></rf-api>
-        <rf-api id="article-favorite" method="mark-article-as-favorite" tag="content-list"on-rf-api-message="onArticleStateMessage"  user="[[ user ]]"></rf-api>
+        <rf-api id="article-read" method="article-read-state" tag="content-list" on-rf-api-message="onArticleStateMessage" user="[[ user ]]"></rf-api>
+        <rf-api id="article-favorite" method="article-favorite-state" tag="content-list"on-rf-api-message="onArticleStateMessage"  user="[[ user ]]"></rf-api>
         <rf-api id="article-format" method="format-article" on-rf-api-message="onArticleFormatMessage" user="[[ user ]]"></rf-api>
 
         <rf-keyboard-shortcut route-name="article" key-code="86, 118" label="v" description="Open the article's link in a new tab" on-press="onOpenArticleLink"></rf-keyboard-shortcut>

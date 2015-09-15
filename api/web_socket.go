@@ -258,10 +258,10 @@ func (a apiRequest) processor(
 		return &getAuthDataProcessor{user: user, session: s, capabilities: capabilities}, nil
 	case "logout":
 		return &logoutProcessor{session: s}, nil
-	case "mark-article-as-read":
-		return &markArticleAsReadProcessor{user: user}, nil
-	case "mark-article-as-favorite":
-		return &markArticleAsFavoriteProcessor{user: user}, nil
+	case "article-read-state":
+		return &articleReadStateProcessor{user: user}, nil
+	case "article-favorite-state":
+		return &articleFavoriteStateProcessor{user: user}, nil
 	case "format-article":
 		return &formatArticleProcessor{
 			user:          user,

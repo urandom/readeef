@@ -546,28 +546,31 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 								updated = true
 								d.Favorite = !d.Favorite
 							}
+							if updated {
+								a.Favorite(d.Favorite)
+							}
 						case 2:
 							switch req.Mode {
 							case 0:
-								if d.Read {
-									updated = true
-									d.Read = false
-								}
-							case 1:
 								if !d.Read {
 									updated = true
 									d.Read = true
+								}
+							case 1:
+								if d.Read {
+									updated = true
+									d.Read = false
 								}
 							case 2:
 								updated = true
 								d.Read = !d.Read
 							}
+							if updated {
+								a.Read(d.Read)
+							}
 						}
 
 						if updated {
-							a.Data(d)
-							a.Update()
-
 							if a.HasErr() {
 								err = a.Err()
 								break
@@ -847,7 +850,8 @@ func ttRssParseString(vv interface{}) string {
 func ttRssParseBool(vv interface{}) bool {
 	switch v := vv.(type) {
 	case string:
-	case int, int64:
+		return v == "t" || v == "true" || v == "1"
+	case float64:
 		return v == 1
 	case bool:
 		return v

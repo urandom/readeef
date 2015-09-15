@@ -29,14 +29,14 @@ type Readability struct {
 	Content string
 }
 
-type markArticleAsReadProcessor struct {
+type articleReadStateProcessor struct {
 	Id    data.ArticleId `json:"id"`
 	Value bool           `json:"value"`
 
 	user content.User
 }
 
-type markArticleAsFavoriteProcessor struct {
+type articleFavoriteStateProcessor struct {
 	Id    data.ArticleId `json:"id"`
 	Value bool           `json:"value"`
 
@@ -90,9 +90,9 @@ func (con Article) Handler(c context.Context) http.Handler {
 			case "fetch":
 				resp = fetchArticle(user, id)
 			case "read":
-				resp = markArticleAsRead(user, id, params["value"] == "true")
+				resp = articleReadState(user, id, params["value"] == "true")
 			case "favorite":
-				resp = markArticleAsFavorite(user, id, params["value"] == "true")
+				resp = articleFavoriteState(user, id, params["value"] == "true")
 			case "format":
 				resp = formatArticle(user, id, con.extractor, webfw.GetConfig(c), con.config)
 			}
@@ -117,12 +117,12 @@ func (con Article) AuthRequired(c context.Context, r *http.Request) bool {
 	return true
 }
 
-func (p markArticleAsReadProcessor) Process() responseError {
-	return markArticleAsRead(p.user, p.Id, p.Value)
+func (p articleReadStateProcessor) Process() responseError {
+	return articleReadState(p.user, p.Id, p.Value)
 }
 
-func (p markArticleAsFavoriteProcessor) Process() responseError {
-	return markArticleAsFavorite(p.user, p.Id, p.Value)
+func (p articleFavoriteStateProcessor) Process() responseError {
+	return articleFavoriteState(p.user, p.Id, p.Value)
 }
 
 func (p formatArticleProcessor) Process() responseError {
@@ -146,7 +146,7 @@ func fetchArticle(user content.User, id data.ArticleId) (resp responseError) {
 	return
 }
 
-func markArticleAsRead(user content.User, id data.ArticleId, read bool) (resp responseError) {
+func articleReadState(user content.User, id data.ArticleId, read bool) (resp responseError) {
 	resp = newResponse()
 
 	article := user.ArticleById(id)
@@ -172,7 +172,7 @@ func markArticleAsRead(user content.User, id data.ArticleId, read bool) (resp re
 	return
 }
 
-func markArticleAsFavorite(user content.User, id data.ArticleId, favorite bool) (resp responseError) {
+func articleFavoriteState(user content.User, id data.ArticleId, favorite bool) (resp responseError) {
 	resp = newResponse()
 
 	article := user.ArticleById(id)
