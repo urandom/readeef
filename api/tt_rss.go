@@ -698,6 +698,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 			resp.Status = TTRSS_API_STATUS_ERR
 			if v, ok := con.(ttRssGenericContent); ok {
 				v.Error = errType
+				con = v
 			}
 		}
 
