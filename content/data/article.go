@@ -73,6 +73,7 @@ type ArticleExtract struct {
 type ArticleQueryOptions struct {
 	Limit           int
 	Offset          int
+	ReadOnly        bool
 	UnreadOnly      bool
 	UnreadFirst     bool
 	FavoriteOnly    bool

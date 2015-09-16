@@ -552,6 +552,37 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 		}
 	}
 
+	/* Much faster than using 'ORDER BY read'
+	 * TODO: potential overall improvement for fetching pages other than the
+	 * first by using the unread count and moving the offset based on it
+	 */
+	if opts.UnreadFirst && opts.Offset == 0 {
+		originalUnreadOnly := opts.UnreadOnly
+
+		opts.UnreadFirst = false
+		opts.UnreadOnly = true
+
+		ua = internalGetArticles(u, dbo, logger, opts, sorting, join, where, args)
+
+		if !originalUnreadOnly && (opts.Limit == 0 || opts.Limit > len(ua)) {
+			if opts.Limit > 0 {
+				opts.Limit -= len(ua)
+			}
+			opts.UnreadOnly = false
+			opts.ReadOnly = true
+
+			readOnly := internalGetArticles(u, dbo, logger, opts, sorting, join, where, args)
+
+			ua = append(ua, readOnly...)
+		}
+
+		return
+	}
+
+	return internalGetArticles(u, dbo, logger, opts, sorting, join, where, args)
+}
+
+func internalGetArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleQueryOptions, sorting content.ArticleSorting, join, where string, args []interface{}) (ua []content.UserArticle) {
 	renderData := getArticlesData{}
 	if opts.IncludeScores {
 		renderData.Columns += ", asco.score"
@@ -568,6 +599,8 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 
 	if opts.UnreadOnly {
 		whereSlice = append(whereSlice, "au.article_id IS NOT NULL")
+	} else if opts.ReadOnly {
+		whereSlice = append(whereSlice, "au.article_id IS NULL")
 	}
 
 	if where != "" {
