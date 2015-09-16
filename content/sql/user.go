@@ -17,7 +17,7 @@ import (
 var (
 	getArticlesTemplate     *template.Template
 	readStateInsertTemplate *template.Template
-	readStateUpdateTemplate *template.Template
+	readStateDeleteTemplate *template.Template
 	articleCountTemplate    *template.Template
 )
 
@@ -29,18 +29,15 @@ type getArticlesData struct {
 	Limit   string
 }
 
-type markReadInsertData struct {
-	InnerJoin           string
-	InnerWhere          string
-	InsertJoin          string
-	InsertJoinPredicate string
-	ExceptJoin          string
-	ExceptWhere         string
+type readStateInsertData struct {
+	Join          string
+	JoinPredicate string
+	Where         string
 }
 
-type markReadUpdateData struct {
-	InnerJoin  string
-	InnerWhere string
+type readStateDeleteData struct {
+	Join  string
+	Where string
 }
 
 type articleCountData struct {
@@ -505,7 +502,7 @@ func (u *User) ReadState(read bool, o ...data.ArticleUpdateStateOptions) {
 	login := u.Data().Login
 	u.logger.Infof("Getting articles for user %s with options: %#v\n", login, opts)
 
-	readState(u, u.db, u.logger, opts, read, "", "", "", "", "", "", nil, nil)
+	readState(u, u.db, u.logger, opts, read, "", "", "", "", nil, nil)
 }
 
 func (u *User) Tags() (tags []content.Tag) {
@@ -570,7 +567,7 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 	whereSlice := []string{}
 
 	if opts.UnreadOnly {
-		whereSlice = append(whereSlice, "uas.article_id IS NULL OR NOT uas.read")
+		whereSlice = append(whereSlice, "au.article_id IS NOT NULL")
 	}
 
 	if where != "" {
@@ -587,7 +584,7 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 	}
 
 	if opts.FavoriteOnly {
-		whereSlice = append(whereSlice, "uas.favorite")
+		whereSlice = append(whereSlice, "af.article_id IS NOT NULL")
 	}
 
 	if !opts.BeforeDate.IsZero() {
@@ -665,7 +662,7 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 	return
 }
 
-func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleUpdateStateOptions, read bool, insertJoin, insertJoinPredicate, exceptJoin, exceptWhere, updateInnerJoin, updateInnerWhere string, insertArgs, updateArgs []interface{}) {
+func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleUpdateStateOptions, read bool, join, joinPredicate, deleteJoin, deleteWhere string, insertArgs, deleteArgs []interface{}) {
 	if u.HasErr() {
 		return
 	}
@@ -680,12 +677,12 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 			return
 		}
 	}
-	if readStateUpdateTemplate == nil {
-		readStateUpdateTemplate, err = template.New("read-state-update-sql").
-			Parse(dbo.SQL("read_state_update_template"))
+	if readStateDeleteTemplate == nil {
+		readStateDeleteTemplate, err = template.New("read-state-delete-sql").
+			Parse(dbo.SQL("read_state_delete_template"))
 
 		if err != nil {
-			u.Err(fmt.Errorf("Error generating read-state-update template: %v", err))
+			u.Err(fmt.Errorf("Error generating read-state-delete template: %v", err))
 			return
 		}
 	}
@@ -698,59 +695,120 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 	defer tx.Rollback()
 
 	if read {
+		args := append([]interface{}{u.Data().Login}, deleteArgs...)
+
+		buf := util.BufferPool.GetBuffer()
+		defer util.BufferPool.Put(buf)
+
+		data := readStateDeleteData{}
+
+		if deleteJoin != "" {
+			data.Join = deleteJoin
+		}
+
+		if opts.FavoriteOnly {
+			data.Join += dbo.SQL("read_state_delete_favorite_join")
+		}
+
+		where := []string{}
+
+		if deleteWhere != "" {
+			where = append(where, deleteWhere)
+		}
+
+		if !opts.BeforeDate.IsZero() {
+			where = append(where, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+1))
+			args = append(args, opts.BeforeDate)
+		}
+		if !opts.AfterDate.IsZero() {
+			where = append(where, fmt.Sprintf("a.date > $%d", len(args)+1))
+			args = append(args, opts.AfterDate)
+		}
+
+		if opts.BeforeId > 0 {
+			where = append(where, fmt.Sprintf("a.id < $%d", len(args)+1))
+			args = append(args, opts.BeforeId)
+		}
+		if opts.AfterId > 0 {
+			where = append(where, fmt.Sprintf("a.id > $%d", len(args)+1))
+			args = append(args, opts.AfterId)
+		}
+
+		if opts.FavoriteOnly {
+			where = append(where, "af.article_id IS NOT NULL")
+		}
+
+		if len(where) > 0 {
+			data.Where = " WHERE " + strings.Join(where, " AND ")
+		}
+
+		if err := readStateDeleteTemplate.Execute(buf, data); err != nil {
+			u.Err(fmt.Errorf("Error executing read-state-delete template: %v", err))
+			return
+		}
+
+		sql := buf.String()
+		logger.Debugf("Read state delete SQL:\n%s\nArgs:%q\n", sql, args)
+
+		stmt, err := tx.Preparex(sql)
+
+		if err != nil {
+			u.Err(err)
+			return
+		}
+		defer stmt.Close()
+
+		_, err = stmt.Exec(args...)
+		if err != nil {
+			u.Err(err)
+			return
+		}
+	} else {
 		args := append([]interface{}{u.Data().Login}, insertArgs...)
 
 		buf := util.BufferPool.GetBuffer()
 		defer util.BufferPool.Put(buf)
 
-		data := markReadInsertData{}
+		data := readStateInsertData{}
 
-		if insertJoin != "" {
-			data.InsertJoin = insertJoinPredicate
-		}
-
-		if insertJoinPredicate != "" {
-			data.InsertJoinPredicate = " AND " + insertJoinPredicate
+		if joinPredicate != "" {
+			data.JoinPredicate = " AND " + joinPredicate
 		}
 
 		if opts.FavoriteOnly {
-			data.InnerJoin = dbo.SQL("read_state_insert_state_inner_join")
+			data.Join += dbo.SQL("read_state_insert_favorite_join")
 		}
 
-		innerWhere := []string{}
+		if join != "" {
+			data.Join += joinPredicate
+		}
+
+		where := []string{}
 
 		if !opts.BeforeDate.IsZero() {
-			innerWhere = append(innerWhere, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+1))
+			where = append(where, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+1))
 			args = append(args, opts.BeforeDate)
 		}
 		if !opts.AfterDate.IsZero() {
-			innerWhere = append(innerWhere, fmt.Sprintf("a.date > $%d", len(args)+1))
+			where = append(where, fmt.Sprintf("a.date > $%d", len(args)+1))
 			args = append(args, opts.AfterDate)
 		}
 
 		if opts.BeforeId > 0 {
-			innerWhere = append(innerWhere, fmt.Sprintf("a.id < $%d", len(args)+1))
+			where = append(where, fmt.Sprintf("a.id < $%d", len(args)+1))
 			args = append(args, opts.BeforeId)
 		}
 		if opts.AfterId > 0 {
-			innerWhere = append(innerWhere, fmt.Sprintf("a.id > $%d", len(args)+1))
+			where = append(where, fmt.Sprintf("a.id > $%d", len(args)+1))
 			args = append(args, opts.AfterId)
 		}
 
 		if opts.FavoriteOnly {
-			innerWhere = append(innerWhere, "uas.favorite")
+			where = append(where, "af.article_id IS NOT NULL")
 		}
 
-		if len(innerWhere) > 0 {
-			data.InnerWhere = " WHERE " + strings.Join(innerWhere, " AND ")
-		}
-
-		if exceptJoin != "" {
-			data.ExceptJoin = exceptJoin
-		}
-
-		if exceptWhere != "" {
-			data.ExceptWhere = " AND " + exceptWhere
+		if len(where) > 0 {
+			data.Where = " WHERE " + strings.Join(where, " AND ")
 		}
 
 		if err := readStateInsertTemplate.Execute(buf, data); err != nil {
@@ -776,75 +834,6 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 		}
 	}
 
-	args := append([]interface{}{read, u.Data().Login}, updateArgs...)
-
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
-
-	data := markReadUpdateData{}
-
-	if updateInnerJoin != "" {
-		data.InnerJoin = updateInnerJoin
-	}
-
-	if opts.FavoriteOnly {
-		data.InnerJoin += dbo.SQL("read_state_update_state_inner_join")
-	}
-
-	where := []string{}
-
-	if updateInnerWhere != "" {
-		where = append(where, updateInnerWhere)
-	}
-
-	if !opts.BeforeDate.IsZero() {
-		where = append(where, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+1))
-		args = append(args, opts.BeforeDate)
-	}
-	if !opts.AfterDate.IsZero() {
-		where = append(where, fmt.Sprintf("a.date > $%d", len(args)+1))
-		args = append(args, opts.AfterDate)
-	}
-
-	if opts.BeforeId > 0 {
-		where = append(where, fmt.Sprintf("a.id < $%d", len(args)+1))
-		args = append(args, opts.BeforeId)
-	}
-	if opts.AfterId > 0 {
-		where = append(where, fmt.Sprintf("a.id > $%d", len(args)+1))
-		args = append(args, opts.AfterId)
-	}
-
-	if opts.FavoriteOnly {
-		where = append(where, "uas.favorite")
-	}
-
-	if len(where) > 0 {
-		data.InnerWhere = " WHERE " + strings.Join(where, " AND ")
-	}
-
-	if err := readStateUpdateTemplate.Execute(buf, data); err != nil {
-		u.Err(fmt.Errorf("Error executing read-state-update template: %v", err))
-		return
-	}
-
-	sql := buf.String()
-	logger.Debugf("Read state update SQL:\n%s\nArgs:%q\n", sql, args)
-
-	stmt, err := tx.Preparex(sql)
-
-	if err != nil {
-		u.Err(err)
-		return
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(args...)
-	if err != nil {
-		u.Err(err)
-		return
-	}
-
 	if err = tx.Commit(); err != nil {
 		u.Err(err)
 	}
@@ -867,8 +856,11 @@ func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Art
 	}
 
 	renderData := articleCountData{}
-	if opts.UnreadOnly || opts.FavoriteOnly {
-		renderData.Join += dbo.SQL("article_count_state_join")
+	if opts.UnreadOnly {
+		renderData.Join += dbo.SQL("article_count_unread_join")
+	}
+	if opts.FavoriteOnly {
+		renderData.Join += dbo.SQL("article_count_favorite_join")
 	}
 
 	if join != "" {
@@ -880,11 +872,11 @@ func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Art
 	whereSlice := []string{}
 
 	if opts.UnreadOnly {
-		whereSlice = append(whereSlice, "(uas.article_id IS NULL OR NOT uas.read)")
+		whereSlice = append(whereSlice, "au.article_id IS NOT NULL")
 	}
 
 	if opts.FavoriteOnly {
-		whereSlice = append(whereSlice, "uas.favorite")
+		whereSlice = append(whereSlice, "af.article_id IS NOT NULL")
 	}
 
 	if where != "" {

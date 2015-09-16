@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+	"text/template"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/urandom/readeef/content"
@@ -12,6 +14,7 @@ import (
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/db"
 	"github.com/urandom/webfw"
+	"github.com/urandom/webfw/util"
 )
 
 type Feed struct {
@@ -38,6 +41,14 @@ type taggedFeedJSON struct {
 	data.Feed
 	Tags []content.Tag
 }
+
+type readStateInsertFeedData struct {
+	NewArticleIds string
+}
+
+var (
+	readStateInsertFeedTemplate *template.Template
+)
 
 func (f *Feed) ParsedArticles() (a []content.Article) {
 	if f.HasErr() {
@@ -197,6 +208,87 @@ func (f *Feed) Delete() {
 	}
 
 	tx.Commit()
+}
+
+func (f *Feed) SetNewArticlesUnread() {
+	if f.HasErr() {
+		return
+	}
+
+	if err := f.Validate(); err != nil {
+		f.Err(err)
+		return
+	}
+
+	id := f.Data().Id
+	if id == 0 {
+		f.Err(content.NewValidationError(errors.New("Invalid feed id")))
+		return
+	}
+
+	articles := f.NewArticles()
+	if len(articles) == 0 {
+		return
+	}
+
+	var err error
+	if readStateInsertFeedTemplate == nil {
+		readStateInsertFeedTemplate, err = template.New("read-state-insert-feed-sql").
+			Parse(f.db.SQL("read_state_insert_feed_template"))
+
+		if err != nil {
+			f.Err(fmt.Errorf("Error generating read-state-insert-feed template: %v", err))
+			return
+		}
+	}
+
+	f.logger.Infof("Setting new articles from feed %d as unread for all related users\n", id)
+
+	args := make([]interface{}, len(articles)+1)
+	placeholders := make([]string, len(articles))
+
+	args[0] = id
+	for i := range articles {
+		args[i+1] = articles[i].Data().Id
+		placeholders[i] = fmt.Sprintf("$%d", i+2)
+	}
+
+	buf := util.BufferPool.GetBuffer()
+	defer util.BufferPool.Put(buf)
+
+	data := readStateInsertFeedData{NewArticleIds: strings.Join(placeholders, ", ")}
+
+	if err := readStateInsertFeedTemplate.Execute(buf, data); err != nil {
+		f.Err(fmt.Errorf("Error executing read-state-insert-feed template: %v", err))
+		return
+	}
+
+	sql := buf.String()
+	f.logger.Debugf("Read state insert feed SQL:\n%s\nArgs:%q\n", sql, args)
+
+	tx, err := f.db.Beginx()
+	if err != nil {
+		f.Err(err)
+		return
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Preparex(sql)
+	if err != nil {
+		f.Err(err)
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(args...)
+	if err != nil {
+		f.Err(err)
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		f.Err(err)
+	}
 }
 
 func (f *Feed) AllArticles() (a []content.Article) {
@@ -479,8 +571,7 @@ func (uf *UserFeed) ReadState(read bool, o ...data.ArticleUpdateStateOptions) {
 
 	args := []interface{}{id}
 	readState(u, uf.db, uf.logger, opts, read, "", "uf.feed_id = $2",
-		"INNER JOIN articles a ON uas.article_id = a.id", "a.feed_id = $2",
-		"", "feed_id = $3", args, args)
+		"", "a.feed_id = $2", args, args)
 	if u.HasErr() {
 		uf.Err(u.Err())
 	}

@@ -29,6 +29,8 @@ type Feed interface {
 	Update()
 	Delete()
 
+	SetNewArticlesUnread()
+
 	AllArticles() []Article
 	LatestArticles() []Article
 

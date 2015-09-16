@@ -9,9 +9,10 @@ func init() {
 	sql["get_hubbub_subscription"] = getHubbubSubscription
 	sql["get_feed_users"] = getFeedUsers
 	sql["delete_user_feed"] = deleteUserFeed
+	sql["get_user_feed_tags"] = getUserFeedTags
 	sql["create_user_feed_tag"] = createUserFeedTag
 	sql["delete_user_feed_tags"] = deleteUserFeedTags
-	sql["get_user_feed_tags"] = getUserFeedTags
+	sql["read_state_insert_feed_template"] = readStateInsertFeedTemplate
 }
 
 const (
@@ -51,5 +52,18 @@ INSERT INTO users_feeds_tags(user_login, feed_id, tag)
 `
 	deleteUserFeedTags = `
 DELETE FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2
+`
+	readStateInsertFeedTemplate = `
+INSERT INTO users_articles_unread (user_login, article_id)
+SELECT uf.user_login, a.id
+FROM users_feeds uf
+INNER JOIN articles a
+	ON uf.feed_id = a.feed_id
+	AND uf.feed_id = $1
+	AND a.id IN (
+		{{ .NewArticleIds }}
+	)
+EXCEPT SELECT au.user_login, au.article_id
+FROM users_articles_unread au
 `
 )

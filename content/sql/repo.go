@@ -2,6 +2,7 @@ package sql
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
@@ -221,6 +222,19 @@ func (r *Repo) FailSubscriptions() {
 	r.logger.Infoln("Marking all subscriptions as failed")
 
 	if _, err := r.db.Exec(r.db.SQL("fail_hubbub_subscriptions")); err != nil {
+		r.Err(err)
+		return
+	}
+}
+
+func (r *Repo) DeleteStaleUnreadRecords() {
+	if r.HasErr() {
+		return
+	}
+
+	r.logger.Infoln("Deleting stale article unread records")
+
+	if _, err := r.db.Exec(r.db.SQL("delete_stale_unread_records"), time.Now().AddDate(0, -1, 0)); err != nil {
 		r.Err(err)
 		return
 	}

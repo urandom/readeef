@@ -68,8 +68,7 @@ func (t *Tag) Articles(o ...data.ArticleQueryOptions) (ua []content.UserArticle)
 	u := t.User()
 
 	ua = getArticles(u, t.db, t.logger, opts, t,
-		"INNER JOIN users_feeds_tags uft ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login",
-		"uft.tag = $2", []interface{}{t.String()})
+		t.db.SQL("get_articles_tag_join"), "", []interface{}{t.String()})
 
 	if u.HasErr() {
 		t.Err(u.Err())
@@ -126,20 +125,10 @@ func (t *Tag) ReadState(read bool, o ...data.ArticleUpdateStateOptions) {
 	tag := t.Value()
 	t.logger.Infof("Getting articles for user %s tag %s with options: %#v\n", login, tag, opts)
 
-	insertInnerJoin := `
-INNER JOIN users_feeds_tags uft
-	ON uft.feed_id = uf.feed_id AND uft.user_login = uf.user_login
-		AND uft.user_login = $1 AND uft.tag = $2
-`
-	exceptJoin := `
-INNER JOIN articles a ON uas.article_id = a.id
-INNER JOIN users_feeds_tags uft ON a.feed_id = uft.feed_id
-`
-
 	args := []interface{}{tag}
-	readState(u, t.db, t.logger, opts, read, insertInnerJoin, "",
-		exceptJoin, "uft.tag = $2",
-		"INNER JOIN users_feeds_tags uft ON a.feed_id = uft.feed_id", "uft.tag = $3",
+	readState(u, t.db, t.logger, opts, read,
+		t.db.SQL("read_state_insert_tag_join"), "",
+		t.db.SQL("read_state_delete_tag_join"), "",
 		args, args)
 
 	if u.HasErr() {

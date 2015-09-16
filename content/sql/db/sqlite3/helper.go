@@ -2,6 +2,7 @@ package sqlite3
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/urandom/readeef/content/sql/db"
 	"github.com/urandom/readeef/content/sql/db/base"
@@ -17,11 +18,16 @@ func (h Helper) InitSQL() []string {
 
 func (h Helper) Upgrade(db *db.DB, old, new int) error {
 	for old < new {
+		var err error
 		switch old {
 		case 1:
-			if err := upgrade1to2(db); err != nil {
-				return fmt.Errorf("Error upgrading db from %d to %d: %v\n", old, new, err)
-			}
+			err = upgrade1to2(db)
+		case 2:
+			err = upgrade2to3(db)
+		}
+
+		if err != nil {
+			return fmt.Errorf("Error upgrading db from %d to %d: %v\n", old, new, err)
 		}
 		old++
 	}
@@ -54,6 +60,32 @@ func upgrade1to2(db *db.DB) error {
 	return tx.Commit()
 }
 
+func upgrade2to3(db *db.DB) error {
+	tx, err := db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	t := time.Now().AddDate(0, -1, 0)
+	_, err = tx.Exec(upgrade2To3SplitStatesToUnread, t)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(upgrade2To3SplitStatesToFavorite)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("DROP TABLE users_articles_states")
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func init() {
 	helper := &Helper{Helper: base.NewHelper()}
 
@@ -61,7 +93,6 @@ func init() {
 	helper.Set("get_user_feeds", getUserFeeds)
 	helper.Set("get_user_tag_feeds", getUserTagFeeds)
 	helper.Set("get_latest_feed_articles", getLatestFeedArticles)
-	helper.Set("create_user_article_state", createUserArticleState)
 
 	db.Register("sqlite3", helper)
 }
@@ -95,13 +126,6 @@ FROM articles a
 WHERE a.feed_id = $1 AND a.date > DATE('NOW', '-5 days')
 `
 
-	createUserArticleState = `
-INSERT INTO users_articles_states(user_login, article_id, read, favorite)
-	SELECT $1, $2, $3, $4 EXCEPT
-		SELECT user_login, article_id, CAST($3 AS INTEGER), CAST($4 AS INTEGER)
-		FROM users_articles_states WHERE user_login = $1 AND article_id = $2
-`
-
 	upgrade1To2MergeReadAndFav = `
 INSERT INTO users_articles_states
 SELECT ar.user_login, ar.article_id, 1 as read,
@@ -115,5 +139,19 @@ FROM users_articles_fav af LEFT OUTER JOIN users_articles_read ar
     ON af.user_login = ar.user_login AND af.article_id = ar.article_id
 WHERE ar.article_id IS NULL
 ORDER BY ar.article_id, af.article_id
+`
+	upgrade2To3SplitStatesToUnread = `
+INSERT INTO users_articles_unread (user_login, article_id, insert_date)
+SELECT uas.user_login, uas.article_id, a.date
+FROM users_articles_states uas INNER JOIN articles a
+	ON uas.article_id = a.id
+WHERE NOT uas.read AND a.date > $1
+`
+
+	upgrade2To3SplitStatesToFavorite = `
+INSERT INTO users_articles_favorite (user_login, article_id)
+SELECT uas.user_login, uas.article_id
+FROM users_articles_states uas
+WHERE uas.favorite
 `
 )

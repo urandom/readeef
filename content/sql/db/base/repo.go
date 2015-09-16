@@ -10,6 +10,7 @@ func init() {
 	sql["get_unsubscribed_feeds"] = getUnsubscribedFeeds
 	sql["get_hubbub_subscriptions"] = getHubbubSubscriptions
 	sql["fail_hubbub_subscriptions"] = failHubbubSubscription
+	sql["delete_stale_unread_records"] = deleteStaleUnreadRecords
 }
 
 const (
@@ -29,5 +30,6 @@ SELECT f.id, f.link, f.title, f.description, f.hub_link, f.site_link, f.update_e
 	getHubbubSubscriptions = `
 SELECT link, feed_id, lease_duration, verification_time, subscription_failure
 	FROM hubbub_subscriptions`
-	failHubbubSubscription = `UPDATE hubbub_subscriptions SET subscription_failure = '1'`
+	failHubbubSubscription   = `UPDATE hubbub_subscriptions SET subscription_failure = '1'`
+	deleteStaleUnreadRecords = `DELETE FROM users_articles_unread WHERE insert_date < $1`
 )

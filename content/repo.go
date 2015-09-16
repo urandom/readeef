@@ -19,6 +19,7 @@ type Repo interface {
 	AllSubscriptions() []Subscription
 
 	FailSubscriptions()
+	DeleteStaleUnreadRecords()
 }
 
 type Generator interface {

@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -42,11 +43,16 @@ func (h Helper) CreateWithId(tx *sqlx.Tx, name string, args ...interface{}) (int
 
 func (h Helper) Upgrade(db *db.DB, old, new int) error {
 	for old < new {
+		var err error
 		switch old {
 		case 1:
-			if err := upgrade1to2(db); err != nil {
-				return fmt.Errorf("Error upgrading db from %d to %d: %v\n", old, new, err)
-			}
+			err = upgrade1to2(db)
+		case 2:
+			err = upgrade2to3(db)
+		}
+
+		if err != nil {
+			return fmt.Errorf("Error upgrading db from %d to %d: %v\n", old, new, err)
 		}
 		old++
 	}
@@ -72,6 +78,32 @@ func upgrade1to2(db *db.DB) error {
 	}
 
 	_, err = tx.Exec("DROP TABLE users_articles_fav")
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func upgrade2to3(db *db.DB) error {
+	tx, err := db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	t := time.Now().AddDate(0, -1, 0)
+	_, err = tx.Exec(upgrade2To3SplitStatesToUnread, t)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(upgrade2To3SplitStatesToFavorite)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("DROP TABLE users_articles_states")
 	if err != nil {
 		return err
 	}
@@ -112,5 +144,20 @@ SELECT COALESCE(ar.user_login, af.user_login), COALESCE(ar.article_id, af.articl
 FROM users_articles_read ar FULL OUTER JOIN users_articles_fav af
 	ON ar.article_id = af.article_id AND ar.user_login = af.user_login
 ORDER BY ar.article_id
+`
+
+	upgrade2To3SplitStatesToUnread = `
+INSERT INTO users_articles_unread (user_login, article_id, insert_date)
+SELECT uas.user_login, uas.article_id, a.date
+FROM users_articles_states uas INNER JOIN articles a
+	ON uas.article_id = a.id
+WHERE NOT uas.read AND a.date > $1
+`
+
+	upgrade2To3SplitStatesToFavorite = `
+INSERT INTO users_articles_favorite (user_login, article_id)
+SELECT uas.user_login, uas.article_id
+FROM users_articles_states uas
+WHERE uas.favorite
 `
 )

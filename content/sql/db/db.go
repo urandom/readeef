@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -15,9 +14,7 @@ type DB struct {
 }
 
 var (
-	dbVersion        = 2
-	errAlreadyFrozen = errors.New("DB already frozen")
-	errNotFrozen     = errors.New("DB not frozen")
+	dbVersion = 3
 
 	helpers = make(map[string]Helper)
 )

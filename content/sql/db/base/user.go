@@ -16,13 +16,14 @@ func init() {
 	sql["get_articles_score_join"] = getArticlesScoreJoin
 
 	sql["read_state_insert_template"] = readStateInsertTemplate
-	sql["read_state_insert_state_inner_join"] = readStateInsertStateInnerJoin
+	sql["read_state_insert_favorite_join"] = readStateInsertFavoriteJoin
 
-	sql["read_state_update_template"] = readStateUpdateTemplate
-	sql["read_state_update_state_inner_join"] = readStateUpdateStateInnerJoin
+	sql["read_state_delete_template"] = readStateDeleteTemplate
+	sql["read_state_delete_favorite_join"] = readStateInsertFavoriteJoin
 
 	sql["article_count_template"] = articleCountTemplate
-	sql["article_count_state_join"] = articleCountStateJoin
+	sql["article_count_unread_join"] = articleCountUnreadJoin
+	sql["article_count_favorite_join"] = articleCountFavoriteJoin
 
 }
 
@@ -58,31 +59,33 @@ ORDER BY LOWER(f.title)
 SELECT a.id
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-LEFT OUTER JOIN users_articles_states uas
-	ON a.id = uas.article_id AND uf.user_login = uas.user_login
-WHERE uas.article_id IS NULL OR NOT uas.read
+LEFT OUTER JOIN users_articles_unread au
+	ON a.id = au.article_id AND uf.user_login = au.user_login
+WHERE au.article_id IS NOT NULL
 `
 	getAllFavoriteUserArticleIds = `
 SELECT a.id
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-LEFT OUTER JOIN users_articles_states uas
-	ON a.id = uas.article_id AND uf.user_login = uas.user_login
-WHERE uas.favorite
+LEFT OUTER JOIN users_articles_favorite af
+	ON a.id = af.article_id AND uf.user_login = af.user_login
+WHERE af.article_id IS NOT NULL
 `
 
 	getArticlesTemplate = `
 SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
-	COALESCE(uas.read, CAST(0 AS BOOLEAN)) as read,
-	COALESCE(uas.favorite, CAST(0 AS BOOLEAN)) as favorite,
+	CASE WHEN au.article_id IS NULL THEN 1 ELSE 0 END AS read,
+	CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite,
 	COALESCE(at.thumbnail, '') as thumbnail,
 	COALESCE(at.link, '') as thumbnail_link
 	{{ .Columns }}
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id
 {{ .Join }}
-LEFT OUTER JOIN users_articles_states uas
-	ON a.id = uas.article_id AND uf.user_login = uas.user_login
+LEFT OUTER JOIN users_articles_unread au 
+    ON a.id = au.article_id AND uf.user_login = au.user_login
+LEFT OUTER JOIN users_articles_favorite af 
+    ON a.id = af.article_id AND uf.user_login = af.user_login
 LEFT OUTER JOIN articles_thumbnails at
     ON a.id = at.article_id
 WHERE uf.user_login = $1
@@ -95,38 +98,28 @@ WHERE uf.user_login = $1
 `
 
 	readStateInsertTemplate = `
-INSERT INTO users_articles_states (user_login, article_id)
+INSERT INTO users_articles_unread (user_login, article_id)
 SELECT uf.user_login, a.id
 FROM users_feeds uf
-{{ .InsertJoin }}
 INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-	{{ .InsertJoinPredicate }}
-	AND a.id IN (
-		SELECT a.id FROM articles a
-		{{ .InnerJoin }}
-		{{ .InnerWhere }}
-	)
-EXCEPT SELECT uas.user_login, uas.article_id
-FROM users_articles_states uas
-{{ .ExceptJoin }}
-WHERE uas.user_login = $1
-{{ .ExceptWhere }}
+	{{ .JoinPredicate }}
+{{ .Join }}
+{{ .Where }}
+EXCEPT SELECT au.user_login, au.article_id
+FROM users_articles_unread au
+WHERE au.user_login = $1
 `
-	readStateInsertStateInnerJoin = `
-LEFT OUTER JOIN users_articles_states uas
-	ON a.id = uas.article_id AND uas.user_login = $1
+	readStateInsertFavoriteJoin = `
+LEFT OUTER JOIN users_articles_favorite af
+	ON a.id = af.article_id AND af.user_login = uf.user_login
 `
 
-	readStateUpdateTemplate = `
-UPDATE users_articles_states SET read = $1 WHERE user_login = $2 AND article_id IN (
-	SELECT a.id FROM articles a {{ .InnerJoin }}
-	{{ .InnerWhere }}
+	readStateDeleteTemplate = `
+DELETE FROM users_articles_unread WHERE user_login = $1 AND article_id IN (
+	SELECT a.id FROM articles a {{ .Join }}
+	{{ .Where }}
 )
-`
-	readStateUpdateStateInnerJoin = `
-LEFT OUTER JOIN users_articles_states uas
-	ON a.id = uas.article_id AND uas.user_login = $2
 `
 
 	articleCountTemplate = `
@@ -137,9 +130,14 @@ FROM users_feeds uf INNER JOIN articles a
 {{ .Join }}
 {{ .Where }}
 `
-	articleCountStateJoin = `
-LEFT OUTER JOIN users_articles_states uas
-	ON a.id = uas.article_id
-	AND uf.user_login = uas.user_login
+	articleCountUnreadJoin = `
+LEFT OUTER JOIN users_articles_unread au
+	ON a.id = au.article_id
+	AND uf.user_login = au.user_login
+`
+	articleCountFavoriteJoin = `
+LEFT OUTER JOIN users_articles_favorite af
+	ON a.id = af.article_id
+	AND uf.user_login = af.user_login
 `
 )

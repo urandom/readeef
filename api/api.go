@@ -156,7 +156,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		t = thumbnailer.NewDescription(logger)
 	}
 
-	var monitors []content.FeedMonitor
+	monitors := []content.FeedMonitor{monitor.NewUnread(repo, logger)}
 	for _, m := range config.FeedManager.Monitors {
 		switch m {
 		case "index":
