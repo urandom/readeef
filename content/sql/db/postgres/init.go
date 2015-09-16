@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 )`, `
 CREATE OR REPLACE FUNCTION create_index_if_not_exists(tblname text, colname text) RETURNS void AS $$
 DECLARE
-	idxname text := quote_ident(tblname) || '_' || quote_ident(colname) || '_idx';
+	idxname text := quote_ident(tblname) || '_' || quote_ident(regexp_replace(colname, '\s*,\s*', '_')) || '_idx';
 BEGIN
 	IF NOT EXISTS (
 		SELECT 1
