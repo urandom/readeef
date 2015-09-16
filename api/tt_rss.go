@@ -508,16 +508,17 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					}
 				}
 
+				headlines := ttRssHeadlinesFromArticles(req, articles, feedTitle, nil)
 				if req.IncludeHeader {
 					header := ttRssHeadlinesHeader{Id: req.FeedId, FirstId: firstId}
 					hContent := ttRssHeadlinesHeaderContent{}
 
 					hContent = append(hContent, header)
-					hContent = append(hContent, ttRssHeadlinesFromArticles(req, articles, feedTitle, nil))
+					hContent = append(hContent, headlines)
 
 					con = hContent
 				} else {
-					con = ttRssHeadlinesFromArticles(req, articles, feedTitle, nil)
+					con = headlines
 				}
 			case "updateArticle":
 				articles := user.ArticlesById(req.ArticleIds)
@@ -716,6 +717,8 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 		if err == nil {
 			w.Header().Set("Content-Type", "text/json")
 			w.Write(b)
+
+			logger.Debugf("Output for %s: %s\n", req.Op, string(b))
 		} else {
 			logger.Print(fmt.Errorf("TT-RSS error %s: %v", req.Op, err))
 
@@ -737,6 +740,7 @@ func ttRssSetupSorting(req ttRssRequest, sorting content.ArticleSorting) {
 }
 
 func ttRssHeadlinesFromArticles(req ttRssRequest, articles []content.UserArticle, feedTitle string, feedTitles map[data.FeedId]string) (c ttRssHeadlinesContent) {
+	c = ttRssHeadlinesContent{}
 	for _, a := range articles {
 		d := a.Data()
 		title := feedTitle
