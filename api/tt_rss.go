@@ -77,15 +77,17 @@ type ttRssResponse struct {
 }
 
 type ttRssGenericContent struct {
-	Error     string      `json:"error,omitempty"`
-	Level     int         `json:"level,omitempty"`
-	ApiLevel  int         `json:"api_level,omitempty"`
-	Version   string      `json:"version,omitempty"`
-	SessionId string      `json:"session_id,omitempty"`
-	Status    interface{} `json:"status,omitempty"`
-	Unread    int64       `json:"unread,omitempty"`
-	Updated   int64       `json:"updated,omitempty"`
-	Value     interface{} `json:"value,omitempty"`
+	Error      string        `json:"error,omitempty"`
+	Level      int           `json:"level,omitempty"`
+	ApiLevel   int           `json:"api_level,omitempty"`
+	Version    string        `json:"version,omitempty"`
+	SessionId  string        `json:"session_id,omitempty"`
+	Status     interface{}   `json:"status,omitempty"`
+	Unread     int64         `json:"unread,omitempty"`
+	Updated    int64         `json:"updated,omitempty"`
+	Value      interface{}   `json:"value,omitempty"`
+	Method     string        `json:"method,omitempty"`
+	Categories ttRssCategory `json:"categories,omitempty"`
 }
 
 type ttRssCountersContent []ttRssCounter
@@ -150,6 +152,17 @@ type ttRssSubscribeContent struct {
 type ttRssSession struct {
 	login     data.Login
 	lastVisit time.Time
+}
+
+type ttRssCategory struct {
+	Identifier string          `json:"identifier,omitempty"`
+	Label      string          `json:"label,omitempty"`
+	Items      []ttRssCategory `json:"items,omitempty"`
+	Id         string          `json:"id,omitempty"`
+	Name       string          `json:"name,omitempty"`
+	Type       string          `json:"type,omitempty"`
+	Unread     int             `json:"unread,omitempty"`
+	BareId     data.FeedId     `json:"bare_id,omitempty"`
 }
 
 var (
@@ -310,7 +323,9 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				}
 
 				if con == nil {
+					fmt.Println(con, con == nil)
 					con = ttRssGenericContent{Unread: 0}
+					fmt.Printf("### %#v\n", con)
 				}
 			case "getCounters":
 				if req.OutputMode == "" {
@@ -692,6 +707,24 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				}
 
 				con = ttRssGenericContent{Status: "OK"}
+			case "getFeedTree":
+				root := ttRssCategory{Id: "root", Name: "Feeds", Type: "category"}
+
+				if req.Mode == 2 {
+					cat := ttRssCategory{Items: []ttRssCategory{}}
+				}
+
+				fl := ttRssCategory{Identifier: "id", Label: "name"}
+				if req.Mode == 2 {
+					fl.Items = []ttRssCategory{root}
+				} else {
+					fl.Items = root.Items
+				}
+
+				con = ttRssGenericContent{Categories: fl}
+			default:
+				errType = "UNKNOWN_METHOD"
+				con = ttRssGenericContent{Method: req.Op}
 			}
 		}
 
@@ -716,6 +749,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 		if err == nil {
 			w.Header().Set("Content-Type", "text/json")
+			w.Header().Set("Api-Content-Length", strconv.Itoa(len(b)))
 			w.Write(b)
 
 			logger.Debugf("Output for %s: %s\n", req.Op, string(b))
