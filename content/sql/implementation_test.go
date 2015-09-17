@@ -19,9 +19,9 @@ func TestImplements(t *testing.T) {
 	userArticle = r.UserArticle(nil)
 	userArticle.Data()
 
-	var scoredArticle content.ScoredArticle
+	var scoredArticle content.Article
 
-	scoredArticle = r.ScoredArticle()
+	scoredArticle = r.Article()
 	scoredArticle.Data()
 
 	var feed content.Feed

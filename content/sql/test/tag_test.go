@@ -132,7 +132,7 @@ func TestTag(t *testing.T) {
 	tag3.Reverse()
 	tag3.SortingById()
 
-	ua = tag3.UnreadArticles()
+	ua = tag3.Articles(data.ArticleQueryOptions{UnreadOnly: true})
 	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
 	tests.CheckInt64(t, 2, int64(len(ua)))
 
@@ -141,13 +141,13 @@ func TestTag(t *testing.T) {
 
 	u.ArticleById(id2).Read(false)
 
-	ua = tag3.UnreadArticles()
+	ua = tag3.Articles(data.ArticleQueryOptions{UnreadOnly: true})
 	tests.CheckInt64(t, 3, int64(len(ua)))
 
-	tag3.ReadBefore(now.Add(time.Minute), true)
+	tag3.ReadState(true, data.ArticleUpdateStateOptions{BeforeDate: now.Add(time.Minute)})
 	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
 
-	ua = tag3.UnreadArticles()
+	ua = tag3.Articles(data.ArticleQueryOptions{UnreadOnly: true})
 	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
 	tests.CheckInt64(t, 1, int64(len(ua)))
 	tests.CheckInt64(t, int64(id2), int64(ua[0].Data().Id))
@@ -155,7 +155,7 @@ func TestTag(t *testing.T) {
 	asc1 := createArticleScores(data.ArticleScores{ArticleId: id1, Score1: 2, Score2: 2})
 	asc2 := createArticleScores(data.ArticleScores{ArticleId: id2, Score1: 1, Score2: 3})
 
-	sa := tag3.ScoredArticles(now.Add(-20*time.Hour), now.Add(20*time.Hour))
+	sa := tag3.Articles(data.ArticleQueryOptions{AfterDate: now.Add(-20 * time.Hour), BeforeDate: now.Add(20 * time.Hour), IncludeScores: true, HighScoredFirst: true})
 
 	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
 	tests.CheckInt64(t, 2, int64(len(sa)))

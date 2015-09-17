@@ -119,11 +119,13 @@ func TestUser(t *testing.T) {
 	tests.CheckInt64(t, now.Add(-3*time.Hour).Unix(), ua[2].Data().Date.Unix())
 
 	ua[0].Read(true)
+	ua[1].Read(false)
+	ua[2].Read(false)
 
 	u.Reverse()
 	u.DefaultSorting()
 
-	ua = u.UnreadArticles()
+	ua = u.Articles(data.ArticleQueryOptions{UnreadOnly: true})
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 	tests.CheckInt64(t, 2, int64(len(ua)))
 
@@ -132,23 +134,23 @@ func TestUser(t *testing.T) {
 
 	u.ArticleById(id2).Read(false)
 
-	ua = u.UnreadArticles()
+	ua = u.Articles(data.ArticleQueryOptions{UnreadOnly: true})
 	tests.CheckInt64(t, 3, int64(len(ua)))
 
-	u.ReadBefore(now.Add(time.Minute), true)
+	u.ReadState(true, data.ArticleUpdateStateOptions{BeforeDate: now.Add(time.Minute)})
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 
-	ua = u.UnreadArticles()
+	ua = u.Articles(data.ArticleQueryOptions{UnreadOnly: true})
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 	tests.CheckInt64(t, 1, int64(len(ua)))
 	tests.CheckInt64(t, int64(id2), int64(ua[0].Data().Id))
 
 	u.ArticleById(id1).Read(false)
 
-	u.ReadAfter(now.Add(time.Minute), true)
+	u.ReadState(true, data.ArticleUpdateStateOptions{AfterDate: now.Add(time.Minute)})
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 
-	ua = u.UnreadArticles()
+	ua = u.Articles(data.ArticleQueryOptions{UnreadOnly: true})
 	tests.CheckInt64(t, 1, int64(len(ua)))
 	tests.CheckInt64(t, int64(id1), int64(ua[0].Data().Id))
 
@@ -173,10 +175,10 @@ func TestUser(t *testing.T) {
 		}
 	}
 
-	tests.CheckInt64(t, 3, u.ArticleCount())
+	tests.CheckInt64(t, 3, u.Count())
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 
-	ua = u.FavoriteArticles()
+	ua = u.Articles(data.ArticleQueryOptions{FavoriteOnly: true})
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 	tests.CheckInt64(t, 2, int64(len(ua)))
 
@@ -190,7 +192,8 @@ func TestUser(t *testing.T) {
 		}
 	}
 
-	ua = u.ArticlesOrderedById(id1)
+	u.SortingById()
+	ua = u.Articles(data.ArticleQueryOptions{AfterId: id1})
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 	tests.CheckInt64(t, 2, int64(len(ua)))
 
@@ -205,7 +208,7 @@ func TestUser(t *testing.T) {
 	}
 
 	u.Reverse()
-	ua = u.ArticlesOrderedById(id2)
+	ua = u.Articles(data.ArticleQueryOptions{BeforeId: id2})
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 	tests.CheckInt64(t, 1, int64(len(ua)))
 	tests.CheckString(t, "article1", ua[0].Data().Title)
@@ -213,7 +216,7 @@ func TestUser(t *testing.T) {
 	asc1 := createArticleScores(data.ArticleScores{ArticleId: id1, Score1: 2, Score2: 2})
 	asc2 := createArticleScores(data.ArticleScores{ArticleId: id2, Score1: 1, Score2: 3})
 
-	sa := u.ScoredArticles(now.Add(-20*time.Hour), now.Add(20*time.Hour))
+	sa := u.Articles(data.ArticleQueryOptions{AfterDate: now.Add(-20 * time.Hour), BeforeDate: now.Add(20 * time.Hour), IncludeScores: true, HighScoredFirst: true})
 
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 	tests.CheckInt64(t, 2, int64(len(sa)))

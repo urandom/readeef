@@ -151,7 +151,7 @@ func TestUserFeed(t *testing.T) {
 	uf.Reverse()
 	uf.SortingById()
 
-	ua = uf.UnreadArticles()
+	ua = uf.Articles(data.ArticleQueryOptions{UnreadOnly: true})
 	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
 	tests.CheckInt64(t, 2, int64(len(ua)))
 
@@ -160,13 +160,13 @@ func TestUserFeed(t *testing.T) {
 
 	u.ArticleById(data.ArticleId(id2)).Read(false)
 
-	ua = uf.UnreadArticles()
+	ua = uf.Articles(data.ArticleQueryOptions{UnreadOnly: true})
 	tests.CheckInt64(t, 3, int64(len(ua)))
 
-	uf.ReadBefore(now.Add(time.Minute), true)
+	uf.ReadState(true, data.ArticleUpdateStateOptions{BeforeDate: now.Add(time.Minute)})
 	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
 
-	ua = uf.UnreadArticles()
+	ua = uf.Articles(data.ArticleQueryOptions{UnreadOnly: true})
 	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
 	tests.CheckInt64(t, 1, int64(len(ua)))
 	tests.CheckInt64(t, int64(id2), int64(ua[0].Data().Id))
@@ -176,7 +176,7 @@ func TestUserFeed(t *testing.T) {
 	asc2 := createArticleScores(data.ArticleScores{ArticleId: id2, Score1: 1, Score2: 3})
 	tests.CheckBool(t, false, asc2.HasErr(), asc2.Err())
 
-	sa := uf.ScoredArticles(now.Add(-20*time.Hour), now.Add(20*time.Hour))
+	sa := uf.Articles(data.ArticleQueryOptions{IncludeScores: true, HighScoredFirst: true, AfterDate: now.Add(-20 * time.Hour), BeforeDate: now.Add(20 * time.Hour)})
 
 	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
 	tests.CheckInt64(t, 2, int64(len(sa)))
