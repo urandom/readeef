@@ -1,18 +1,18 @@
 package base
 
 func init() {
-	sql["create_feed"] = createFeed
-	sql["update_feed"] = updateFeed
-	sql["delete_feed"] = deleteFeed
-	sql["get_all_feed_articles"] = getAllFeedArticles
-	sql["get_latest_feed_articles"] = getLatestFeedArticles
-	sql["get_hubbub_subscription"] = getHubbubSubscription
-	sql["get_feed_users"] = getFeedUsers
-	sql["delete_user_feed"] = deleteUserFeed
-	sql["get_user_feed_tags"] = getUserFeedTags
-	sql["create_user_feed_tag"] = createUserFeedTag
-	sql["delete_user_feed_tags"] = deleteUserFeedTags
-	sql["read_state_insert_feed_template"] = readStateInsertFeedTemplate
+	sqlStmts.Feed.Create = createFeed
+	sqlStmts.Feed.Update = updateFeed
+	sqlStmts.Feed.Delete = deleteFeed
+	sqlStmts.Feed.GetAllArticles = getAllFeedArticles
+	sqlStmts.Feed.GetLatestArticles = getLatestFeedArticles
+	sqlStmts.Feed.GetHubbubSubscription = getFeedHubbubSubscription
+	sqlStmts.Feed.GetUsers = getFeedUsers
+	sqlStmts.Feed.Detach = deleteUserFeed
+	sqlStmts.Feed.GetUserTags = getUserFeedTags
+	sqlStmts.Feed.CreateUserTag = createUserFeedTag
+	sqlStmts.Feed.DeleteUserTags = deleteUserFeedTags
+	sqlStmts.Feed.ReadStateInsertTemplate = readStateInsertFeedTemplate
 }
 
 const (
@@ -32,7 +32,7 @@ SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid
 FROM articles a
 WHERE a.feed_id = $1 AND a.date > NOW() - INTERVAL '5 days'
 `
-	getHubbubSubscription = `
+	getFeedHubbubSubscription = `
 SELECT link, lease_duration, verification_time, subscription_failure
 	FROM hubbub_subscriptions WHERE feed_id = $1`
 	getFeedUsers = `

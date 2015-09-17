@@ -24,6 +24,7 @@ func (asc *ArticleScores) Update() {
 	}
 
 	data := asc.Data()
+	s := asc.db.SQL()
 	if data.Score == 0 {
 		data.Score = asc.Calculate()
 		asc.Data(data)
@@ -37,7 +38,7 @@ func (asc *ArticleScores) Update() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(asc.db.SQL("update_article_scores"))
+	stmt, err := tx.Preparex(s.Article.UpdateScores)
 	if err != nil {
 		asc.Err(err)
 		return
@@ -51,7 +52,7 @@ func (asc *ArticleScores) Update() {
 	}
 
 	if num, err := res.RowsAffected(); err != nil || num == 0 {
-		stmt, err := tx.Preparex(asc.db.SQL("create_article_scores"))
+		stmt, err := tx.Preparex(s.Article.CreateScores)
 		if err != nil {
 			asc.Err(err)
 			return

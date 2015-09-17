@@ -32,7 +32,7 @@ func (r *Repo) UserByLogin(login data.Login) (u content.User) {
 	r.logger.Infof("Getting user '%s'\n", login)
 
 	var data data.User
-	if err := r.db.Get(&data, r.db.SQL("get_user"), login); err != nil {
+	if err := r.db.Get(&data, r.db.SQL().Repo.GetUser, login); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -56,7 +56,7 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 	r.logger.Infof("Getting user using md5 api field '%v'\n", md5)
 
 	var data data.User
-	if err := r.db.Get(&data, r.db.SQL("get_user_by_md5_api"), md5); err != nil {
+	if err := r.db.Get(&data, r.db.SQL().Repo.GetUserByMD5API, md5); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -78,7 +78,7 @@ func (r *Repo) AllUsers() (users []content.User) {
 	r.logger.Infoln("Getting all users")
 
 	var data []data.User
-	if err := r.db.Select(&data, r.db.SQL("get_users")); err != nil {
+	if err := r.db.Select(&data, r.db.SQL().Repo.GetUsers); err != nil {
 		r.Err(err)
 		return
 	}
@@ -107,7 +107,7 @@ func (r *Repo) FeedById(id data.FeedId) (f content.Feed) {
 	r.logger.Infof("Getting feed '%d'\n", id)
 
 	i := data.Feed{}
-	if err := r.db.Get(&i, r.db.SQL("get_feed"), id); err != nil {
+	if err := r.db.Get(&i, r.db.SQL().Repo.GetFeed, id); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -131,7 +131,7 @@ func (r *Repo) FeedByLink(link string) (f content.Feed) {
 	r.logger.Infof("Getting feed by link '%s'\n", link)
 
 	i := data.Feed{}
-	if err := r.db.Get(&i, r.db.SQL("get_feed_by_link"), link); err != nil {
+	if err := r.db.Get(&i, r.db.SQL().Repo.GetFeedByLink, link); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -153,7 +153,7 @@ func (r *Repo) AllFeeds() (feeds []content.Feed) {
 	r.logger.Infoln("Getting all feeds")
 
 	var data []data.Feed
-	if err := r.db.Select(&data, r.db.SQL("get_feeds")); err != nil {
+	if err := r.db.Select(&data, r.db.SQL().Repo.GetFeeds); err != nil {
 		r.Err(err)
 		return
 	}
@@ -176,7 +176,7 @@ func (r *Repo) AllUnsubscribedFeeds() (feeds []content.Feed) {
 	r.logger.Infoln("Getting all unsubscribed feeds")
 
 	var data []data.Feed
-	if err := r.db.Select(&data, r.db.SQL("get_unsubscribed_feeds")); err != nil {
+	if err := r.db.Select(&data, r.db.SQL().Repo.GetUnsubscribedFeeds); err != nil {
 		r.Err(err)
 		return
 	}
@@ -199,7 +199,7 @@ func (r *Repo) AllSubscriptions() (s []content.Subscription) {
 	r.logger.Infoln("Getting all subscriptions")
 
 	var data []data.Subscription
-	if err := r.db.Select(&data, r.db.SQL("get_hubbub_subscriptions")); err != nil {
+	if err := r.db.Select(&data, r.db.SQL().Repo.GetHubbubSubscriptions); err != nil {
 		r.Err(err)
 		return
 	}
@@ -221,7 +221,7 @@ func (r *Repo) FailSubscriptions() {
 
 	r.logger.Infoln("Marking all subscriptions as failed")
 
-	if _, err := r.db.Exec(r.db.SQL("fail_hubbub_subscriptions")); err != nil {
+	if _, err := r.db.Exec(r.db.SQL().Repo.FailHubbubSubscriptions); err != nil {
 		r.Err(err)
 		return
 	}
@@ -234,7 +234,7 @@ func (r *Repo) DeleteStaleUnreadRecords() {
 
 	r.logger.Infoln("Deleting stale article unread records")
 
-	if _, err := r.db.Exec(r.db.SQL("delete_stale_unread_records"), time.Now().AddDate(0, -1, 0)); err != nil {
+	if _, err := r.db.Exec(r.db.SQL().Repo.DeleteStaleUnreadRecords, time.Now().AddDate(0, -1, 0)); err != nil {
 		r.Err(err)
 		return
 	}

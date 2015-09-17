@@ -9,7 +9,7 @@ import (
 )
 
 type Helper struct {
-	base.Helper
+	*base.Helper
 }
 
 func (h Helper) InitSQL() []string {
@@ -89,10 +89,12 @@ func upgrade2to3(db *db.DB) error {
 func init() {
 	helper := &Helper{Helper: base.NewHelper()}
 
-	helper.Set("create_feed_article", createFeedArticle)
-	helper.Set("get_user_feeds", getUserFeeds)
-	helper.Set("get_user_tag_feeds", getUserTagFeeds)
-	helper.Set("get_latest_feed_articles", getLatestFeedArticles)
+	helper.Set(db.SqlStmts{
+		Article: db.ArticleStmts{Create: createFeedArticle},
+		User:    db.UserStmts{GetFeeds: getUserFeeds},
+		Tag:     db.TagStmts{GetUserFeeds: getUserTagFeeds},
+		Feed:    db.FeedStmts{GetLatestArticles: getLatestFeedArticles},
+	})
 
 	db.Register("sqlite3", helper)
 }

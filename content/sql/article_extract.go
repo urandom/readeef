@@ -24,6 +24,7 @@ func (ae *ArticleExtract) Update() {
 	}
 
 	data := ae.Data()
+	s := ae.db.SQL()
 	ae.logger.Infof("Updating extract for article %d", data.ArticleId)
 
 	tx, err := ae.db.Beginx()
@@ -33,7 +34,7 @@ func (ae *ArticleExtract) Update() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(ae.db.SQL("update_article_extract"))
+	stmt, err := tx.Preparex(s.Article.UpdateExtract)
 	if err != nil {
 		ae.Err(err)
 		return
@@ -47,7 +48,7 @@ func (ae *ArticleExtract) Update() {
 	}
 
 	if num, err := res.RowsAffected(); err != nil || num == 0 {
-		stmt, err := tx.Preparex(ae.db.SQL("create_article_extract"))
+		stmt, err := tx.Preparex(s.Article.CreateExtract)
 		if err != nil {
 			ae.Err(err)
 			return

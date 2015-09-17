@@ -3,11 +3,116 @@ package db
 import "github.com/jmoiron/sqlx"
 
 type Helper interface {
-	SQL(name string) string
+	SQL() SqlStmts
 	InitSQL() []string
 
-	CreateWithId(tx *sqlx.Tx, name string, args ...interface{}) (int64, error)
+	CreateWithId(tx *sqlx.Tx, sql string, args ...interface{}) (int64, error)
 	Upgrade(db *DB, old, new int) error
+}
+
+type ArticleStmts struct {
+	Create string
+	Update string
+
+	CreateUserUnread   string
+	DeleteUserUnread   string
+	CreateUserFavorite string
+	DeleteUserFavorite string
+
+	GetScores    string
+	CreateScores string
+	UpdateScores string
+
+	GetThumbnail    string
+	CreateThumbnail string
+	UpdateThumbnail string
+
+	GetExtract    string
+	CreateExtract string
+	UpdateExtract string
+}
+
+type FeedStmts struct {
+	Create string
+	Update string
+	Delete string
+
+	GetAllArticles    string
+	GetLatestArticles string
+
+	GetHubbubSubscription   string
+	GetUsers                string
+	Detach                  string
+	GetUserTags             string
+	CreateUserTag           string
+	DeleteUserTags          string
+	ReadStateInsertTemplate string
+}
+
+type RepoStmts struct {
+	GetUser                  string
+	GetUserByMD5API          string
+	GetUsers                 string
+	GetFeed                  string
+	GetFeedByLink            string
+	GetFeeds                 string
+	GetUnsubscribedFeeds     string
+	GetHubbubSubscriptions   string
+	FailHubbubSubscriptions  string
+	DeleteStaleUnreadRecords string
+}
+
+type SubscriptionStmts struct {
+	Create string
+	Update string
+	Delete string
+}
+
+type TagStmts struct {
+	GetUserFeeds string
+
+	GetArticlesJoin     string
+	ReadStateInsertJoin string
+	ReadStateDeleteJoin string
+	ArticleCountJoin    string
+}
+
+type UserStmts struct {
+	Create string
+	Update string
+	Delete string
+
+	GetFeed    string
+	CreateFeed string
+	GetFeeds   string
+
+	GetFeedIdsTags string
+	GetTags        string
+
+	GetAllUnreadArticleIds   string
+	GetAllFavoriteArticleIds string
+
+	GetArticlesTemplate  string
+	GetArticlesScoreJoin string
+
+	ReadStateInsertTemplate     string
+	ReadStateInsertFavoriteJoin string
+
+	ReadStateDeleteTemplate     string
+	ReadStateDeleteFavoriteJoin string
+
+	ArticleCountTemplate     string
+	ArticleCountUnreadJoin   string
+	ArticleCountFavoriteJoin string
+}
+
+type SqlStmts struct {
+	Article      ArticleStmts
+	Feed         FeedStmts
+	Repo         RepoStmts
+	Subscription SubscriptionStmts
+	Tag          TagStmts
+	User         UserStmts
 }
 
 func Register(driver string, helper Helper) {
@@ -23,17 +128,11 @@ func Register(driver string, helper Helper) {
 }
 
 // Can't recover from missing driver or statement, panic
-func (db DB) SQL(name string) string {
+func (db DB) SQL() SqlStmts {
 	driver := db.DriverName()
 
 	if h, ok := helpers[driver]; ok {
-		sql := h.SQL(name)
-
-		if sql == "" {
-			panic("No statement registered under " + name)
-		}
-
-		return sql
+		return h.SQL()
 	} else {
 		panic("No helper registered for " + driver)
 	}

@@ -1,12 +1,12 @@
 package base
 
 func init() {
-	sql["get_user_tag_feeds"] = getUserTagFeeds
+	sqlStmts.Tag.GetUserFeeds = getUserTagFeeds
 
-	sql["get_articles_tag_join"] = getArticlesTagJoin
-	sql["read_state_insert_tag_join"] = readStateInsertTagJoin
-	sql["read_state_delete_tag_join"] = readStateDeleteTagJoin
-	sql["article_count_tag_join"] = articleCountTagJoin
+	sqlStmts.Tag.GetArticlesJoin = getArticlesTagJoin
+	sqlStmts.Tag.ReadStateInsertJoin = readStateInsertTagJoin
+	sqlStmts.Tag.ReadStateDeleteJoin = readStateDeleteTagJoin
+	sqlStmts.Tag.ArticleCountJoin = articleCountTagJoin
 }
 
 const (

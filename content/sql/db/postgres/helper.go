@@ -11,20 +11,16 @@ import (
 )
 
 type Helper struct {
-	base.Helper
+	*base.Helper
 }
 
 func (h Helper) InitSQL() []string {
 	return initSQL
 }
 
-func (h Helper) CreateWithId(tx *sqlx.Tx, name string, args ...interface{}) (int64, error) {
+func (h Helper) CreateWithId(tx *sqlx.Tx, sql string, args ...interface{}) (int64, error) {
 	var id int64
 
-	sql := h.SQL(name)
-	if sql == "" {
-		panic("No statement registered under " + name)
-	}
 	sql += " RETURNING id"
 
 	stmt, err := tx.Preparex(sql)
@@ -114,8 +110,10 @@ func upgrade2to3(db *db.DB) error {
 func init() {
 	helper := &Helper{Helper: base.NewHelper()}
 
-	helper.Set("get_user_feeds", getUserFeeds)
-	helper.Set("get_user_tag_feeds", getUserTagFeeds)
+	helper.Set(db.SqlStmts{
+		User: db.UserStmts{GetFeeds: getUserFeeds},
+		Tag:  db.TagStmts{GetUserFeeds: getUserTagFeeds},
+	})
 
 	db.Register("postgres", helper)
 }

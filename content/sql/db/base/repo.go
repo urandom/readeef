@@ -1,16 +1,16 @@
 package base
 
 func init() {
-	sql["get_user"] = getUser
-	sql["get_user_by_md5_api"] = getUserByMD5Api
-	sql["get_users"] = getUsers
-	sql["get_feed"] = getFeed
-	sql["get_feed_by_link"] = getFeedByLink
-	sql["get_feeds"] = getFeeds
-	sql["get_unsubscribed_feeds"] = getUnsubscribedFeeds
-	sql["get_hubbub_subscriptions"] = getHubbubSubscriptions
-	sql["fail_hubbub_subscriptions"] = failHubbubSubscription
-	sql["delete_stale_unread_records"] = deleteStaleUnreadRecords
+	sqlStmts.Repo.GetUser = getUser
+	sqlStmts.Repo.GetUserByMD5API = getUserByMD5Api
+	sqlStmts.Repo.GetUsers = getUsers
+	sqlStmts.Repo.GetFeed = getFeed
+	sqlStmts.Repo.GetFeedByLink = getFeedByLink
+	sqlStmts.Repo.GetFeeds = getFeeds
+	sqlStmts.Repo.GetUnsubscribedFeeds = getUnsubscribedFeeds
+	sqlStmts.Repo.GetHubbubSubscriptions = getHubbubSubscriptions
+	sqlStmts.Repo.FailHubbubSubscriptions = failHubbubSubscriptions
+	sqlStmts.Repo.DeleteStaleUnreadRecords = deleteStaleUnreadRecords
 }
 
 const (
@@ -30,6 +30,6 @@ SELECT f.id, f.link, f.title, f.description, f.hub_link, f.site_link, f.update_e
 	getHubbubSubscriptions = `
 SELECT link, feed_id, lease_duration, verification_time, subscription_failure
 	FROM hubbub_subscriptions`
-	failHubbubSubscription   = `UPDATE hubbub_subscriptions SET subscription_failure = '1'`
+	failHubbubSubscriptions  = `UPDATE hubbub_subscriptions SET subscription_failure = '1'`
 	deleteStaleUnreadRecords = `DELETE FROM users_articles_unread WHERE insert_date < $1`
 )

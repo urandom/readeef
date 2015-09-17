@@ -34,7 +34,7 @@ func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
 	u := t.User()
 
 	var d []data.Feed
-	if err := t.db.Select(&d, t.db.SQL("get_user_tag_feeds"), u.Data().Login, t.String()); err != nil {
+	if err := t.db.Select(&d, t.db.SQL().Tag.GetUserFeeds, u.Data().Login, t.String()); err != nil {
 		t.Err(err)
 		return
 	}
@@ -68,7 +68,7 @@ func (t *Tag) Articles(o ...data.ArticleQueryOptions) (ua []content.UserArticle)
 	u := t.User()
 
 	ua = getArticles(u, t.db, t.logger, opts, t,
-		t.db.SQL("get_articles_tag_join"), "", []interface{}{t.String()})
+		t.db.SQL().Tag.GetArticlesJoin, "", []interface{}{t.String()})
 
 	if u.HasErr() {
 		t.Err(u.Err())
@@ -96,7 +96,7 @@ func (t *Tag) Count(o ...data.ArticleCountOptions) (count int64) {
 	tag := t.Value()
 	t.logger.Infof("Getting user %s tag %s count with options %#v\n", u.Data().Login, tag, opts)
 
-	articleCount(u, t.db, t.logger, opts, t.db.SQL("article_count_tag_join"), "", []interface{}{tag})
+	articleCount(u, t.db, t.logger, opts, t.db.SQL().Tag.ArticleCountJoin, "", []interface{}{tag})
 
 	if u.HasErr() {
 		t.Err(u.Err())
@@ -125,10 +125,11 @@ func (t *Tag) ReadState(read bool, o ...data.ArticleUpdateStateOptions) {
 	tag := t.Value()
 	t.logger.Infof("Getting articles for user %s tag %s with options: %#v\n", login, tag, opts)
 
+	s := t.db.SQL()
 	args := []interface{}{tag}
 	readState(u, t.db, t.logger, opts, read,
-		t.db.SQL("read_state_insert_tag_join"), "",
-		t.db.SQL("read_state_delete_tag_join"), "",
+		s.Tag.ReadStateInsertJoin, "",
+		s.Tag.ReadStateDeleteJoin, "",
 		args, args)
 
 	if u.HasErr() {

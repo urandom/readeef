@@ -58,7 +58,7 @@ func (a *Article) Thumbnail() (at content.ArticleThumbnail) {
 	a.logger.Infof("Getting article '%d' thumbnail\n", id)
 
 	var i data.ArticleThumbnail
-	if err := a.db.Get(&i, a.db.SQL("get_article_thumbnail"), id); err != nil {
+	if err := a.db.Get(&i, a.db.SQL().Article.GetThumbnail, id); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -87,7 +87,7 @@ func (a *Article) Extract() (ae content.ArticleExtract) {
 	a.logger.Infof("Getting article '%d' extract\n", id)
 
 	var i data.ArticleExtract
-	if err := a.db.Get(&i, a.db.SQL("get_article_extract"), id); err != nil {
+	if err := a.db.Get(&i, a.db.SQL().Article.GetExtract, id); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -116,7 +116,7 @@ func (a *Article) Scores() (as content.ArticleScores) {
 	a.logger.Infof("Getting article '%d' scores\n", id)
 
 	var i data.ArticleScores
-	if err := a.db.Get(&i, a.db.SQL("get_article_scores"), id); err != nil {
+	if err := a.db.Get(&i, a.db.SQL().Article.GetScores, id); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -142,8 +142,9 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logge
 	logger.Infof("Updating article %s\n", a)
 
 	d := a.Data()
+	s := db.SQL()
 
-	stmt, err := tx.Preparex(db.SQL("update_feed_article"))
+	stmt, err := tx.Preparex(s.Article.Update)
 	if err != nil {
 		a.Err(err)
 		return
@@ -159,7 +160,7 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logge
 	if num, err := res.RowsAffected(); err != nil && err == sql.ErrNoRows || num == 0 {
 		logger.Infof("Creating article %s\n", a)
 
-		aId, err := db.CreateWithId(tx, "create_feed_article", d.FeedId, d.Link, d.Guid,
+		aId, err := db.CreateWithId(tx, s.Article.Create, d.FeedId, d.Link, d.Guid,
 			d.Title, d.Description, d.Date)
 
 		if err != nil {
@@ -196,7 +197,7 @@ func (ua *UserArticle) Read(read bool) {
 	defer tx.Rollback()
 
 	if read {
-		stmt, err := tx.Preparex(ua.db.SQL("delete_user_article_unread"))
+		stmt, err := tx.Preparex(ua.db.SQL().Article.DeleteUserUnread)
 		if err != nil {
 			ua.Err(err)
 			return
@@ -209,7 +210,7 @@ func (ua *UserArticle) Read(read bool) {
 			return
 		}
 	} else {
-		stmt, err := tx.Preparex(ua.db.SQL("create_user_article_unread"))
+		stmt, err := tx.Preparex(ua.db.SQL().Article.CreateUserUnread)
 		if err != nil {
 			ua.Err(err)
 			return
@@ -251,7 +252,7 @@ func (ua *UserArticle) Favorite(favorite bool) {
 	defer tx.Rollback()
 
 	if favorite {
-		stmt, err := tx.Preparex(ua.db.SQL("create_user_article_favorite"))
+		stmt, err := tx.Preparex(ua.db.SQL().Article.CreateUserFavorite)
 		if err != nil {
 			ua.Err(err)
 			return
@@ -264,7 +265,7 @@ func (ua *UserArticle) Favorite(favorite bool) {
 			return
 		}
 	} else {
-		stmt, err := tx.Preparex(ua.db.SQL("delete_user_article_favorite"))
+		stmt, err := tx.Preparex(ua.db.SQL().Article.DeleteUserFavorite)
 		if err != nil {
 			ua.Err(err)
 			return

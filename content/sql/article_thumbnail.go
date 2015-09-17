@@ -24,6 +24,7 @@ func (at *ArticleThumbnail) Update() {
 	}
 
 	data := at.Data()
+	s := at.db.SQL()
 	at.logger.Infof("Updating thumbnail for article %d", data.ArticleId)
 
 	tx, err := at.db.Beginx()
@@ -33,7 +34,7 @@ func (at *ArticleThumbnail) Update() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(at.db.SQL("update_article_thumbnail"))
+	stmt, err := tx.Preparex(s.Article.UpdateThumbnail)
 	if err != nil {
 		at.Err(err)
 		return
@@ -47,7 +48,7 @@ func (at *ArticleThumbnail) Update() {
 	}
 
 	if num, err := res.RowsAffected(); err != nil || num == 0 {
-		stmt, err := tx.Preparex(at.db.SQL("create_article_thumbnail"))
+		stmt, err := tx.Preparex(s.Article.CreateThumbnail)
 		if err != nil {
 			at.Err(err)
 			return

@@ -1,30 +1,29 @@
 package base
 
 func init() {
-	sql["create_user"] = createUser
-	sql["update_user"] = updateUser
-	sql["delete_user"] = deleteUser
-	sql["get_user_feed"] = getUserFeed
-	sql["create_user_feed"] = createUserFeed
-	sql["get_user_feeds"] = getUserFeeds
-	sql["get_user_feed_ids_tags"] = getUserFeedIdsTags
-	sql["get_user_tags"] = getUserTags
-	sql["get_all_unread_user_article_ids"] = getAllUnreadUserArticleIds
-	sql["get_all_favorite_user_article_ids"] = getAllFavoriteUserArticleIds
+	sqlStmts.User.Create = createUser
+	sqlStmts.User.Update = updateUser
+	sqlStmts.User.Delete = deleteUser
+	sqlStmts.User.GetFeed = getUserFeed
+	sqlStmts.User.CreateFeed = createUserFeed
+	sqlStmts.User.GetFeeds = getUserFeeds
+	sqlStmts.User.GetFeedIdsTags = getUserFeedIdsTags
+	sqlStmts.User.GetTags = getUserTags
+	sqlStmts.User.GetAllUnreadArticleIds = getAllUnreadUserArticleIds
+	sqlStmts.User.GetAllFavoriteArticleIds = getAllFavoriteUserArticleIds
 
-	sql["get_articles_template"] = getArticlesTemplate
-	sql["get_articles_score_join"] = getArticlesScoreJoin
+	sqlStmts.User.GetArticlesTemplate = getArticlesTemplate
+	sqlStmts.User.GetArticlesScoreJoin = getArticlesScoreJoin
 
-	sql["read_state_insert_template"] = readStateInsertTemplate
-	sql["read_state_insert_favorite_join"] = readStateInsertFavoriteJoin
+	sqlStmts.User.ReadStateInsertTemplate = readStateInsertTemplate
+	sqlStmts.User.ReadStateInsertFavoriteJoin = readStateInsertFavoriteJoin
 
-	sql["read_state_delete_template"] = readStateDeleteTemplate
-	sql["read_state_delete_favorite_join"] = readStateInsertFavoriteJoin
+	sqlStmts.User.ReadStateDeleteTemplate = readStateDeleteTemplate
+	sqlStmts.User.ReadStateDeleteFavoriteJoin = readStateInsertFavoriteJoin
 
-	sql["article_count_template"] = articleCountTemplate
-	sql["article_count_unread_join"] = articleCountUnreadJoin
-	sql["article_count_favorite_join"] = articleCountFavoriteJoin
-
+	sqlStmts.User.ArticleCountTemplate = articleCountTemplate
+	sqlStmts.User.ArticleCountUnreadJoin = articleCountUnreadJoin
+	sqlStmts.User.ArticleCountFavoriteJoin = articleCountFavoriteJoin
 }
 
 const (
@@ -82,9 +81,9 @@ SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id
 {{ .Join }}
-LEFT OUTER JOIN users_articles_unread au 
+LEFT OUTER JOIN users_articles_unread au
     ON a.id = au.article_id AND uf.user_login = au.user_login
-LEFT OUTER JOIN users_articles_favorite af 
+LEFT OUTER JOIN users_articles_favorite af
     ON a.id = af.article_id AND uf.user_login = af.user_login
 LEFT OUTER JOIN articles_thumbnails at
     ON a.id = at.article_id

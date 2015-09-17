@@ -1,21 +1,21 @@
 package base
 
 func init() {
-	sql["create_feed_article"] = createFeedArticle
-	sql["update_feed_article"] = updateFeedArticle
-	sql["create_user_article_unread"] = createUserArticleUnread
-	sql["delete_user_article_unread"] = deleteUserArticleUnread
-	sql["create_user_article_favorite"] = createUserArticleFavorite
-	sql["delete_user_article_favorite"] = deleteUserArticleFavorite
-	sql["get_article_scores"] = getArticleScores
-	sql["create_article_scores"] = createArticleScores
-	sql["update_article_scores"] = updateArticleScores
-	sql["get_article_thumbnail"] = getArticleThumbnail
-	sql["create_article_thumbnail"] = createArticleThumbnail
-	sql["update_article_thumbnail"] = updateArticleThumbnail
-	sql["get_article_extract"] = getArticleExtract
-	sql["create_article_extract"] = createArticleExtract
-	sql["update_article_extract"] = updateArticleExtract
+	sqlStmts.Article.Create = createFeedArticle
+	sqlStmts.Article.Update = updateFeedArticle
+	sqlStmts.Article.CreateUserUnread = createUserArticleUnread
+	sqlStmts.Article.DeleteUserUnread = deleteUserArticleUnread
+	sqlStmts.Article.CreateUserFavorite = createUserArticleFavorite
+	sqlStmts.Article.DeleteUserFavorite = deleteUserArticleFavorite
+	sqlStmts.Article.GetScores = getArticleScores
+	sqlStmts.Article.CreateScores = createArticleScores
+	sqlStmts.Article.UpdateScores = updateArticleScores
+	sqlStmts.Article.GetThumbnail = getArticleThumbnail
+	sqlStmts.Article.CreateThumbnail = createArticleThumbnail
+	sqlStmts.Article.UpdateThumbnail = updateArticleThumbnail
+	sqlStmts.Article.GetExtract = getArticleExtract
+	sqlStmts.Article.CreateExtract = createArticleExtract
+	sqlStmts.Article.UpdateExtract = updateArticleExtract
 }
 
 const (

@@ -33,7 +33,7 @@ func (s *Subscription) Update() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(s.db.SQL("update_hubbub_subscription"))
+	stmt, err := tx.Preparex(s.db.SQL().Subscription.Update)
 	if err != nil {
 		s.Err(err)
 		return
@@ -51,7 +51,7 @@ func (s *Subscription) Update() {
 		return
 	}
 
-	stmt, err = tx.Preparex(s.db.SQL("create_hubbub_subscription"))
+	stmt, err = tx.Preparex(s.db.SQL().Subscription.Create)
 
 	if err != nil {
 		s.Err(err)
@@ -88,7 +88,7 @@ func (s *Subscription) Delete() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(s.db.SQL("delete_hubbub_subscription"))
+	stmt, err := tx.Preparex(s.db.SQL().Subscription.Delete)
 
 	if err != nil {
 		s.Err(err)

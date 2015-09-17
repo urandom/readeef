@@ -72,7 +72,8 @@ func (u *User) Update() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(u.db.SQL("update_user"))
+	s := u.db.SQL()
+	stmt, err := tx.Preparex(s.User.Update)
 	if err != nil {
 		u.Err(err)
 		return
@@ -93,7 +94,7 @@ func (u *User) Update() {
 		return
 	}
 
-	stmt, err = tx.Preparex(u.db.SQL("create_user"))
+	stmt, err = tx.Preparex(s.User.Create)
 	if err != nil {
 		u.Err(err)
 		return
@@ -133,7 +134,7 @@ func (u *User) Delete() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(u.db.SQL("delete_user"))
+	stmt, err := tx.Preparex(u.db.SQL().User.Delete)
 	if err != nil {
 		u.Err(err)
 		return
@@ -167,7 +168,7 @@ func (u *User) FeedById(id data.FeedId) (uf content.UserFeed) {
 	u.logger.Infof("Getting user feed for user %s and feed %d\n", login, id)
 
 	var i data.Feed
-	if err := u.db.Get(&i, u.db.SQL("get_user_feed"), id, login); err != nil {
+	if err := u.db.Get(&i, u.db.SQL().User.GetFeed, id, login); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -214,7 +215,7 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(u.db.SQL("create_user_feed"))
+	stmt, err := tx.Preparex(u.db.SQL().User.CreateFeed)
 	if err != nil {
 		uf.Err(err)
 		return
@@ -250,7 +251,7 @@ func (u *User) AllFeeds() (uf []content.UserFeed) {
 	u.logger.Infof("Getting all feeds for user %s\n", login)
 
 	var data []data.Feed
-	if err := u.db.Select(&data, u.db.SQL("get_user_feeds"), login); err != nil {
+	if err := u.db.Select(&data, u.db.SQL().User.GetFeeds, login); err != nil {
 		u.Err(err)
 		return
 	}
@@ -279,7 +280,7 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 
 	var feedIdTags []feedIdTag
 
-	if err := u.db.Select(&feedIdTags, u.db.SQL("get_user_feed_ids_tags"), login); err != nil {
+	if err := u.db.Select(&feedIdTags, u.db.SQL().User.GetFeedIdsTags, login); err != nil {
 		u.Err(err)
 		return
 	}
@@ -389,7 +390,7 @@ func (u *User) AllUnreadArticleIds() (ids []data.ArticleId) {
 	login := u.Data().Login
 	u.logger.Infof("Getting unread article ids for user %s\n", login)
 
-	if err := u.db.Select(&ids, u.db.SQL("get_all_unread_user_article_ids"), login); err != nil {
+	if err := u.db.Select(&ids, u.db.SQL().User.GetAllUnreadArticleIds, login); err != nil {
 		u.Err(err)
 		return
 	}
@@ -410,7 +411,7 @@ func (u *User) AllFavoriteArticleIds() (ids []data.ArticleId) {
 	login := u.Data().Login
 	u.logger.Infof("Getting favorite article ids for user %s\n", login)
 
-	if err := u.db.Select(&ids, u.db.SQL("get_all_favorite_user_article_ids"), login); err != nil {
+	if err := u.db.Select(&ids, u.db.SQL().User.GetAllFavoriteArticleIds, login); err != nil {
 		u.Err(err)
 		return
 	}
@@ -520,7 +521,7 @@ func (u *User) Tags() (tags []content.Tag) {
 
 	var feedIdTags []feedIdTag
 
-	if err := u.db.Select(&feedIdTags, u.db.SQL("get_user_tags"), login); err != nil {
+	if err := u.db.Select(&feedIdTags, u.db.SQL().User.GetTags, login); err != nil {
 		u.Err(err)
 		return
 	}
@@ -544,7 +545,7 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 	var err error
 	if getArticlesTemplate == nil {
 		getArticlesTemplate, err = template.New("read-state-update-sql").
-			Parse(dbo.SQL("get_articles_template"))
+			Parse(dbo.SQL().User.GetArticlesTemplate)
 
 		if err != nil {
 			u.Err(fmt.Errorf("Error generating get-articles-update template: %v", err))
@@ -586,7 +587,7 @@ func internalGetArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts d
 	renderData := getArticlesData{}
 	if opts.IncludeScores {
 		renderData.Columns += ", asco.score"
-		renderData.Join += dbo.SQL("get_articles_score_join")
+		renderData.Join += dbo.SQL().User.GetArticlesScoreJoin
 	}
 
 	if join != "" {
@@ -703,7 +704,7 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 	var err error
 	if readStateInsertTemplate == nil {
 		readStateInsertTemplate, err = template.New("read-state-insert-sql").
-			Parse(dbo.SQL("read_state_insert_template"))
+			Parse(dbo.SQL().User.ReadStateInsertTemplate)
 
 		if err != nil {
 			u.Err(fmt.Errorf("Error generating read-state-insert template: %v", err))
@@ -712,7 +713,7 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 	}
 	if readStateDeleteTemplate == nil {
 		readStateDeleteTemplate, err = template.New("read-state-delete-sql").
-			Parse(dbo.SQL("read_state_delete_template"))
+			Parse(dbo.SQL().User.ReadStateDeleteTemplate)
 
 		if err != nil {
 			u.Err(fmt.Errorf("Error generating read-state-delete template: %v", err))
@@ -740,7 +741,7 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 		}
 
 		if opts.FavoriteOnly {
-			data.Join += dbo.SQL("read_state_delete_favorite_join")
+			data.Join += dbo.SQL().User.ReadStateDeleteFavoriteJoin
 		}
 
 		where := []string{}
@@ -809,7 +810,7 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 		}
 
 		if opts.FavoriteOnly {
-			data.Join += dbo.SQL("read_state_insert_favorite_join")
+			data.Join += dbo.SQL().User.ReadStateInsertFavoriteJoin
 		}
 
 		if join != "" {
@@ -877,10 +878,11 @@ func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Art
 		return
 	}
 
+	s := dbo.SQL()
 	var err error
 	if articleCountTemplate == nil {
 		articleCountTemplate, err = template.New("article-count-sql").
-			Parse(dbo.SQL("article_count_template"))
+			Parse(s.User.ArticleCountTemplate)
 
 		if err != nil {
 			u.Err(fmt.Errorf("Error generating article-count template: %v", err))
@@ -890,10 +892,10 @@ func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Art
 
 	renderData := articleCountData{}
 	if opts.UnreadOnly {
-		renderData.Join += dbo.SQL("article_count_unread_join")
+		renderData.Join += s.User.ArticleCountUnreadJoin
 	}
 	if opts.FavoriteOnly {
-		renderData.Join += dbo.SQL("article_count_favorite_join")
+		renderData.Join += s.User.ArticleCountFavoriteJoin
 	}
 
 	if join != "" {

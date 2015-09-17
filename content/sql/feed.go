@@ -93,7 +93,7 @@ func (f *Feed) Users() (u []content.User) {
 	f.logger.Infof("Getting users for feed %d\n", id)
 
 	var in []data.User
-	if err := f.db.Select(&in, f.db.SQL("get_feed_users"), id); err != nil {
+	if err := f.db.Select(&in, f.db.SQL().Feed.GetUsers, id); err != nil {
 		f.Err(err)
 		return
 	}
@@ -124,6 +124,7 @@ func (f *Feed) Update() {
 
 	i := f.Data()
 	id := i.Id
+	s := f.db.SQL()
 	f.logger.Infof("Updating feed %d\n", id)
 
 	tx, err := f.db.Beginx()
@@ -133,7 +134,7 @@ func (f *Feed) Update() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(f.db.SQL("update_feed"))
+	stmt, err := tx.Preparex(s.Feed.Update)
 	if err != nil {
 		f.Err(err)
 		return
@@ -147,7 +148,7 @@ func (f *Feed) Update() {
 	}
 
 	if num, err := res.RowsAffected(); err != nil || num == 0 {
-		id, err := f.db.CreateWithId(tx, "create_feed", i.Link, i.Title, i.Description, i.HubLink, i.SiteLink, i.UpdateError, i.SubscribeError)
+		id, err := f.db.CreateWithId(tx, s.Feed.Create, i.Link, i.Title, i.Description, i.HubLink, i.SiteLink, i.UpdateError, i.SubscribeError)
 		if err != nil {
 			f.Err(err)
 			return
@@ -194,7 +195,7 @@ func (f *Feed) Delete() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(f.db.SQL("delete_feed"))
+	stmt, err := tx.Preparex(f.db.SQL().Feed.Delete)
 	if err != nil {
 		f.Err(err)
 		return
@@ -234,7 +235,7 @@ func (f *Feed) SetNewArticlesUnread() {
 	var err error
 	if readStateInsertFeedTemplate == nil {
 		readStateInsertFeedTemplate, err = template.New("read-state-insert-feed-sql").
-			Parse(f.db.SQL("read_state_insert_feed_template"))
+			Parse(f.db.SQL().Feed.ReadStateInsertTemplate)
 
 		if err != nil {
 			f.Err(fmt.Errorf("Error generating read-state-insert-feed template: %v", err))
@@ -305,7 +306,7 @@ func (f *Feed) AllArticles() (a []content.Article) {
 	f.logger.Infof("Getting all feed %d articles\n", id)
 
 	var data []data.Article
-	if err := f.db.Select(&data, f.db.SQL("get_all_feed_articles"), id); err != nil {
+	if err := f.db.Select(&data, f.db.SQL().Feed.GetAllArticles, id); err != nil {
 		f.Err(err)
 		return
 	}
@@ -333,7 +334,7 @@ func (f *Feed) LatestArticles() (a []content.Article) {
 	f.logger.Infof("Getting latest feed %d articles\n", id)
 
 	var data []data.Article
-	if err := f.db.Select(&data, f.db.SQL("get_latest_feed_articles"), id); err != nil {
+	if err := f.db.Select(&data, f.db.SQL().Feed.GetLatestArticles, id); err != nil {
 		f.Err(err)
 		return
 	}
@@ -394,7 +395,7 @@ func (f *Feed) Subscription() (s content.Subscription) {
 	f.logger.Infof("Getting subcription for feed %d\n", id)
 
 	var in data.Subscription
-	if err := f.db.Get(&in, f.db.SQL("get_hubbub_subscription"), id); err != nil {
+	if err := f.db.Get(&in, f.db.SQL().Feed.GetHubbubSubscription, id); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -469,7 +470,7 @@ func (uf *UserFeed) Detach() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(uf.db.SQL("delete_user_feed"))
+	stmt, err := tx.Preparex(uf.db.SQL().Feed.Detach)
 	if err != nil {
 		uf.Err(err)
 		return
@@ -636,7 +637,7 @@ func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
 		tf.logger.Infof("Getting tags for user %s and feed '%d'\n", login, id)
 
 		var feedIdTags []feedIdTag
-		if err := tf.db.Select(&feedIdTags, tf.db.SQL("get_user_feed_tags"), login, id); err != nil {
+		if err := tf.db.Select(&feedIdTags, tf.db.SQL().Feed.GetUserTags, login, id); err != nil {
 			tf.Err(err)
 			return []content.Tag{}
 		}
@@ -663,6 +664,7 @@ func (tf *TaggedFeed) UpdateTags() {
 	}
 
 	id := tf.Data().Id
+	s := tf.db.SQL()
 	if id == 0 {
 		tf.Err(content.NewValidationError(errors.New("Invalid feed id")))
 		return
@@ -678,7 +680,7 @@ func (tf *TaggedFeed) UpdateTags() {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(tf.db.SQL("delete_user_feed_tags"))
+	stmt, err := tx.Preparex(s.Feed.DeleteUserTags)
 	if err != nil {
 		tf.Err(err)
 		return
@@ -698,7 +700,7 @@ func (tf *TaggedFeed) UpdateTags() {
 		login := tf.User().Data().Login
 		tf.logger.Infof("Adding tags for feed %d\n", id)
 
-		stmt, err := tx.Preparex(tf.db.SQL("create_user_feed_tag"))
+		stmt, err := tx.Preparex(s.Feed.CreateUserTag)
 		if err != nil {
 			tf.Err(err)
 			return

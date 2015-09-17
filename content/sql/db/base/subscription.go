@@ -1,9 +1,9 @@
 package base
 
 func init() {
-	sql["create_hubbub_subscription"] = createHubbubSubscription
-	sql["update_hubbub_subscription"] = updateHubbubSubscription
-	sql["delete_hubbub_subscription"] = deleteHubbubSubscription
+	sqlStmts.Subscription.Create = createHubbubSubscription
+	sqlStmts.Subscription.Update = updateHubbubSubscription
+	sqlStmts.Subscription.Delete = deleteHubbubSubscription
 }
 
 const (
