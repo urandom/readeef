@@ -224,6 +224,9 @@ func (ua *UserArticle) Read(read bool) {
 		}
 	}
 
+	d.Read = read
+	ua.Data(d)
+
 	if err := tx.Commit(); err != nil {
 		ua.Err(err)
 	}
@@ -278,6 +281,9 @@ func (ua *UserArticle) Favorite(favorite bool) {
 			return
 		}
 	}
+
+	d.Favorite = favorite
+	ua.Data(d)
 
 	if err := tx.Commit(); err != nil {
 		ua.Err(err)

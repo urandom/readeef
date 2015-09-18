@@ -146,7 +146,8 @@ func TestUserFeed(t *testing.T) {
 	tests.CheckString(t, "article1", ua[1].Data().Title)
 	tests.CheckInt64(t, now.Add(-3*time.Hour).Unix(), ua[2].Data().Date.Unix())
 
-	ua[0].Read(true)
+	ua[1].Read(false)
+	ua[2].Read(false)
 
 	uf.Reverse()
 	uf.SortingById()

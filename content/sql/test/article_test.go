@@ -57,18 +57,18 @@ func TestUserArticle(t *testing.T) {
 
 	a := u.ArticleById(id)
 	tests.CheckBool(t, false, a.HasErr(), a.Err())
-	tests.CheckBool(t, false, a.Data().Read)
-	tests.CheckBool(t, false, a.Data().Favorite)
-
-	a.Read(true)
-	tests.CheckBool(t, false, a.HasErr(), a.Err())
 	tests.CheckBool(t, true, a.Data().Read)
-	tests.CheckBool(t, true, u.ArticleById(id).Data().Read)
+	tests.CheckBool(t, false, a.Data().Favorite)
 
 	a.Read(false)
 	tests.CheckBool(t, false, a.HasErr(), a.Err())
 	tests.CheckBool(t, false, a.Data().Read)
 	tests.CheckBool(t, false, u.ArticleById(id).Data().Read)
+
+	a.Read(true)
+	tests.CheckBool(t, false, a.HasErr(), a.Err())
+	tests.CheckBool(t, true, a.Data().Read)
+	tests.CheckBool(t, true, u.ArticleById(id).Data().Read)
 
 	a.Favorite(true)
 	tests.CheckBool(t, false, a.HasErr(), a.Err())

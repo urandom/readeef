@@ -632,7 +632,7 @@ func internalGetArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts d
 	}
 
 	if len(whereSlice) > 0 {
-		renderData.Where = " AND " + strings.Join(whereSlice, " AND ")
+		renderData.Where = "WHERE " + strings.Join(whereSlice, " AND ")
 	}
 
 	sortingField := sorting.Field()

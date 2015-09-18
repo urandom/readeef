@@ -127,7 +127,8 @@ func TestTag(t *testing.T) {
 	tests.CheckString(t, "article1", ua[1].Data().Title)
 	tests.CheckInt64(t, now.Add(-2*time.Hour).Unix(), ua[2].Data().Date.Unix())
 
-	ua[0].Read(true)
+	ua[1].Read(false)
+	ua[2].Read(false)
 
 	tag3.Reverse()
 	tag3.SortingById()
