@@ -10,24 +10,24 @@ import (
 
 func TestTag(t *testing.T) {
 	tag := Tag{}
-	tag.value = "Link"
+	tag.data.Value = "Link"
 
 	tests.CheckString(t, "Link", tag.String())
 
-	d := tag.Value()
+	d := tag.Data()
 
-	tests.CheckString(t, "Link", string(d))
+	tests.CheckString(t, "Link", string(d.Value))
 
-	d = tag.Value(data.TagValue(""))
+	d = tag.Data(data.Tag{FeedId: 2, Value: ""})
 
-	tests.CheckString(t, "", string(d))
+	tests.CheckString(t, "", string(d.Value))
 
 	tests.CheckBool(t, false, tag.Validate() == nil)
 
-	tag.value = "tag"
+	tag.data.Value = "tag"
 	tests.CheckBool(t, false, tag.Validate() == nil)
 
-	ejson, eerr := json.Marshal(tag.value)
+	ejson, eerr := json.Marshal(tag.data.Value)
 	tests.CheckBool(t, true, eerr == nil)
 
 	ajson, aerr := json.Marshal(tag)

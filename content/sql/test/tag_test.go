@@ -25,7 +25,7 @@ func TestTag(t *testing.T) {
 	_, ok := tf.Err().(content.ValidationError)
 	tests.CheckBool(t, true, ok)
 
-	tag.Value("tag1")
+	tag.Data(data.Tag{Value: "tag1"})
 	tests.CheckString(t, "tag1", tag.String())
 
 	tf.Tags([]content.Tag{tag})
@@ -35,10 +35,10 @@ func TestTag(t *testing.T) {
 	tf2 := createTaggedFeed(u, data.Feed{Link: "http://sugr.org/products/readeef"})
 
 	tag2 := repo.Tag(u)
-	tag2.Value(data.TagValue("tag2"))
+	tag2.Data(data.Tag{Value: "tag2"})
 
 	tag3 := repo.Tag(u)
-	tag3.Value(data.TagValue("tag3"))
+	tag3.Data(data.Tag{Value: "tag3"})
 
 	tests.CheckInt64(t, 2, int64(len(tf2.Tags([]content.Tag{tag2, tag3}))))
 	tf2.UpdateTags()
@@ -205,11 +205,4 @@ func TestTag(t *testing.T) {
 	count = tag3.Count(data.ArticleCountOptions{BeforeId: id3, AfterId: id1})
 	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
 	tests.CheckInt64(t, 1, count)
-}
-
-func createTag(u content.User, d data.TagValue) (t content.Tag) {
-	t = repo.Tag(u)
-	t.Value(d)
-
-	return
 }

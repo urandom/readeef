@@ -95,6 +95,7 @@ func TestUser(t *testing.T) {
 		}
 	}
 
+	u.SortingById()
 	ua := u.Articles()
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 
@@ -122,7 +123,7 @@ func TestUser(t *testing.T) {
 	ua[2].Read(false)
 
 	u.Reverse()
-	u.DefaultSorting()
+	u.SortingById()
 
 	ua = u.Articles(data.ArticleQueryOptions{UnreadOnly: true})
 	tests.CheckBool(t, false, u.HasErr(), u.Err())

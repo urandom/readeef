@@ -616,6 +616,12 @@ func (tf TaggedFeed) MarshalJSON() ([]byte, error) {
 
 func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
 	if len(tags) > 0 {
+		id := tf.Data().Id
+		for i := range tags[0] {
+			d := tags[0][i].Data()
+			d.FeedId = id
+			tags[0][i].Data(d)
+		}
 		tf.tags = tags[0]
 		tf.initialized = true
 		return tf.tags
@@ -636,15 +642,16 @@ func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
 		login := tf.User().Data().Login
 		tf.logger.Infof("Getting tags for user %s and feed '%d'\n", login, id)
 
-		var feedIdTags []feedIdTag
-		if err := tf.db.Select(&feedIdTags, tf.db.SQL().Feed.GetUserTags, login, id); err != nil {
+		var tagData []data.Tag
+		if err := tf.db.Select(&tagData, tf.db.SQL().Feed.GetUserTags, login, id); err != nil {
 			tf.Err(err)
 			return []content.Tag{}
 		}
 
-		for _, t := range feedIdTags {
+		for _, d := range tagData {
+			d.FeedId = id
 			tag := tf.Repo().Tag(tf.User())
-			tag.Value(t.TagValue)
+			tag.Data(d)
 			tf.tags = append(tf.tags, tag)
 		}
 		tf.initialized = true
@@ -711,7 +718,7 @@ func (tf *TaggedFeed) UpdateTags() {
 		existingMap := make(map[data.TagValue]bool)
 
 		for i := range existing {
-			existingMap[existing[i].Value()] = true
+			existingMap[existing[i].Data().Value] = true
 		}
 
 		for i := range tags {
@@ -720,13 +727,13 @@ func (tf *TaggedFeed) UpdateTags() {
 				return
 			}
 
-			_, err = stmt.Exec(login, id, tags[i].Value())
+			_, err = stmt.Exec(login, id, tags[i].Data().Value)
 			if err != nil {
-				tf.Err(fmt.Errorf("Error adding user feed tag for user %s, feed %d, and tag %s: %v", login, id, tags[i].Value(), err))
+				tf.Err(fmt.Errorf("Error adding user feed tag for user %s, feed %d, and tag %s: %v", login, id, tags[i].Data().Value, err))
 				return
 			}
 
-			if !existingMap[tags[i].Value()] {
+			if !existingMap[tags[i].Data().Value] {
 				existing = append(existing, tags[i])
 			}
 		}

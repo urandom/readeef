@@ -15,11 +15,6 @@ type Tag struct {
 	db *db.DB
 }
 
-type feedIdTag struct {
-	FeedId   data.FeedId   `db:"feed_id"`
-	TagValue data.TagValue `db:"tag"`
-}
-
 func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
 	if t.HasErr() {
 		return
@@ -93,7 +88,7 @@ func (t *Tag) Count(o ...data.ArticleCountOptions) (count int64) {
 	}
 
 	u := t.User()
-	tag := t.Value()
+	tag := t.Data().Value
 	t.logger.Infof("Getting user %s tag %s count with options %#v\n", u.Data().Login, tag, opts)
 
 	count = articleCount(u, t.db, t.logger, opts, t.db.SQL().Tag.ArticleCountJoin, "", []interface{}{tag})
@@ -122,7 +117,7 @@ func (t *Tag) ReadState(read bool, o ...data.ArticleUpdateStateOptions) {
 
 	u := t.User()
 	login := u.Data().Login
-	tag := t.Value()
+	tag := t.Data().Value
 	t.logger.Infof("Getting articles for user %s tag %s with options: %#v\n", login, tag, opts)
 
 	s := t.db.SQL()

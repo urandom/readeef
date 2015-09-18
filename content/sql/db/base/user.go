@@ -52,7 +52,7 @@ WHERE f.id = uf.feed_id
 	AND uf.user_login = $1
 ORDER BY LOWER(f.title)
 `
-	getUserFeedIdsTags = `SELECT feed_id, tag FROM users_feeds_tags WHERE user_login = $1 ORDER BY feed_id`
+	getUserFeedIdsTags = `SELECT id, feed_id, tag FROM users_feeds_tags WHERE user_login = $1 ORDER BY feed_id`
 	getUserTags        = `SELECT DISTINCT tag FROM users_feeds_tags WHERE user_login = $1`
 
 	getAllUnreadUserArticleIds = `

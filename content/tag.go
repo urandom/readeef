@@ -16,7 +16,7 @@ type Tag interface {
 	fmt.Stringer
 	json.Marshaler
 
-	Value(val ...data.TagValue) data.TagValue
+	Data(data ...data.Tag) data.Tag
 
 	Validate() error
 

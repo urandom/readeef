@@ -15,27 +15,27 @@ type Tag struct {
 	UserRelated
 	RepoRelated
 
-	value data.TagValue
+	data data.Tag
 }
 
 func (t Tag) String() string {
-	return string(t.value)
+	return string(t.data.Value)
 }
 
-func (t *Tag) Value(val ...data.TagValue) data.TagValue {
+func (t *Tag) Data(d ...data.Tag) data.Tag {
 	if t.HasErr() {
-		return ""
+		return data.Tag{}
 	}
 
-	if len(val) > 0 {
-		t.value = val[0]
+	if len(d) > 0 {
+		t.data = d[0]
 	}
 
-	return t.value
+	return t.data
 }
 
 func (t Tag) MarshalJSON() ([]byte, error) {
-	b, err := json.Marshal(t.value)
+	b, err := json.Marshal(t.data.Value)
 
 	if err == nil {
 		return b, nil
@@ -45,7 +45,7 @@ func (t Tag) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Tag) Validate() error {
-	if t.value == "" {
+	if t.data.Value == "" {
 		return content.NewValidationError(errors.New("Tag has no value"))
 	}
 

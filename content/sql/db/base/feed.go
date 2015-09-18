@@ -43,7 +43,7 @@ WHERE u.login = uf.user_login AND uf.feed_id = $1
 `
 	deleteUserFeed = `DELETE FROM users_feeds WHERE user_login = $1 AND feed_id = $2`
 
-	getUserFeedTags   = `SELECT tag FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2`
+	getUserFeedTags   = `SELECT id, tag FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2`
 	createUserFeedTag = `
 INSERT INTO users_feeds_tags(user_login, feed_id, tag)
 	SELECT $1, $2, $3 EXCEPT SELECT user_login, feed_id, tag

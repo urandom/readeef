@@ -1,7 +1,9 @@
 package sqlite3
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/urandom/readeef/content/sql/db"
@@ -24,6 +26,8 @@ func (h Helper) Upgrade(db *db.DB, old, new int) error {
 			err = upgrade1to2(db)
 		case 2:
 			err = upgrade2to3(db)
+		case 3:
+			err = upgrade3to4(db)
 		}
 
 		if err != nil {
@@ -79,6 +83,51 @@ func upgrade2to3(db *db.DB) error {
 	}
 
 	_, err = tx.Exec("DROP TABLE users_articles_states")
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func upgrade3to4(db *db.DB) error {
+	table := "users_feeds_tags"
+	var tabledef string
+
+	for _, s := range initSQL {
+		if strings.Contains(s, table) {
+			tabledef = s
+		}
+	}
+
+	if tabledef == "" {
+		return errors.New("Definition for users_feeds_tags not found")
+	}
+
+	strings.Replace(tabledef, table, table+"2", 1)
+
+	tx, err := db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(tabledef)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(upgrade3To4PopulateCopy)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("DROP TABLE " + table)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("ALTER TABLE " + table + "2 RENAME TO " + table)
 	if err != nil {
 		return err
 	}
@@ -155,5 +204,10 @@ INSERT INTO users_articles_favorite (user_login, article_id)
 SELECT uas.user_login, uas.article_id
 FROM users_articles_states uas
 WHERE uas.favorite
+`
+
+	upgrade3To4PopulateCopy = `
+INSERT INTO users_feeds_tags2 (user_login, feed_id, tag)
+SELECT user_login, feed_id, tag FROM users_feeds_tags
 `
 )

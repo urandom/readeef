@@ -6,6 +6,13 @@ import (
 )
 
 type TagValue string
+type TagId int64
+
+type Tag struct {
+	Id     TagId
+	FeedId FeedId   `db:"feed_id"`
+	Value  TagValue `db:"tag"`
+}
 
 func (val *TagValue) Scan(src interface{}) error {
 	switch t := src.(type) {

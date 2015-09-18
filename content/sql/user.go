@@ -278,9 +278,9 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	login := u.Data().Login
 	u.logger.Infof("Getting all tagged feeds for user %s\n", login)
 
-	var feedIdTags []feedIdTag
+	var tagData []data.Tag
 
-	if err := u.db.Select(&feedIdTags, u.db.SQL().User.GetFeedIdsTags, login); err != nil {
+	if err := u.db.Select(&tagData, u.db.SQL().User.GetFeedIdsTags, login); err != nil {
 		u.Err(err)
 		return
 	}
@@ -293,10 +293,10 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	feedMap := make(map[data.FeedId][]content.Tag)
 	repo := u.Repo()
 
-	for _, tuple := range feedIdTags {
+	for _, d := range tagData {
 		tag := repo.Tag(u)
-		tag.Value(tuple.TagValue)
-		feedMap[tuple.FeedId] = append(feedMap[tuple.FeedId], tag)
+		tag.Data(d)
+		feedMap[d.FeedId] = append(feedMap[d.FeedId], tag)
 	}
 
 	tf = make([]content.TaggedFeed, len(uf))
@@ -519,17 +519,17 @@ func (u *User) Tags() (tags []content.Tag) {
 	login := u.Data().Login
 	u.logger.Infof("Getting all tags for user %s\n", login)
 
-	var feedIdTags []feedIdTag
+	var tagData []data.Tag
 
-	if err := u.db.Select(&feedIdTags, u.db.SQL().User.GetTags, login); err != nil {
+	if err := u.db.Select(&tagData, u.db.SQL().User.GetTags, login); err != nil {
 		u.Err(err)
 		return
 	}
 
-	tags = make([]content.Tag, len(feedIdTags))
-	for i, tuple := range feedIdTags {
+	tags = make([]content.Tag, len(tagData))
+	for i, d := range tagData {
 		tag := u.Repo().Tag(u)
-		tag.Value(tuple.TagValue)
+		tag.Data(d)
 
 		tags[i] = tag
 	}

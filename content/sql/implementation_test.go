@@ -49,7 +49,7 @@ func TestImplements(t *testing.T) {
 	var tag content.Tag
 
 	tag = r.Tag(nil)
-	tag.Value()
+	tag.Data()
 
 	var user content.User
 

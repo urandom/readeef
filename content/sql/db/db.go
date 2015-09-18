@@ -14,7 +14,7 @@ type DB struct {
 }
 
 var (
-	dbVersion = 3
+	dbVersion = 4
 
 	helpers = make(map[string]Helper)
 )
