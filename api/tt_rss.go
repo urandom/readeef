@@ -381,7 +381,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					if unreadFav > 0 || !req.UnreadOnly {
 						fContent = append(fContent, ttRssFeed{
 							Id:     TTRSS_FAVORITE_ID,
-							Title:  "Starred articles",
+							Title:  ttRssSpecialTitle(TTRSS_FAVORITE_ID),
 							Unread: unreadFav,
 							CatId:  TTRSS_FAVORITE_ID,
 						})
@@ -393,7 +393,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					if unreadFresh > 0 || !req.UnreadOnly {
 						fContent = append(fContent, ttRssFeed{
 							Id:     TTRSS_FRESH_ID,
-							Title:  "Fresh articles",
+							Title:  ttRssSpecialTitle(TTRSS_FRESH_ID),
 							Unread: unreadFresh,
 							CatId:  TTRSS_FAVORITE_ID,
 						})
@@ -404,7 +404,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					if unreadAll > 0 || !req.UnreadOnly {
 						fContent = append(fContent, ttRssFeed{
 							Id:     TTRSS_ALL_ID,
-							Title:  "All articles",
+							Title:  ttRssSpecialTitle(TTRSS_ALL_ID),
 							Unread: unreadAll,
 							CatId:  TTRSS_FAVORITE_ID,
 						})
@@ -712,6 +712,8 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 				if req.Mode == 2 {
 					cat := ttRssCategory{Items: []ttRssCategory{}}
+
+					cat.Items = append(cat.Items, ttRssFeedListCategoryFeed())
 				}
 
 				fl := ttRssCategory{Identifier: "id", Label: "name"}
@@ -933,5 +935,30 @@ func ttRssParseArticleIds(vv interface{}) (ids []data.ArticleId) {
 			ids = append(ids, data.ArticleId(int64(p)))
 		}
 	}
+	return
+}
+
+func ttRssFeedListCategoryFeed(id data.FeedId) (c ttRssCategory) {
+	var title string
+
+	switch id {
+	case TTRSS_FAVORITE_ID:
+		title = "Favorite articles"
+	case TTRSS_FRESH_ID:
+		title = "Fresh articles"
+	}
+	return
+}
+
+func ttRssSpecialTitle(id data.FeedId) (t string) {
+	switch id {
+	case TTRSS_FAVORITE_ID:
+		t = "Starred articles"
+	case TTRSS_FRESH_ID:
+		t = "Fresh articles"
+	case TTRSS_ALL_ID:
+		t = "All articles"
+	}
+
 	return
 }
