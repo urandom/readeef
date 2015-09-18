@@ -172,7 +172,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 						}
 					}()
 				case f := <-receiver:
-					if f == nil {
+					if f == nil || user == nil {
 						// Socket was closed
 						return
 					}

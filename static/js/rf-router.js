@@ -61,7 +61,7 @@
                 return;
             }
 
-            if (!this.user & (this._state & state.VALIDATING) != state.VALIDATING) {
+            if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING) {
                 if (MoreRouting.isCurrentUrl('login')) {
                     this.$.splash.selected = 0;
                 } else if (!MoreRouting.getRouteByName('splash').children[0].active) {
@@ -93,6 +93,7 @@
 
             var authCheck = this.$['auth-check'];
             var validateMessage = function(event) {
+                authCheck.removeEventListener('rf-api-message', validateMessage);
                 if (!event.detail.arguments.Auth) {
                     return this.connectionUnauthorized();
                 }
@@ -145,7 +146,6 @@
                         RfShareServices.get(name).active = true;
                     });
                 }
-                authCheck.removeEventListener('rf-api-message', validateMessage);
             }.bind(this);
 
             authCheck.user = user;
@@ -160,8 +160,11 @@
         },
 
         connectionUnauthorized: function() {
-            if (!MoreRouting.getRouteByName('login').active) {
+            this._state &= ~state.VALIDATING;
+            if (MoreRouting.isCurrentUrl('feed-base') || MoreRouting.isCurrentUrl('settings-base')) {
                 MoreRouting.navigateTo('login-from', {url: location.pathname});
+            } else if (!MoreRouting.isCurrentUrl('login')) {
+                MoreRouting.navigateTo('login');
             } else {
                 var login = Polymer.dom(this.root).querySelector('rf-login');
                 if (login) {
