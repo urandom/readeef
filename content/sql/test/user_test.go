@@ -118,7 +118,6 @@ func TestUser(t *testing.T) {
 	tests.CheckString(t, "article1", ua[1].Data().Title)
 	tests.CheckInt64(t, now.Add(-3*time.Hour).Unix(), ua[2].Data().Date.Unix())
 
-	ua[0].Read(true)
 	ua[1].Read(false)
 	ua[2].Read(false)
 
@@ -229,6 +228,42 @@ func TestUser(t *testing.T) {
 			tests.CheckInt64(t, asc2.Calculate(), sa[i].Data().Score)
 		}
 	}
+
+	ua = u.Articles()
+	ua[0].Read(true)
+	ua[1].Read(true)
+	ua[2].Read(false)
+	ua[0].Favorite(true)
+	ua[1].Favorite(false)
+	ua[2].Favorite(true)
+
+	count := u.Count()
+	tests.CheckBool(t, false, u.HasErr(), u.Err())
+	tests.CheckInt64(t, 3, count)
+
+	count = u.Count(data.ArticleCountOptions{UnreadOnly: true})
+	tests.CheckBool(t, false, u.HasErr(), u.Err())
+	tests.CheckInt64(t, 1, count)
+
+	count = u.Count(data.ArticleCountOptions{FavoriteOnly: true})
+	tests.CheckBool(t, false, u.HasErr(), u.Err())
+	tests.CheckInt64(t, 2, count)
+
+	count = u.Count(data.ArticleCountOptions{FavoriteOnly: true, UnreadOnly: true})
+	tests.CheckBool(t, false, u.HasErr(), u.Err())
+	tests.CheckInt64(t, 1, count)
+
+	count = u.Count(data.ArticleCountOptions{BeforeId: id2})
+	tests.CheckBool(t, false, u.HasErr(), u.Err())
+	tests.CheckInt64(t, 1, count)
+
+	count = u.Count(data.ArticleCountOptions{AfterId: id1})
+	tests.CheckBool(t, false, u.HasErr(), u.Err())
+	tests.CheckInt64(t, 2, count)
+
+	count = u.Count(data.ArticleCountOptions{BeforeId: id3, AfterId: id1})
+	tests.CheckBool(t, false, u.HasErr(), u.Err())
+	tests.CheckInt64(t, 1, count)
 }
 
 func createUser(d data.User) (u content.User) {

@@ -96,7 +96,7 @@ func (t *Tag) Count(o ...data.ArticleCountOptions) (count int64) {
 	tag := t.Value()
 	t.logger.Infof("Getting user %s tag %s count with options %#v\n", u.Data().Login, tag, opts)
 
-	articleCount(u, t.db, t.logger, opts, t.db.SQL().Tag.ArticleCountJoin, "", []interface{}{tag})
+	count = articleCount(u, t.db, t.logger, opts, t.db.SQL().Tag.ArticleCountJoin, "", []interface{}{tag})
 
 	if u.HasErr() {
 		t.Err(u.Err())

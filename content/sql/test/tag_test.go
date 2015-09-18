@@ -169,6 +169,42 @@ func TestTag(t *testing.T) {
 			tests.CheckInt64(t, asc2.Calculate(), sa[i].Data().Score)
 		}
 	}
+
+	ua = tag3.Articles()
+	ua[0].Read(true)
+	ua[1].Read(true)
+	ua[2].Read(false)
+	ua[0].Favorite(true)
+	ua[1].Favorite(false)
+	ua[2].Favorite(true)
+
+	count := tag3.Count()
+	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
+	tests.CheckInt64(t, 3, count)
+
+	count = tag3.Count(data.ArticleCountOptions{UnreadOnly: true})
+	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
+	tests.CheckInt64(t, 1, count)
+
+	count = tag3.Count(data.ArticleCountOptions{FavoriteOnly: true})
+	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
+	tests.CheckInt64(t, 2, count)
+
+	count = tag3.Count(data.ArticleCountOptions{FavoriteOnly: true, UnreadOnly: true})
+	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
+	tests.CheckInt64(t, 1, count)
+
+	count = tag3.Count(data.ArticleCountOptions{BeforeId: id2})
+	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
+	tests.CheckInt64(t, 1, count)
+
+	count = tag3.Count(data.ArticleCountOptions{AfterId: id1})
+	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
+	tests.CheckInt64(t, 2, count)
+
+	count = tag3.Count(data.ArticleCountOptions{BeforeId: id3, AfterId: id1})
+	tests.CheckBool(t, false, tag3.HasErr(), tag3.Err())
+	tests.CheckInt64(t, 1, count)
 }
 
 func createTag(u content.User, d data.TagValue) (t content.Tag) {

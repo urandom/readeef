@@ -191,12 +191,47 @@ func TestUserFeed(t *testing.T) {
 		}
 	}
 
+	ua = uf.Articles()
+	ua[0].Read(true)
+	ua[1].Read(true)
+	ua[2].Read(false)
+	ua[0].Favorite(true)
+	ua[1].Favorite(false)
+	ua[2].Favorite(true)
+
+	count := uf.Count()
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+	tests.CheckInt64(t, 3, count)
+
+	count = uf.Count(data.ArticleCountOptions{UnreadOnly: true})
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+	tests.CheckInt64(t, 1, count)
+
+	count = uf.Count(data.ArticleCountOptions{FavoriteOnly: true})
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+	tests.CheckInt64(t, 2, count)
+
+	count = uf.Count(data.ArticleCountOptions{FavoriteOnly: true, UnreadOnly: true})
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+	tests.CheckInt64(t, 1, count)
+
+	count = uf.Count(data.ArticleCountOptions{BeforeId: id2})
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+	tests.CheckInt64(t, 1, count)
+
+	count = uf.Count(data.ArticleCountOptions{AfterId: id1})
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+	tests.CheckInt64(t, 2, count)
+
+	count = uf.Count(data.ArticleCountOptions{BeforeId: id3, AfterId: id1})
+	tests.CheckBool(t, false, uf.HasErr(), uf.Err())
+	tests.CheckInt64(t, 1, count)
+
 	uf.Detach()
 	tests.CheckInt64(t, 0, int64(len(u.AllFeeds())))
 
 	uf2 = u.FeedById(id)
 	tests.CheckBool(t, true, uf2.Err() == content.ErrNoContent)
-
 }
 
 func createFeed(d data.Feed) (f content.Feed) {

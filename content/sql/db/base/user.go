@@ -22,6 +22,7 @@ func init() {
 	sqlStmts.User.ReadStateDeleteFavoriteJoin = readStateInsertFavoriteJoin
 
 	sqlStmts.User.ArticleCountTemplate = articleCountTemplate
+	sqlStmts.User.ArticleCountUserFeedsJoin = articleCountUserFeedsJoin
 	sqlStmts.User.ArticleCountUnreadJoin = articleCountUnreadJoin
 	sqlStmts.User.ArticleCountFavoriteJoin = articleCountFavoriteJoin
 }
@@ -123,20 +124,21 @@ DELETE FROM users_articles_unread WHERE user_login = $1 AND article_id IN (
 
 	articleCountTemplate = `
 SELECT count(a.id)
-FROM users_feeds uf INNER JOIN articles a
-	ON uf.feed_id = a.feed_id
-	AND uf.user_login = $1
+FROM articles a
 {{ .Join }}
 {{ .Where }}
+`
+	articleCountUserFeedsJoin = `
+INNER JOIN users_feeds uf
+	ON uf.feed_id = a.feed_id
+	AND uf.user_login = $1
 `
 	articleCountUnreadJoin = `
 LEFT OUTER JOIN users_articles_unread au
 	ON a.id = au.article_id
-	AND uf.user_login = au.user_login
 `
 	articleCountFavoriteJoin = `
 LEFT OUTER JOIN users_articles_favorite af
 	ON a.id = af.article_id
-	AND uf.user_login = af.user_login
 `
 )

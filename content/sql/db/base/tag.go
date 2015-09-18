@@ -35,8 +35,8 @@ INNER JOIN users_feeds_tags uft
 
 	articleCountTagJoin = `
 INNER JOIN users_feeds_tags uft
-	ON uft.feed_id = uf.feed_id
-	AND uft.user_login = uf.user_login
+	ON uft.feed_id = a.feed_id
+	AND uft.user_login = $1
 	AND uft.tag = $2
 `
 )

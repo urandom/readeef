@@ -541,7 +541,7 @@ func (uf *UserFeed) Count(o ...data.ArticleCountOptions) (count int64) {
 
 	uf.logger.Infof("Getting user %s feed %d article count with options %#v\n", u.Data().Login, id, opts)
 
-	articleCount(u, uf.db, uf.logger, opts, "", "uf.feed_id = $2", []interface{}{id})
+	count = articleCount(u, uf.db, uf.logger, opts, "", "a.feed_id = $2", []interface{}{id})
 
 	if u.HasErr() {
 		uf.Err(u.Err())

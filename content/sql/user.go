@@ -681,7 +681,7 @@ func internalGetArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts d
 
 	sql := buf.String()
 	var data []data.Article
-	logger.Debugf("Articles SQL:\n%s\nArgs:%q\n", sql, args)
+	logger.Debugf("Articles SQL:\n%s\nArgs:%v\n", sql, args)
 	if err := dbo.Select(&data, sql, args...); err != nil {
 		u.Err(err)
 		return
@@ -782,7 +782,7 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 		}
 
 		sql := buf.String()
-		logger.Debugf("Read state delete SQL:\n%s\nArgs:%q\n", sql, args)
+		logger.Debugf("Read state delete SQL:\n%s\nArgs:%v\n", sql, args)
 
 		stmt, err := tx.Preparex(sql)
 
@@ -891,11 +891,17 @@ func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Art
 	}
 
 	renderData := articleCountData{}
-	if opts.UnreadOnly {
-		renderData.Join += s.User.ArticleCountUnreadJoin
-	}
-	if opts.FavoriteOnly {
-		renderData.Join += s.User.ArticleCountFavoriteJoin
+	containsUserFeeds := !opts.UnreadOnly && !opts.FavoriteOnly
+
+	if containsUserFeeds {
+		renderData.Join += s.User.ArticleCountUserFeedsJoin
+	} else {
+		if opts.UnreadOnly {
+			renderData.Join += s.User.ArticleCountUnreadJoin
+		}
+		if opts.FavoriteOnly {
+			renderData.Join += s.User.ArticleCountFavoriteJoin
+		}
 	}
 
 	if join != "" {
@@ -907,11 +913,10 @@ func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Art
 	whereSlice := []string{}
 
 	if opts.UnreadOnly {
-		whereSlice = append(whereSlice, "au.article_id IS NOT NULL")
+		whereSlice = append(whereSlice, "au.article_id IS NOT NULL AND au.user_login = $1")
 	}
-
 	if opts.FavoriteOnly {
-		whereSlice = append(whereSlice, "af.article_id IS NOT NULL")
+		whereSlice = append(whereSlice, "af.article_id IS NOT NULL AND af.user_login = $1")
 	}
 
 	if where != "" {
@@ -951,7 +956,7 @@ func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Art
 
 	sql := buf.String()
 
-	logger.Debugf("Article count SQL:\n%s\nArgs:%q\n", sql, args)
+	logger.Debugf("Article count SQL:\n%s\nArgs:%v\n", sql, args)
 	if err := dbo.Get(&count, sql, args...); err != nil {
 		u.Err(err)
 		return

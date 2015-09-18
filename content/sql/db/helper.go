@@ -101,9 +101,10 @@ type UserStmts struct {
 	ReadStateDeleteTemplate     string
 	ReadStateDeleteFavoriteJoin string
 
-	ArticleCountTemplate     string
-	ArticleCountUnreadJoin   string
-	ArticleCountFavoriteJoin string
+	ArticleCountTemplate      string
+	ArticleCountUserFeedsJoin string
+	ArticleCountUnreadJoin    string
+	ArticleCountFavoriteJoin  string
 }
 
 type SqlStmts struct {
