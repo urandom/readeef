@@ -76,18 +76,20 @@ type ttRssResponse struct {
 	Content json.RawMessage `json:"content"`
 }
 
+type ttRssErrorContent struct {
+	Error string `json:"error"`
+}
+
 type ttRssGenericContent struct {
-	Error      string        `json:"error,omitempty"`
-	Level      int           `json:"level,omitempty"`
-	ApiLevel   int           `json:"api_level,omitempty"`
-	Version    string        `json:"version,omitempty"`
-	SessionId  string        `json:"session_id,omitempty"`
-	Status     interface{}   `json:"status,omitempty"`
-	Unread     int64         `json:"unread,omitempty"`
-	Updated    int64         `json:"updated,omitempty"`
-	Value      interface{}   `json:"value,omitempty"`
-	Method     string        `json:"method,omitempty"`
-	Categories ttRssCategory `json:"categories,omitempty"`
+	Level     int         `json:"level,omitempty"`
+	ApiLevel  int         `json:"api_level,omitempty"`
+	Version   string      `json:"version,omitempty"`
+	SessionId string      `json:"session_id,omitempty"`
+	Status    interface{} `json:"status,omitempty"`
+	Unread    int64       `json:"unread,omitempty"`
+	Updated   int64       `json:"updated,omitempty"`
+	Value     interface{} `json:"value,omitempty"`
+	Method    string      `json:"method,omitempty"`
 }
 
 type ttRssCountersContent []ttRssCounter
@@ -154,6 +156,10 @@ type ttRssSession struct {
 	lastVisit time.Time
 }
 
+type ttRssFeedTreeContent struct {
+	Categories ttRssCategory `json:"categories"`
+}
+
 type ttRssCategory struct {
 	Identifier string          `json:"identifier,omitempty"`
 	Label      string          `json:"label,omitempty"`
@@ -161,7 +167,7 @@ type ttRssCategory struct {
 	Id         string          `json:"id,omitempty"`
 	Name       string          `json:"name,omitempty"`
 	Type       string          `json:"type,omitempty"`
-	Unread     int             `json:"unread,omitempty"`
+	Unread     int64           `json:"unread,omitempty"`
 	BareId     data.FeedId     `json:"bare_id,omitempty"`
 }
 
@@ -239,7 +245,6 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 			if errType != "" {
 				logger.Debugf("TT-RSS Sessions: %#v\n", ttRssSessions)
-				con = ttRssGenericContent{}
 				break
 			}
 
@@ -253,11 +258,13 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				user = repo.UserByLogin(data.Login(req.User))
 				if repo.Err() != nil {
 					errType = "LOGIN_ERROR"
+					err = fmt.Errorf("Error getting TT-RSS user: %v\n", repo.Err())
 					break
 				}
 
 				if !user.Authenticate(req.Password, []byte(config.Auth.Secret)) {
 					errType = "LOGIN_ERROR"
+					err = fmt.Errorf("Authentication for TT-RSS user '%s' failed\n", user.Data().Login)
 					break
 				}
 
@@ -301,7 +308,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					case TTRSS_FRESH_ID:
 						ar = user
 						o.AfterDate = time.Now().Add(TTRSS_FRESH_DURATION)
-					case TTRSS_ALL_ID:
+					case TTRSS_ALL_ID, 0:
 						ar = user
 					default:
 						if req.FeedId > 0 {
@@ -323,9 +330,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				}
 
 				if con == nil {
-					fmt.Println(con, con == nil)
 					con = ttRssGenericContent{Unread: 0}
-					fmt.Printf("### %#v\n", con)
 				}
 			case "getCounters":
 				if req.OutputMode == "" {
@@ -713,7 +718,16 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				if req.Mode == 2 {
 					cat := ttRssCategory{Items: []ttRssCategory{}}
 
-					cat.Items = append(cat.Items, ttRssFeedListCategoryFeed())
+					cat.Items = append(cat.Items, ttRssFeedListCategoryFeed(user, nil, TTRSS_ALL_ID, false))
+					cat.Items = append(cat.Items, ttRssFeedListCategoryFeed(user, nil, TTRSS_FRESH_ID, false))
+					cat.Items = append(cat.Items, ttRssFeedListCategoryFeed(user, nil, TTRSS_FAVORITE_ID, false))
+
+					root.Items = append(root.Items, cat.Items...)
+				}
+
+				feeds := user.AllFeeds()
+				for _, f := range feeds {
+					root.Items = append(root.Items, ttRssFeedListCategoryFeed(user, f, f.Data().Id, true))
 				}
 
 				fl := ttRssCategory{Identifier: "id", Label: "name"}
@@ -723,7 +737,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					fl.Items = root.Items
 				}
 
-				con = ttRssGenericContent{Categories: fl}
+				con = ttRssFeedTreeContent{Categories: fl}
 			default:
 				errType = "UNKNOWN_METHOD"
 				con = ttRssGenericContent{Method: req.Op}
@@ -735,10 +749,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 		} else {
 			logger.Infof("Error processing TT-RSS API request: %s %v\n", errType, err)
 			resp.Status = TTRSS_API_STATUS_ERR
-			if v, ok := con.(ttRssGenericContent); ok {
-				v.Error = errType
-				con = v
-			}
+			con = ttRssErrorContent{Error: errType}
 		}
 
 		var b []byte
@@ -938,15 +949,18 @@ func ttRssParseArticleIds(vv interface{}) (ids []data.ArticleId) {
 	return
 }
 
-func ttRssFeedListCategoryFeed(id data.FeedId) (c ttRssCategory) {
-	var title string
+func ttRssFeedListCategoryFeed(u content.User, f content.UserFeed, id data.FeedId, includeUnread bool) (c ttRssCategory) {
+	c.BareId = id
+	c.Id = "FEED:" + strconv.FormatInt(int64(id), 10)
+	c.Type = "feed"
 
-	switch id {
-	case TTRSS_FAVORITE_ID:
-		title = "Favorite articles"
-	case TTRSS_FRESH_ID:
-		title = "Fresh articles"
+	if f != nil {
+		c.Name = f.Data().Title
+		c.Unread = f.Count(data.ArticleCountOptions{UnreadOnly: true})
+	} else {
+		c.Name = ttRssSpecialTitle(id)
 	}
+
 	return
 }
 
