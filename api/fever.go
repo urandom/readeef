@@ -121,18 +121,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 				reqType = "groups"
 				logger.Infoln("Fetching fever groups")
 
-				groups := []feverGroup{feverGroup{Id: 1, Title: "All"}}
-
-				resp["groups"] = groups
-
-				feeds := user.AllFeeds()
-				err = user.Err()
-
-				if err != nil {
-					break
-				}
-
-				resp["feeds_groups"] = getFeedsGroups(feeds)
+				resp["groups"], resp["feeds_groups"], err = getGroups(user)
 			}
 
 			if _, ok := r.Form["feeds"]; ok {
@@ -158,7 +147,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 				}
 
 				resp["feeds"] = feverFeeds
-				resp["feeds_groups"] = getFeedsGroups(feeds)
+				_, resp["feeds_groups"], err = getGroups(user)
 			}
 
 			if _, ok := r.Form["unread_item_ids"]; ok {
@@ -493,17 +482,35 @@ func getReadeefUser(repo content.Repo, md5hex string, log webfw.Logger) content.
 	return user
 }
 
-func getFeedsGroups(feeds []content.UserFeed) []feverFeedsGroup {
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
+func getGroups(user content.User) (g []feverGroup, fg []feverFeedsGroup, err error) {
+	tags := user.Tags()
 
-	for i := range feeds {
-		if i != 0 {
-			buf.WriteString(",")
-		}
-
-		buf.WriteString(strconv.FormatInt(int64(feeds[i].Data().Id), 10))
+	if user.HasErr() {
+		err = fmt.Errorf("Error getting user tags: %v", user.Err())
+		return
 	}
 
-	return []feverFeedsGroup{feverFeedsGroup{GroupId: 1, FeedIds: buf.String()}}
+	g = make([]feverGroup, len(tags))
+	fg = make([]feverFeedsGroup, len(tags))
+
+	for i := range tags {
+		td := tags[i].Data()
+
+		g[i] = feverGroup{Id: int64(td.Id), Title: string(td.Value)}
+
+		feeds := tags[i].AllFeeds()
+		if tags[i].HasErr() {
+			err = fmt.Errorf("Error getting tag feeds: %v", tags[i].Err())
+			return
+		}
+
+		ids := make([]string, len(feeds))
+		for j := range feeds {
+			ids[j] = strconv.FormatInt(int64(feeds[j].Data().Id), 10)
+		}
+
+		fg[i] = feverFeedsGroup{GroupId: int64(td.Id), FeedIds: strings.Join(ids, ",")}
+	}
+
+	return
 }
