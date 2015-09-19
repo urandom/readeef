@@ -9,6 +9,8 @@ func init() {
 	sqlStmts.User.GetFeeds = getUserFeeds
 	sqlStmts.User.GetFeedIdsTags = getUserFeedIdsTags
 	sqlStmts.User.GetTags = getUserTags
+	sqlStmts.User.GetTag = getTag
+	sqlStmts.User.GetTagByValue = GetTagByValue
 	sqlStmts.User.GetAllUnreadArticleIds = getAllUnreadUserArticleIds
 	sqlStmts.User.GetAllFavoriteArticleIds = getAllFavoriteUserArticleIds
 
@@ -52,8 +54,20 @@ WHERE f.id = uf.feed_id
 	AND uf.user_login = $1
 ORDER BY LOWER(f.title)
 `
-	getUserFeedIdsTags = `SELECT id, feed_id, tag FROM users_feeds_tags WHERE user_login = $1 ORDER BY feed_id`
-	getUserTags        = `SELECT DISTINCT tag FROM users_feeds_tags WHERE user_login = $1`
+	getUserFeedIdsTags = `
+SELECT uft.feed_id, t.id, t.value
+FROM users_feeds_tags uft INNER JOIN tags t
+	ON t.id = uft.tag_id
+WHERE uft.user_login = $1 ORDER BY uft.feed_id
+`
+	getUserTags = `
+SELECT DISTINCT t.id, t.value
+FROM tags t LEFT OUTER JOIN users_feeds_tags uft
+	ON t.id = uft.tag_id
+WHERE uft.user_login = $1
+`
+	getTag        = `SELECT value FROM tags WHERE id = $1`
+	GetTagByValue = `SELECT id FROM tags WHERE value = $1`
 
 	getAllUnreadUserArticleIds = `
 SELECT a.id

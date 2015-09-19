@@ -104,30 +104,33 @@ func upgrade3to4(db *db.DB) error {
 		return errors.New("Definition for users_feeds_tags not found")
 	}
 
-	strings.Replace(tabledef, table, table+"2", 1)
-
 	tx, err := db.Beginx()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
+	_, err = tx.Exec("ALTER TABLE " + table + " RENAME TO " + table + "2")
+	if err != nil {
+		return err
+	}
+
 	_, err = tx.Exec(tabledef)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(upgrade3To4PopulateCopy)
+	_, err = tx.Exec(upgrade3To4PopulateTags)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec("DROP TABLE " + table)
+	_, err = tx.Exec(upgrade3To4PopulateUsersFeedsTags)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec("ALTER TABLE " + table + "2 RENAME TO " + table)
+	_, err = tx.Exec("DROP TABLE " + table + "2")
 	if err != nil {
 		return err
 	}
@@ -165,9 +168,10 @@ ORDER BY f.title COLLATE NOCASE
 `
 	getUserTagFeeds = `
 SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
-FROM feeds f, users_feeds_tags uft
+FROM feeds f, users_feeds_tags uft, tags t
 WHERE f.id = uft.feed_id
-	AND uft.user_login = $1 AND uft.tag = $2
+	AND t.id = uft.tag_id
+	AND uft.user_login = $1 AND t.value = $2
 ORDER BY f.title COLLATE NOCASE
 `
 
@@ -206,8 +210,14 @@ FROM users_articles_states uas
 WHERE uas.favorite
 `
 
-	upgrade3To4PopulateCopy = `
-INSERT INTO users_feeds_tags2 (user_login, feed_id, tag)
-SELECT user_login, feed_id, tag FROM users_feeds_tags
+	upgrade3To4PopulateTags = `
+INSERT INTO tags (value)
+SELECT DISTINCT tag FROM users_feeds_tags2 WHERE tag != ''
+`
+	upgrade3To4PopulateUsersFeedsTags = `
+INSERT INTO users_feeds_tags (user_login, feed_id, tag_id)
+SELECT uft.user_login, uft.feed_id, t.id
+FROM tags t INNER JOIN users_feeds_tags2 uft
+	ON t.value = uft.tag
 `
 )

@@ -15,6 +15,62 @@ type Tag struct {
 	db *db.DB
 }
 
+func (t *Tag) Update() {
+	if t.HasErr() {
+		return
+	}
+
+	if err := t.Validate(); err != nil {
+		t.Err(err)
+		return
+	}
+
+	i := t.Data()
+	id := i.Id
+	s := t.db.SQL()
+	t.logger.Infof("Updating tag %d\n", id)
+
+	tx, err := t.db.Beginx()
+	if err != nil {
+		t.Err(err)
+		return
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Preparex(s.Feed.Update)
+	if err != nil {
+		t.Err(err)
+		return
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(i.Value, i.Id)
+	if err != nil {
+		t.Err(err)
+		return
+	}
+
+	if num, err := res.RowsAffected(); err != nil || num == 0 {
+		id, err := t.db.CreateWithId(tx, s.Tag.Create, i.Value)
+		if err != nil {
+			t.Err(err)
+			return
+		}
+
+		i.Id = data.TagId(id)
+
+		t.Data(i)
+	}
+
+	if t.HasErr() {
+		return
+	}
+
+	if err := tx.Commit(); err != nil {
+		t.Err(err)
+	}
+}
+
 func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
 	if t.HasErr() {
 		return

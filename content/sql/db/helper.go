@@ -69,7 +69,10 @@ type SubscriptionStmts struct {
 }
 
 type TagStmts struct {
+	Create       string
+	Update       string
 	GetUserFeeds string
+	DeleteStale  string
 
 	GetArticlesJoin     string
 	ReadStateInsertJoin string
@@ -82,12 +85,14 @@ type UserStmts struct {
 	Update string
 	Delete string
 
-	GetFeed    string
-	CreateFeed string
-	GetFeeds   string
-
+	GetFeed        string
+	CreateFeed     string
+	GetFeeds       string
 	GetFeedIdsTags string
-	GetTags        string
+
+	GetTags       string
+	GetTag        string
+	GetTagByValue string
 
 	GetAllUnreadArticleIds   string
 	GetAllFavoriteArticleIds string

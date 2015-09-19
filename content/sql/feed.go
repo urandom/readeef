@@ -616,12 +616,6 @@ func (tf TaggedFeed) MarshalJSON() ([]byte, error) {
 
 func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
 	if len(tags) > 0 {
-		id := tf.Data().Id
-		for i := range tags[0] {
-			d := tags[0][i].Data()
-			d.FeedId = id
-			tags[0][i].Data(d)
-		}
 		tf.tags = tags[0]
 		tf.initialized = true
 		return tf.tags
@@ -649,7 +643,6 @@ func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
 		}
 
 		for _, d := range tagData {
-			d.FeedId = id
 			tag := tf.Repo().Tag(tf.User())
 			tag.Data(d)
 			tf.tags = append(tf.tags, tag)
@@ -672,12 +665,13 @@ func (tf *TaggedFeed) UpdateTags() {
 
 	id := tf.Data().Id
 	s := tf.db.SQL()
+	u := tf.User()
 	if id == 0 {
 		tf.Err(content.NewValidationError(errors.New("Invalid feed id")))
 		return
 	}
 
-	login := tf.User().Data().Login
+	login := u.Data().Login
 	tf.logger.Infof("Deleting all tags for feed %d\n", id)
 
 	tx, err := tf.db.Beginx()
@@ -701,10 +695,25 @@ func (tf *TaggedFeed) UpdateTags() {
 	}
 
 	tags := tf.Tags()
+	for i := range tags {
+		tagData := tags[i].Data()
+		if tagData.Id == 0 {
+			t := u.TagByValue(tagData.Value)
+			if t.HasErr() {
+				err := t.Err()
+				if err != content.ErrNoContent {
+					tf.Err(t.Err())
+					return
+				}
+			} else {
+				tagData.Id = t.Data().Id
+				tags[i].Data(tagData)
+			}
+		}
+	}
 
 	if len(tags) > 0 {
 		id := tf.Data().Id
-		login := tf.User().Data().Login
 		tf.logger.Infof("Adding tags for feed %d\n", id)
 
 		stmt, err := tx.Preparex(s.Feed.CreateUserTag)
@@ -714,31 +723,42 @@ func (tf *TaggedFeed) UpdateTags() {
 		}
 		defer stmt.Close()
 
-		existing := tf.Tags()
-		existingMap := make(map[data.TagValue]bool)
-
-		for i := range existing {
-			existingMap[existing[i].Data().Value] = true
-		}
-
 		for i := range tags {
 			if err := tags[i].Validate(); err != nil {
 				tf.Err(err)
 				return
 			}
 
-			_, err = stmt.Exec(login, id, tags[i].Data().Value)
+			tagData := tags[i].Data()
+
+			if tagData.Id == 0 {
+				tagId, err := tf.db.CreateWithId(tx, s.Tag.Create, tagData.Value)
+				if err != nil {
+					tf.Err(err)
+					return
+				}
+				tagData.Id = data.TagId(tagId)
+			}
+
+			_, err = stmt.Exec(login, id, tagData.Id)
 			if err != nil {
-				tf.Err(fmt.Errorf("Error adding user feed tag for user %s, feed %d, and tag %s: %v", login, id, tags[i].Data().Value, err))
+				tf.Err(fmt.Errorf("Error adding user feed tag for user %s, feed %d, and tag %s: %v", login, id, tagData.Value, err))
 				return
 			}
-
-			if !existingMap[tags[i].Data().Value] {
-				existing = append(existing, tags[i])
-			}
 		}
+	}
 
-		tf.Tags(existing)
+	stmt, err = tx.Preparex(s.Tag.DeleteStale)
+	if err != nil {
+		tf.Err(err)
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec()
+	if err != nil {
+		tf.Err(fmt.Errorf("Error deleting stale tags: %v", err))
+		return
 	}
 
 	tx.Commit()

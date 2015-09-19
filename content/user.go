@@ -41,6 +41,8 @@ type User interface {
 	AllFavoriteArticleIds() []data.ArticleId
 
 	Tags() []Tag
+	TagById(id data.TagId) Tag
+	TagByValue(v data.TagValue) Tag
 }
 
 type UserRelated interface {

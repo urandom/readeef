@@ -42,6 +42,7 @@ func TestTag(t *testing.T) {
 
 	tests.CheckInt64(t, 2, int64(len(tf2.Tags([]content.Tag{tag2, tag3}))))
 	tf2.UpdateTags()
+	tests.CheckBool(t, false, tf2.HasErr(), tf2.Err())
 
 	tags := u.Tags()
 	tests.CheckBool(t, false, u.HasErr(), u.Err())

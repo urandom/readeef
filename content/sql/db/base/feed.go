@@ -43,12 +43,16 @@ WHERE u.login = uf.user_login AND uf.feed_id = $1
 `
 	deleteUserFeed = `DELETE FROM users_feeds WHERE user_login = $1 AND feed_id = $2`
 
-	getUserFeedTags   = `SELECT id, tag FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2`
+	getUserFeedTags = `
+SELECT t.id, t.value
+FROM users_feeds_tags uft INNER JOIN tags t
+	ON uft.tag_id = t.id
+WHERE uft.user_login = $1 AND uft.feed_id = $2`
 	createUserFeedTag = `
-INSERT INTO users_feeds_tags(user_login, feed_id, tag)
-	SELECT $1, $2, $3 EXCEPT SELECT user_login, feed_id, tag
+INSERT INTO users_feeds_tags(user_login, feed_id, tag_id)
+	SELECT $1, $2, $3 EXCEPT SELECT user_login, feed_id, tag_id
 		FROM users_feeds_tags
-		WHERE user_login = $1 AND feed_id = $2 AND tag = $3
+		WHERE user_login = $1 AND feed_id = $2 AND tag_id = $3
 `
 	deleteUserFeedTags = `
 DELETE FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2

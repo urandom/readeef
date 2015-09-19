@@ -18,7 +18,7 @@ func TestTag(t *testing.T) {
 
 	tests.CheckString(t, "Link", string(d.Value))
 
-	d = tag.Data(data.Tag{FeedId: 2, Value: ""})
+	d = tag.Data(data.Tag{Value: ""})
 
 	tests.CheckString(t, "", string(d.Value))
 

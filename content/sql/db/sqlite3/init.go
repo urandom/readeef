@@ -61,14 +61,19 @@ CREATE TABLE IF NOT EXISTS users_feeds (
 	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
 )`, `
-CREATE TABLE IF NOT EXISTS users_feeds_tags (
+CREATE TABLE IF NOT EXISTS tags (
 	id INTEGER PRIMARY KEY,
-	user_login TEXT NOT NULL,
-	feed_id INTEGER NOT NULL,
-	tag TEXT NOT NULL,
+	value TEXT NOT NULL UNIQUE
+)`, `
+CREATE TABLE IF NOT EXISTS users_feeds_tags (
+	user_login TEXT,
+	feed_id INTEGER,
+	tag_id INTEGER,
 
-	UNIQUE(user_login, feed_id, tag),
-	FOREIGN KEY(user_login, feed_id) REFERENCES users_feeds(user_login, feed_id) ON DELETE CASCADE
+	PRIMARY KEY(user_login, feed_id, tag_id),
+	FOREIGN KEY(user_login) REFERENCES users(login) ON DELETE CASCADE,
+	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE,
+	FOREIGN KEY(tag_id) REFERENCES tags(id) ON DELETE CASCADE
 )`, `
 CREATE TABLE IF NOT EXISTS users_articles_unread (
 	user_login TEXT,

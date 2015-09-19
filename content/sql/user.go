@@ -52,6 +52,11 @@ type User struct {
 	db *db.DB
 }
 
+type feedTagTuple struct {
+	data.Tag
+	FeedId data.FeedId `db:"feed_id"`
+}
+
 func (u *User) Update() {
 	if u.HasErr() {
 		return
@@ -278,9 +283,9 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	login := u.Data().Login
 	u.logger.Infof("Getting all tagged feeds for user %s\n", login)
 
-	var tagData []data.Tag
+	var tuples []feedTagTuple
 
-	if err := u.db.Select(&tagData, u.db.SQL().User.GetFeedIdsTags, login); err != nil {
+	if err := u.db.Select(&tuples, u.db.SQL().User.GetFeedIdsTags, login); err != nil {
 		u.Err(err)
 		return
 	}
@@ -293,10 +298,10 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	feedMap := make(map[data.FeedId][]content.Tag)
 	repo := u.Repo()
 
-	for _, d := range tagData {
+	for _, t := range tuples {
 		tag := repo.Tag(u)
-		tag.Data(d)
-		feedMap[d.FeedId] = append(feedMap[d.FeedId], tag)
+		tag.Data(t.Tag)
+		feedMap[t.FeedId] = append(feedMap[t.FeedId], tag)
 	}
 
 	tf = make([]content.TaggedFeed, len(uf))
@@ -533,6 +538,54 @@ func (u *User) Tags() (tags []content.Tag) {
 
 		tags[i] = tag
 	}
+
+	return
+}
+
+func (u *User) TagById(id data.TagId) (t content.Tag) {
+	t = u.Repo().Tag(u)
+	if u.HasErr() {
+		t.Err(u.Err())
+		return
+	}
+
+	u.logger.Infof("Getting tag '%d'\n", id)
+
+	i := data.Tag{}
+	if err := u.db.Get(&i, u.db.SQL().User.GetTag, id); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
+		t.Err(err)
+		return
+	}
+
+	i.Id = id
+	t.Data(i)
+
+	return
+}
+
+func (u *User) TagByValue(v data.TagValue) (t content.Tag) {
+	t = u.Repo().Tag(u)
+	if u.HasErr() {
+		t.Err(u.Err())
+		return
+	}
+
+	u.logger.Infof("Getting tag '%s' by value\n", v)
+
+	i := data.Tag{}
+	if err := u.db.Get(&i, u.db.SQL().User.GetTagByValue, v); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
+		t.Err(err)
+		return
+	}
+
+	i.Value = v
+	t.Data(i)
 
 	return
 }

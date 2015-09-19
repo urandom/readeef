@@ -404,7 +404,7 @@ func addFeeds(user content.User, fm *readeef.FeedManager, links []string) (resp 
 				t := make([]content.Tag, len(tags))
 				for i := range tags {
 					t[i] = repo.Tag(user)
-					t[i].Value(data.TagValue(tags[i]))
+					t[i].Data(data.Tag{Value: data.TagValue(tags[i])})
 				}
 
 				tf.Tags(t)
@@ -477,10 +477,19 @@ func setFeedTags(user content.User, id data.FeedId, tagValues []data.TagValue) (
 	repo := user.Repo()
 	tf := repo.TaggedFeed(user)
 	tf.Data(feed.Data())
-	tags := make([]content.Tag, len(tagValues))
-	for i := range tagValues {
+
+	filtered := make([]data.TagValue, 0, len(tagValues))
+	for _, v := range tagValues {
+		v = data.TagValue(strings.TrimSpace(string(v)))
+		if v != "" {
+			filtered = append(filtered, v)
+		}
+	}
+
+	tags := make([]content.Tag, len(filtered))
+	for i := range filtered {
 		tags[i] = repo.Tag(user)
-		tags[i].Value(tagValues[i])
+		tags[i].Data(data.Tag{Value: filtered[i]})
 	}
 	tf.Tags(tags)
 	if tf.UpdateTags(); tf.HasErr() {
@@ -519,7 +528,7 @@ func readState(user content.User, id string, beforeId data.ArticleId, timestamp 
 		// Can't bulk set state to popular articles
 	case strings.HasPrefix(id, "tag:"):
 		tag := user.Repo().Tag(user)
-		tag.Value(data.TagValue(id[4:]))
+		tag.Data(data.Tag{Value: data.TagValue(id[4:])})
 
 		ar = tag
 	default:
@@ -584,7 +593,7 @@ func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleP
 			as = user
 		} else if strings.HasPrefix(id, "popular:tag:") {
 			tag := user.Repo().Tag(user)
-			tag.Value(data.TagValue(id[12:]))
+			tag.Data(data.Tag{Value: data.TagValue(id[12:])})
 
 			ar = tag
 			as = tag
@@ -631,7 +640,7 @@ func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleP
 		ua, resp.err = performSearch(user, sp, query, id, limit, offset)
 	} else if strings.HasPrefix(id, "tag:") {
 		tag := user.Repo().Tag(user)
-		tag.Value(data.TagValue(id[4:]))
+		tag.Data(data.Tag{Value: data.TagValue(id[4:])})
 
 		as = tag
 		ar = tag
@@ -693,7 +702,7 @@ func performSearch(user content.User, sp content.SearchProvider, query, feedId s
 
 	if strings.HasPrefix(feedId, "tag:") {
 		tag := user.Repo().Tag(user)
-		tag.Value(data.TagValue(feedId[4:]))
+		tag.Data(data.Tag{Value: data.TagValue(feedId[4:])})
 
 		ua, err = tag.Query(query, sp, limit, offset), tag.Err()
 	} else {

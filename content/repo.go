@@ -17,8 +17,8 @@ type Repo interface {
 	AllUnsubscribedFeeds() []Feed
 
 	AllSubscriptions() []Subscription
-
 	FailSubscriptions()
+
 	DeleteStaleUnreadRecords()
 }
 
