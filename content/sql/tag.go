@@ -114,6 +114,9 @@ func (t *Tag) Articles(o ...data.ArticleQueryOptions) (ua []content.UserArticle)
 	if len(o) > 0 {
 		opts = o[0]
 	}
+	if opts.UntaggedOnly {
+		return
+	}
 
 	t.logger.Infof("Getting articles for tag %s with options: %#v\n", t, opts)
 	u := t.User()
@@ -142,6 +145,9 @@ func (t *Tag) Count(o ...data.ArticleCountOptions) (count int64) {
 	if len(o) > 0 {
 		opts = o[0]
 	}
+	if opts.UntaggedOnly {
+		return
+	}
 
 	u := t.User()
 	tag := t.Data().Value
@@ -169,6 +175,9 @@ func (t *Tag) ReadState(read bool, o ...data.ArticleUpdateStateOptions) {
 	var opts data.ArticleUpdateStateOptions
 	if len(o) > 0 {
 		opts = o[0]
+	}
+	if opts.UntaggedOnly {
+		return
 	}
 
 	u := t.User()

@@ -29,6 +29,12 @@ const (
 	TTRSS_ALL_ID      = -4
 
 	TTRSS_FRESH_DURATION = -24 * time.Hour
+
+	TTRSS_CAT_UNCATEGORIZED      = 0
+	TTRSS_CAT_SPECIAL            = -1 // Starred, Published, Archived, etc.
+	TTRSS_CAT_LABELS             = -2
+	TTRSS_CAT_ALL_EXCEPT_VIRTUAL = -3 // i.e: labels
+	TTRSS_CAT_ALL                = -4
 )
 
 type TtRss struct {
@@ -46,9 +52,10 @@ type ttRssRequest struct {
 	Password      string           `json:"password"`
 	OutputMode    string           `json:"output_mode"`
 	UnreadOnly    bool             `json:"unread_only"`
+	IncludeEmpty  bool             `json:"include_empty"`
 	Limit         int              `json:"limit"`
 	Offset        int              `json:"offset"`
-	CatId         int              `json:"cat_id"`
+	CatId         data.TagId       `json:"cat_id"`
 	FeedId        data.FeedId      `json:"feed_id"`
 	Skip          int              `json:"skip"`
 	IsCat         bool             `json:"is_cat"`
@@ -92,12 +99,22 @@ type ttRssGenericContent struct {
 	Method    string      `json:"method,omitempty"`
 }
 
+type ttRssCategoriesContent []ttRssCat
+
+type ttRssCat struct {
+	Id      int64  `json:"id"`
+	Title   string `json:"title"`
+	Unread  int64  `json:"unread"`
+	OrderId int64  `json:"order_id"`
+}
+
 type ttRssCountersContent []ttRssCounter
 
 type ttRssCounter struct {
-	Id         string `json:"id"`
-	Counter    int64  `json:"counter"`
-	AuxCounter int64  `json:"auxcounter,omitempty"`
+	Id         interface{} `json:"id"`
+	Counter    int64       `json:"counter"`
+	AuxCounter int64       `json:"auxcounter,omitempty"`
+	Kind       string      `json:"kind,omitempty"`
 }
 
 type ttRssFeedsContent []ttRssFeed
@@ -297,10 +314,21 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					con = ttRssGenericContent{Status: false}
 				}
 			case "getUnread":
-				if !req.IsCat {
-					var ar content.ArticleRepo
-					o := data.ArticleCountOptions{UnreadOnly: true}
+				var ar content.ArticleRepo
+				o := data.ArticleCountOptions{UnreadOnly: true}
 
+				if req.IsCat {
+					tagId := data.TagId(req.FeedId)
+					if tagId > 0 {
+						ar = user.TagById(tagId)
+					} else if tagId == TTRSS_CAT_UNCATEGORIZED {
+						ar = user
+						o.UntaggedOnly = true
+					} else if tagId == TTRSS_CAT_SPECIAL {
+						ar = user
+						o.FavoriteOnly = true
+					}
+				} else {
 					switch req.FeedId {
 					case TTRSS_FAVORITE_ID:
 						ar = user
@@ -323,14 +351,12 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 					}
 
-					if ar != nil {
-						con = ttRssGenericContent{Unread: ar.Count(o)}
-					}
-
 				}
 
-				if con == nil {
+				if ar == nil {
 					con = ttRssGenericContent{Unread: 0}
+				} else if con == nil {
+					con = ttRssGenericContent{Unread: ar.Count(o)}
 				}
 			case "getCounters":
 				if req.OutputMode == "" {
@@ -348,28 +374,48 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					ttRssCounter{Id: "subscribed-feeds", Counter: int64(len(feeds))})
 
 				cContent = append(cContent,
-					ttRssCounter{Id: strconv.Itoa(TTRSS_FAVORITE_ID),
+					ttRssCounter{Id: TTRSS_FAVORITE_ID,
 						Counter:    user.Count(data.ArticleCountOptions{UnreadOnly: true, FavoriteOnly: true}),
 						AuxCounter: user.Count(data.ArticleCountOptions{FavoriteOnly: true})})
 
 				freshTime := time.Now().Add(TTRSS_FRESH_DURATION)
 				cContent = append(cContent,
-					ttRssCounter{Id: strconv.Itoa(TTRSS_FRESH_ID),
+					ttRssCounter{Id: TTRSS_FRESH_ID,
 						Counter:    user.Count(data.ArticleCountOptions{UnreadOnly: true, AfterDate: freshTime}),
 						AuxCounter: user.Count(data.ArticleCountOptions{AfterDate: freshTime})})
 
 				cContent = append(cContent,
-					ttRssCounter{Id: strconv.Itoa(TTRSS_ALL_ID),
+					ttRssCounter{Id: TTRSS_ALL_ID,
 						Counter:    user.Count(),
 						AuxCounter: unreadCount})
 
 				if strings.Contains(req.OutputMode, "f") {
 					for _, f := range feeds {
 						cContent = append(cContent,
-							ttRssCounter{Id: strconv.FormatInt(int64(f.Data().Id), 10), Counter: f.Count(o)},
+							ttRssCounter{Id: int64(f.Data().Id), Counter: f.Count(o)},
 						)
 
 					}
+				}
+
+				if strings.Contains(req.OutputMode, "c") {
+					for _, t := range user.Tags() {
+						cContent = append(cContent,
+							ttRssCounter{
+								Id:      int64(t.Data().Id),
+								Counter: t.Count(o),
+								Kind:    "cat",
+							},
+						)
+					}
+
+					cContent = append(cContent,
+						ttRssCounter{
+							Id:      TTRSS_CAT_UNCATEGORIZED,
+							Counter: user.Count(data.ArticleCountOptions{UnreadOnly: true, UntaggedOnly: true}),
+							Kind:    "cat",
+						},
+					)
 				}
 
 				if user.HasErr() {
@@ -380,7 +426,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 			case "getFeeds":
 				fContent := ttRssFeedsContent{}
 
-				if req.CatId == TTRSS_FAVORITE_ID || req.CatId == TTRSS_ALL_ID {
+				if req.CatId == TTRSS_CAT_ALL || req.CatId == TTRSS_CAT_SPECIAL {
 					unreadFav := user.Count(data.ArticleCountOptions{UnreadOnly: true, FavoriteOnly: true})
 
 					if unreadFav > 0 || !req.UnreadOnly {
@@ -416,8 +462,31 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					}
 				}
 
-				if req.CatId == 0 || req.CatId == TTRSS_FRESH_ID || req.CatId == TTRSS_ALL_ID {
-					feeds := user.AllFeeds()
+				var feeds []content.UserFeed
+				if req.CatId == TTRSS_CAT_ALL || req.CatId == TTRSS_CAT_ALL_EXCEPT_VIRTUAL {
+					feeds = user.AllFeeds()
+				} else {
+					if req.CatId == TTRSS_CAT_UNCATEGORIZED {
+						tagged := user.AllTaggedFeeds()
+						for _, t := range tagged {
+							if len(t.Tags()) == 0 {
+								feeds = append(feeds, t)
+							}
+						}
+					} else {
+						t := user.TagById(req.CatId)
+						tagged := t.AllFeeds()
+						if t.HasErr() {
+							err = t.Err()
+							break
+						}
+						for _, t := range tagged {
+							feeds = append(feeds, t)
+						}
+					}
+				}
+
+				if len(feeds) > 0 {
 					o := data.ArticleCountOptions{UnreadOnly: true}
 					for i := range feeds {
 						if req.Limit > 0 {
@@ -449,7 +518,37 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 				con = fContent
 			case "getCategories":
-				con = ttRssFeedsContent{}
+				cContent := ttRssCategoriesContent{}
+				o := data.ArticleCountOptions{UnreadOnly: true}
+
+				for _, t := range user.Tags() {
+					td := t.Data()
+					count := t.Count(o)
+
+					if count > 0 || !req.UnreadOnly {
+						cContent = append(cContent,
+							ttRssCat{Id: int64(td.Id), Title: string(td.Value), Unread: count},
+						)
+					}
+				}
+
+				count := user.Count(data.ArticleCountOptions{UnreadOnly: true, UntaggedOnly: true})
+				if count > 0 || !req.UnreadOnly {
+					cContent = append(cContent,
+						ttRssCat{Id: TTRSS_CAT_UNCATEGORIZED, Title: "Uncategorized", Unread: count},
+					)
+				}
+
+				o.FavoriteOnly = true
+				count = user.Count(o)
+
+				if count > 0 || !req.UnreadOnly {
+					cContent = append(cContent,
+						ttRssCat{Id: TTRSS_CAT_SPECIAL, Title: "Special", Unread: count},
+					)
+				}
+
+				con = cContent
 			case "getHeadlines":
 				if req.FeedId == 0 {
 					errType = "INCORRECT_USAGE"
@@ -467,26 +566,40 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				firstId := data.ArticleId(0)
 				o := data.ArticleQueryOptions{Limit: limit, Offset: req.Skip, UnreadFirst: true}
 
-				if req.FeedId == TTRSS_FAVORITE_ID {
-					ttRssSetupSorting(req, user)
-					o.FavoriteOnly = true
-					articleRepo = user
-					feedTitle = "Starred articles"
-				} else if req.FeedId == TTRSS_FRESH_ID {
-					ttRssSetupSorting(req, user)
-					o.AfterDate = time.Now().Add(TTRSS_FRESH_DURATION)
-					articleRepo = user
-					feedTitle = "Fresh articles"
-				} else if req.FeedId == TTRSS_ALL_ID {
-					ttRssSetupSorting(req, user)
-					articleRepo = user
-					feedTitle = "All articles"
-				} else if req.FeedId > 0 {
-					feed := user.FeedById(req.FeedId)
+				if req.IsCat {
+					if req.FeedId == TTRSS_CAT_UNCATEGORIZED {
+						ttRssSetupSorting(req, user)
+						articleRepo = user
+						o.UntaggedOnly = true
+						feedTitle = "Uncategorized"
+					} else if req.FeedId > 0 {
+						t := user.TagById(data.TagId(req.FeedId))
+						ttRssSetupSorting(req, t)
+						articleRepo = t
+						feedTitle = string(t.Data().Value)
+					}
+				} else {
+					if req.FeedId == TTRSS_FAVORITE_ID {
+						ttRssSetupSorting(req, user)
+						o.FavoriteOnly = true
+						articleRepo = user
+						feedTitle = "Starred articles"
+					} else if req.FeedId == TTRSS_FRESH_ID {
+						ttRssSetupSorting(req, user)
+						o.AfterDate = time.Now().Add(TTRSS_FRESH_DURATION)
+						articleRepo = user
+						feedTitle = "Fresh articles"
+					} else if req.FeedId == TTRSS_ALL_ID {
+						ttRssSetupSorting(req, user)
+						articleRepo = user
+						feedTitle = "All articles"
+					} else if req.FeedId > 0 {
+						feed := user.FeedById(req.FeedId)
 
-					ttRssSetupSorting(req, feed)
-					articleRepo = feed
-					feedTitle = feed.Data().Title
+						ttRssSetupSorting(req, feed)
+						articleRepo = feed
+						feedTitle = feed.Data().Title
+					}
 				}
 
 				if req.SinceId > 0 {
@@ -530,7 +643,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 				headlines := ttRssHeadlinesFromArticles(req, articles, feedTitle, nil)
 				if req.IncludeHeader {
-					header := ttRssHeadlinesHeader{Id: req.FeedId, FirstId: firstId}
+					header := ttRssHeadlinesHeader{Id: req.FeedId, FirstId: firstId, IsCat: req.IsCat}
 					hContent := ttRssHeadlinesHeaderContent{}
 
 					hContent = append(hContent, header)
@@ -631,13 +744,28 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 			case "updateFeed":
 				con = ttRssGenericContent{Status: "OK"}
 			case "catchupFeed":
-				if !req.IsCat {
-					f := user.FeedById(req.FeedId)
-					f.ReadState(true, data.ArticleUpdateStateOptions{BeforeDate: time.Now()})
+				var ar content.ArticleRepo
+				o := data.ArticleUpdateStateOptions{BeforeDate: time.Now()}
 
-					if f.HasErr() {
-						err = f.Err()
-						break
+				if req.IsCat {
+					tagId := data.TagId(req.FeedId)
+					ar = user.TagById(tagId)
+
+					if tagId == TTRSS_CAT_UNCATEGORIZED {
+						o.UntaggedOnly = true
+					}
+				} else {
+					ar = user.FeedById(req.FeedId)
+				}
+
+				if ar != nil {
+					ar.ReadState(true, o)
+
+					if e, ok := ar.(content.Error); ok {
+						if e.HasErr() {
+							err = e.Err()
+							break
+						}
 					}
 
 					con = ttRssGenericContent{Status: "OK"}
@@ -841,12 +969,14 @@ func ttRssConvertRequest(in map[string]interface{}) (req ttRssRequest) {
 			req.OutputMode = ttRssParseString(v)
 		case "unread_only":
 			req.UnreadOnly = ttRssParseBool(v)
+		case "include_empty":
+			req.IncludeEmpty = ttRssParseBool(v)
 		case "limit":
 			req.Limit = ttRssParseInt(v)
 		case "offset":
 			req.Offset = ttRssParseInt(v)
 		case "cat_id":
-			req.CatId = ttRssParseInt(v)
+			req.CatId = data.TagId(ttRssParseInt64(v))
 		case "feed_id":
 			req.FeedId = data.FeedId(ttRssParseInt64(v))
 		case "skip":

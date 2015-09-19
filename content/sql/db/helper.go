@@ -97,19 +97,23 @@ type UserStmts struct {
 	GetAllUnreadArticleIds   string
 	GetAllFavoriteArticleIds string
 
-	GetArticlesTemplate  string
-	GetArticlesScoreJoin string
+	GetArticlesTemplate     string
+	GetArticlesScoreJoin    string
+	GetArticlesUntaggedJoin string
 
 	ReadStateInsertTemplate     string
 	ReadStateInsertFavoriteJoin string
+	ReadStateInsertUntaggedJoin string
 
 	ReadStateDeleteTemplate     string
 	ReadStateDeleteFavoriteJoin string
+	ReadStateDeleteUntaggedJoin string
 
 	ArticleCountTemplate      string
 	ArticleCountUserFeedsJoin string
 	ArticleCountUnreadJoin    string
 	ArticleCountFavoriteJoin  string
+	ArticleCountUntaggedJoin  string
 }
 
 type SqlStmts struct {

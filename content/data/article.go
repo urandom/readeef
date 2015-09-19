@@ -77,6 +77,7 @@ type ArticleQueryOptions struct {
 	UnreadOnly      bool
 	UnreadFirst     bool
 	FavoriteOnly    bool
+	UntaggedOnly    bool
 	IncludeScores   bool
 	HighScoredFirst bool
 	BeforeId        ArticleId
@@ -88,6 +89,7 @@ type ArticleQueryOptions struct {
 type ArticleCountOptions struct {
 	UnreadOnly   bool
 	FavoriteOnly bool
+	UntaggedOnly bool
 	BeforeId     ArticleId
 	AfterId      ArticleId
 	BeforeDate   time.Time
@@ -96,6 +98,7 @@ type ArticleCountOptions struct {
 
 type ArticleUpdateStateOptions struct {
 	FavoriteOnly bool
+	UntaggedOnly bool
 	BeforeId     ArticleId
 	AfterId      ArticleId
 	BeforeDate   time.Time

@@ -16,17 +16,21 @@ func init() {
 
 	sqlStmts.User.GetArticlesTemplate = getArticlesTemplate
 	sqlStmts.User.GetArticlesScoreJoin = getArticlesScoreJoin
+	sqlStmts.User.GetArticlesUntaggedJoin = getArticlesUntaggedJoin
 
 	sqlStmts.User.ReadStateInsertTemplate = readStateInsertTemplate
 	sqlStmts.User.ReadStateInsertFavoriteJoin = readStateInsertFavoriteJoin
+	sqlStmts.User.ReadStateInsertUntaggedJoin = readStateInsertUntaggedJoin
 
 	sqlStmts.User.ReadStateDeleteTemplate = readStateDeleteTemplate
 	sqlStmts.User.ReadStateDeleteFavoriteJoin = readStateInsertFavoriteJoin
+	sqlStmts.User.ReadStateDeleteUntaggedJoin = readStateInsertUntaggedJoin
 
 	sqlStmts.User.ArticleCountTemplate = articleCountTemplate
 	sqlStmts.User.ArticleCountUserFeedsJoin = articleCountUserFeedsJoin
 	sqlStmts.User.ArticleCountUnreadJoin = articleCountUnreadJoin
 	sqlStmts.User.ArticleCountFavoriteJoin = articleCountFavoriteJoin
+	sqlStmts.User.ArticleCountUntaggedJoin = articleCountUntaggedJoin
 }
 
 const (
@@ -110,6 +114,11 @@ LEFT OUTER JOIN articles_thumbnails at
 	getArticlesScoreJoin = `
 	INNER JOIN articles_scores asco ON a.id = asco.article_id
 `
+	getArticlesUntaggedJoin = `
+LEFT OUTER JOIN users_feeds_tags uft
+	ON uft.feed_id = uf.feed_id
+	AND uft.user_login = uf.user_login
+`
 
 	readStateInsertTemplate = `
 INSERT INTO users_articles_unread (user_login, article_id)
@@ -127,6 +136,11 @@ WHERE au.user_login = $1
 	readStateInsertFavoriteJoin = `
 LEFT OUTER JOIN users_articles_favorite af
 	ON a.id = af.article_id AND af.user_login = uf.user_login
+`
+	readStateInsertUntaggedJoin = `
+LEFT OUTER JOIN users_feeds_tags uft
+	ON uft.feed_id = uf.feed_id
+	AND uft.user_login = uf.user_login
 `
 
 	readStateDeleteTemplate = `
@@ -154,5 +168,9 @@ LEFT OUTER JOIN users_articles_unread au
 	articleCountFavoriteJoin = `
 LEFT OUTER JOIN users_articles_favorite af
 	ON a.id = af.article_id
+`
+	articleCountUntaggedJoin = `
+LEFT OUTER JOIN users_feeds_tags uft
+	ON uft.feed_id = a.feed_id
 `
 )

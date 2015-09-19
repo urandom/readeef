@@ -638,9 +638,14 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 
 func internalGetArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleQueryOptions, sorting content.ArticleSorting, join, where string, args []interface{}) (ua []content.UserArticle) {
 	renderData := getArticlesData{}
+	s := dbo.SQL()
 	if opts.IncludeScores {
 		renderData.Columns += ", asco.score"
-		renderData.Join += dbo.SQL().User.GetArticlesScoreJoin
+		renderData.Join += s.User.GetArticlesScoreJoin
+	}
+
+	if opts.UntaggedOnly {
+		renderData.Join += s.User.GetArticlesUntaggedJoin
 	}
 
 	if join != "" {
@@ -655,6 +660,10 @@ func internalGetArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts d
 		whereSlice = append(whereSlice, "au.article_id IS NOT NULL")
 	} else if opts.ReadOnly {
 		whereSlice = append(whereSlice, "au.article_id IS NULL")
+	}
+
+	if opts.UntaggedOnly {
+		whereSlice = append(whereSlice, "uft.feed_id IS NULL")
 	}
 
 	if where != "" {
@@ -754,10 +763,12 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 		return
 	}
 
+	s := dbo.SQL()
+
 	var err error
 	if readStateInsertTemplate == nil {
 		readStateInsertTemplate, err = template.New("read-state-insert-sql").
-			Parse(dbo.SQL().User.ReadStateInsertTemplate)
+			Parse(s.User.ReadStateInsertTemplate)
 
 		if err != nil {
 			u.Err(fmt.Errorf("Error generating read-state-insert template: %v", err))
@@ -766,7 +777,7 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 	}
 	if readStateDeleteTemplate == nil {
 		readStateDeleteTemplate, err = template.New("read-state-delete-sql").
-			Parse(dbo.SQL().User.ReadStateDeleteTemplate)
+			Parse(s.User.ReadStateDeleteTemplate)
 
 		if err != nil {
 			u.Err(fmt.Errorf("Error generating read-state-delete template: %v", err))
@@ -794,7 +805,11 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 		}
 
 		if opts.FavoriteOnly {
-			data.Join += dbo.SQL().User.ReadStateDeleteFavoriteJoin
+			data.Join += s.User.ReadStateDeleteFavoriteJoin
+		}
+
+		if opts.UntaggedOnly {
+			data.Join += s.User.ReadStateDeleteUntaggedJoin
 		}
 
 		where := []string{}
@@ -823,6 +838,10 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 
 		if opts.FavoriteOnly {
 			where = append(where, "af.article_id IS NOT NULL")
+		}
+
+		if opts.UntaggedOnly {
+			where = append(where, "uft.feed_id IS NULL")
 		}
 
 		if len(where) > 0 {
@@ -863,7 +882,11 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 		}
 
 		if opts.FavoriteOnly {
-			data.Join += dbo.SQL().User.ReadStateInsertFavoriteJoin
+			data.Join += s.User.ReadStateInsertFavoriteJoin
+		}
+
+		if opts.UntaggedOnly {
+			data.Join += s.User.ReadStateInsertUntaggedJoin
 		}
 
 		if join != "" {
@@ -892,6 +915,10 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 
 		if opts.FavoriteOnly {
 			where = append(where, "af.article_id IS NOT NULL")
+		}
+
+		if opts.UntaggedOnly {
+			where = append(where, "uft.feed_id IS NULL")
 		}
 
 		if len(where) > 0 {
@@ -957,6 +984,10 @@ func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Art
 		}
 	}
 
+	if opts.UntaggedOnly {
+		renderData.Join += s.User.ArticleCountUntaggedJoin
+	}
+
 	if join != "" {
 		renderData.Join += " " + join
 	}
@@ -970,6 +1001,9 @@ func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Art
 	}
 	if opts.FavoriteOnly {
 		whereSlice = append(whereSlice, "af.article_id IS NOT NULL AND af.user_login = $1")
+	}
+	if opts.UntaggedOnly {
+		whereSlice = append(whereSlice, "uft.feed_id IS NULL")
 	}
 
 	if where != "" {
