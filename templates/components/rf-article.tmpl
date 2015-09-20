@@ -595,6 +595,7 @@
                 this._renderInstance(index, 0);
             }
 
+            this.$['article-container'].style.height = '';
             var oldHeight = window.getComputedStyle(this.$['article-container']).getPropertyValue('height');
 
             ['previous-article', 'active-article', 'next-article'].forEach(function(cls) {
@@ -611,10 +612,9 @@
 
             var newHeight = window.getComputedStyle(this.$['article-container']).getPropertyValue('height');
             if (oldHeight != newHeight) {
-                this.$['article-container'].animate([
-                    {height: oldHeight},
-                    {height: newHeight},
-                ], {duration: 400, easing: 'ease'});
+                this.$['article-container'].style.height = oldHeight;
+                this.$['article-container'].offsetHeight;
+                this.$['article-container'].style.height = newHeight;
             }
 
             Polymer.dom.flush();
