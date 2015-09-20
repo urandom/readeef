@@ -77,7 +77,9 @@
 (function() {
     "use strict";
 
-    var animations = {}, httpRe = /^https?:/, templateRe = /\{\{\s*\.\s*\}\}/;
+    var animations = {}, transitionEvents = {},
+        httpRe = /^https?:/, templateRe = /\{\{\s*\.\s*\}\}/,
+        hasWebkitTransform = 'webkitTransform' in document.body;
 
     {% if .base.langs %}
     moment.locale('{% .base.lang %}');
@@ -113,82 +115,93 @@
         {% end %}
     }
 
+    function animateTransform(element, startX, startY, startOpacity, transition, endX, endY, endOpacity, cb) {
+        Polymer.Base.translate3d(startX, startY, 0, element);
+        element.style.opacity = startOpacity;
+
+        // Force redraw in order to avoid the upcoming transition to apply to
+        // the translate that was just set
+        element.offsetHeight;
+
+        element.style.webkitTransition = transition.replace(/\btransform\b/, '-webkit-transform');
+        element.style.transition = transition;
+
+        var name = 'transitionend';
+        if (hasWebkitTransform) {
+            name = 'webkitTransitionEnd';
+        }
+
+        var one = function() {
+            element.removeEventListener(name, one);
+            element.style.webkitTransition = '';
+            element.style.transition = '';
+
+            delete transitionEvents[element.id];
+
+            if (cb) {
+                cb();
+            }
+        };
+
+        element.addEventListener(name, one);
+        transitionEvents[element.id] = one;
+
+        element.style.opacity = endOpacity;
+        Polymer.Base.translate3d(endX, endY, 0, element);
+    }
+
     function slideFromTop(element) {
-        animations[element.id] = element.animate([
-            {opacity: 0.5, transform: "translate3d(0px, -105%, 0px)"},
-            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
-        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+        animateTransform(element, 0, '-105%', 0.3,
+                'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                0, 0, 1, null);
     }
 
     function slideFromLeft(left, active, cb) {
         left.removeAttribute('hidden');
 
-        animations[left.id] = left.animate([
-            {opacity: 0.3, transform: "translate3d(-105%, 0px, 0px)"},
-            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
-        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+        animateTransform(left, '-105%', 0, 0.3,
+                'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                0, 0, 1, null);
 
-        animations[active.id] = active.animate([
-            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
-            {opacity: 0.3, transform: "translate3d(105%, 0px, 0px)"},
-        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
-
-        animations[active.id].onfinish = cb;
+        animateTransform(active, 0, 0, 1,
+                'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                '105%', 0, 0.3, cb);
     }
 
     function slideFromRight(active, right, cb) {
         right.removeAttribute('hidden');
 
-        animations[right.id] = right.animate([
-            {opacity: 0.3, transform: "translate3d(105%, 0px, 0px)"},
-            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
-        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+        animateTransform(right, '105%', 0, 0.3,
+                'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                0, 0, 1, null);
 
-        animations[active.id] = active.animate([
-            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
-            {opacity: 0.3, transform: "translate3d(-105%, 0px, 0px)"},
-        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
-
-        animations[active.id].onfinish = cb;
+        animateTransform(active, 0, 0, 1,
+                'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                '-105%', 0, 0.3, cb);
     }
 
-    function stopRunningAnimations(finish) {
-        var hadRunning = false;
+    function stopRunningAnimations(elements, finish) {
+        var finishSet = false;
+        for (var i = 0, element; element = elements[i]; ++i) {
+            element.style.webkitTransition = '';
+            element.style.transition = '';
 
-        if (finish) {
-            var emitter = null;
-            for (var key in animations) {
-                if (animations[key].playState == 'running') {
-                    var oldHandler = animations[key].onfinish;
-                    if (oldHandler) {
-                        animations[key].onfinish = function() {
-                            oldHandler.apply(this, arguments);
-                            finish.apply(this, arguments);
-                        };
-                        emitter = null;
-                        break;
-                    } else {
-                        emitter = animations[key];
-                    }
+            if (finishSet) {
+                finish = null;
+            }
+            if (transitionEvents[element.id]) {
+                transitionEvents[element.id].call(element);
+                if (finish) {
+                    setTimeout((function(finish) {
+                        return finish;
+                    })(finish), 0);
                 }
-            }
 
-            if (emitter) {
-                emitter.onfinish = finish;
+                finishSet = true;
             }
         }
 
-        for (var key in animations) {
-            if (animations[key].playState == 'running') {
-                hadRunning = true;
-                animations[key].finish();
-            } else if (animations[key].playState != 'finished') {
-                animations[key].cancel();
-            }
-            delete animations[key];
-        }
-
-        return hadRunning;
+        return finishSet;
     }
 
     function responsiveIframe(iframe) {
@@ -373,64 +386,67 @@
                         }
 
                         if (direction > 0) {
-                            this._trackState.previous.animate([
-                                {transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
-                                {transform: "translate3d(0px, 0px, 0px)"},
-                            ], {duration: duration, easing: easing});
+                            animateTransform(this._trackState.previous,
+                                (this._trackState.previousDx - this._trackState.containerWidth), 0, 1,
+                                'transform ' + duration + 'ms ' + easing,
+                                0, 0, 1, null);
                         }
                         if (direction < 0) {
-                            this._trackState.next.animate([
-                                {transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
-                                {transform: "translate3d(0px, 0px, 0px)"},
-                            ], {duration: duration, easing: easing});
+                            animateTransform(this._trackState.next,
+                                (this._trackState.previousDx + this._trackState.containerWidth), 0, 1,
+                                'transform ' + duration + 'ms ' + easing,
+                                0, 0, 1, null);
                         }
-                        this._trackState.active.animate([
-                            {transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
-                            {transform: "translate3d(" + (direction > 0 ? '' : '-') + "105%, 0px, 0px)"},
-                        ], {duration: duration, easing: easing}).onfinish = function() {
-                            this.async(function() {
-                                this._trackState.previous.removeAttribute('style');
-                                this._trackState.active.removeAttribute('style');
-                                this._trackState.next.removeAttribute('style');
+                        animateTransform(this._trackState.active,
+                            this._trackState.previousDx, 0, 1,
+                            'transform ' + duration + 'ms ' + easing,
+                            (direction > 0 ? '' : '-') + "105%", 0, 1, 
+                            function() {
+                                this.async(function() {
+                                    this._trackState.previous.removeAttribute('style');
+                                    this._trackState.active.removeAttribute('style');
+                                    this._trackState.next.removeAttribute('style');
 
-                                if (direction > 0) {
-                                    this.translate3d(0, 0, 0, this._trackState.previous);
+                                    if (direction > 0) {
+                                        this.translate3d(0, 0, 0, this._trackState.previous);
 
-                                    this._trackState.selectedId = this.articles[index - 1].Id;
-                                } else {
-                                    this.translate3d(0, 0, 0, this._trackState.next);
+                                        this._trackState.selectedId = this.articles[index - 1].Id;
+                                    } else {
+                                        this.translate3d(0, 0, 0, this._trackState.next);
 
-                                    this._trackState.selectedId = this.articles[index + 1].Id;
-                                }
+                                        this._trackState.selectedId = this.articles[index + 1].Id;
+                                    }
 
-                                MoreRouting.navigateTo('article', {
-                                    tagOrId: MoreRouting.getRoute('article').params.tagOrId,
-                                    articleId: this._trackState.selectedId,
+                                    MoreRouting.navigateTo('article', {
+                                        tagOrId: MoreRouting.getRoute('article').params.tagOrId,
+                                        articleId: this._trackState.selectedId,
+                                    });
                                 });
-                            });
-                        }.bind(this);
+                            }.bind(this));
                     } else {
-                        this._trackState.previous.animate([
-                            {transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
-                            {transform: "translate3d(-105%, 0px, 0px)"},
-                        ], {duration: 200});
-                        this._trackState.next.animate([
-                            {transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
-                            {transform: "translate3d(105%, 0px, 0px)"},
-                        ], {duration: 200});
-                        this._trackState.active.animate([
-                            {transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
-                            {transform: "translate3d(0px, 0px, 0px)"},
-                        ], {duration: 200}).onfinish = function() {
-                            this.async(function() {
-                                this._trackState.previous.removeAttribute('style');
-                                this._trackState.active.removeAttribute('style');
-                                this._trackState.next.removeAttribute('style');
+                        animateTransform(this._trackState.previous,
+                            (this._trackState.previousDx - this._trackState.containerWidth), 0, 1,
+                            'transform 200ms',
+                            '-105%', 0, 1, null);
 
-                                this._trackState.previous.setAttribute('hidden', '');
-                                this._trackState.next.setAttribute('hidden', '');
-                            });
-                        }.bind(this);
+                        animateTransform(this._trackState.next,
+                            (this._trackState.previousDx + this._trackState.containerWidth), 0, 1,
+                            'transform 200ms',
+                            '105%', 0, 1, null);
+
+                        animateTransform(this._trackState.active,
+                            this._trackState.previousDx, 0, 1,
+                            'transform 200ms',
+                            0, 0, 1,function() {
+                                this.async(function() {
+                                    this._trackState.previous.removeAttribute('style');
+                                    this._trackState.active.removeAttribute('style');
+                                    this._trackState.next.removeAttribute('style');
+
+                                    this._trackState.previous.setAttribute('hidden', '');
+                                    this._trackState.next.setAttribute('hidden', '');
+                                });
+                            }.bind(this));
                     }
 
                     this.$['article-container'].classList.remove('disable-select');
@@ -443,7 +459,12 @@
                 return;
             }
 
-            if (stopRunningAnimations(function() {
+            var elements = [
+                Polymer.dom(this.root).querySelector('.previous-article'),
+                Polymer.dom(this.root).querySelector('.active-article'),
+                Polymer.dom(this.root).querySelector('.next-article'),
+            ];
+            if (stopRunningAnimations(elements, function() {
                 this._selectedIdChanged.call(this, id, oldValue);
             }.bind(this))) {
                 return;
@@ -464,15 +485,15 @@
             if (direction === 0) {
                 this._debounceTemplate(function() { this._render(id) });
                 this.debounce('animation', function() {
-                    slideFromTop(Polymer.dom(this.root).querySelector('.active-article'));
+                    slideFromTop(elements[1]);
                 }.bind(this));
             } else {
                 if (this._trackState && id == this._trackState.selectedId) {
                     this._debounceTemplate(function() { this._render(id) });
                 } else if (direction === 1) {
-                    slideFromRight(Polymer.dom(this.root).querySelector('.active-article'), Polymer.dom(this.root).querySelector('.next-article'), function() { this._render(id) }.bind(this));
+                    slideFromRight(elements[1], elements[2], function() { this._render(id) }.bind(this));
                 } else {
-                    slideFromLeft(Polymer.dom(this.root).querySelector('.previous-article'), Polymer.dom(this.root).querySelector('.active-article'), function() { this._render(id) }.bind(this));
+                    slideFromLeft(elements[0], elements[1], function() { this._render(id) }.bind(this));
                 }
             }
         },
