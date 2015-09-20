@@ -473,7 +473,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 								feeds = append(feeds, t)
 							}
 						}
-					} else {
+					} else if req.CatId > 0 {
 						t := user.TagById(req.CatId)
 						tagged := t.AllFeeds()
 						if t.HasErr() {
