@@ -641,7 +641,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					}
 				}
 
-				headlines := ttRssHeadlinesFromArticles(req, articles, feedTitle, nil)
+				headlines := ttRssHeadlinesFromArticles(articles, feedTitle, nil, req.ShowContent, req.ShowExcerpt)
 				if req.IncludeHeader {
 					header := ttRssHeadlinesHeader{Id: req.FeedId, FirstId: firstId, IsCat: req.IsCat}
 					hContent := ttRssHeadlinesHeaderContent{}
@@ -738,7 +738,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					}
 				}
 
-				con = ttRssHeadlinesFromArticles(req, articles, "", feedTitles)
+				con = ttRssHeadlinesFromArticles(articles, "", feedTitles, true, false)
 			case "getConfig":
 				con = ttRssConfigContent{DaemonIsRunning: true, NumFeeds: len(user.AllFeeds())}
 			case "updateFeed":
@@ -914,7 +914,7 @@ func ttRssSetupSorting(req ttRssRequest, sorting content.ArticleSorting) {
 	}
 }
 
-func ttRssHeadlinesFromArticles(req ttRssRequest, articles []content.UserArticle, feedTitle string, feedTitles map[data.FeedId]string) (c ttRssHeadlinesContent) {
+func ttRssHeadlinesFromArticles(articles []content.UserArticle, feedTitle string, feedTitles map[data.FeedId]string, content, excerpt bool) (c ttRssHeadlinesContent) {
 	c = ttRssHeadlinesContent{}
 	for _, a := range articles {
 		d := a.Data()
@@ -934,17 +934,17 @@ func ttRssHeadlinesFromArticles(req ttRssRequest, articles []content.UserArticle
 			FeedTitle: title,
 		}
 
-		if req.ShowExcerpt {
+		if content {
+			h.Content = d.Description
+		}
+
+		if excerpt {
 			excerpt := search.StripTags(d.Description)
 			if len(excerpt) > 100 {
 				excerpt = excerpt[:100]
 			}
 
 			h.Excerpt = excerpt
-		}
-
-		if req.ShowContent {
-			h.Content = d.Description
 		}
 
 		c = append(c, h)
@@ -1075,6 +1075,8 @@ func ttRssParseArticleIds(vv interface{}) (ids []data.ArticleId) {
 		for _, p := range v {
 			ids = append(ids, data.ArticleId(int64(p)))
 		}
+	case float64:
+		ids = append(ids, data.ArticleId(int64(v)))
 	}
 	return
 }
