@@ -595,6 +595,7 @@
                 this._renderInstance(index, 0);
             }
 
+            this.cancelDebouncer('container-clear-height');
             this.$['article-container'].style.height = '';
             var oldHeight = window.getComputedStyle(this.$['article-container']).getPropertyValue('height');
 
@@ -614,7 +615,11 @@
             if (oldHeight != newHeight) {
                 this.$['article-container'].style.height = oldHeight;
                 this.$['article-container'].offsetHeight;
+
                 this.$['article-container'].style.height = newHeight;
+                this.debounce('container-clear-height', function() {
+                    this.$['article-container'].style.height = '';
+                }, 1000);
             }
 
             Polymer.dom.flush();
