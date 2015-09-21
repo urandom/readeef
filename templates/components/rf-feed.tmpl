@@ -228,12 +228,12 @@ rf-article /deep/ .article-summary {
                                             <paper-ripple></paper-ripple>
                                         </a>
                                         <paper-spinner active="[[ item.article.summarizing ]]"></paper-spinner>
-                                        <a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'summary') ]]" class="article-link article-control" hidden="[[ item.article.summarizing ]]">
+                                        <a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'summary') ]]" class="article-link article-control" hidden="[[ _computeHideFormattingButtons(item, 'summarizing') ]]">
                                             {% __ "Summarize" .base.lang %}
                                             <paper-ripple></paper-ripple>
                                         </a>
                                         <paper-spinner active="[[ item.article.formatting ]]"></paper-spinner>
-                                        <a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'format') ]]" class="article-link article-control" hidden="[[ item.article.formatting ]]">
+                                        <a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'format') ]]" class="article-link article-control" hidden="[[ _computeHideFormattingButtons(item, 'formatting') ]]">
                                             {% __ "Format" .base.lang %}
                                             <paper-ripple></paper-ripple>
                                         </a>
@@ -508,6 +508,10 @@ rf-article /deep/ .article-summary {
                         });
                     }
                 }
+            },
+
+            _computeHideFormattingButtons: function(item, type) {
+                return !this.user.capabilities.Extractor || item.article[type];
             },
 
             _computeArticleLink: function(articleId, type) {

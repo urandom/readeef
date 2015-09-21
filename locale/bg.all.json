@@ -96,8 +96,8 @@
         "translation": "Английски"
     },
     {
-        "id": "Enter the address of a feed, or a website that might contain one or more feeds.",
-        "translation": "Въведете адрес на емисия, или сайт който може да съдържа такива."
+        "id": "Enter keywords to use when searching for public feeds. A website address that contains one more more feeds may also be used. Finally, feed addresses may be entered directly.",
+        "translation": "Въведете ключови думи с които да се търсят публични емисии. Може да се въведе адрес на сайт който съдържа една или повече емисии, или директни адреси на последните."
     },
     {
         "id": "Error adding selected feeds: ",
@@ -286,6 +286,10 @@
     {
         "id": "Unread only",
         "translation": "Само непрочетени"
+    },
+    {
+        "id": "URL or keywords",
+        "translation": "URL или ключови думи"
     },
     {
         "id": "User exists",

@@ -44,10 +44,10 @@ li paper-checkbox {
                     <iron-pages>
                         <section route="settings-add-feed-discover">
                             <p>
-                                {% __ "Enter the address of a feed, or a website that might contain one or more feeds." .base.lang %}
+                                {% __ "Enter keywords to use when searching for public feeds. A website address that contains one more more feeds may also be used. Finally, feed addresses may be entered directly." .base.lang %}
                             </p>
 
-                            <paper-input id="feed-url" label="{% __ "URL" .base.lang %}" on-keypress="onUrlKeypress" data-error-no-feed="{% __ "No feeds were found" .base.lang %}" data-error-no-absolute="{% __ "The value is not a valid absolute URL" .base.lang %}" data-error-internal="{% __ "There was an error processing the request" .base.lang %}"></paper-input>
+                            <paper-input id="feed-url" label="{% __ "URL or keywords" .base.lang %}" on-keypress="onUrlKeypress"></paper-input>
 
                             <p>
                                 {% __ "Alternatively, you may provide an OPML file that contains a list of feeds." .base.lang %}

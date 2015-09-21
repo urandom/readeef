@@ -144,6 +144,10 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		}
 	}
 
+	if ce != nil {
+		capabilities.Extractor = true
+	}
+
 	var t content.Thumbnailer
 	switch config.Content.Thumbnailer {
 	case "extract":

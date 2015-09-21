@@ -28,6 +28,7 @@ type logoutProcessor struct {
 type capabilities struct {
 	I18N      bool
 	Search    bool
+	Extractor bool
 	ProxyHTTP bool
 }
 
