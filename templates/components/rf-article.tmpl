@@ -79,7 +79,22 @@
 
     var animations = {}, transitionEvents = {},
         httpRe = /^https?:/, templateRe = /\{\{\s*\.\s*\}\}/,
-        hasWebkitTransform = 'webkitTransform' in document.body;
+        transformPrefix = '', transitionProperty = 'transition',
+        transitionEventName = 'transitionend';
+
+    if ('webkitTransition' in document.body) {
+        transitionEventName = 'webkitTransitionEnd';
+        transitionProperty = 'webkitTransition';
+    } else if ('msTransition' in document.body) {
+        transitionEventName = 'msTransitionEnd';
+        transitionProperty = 'msTransition';
+    }
+
+    if ('webkitTransform' in document.body) {
+        transformPrefix = '-webkit-';
+    } else if ('msTransform' in document.body) {
+        transformPrefix = '-ms-';
+    }
 
     {% if .base.langs %}
     moment.locale('{% .base.lang %}');
@@ -124,15 +139,11 @@
         element.offsetHeight;
 
         element.style.webkitTransition = transition.replace(/\btransform\b/, '-webkit-transform');
-        element.style.transition = transition;
-
-        var name = 'transitionend';
-        if (hasWebkitTransform) {
-            name = 'webkitTransitionEnd';
-        }
+        element.style[transitionProperty] = transformPrefix ?
+            transition.replace(/\btransform\b/, transformPrefix + 'transform') : transition;
 
         var one = function() {
-            element.removeEventListener(name, one);
+            element.removeEventListener(transitionEventName, one);
             element.style.webkitTransition = '';
             element.style.transition = '';
 
@@ -143,7 +154,7 @@
             }
         };
 
-        element.addEventListener(name, one);
+        element.addEventListener(transitionEventName, one);
         transitionEvents[element.id] = one;
 
         element.style.opacity = endOpacity;
