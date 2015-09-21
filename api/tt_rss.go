@@ -38,7 +38,6 @@ const (
 )
 
 type TtRss struct {
-	webfw.BasePatternController
 	fm *readeef.FeedManager
 	sp content.SearchProvider
 	ap []ArticleProcessor
@@ -210,8 +209,16 @@ func NewTtRss(fm *readeef.FeedManager, sp content.SearchProvider, processors []A
 	}()
 
 	return TtRss{
-		webfw.NewBasePatternController(fmt.Sprintf("/v%d/tt-rss/api/", TTRSS_API_LEVEL), webfw.MethodPost, ""),
 		fm, sp, ap,
+	}
+}
+
+func (controller TtRss) Patterns() []webfw.MethodIdentifierTuple {
+	prefix := fmt.Sprintf("/v%d/tt-rss", TTRSS_API_LEVEL)
+
+	return []webfw.MethodIdentifierTuple{
+		webfw.MethodIdentifierTuple{prefix, webfw.MethodGet, "redirecter"},
+		webfw.MethodIdentifierTuple{prefix + "/api/", webfw.MethodPost, "api"},
 	}
 }
 
@@ -221,6 +228,12 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 	config := readeef.GetConfig(c)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		action := webfw.GetMultiPatternIdentifier(c, r)
+
+		if action == "redirecter" {
+			http.Redirect(w, r, "/", http.StatusMovedPermanently)
+		}
+
 		req := ttRssRequest{}
 		dec := json.NewDecoder(r.Body)
 
