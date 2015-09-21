@@ -55,7 +55,7 @@
         onRouteChange: function(event, detail) {
             // For some reason, MoreRouting keeps logout active for some time after redirecting
             if (MoreRouting.isCurrentUrl('logout') && !MoreRouting.isCurrentUrl('login')) {
-                this.async(function() {
+                this.debounce('logout', function() {
                     this.logout();
                 });
                 return;
@@ -68,6 +68,13 @@
                     MoreRouting.navigateTo('login');
                 } else {
                     MoreRouting.navigateTo('login-from', {url: this.encodeURI(location.pathname)});
+                }
+            }
+
+            if (MoreRouting.isCurrentUrl('login')) {
+                var login = Polymer.dom(this.root).querySelector('rf-login');
+                if (login) {
+                    login.show();
                 }
             }
         },
@@ -156,7 +163,9 @@
         logout: function() {
             this.$.logout.send();
             this._setUser(null);
-            MoreRouting.navigateTo('login');
+            this.async(function() {
+                MoreRouting.navigateTo('login');
+            });
         },
 
         connectionUnauthorized: function() {
