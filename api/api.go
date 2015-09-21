@@ -196,7 +196,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	controllers := []webfw.Controller{
 		NewAuth(capabilities),
 		NewFeed(fm, sp, ap),
-		NewArticle(config, ce),
+		NewArticle(config, ce, ap),
 		NewUser(),
 		NewUserSettings(),
 		NewNonce(nonce),

@@ -270,7 +270,7 @@ func (a apiRequest) processor(
 			readeefConfig: readeef.GetConfig(c),
 		}, nil
 	case "get-article":
-		return &getArticleProcessor{user: user}, nil
+		return &getArticleProcessor{user: user, ap: ap}, nil
 	case "list-feeds":
 		return &listFeedsProcessor{user: user}, nil
 	case "discover-feeds":
