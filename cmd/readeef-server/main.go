@@ -20,16 +20,23 @@ import (
 )
 
 func main() {
-	serverconfpath := flag.String("server-config", "", "server config path")
-	readeefconfpath := flag.String("readeef-config", "", "readeef config path")
-	address := flag.String("address", "", "local server network address")
-	port := flag.Int("port", 0, "server port")
+	configpath := flag.String("config", "", "readeef config path")
 
 	flag.Parse()
 
-	cfg, err := readeef.ReadConfig(*readeefconfpath)
+	cfg, err := readeef.ReadConfig(*configpath)
 	if err != nil {
-		exitWithError(fmt.Sprintf("Error reading config from path '%s': %v", *readeefconfpath, err))
+		exitWithError(fmt.Sprintf("Error reading config from path '%s': %v", *configpath, err))
+	}
+
+	if len(cfg.Config.Session.IgnoreURLPrefix) == 0 {
+		cfg.Config.Session.IgnoreURLPrefix = []string{"/v2/fever", "/v12/tt-rss"}
+	}
+	if len(cfg.Config.I18n.Languages) == 0 {
+		cfg.Config.I18n.Languages = []string{"en", "bg"}
+	}
+	if len(cfg.Config.I18n.IgnoreURLPrefix) == 0 {
+		cfg.Config.I18n.IgnoreURLPrefix = []string{"/dist", "/js", "/css", "/images", "/proxy"}
 	}
 
 	logger := readeef.NewLogger(cfg)
@@ -40,20 +47,7 @@ func main() {
 		}
 	}()
 
-	server := webfw.NewServer(*serverconfpath)
-	if *address != "" {
-		server.Address = *address
-	}
-
-	if *port > 0 {
-		server.Port = *port
-	}
-
-	if *serverconfpath == "" {
-		server.Config.Session.IgnoreURLPrefix = []string{"/v2/fever", "/v12/tt-rss"}
-		server.Config.I18n.Languages = []string{"en", "bg"}
-		server.Config.I18n.IgnoreURLPrefix = []string{"/dist", "/js", "/css", "/images", "/proxy"}
-	}
+	server := webfw.NewServerWithConfig(cfg.Config)
 
 	var accessWriter io.Writer
 	if cfg.Logger.AccessFile == "-" {

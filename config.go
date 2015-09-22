@@ -4,12 +4,15 @@ import (
 	"os"
 	"time"
 
+	"github.com/urandom/webfw"
+
 	"code.google.com/p/gcfg"
 )
 
 var apiversion = 1
 
 type Config struct {
+	webfw.Config
 	Logger struct {
 		Level      string
 		File       string
@@ -134,7 +137,10 @@ func ReadConfig(path ...string) (Config, error) {
 func defaultConfig() (Config, error) {
 	var def Config
 
-	err := gcfg.ReadStringInto(&def, cfg)
+	err := gcfg.ReadStringInto(&def, webfw.DefaultCfg)
+	if err == nil {
+		err = gcfg.ReadStringInto(&def, DefaultCfg)
+	}
 
 	if err != nil {
 		return Config{}, err
@@ -144,7 +150,7 @@ func defaultConfig() (Config, error) {
 	return def, nil
 }
 
-var cfg string = `
+var DefaultCfg string = `
 [logger]
 	level = error # error, info, debug
 	file = - # stderr, or a filename
