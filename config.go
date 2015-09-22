@@ -148,6 +148,7 @@ func defaultConfig() (Config, error) {
 	return def, nil
 }
 
+// Default configuration
 var DefaultCfg string = `
 [logger]
 	level = error # error, info, debug
