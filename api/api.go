@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/urandom/readeef"
-	apiProcessor "github.com/urandom/readeef/api/processor"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base/extractor"
 	"github.com/urandom/readeef/content/base/monitor"
+	contentProcessor "github.com/urandom/readeef/content/base/processor"
 	"github.com/urandom/readeef/content/base/search"
 	"github.com/urandom/readeef/content/base/thumbnailer"
 	"github.com/urandom/readeef/content/data"
@@ -37,10 +37,6 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		return err
 	}
 
-	if err := initAdminUser(repo, []byte(config.Auth.Secret)); err != nil {
-		return err
-	}
-
 	mw := make([]string, 0, len(dispatcher.Config.Dispatcher.Middleware))
 	for _, m := range dispatcher.Config.Dispatcher.Middleware {
 		switch m {
@@ -50,6 +46,38 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		}
 	}
 
+	capabilities := capabilities{
+		I18N:       len(dispatcher.Config.I18n.Languages) > 1,
+		Popularity: len(config.Popularity.Providers) > 0,
+	}
+
+	var ap []content.ArticleProcessor
+	for _, p := range config.Content.ArticleProcessors {
+		switch p {
+		case "relative-url":
+			ap = append(ap, contentProcessor.NewRelativeUrl(logger))
+		case "proxy-http":
+			template := config.Content.ProxyHTTPURLTemplate
+
+			if template != "" {
+				p, err := contentProcessor.NewProxyHTTP(logger, template)
+				if err != nil {
+					return fmt.Errorf("Error initializing Proxy HTTP article processor: %v", err)
+				}
+				ap = append(ap, p)
+				capabilities.ProxyHTTP = true
+			}
+		case "insert-thumbnail-target":
+			ap = append(ap, contentProcessor.NewInsertThumbnailTarget(logger))
+		}
+	}
+
+	repo.ArticleProcessors(ap)
+
+	if err := initAdminUser(repo, []byte(config.Auth.Secret)); err != nil {
+		return err
+	}
+
 	dispatcher.Config.Dispatcher.Middleware = mw
 
 	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
@@ -57,11 +85,6 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	dispatcher.Context.SetGlobal(readeef.CtxKey("repo"), repo)
 
 	fm := readeef.NewFeedManager(repo, config, logger)
-
-	capabilities := capabilities{
-		I18N:       len(dispatcher.Config.I18n.Languages) > 1,
-		Popularity: len(config.Popularity.Providers) > 0,
-	}
 
 	var processors []parser.Processor
 	for _, p := range config.FeedParser.Processors {
@@ -87,27 +110,6 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	}
 
 	fm.ParserProcessors(processors)
-
-	var ap []ArticleProcessor
-	for _, p := range config.API.ArticleProcessors {
-		switch p {
-		case "relative-url":
-			ap = append(ap, apiProcessor.NewRelativeUrl(logger))
-		case "proxy-http":
-			template := config.API.ProxyHTTPURLTemplate
-
-			if template != "" {
-				p, err := apiProcessor.NewProxyHTTP(logger, template)
-				if err != nil {
-					return fmt.Errorf("Error initializing Proxy HTTP article processor: %v", err)
-				}
-				ap = append(ap, p)
-				capabilities.ProxyHTTP = true
-			}
-		case "insert-thumbnail-target":
-			ap = append(ap, apiProcessor.NewInsertThumbnailTarget(logger))
-		}
-	}
 
 	var sp content.SearchProvider
 
@@ -178,7 +180,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		}
 	}
 
-	webSocket := NewWebSocket(fm, sp, ap, ce, capabilities)
+	webSocket := NewWebSocket(fm, sp, ce, capabilities)
 	dispatcher.Handle(webSocket)
 
 	monitors = append(monitors, webSocket)
@@ -202,8 +204,8 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	controllers := []webfw.Controller{
 		NewAuth(capabilities),
-		NewFeed(fm, sp, ap),
-		NewArticle(config, ce, ap),
+		NewFeed(fm, sp),
+		NewArticle(config, ce),
 		NewUser(),
 		NewUserSettings(),
 		NewNonce(nonce),
@@ -217,9 +219,9 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	for _, e := range config.API.Emulators {
 		switch e {
 		case "tt-rss":
-			controllers = append(controllers, NewTtRss(fm, sp, ap))
+			controllers = append(controllers, NewTtRss(fm, sp))
 		case "fever":
-			controllers = append(controllers, NewFever(ap))
+			controllers = append(controllers, NewFever())
 		}
 	}
 

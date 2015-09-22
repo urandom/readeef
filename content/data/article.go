@@ -84,6 +84,9 @@ type ArticleQueryOptions struct {
 	AfterId         ArticleId
 	BeforeDate      time.Time
 	AfterDate       time.Time
+
+	SkipProcessors            bool
+	SkipUrlModifierProcessors bool
 }
 
 type ArticleCountOptions struct {

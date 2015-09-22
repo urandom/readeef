@@ -22,10 +22,6 @@ type Config struct {
 	API struct {
 		Version   int
 		Emulators []string
-
-		ArticleProcessors []string `gcfg:"article-processors"`
-
-		ProxyHTTPURLTemplate string `gcfg:"proxy-http-url-template"`
 	}
 	Timeout struct {
 		Connect   string
@@ -76,15 +72,17 @@ type Config struct {
 	} `gcfg:"feed-manager"`
 
 	Content struct {
-		Extractor      string
-		Thumbnailer    string
-		SearchProvider string `gcfg:"search-provider"`
+		Extractor         string
+		Thumbnailer       string
+		SearchProvider    string   `gcfg:"search-provider"`
+		ArticleProcessors []string `gcfg:"article-processors"`
 
 		SearchBatchSize int64 `gcfg:"search-batch-size"`
 
-		ReadabilityKey string `gcfg:"readability-key"`
-		BlevePath      string `gcfg:"bleve-path"`
-		ElasticURL     string `gcfg:"elastic-url"`
+		ReadabilityKey       string `gcfg:"readability-key"`
+		BlevePath            string `gcfg:"bleve-path"`
+		ElasticURL           string `gcfg:"elastic-url"`
+		ProxyHTTPURLTemplate string `gcfg:"proxy-http-url-template"`
 	}
 }
 
@@ -160,13 +158,6 @@ var DefaultCfg string = `
 	emulators
 	# emulators = tt-rss
 	# emulators = fever
-
-	article-processors
-	article-processors = insert-thumbnail-target
-	# article-processors = relative-url
-	# article-processors = proxy-http
-
-	proxy-http-url-template = "/proxy?url={{ . }}"
 [db]
 	driver = sqlite3
 	connect = file:./readeef.sqlite3?cache=shared&mode=rwc
@@ -202,7 +193,15 @@ var DefaultCfg string = `
 	extractor = goose # readability
 	thumbnailer = description
 	search-provider = bleve
+
+	article-processors
+	article-processors = insert-thumbnail-target
+	# article-processors = relative-url
+	# article-processors = proxy-http
+
 	search-batch-size = 100
+
 	bleve-path = ./readeef.bleve
 	elastic-url = http://localhost:9200
+	proxy-http-url-template = "/proxy?url={{ . }}"
 `

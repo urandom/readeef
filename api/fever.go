@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/urandom/readeef"
-	"github.com/urandom/readeef/api/processor"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw"
@@ -22,7 +21,6 @@ import (
 
 type Fever struct {
 	webfw.BasePatternController
-	ap []ArticleProcessor
 }
 
 type feverFeed struct {
@@ -73,18 +71,10 @@ const (
 	FEVER_API_VERSION = 2
 )
 
-func NewFever(processors []ArticleProcessor) Fever {
-	ap := make([]ArticleProcessor, 0, len(processors))
-	for _, p := range processors {
-		if _, ok := p.(processor.ProxyHTTP); !ok {
-			ap = append(ap, p)
-		}
-	}
-
+func NewFever() Fever {
 	return Fever{
 		BasePatternController: webfw.NewBasePatternController(
 			fmt.Sprintf("/v%d/fever/", FEVER_API_VERSION), webfw.MethodPost, ""),
-		ap: ap,
 	}
 }
 
@@ -230,7 +220,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 
 					var articles []content.UserArticle
 					// Fever clients do their own paging
-					o := data.ArticleQueryOptions{Limit: 50, Offset: 0}
+					o := data.ArticleQueryOptions{Limit: 50, Offset: 0, SkipUrlModifierProcessors: true}
 
 					if withIds, ok := r.Form["with_ids"]; ok {
 						stringIds := strings.Split(withIds[0], ",")
@@ -244,7 +234,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 							}
 						}
 
-						articles, err = user.ArticlesById(ids), user.Err()
+						articles, err = user.ArticlesById(ids, data.ArticleQueryOptions{SkipUrlModifierProcessors: true}), user.Err()
 					} else if max > 0 {
 						user.Order(data.DescendingOrder)
 						o.BeforeId = data.ArticleId(max)
@@ -257,10 +247,6 @@ func (con Fever) Handler(c context.Context) http.Handler {
 
 					if err != nil {
 						break
-					}
-
-					for _, p := range con.ap {
-						articles = p.ProcessArticles(articles)
 					}
 
 					for i := range articles {
@@ -380,7 +366,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 						break
 					}
 
-					article, err = user.ArticleById(data.ArticleId(id)), user.Err()
+					article, err = user.ArticleById(data.ArticleId(id), data.ArticleQueryOptions{SkipUrlModifierProcessors: true}), user.Err()
 					if err != nil {
 						break
 					}

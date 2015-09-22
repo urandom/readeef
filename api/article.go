@@ -19,11 +19,10 @@ import (
 type Article struct {
 	config    readeef.Config
 	extractor content.Extractor
-	ap        []ArticleProcessor
 }
 
-func NewArticle(config readeef.Config, extractor content.Extractor, ap []ArticleProcessor) Article {
-	return Article{config: config, extractor: extractor, ap: ap}
+func NewArticle(config readeef.Config, extractor content.Extractor) Article {
+	return Article{config: config, extractor: extractor}
 }
 
 type Readability struct {
@@ -57,7 +56,6 @@ type getArticleProcessor struct {
 	Id data.ArticleId `json:"id"`
 
 	user content.User
-	ap   []ArticleProcessor
 }
 
 func (con Article) Patterns() []webfw.MethodIdentifierTuple {
@@ -90,7 +88,7 @@ func (con Article) Handler(c context.Context) http.Handler {
 			id := data.ArticleId(articleId)
 			switch action {
 			case "fetch":
-				resp = fetchArticle(user, id, con.ap)
+				resp = fetchArticle(user, id)
 			case "read":
 				resp = articleReadState(user, id, params["value"] == "true")
 			case "favorite":
@@ -132,24 +130,16 @@ func (p formatArticleProcessor) Process() responseError {
 }
 
 func (p getArticleProcessor) Process() responseError {
-	return fetchArticle(p.user, p.Id, p.ap)
+	return fetchArticle(p.user, p.Id)
 }
 
-func fetchArticle(user content.User, id data.ArticleId, ap []ArticleProcessor) (resp responseError) {
+func fetchArticle(user content.User, id data.ArticleId) (resp responseError) {
 	resp = newResponse()
 
 	article := user.ArticleById(id)
 	if user.HasErr() {
 		resp.err = user.Err()
 		return
-	}
-
-	if len(ap) > 0 {
-		ua := []content.UserArticle{article}
-		for _, p := range ap {
-			ua = p.ProcessArticles(ua)
-		}
-		article = ua[0]
 	}
 
 	resp.val["Article"] = article
@@ -159,7 +149,7 @@ func fetchArticle(user content.User, id data.ArticleId, ap []ArticleProcessor) (
 func articleReadState(user content.User, id data.ArticleId, read bool) (resp responseError) {
 	resp = newResponse()
 
-	article := user.ArticleById(id)
+	article := user.ArticleById(id, data.ArticleQueryOptions{SkipProcessors: true})
 	if user.HasErr() {
 		resp.err = user.Err()
 		return
@@ -185,7 +175,7 @@ func articleReadState(user content.User, id data.ArticleId, read bool) (resp res
 func articleFavoriteState(user content.User, id data.ArticleId, favorite bool) (resp responseError) {
 	resp = newResponse()
 
-	article := user.ArticleById(id)
+	article := user.ArticleById(id, data.ArticleQueryOptions{SkipProcessors: true})
 	if user.HasErr() {
 		resp.err = user.Err()
 		return

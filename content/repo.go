@@ -6,6 +6,8 @@ type Repo interface {
 	Error
 	Generator
 
+	ArticleProcessors(processors ...[]ArticleProcessor) []ArticleProcessor
+
 	UserByLogin(login data.Login) User
 	UserByMD5Api(md5 []byte) User
 	AllUsers() []User

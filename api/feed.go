@@ -23,11 +23,10 @@ import (
 type Feed struct {
 	fm *readeef.FeedManager
 	sp content.SearchProvider
-	ap []ArticleProcessor
 }
 
-func NewFeed(fm *readeef.FeedManager, sp content.SearchProvider, ap []ArticleProcessor) Feed {
-	return Feed{fm: fm, sp: sp, ap: ap}
+func NewFeed(fm *readeef.FeedManager, sp content.SearchProvider) Feed {
+	return Feed{fm: fm, sp: sp}
 }
 
 type listFeedsProcessor struct {
@@ -93,7 +92,6 @@ type getFeedArticlesProcessor struct {
 
 	user content.User
 	sp   content.SearchProvider
-	ap   []ArticleProcessor
 }
 
 var (
@@ -186,7 +184,7 @@ func (con Feed) Handler(c context.Context) http.Handler {
 				if offset, resp.err = strconv.Atoi(params["offset"]); resp.err == nil {
 					afterId, _ := strconv.ParseInt(params["after-id"], 10, 64)
 
-					resp = getFeedArticles(user, con.sp, con.ap, params["feed-id"], data.ArticleId(afterId),
+					resp = getFeedArticles(user, con.sp, params["feed-id"], data.ArticleId(afterId),
 						limit, offset, params["older-first"] == "true", params["unread-only"] == "true")
 				}
 			}
@@ -256,7 +254,7 @@ func (p readStateProcessor) Process() responseError {
 }
 
 func (p getFeedArticlesProcessor) Process() responseError {
-	return getFeedArticles(p.user, p.sp, p.ap, p.Id, p.AfterId, p.Limit, p.Offset, p.OlderFirst, p.UnreadOnly)
+	return getFeedArticles(p.user, p.sp, p.Id, p.AfterId, p.Limit, p.Offset, p.OlderFirst, p.UnreadOnly)
 }
 
 func listFeeds(user content.User) (resp responseError) {
@@ -554,7 +552,7 @@ func readState(user content.User, id string, beforeId data.ArticleId, timestamp 
 	return
 }
 
-func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleProcessor,
+func getFeedArticles(user content.User, sp content.SearchProvider,
 	id string, afterId data.ArticleId, limit int, offset int, olderFirst bool,
 	unreadOnly bool) (resp responseError) {
 
@@ -680,10 +678,6 @@ func getFeedArticles(user content.User, sp content.SearchProvider, ap []ArticleP
 		if e, ok := ar.(content.Error); ok && e.HasErr() {
 			resp.err = e.Err()
 		}
-	}
-
-	for _, p := range ap {
-		ua = p.ProcessArticles(ua)
 	}
 
 	resp.val["Articles"] = ua

@@ -102,3 +102,7 @@ type ArticleExtract interface {
 
 	Update()
 }
+
+type ArticleProcessor interface {
+	ProcessArticles(ua []UserArticle) []UserArticle
+}

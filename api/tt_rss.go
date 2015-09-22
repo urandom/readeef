@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/urandom/readeef"
-	"github.com/urandom/readeef/api/processor"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base/search"
 	"github.com/urandom/readeef/content/data"
@@ -40,7 +39,6 @@ const (
 type TtRss struct {
 	fm *readeef.FeedManager
 	sp content.SearchProvider
-	ap []ArticleProcessor
 }
 
 type ttRssRequest struct {
@@ -191,14 +189,7 @@ var (
 	ttRssSessions = map[string]ttRssSession{}
 )
 
-func NewTtRss(fm *readeef.FeedManager, sp content.SearchProvider, processors []ArticleProcessor) TtRss {
-	ap := make([]ArticleProcessor, 0, len(processors))
-	for _, p := range processors {
-		if _, ok := p.(processor.ProxyHTTP); !ok {
-			ap = append(ap, p)
-		}
-	}
-
+func NewTtRss(fm *readeef.FeedManager, sp content.SearchProvider) TtRss {
 	go func() {
 		fiveDaysAgo := time.Now().AddDate(0, 0, -5)
 		for id, sess := range ttRssSessions {
@@ -208,9 +199,7 @@ func NewTtRss(fm *readeef.FeedManager, sp content.SearchProvider, processors []A
 		}
 	}()
 
-	return TtRss{
-		fm, sp, ap,
-	}
+	return TtRss{fm, sp}
 }
 
 func (controller TtRss) Patterns() []webfw.MethodIdentifierTuple {
@@ -577,7 +566,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				var articleRepo content.ArticleRepo
 				var feedTitle string
 				firstId := data.ArticleId(0)
-				o := data.ArticleQueryOptions{Limit: limit, Offset: req.Skip, UnreadFirst: true}
+				o := data.ArticleQueryOptions{Limit: limit, Offset: req.Skip, UnreadFirst: true, SkipUrlModifierProcessors: true}
 
 				if req.IsCat {
 					if req.FeedId == TTRSS_CAT_UNCATEGORIZED {
@@ -648,10 +637,6 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 				if len(articles) > 0 {
 					firstId = articles[0].Data().Id
-
-					for _, p := range controller.ap {
-						articles = p.ProcessArticles(articles)
-					}
 				}
 
 				headlines := ttRssHeadlinesFromArticles(articles, feedTitle, nil, req.ShowContent, req.ShowExcerpt)
@@ -667,7 +652,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					con = headlines
 				}
 			case "updateArticle":
-				articles := user.ArticlesById(req.ArticleIds)
+				articles := user.ArticlesById(req.ArticleIds, data.ArticleQueryOptions{SkipUrlModifierProcessors: true})
 				updateCount := int64(0)
 
 				switch req.Field {
@@ -734,7 +719,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					con = ttRssGenericContent{Status: "OK", Updated: updateCount}
 				}
 			case "getArticle":
-				articles := user.ArticlesById(req.ArticleId)
+				articles := user.ArticlesById(req.ArticleId, data.ArticleQueryOptions{SkipUrlModifierProcessors: true})
 				feedTitles := map[data.FeedId]string{}
 
 				for _, a := range articles {
@@ -742,12 +727,6 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					if _, ok := feedTitles[d.FeedId]; !ok {
 						f := repo.FeedById(d.FeedId)
 						feedTitles[d.FeedId] = f.Data().Title
-					}
-				}
-
-				if len(controller.ap) > 0 {
-					for _, p := range controller.ap {
-						articles = p.ProcessArticles(articles)
 					}
 				}
 

@@ -33,9 +33,8 @@ type User interface {
 
 	AllTaggedFeeds() []TaggedFeed
 
-	ArticleById(id data.ArticleId) UserArticle
-
-	ArticlesById(ids []data.ArticleId) []UserArticle
+	ArticleById(id data.ArticleId, opts ...data.ArticleQueryOptions) UserArticle
+	ArticlesById(ids []data.ArticleId, opts ...data.ArticleQueryOptions) []UserArticle
 
 	AllUnreadArticleIds() []data.ArticleId
 	AllFavoriteArticleIds() []data.ArticleId

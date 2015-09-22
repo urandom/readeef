@@ -30,7 +30,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, ap
 	}
 
 	if !hasProxy {
-		for _, p := range config.API.ArticleProcessors {
+		for _, p := range config.Content.ArticleProcessors {
 			if p == "proxy-http" {
 				hasProxy = true
 				break

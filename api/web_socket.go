@@ -18,7 +18,6 @@ type WebSocket struct {
 	webfw.BasePatternController
 	fm           *readeef.FeedManager
 	sp           content.SearchProvider
-	ap           []ArticleProcessor
 	extractor    content.Extractor
 	capabilities capabilities
 	updateFeed   chan content.Feed
@@ -62,13 +61,12 @@ var (
 	errResourceNotFound   = errors.New("Resource not found")
 )
 
-func NewWebSocket(fm *readeef.FeedManager, sp content.SearchProvider, ap []ArticleProcessor,
+func NewWebSocket(fm *readeef.FeedManager, sp content.SearchProvider,
 	extractor content.Extractor, capabilities capabilities) WebSocket {
 	return WebSocket{
 		BasePatternController: webfw.NewBasePatternController("/v:version/", webfw.MethodGet, ""),
 		fm:           fm,
 		sp:           sp,
-		ap:           ap,
 		extractor:    extractor,
 		capabilities: capabilities,
 		updateFeed:   make(chan content.Feed),
@@ -135,7 +133,7 @@ func (con WebSocket) Handler(c context.Context) http.Handler {
 					var err error
 					var processor Processor
 
-					if processor, err = data.processor(c, sess, user, con.fm, con.sp, con.ap, con.extractor,
+					if processor, err = data.processor(c, sess, user, con.fm, con.sp, con.extractor,
 						con.capabilities, []byte(cfg.Auth.Secret)); err == nil {
 						if len(data.Arguments) > 0 {
 							err = json.Unmarshal([]byte(data.Arguments), processor)
@@ -245,7 +243,6 @@ func (a apiRequest) processor(
 	user content.User,
 	fm *readeef.FeedManager,
 	sp content.SearchProvider,
-	ap []ArticleProcessor,
 	extractor content.Extractor,
 	capabilities capabilities,
 	secret []byte,
@@ -270,7 +267,7 @@ func (a apiRequest) processor(
 			readeefConfig: readeef.GetConfig(c),
 		}, nil
 	case "get-article":
-		return &getArticleProcessor{user: user, ap: ap}, nil
+		return &getArticleProcessor{user: user}, nil
 	case "list-feeds":
 		return &listFeedsProcessor{user: user}, nil
 	case "discover-feeds":
@@ -288,7 +285,7 @@ func (a apiRequest) processor(
 	case "read-state":
 		return &readStateProcessor{user: user}, nil
 	case "get-feed-articles":
-		return &getFeedArticlesProcessor{user: user, sp: sp, ap: ap}, nil
+		return &getFeedArticlesProcessor{user: user, sp: sp}, nil
 	case "get-user-attribute":
 		return &getUserAttributeProcessor{user: user}, nil
 	case "set-user-attribute":

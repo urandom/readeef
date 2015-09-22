@@ -8,6 +8,7 @@ import (
 
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
+	"github.com/urandom/readeef/content/base/processor"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/db"
 	"github.com/urandom/webfw"
@@ -314,7 +315,7 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	return
 }
 
-func (u *User) ArticleById(id data.ArticleId) (ua content.UserArticle) {
+func (u *User) ArticleById(id data.ArticleId, o ...data.ArticleQueryOptions) (ua content.UserArticle) {
 	ua = u.Repo().UserArticle(u)
 	if u.HasErr() {
 		ua.Err(u.Err())
@@ -326,10 +327,15 @@ func (u *User) ArticleById(id data.ArticleId) (ua content.UserArticle) {
 		return
 	}
 
+	var opts data.ArticleQueryOptions
+	if len(o) > 0 {
+		opts = o[0]
+	}
+
 	login := u.Data().Login
 	u.logger.Infof("Getting article '%d' for user %s\n", id, login)
 
-	articles := getArticles(u, u.db, u.logger, data.ArticleQueryOptions{}, u,
+	articles := getArticles(u, u.db, u.logger, opts, u,
 		"", "a.id = $2", []interface{}{id})
 
 	if len(articles) > 0 {
@@ -344,7 +350,7 @@ func (u *User) ArticleById(id data.ArticleId) (ua content.UserArticle) {
 	return
 }
 
-func (u *User) ArticlesById(ids []data.ArticleId) (ua []content.UserArticle) {
+func (u *User) ArticlesById(ids []data.ArticleId, o ...data.ArticleQueryOptions) (ua []content.UserArticle) {
 	if u.HasErr() || len(ids) == 0 {
 		return
 	}
@@ -352,6 +358,11 @@ func (u *User) ArticlesById(ids []data.ArticleId) (ua []content.UserArticle) {
 	if err := u.Validate(); err != nil {
 		u.Err(err)
 		return
+	}
+
+	var opts data.ArticleQueryOptions
+	if len(o) > 0 {
+		opts = o[0]
 	}
 
 	login := u.Data().Login
@@ -373,7 +384,7 @@ func (u *User) ArticlesById(ids []data.ArticleId) (ua []content.UserArticle) {
 
 	where += ")"
 
-	articles := getArticles(u, u.db, u.logger, data.ArticleQueryOptions{}, u, "", where, args)
+	articles := getArticles(u, u.db, u.logger, opts, u, "", where, args)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -753,6 +764,21 @@ func internalGetArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts d
 	for i := range data {
 		ua[i] = u.Repo().UserArticle(u)
 		ua[i].Data(data[i])
+	}
+
+	processors := u.Repo().ArticleProcessors()
+	if !opts.SkipProcessors && len(processors) > 0 {
+		for _, p := range processors {
+			if opts.SkipUrlModifierProcessors {
+				if _, ok := p.(processor.ProxyHTTP); ok {
+					continue
+				}
+				if _, ok := p.(processor.RelativeUrl); ok {
+					continue
+				}
+			}
+			ua = p.ProcessArticles(ua)
+		}
 	}
 
 	return
