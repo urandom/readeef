@@ -26,10 +26,11 @@ type logoutProcessor struct {
 }
 
 type capabilities struct {
-	I18N      bool
-	Search    bool
-	Extractor bool
-	ProxyHTTP bool
+	I18N       bool
+	Search     bool
+	Extractor  bool
+	ProxyHTTP  bool
+	Popularity bool
 }
 
 func NewAuth(capabilities capabilities) Auth {

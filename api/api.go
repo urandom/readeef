@@ -58,7 +58,10 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	fm := readeef.NewFeedManager(repo, config, logger)
 
-	capabilities := capabilities{I18N: len(dispatcher.Config.I18n.Languages) > 1}
+	capabilities := capabilities{
+		I18N:       len(dispatcher.Config.I18n.Languages) > 1,
+		Popularity: len(config.Popularity.Providers) > 0,
+	}
 
 	var processors []parser.Processor
 	for _, p := range config.FeedParser.Processors {

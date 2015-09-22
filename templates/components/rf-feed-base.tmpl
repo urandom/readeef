@@ -112,7 +112,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                         <paper-ripple></paper-ripple>
                     </a>
 
-                    <div class="layout horizontal center">
+                    <div class="layout horizontal center" hidden$="[[ !user.capabilities.Popularity ]]">
                         <paper-icon-button icon="expand-more" expands="popular-feeds" class="item" on-tap="onToggleExpand"></paper-icon-button>
                         <a is="pushstate-anchor" href="[[ feedUrlFor('popular:all') ]]" class="layout horizontal flex">
                             <div style="position: relative" class="flex item">
@@ -121,7 +121,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                             </div>
                         </a>
                     </div>
-                    <iron-collapse id="popular-feeds">
+                    <iron-collapse id="popular-feeds" hidden$="[[ !user.capabilities.Popularity ]]">
                         <div class="menu submenu">
                             <template is="dom-repeat" items="[[ tags ]]">
                                 <a is="pushstate-anchor" href="[[ feedUrlFor(item.name, 'popular:tag') ]]" class="item">
