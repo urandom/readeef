@@ -282,6 +282,9 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     type: Array,
                     notify: true,
                     observer: '_feedsChanged',
+                    value: function() {
+                        return [];
+                    },
                 },
                 articles: {
                     type: Array,
@@ -780,7 +783,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
                     return '{% __ "Articles from { Tag }" .base.lang %}'.replace(/{\s*Tag\s*}/, tagOrId.substring("tag:".length));
                 } else if (!isNaN(tagOrId)) {
-                    var feed = (this.feeds || []).filter(function(f) { return f.Id == tagOrId })[0];
+                    var feed = this.feeds.filter(function(f) { return f.Id == tagOrId })[0];
                     if (feed) {
                         return feed.Title;
                     }
@@ -788,7 +791,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
             _computeHideFeedItems: function(feeds) {
-                return this.feeds == 0;
+                return this.feeds.length == 0;
             },
 
             _computeFavIconUrl: function(feed) {

@@ -602,7 +602,7 @@ func (fm FeedManager) processFeedUpdateMonitors(f content.Feed) {
 	if len(f.NewArticles()) > 0 {
 		for _, m := range fm.feedMonitors {
 			if err := m.FeedUpdated(f); err != nil {
-				fm.logger.Print("Error invoking monitor '%s' on updated feed '%s': %v\n",
+				fm.logger.Printf("Error invoking monitor '%s' on updated feed '%s': %v\n",
 					reflect.TypeOf(m), f, err)
 			}
 		}

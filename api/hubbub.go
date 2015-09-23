@@ -107,7 +107,7 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 			if newArticles {
 				for _, m := range con.hubbub.FeedMonitors() {
 					if err := m.FeedUpdated(f); err != nil {
-						logger.Print("Error invoking monitor '%s' on updated feed '%s': %v\n",
+						logger.Printf("Error invoking monitor '%s' on updated feed '%s': %v\n",
 							reflect.TypeOf(m), f, err)
 					}
 				}
