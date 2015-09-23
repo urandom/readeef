@@ -6,7 +6,7 @@ import (
 
 	"github.com/urandom/webfw"
 
-	"code.google.com/p/gcfg"
+	"gopkg.in/gcfg.v1"
 )
 
 var apiversion = 1
