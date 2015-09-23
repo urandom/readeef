@@ -37,15 +37,6 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 		return err
 	}
 
-	mw := make([]string, 0, len(dispatcher.Config.Dispatcher.Middleware))
-	for _, m := range dispatcher.Config.Dispatcher.Middleware {
-		switch m {
-		case "I18N", "Static", "Url", "Sitemap":
-		default:
-			mw = append(mw, m)
-		}
-	}
-
 	capabilities := capabilities{
 		I18N:       len(dispatcher.Config.I18n.Languages) > 1,
 		Popularity: len(config.Popularity.Providers) > 0,
@@ -76,6 +67,19 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	if err := initAdminUser(repo, []byte(config.Auth.Secret)); err != nil {
 		return err
+	}
+
+	mw := make([]string, 0, len(dispatcher.Config.Dispatcher.Middleware))
+	for _, m := range dispatcher.Config.Dispatcher.Middleware {
+		switch m {
+		case "I18N", "Static", "Url", "Sitemap":
+		case "Session":
+			if capabilities.ProxyHTTP {
+				mw = append(mw, m)
+			}
+		default:
+			mw = append(mw, m)
+		}
 	}
 
 	dispatcher.Config.Dispatcher.Middleware = mw

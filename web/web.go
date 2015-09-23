@@ -12,15 +12,6 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, ap
 	dispatcher.Renderer = renderer.NewRenderer(dispatcher.Config.Renderer.Dir,
 		dispatcher.Config.Renderer.Base)
 
-	dispatcher.Renderer.Delims("{%", "%}")
-	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
-	dispatcher.Context.SetGlobal(context.BaseCtxKey("readeefConfig"), config)
-
-	middleware.InitializeDefault(dispatcher)
-
-	dispatcher.Handle(NewApp())
-	dispatcher.Handle(NewComponent(dispatcher, apiPattern))
-
 	hasProxy := false
 	for _, p := range config.FeedParser.Processors {
 		if p == "proxy-http" {
@@ -38,7 +29,31 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, ap
 		}
 	}
 
+	mw := make([]string, 0, len(dispatcher.Config.Dispatcher.Middleware))
+	for _, m := range dispatcher.Config.Dispatcher.Middleware {
+		switch m {
+		case "Session":
+			if hasProxy {
+				mw = append(mw, m)
+			}
+		default:
+			mw = append(mw, m)
+		}
+	}
+
+	dispatcher.Config.Dispatcher.Middleware = mw
+
+	dispatcher.Renderer.Delims("{%", "%}")
+	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
+	dispatcher.Context.SetGlobal(context.BaseCtxKey("readeefConfig"), config)
+
+	middleware.InitializeDefault(dispatcher)
+
+	dispatcher.Handle(NewApp())
+	dispatcher.Handle(NewComponent(dispatcher, apiPattern))
+
 	if hasProxy {
 		dispatcher.Handle(NewProxy())
 	}
+
 }
