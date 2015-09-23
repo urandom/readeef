@@ -109,7 +109,12 @@ li paper-checkbox {
                         </section>
 
                         <section route="settings-add-feed-discover-select-error">
-                            <p>{% __ "Error adding selected feeds: " .base.lang %}<span>[[ addFeedError ]]</span></p>
+                            <p>{% __ "Error adding selected feeds: " .base.lang %}<br>
+                                <template is="dom-repeat" items="[[ addFeedErrors ]]">
+                                    <span>[[ _computeFeedErrorEntry(item) ]]</span>
+                                    <br>
+                                </template>
+                            </p>
                             <div class="layout horizontal end-justified">
                                 <a is="pushstate-anchor" href="[[ urlFor('settings-add-feed-discover-select') ]]">
                                     <span>{% __ "Back" .base.lang %}</span>
@@ -148,9 +153,11 @@ li paper-checkbox {
                         return null;
                     },
                 },
-                addFeedError: {
-                    type: String,
-                    value: "",
+                addFeedErrors: {
+                    type: Array,
+                    value: function() {
+                        return [];
+                    },
                 },
                 loading: {
                     type: Boolean,
@@ -276,7 +283,11 @@ li paper-checkbox {
             },
 
             onAddFeedError: function(event, data) {
-                this.addFeedError = data.error;
+                this.addFeedErrors = data.arguments.Errors;
+
+                if (data.arguments.Success) {
+                    this.fire('iron-signal', {name: 'rf-feeds-added'});
+                }
                 MoreRouting.navigateTo('settings-add-feed-discover-select-error');
             },
 
@@ -302,6 +313,10 @@ li paper-checkbox {
 
             _computeHideAddFeed: function(discovered, loading) {
                 return loading || !discovered || discovered.length == 0;
+            },
+
+            _computeFeedErrorEntry: function(item) {
+                return (item.Title || item.Link) + ": " + item.Error;
             },
 
             _stripTags: function(html) {

@@ -1037,8 +1037,12 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
                 if (event.data.requestedArticle !== undefined) {
                     this.$['feed-articles'].send();
-                    MoreRouting.navigateTo('article',
-                            {tagOrId: this.tagOrId, articleId: event.data.requestedArticle});
+                    if (event.data.requestedArticle) {
+                        MoreRouting.navigateTo('article',
+                                {tagOrId: this.tagOrId, articleId: event.data.requestedArticle});
+                    } else {
+                        MoreRouting.navigateTo('feed', {tagOrId: this.tagOrId});
+                    }
                 } else {
                     this._maxArticleId = event.data.maxId;
                     this.loading = false;

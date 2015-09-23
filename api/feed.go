@@ -94,6 +94,12 @@ type getFeedArticlesProcessor struct {
 	sp   content.SearchProvider
 }
 
+type addFeedError struct {
+	Link  string
+	Title string
+	Error string
+}
+
 var (
 	errTypeNoAbsolute = "error-no-absolute"
 	errTypeNoFeed     = "error-no-feed"
@@ -370,27 +376,32 @@ func parseOpml(user content.User, fm *readeef.FeedManager, opmlData []byte) (res
 func addFeeds(user content.User, fm *readeef.FeedManager, links []string) (resp responseError) {
 	resp = newResponse()
 
-	success := false
+	var err error
+	errs := make([]addFeedError, 0, len(links))
 
 	for _, link := range links {
 		var u *url.URL
-		if u, resp.err = url.Parse(link); resp.err != nil {
-			/* TODO: non-fatal error */
-			return
+		if u, err = url.Parse(link); err != nil {
+			resp.err = err
+			errs = append(errs, addFeedError{Link: link, Error: "Error parsing link"})
+			continue
 		} else if !u.IsAbs() {
-			/* TODO: non-fatal error */
 			resp.err = errors.New("Feed has no link")
-			return
+			errs = append(errs, addFeedError{Link: link, Error: resp.err.Error()})
+			continue
 		} else {
 			var f content.Feed
-			if f, resp.err = fm.AddFeedByLink(link); resp.err != nil {
-				return
+			if f, err = fm.AddFeedByLink(link); err != nil {
+				resp.err = err
+				errs = append(errs, addFeedError{Link: link, Error: "Error adding feed to the database"})
+				continue
 			}
 
 			uf := user.AddFeed(f)
 			if uf.HasErr() {
 				resp.err = f.Err()
-				return
+				errs = append(errs, addFeedError{Link: link, Title: f.Data().Title, Error: "Error adding feed to the database"})
+				continue
 			}
 
 			tags := strings.SplitN(u.Fragment, ",", -1)
@@ -408,15 +419,15 @@ func addFeeds(user content.User, fm *readeef.FeedManager, links []string) (resp 
 				tf.Tags(t)
 				if tf.UpdateTags(); tf.HasErr() {
 					resp.err = tf.Err()
-					return
+					errs = append(errs, addFeedError{Link: link, Title: f.Data().Title, Error: "Error adding feed to the database"})
+					continue
 				}
 			}
-
-			success = true
 		}
 	}
 
-	resp.val["Success"] = success
+	resp.val["Errors"] = errs
+	resp.val["Success"] = len(errs) < len(links)
 	return
 }
 
