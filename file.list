@@ -113,7 +113,7 @@ static/dist/paper-input/paper-input-char-counter.html
 static/dist/paper-input/paper-input-container.html
 static/dist/paper-input/paper-input-error.html
 static/dist/paper-input/paper-input.html
-static/dist/paper-item/paper-item-shared.css
+static/dist/paper-item/paper-item-shared-styles.html
 static/dist/paper-item/paper-item.html
 static/dist/paper-material/paper-material.html
 static/dist/paper-menu-button/paper-menu-button-animations.html

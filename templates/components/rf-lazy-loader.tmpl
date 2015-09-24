@@ -81,7 +81,11 @@
         _onPropertyPayloadChanged: function(newValue, oldValue) {
             if (this.content) {
                 for (var key in (newValue || {})) {
-                    this.content[key] = newValue[key];
+                    if (this.set) {
+                        this.set(key, newValue[key]);
+                    } else {
+                        this.content[key] = newValue[key];
+                    }
                 }
             }
         },

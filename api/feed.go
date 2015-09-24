@@ -84,7 +84,8 @@ type readStateProcessor struct {
 
 type getFeedArticlesProcessor struct {
 	Id         string         `json:"id"`
-	AfterId    data.ArticleId `json:"afterId"`
+	MinId      data.ArticleId `json:"minId"`
+	MaxId      data.ArticleId `json:"maxId"`
 	Limit      int            `json:"limit"`
 	Offset     int            `json:"offset"`
 	OlderFirst bool           `json:"olderFirst"`
@@ -116,7 +117,7 @@ func (con Feed) Patterns() []webfw.MethodIdentifierTuple {
 		webfw.MethodIdentifierTuple{prefix + ":feed-id/read/:timestamp", webfw.MethodPost, "read"},
 		webfw.MethodIdentifierTuple{prefix + ":feed-id/read/before/:before-id", webfw.MethodPost, "read"},
 		webfw.MethodIdentifierTuple{prefix + ":feed-id/articles/:limit/:offset/:older-first/:unread-only", webfw.MethodGet, "articles"},
-		webfw.MethodIdentifierTuple{prefix + ":feed-id/articles/after/:after-id/:limit/:offset/:older-first/:unread-only", webfw.MethodGet, "articles"},
+		webfw.MethodIdentifierTuple{prefix + ":feed-id/articles/min/:min-id/max/:max-id/:limit/:offset/:older-first/:unread-only", webfw.MethodGet, "articles"},
 
 		webfw.MethodIdentifierTuple{prefix + "discover", webfw.MethodGet, "discover"},
 		webfw.MethodIdentifierTuple{prefix + "opml", webfw.MethodPost, "opml"},
@@ -188,9 +189,11 @@ func (con Feed) Handler(c context.Context) http.Handler {
 
 			if limit, resp.err = strconv.Atoi(params["limit"]); resp.err == nil {
 				if offset, resp.err = strconv.Atoi(params["offset"]); resp.err == nil {
-					afterId, _ := strconv.ParseInt(params["after-id"], 10, 64)
+					minId, _ := strconv.ParseInt(params["min-id"], 10, 64)
+					maxId, _ := strconv.ParseInt(params["max-id"], 10, 64)
 
-					resp = getFeedArticles(user, con.sp, params["feed-id"], data.ArticleId(afterId),
+					resp = getFeedArticles(user, con.sp, params["feed-id"],
+						data.ArticleId(minId), data.ArticleId(maxId),
 						limit, offset, params["older-first"] == "true", params["unread-only"] == "true")
 				}
 			}
@@ -260,7 +263,8 @@ func (p readStateProcessor) Process() responseError {
 }
 
 func (p getFeedArticlesProcessor) Process() responseError {
-	return getFeedArticles(p.user, p.sp, p.Id, p.AfterId, p.Limit, p.Offset, p.OlderFirst, p.UnreadOnly)
+	return getFeedArticles(p.user, p.sp, p.Id, p.MinId, p.MaxId,
+		p.Limit, p.Offset, p.OlderFirst, p.UnreadOnly)
 }
 
 func listFeeds(user content.User) (resp responseError) {
@@ -564,7 +568,7 @@ func readState(user content.User, id string, beforeId data.ArticleId, timestamp 
 }
 
 func getFeedArticles(user content.User, sp content.SearchProvider,
-	id string, afterId data.ArticleId, limit int, offset int, olderFirst bool,
+	id string, minId, maxId data.ArticleId, limit int, offset int, olderFirst bool,
 	unreadOnly bool) (resp responseError) {
 
 	resp = newResponse()
@@ -579,9 +583,9 @@ func getFeedArticles(user content.User, sp content.SearchProvider,
 
 	o := data.ArticleQueryOptions{Limit: limit, Offset: offset, UnreadOnly: unreadOnly, UnreadFirst: true}
 
-	if afterId > 0 {
-		o.AfterId = afterId
-		resp.val["AfterId"] = afterId
+	if maxId > 0 {
+		o.AfterId = maxId
+		resp.val["MaxId"] = maxId
 	}
 
 	if id == "favorite" {
@@ -685,6 +689,19 @@ func getFeedArticles(user content.User, sp content.SearchProvider,
 
 	if ar != nil {
 		ua = ar.Articles(o)
+
+		if minId > 0 {
+			qo := data.ArticleIdQueryOptions{BeforeId: maxId + 1, AfterId: minId - 1}
+
+			qo.UnreadOnly = true
+			resp.val["UnreadIds"] = ar.Ids(qo)
+
+			qo.UnreadOnly = false
+			qo.FavoriteOnly = true
+			resp.val["FavoriteIds"] = ar.Ids(qo)
+
+			resp.val["MinId"] = minId
+		}
 
 		if e, ok := ar.(content.Error); ok && e.HasErr() {
 			resp.err = e.Err()

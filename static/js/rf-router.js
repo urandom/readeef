@@ -79,7 +79,7 @@
             }
         },
 
-        onUserLoad: function(event) {
+        onUserLoad: function(event, detail) {
             var storage = event.target;
 
             if (storage.value) {
@@ -88,7 +88,9 @@
                 }
             }
 
-            this.validateUser(storage.value);
+            if (!detail.externalChange) {
+                this.validateUser(storage.value);
+            }
         },
 
         validateUser: function(user) {

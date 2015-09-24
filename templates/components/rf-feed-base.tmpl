@@ -366,7 +366,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                             this.$['get-article'].send();
                             break;
                         default:
-                            this.$['feed-articles'].send();
+                            this.$['feed-articles'].send({minId: this._minArticleId, maxId: this._maxArticleId});
                     }
                 });
             },
@@ -475,35 +475,25 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             onFeedArticlesMessage: function(event, data) {
                 this._updateAvailable = false;
 
-                if (data.arguments.Articles && data.arguments.Articles.length) {
-                    var data = {
-                        current: [].concat(this.articles),
-                        newArticles: data.arguments.Articles,
-                        olderFirst: this.user.ProfileData.olderFirst,
-                        unreadOnly: this.user.ProfileData.unreadOnly,
-                        treatAsUnread: this._treatAsUnread,
-                        lang: "{% .base.lang %}",
-                    };
+                var data = {
+                    current: [].concat(this.articles),
+                    newArticles: data.arguments.Articles,
+                    olderFirst: this.user.ProfileData.olderFirst,
+                    unreadOnly: this.user.ProfileData.unreadOnly,
+                    treatAsUnread: this._treatAsUnread,
+                    unreadIds: data.arguments.UnreadIds,
+                    favoriteIds: data.arguments.FavoriteIds,
+                    updateRequest: !!data.arguments.MaxId,
+                    lang: "{% .base.lang %}",
+                };
 
-                    delete this._treatAsUnread;
+                delete this._treatAsUnread;
 
-                    if (isNaN(this.tagOrId)) {
-                        data.feeds = this.feeds;
-                    }
-
-                    this._appendArticleWorker.postMessage(data);
-                } else {
-                    this.loading = false;
-
-                    if (data.arguments.AfterId) {
-                        this.$['no-new-articles'].show();
-                    } else {
-                        this.noMoreArticles = true;
-                        if (!this.offset) {
-                            this.articles = this._createArticles();
-                        }
-                    }
+                if (isNaN(this.tagOrId)) {
+                    data.feeds = this.feeds;
                 }
+
+                this._appendArticleWorker.postMessage(data);
             },
 
             onFeedArticlesError: function(event, detail) {
@@ -917,7 +907,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     return;
                 }
 
-                this.$['feed-articles'].send({offset: 0});
+                this.$['feed-articles'].send({offset: 0, minId: this._minArticleId, maxId: this._maxArticleId});
             },
 
             _previousArticle: function(unread) {
@@ -1004,7 +994,8 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     return index === undefined ? -1 : index;
                 };
 
-                this._maxArticleId = null;
+                this._minArticleId = 0;
+                this._maxArticleId = 0;
                 return articles;
             },
 
@@ -1044,12 +1035,20 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                         MoreRouting.navigateTo('feed', {tagOrId: this.tagOrId});
                     }
                 } else {
+                    this._minArticleId = event.data.minId;
                     this._maxArticleId = event.data.maxId;
                     this.loading = false;
                 }
 
                 if (!updated) {
-                    this.$['no-new-articles'].show();
+                    if (event.data.updateRequest) {
+                        this.$['no-new-articles'].show();
+                    } else {
+                        this.noMoreArticles = true;
+                        if (!this.offset) {
+                            this.articles = this._createArticles();
+                        }
+                    }
                 }
             },
 
