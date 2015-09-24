@@ -157,12 +157,12 @@ func TestUser(t *testing.T) {
 	u.ArticleById(id1).Favorite(true)
 	u.ArticleById(id3).Favorite(true)
 
-	uIds := u.AllUnreadArticleIds()
+	uIds := u.Ids(data.ArticleIdQueryOptions{UnreadOnly: true})
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 	tests.CheckInt64(t, 1, int64(len(uIds)))
 	tests.CheckInt64(t, int64(id1), int64(uIds[0]))
 
-	fIds := u.AllFavoriteArticleIds()
+	fIds := u.Ids(data.ArticleIdQueryOptions{FavoriteOnly: true})
 	tests.CheckBool(t, false, u.HasErr(), u.Err())
 	tests.CheckInt64(t, 2, int64(len(fIds)))
 

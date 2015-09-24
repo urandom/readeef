@@ -144,7 +144,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 				reqType = "unread item ids"
 				logger.Infoln("Fetching unread fever item ids")
 
-				ids := user.AllUnreadArticleIds()
+				ids := user.Ids(data.ArticleIdQueryOptions{UnreadOnly: true})
 				err = user.Err()
 				if err != nil {
 					break
@@ -168,7 +168,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 				reqType = "saved item ids"
 				logger.Infoln("Fetching saved fever item ids")
 
-				ids := user.AllFavoriteArticleIds()
+				ids := user.Ids(data.ArticleIdQueryOptions{FavoriteOnly: true})
 				err = user.Err()
 				if err != nil {
 					break

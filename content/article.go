@@ -29,6 +29,7 @@ type ArticleRepo interface {
 	ArticleSorting
 
 	Articles(...data.ArticleQueryOptions) []UserArticle
+	Ids(...data.ArticleIdQueryOptions) []data.ArticleId
 	Count(...data.ArticleCountOptions) int64
 	ReadState(read bool, o ...data.ArticleUpdateStateOptions)
 }

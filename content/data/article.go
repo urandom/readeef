@@ -89,6 +89,16 @@ type ArticleQueryOptions struct {
 	SkipUrlModifierProcessors bool
 }
 
+type ArticleIdQueryOptions struct {
+	UnreadOnly   bool
+	FavoriteOnly bool
+	UntaggedOnly bool
+	BeforeId     ArticleId
+	AfterId      ArticleId
+	BeforeDate   time.Time
+	AfterDate    time.Time
+}
+
 type ArticleCountOptions struct {
 	UnreadOnly   bool
 	FavoriteOnly bool

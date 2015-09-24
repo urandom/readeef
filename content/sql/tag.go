@@ -131,6 +131,37 @@ func (t *Tag) Articles(o ...data.ArticleQueryOptions) (ua []content.UserArticle)
 	return
 }
 
+func (t *Tag) Ids(o ...data.ArticleIdQueryOptions) (ids []data.ArticleId) {
+	if t.HasErr() {
+		return
+	}
+
+	if err := t.Validate(); err != nil {
+		t.Err(err)
+		return
+	}
+
+	var opts data.ArticleIdQueryOptions
+	if len(o) > 0 {
+		opts = o[0]
+	}
+	if opts.UntaggedOnly {
+		return
+	}
+
+	u := t.User()
+	tag := t.Data().Value
+	t.logger.Infof("Getting user %s tag %s article ids with options %#v\n", u.Data().Login, tag, opts)
+
+	ids = articleIds(u, t.db, t.logger, opts, t.db.SQL().Tag.ArticleCountJoin, "", []interface{}{tag})
+
+	if u.HasErr() {
+		t.Err(u.Err())
+	}
+
+	return
+}
+
 func (t *Tag) Count(o ...data.ArticleCountOptions) (count int64) {
 	if t.HasErr() {
 		return

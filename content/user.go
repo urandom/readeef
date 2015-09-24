@@ -36,9 +36,6 @@ type User interface {
 	ArticleById(id data.ArticleId, opts ...data.ArticleQueryOptions) UserArticle
 	ArticlesById(ids []data.ArticleId, opts ...data.ArticleQueryOptions) []UserArticle
 
-	AllUnreadArticleIds() []data.ArticleId
-	AllFavoriteArticleIds() []data.ArticleId
-
 	Tags() []Tag
 	TagById(id data.TagId) Tag
 	TagByValue(v data.TagValue) Tag

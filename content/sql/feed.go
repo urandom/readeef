@@ -521,6 +521,35 @@ func (uf *UserFeed) Articles(o ...data.ArticleQueryOptions) (ua []content.UserAr
 	return
 }
 
+func (uf *UserFeed) Ids(o ...data.ArticleIdQueryOptions) (ids []data.ArticleId) {
+	if uf.HasErr() {
+		return
+	}
+
+	if err := uf.Validate(); err != nil {
+		uf.Err(err)
+		return
+	}
+
+	u := uf.User()
+	id := uf.Data().Id
+
+	var opts data.ArticleIdQueryOptions
+	if len(o) > 0 {
+		opts = o[0]
+	}
+
+	uf.logger.Infof("Getting user %s feed %d article ids with options %#v\n", u.Data().Login, id, opts)
+
+	ids = articleIds(u, uf.db, uf.logger, opts, "", "a.feed_id = $2", []interface{}{id})
+
+	if u.HasErr() {
+		uf.Err(u.Err())
+	}
+
+	return
+}
+
 func (uf *UserFeed) Count(o ...data.ArticleCountOptions) (count int64) {
 	if uf.HasErr() {
 		return

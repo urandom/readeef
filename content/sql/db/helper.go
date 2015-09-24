@@ -94,12 +94,15 @@ type UserStmts struct {
 	GetTag        string
 	GetTagByValue string
 
-	GetAllUnreadArticleIds   string
-	GetAllFavoriteArticleIds string
-
 	GetArticlesTemplate     string
 	GetArticlesScoreJoin    string
 	GetArticlesUntaggedJoin string
+
+	GetArticleIdsTemplate      string
+	GetArticleIdsUserFeedsJoin string
+	GetArticleIdsUnreadJoin    string
+	GetArticleIdsFavoriteJoin  string
+	GetArticleIdsUntaggedJoin  string
 
 	ReadStateInsertTemplate     string
 	ReadStateInsertFavoriteJoin string

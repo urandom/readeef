@@ -17,9 +17,10 @@ import (
 
 var (
 	getArticlesTemplate     *template.Template
+	getArticleIdsTemplate   *template.Template
+	articleCountTemplate    *template.Template
 	readStateInsertTemplate *template.Template
 	readStateDeleteTemplate *template.Template
-	articleCountTemplate    *template.Template
 )
 
 type getArticlesData struct {
@@ -30,6 +31,16 @@ type getArticlesData struct {
 	Limit   string
 }
 
+type articleIdsData struct {
+	Join  string
+	Where string
+}
+
+type articleCountData struct {
+	Join  string
+	Where string
+}
+
 type readStateInsertData struct {
 	Join          string
 	JoinPredicate string
@@ -37,11 +48,6 @@ type readStateInsertData struct {
 }
 
 type readStateDeleteData struct {
-	Join  string
-	Where string
-}
-
-type articleCountData struct {
 	Join  string
 	Where string
 }
@@ -393,48 +399,6 @@ func (u *User) ArticlesById(ids []data.ArticleId, o ...data.ArticleQueryOptions)
 	return
 }
 
-func (u *User) AllUnreadArticleIds() (ids []data.ArticleId) {
-	if u.HasErr() {
-		return
-	}
-
-	if err := u.Validate(); err != nil {
-		u.Err(err)
-		return
-	}
-
-	login := u.Data().Login
-	u.logger.Infof("Getting unread article ids for user %s\n", login)
-
-	if err := u.db.Select(&ids, u.db.SQL().User.GetAllUnreadArticleIds, login); err != nil {
-		u.Err(err)
-		return
-	}
-
-	return
-}
-
-func (u *User) AllFavoriteArticleIds() (ids []data.ArticleId) {
-	if u.HasErr() {
-		return
-	}
-
-	if err := u.Validate(); err != nil {
-		u.Err(err)
-		return
-	}
-
-	login := u.Data().Login
-	u.logger.Infof("Getting favorite article ids for user %s\n", login)
-
-	if err := u.db.Select(&ids, u.db.SQL().User.GetAllFavoriteArticleIds, login); err != nil {
-		u.Err(err)
-		return
-	}
-
-	return
-}
-
 func (u *User) Articles(o ...data.ArticleQueryOptions) (ua []content.UserArticle) {
 	if u.HasErr() {
 		return
@@ -460,6 +424,26 @@ func (u *User) Articles(o ...data.ArticleQueryOptions) (ua []content.UserArticle
 	}
 
 	return
+}
+
+func (u *User) Ids(o ...data.ArticleIdQueryOptions) (ids []data.ArticleId) {
+	if u.HasErr() {
+		return
+	}
+
+	if err := u.Validate(); err != nil {
+		u.Err(err)
+		return
+	}
+
+	var opts data.ArticleIdQueryOptions
+	if len(o) > 0 {
+		opts = o[0]
+	}
+
+	u.logger.Infof("Getting user %s article ids using options: %#v\n", u.Data().Login, opts)
+
+	return articleIds(u, u.db, u.logger, opts, "", "", nil)
 }
 
 func (u *User) Count(o ...data.ArticleCountOptions) (count int64) {
@@ -784,6 +768,204 @@ func internalGetArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts d
 	return
 }
 
+func articleIds(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleIdQueryOptions, join, where string, args []interface{}) (ids []data.ArticleId) {
+	if u.HasErr() {
+		return
+	}
+
+	s := dbo.SQL()
+	var err error
+	if getArticleIdsTemplate == nil {
+		getArticleIdsTemplate, err = template.New("article-ids-sql").
+			Parse(s.User.GetArticleIdsTemplate)
+
+		if err != nil {
+			u.Err(fmt.Errorf("Error generating article-ids template: %v", err))
+			return
+		}
+	}
+
+	renderData := articleIdsData{}
+	containsUserFeeds := !opts.UnreadOnly && !opts.FavoriteOnly
+
+	if containsUserFeeds {
+		renderData.Join += s.User.GetArticleIdsUserFeedsJoin
+	} else {
+		if opts.UnreadOnly {
+			renderData.Join += s.User.GetArticleIdsUnreadJoin
+		}
+		if opts.FavoriteOnly {
+			renderData.Join += s.User.GetArticleIdsFavoriteJoin
+		}
+	}
+
+	if opts.UntaggedOnly {
+		renderData.Join += s.User.GetArticleIdsUntaggedJoin
+	}
+
+	if join != "" {
+		renderData.Join += " " + join
+	}
+
+	args = append([]interface{}{u.Data().Login}, args...)
+
+	whereSlice := []string{}
+
+	if opts.UnreadOnly {
+		whereSlice = append(whereSlice, "au.article_id IS NOT NULL AND au.user_login = $1")
+	}
+	if opts.FavoriteOnly {
+		whereSlice = append(whereSlice, "af.article_id IS NOT NULL AND af.user_login = $1")
+	}
+	if opts.UntaggedOnly {
+		whereSlice = append(whereSlice, "uft.feed_id IS NULL")
+	}
+
+	if where != "" {
+		whereSlice = append(whereSlice, where)
+	}
+
+	if opts.BeforeId > 0 {
+		whereSlice = append(whereSlice, fmt.Sprintf("a.id < $%d", len(args)+1))
+		args = append(args, opts.BeforeId)
+	}
+	if opts.AfterId > 0 {
+		whereSlice = append(whereSlice, fmt.Sprintf("a.id > $%d", len(args)+1))
+		args = append(args, opts.AfterId)
+	}
+
+	if !opts.BeforeDate.IsZero() {
+		whereSlice = append(whereSlice, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+1))
+		args = append(args, opts.BeforeDate)
+	}
+
+	if !opts.AfterDate.IsZero() {
+		whereSlice = append(whereSlice, fmt.Sprintf("a.date > $%d", len(args)+1))
+		args = append(args, opts.AfterDate)
+	}
+
+	if len(whereSlice) > 0 {
+		renderData.Where = "WHERE " + strings.Join(whereSlice, " AND ")
+	}
+
+	buf := util.BufferPool.GetBuffer()
+	defer util.BufferPool.Put(buf)
+
+	if err := getArticleIdsTemplate.Execute(buf, renderData); err != nil {
+		u.Err(fmt.Errorf("Error executing article-ids template: %v", err))
+		return
+	}
+
+	sql := buf.String()
+
+	logger.Debugf("Article ids SQL:\n%s\nArgs:%v\n", sql, args)
+	if err := dbo.Select(&ids, sql, args...); err != nil {
+		u.Err(err)
+		return
+	}
+
+	return
+}
+
+func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleCountOptions, join, where string, args []interface{}) (count int64) {
+	if u.HasErr() {
+		return
+	}
+
+	s := dbo.SQL()
+	var err error
+	if articleCountTemplate == nil {
+		articleCountTemplate, err = template.New("article-count-sql").
+			Parse(s.User.ArticleCountTemplate)
+
+		if err != nil {
+			u.Err(fmt.Errorf("Error generating article-count template: %v", err))
+			return
+		}
+	}
+
+	renderData := articleCountData{}
+	containsUserFeeds := !opts.UnreadOnly && !opts.FavoriteOnly
+
+	if containsUserFeeds {
+		renderData.Join += s.User.ArticleCountUserFeedsJoin
+	} else {
+		if opts.UnreadOnly {
+			renderData.Join += s.User.ArticleCountUnreadJoin
+		}
+		if opts.FavoriteOnly {
+			renderData.Join += s.User.ArticleCountFavoriteJoin
+		}
+	}
+
+	if opts.UntaggedOnly {
+		renderData.Join += s.User.ArticleCountUntaggedJoin
+	}
+
+	if join != "" {
+		renderData.Join += " " + join
+	}
+
+	args = append([]interface{}{u.Data().Login}, args...)
+
+	whereSlice := []string{}
+
+	if opts.UnreadOnly {
+		whereSlice = append(whereSlice, "au.article_id IS NOT NULL AND au.user_login = $1")
+	}
+	if opts.FavoriteOnly {
+		whereSlice = append(whereSlice, "af.article_id IS NOT NULL AND af.user_login = $1")
+	}
+	if opts.UntaggedOnly {
+		whereSlice = append(whereSlice, "uft.feed_id IS NULL")
+	}
+
+	if where != "" {
+		whereSlice = append(whereSlice, where)
+	}
+
+	if opts.BeforeId > 0 {
+		whereSlice = append(whereSlice, fmt.Sprintf("a.id < $%d", len(args)+1))
+		args = append(args, opts.BeforeId)
+	}
+	if opts.AfterId > 0 {
+		whereSlice = append(whereSlice, fmt.Sprintf("a.id > $%d", len(args)+1))
+		args = append(args, opts.AfterId)
+	}
+
+	if !opts.BeforeDate.IsZero() {
+		whereSlice = append(whereSlice, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+1))
+		args = append(args, opts.BeforeDate)
+	}
+
+	if !opts.AfterDate.IsZero() {
+		whereSlice = append(whereSlice, fmt.Sprintf("a.date > $%d", len(args)+1))
+		args = append(args, opts.AfterDate)
+	}
+
+	if len(whereSlice) > 0 {
+		renderData.Where = "WHERE " + strings.Join(whereSlice, " AND ")
+	}
+
+	buf := util.BufferPool.GetBuffer()
+	defer util.BufferPool.Put(buf)
+
+	if err := articleCountTemplate.Execute(buf, renderData); err != nil {
+		u.Err(fmt.Errorf("Error executing article-count template: %v", err))
+		return
+	}
+
+	sql := buf.String()
+
+	logger.Debugf("Article count SQL:\n%s\nArgs:%v\n", sql, args)
+	if err := dbo.Get(&count, sql, args...); err != nil {
+		u.Err(err)
+		return
+	}
+
+	return
+}
+
 func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleUpdateStateOptions, read bool, join, joinPredicate, deleteJoin, deleteWhere string, insertArgs, deleteArgs []interface{}) {
 	if u.HasErr() {
 		return
@@ -977,103 +1159,4 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 	if err = tx.Commit(); err != nil {
 		u.Err(err)
 	}
-}
-
-func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleCountOptions, join, where string, args []interface{}) (count int64) {
-	if u.HasErr() {
-		return
-	}
-
-	s := dbo.SQL()
-	var err error
-	if articleCountTemplate == nil {
-		articleCountTemplate, err = template.New("article-count-sql").
-			Parse(s.User.ArticleCountTemplate)
-
-		if err != nil {
-			u.Err(fmt.Errorf("Error generating article-count template: %v", err))
-			return
-		}
-	}
-
-	renderData := articleCountData{}
-	containsUserFeeds := !opts.UnreadOnly && !opts.FavoriteOnly
-
-	if containsUserFeeds {
-		renderData.Join += s.User.ArticleCountUserFeedsJoin
-	} else {
-		if opts.UnreadOnly {
-			renderData.Join += s.User.ArticleCountUnreadJoin
-		}
-		if opts.FavoriteOnly {
-			renderData.Join += s.User.ArticleCountFavoriteJoin
-		}
-	}
-
-	if opts.UntaggedOnly {
-		renderData.Join += s.User.ArticleCountUntaggedJoin
-	}
-
-	if join != "" {
-		renderData.Join += " " + join
-	}
-
-	args = append([]interface{}{u.Data().Login}, args...)
-
-	whereSlice := []string{}
-
-	if opts.UnreadOnly {
-		whereSlice = append(whereSlice, "au.article_id IS NOT NULL AND au.user_login = $1")
-	}
-	if opts.FavoriteOnly {
-		whereSlice = append(whereSlice, "af.article_id IS NOT NULL AND af.user_login = $1")
-	}
-	if opts.UntaggedOnly {
-		whereSlice = append(whereSlice, "uft.feed_id IS NULL")
-	}
-
-	if where != "" {
-		whereSlice = append(whereSlice, where)
-	}
-
-	if opts.BeforeId > 0 {
-		whereSlice = append(whereSlice, fmt.Sprintf("a.id < $%d", len(args)+1))
-		args = append(args, opts.BeforeId)
-	}
-	if opts.AfterId > 0 {
-		whereSlice = append(whereSlice, fmt.Sprintf("a.id > $%d", len(args)+1))
-		args = append(args, opts.AfterId)
-	}
-
-	if !opts.BeforeDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+1))
-		args = append(args, opts.BeforeDate)
-	}
-
-	if !opts.AfterDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf("a.date > $%d", len(args)+1))
-		args = append(args, opts.AfterDate)
-	}
-
-	if len(whereSlice) > 0 {
-		renderData.Where = "WHERE " + strings.Join(whereSlice, " AND ")
-	}
-
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
-
-	if err := articleCountTemplate.Execute(buf, renderData); err != nil {
-		u.Err(fmt.Errorf("Error executing article-count template: %v", err))
-		return
-	}
-
-	sql := buf.String()
-
-	logger.Debugf("Article count SQL:\n%s\nArgs:%v\n", sql, args)
-	if err := dbo.Get(&count, sql, args...); err != nil {
-		u.Err(err)
-		return
-	}
-
-	return
 }
