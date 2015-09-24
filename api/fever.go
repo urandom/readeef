@@ -220,7 +220,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 
 					var articles []content.UserArticle
 					// Fever clients do their own paging
-					o := data.ArticleQueryOptions{Limit: 50, Offset: 0, SkipUrlModifierProcessors: true}
+					o := data.ArticleQueryOptions{Limit: 50, Offset: 0, SkipSessionProcessors: true}
 
 					if withIds, ok := r.Form["with_ids"]; ok {
 						stringIds := strings.Split(withIds[0], ",")
@@ -234,7 +234,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 							}
 						}
 
-						articles, err = user.ArticlesById(ids, data.ArticleQueryOptions{SkipUrlModifierProcessors: true}), user.Err()
+						articles, err = user.ArticlesById(ids, data.ArticleQueryOptions{SkipSessionProcessors: true}), user.Err()
 					} else if max > 0 {
 						user.Order(data.DescendingOrder)
 						o.BeforeId = data.ArticleId(max)
@@ -366,7 +366,7 @@ func (con Fever) Handler(c context.Context) http.Handler {
 						break
 					}
 
-					article, err = user.ArticleById(data.ArticleId(id), data.ArticleQueryOptions{SkipUrlModifierProcessors: true}), user.Err()
+					article, err = user.ArticleById(data.ArticleId(id), data.ArticleQueryOptions{SkipSessionProcessors: true}), user.Err()
 					if err != nil {
 						break
 					}

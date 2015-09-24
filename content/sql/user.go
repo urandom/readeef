@@ -753,11 +753,8 @@ func internalGetArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts d
 	processors := u.Repo().ArticleProcessors()
 	if !opts.SkipProcessors && len(processors) > 0 {
 		for _, p := range processors {
-			if opts.SkipUrlModifierProcessors {
+			if opts.SkipSessionProcessors {
 				if _, ok := p.(processor.ProxyHTTP); ok {
-					continue
-				}
-				if _, ok := p.(processor.RelativeUrl); ok {
 					continue
 				}
 			}

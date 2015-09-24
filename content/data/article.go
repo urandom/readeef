@@ -85,8 +85,8 @@ type ArticleQueryOptions struct {
 	BeforeDate      time.Time
 	AfterDate       time.Time
 
-	SkipProcessors            bool
-	SkipUrlModifierProcessors bool
+	SkipProcessors        bool
+	SkipSessionProcessors bool
 }
 
 type ArticleIdQueryOptions struct {

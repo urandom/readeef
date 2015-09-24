@@ -566,7 +566,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				var articleRepo content.ArticleRepo
 				var feedTitle string
 				firstId := data.ArticleId(0)
-				o := data.ArticleQueryOptions{Limit: limit, Offset: req.Skip, UnreadFirst: true, SkipUrlModifierProcessors: true}
+				o := data.ArticleQueryOptions{Limit: limit, Offset: req.Skip, UnreadFirst: true, SkipSessionProcessors: true}
 
 				if req.IsCat {
 					if req.FeedId == TTRSS_CAT_UNCATEGORIZED {
@@ -652,7 +652,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					con = headlines
 				}
 			case "updateArticle":
-				articles := user.ArticlesById(req.ArticleIds, data.ArticleQueryOptions{SkipUrlModifierProcessors: true})
+				articles := user.ArticlesById(req.ArticleIds, data.ArticleQueryOptions{SkipSessionProcessors: true})
 				updateCount := int64(0)
 
 				switch req.Field {
@@ -719,7 +719,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					con = ttRssGenericContent{Status: "OK", Updated: updateCount}
 				}
 			case "getArticle":
-				articles := user.ArticlesById(req.ArticleId, data.ArticleQueryOptions{SkipUrlModifierProcessors: true})
+				articles := user.ArticlesById(req.ArticleId, data.ArticleQueryOptions{SkipSessionProcessors: true})
 				feedTitles := map[data.FeedId]string{}
 
 				for _, a := range articles {
