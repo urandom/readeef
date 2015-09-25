@@ -39,7 +39,7 @@
         attached: function() {
             this.async(function() {
                 if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING) {
-                    if (!MoreRouting.getRouteByName('splash').children[0].active) {
+                    if (!MoreRouting.getRouteByName('splash').children[0].active || !location.pathname) {
                         MoreRouting.navigateTo('login');
                     } else if (!MoreRouting.isCurrentUrl('login')) {
                         MoreRouting.navigateTo('login-from', {url: this.encodeURI(location.pathname)});
@@ -64,7 +64,7 @@
             if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING) {
                 if (MoreRouting.isCurrentUrl('login')) {
                     this.$.splash.selected = 0;
-                } else if (!MoreRouting.getRouteByName('splash').children[0].active) {
+                } else if (!MoreRouting.getRouteByName('splash').children[0].active || !location.pathname) {
                     MoreRouting.navigateTo('login');
                 } else {
                     MoreRouting.navigateTo('login-from', {url: this.encodeURI(location.pathname)});
