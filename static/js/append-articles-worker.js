@@ -11,6 +11,7 @@ self.addEventListener('message', function(event) {
         olderFirst = event.data.olderFirst,
         unreadOnly = event.data.unreadOnly,
         feeds = event.data.feeds,
+        updateRequest = event.data.updateRequest,
         minId = 0, maxId = 0,
         articleMap = {}, indexMap = {}, stateChange = {}, unreadMap = {}, favoriteMap ={},
         feedMap, response;
@@ -23,41 +24,45 @@ self.addEventListener('message', function(event) {
         articles[event.data.treatAsUnread].Read = false;
     }
 
-    for (var i = 0, id; id = unreadIds[i]; ++i) {
-        unreadMap[id] = true;
-    }
+    if (updateRequest) {
+        for (var i = 0, id; id = unreadIds[i]; ++i) {
+            unreadMap[id] = true;
+        }
 
-    for (var i = 0, id; id = favoriteIds[i]; ++i) {
-        favoriteMap[id] = true;
+        for (var i = 0, id; id = favoriteIds[i]; ++i) {
+            favoriteMap[id] = true;
+        }
     }
 
     for (var i = 0, a; a = articles[i]; ++i) {
         articleMap[a.Id] = a;
 
-        var changes = {};
+        if (updateRequest) {
+            var changes = {};
 
-        if (unreadMap[a.Id]) {
-            if (a.Read) {
-                a.Read = false;
-                changes.Read = false;
+            if (unreadMap[a.Id]) {
+                if (a.Read) {
+                    a.Read = false;
+                    changes.Read = false;
+                }
+            } else if (!a.Read) {
+                a.Read = true;
+                changes.Read = true;
             }
-        } else if (!a.Read) {
-            a.Read = true;
-            changes.Read = true;
-        }
 
-        if (favoriteMap[a.Id]) {
-            if (!a.Favorite) {
-                a.Favorite = true;
-                changes.Favorite = true;
+            if (favoriteMap[a.Id]) {
+                if (!a.Favorite) {
+                    a.Favorite = true;
+                    changes.Favorite = true;
+                }
+            } else if (a.Favorite) {
+                a.Favorite = false;
+                changes.Favorite = false;
             }
-        } else if (a.Favorite) {
-            a.Favorite = false;
-            changes.Favorite = false;
-        }
 
-        if (Object.keys(changes).length) {
-            stateChange[a.Id] = changes;
+            if (Object.keys(changes).length) {
+                stateChange[a.Id] = changes;
+            }
         }
 
         if (!a.Read) {
@@ -150,7 +155,7 @@ self.addEventListener('message', function(event) {
         stateChange: stateChange,
         minId: minId,
         maxId: maxId,
-        updateRequest: event.data.updateRequest,
+        updateRequest: updateRequest,
     };
     if ('requestedArticle' in event.data) {
         response.requestedArticle = event.data.requestedArticle;

@@ -993,6 +993,8 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
             _handleArticleWorkerMessage: function(event) {
+                this.$.feed.preArticlesUpdate(event.data.inserts, event.data.stateChange);
+
                 // Update the map first, the change callbacks might use it
                 this.articles.indexMap = event.data.indexMap;
 

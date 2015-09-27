@@ -289,6 +289,10 @@ rf-article /deep/ .article-summary {
                 }
             },
 
+            preArticlesUpdate: function(inserts, stateChange) {
+                this._preUpdateFirstVisibleIndex = this.$.list.firstVisibleIndex;
+            },
+
             attached: function() {
                 this._relativeDateWorker = new Worker('/js/relative-date-worker.js');
                 this._relativeDateWorker.addEventListener('message', this._handleRelativeDateWorkerMessage.bind(this));
@@ -489,7 +493,7 @@ rf-article /deep/ .article-summary {
                     this.$.article.selectedId = 0;
                 } else if (record.path == 'articles.splices') {
                     if (!MoreRouting.isCurrentUrl('article')) {
-                        var newIndex = this.$.list.firstVisibleIndex,
+                        var newIndex = this._preUpdateFirstVisibleIndex,
                             originalIndex = newIndex, changeCount = 0;
 
                         for (var i = 0, s; s = record.value.indexSplices[i]; ++i) {
