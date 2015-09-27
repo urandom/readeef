@@ -240,6 +240,20 @@ func formatArticle(user content.User, id data.ArticleId, extractor content.Extra
 		}
 	}
 
+	processors := user.Repo().ArticleProcessors()
+	if len(processors) > 0 {
+		a := user.Repo().UserArticle(user)
+		a.Data(data.Article{Description: extractData.Content})
+
+		ua := []content.UserArticle{a}
+
+		for _, p := range processors {
+			ua = p.ProcessArticles(ua)
+		}
+
+		extractData.Content = a.Data().Description
+	}
+
 	s := summarize.NewFromString(extractData.Title, search.StripTags(extractData.Content))
 
 	s.Language = extractData.Language
