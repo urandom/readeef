@@ -241,7 +241,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
         <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage" user="{{ user }}"></rf-api>
         <rf-api id="user-settings" method="set-user-attribute" tag="feed-base" user="[[ user ]]"></rf-api>
-        <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit, offset) ]]" on-rf-api-message="onFeedArticlesMessage" on-rf-api-error="onFeedArticlesError" user="[[ user ]]"></rf-api>
+        <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit) ]]" on-rf-api-message="onFeedArticlesMessage" on-rf-api-error="onFeedArticlesError" user="[[ user ]]"></rf-api>
         <rf-api id="get-article" method="get-article" on-rf-api-message="onGetArticleMessage" user="[[ user ]]"></rf-api>
         <rf-api id="feed-read-all" method="read-state" on-rf-api-message="onFeedReadAllMessage" user="[[ user ]]"></rf-api>
         <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="onFeedUpdateNotify" user="[[ user ]]" receiver="true"></rf-api>
@@ -305,10 +305,6 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     type: Number,
                     value: 200,
                 },
-                offset: {
-                    type: Number,
-                    value: 0,
-                },
                 _articleId: String,
                 _readState: Boolean,
                 _shareServices: Array,
@@ -359,7 +355,6 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 this.debounce('feed-refresh', function() {
                     this.loading = true;
                     this.noMoreArticles = false;
-                    this.offset = 0;
 
                     switch (type) {
                         case 'get-article':
@@ -439,8 +434,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
                                 this.debounce('feed-refresh', function() {
                                     this.loading = true;
-                                    this.offset += this.limit;
-                                    this.$['feed-articles'].send();
+                                    this.$['feed-articles'].send({offset: this.articles.length});
                                 });
                             }
                         } else if (!this.articles.length) {
@@ -695,8 +689,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 }
                 this.debounce('feed-refresh', function() {
                     this.loading = true;
-                    this.offset += this.limit;
-                    this.$['feed-articles'].send();
+                    this.$['feed-articles'].send({offset: this.articles.length});
                 });
             },
 
@@ -838,7 +831,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
 
-            _computeFeedArticlesArguments: function(userRecord, tagOrId, limit, offset) {
+            _computeFeedArticlesArguments: function(userRecord, tagOrId, limit) {
                 if (!this.user) {
                     return {};
                 }
@@ -846,7 +839,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 return {
                     id: tagOrId,
                     limit: limit,
-                    offset: offset,
+                    offset: 0,
                     olderFirst: userRecord.base.ProfileData.olderFirst || false,
                     unreadOnly: userRecord.base.ProfileData.unreadOnly || false,
                 };
@@ -907,7 +900,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     return;
                 }
 
-                this.$['feed-articles'].send({offset: 0, minId: this._minArticleId, maxId: this._maxArticleId});
+                this.$['feed-articles'].send({minId: this._minArticleId, maxId: this._maxArticleId});
             },
 
             _previousArticle: function(unread) {
@@ -1045,9 +1038,6 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                         this.$['no-new-articles'].show();
                     } else {
                         this.noMoreArticles = true;
-                        if (!this.offset) {
-                            this.articles = this._createArticles();
-                        }
                     }
                 }
             },
