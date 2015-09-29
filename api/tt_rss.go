@@ -93,7 +93,7 @@ type ttRssGenericContent struct {
 	Version   string      `json:"version,omitempty"`
 	SessionId string      `json:"session_id,omitempty"`
 	Status    interface{} `json:"status,omitempty"`
-	Unread    int64       `json:"unread,omitempty"`
+	Unread    string      `json:"unread,omitempty"`
 	Updated   int64       `json:"updated,omitempty"`
 	Value     interface{} `json:"value,omitempty"`
 	Method    string      `json:"method,omitempty"`
@@ -360,9 +360,9 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				}
 
 				if ar == nil {
-					con = ttRssGenericContent{Unread: 0}
+					con = ttRssGenericContent{Unread: "0"}
 				} else if con == nil {
-					con = ttRssGenericContent{Unread: ar.Count(o)}
+					con = ttRssGenericContent{Unread: strconv.FormatInt(ar.Count(o), 10)}
 				}
 			case "getCounters":
 				if req.OutputMode == "" {
