@@ -140,7 +140,8 @@ type ttRssHeadline struct {
 	IsUpdated bool           `json:"is_updated"`
 	Title     string         `json:"title"`
 	Link      string         `json:"link"`
-	FeedId    data.FeedId    `json:"feed_id"`
+	FeedId    string         `json:"feed_id"`
+	Author    string         `json:"author"`
 	Excerpt   string         `json:"excerpt,omitempty"`
 	Content   string         `json:"content,omitempty"`
 	FeedTitle string         `json:"feed_title"`
@@ -970,7 +971,7 @@ func ttRssHeadlinesFromArticles(articles []content.UserArticle, feedTitle string
 			IsUpdated: !d.Read,
 			Title:     d.Title,
 			Link:      d.Link,
-			FeedId:    d.FeedId,
+			FeedId:    strconv.FormatInt(int64(d.FeedId), 10),
 			FeedTitle: title,
 		}
 
