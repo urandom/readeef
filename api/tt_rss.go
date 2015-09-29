@@ -23,9 +23,12 @@ const (
 	TTRSS_VERSION        = "1.8.0"
 	TTRSS_API_LEVEL      = 12
 
-	TTRSS_FAVORITE_ID = -1
-	TTRSS_FRESH_ID    = -3
-	TTRSS_ALL_ID      = -4
+	TTRSS_ARCHIVED_ID      = 0
+	TTRSS_FAVORITE_ID      = -1
+	TTRSS_PUBLISHED_ID     = -2
+	TTRSS_FRESH_ID         = -3
+	TTRSS_ALL_ID           = -4
+	TTRSS_RECENTLY_READ_ID = -6
 
 	TTRSS_FRESH_DURATION = -24 * time.Hour
 
@@ -183,6 +186,7 @@ type ttRssCategory struct {
 	Type       string          `json:"type,omitempty"`
 	Unread     int64           `json:"unread,omitempty"`
 	BareId     data.FeedId     `json:"bare_id,omitempty"`
+	Param      string          `json:"param,omitempty"`
 }
 
 var (
@@ -298,7 +302,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				}
 
 				if sessId == "" {
-					sessId = util.UUID()
+					sessId = strings.Replace(util.UUID(), "-", "", -1)
 					ttRssSessions[sessId] = ttRssSession{login: login, lastVisit: time.Now()}
 				}
 
@@ -375,50 +379,52 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				cContent = append(cContent,
 					ttRssCounter{Id: "subscribed-feeds", Counter: int64(len(feeds))})
 
+				cContent = append(cContent, ttRssCounter{Id: TTRSS_ARCHIVED_ID})
+
 				cContent = append(cContent,
 					ttRssCounter{Id: TTRSS_FAVORITE_ID,
 						Counter:    user.Count(data.ArticleCountOptions{UnreadOnly: true, FavoriteOnly: true}),
 						AuxCounter: user.Count(data.ArticleCountOptions{FavoriteOnly: true})})
 
+				cContent = append(cContent, ttRssCounter{Id: TTRSS_PUBLISHED_ID})
+
 				freshTime := time.Now().Add(TTRSS_FRESH_DURATION)
 				cContent = append(cContent,
 					ttRssCounter{Id: TTRSS_FRESH_ID,
 						Counter:    user.Count(data.ArticleCountOptions{UnreadOnly: true, AfterDate: freshTime}),
-						AuxCounter: user.Count(data.ArticleCountOptions{AfterDate: freshTime})})
+						AuxCounter: 0})
 
 				cContent = append(cContent,
 					ttRssCounter{Id: TTRSS_ALL_ID,
 						Counter:    user.Count(),
-						AuxCounter: unreadCount})
+						AuxCounter: 0})
 
-				if strings.Contains(req.OutputMode, "f") {
-					for _, f := range feeds {
-						cContent = append(cContent,
-							ttRssCounter{Id: int64(f.Data().Id), Counter: f.Count(o)},
-						)
+				for _, f := range feeds {
+					cContent = append(cContent,
+						ttRssCounter{Id: int64(f.Data().Id), Counter: f.Count(o)},
+					)
 
-					}
 				}
 
-				if strings.Contains(req.OutputMode, "c") {
-					for _, t := range user.Tags() {
-						cContent = append(cContent,
-							ttRssCounter{
-								Id:      int64(t.Data().Id),
-								Counter: t.Count(o),
-								Kind:    "cat",
-							},
-						)
-					}
+				cContent = append(cContent, ttRssCounter{Id: TTRSS_CAT_LABELS, Counter: 0, Kind: "cat"})
 
+				for _, t := range user.Tags() {
 					cContent = append(cContent,
 						ttRssCounter{
-							Id:      TTRSS_CAT_UNCATEGORIZED,
-							Counter: user.Count(data.ArticleCountOptions{UnreadOnly: true, UntaggedOnly: true}),
+							Id:      int64(t.Data().Id),
+							Counter: t.Count(o),
 							Kind:    "cat",
 						},
 					)
 				}
+
+				cContent = append(cContent,
+					ttRssCounter{
+						Id:      TTRSS_CAT_UNCATEGORIZED,
+						Counter: user.Count(data.ArticleCountOptions{UnreadOnly: true, UntaggedOnly: true}),
+						Kind:    "cat",
+					},
+				)
 
 				if user.HasErr() {
 					err = fmt.Errorf("Error getting user counters: %v\n", user.Err())
@@ -465,6 +471,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				}
 
 				var feeds []content.UserFeed
+				var catId int
 				if req.CatId == TTRSS_CAT_ALL || req.CatId == TTRSS_CAT_ALL_EXCEPT_VIRTUAL {
 					feeds = user.AllFeeds()
 				} else {
@@ -476,6 +483,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 							}
 						}
 					} else if req.CatId > 0 {
+						catId = int(req.CatId)
 						t := user.TagById(req.CatId)
 						tagged := t.AllFeeds()
 						if t.HasErr() {
@@ -505,7 +513,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 								Id:          d.Id,
 								Title:       d.Title,
 								FeedUrl:     d.Link,
-								CatId:       0,
+								CatId:       catId,
 								Unread:      unread,
 								LastUpdated: time.Now().Unix(),
 								OrderId:     0,
@@ -768,11 +776,9 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					con = ttRssGenericContent{Value: int(config.FeedManager.Converted.UpdateInterval.Minutes())}
 				case "DEFAULT_ARTICLE_LIMIT":
 					con = ttRssGenericContent{Value: 200}
-				case "SHOW_CONTENT_PREVIEW":
-					con = ttRssGenericContent{Value: true}
 				case "HIDE_READ_FEEDS":
 					con = ttRssGenericContent{Value: user.Data().ProfileData["unreadOnly"]}
-				case "FEEDS_SORT_BY_UNREAD":
+				case "FEEDS_SORT_BY_UNREAD", "ENABLE_FEED_CATS", "SHOW_CONTENT_PREVIEW":
 					con = ttRssGenericContent{Value: true}
 				case "FRESH_ARTICLE_MAX_AGE":
 					con = ttRssGenericContent{Value: (-1 * TTRSS_FRESH_DURATION).Hours()}
@@ -833,31 +839,73 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 				con = ttRssGenericContent{Status: "OK"}
 			case "getFeedTree":
-				root := ttRssCategory{Id: "root", Name: "Feeds", Type: "category"}
+				items := []ttRssCategory{}
 
-				if req.Mode == 2 {
-					cat := ttRssCategory{Items: []ttRssCategory{}}
+				special := ttRssCategory{Id: "CAT:-1", Items: []ttRssCategory{}, Name: "Special", Type: "category", BareId: -1}
 
-					cat.Items = append(cat.Items, ttRssFeedListCategoryFeed(user, nil, TTRSS_ALL_ID, false))
-					cat.Items = append(cat.Items, ttRssFeedListCategoryFeed(user, nil, TTRSS_FRESH_ID, false))
-					cat.Items = append(cat.Items, ttRssFeedListCategoryFeed(user, nil, TTRSS_FAVORITE_ID, false))
+				special.Items = append(special.Items, ttRssFeedListCategoryFeed(user, nil, TTRSS_ALL_ID, false))
+				special.Items = append(special.Items, ttRssFeedListCategoryFeed(user, nil, TTRSS_FRESH_ID, false))
+				special.Items = append(special.Items, ttRssFeedListCategoryFeed(user, nil, TTRSS_FAVORITE_ID, false))
+				special.Items = append(special.Items, ttRssFeedListCategoryFeed(user, nil, TTRSS_PUBLISHED_ID, false))
+				special.Items = append(special.Items, ttRssFeedListCategoryFeed(user, nil, TTRSS_ARCHIVED_ID, false))
+				special.Items = append(special.Items, ttRssFeedListCategoryFeed(user, nil, TTRSS_RECENTLY_READ_ID, false))
 
-					root.Items = append(root.Items, cat.Items...)
+				items = append(items, special)
+
+				tf := user.AllTaggedFeeds()
+
+				uncat := ttRssCategory{Id: "CAT:0", Items: []ttRssCategory{}, BareId: 0, Name: "Uncategorized", Type: "category"}
+				tagCategories := map[content.Tag]ttRssCategory{}
+
+				for _, f := range tf {
+					tags := f.Tags()
+
+					item := ttRssFeedListCategoryFeed(user, f, f.Data().Id, true)
+					if len(tags) > 0 {
+						for _, t := range tags {
+							var c ttRssCategory
+							if cached, ok := tagCategories[t]; ok {
+								c = cached
+							} else {
+								c = ttRssCategory{
+									Id:     "CAT:" + strconv.FormatInt(int64(t.Data().Id), 10),
+									BareId: data.FeedId(t.Data().Id),
+									Name:   string(t.Data().Value),
+									Type:   "category",
+									Items:  []ttRssCategory{},
+								}
+							}
+
+							c.Items = append(c.Items, item)
+							tagCategories[t] = c
+						}
+					} else {
+						uncat.Items = append(uncat.Items, item)
+					}
 				}
 
-				feeds := user.AllFeeds()
-				for _, f := range feeds {
-					root.Items = append(root.Items, ttRssFeedListCategoryFeed(user, f, f.Data().Id, true))
+				categories := []ttRssCategory{uncat}
+				for _, c := range tagCategories {
+					categories = append(categories, c)
+				}
+
+				for _, c := range categories {
+					if len(c.Items) == 1 {
+						c.Param = "(1 feed)"
+					} else {
+						c.Param = fmt.Sprintf("(%d feed)", len(c.Items))
+					}
+					items = append(items, c)
 				}
 
 				fl := ttRssCategory{Identifier: "id", Label: "name"}
-				if req.Mode == 2 {
-					fl.Items = []ttRssCategory{root}
-				} else {
-					fl.Items = root.Items
-				}
+				fl.Items = items
 
-				con = ttRssFeedTreeContent{Categories: fl}
+				if user.HasErr() {
+					err = user.Err()
+				} else {
+					con = ttRssFeedTreeContent{Categories: fl}
+				}
 			default:
 				errType = "UNKNOWN_METHOD"
 				con = ttRssGenericContent{Method: req.Op}
@@ -1078,11 +1126,22 @@ func ttRssFeedListCategoryFeed(u content.User, f content.UserFeed, id data.FeedI
 	c.Id = "FEED:" + strconv.FormatInt(int64(id), 10)
 	c.Type = "feed"
 
+	copts := data.ArticleCountOptions{UnreadOnly: true}
 	if f != nil {
 		c.Name = f.Data().Title
-		c.Unread = f.Count(data.ArticleCountOptions{UnreadOnly: true})
+		c.Unread = f.Count(copts)
 	} else {
 		c.Name = ttRssSpecialTitle(id)
+		switch id {
+		case TTRSS_FAVORITE_ID:
+			copts.FavoriteOnly = true
+			c.Unread = u.Count(copts)
+		case TTRSS_FRESH_ID:
+			copts.AfterDate = time.Now().Add(TTRSS_FRESH_DURATION)
+			c.Unread = u.Count(copts)
+		case TTRSS_ALL_ID:
+			c.Unread = u.Count(copts)
+		}
 	}
 
 	return
@@ -1096,6 +1155,12 @@ func ttRssSpecialTitle(id data.FeedId) (t string) {
 		t = "Fresh articles"
 	case TTRSS_ALL_ID:
 		t = "All articles"
+	case TTRSS_PUBLISHED_ID:
+		t = "Published articles"
+	case TTRSS_ARCHIVED_ID:
+		t = "Archived articles"
+	case TTRSS_RECENTLY_READ_ID:
+		t = "Recently read"
 	}
 
 	return
