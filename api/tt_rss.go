@@ -102,7 +102,7 @@ type ttRssGenericContent struct {
 type ttRssCategoriesContent []ttRssCat
 
 type ttRssCat struct {
-	Id      int64  `json:"id"`
+	Id      string `json:"id"`
 	Title   string `json:"title"`
 	Unread  int64  `json:"unread"`
 	OrderId int64  `json:"order_id"`
@@ -147,6 +147,22 @@ type ttRssHeadline struct {
 	FeedTitle string         `json:"feed_title"`
 
 	Tags   []string `json:"tags,omitempty"`
+	Labels []string `json:"labels,omitempty"`
+}
+
+type ttRssArticlesContent []ttRssArticle
+type ttRssArticle struct {
+	Id        string `json:"id"`
+	Title     string `json:"title"`
+	Link      string `json:"link"`
+	Unread    bool   `json:"unread"`
+	Marked    bool   `json:"marked"`
+	Author    string `json:"author"`
+	Updated   int64  `json:"updated"`
+	Content   string `json:"content,omitempty"`
+	FeedId    string `json:"feed_id"`
+	FeedTitle string `json:"feed_title"`
+
 	Labels []string `json:"labels,omitempty"`
 }
 
@@ -538,7 +554,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 					if count > 0 || !req.UnreadOnly {
 						cContent = append(cContent,
-							ttRssCat{Id: int64(td.Id), Title: string(td.Value), Unread: count},
+							ttRssCat{Id: strconv.FormatInt(int64(td.Id), 10), Title: string(td.Value), Unread: count},
 						)
 					}
 				}
@@ -546,7 +562,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				count := user.Count(data.ArticleCountOptions{UnreadOnly: true, UntaggedOnly: true})
 				if count > 0 || !req.UnreadOnly {
 					cContent = append(cContent,
-						ttRssCat{Id: TTRSS_CAT_UNCATEGORIZED, Title: "Uncategorized", Unread: count},
+						ttRssCat{Id: strconv.FormatInt(TTRSS_CAT_UNCATEGORIZED, 10), Title: "Uncategorized", Unread: count},
 					)
 				}
 
@@ -555,7 +571,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 				if count > 0 || !req.UnreadOnly {
 					cContent = append(cContent,
-						ttRssCat{Id: TTRSS_CAT_SPECIAL, Title: "Special", Unread: count},
+						ttRssCat{Id: strconv.FormatInt(TTRSS_CAT_SPECIAL, 10), Title: "Special", Unread: count},
 					)
 				}
 
@@ -648,7 +664,7 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					firstId = articles[0].Data().Id
 				}
 
-				headlines := ttRssHeadlinesFromArticles(articles, feedTitle, nil, req.ShowContent, req.ShowExcerpt)
+				headlines := ttRssHeadlinesFromArticles(articles, feedTitle, req.ShowContent, req.ShowExcerpt)
 				if req.IncludeHeader {
 					header := ttRssHeadlinesHeader{Id: req.FeedId, FirstId: firstId, IsCat: req.IsCat}
 					hContent := ttRssHeadlinesHeaderContent{}
@@ -739,7 +755,27 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 					}
 				}
 
-				con = ttRssHeadlinesFromArticles(articles, "", feedTitles, true, false)
+				cContent := ttRssArticlesContent{}
+
+				for _, a := range articles {
+					d := a.Data()
+					title := feedTitles[d.FeedId]
+					h := ttRssArticle{
+						Id:        strconv.FormatInt(int64(d.Id), 10),
+						Unread:    !d.Read,
+						Marked:    d.Favorite,
+						Updated:   d.Date.Unix(),
+						Title:     d.Title,
+						Link:      d.Link,
+						FeedId:    strconv.FormatInt(int64(d.FeedId), 10),
+						FeedTitle: title,
+						Content:   d.Description,
+					}
+
+					cContent = append(cContent, h)
+				}
+
+				con = cContent
 			case "getConfig":
 				con = ttRssConfigContent{DaemonIsRunning: true, NumFeeds: len(user.AllFeeds())}
 			case "updateFeed":
@@ -955,14 +991,11 @@ func ttRssSetupSorting(req ttRssRequest, sorting content.ArticleSorting) {
 	}
 }
 
-func ttRssHeadlinesFromArticles(articles []content.UserArticle, feedTitle string, feedTitles map[data.FeedId]string, content, excerpt bool) (c ttRssHeadlinesContent) {
+func ttRssHeadlinesFromArticles(articles []content.UserArticle, feedTitle string, content, excerpt bool) (c ttRssHeadlinesContent) {
 	c = ttRssHeadlinesContent{}
 	for _, a := range articles {
 		d := a.Data()
 		title := feedTitle
-		if feedTitles != nil {
-			title = feedTitles[d.FeedId]
-		}
 		h := ttRssHeadline{
 			Id:        d.Id,
 			Unread:    !d.Read,
