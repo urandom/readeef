@@ -164,6 +164,7 @@
 
         logout: function() {
             this.$.logout.send();
+            this.$['auth-check'].close();
             this._setUser(null);
             this.async(function() {
                 MoreRouting.navigateTo('login');

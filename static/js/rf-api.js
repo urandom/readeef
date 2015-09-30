@@ -114,6 +114,12 @@
             webSocket.send(JSON.stringify(payload));
         },
 
+        close: function() {
+            if (webSocket != null) {
+                clearHeartbeat();
+            }
+        },
+
         onRequestResponse: function(event) {
             if (!event.detail.response) {
                 initializing = false;
@@ -228,7 +234,7 @@
             initializing = true;
 
             return this.$.nonce.generateRequest();
-        }
+        },
 
     });
 })();
