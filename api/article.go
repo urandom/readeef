@@ -6,6 +6,7 @@ import (
 	"html"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
@@ -247,11 +248,30 @@ func formatArticle(user content.User, id data.ArticleId, extractor content.Extra
 
 		ua := []content.UserArticle{a}
 
+		if extractData.TopImage != "" {
+			a = user.Repo().UserArticle(user)
+			a.Data(data.Article{
+				Description: fmt.Sprintf(`<img src="%s">`, extractData.TopImage),
+			})
+
+			ua = append(ua, a)
+		}
+
 		for _, p := range processors {
 			ua = p.ProcessArticles(ua)
 		}
 
-		extractData.Content = a.Data().Description
+		extractData.Content = ua[0].Data().Description
+
+		if extractData.TopImage != "" {
+			content := ua[1].Data().Description
+
+			content = strings.Replace(content, `<img src="`, "", -1)
+			i := strings.Index(content, `"`)
+			content = content[:i]
+
+			extractData.TopImage = content
+		}
 	}
 
 	s := summarize.NewFromString(extractData.Title, search.StripTags(extractData.Content))
