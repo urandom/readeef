@@ -11,7 +11,7 @@ Quick start
 
 readeef is written in Go, and as of September 2014, requires at least version 1.3 of the language. The currently supported databases are PostgreSQL, and SQLite. SQLite support is only built if CGO is enabled. The later is not recommended, as locking problems will occur.
 
-Three binaries may be built from the sources. The first binary is the standalone server. Unless readeef is being added to an existing golang server setup, it should be built as well. Since readeef uses bleve for FTS capabilities, bleve-specific tags (e.g.: leveldb, cld2, etc) should be passed here.
+Three binaries may be built from the sources. The first binary is the standalone server. Unless readeef is being added to an existing golang server setup, it should be built as well. Since readeef can use bleve for FTS capabilities, bleve-specific tags (e.g.: libstemmer, cld2, etc) should be passed here.
 
 > go build github.com/urandom/readeef/cmd/readeef-server
 
