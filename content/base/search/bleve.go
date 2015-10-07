@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/index/store/goleveldb"
+	"github.com/blevesearch/bleve/index/upside_down"
 	"github.com/blevesearch/bleve/search"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
@@ -61,7 +63,7 @@ func NewBleve(path string, size int64, logger webfw.Logger) (content.SearchProvi
 		mapping.AddDocumentMapping(mapping.DefaultType, docMapping)
 
 		logger.Infoln("Creating search index " + path)
-		index, err = bleve.NewUsing(path, mapping, "goleveldb", nil)
+		index, err = bleve.NewUsing(path, mapping, upside_down.Name, goleveldb.Name, nil)
 
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("Error creating search index: %v\n", err))
