@@ -40,7 +40,7 @@ func (e Goose) Extract(link string) (data data.ArticleExtract, err error) {
 
 	g := goose.New()
 	/* TODO: preserve links */
-	formatted := g.ExtractFromUrl(link)
+	formatted, err := g.ExtractFromURL(link)
 
 	content := formatted.CleanedText
 	buf := util.BufferPool.GetBuffer()
