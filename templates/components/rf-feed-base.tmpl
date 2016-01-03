@@ -242,9 +242,9 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
         <paper-toast id="no-new-articles" text="{% __ "Articles are up-to-date" .base.lang %}"></paper-toast>
 
-        <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage" user="{{ user }}"></rf-api>
+        <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage" user="[[ user ]]"></rf-api>
         <rf-api id="user-settings" method="set-user-attribute" tag="feed-base" user="[[ user ]]"></rf-api>
-        <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit) ]]" on-rf-api-message="onFeedArticlesMessage" on-rf-api-error="onFeedArticlesError" user="[[ user ]]"></rf-api>
+        <rf-api id="feed-articles" method="get-feed-articles" on-rf-api-message="onFeedArticlesMessage" on-rf-api-error="onFeedArticlesError" user="[[ user ]]"></rf-api>
         <rf-api id="get-article" method="get-article" on-rf-api-message="onGetArticleMessage" user="[[ user ]]"></rf-api>
         <rf-api id="feed-read-all" method="read-state" on-rf-api-message="onFeedReadAllMessage" user="[[ user ]]"></rf-api>
         <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="onFeedUpdateNotify" user="[[ user ]]" receiver="true"></rf-api>
@@ -367,7 +367,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                             this.$['get-article'].send();
                             break;
                         default:
-                            this.$['feed-articles'].send({minId: this._minArticleId, maxId: this._maxArticleId});
+							this._getFeedArticles({minId: this._minArticleId, maxId: this._maxArticleId});
                     }
                 });
             },
@@ -636,7 +636,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 }
                 this.debounce('feed-refresh', function() {
                     this.loading = true;
-                    this.$['feed-articles'].send({offset: this.articles.length});
+					this._getFeedArticles({offset: this.articles.length});
                 });
             },
 
@@ -681,7 +681,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
 						this.debounce('feed-refresh', function() {
 							this.loading = true;
-							this.$['feed-articles'].send({offset: this.articles.length});
+							this._getFeedArticles({offset: this.articles.length});
 						});
 					}
 				} else if (!this.articles.length) {
@@ -816,18 +816,21 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
 
-            _computeFeedArticlesArguments: function(userRecord, tagOrId, limit) {
+            _getFeedArticles: function(args) {
                 if (!this.user) {
-                    return {};
+                    return;
                 }
 
-                return {
-                    id: tagOrId,
-                    limit: limit,
+
+                var defaults = {
+                    id: this.tagOrId,
+                    limit: this.limit,
                     offset: 0,
-                    olderFirst: userRecord.base.ProfileData.olderFirst || false,
-                    unreadOnly: userRecord.base.ProfileData.unreadOnly || false,
+                    olderFirst: this.user.ProfileData.olderFirst || false,
+                    unreadOnly: this.user.ProfileData.unreadOnly || false,
                 };
+
+				this.$['feed-articles'].send(Polymer.Base.mixin(defaults, args || {}));
             },
 
             _extractSearchTokens: function(tagOrId) {
@@ -885,7 +888,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     return;
                 }
 
-                this.$['feed-articles'].send({minId: this._minArticleId, maxId: this._maxArticleId});
+				this._getFeedArticles({minId: this._minArticleId, maxId: this._maxArticleId});
             },
 
             _previousArticle: function(unread) {
@@ -1005,7 +1008,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 this.$['scroll-threshold'].clearLower();
 
                 if (event.data.requestedArticle !== undefined) {
-                    this.$['feed-articles'].send();
+					this._getFeedArticles();
                     if (event.data.requestedArticle) {
 						Excess.RouteManager.transitionTo('@article',
 								{tagOrId: this.tagOrId, articleId: event.data.requestedArticle});
