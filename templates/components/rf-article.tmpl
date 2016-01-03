@@ -428,10 +428,7 @@
                                         this._trackState.selectedId = this.articles[index + 1].Id;
                                     }
 
-                                    MoreRouting.navigateTo('article', {
-                                        tagOrId: MoreRouting.getRoute('article').params.tagOrId,
-                                        articleId: this._trackState.selectedId,
-                                    });
+									this.fire('change-article-id', this._trackState.selectedId);
                                 });
                             }.bind(this));
                     } else {

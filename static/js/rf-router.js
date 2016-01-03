@@ -22,6 +22,37 @@
     };
     setInterval(randomTheme, 1800000);
 
+    root.UserBehavior = {
+        validateUser: function(user) {
+            Polymer.dom(document).querySelector('rf-router').validateUser(user);
+        },
+    };
+
+	root.RouteBehavior = {
+		attached: function() {
+			Polymer.dom(this.root).querySelectorAll('excess-route').forEach(function(route) {
+				if (route.routeAlias) {
+					var meta = document.createElement('iron-meta');
+					meta.key = route.routeAlias;
+					meta.value = route;
+				}
+			});
+		},
+
+		urlFor: function(spec, params) {
+			return Excess.RouteManager.getRoutePath(spec, params);
+		},
+
+		namedRoute: function(name) {
+			return document.createElement('iron-meta').byKey(name);
+		},
+
+		isRouteActive: function(name) {
+			var r = this.namedRoute(name);
+			return r && r.active;
+		},
+	};
+
     Polymer({
         is: "rf-router",
         properties: {
@@ -32,17 +63,27 @@
                 type: Object,
                 readOnly: true,
                 notify: true
-            }
+			},
+			topLevelNavigation: {
+				type: String,
+				observer: '_topLevelNavigationChanged',
+			},
+			loginRedirect: {
+				type: String,
+			},
         },
+		behaviors: [
+			RouteBehavior,
+		],
         _state: 0,
 
         attached: function() {
             this.async(function() {
                 if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING) {
-                    if (!MoreRouting.getRouteByName('splash').children[0].active || !location.pathname) {
-                        MoreRouting.navigateTo('login');
-                    } else if (!MoreRouting.isCurrentUrl('login')) {
-                        MoreRouting.navigateTo('login-from', {url: this.encodeURI(location.pathname)});
+                    if (this.topLevelNavigation == "splash" || !location.pathname) {
+						Excess.RouteManager.transitionTo('@login');
+                    } else if (this.topLevelNavigation != "login") {
+						Excess.RouteManager.transitionTo('@login-from', {url: this.encodeURI(location.pathname)});
                     }
                 }
             });
@@ -50,33 +91,6 @@
             document.addEventListener('rf-lazy-insert', function(event) {
                 Polymer.updateStyles();
             }.bind(this));
-        },
-
-        onRouteChange: function(event, detail) {
-            // For some reason, MoreRouting keeps logout active for some time after redirecting
-            if (MoreRouting.isCurrentUrl('logout') && !MoreRouting.isCurrentUrl('login')) {
-                this.debounce('logout', function() {
-                    this.logout();
-                });
-                return;
-            }
-
-            if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING) {
-                if (MoreRouting.isCurrentUrl('login')) {
-                    this.$.splash.selected = 0;
-                } else if (!MoreRouting.getRouteByName('splash').children[0].active || !location.pathname) {
-                    MoreRouting.navigateTo('login');
-                } else {
-                    MoreRouting.navigateTo('login-from', {url: this.encodeURI(location.pathname)});
-                }
-            }
-
-            if (MoreRouting.isCurrentUrl('login')) {
-                var login = Polymer.dom(this.root).querySelector('rf-login');
-                if (login) {
-                    login.show();
-                }
-            }
         },
 
         onUserLoad: function(event, detail) {
@@ -120,28 +134,26 @@
                 this._setUser(user);
                 this._state &= ~state.VALIDATING;
 
-                if (MoreRouting.getRouteByName('login-from').active) {
+				if (this.topLevelNavigation == "login" && this.loginRedirect) {
                     var login = Polymer.dom(this.root).querySelector('rf-login');
                     if (login) {
                         login.hide();
                     }
-
-                    var url = MoreRouting.getRouteByName('login-from').params.url;
 
                     try {
-                        MoreRouting.navigateTo(this.decodeURI(url));
+						Excess.RouteManager.transitionTo(this.decodeURI(this.loginRedirect));
                     } catch(e) {
-                        MoreRouting.navigateTo('feed', {tagOrId: 'all'});
+						Excess.RouteManager.transitionTo('@feed-all');
                     }
-                } else if (MoreRouting.getRouteByName('login').active) {
+                } else if (this.topLevelNavigation == "login") {
                     var login = Polymer.dom(this.root).querySelector('rf-login');
                     if (login) {
                         login.hide();
                     }
-                    MoreRouting.navigateTo('feed', {tagOrId: 'all'});
-                } else if (!MoreRouting.isCurrentUrl('feed-base') &&
-                        !MoreRouting.isCurrentUrl('settings-base')) {
-                    MoreRouting.navigateTo('feed', {tagOrId: 'all'});
+					Excess.RouteManager.transitionTo('@feed-all');
+				} else if (this.topLevelNavigation != "feed" &&
+						this.topLevelNavigation != "settings") {
+					Excess.RouteManager.transitionTo('@feed-all');
                 }
                 this.$.splash.selected = 0;
 
@@ -167,22 +179,27 @@
             this.$['auth-check'].close();
             this._setUser(null);
             this.async(function() {
-                MoreRouting.navigateTo('login');
+				Excess.RouteManager.transitionTo('@login');
             });
         },
 
         connectionUnauthorized: function() {
             this._state &= ~state.VALIDATING;
-            if (MoreRouting.isCurrentUrl('feed-base') || MoreRouting.isCurrentUrl('settings-base')) {
-                MoreRouting.navigateTo('login-from', {url: location.pathname});
-            } else if (!MoreRouting.isCurrentUrl('login')) {
-                MoreRouting.navigateTo('login');
-            } else {
+			switch (this.topLevelNavigation) {
+			case "feed":
+			case "settings":
+				Excess.RouteManager.transitionTo('@login-from', {url: this.encodeURI(location.pathname)});
+				break;
+			case "login":
                 var login = Polymer.dom(this.root).querySelector('rf-login');
                 if (login) {
                     login.invalid = true;
                 }
-            }
+				break;
+			default:
+				Excess.RouteManager.transitionTo('@login');
+				break;
+			}
         },
 
         unhandledAPIError: function(data) {
@@ -198,21 +215,28 @@
             return decodeURIComponent(encodedURI.replace(/\$/g, '%'));
         },
 
-        _computeFeedBasePayload: function(user) {
-            return {user: user};
-        },
+		_topLevelNavigationChanged: function(value, old) {
+			if (value == "logout") {
+				this.logout();
+                return;
+			}
 
-        _computeSettingsBasePayload: function(user) {
-            return {user: user};
-        },
+            if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING && value != "login") {
+				if (this.topLevelNavigation == "splash" || !location.pathname) {
+					Excess.RouteManager.transitionTo('@login');
+				} else if (this.topLevelNavigation != "login") {
+					Excess.RouteManager.transitionTo('@login-from', {url: this.encodeURI(location.pathname)});
+				}
+			}
 
+			if (value == "login") {
+                var login = Polymer.dom(this.root).querySelector('rf-login');
+                if (login) {
+                    login.show();
+                }
+			}
+		},
     });
-
-    root.UserBehavior = {
-        validateUser: function(user) {
-            Polymer.dom(document).querySelector('rf-router').validateUser(user);
-        },
-    };
 
     root.NestedRouteBehavior = {
         defaultNestedRoute: function(parentName, nestedName, nestedParams) {
@@ -268,15 +292,6 @@
             if (route.active) {
                 debouncer = Polymer.Debounce(debouncer, cb.bind(this, route.params[param]));
             }
-        },
-
-        isActiveUrl: function(routeName) {
-            var params = {};
-            for (var i = 1, p; p = arguments[i]; i += 2) {
-                params[arguments[i]] = arguments[i+1];
-            }
-
-            return MoreRouting.isCurrentUrl(routeName, params);
         },
 
     };

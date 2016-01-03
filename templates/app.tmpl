@@ -197,7 +197,7 @@ body.theme-grey /deep/ * {
 {% define "body-attrs" %} unresolved class="fullbleed" {% end %}
 
 {% define "content" %}
-    <rf-router data-language="{% .base.lang %}"></rf-router>
+    <rf-router data-language="{% .base.lang %}" data-uri-prefix="{% url "/" .base.r %}"></rf-router>
 {% end %}
 
 {% define "scripts" %}

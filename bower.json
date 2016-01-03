@@ -25,7 +25,6 @@
     "iron-scroll-threshold": "~1.0.1",
     "iron-signals": "PolymerElements/iron-signals",
     "moment": "~2.8.2",
-    "more-routing": "urandom/more-routing#fix-for-issue-60",
     "neon-animation": "PolymerElements/neon-animated-pages",
     "paper-button": "PolymerElements/paper-button",
     "paper-checkbox": "PolymerElements/paper-checkbox",
@@ -48,10 +47,11 @@
     "paper-toolbar": "PolymerElements/paper-toolbar",
     "plastik-lazy-route-selector": "Plastikit/plastik-lazy-route-selector",
     "polymer": "Polymer/polymer",
-    "pushstate-anchor": "erikringsmuth/pushstate-anchor"
+    "pushstate-anchor": "erikringsmuth/pushstate-anchor",
+    "excess-router": "~0.9.10",
+    "lazy-pages": "~0.8.5"
   },
   "resolutions": {
-    "more-routing": "fix-for-issue-60",
-    "polymer": "~1.1"
+    "polymer": "^1.2.0"
   }
 }

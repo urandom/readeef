@@ -1,9 +1,8 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/excess-router/excess-router.html">
 <link rel="import" href="/dist/iron-list/iron-list.html">
 <link rel="import" href="/dist/iron-pages/iron-pages.html">
-<link rel="import" href="/dist/more-routing/more-route-template-helpers.html">
-<link rel="import" href="/dist/more-routing/more-routing.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/paper-spinner/paper-spinner.html">
@@ -195,7 +194,7 @@ rf-article /deep/ .article-summary {
                         </template>
                     </iron-list>
                 </div>
-                <rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" articles="[[ articles ]]" on-next-article="onNextArticle" on-previous-article="onPreviousArticle">
+                <rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" articles="[[ articles ]]" on-change-article-id="onChangeArticleId">
                     <template>
                         <div class="article-detail" data-article-id$="[[ item.article.Id ]]">
                             <div class="card layout vertical">
@@ -263,15 +262,20 @@ rf-article /deep/ .article-summary {
             is: "rf-feed",
             properties: {
                 tagOrId: String,
+				articleId: {
+					type: Number,
+					observer: '_articleIdChanged',
+				},
+				formatType: {
+					type: String,
+					observer: '_formatTypeChanged',
+				},
+				articleActive: Boolean,
                 user: Object,
                 feeds: Object,
                 articles: Array,
                 narrow: Boolean,
             },
-            behaviors: [
-                NestedRouteBehavior,
-                MoreRouting.TemplateHelpers,
-            ],
             observers: [
                 '_articlesChanged(articles.*)',
             ],
@@ -307,93 +311,14 @@ rf-article /deep/ .article-summary {
                     }
                 }
 
-                this.routeParamObserver('article', 'articleId', function(id) {
-                    var prevIndex = this.articles.findIndex(this._articleId),
-                        index = this.articles.findIndex(id);
-                    if (prevIndex != -1) {
-                        var article = this.articles[prevIndex];
-                        if (article.summarized) {
-                            this.set('articles.' + prevIndex + '.summarized', false);
-                        }
-
-                        if (article.formatted) {
-                            this.set('articles.' + prevIndex + '.formatted', false);
-                        }
-                    }
-
-                    if (id === null || index === -1) {
-                        this.$.article.selectedId = 0;
-                        // FIXME: https://github.com/PolymerElements/iron-list/issues/71
-                        this.$.list._scroller = this._scroller;
-                        this.$.list.scrollToIndex(prevIndex);
-                        if (id !== null) {
-                            this.async(function() {
-                                MoreRouting.navigateTo('feed', {tagOrId: this.tagOrId});
-                            });
-                        }
-                    } else {
-                        this.$.article.selectedId = id - 0;
-                        this._scroller.scrollTop = 0;
-                        // FIXME: https://github.com/PolymerElements/iron-list/issues/71
-                        this.$.list._scroller = null;
-
-                        if (!this.articles[index].Read) {
-                            this.$['article-read'].send({id: id - 0, value: true});
-                        }
-                    }
-
-                    this._articleId = id;
-                }.bind(this));
-
-                this.routeParamObserver('article-format', 'type', function(type) {
-                    var route = MoreRouting.getRouteByName('article-format'),
-                        articleId = route.params.articleId,
-                        index = this.articles.findIndex(articleId),
-                        article = this.articles[index];
-
-                    if (index == -1) {
-                        type = null;
-                    }
-
-                    switch (type) {
-                        case "format":
-                            this.set('articles.' + index + '.summarized', false);
-                            if (article.formatted || article.formattedDescription) {
-                                this.set('articles.' + index + '.formatted', !article.formatted);
-                                return;
-                            }
-
-                            if (!article.formatted && !article.formatting) {
-                                this.set('articles.' + index + '.formatting', true);
-                                this.$['article-format'].send({id: articleId - 0});
-                            }
-                            break;
-                        case "summary":
-                            this.set('articles.' + index + '.formatted', false);
-                            if (article.summarized || article.keyPoints) {
-                                this.set('articles.' + index + '.summarized', !article.summarized);
-                                return;
-                            }
-
-                            if (!article.summarized && !article.summarizing) {
-                                this.set('articles.' + index + '.summarizing', true);
-                                this.$['article-format'].send({id: articleId - 0});
-                            }
-                            break;
-                        case null:
-                            break;
-                        default:
-                            return this.async(function() {
-                                MoreRouting.navigateTo('article',
-                                        {tagOrId: route.params.tagOrId, articleId: articleId});
-                            });
-                    }
-                }.bind(this));
-
-                setInterval(function() {
+                this._updateRelativeDateInterval = setInterval(function() {
                     this._updateRelativeDates();
                 }.bind(this), 60000);
             },
+
+			detached: function() {
+				clearInterval(this._updateRelativeDateInterval);
+			},
 
             onArticleStateMessage: function(event, data) {
                 var index = this.articles.findIndex(data.arguments.Id);
@@ -432,6 +357,10 @@ rf-article /deep/ .article-summary {
                 }
             },
 
+			onChangeArticleId: function(event, data) {
+				Excess.RouteManager.transitionTo('@article', {tagOrId: this.tagOrId, articleId: data});
+			},
+
             onFavoriteClick: function(event) {
                 // Stop the pushstate-anchor from activating
                 event.preventDefault();
@@ -458,41 +387,120 @@ rf-article /deep/ .article-summary {
             },
 
             onOpenArticleLink: function() {
-                var article = this.articles.find(MoreRouting.getRoute('article').params.articleId);
+                var article = this.articles.find(this.articleId);
                 window.open(article.Link, this._computeArticleTarget(article));
             },
 
             onToggleArticleRead: function() {
-                var articleRoute = MoreRouting.getRoute('article');
-                this.articleState(articleRoute.params.articleId,
-                        {Read: !this.articles.find(articleRoute.params.articleId).Read});
+                this.articleState(this.articleId,
+                        {Read: !this.articles.find(this.articleId).Read});
             },
 
             onToggleArticleFavorite: function() {
-                var articleRoute = MoreRouting.getRoute('article');
-                this.articleState(articleRoute.params.articleId,
-                        {Favorite: !this.articles.find(articleRoute.params.articleId).Favorite});
+                this.articleState(this.articleId,
+                        {Favorite: !this.articles.find(this.articleId).Favorite});
             },
 
             onToggleArticleSummary: function() {
-                MoreRouting.navigateTo('article-format',
-                        {tagOrId: this.tagOrId,
-                        articleId: MoreRouting.getRoute('article').params.articleId,
-                        type: 'summary'});
+				Excess.RouteManager.transitionTo('@article-format', {
+					tagOrId: this.tagOrId,
+					articleId: this.articleId,
+					formatType: 'summary',
+				});
             },
 
             onToggleArticleFormat: function() {
-                MoreRouting.navigateTo('article-format',
-                        {tagOrId: this.tagOrId,
-                        articleId: MoreRouting.getRoute('article').params.articleId,
-                        type: 'format'});
+				Excess.RouteManager.transitionTo('@article-format', {
+					tagOrId: this.tagOrId,
+					articleId: this.articleId,
+					formatType: 'format',
+				});
             },
+
+			_articleIdChanged: function(id, old) {
+				var prevIndex = this.articles.findIndex(old),
+					index = this.articles.findIndex(id);
+
+				if (prevIndex != -1) {
+					var article = this.articles[prevIndex];
+					if (article.summarized) {
+						this.set('articles.' + prevIndex + '.summarized', false);
+					}
+
+					if (article.formatted) {
+						this.set('articles.' + prevIndex + '.formatted', false);
+					}
+				}
+
+				if (id === null || index === -1) {
+					this.$.article.selectedId = 0;
+					// FIXME: https://github.com/PolymerElements/iron-list/issues/71
+					this.$.list._scroller = this._scroller;
+					this.$.list.scrollToIndex(prevIndex);
+					if (id !== null) {
+						this.async(function() {
+							Excess.RouteManager.getRoutePath('@feed', {tagOrId: this.tagOrId});
+						});
+					}
+				} else {
+					this.$.article.selectedId = id - 0;
+					this._scroller.scrollTop = 0;
+					// FIXME: https://github.com/PolymerElements/iron-list/issues/71
+					this.$.list._scroller = null;
+
+					if (!this.articles[index].Read) {
+						this.$['article-read'].send({id: id - 0, value: true});
+					}
+				}
+			},
+
+			_formatTypeChanged: function(type, old) {
+				var index = this.articles.findIndex(this.articleId),
+					article = this.articles[index];
+
+				if (index == -1) {
+					type = null;
+				}
+
+				switch (type) {
+					case "format":
+						this.set('articles.' + index + '.summarized', false);
+						if (article.formatted || article.formattedDescription) {
+							this.set('articles.' + index + '.formatted', !article.formatted);
+							return;
+						}
+
+						if (!article.formatted && !article.formatting) {
+							this.set('articles.' + index + '.formatting', true);
+							this.$['article-format'].send({id: this.articleId - 0});
+						}
+						break;
+					case "summary":
+						this.set('articles.' + index + '.formatted', false);
+						if (article.summarized || article.keyPoints) {
+							this.set('articles.' + index + '.summarized', !article.summarized);
+							return;
+						}
+
+						if (!article.summarized && !article.summarizing) {
+							this.set('articles.' + index + '.summarizing', true);
+							this.$['article-format'].send({id: this.articleId - 0});
+						}
+						break;
+					case null:
+						break;
+					default:
+						return this.async(function() {
+							Excess.RouteManager.transitionTo('@article', {tagOrId: this.tagOrId, articleId: this.articleId});
+						});
+				}
+			},
 
             _articlesChanged: function(record) {
                 if (!record.base.length) {
                     this.$.article.selectedId = 0;
                 } else if (record.path == 'articles.splices') {
-                    if (!MoreRouting.isCurrentUrl('article')) {
+                    if (!this.articleActive) {
                         var newIndex = this._preUpdateFirstVisibleIndex,
                             originalIndex = newIndex, changeCount = 0;
 
@@ -576,7 +584,7 @@ rf-article /deep/ .article-summary {
             },
 
             _updateRelativeDates: function() {
-                if (!MoreRouting.isCurrentUrl('feed') || !this.articles || !this.articles.length) {
+                if (this.tagOrId == "" || !this.articles || !this.articles.length) {
                     return;
                 }
 
