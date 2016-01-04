@@ -179,55 +179,53 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 </a>
             </div>
             <div class="main-title">
-                <more-route-selector>
-                    <iron-pages>
-                        <section route="feed" class="layout horizontal center flex">
-                            <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-                            <paper-icon-button icon="arrow-back" style="visibility: hidden;" hidden$="[[ _computeHidePlaceholderIcon(searchVisible, narrow) ]]"></paper-icon-button>
-                            <span class="flex title-text" hidden$="[[ searchVisible ]]">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
-                            <span class="search-feed flex layout horizontal center" hidden$="[[ !searchVisible ]]">
-                                <paper-icon-button icon="clear" on-tap="toggleSearch"></paper-icon-button>
-                                <paper-input class="search-input" placeholder="{% __ "Search" .base.lang %}" no-label-float on-keyup="onSearchKeyUp" on-keypress="onSearchKeyPress" autofocus></paper-input>
-                            </span>
+				<iron-pages attr-for-selected="route" selected="[[ display ]]">
+					<section route="feed" class="layout horizontal center flex">
+						<paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+						<paper-icon-button icon="arrow-back" style="visibility: hidden;" hidden$="[[ _computeHidePlaceholderIcon(searchVisible, narrow) ]]"></paper-icon-button>
+						<span class="flex title-text" hidden$="[[ searchVisible ]]">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
+						<span class="search-feed flex layout horizontal center" hidden$="[[ !searchVisible ]]">
+							<paper-icon-button icon="clear" on-tap="toggleSearch"></paper-icon-button>
+							<paper-input class="search-input" placeholder="{% __ "Search" .base.lang %}" no-label-float on-keyup="onSearchKeyUp" on-keypress="onSearchKeyPress" autofocus></paper-input>
+						</span>
 
-                            <paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(tagOrId, searchVisible) ]]" title="{% __ "Search" .base.lang %}" on-tap="toggleSearch"></paper-icon-button>
-                            <paper-icon-button icon="refresh" title="{% __ "Refresh" .base.lang %}" on-tap="onRefresh" hidden$="[[ !narrow ]]"></paper-icon-button>
-                            <paper-menu-button horizontal-align="right">
-                                <paper-icon-button icon="more-vert" class="dropdown-trigger" title="{% __ "More options" .base.lang %}"></paper-icon-button>
-                                {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
-                                <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selected-values="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
-                                    <paper-item name="older-first">{% __ "Older first" .base.lang %}</paper-item>
-                                    <paper-item name="unread-only">{% __ "Unread only" .base.lang %}</paper-item>
-                                    <paper-item name="mark-all-as-read">{% __ "Mark all as read" .base.lang %}</paper-item>
-                                </paper-menu>
-                            </paper-menu-button>
-                        </section>
-                        <section route="article" class="layout horizontal center flex">
-                            <paper-icon-button icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
-                            <span class="title-text-article flex">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
-                            <paper-icon-button icon="[[ _computeReadStateIcon(_readState) ]]" title="{% __ "Mark article as read/unread" .base.lang %}" on-tap="onReadStateTap"></paper-icon-button>
+						<paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(tagOrId, searchVisible) ]]" title="{% __ "Search" .base.lang %}" on-tap="toggleSearch"></paper-icon-button>
+						<paper-icon-button icon="refresh" title="{% __ "Refresh" .base.lang %}" on-tap="onRefresh" hidden$="[[ !narrow ]]"></paper-icon-button>
+						<paper-menu-button horizontal-align="right">
+							<paper-icon-button icon="more-vert" class="dropdown-trigger" title="{% __ "More options" .base.lang %}"></paper-icon-button>
+							{%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
+							<paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selected-values="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
+								<paper-item name="older-first">{% __ "Older first" .base.lang %}</paper-item>
+								<paper-item name="unread-only">{% __ "Unread only" .base.lang %}</paper-item>
+								<paper-item name="mark-all-as-read">{% __ "Mark all as read" .base.lang %}</paper-item>
+							</paper-menu>
+						</paper-menu-button>
+					</section>
+					<section route="article" class="layout horizontal center flex">
+						<paper-icon-button icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
+						<span class="title-text-article flex">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
+						<paper-icon-button icon="[[ _computeReadStateIcon(_readState) ]]" title="{% __ "Mark article as read/unread" .base.lang %}" on-tap="onReadStateTap"></paper-icon-button>
 
-                            <paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(articleId, articles.splices, 'previous') ]]" title="{% __ "Previous article" .base.lang %}" on-tap="onPreviousArticle"></paper-icon-button>
-                            <paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(articleId, articles.splices, 'next') ]]" title="{% __ "Next article" .base.lang %}" on-tap="onNextArticle"></paper-icon-button>
+						<paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(articleId, articles.splices, 'previous') ]]" title="{% __ "Previous article" .base.lang %}" on-tap="onPreviousArticle"></paper-icon-button>
+						<paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(articleId, articles.splices, 'next') ]]" title="{% __ "Next article" .base.lang %}" on-tap="onNextArticle"></paper-icon-button>
 
-                            <paper-menu-button horizontal-align="right" hidden$="[[ !_shareServices.length ]]">
-                                <paper-icon-button icon="social:share" title="{% __ "Share article" .base.lang %}" class="dropdown-trigger"></paper-icon-button>
-                                {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
-                                <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onShareServiceActivate" style="background: #fff">
-                                    <template is="dom-repeat" items="[[ _shareServices ]]">
-                                        <paper-item name="[[ item.name ]]">[[ item.description ]]</paper-item>
-                                    </template>
-                                </paper-menu>
-                            </paper-menu-button>
-                        </section>
-                    </iron-pages>
-                </more-route-selector>
+						<paper-menu-button horizontal-align="right" hidden$="[[ !_shareServices.length ]]">
+							<paper-icon-button icon="social:share" title="{% __ "Share article" .base.lang %}" class="dropdown-trigger"></paper-icon-button>
+							{%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
+							<paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onShareServiceActivate" style="background: #fff">
+								<template is="dom-repeat" items="[[ _shareServices ]]">
+									<paper-item name="[[ item.name ]]">[[ item.description ]]</paper-item>
+								</template>
+							</paper-menu>
+						</paper-menu-button>
+					</section>
+				</iron-pages>
                 <paper-fab icon="refresh" on-tap="onRefresh" hidden$="[[ narrow ]]"></paper-fab>
             </div>
             <div class="main-content">
                 <iron-scroll-threshold id="scroll-threshold" lower-threshold="100" on-lower-trigger="onLowerScrollThresholdTrigger"></iron-scroll-threshold>
 
-                <rf-feed id="feed" user="[[ user ]]" feeds="[[ feeds ]]" articles="[[ articles ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]" article-id="[[ articleId ]]" format-type="[[ formatType ]]" article-active="[[ articleActive ]]" on-feed-article-state="onFeedArticleState"></rf-feed>
+                <rf-feed id="feed" user="[[ user ]]" feeds="[[ feeds ]]" articles="[[ articles ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]" article-id="[[ articleId ]]" format-type="[[ formatType ]]" article-active="[[ articleActive ]]" display="[[ display ]]" on-feed-article-state="onFeedArticleState"></rf-feed>
 
                 <div class="card empty-list" hidden$="[[ _computeHideEmptyMessage(articles.*, loading) ]]">
                     <span>{% __ "There are no articles in this section" .base.lang %}</span>
@@ -311,7 +309,11 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     type: Number,
                     value: 200,
                 },
-				articleActive: Boolean,
+				articleActive: {
+					type: Boolean,
+					observer: '_articleActiveChanged',
+				},
+				display: String,
                 _readState: Boolean,
                 _shareServices: Array,
                 _updateAvailable: {
@@ -695,6 +697,10 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             _feedsChanged: function(newValue, old) {
                 this._updateTags();
             },
+
+			_articleActiveChanged: function(active, old) {
+				this.display = active ? 'article' : 'feed';
+			},
 
             _userProfileChanged: function(userProfileRecord) {
                 if (this.user) {
