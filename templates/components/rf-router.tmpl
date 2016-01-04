@@ -25,7 +25,7 @@ neon-animated-pages, lazy-pages {
     </style>
 
     <template>
-		<excess-router-config path-style="path"></excess-router-config>
+		<excess-router-config path-style="path" manual-start="true"></excess-router-config>
 
 		<excess-route route="{% url "/web/:toplevel/(.*)?" .base.r %}" route-alias="toplevel" toplevel="{{ topLevelNavigation }}"></excess-route>
 		<excess-route route="/(.*)" redirect-to="{% url "/web/splash" .base.r %}" activation-modifiers="x"></excess-route>
