@@ -102,9 +102,9 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 }
     </style>
     <template>
-		<excess-route route="{% url "/web/feed/:tagOrId" .base.r %}" route-alias="feed" tag-or-id="{{ tagOrId }}"></excess-route>
-		<excess-route route="{% url "/web/feed/:tagOrId/article/:articleId" .base.r %}" route-alias="article" active="{{ articleActive }}" article-id="{{ articleId }}"></excess-route>
-		<excess-route route="{% url "/web/feed/:tagOrId/article/:articleId/:formatType" .base.r %}" route-alias="article-format" format-type="{{ formatType }}"></excess-route>
+		<excess-route route="/web/feed/:tagOrId" route-alias="feed" tag-or-id="{{ tagOrId }}"></excess-route>
+		<excess-route route="/web/feed/:tagOrId/article/:articleId" route-alias="article" active="{{ articleActive }}" article-id="{{ articleId }}"></excess-route>
+		<excess-route route="/web/feed/:tagOrId/article/:articleId/:formatType" route-alias="article-format" format-type="{{ formatType }}"></excess-route>
 
         <rf-app-scaffold narrow="{{ narrow }}" class$="[[ _computeScaffoldClass(_updateAvailable) ]]">
             <div class="drawer-title">{% __ "Feeds" .base.lang %}</div>
