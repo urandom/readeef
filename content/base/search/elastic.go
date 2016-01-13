@@ -6,11 +6,12 @@ import (
 	"net/url"
 	"strconv"
 
+	"gopkg.in/olivere/elastic.v3"
+
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw"
-	"gopkg.in/olivere/elastic.v2"
 )
 
 const (
@@ -32,7 +33,7 @@ func NewElastic(url string, size int64, logger webfw.Logger) (content.SearchProv
 
 	client, err := elastic.NewClient(elastic.SetURL(url))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Cannot connect to elastic server '%s': %v", url, err)
 	}
 
 	if exists, err = client.IndexExists(elasticIndexName).Do(); err != nil {
@@ -77,17 +78,16 @@ func (e Elastic) Search(
 	if t, err := url.QueryUnescape(term); err == nil {
 		term = t
 	}
-	query = elastic.NewCommonQuery("_all", term)
+	query = elastic.NewCommonTermsQuery("_all", term)
 
 	if len(feedIds) > 0 {
-		idFilter := elastic.NewOrFilter()
+		idFilter := elastic.NewBoolQuery()
 
 		for _, id := range feedIds {
-			idFilter = idFilter.Add(elastic.NewTermFilter("feed_id", int64(id)))
+			idFilter = idFilter.Should(elastic.NewTermQuery("feed_id", int64(id)))
 		}
 
-		filteredQuery := elastic.NewFilteredQuery(query)
-		query = filteredQuery.Filter(idFilter)
+		query = elastic.NewBoolQuery().Must(query).Filter(idFilter)
 	}
 
 	search.Query(query)
