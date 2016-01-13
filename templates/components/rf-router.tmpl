@@ -25,28 +25,28 @@ neon-animated-pages, lazy-pages {
     </style>
 
     <template>
-		<excess-router-config path-style="path"></excess-router-config>
+		<excess-router-config path-style="path" manual-start="true" base-path="{% url "/" .base.r %}"></excess-router-config>
 
-		<excess-route route="{% url "/web/:toplevel/(.*)?" .base.r %}" route-alias="toplevel" toplevel="{{ topLevelNavigation }}"></excess-route>
-		<excess-route route="/(.*)" redirect-to="{% url "/web/splash" .base.r %}" activation-modifiers="x"></excess-route>
+		<excess-route route="/web/:toplevel/(.*)?" route-alias="toplevel" toplevel="{{ topLevelNavigation }}"></excess-route>
+		<excess-route route="/(.*)?" redirect-to="/web/splash" activation-modifiers="x"></excess-route>
 
-		<excess-route route="{% url "/web/login" .base.r %}" route-alias="login"></excess-route>
-		<excess-route route="{% url "/web/login/from/:url" .base.r %}" route-alias="login-from" url="{{ loginRedirect }}"></excess-route>
-		<excess-route route="{% url "/web/feed/all" .base.r %}" route-alias="feed-all"></excess-route>
+		<excess-route route="/web/login" route-alias="login"></excess-route>
+		<excess-route route="/web/login/from/:url" route-alias="login-from" url="{{ loginRedirect }}"></excess-route>
+		<excess-route route="/web/feed/all" route-alias="feed-all"></excess-route>
 
-		<excess-route route="{% url "/web/logout" .base.r %}" route-alias="logout"></excess-route>
+		<excess-route route="/web/logout" route-alias="logout"></excess-route>
 
-		<excess-route route="{% url "/web/settings" .base.r %}" route-alias="settings-base"></excess-route>
-		<excess-route route="{% url "/web/settings/general" .base.r %}" route-alias="settings-general"></excess-route>
-		<excess-route route="{% url "/web/settings/feed/add" .base.r %}" route-alias="settings-add-feed"></excess-route>
-		<excess-route route="{% url "/web/settings/feed/add/discover" .base.r %}" route-alias="settings-add-feed-discover"></excess-route>
-		<excess-route route="{% url "/web/settings/feed/add/discover/not-found" .base.r %}" route-alias="settings-add-feed-discover-not-found"></excess-route>
-		<excess-route route="{% url "/web/settings/feed/add/discover/select" .base.r %}" route-alias="settings-add-feed-discover-select"></excess-route>
-		<excess-route route="{% url "/web/settings/feed/add/discover/select/none" .base.r %}" route-alias="settings-add-feed-discover-select-none"></excess-route>
-		<excess-route route="{% url "/web/settings/feed/add/discover/select/error" .base.r %}" route-alias="settings-add-feed-discover-select-error"></excess-route>
-		<excess-route route="{% url "/web/settings/feed/manage" .base.r %}" route-alias="settings-manage-feeds"></excess-route>
-		<excess-route route="{% url "/web/settings/share-services" .base.r %}" route-alias="settings-share-services"></excess-route>
-		<excess-route route="{% url "/web/settings/admin" .base.r %}" route-alias="settings-admin"></excess-route>
+		<excess-route route="/web/settings" route-alias="settings-base"></excess-route>
+		<excess-route route="/web/settings/general" route-alias="settings-general"></excess-route>
+		<excess-route route="/web/settings/feed/add" route-alias="settings-add-feed"></excess-route>
+		<excess-route route="/web/settings/feed/add/discover" route-alias="settings-add-feed-discover"></excess-route>
+		<excess-route route="/web/settings/feed/add/discover/not-found" route-alias="settings-add-feed-discover-not-found"></excess-route>
+		<excess-route route="/web/settings/feed/add/discover/select" route-alias="settings-add-feed-discover-select"></excess-route>
+		<excess-route route="/web/settings/feed/add/discover/select/none" route-alias="settings-add-feed-discover-select-none"></excess-route>
+		<excess-route route="/web/settings/feed/add/discover/select/error" route-alias="settings-add-feed-discover-select-error"></excess-route>
+		<excess-route route="/web/settings/feed/manage" route-alias="settings-manage-feeds"></excess-route>
+		<excess-route route="/web/settings/share-services" route-alias="settings-share-services"></excess-route>
+		<excess-route route="/web/settings/admin" route-alias="settings-admin"></excess-route>
 
         <iron-localstorage name="user" value="[[ user ]]" on-iron-localstorage-load="onUserLoad"></iron-localstorage>
 

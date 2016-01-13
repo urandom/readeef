@@ -163,87 +163,85 @@ rf-article /deep/ .article-summary {
 
     </style>
     <template>
-        <more-route-selector>
-            <iron-pages>
-                <div route="feed" class="list-container">
-                    <iron-list items="[[ articles ]]" id="list">
-                        <template>
-                            <a is="pushstate-anchor" href="[[ _computeArticleLink(item.Id, 'main') ]]" class="list-article">
-                                <div class$="[[ _computeArticleClass(item.Read, item.Favorite) ]]" data-feed-id$="[[ item.FeedId ]]" data-article-id$="[[ item.Id ]]">
-                                    <div class="card layout vertical">
-                                        <div class="title-wrapper layout horizontal center">
-                                            <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.Favorite) ]]" on-tap="onFavoriteToggle" on-click="onFavoriteClick"></paper-icon-button>
-                                            <span class="title" title$="[[ item.Title ]]" inner-h-t-m-l="[[ _computeArticleTitle(item.Title, item.Hit.*) ]]"></span>
-                                        </div>
-                                        <div class="detail-wrapper layout horizontal center">
-                                            <span class="short-description flex">
-                                                <img src$="[[ item.Thumbnail ]]" class="top-image">
-                                                <span inner-h-t-m-l="[[ _computeArticleDescription(item.Description, item.Hit.*) ]]"></span>
-                                                <br style="clear: both">
-                                            </span>
-                                        </div>
-                                        <span class="misc-info layout horizontal center">
-                                            <span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
-                                            <span class="publish-date">[[ item.RelativeDate ]]</span>
-                                        </span>
-                                        <!-- allow the inner elements to receiver pointer events -->
-                                        <paper-ripple style="pointer-events: none;"></paper-ripple>
-                                    </div>
-                                </div>
-                            </a>
-                        </template>
-                    </iron-list>
-                </div>
-                <rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" articles="[[ articles ]]" on-change-article-id="onChangeArticleId">
-                    <template>
-                        <div class="article-detail" data-article-id$="[[ item.article.Id ]]">
-                            <div class="card layout vertical">
-                                <a class="article-anchor title-wrapper" href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]">
-                                    <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.article.Favorite) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
-                                    <span class="title" title$="[[ item.article.Title ]]">[[ item.article.Title ]]</span>
-                                    <small class="index">[[ item.ordinalPosition ]]</small>
-                                </a>
-                                <div class="misc-info layout horizontal center">
-                                    <span class="feed-origin" title$="[[ item.article.FeedOrigin ]]" hidden$="[[ !item.article.FeedOrigin ]]">[[ item.article.FeedOrigin ]]</span>
-                                    <span class="publish-date">[[ item.article.RelativeDate ]]</span>
-                                </div>
-                                <div class="article-content">
-                                    <div class="article-description" hidden$="[[ item.article.summarized ]]"></div>
+		<iron-pages attr-for-selected="route" selected="[[ display ]]">
+			<div route="feed" class="list-container">
+				<iron-list items="[[ articles ]]" id="list">
+					<template>
+						<a is="pushstate-anchor" href="[[ _computeArticleLink(item.Id, 'main') ]]" class="list-article">
+							<div class$="[[ _computeArticleClass(item.Read, item.Favorite) ]]" data-feed-id$="[[ item.FeedId ]]" data-article-id$="[[ item.Id ]]">
+								<div class="card layout vertical">
+									<div class="title-wrapper layout horizontal center">
+										<paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.Favorite) ]]" on-tap="onFavoriteToggle" on-click="onFavoriteClick"></paper-icon-button>
+										<span class="title" title$="[[ item.Title ]]" inner-h-t-m-l="[[ _computeArticleTitle(item.Title, item.Hit.*) ]]"></span>
+									</div>
+									<div class="detail-wrapper layout horizontal center">
+										<span class="short-description flex">
+											<img src$="[[ item.Thumbnail ]]" class="top-image">
+											<span inner-h-t-m-l="[[ _computeArticleDescription(item.Description, item.Hit.*) ]]"></span>
+											<br style="clear: both">
+										</span>
+									</div>
+									<span class="misc-info layout horizontal center">
+										<span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
+										<span class="publish-date">[[ item.RelativeDate ]]</span>
+									</span>
+									<!-- allow the inner elements to receiver pointer events -->
+									<paper-ripple style="pointer-events: none;"></paper-ripple>
+								</div>
+							</div>
+						</a>
+					</template>
+				</iron-list>
+			</div>
+			<rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" articles="[[ articles ]]" on-change-article-id="onChangeArticleId">
+				<template>
+					<div class="article-detail" data-article-id$="[[ item.article.Id ]]">
+						<div class="card layout vertical">
+							<a class="article-anchor title-wrapper" href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]">
+								<paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.article.Favorite) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
+								<span class="title" title$="[[ item.article.Title ]]">[[ item.article.Title ]]</span>
+								<small class="index">[[ item.ordinalPosition ]]</small>
+							</a>
+							<div class="misc-info layout horizontal center">
+								<span class="feed-origin" title$="[[ item.article.FeedOrigin ]]" hidden$="[[ !item.article.FeedOrigin ]]">[[ item.article.FeedOrigin ]]</span>
+								<span class="publish-date">[[ item.article.RelativeDate ]]</span>
+							</div>
+							<div class="article-content">
+								<div class="article-description" hidden$="[[ item.article.summarized ]]"></div>
 
-                                    <div hidden$="[[ !item.article.summarized ]]">
-                                        <div class="article-top-image" hidden$="[[ !item.article.topImage ]]">
-                                            <img src$="[[ item.article.topImage ]]">
-                                        </div>
-                                        <ul class="article-summary">
-                                            <template is="dom-repeat" as="point" items="[[ item.article.keyPoints ]]">
-                                                <li>[[ point ]]</li>
-                                            </template>
-                                        </ul>
-                                    </div>
+								<div hidden$="[[ !item.article.summarized ]]">
+									<div class="article-top-image" hidden$="[[ !item.article.topImage ]]">
+										<img src$="[[ item.article.topImage ]]">
+									</div>
+									<ul class="article-summary">
+										<template is="dom-repeat" as="point" items="[[ item.article.keyPoints ]]">
+											<li>[[ point ]]</li>
+										</template>
+									</ul>
+								</div>
 
-                                    <div class="article-buttons layout horizontal">
-                                        <a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]" class="article-link flex article-control">
-                                            {% __ "View" .base.lang %}
-                                            <paper-ripple></paper-ripple>
-                                        </a>
-                                        <paper-spinner active="[[ item.article.summarizing ]]"></paper-spinner>
-                                        <a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'summary') ]]" class="article-link article-control" hidden="[[ _computeHideFormattingButtons(item, 'summarizing') ]]">
-                                            {% __ "Summarize" .base.lang %}
-                                            <paper-ripple></paper-ripple>
-                                        </a>
-                                        <paper-spinner active="[[ item.article.formatting ]]"></paper-spinner>
-                                        <a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'format') ]]" class="article-link article-control" hidden="[[ _computeHideFormattingButtons(item, 'formatting') ]]">
-                                            {% __ "Format" .base.lang %}
-                                            <paper-ripple></paper-ripple>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </rf-article>
-            </iron-pages>
-        </more-route-selector>
+								<div class="article-buttons layout horizontal">
+									<a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]" class="article-link flex article-control">
+										{% __ "View" .base.lang %}
+										<paper-ripple></paper-ripple>
+									</a>
+									<paper-spinner active="[[ item.article.summarizing ]]"></paper-spinner>
+									<a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'summary') ]]" class="article-link article-control" hidden="[[ _computeHideFormattingButtons(item, 'summarizing') ]]">
+										{% __ "Summarize" .base.lang %}
+										<paper-ripple></paper-ripple>
+									</a>
+									<paper-spinner active="[[ item.article.formatting ]]"></paper-spinner>
+									<a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'format') ]]" class="article-link article-control" hidden="[[ _computeHideFormattingButtons(item, 'formatting') ]]">
+										{% __ "Format" .base.lang %}
+										<paper-ripple></paper-ripple>
+									</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</template>
+			</rf-article>
+		</iron-pages>
         
         <rf-api id="article-read" method="article-read-state" tag="content-list" on-rf-api-message="onArticleStateMessage" user="[[ user ]]"></rf-api>
         <rf-api id="article-favorite" method="article-favorite-state" tag="content-list"on-rf-api-message="onArticleStateMessage"  user="[[ user ]]"></rf-api>
@@ -274,6 +272,7 @@ rf-article /deep/ .article-summary {
 					observer: '_formatTypeChanged',
 				},
 				articleActive: Boolean,
+				display: String,
                 user: Object,
                 feeds: Object,
                 articles: Array,

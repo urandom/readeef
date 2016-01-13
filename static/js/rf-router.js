@@ -75,9 +75,13 @@
 		behaviors: [
 			RouteBehavior,
 		],
+		_routingStarted: false,
         _state: 0,
 
         attached: function() {
+			Excess.RouteManager.start();
+			this._routingStarted = true;
+
             this.async(function() {
                 if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING) {
                     if (this.topLevelNavigation == "splash" || !location.pathname) {
@@ -134,29 +138,6 @@
                 this._setUser(user);
                 this._state &= ~state.VALIDATING;
 
-				if (this.topLevelNavigation == "login" && this.loginRedirect) {
-                    var login = Polymer.dom(this.root).querySelector('rf-login');
-                    if (login) {
-                        login.hide();
-                    }
-
-                    try {
-						Excess.RouteManager.transitionTo(this.decodeURI(this.loginRedirect));
-                    } catch(e) {
-						Excess.RouteManager.transitionTo('@feed-all');
-                    }
-                } else if (this.topLevelNavigation == "login") {
-                    var login = Polymer.dom(this.root).querySelector('rf-login');
-                    if (login) {
-                        login.hide();
-                    }
-					Excess.RouteManager.transitionTo('@feed-all');
-				} else if (this.topLevelNavigation != "feed" &&
-						this.topLevelNavigation != "settings") {
-					Excess.RouteManager.transitionTo('@feed-all');
-                }
-                this.$.splash.selected = 0;
-
                 if (user.ProfileData.theme) {
                     document.body.classList.add('theme-' + user.ProfileData.theme);
                     randomTheme();
@@ -167,12 +148,43 @@
                         RfShareServices.get(name).active = true;
                     });
                 }
+
+				this.debounce('validate-redirect', this.validateRedirect);
             }.bind(this);
 
             authCheck.user = user;
             authCheck.addEventListener('rf-api-message', validateMessage);
             authCheck.send();
         },
+
+		validateRedirect: function() {
+			if (!this._routingStarted) {
+				this.debounce('validate-redirect', this.validateRedirect, 50);
+				return;
+			}
+
+			if (this.topLevelNavigation == "login" && this.loginRedirect) {
+				var login = Polymer.dom(this.root).querySelector('rf-login');
+				if (login) {
+					login.hide();
+				}
+
+				try {
+					Excess.RouteManager.transitionTo(this.decodeURI(this.loginRedirect));
+				} catch(e) {
+					Excess.RouteManager.transitionTo('@feed-all');
+				}
+			} else if (this.topLevelNavigation == "login") {
+				var login = Polymer.dom(this.root).querySelector('rf-login');
+				if (login) {
+					login.hide();
+				}
+				Excess.RouteManager.transitionTo('@feed-all');
+			} else if (this.topLevelNavigation != "feed" &&
+					this.topLevelNavigation != "settings") {
+				Excess.RouteManager.transitionTo('@feed-all');
+			}
+		},
 
         logout: function() {
             this.$.logout.send();
