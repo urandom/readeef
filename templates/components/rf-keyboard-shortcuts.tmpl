@@ -169,10 +169,10 @@ Polymer({
                 }
 
                 for (var routeName in routed) {
-                    if (MoreRouting.isCurrentUrl(routeName)) {
+                    if (isRouteActive(routeName)) {
                         var shortcut = routed[routeName], ignore = false;
                         if (shortcut._notRoutes.some(function(r) {
-                            return MoreRouting.isCurrentUrl(r);
+                            return isRouteActive(r);
                         })) {
                             return;
                         }
@@ -183,6 +183,11 @@ Polymer({
             });
         })();
     }
+	
+	function isRouteActive(name) {
+		var r = document.createElement('iron-meta').byKey(name);
+		return r && r.active;
+	}
 
     Polymer({
         is: 'rf-keyboard-shortcut',
