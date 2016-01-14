@@ -4,6 +4,7 @@ templates/base.tmpl
 templates/components/rf-api.tmpl
 templates/components/rf-app-scaffold.tmpl
 templates/components/rf-article.tmpl
+templates/components/rf-behaviors.tmpl
 templates/components/rf-button-link.tmpl
 templates/components/rf-feed-base.tmpl
 templates/components/rf-feed.tmpl
