@@ -22,12 +22,6 @@
     };
     setInterval(randomTheme, 1800000);
 
-    root.UserBehavior = {
-        validateUser: function(user) {
-            Polymer.dom(document).querySelector('rf-router').validateUser(user);
-        },
-    };
-
 	root.RouteBehavior = {
 		attached: function() {
 			Polymer.dom(this.root).querySelectorAll('excess-route').forEach(function(route) {
