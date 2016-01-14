@@ -1,0 +1,13 @@
+{% define "content" %}
+<link rel="import" href="/dist/polymer/polymer.html">
+
+<script>
+(function(root) {
+    root.UserBehavior = {
+        validateUser: function(user) {
+            Polymer.dom(document).querySelector('rf-router').validateUser(user);
+        },
+    };
+})(window);
+</script>
+{% end %}
