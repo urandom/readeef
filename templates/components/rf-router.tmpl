@@ -14,6 +14,7 @@
 
 <link rel="import" href="{% url "/component/rf-behaviors" .base.r %}">
 <link rel="import" href="{% url "/component/rf-splash" .base.r %}">
+<link rel="import" href="{% url "/component/rf-feed-base" .base.r %}">
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
 <link rel="import" href="{% url "/component/rf-share-services" .base.r %}">
 <link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
@@ -59,7 +60,6 @@ neon-animated-pages, lazy-pages {
 			</template>
 			<section route="logout"><!-- Empty section for the logout route to match --></section>
 			<template is="dom-if" route="feed">
-				<link rel="import" href="{% url "/component/rf-feed-base" .base.r %}">
 				<rf-feed-base user="[[ user ]]"></rf-feed-base>
 			</template>
 			<template is="dom-if" route="settings">

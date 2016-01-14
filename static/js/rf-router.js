@@ -22,31 +22,6 @@
     };
     setInterval(randomTheme, 1800000);
 
-	root.RouteBehavior = {
-		attached: function() {
-			Polymer.dom(this.root).querySelectorAll('excess-route').forEach(function(route) {
-				if (route.routeAlias) {
-					var meta = document.createElement('iron-meta');
-					meta.key = route.routeAlias;
-					meta.value = route;
-				}
-			});
-		},
-
-		urlFor: function(spec, params) {
-			return Excess.RouteManager.getRoutePath(spec, params);
-		},
-
-		namedRoute: function(name) {
-			return document.createElement('iron-meta').byKey(name);
-		},
-
-		isRouteActive: function(name) {
-			var r = this.namedRoute(name);
-			return r && r.active;
-		},
-	};
-
     Polymer({
         is: "rf-router",
         properties: {
@@ -244,6 +219,7 @@
 		},
     });
 
+	/*
     root.NestedRouteBehavior = {
         defaultNestedRoute: function(parentName, nestedName, nestedParams) {
             if (!MoreRouting.isCurrentUrl(nestedName)) {
@@ -301,5 +277,6 @@
         },
 
     };
+	*/
 
 })(window);

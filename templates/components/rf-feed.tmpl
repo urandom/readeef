@@ -434,6 +434,10 @@ rf-article /deep/ .article-summary {
 					}
 				}
 
+				if (!this._scroller) {
+					return;
+				}
+
 				if (id === null || index === -1) {
 					this.$.article.selectedId = 0;
 					// FIXME: https://github.com/PolymerElements/iron-list/issues/71
@@ -441,7 +445,7 @@ rf-article /deep/ .article-summary {
 					this.$.list.scrollToIndex(prevIndex);
 					if (id !== null) {
 						this.async(function() {
-							Excess.RouteManager.getRoutePath('@feed', {tagOrId: this.tagOrId});
+							Excess.RouteManager.transitionTo('@feed', {tagOrId: this.tagOrId});
 						});
 					}
 				} else {

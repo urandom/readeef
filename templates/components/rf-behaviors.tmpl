@@ -8,6 +8,41 @@
             Polymer.dom(document).querySelector('rf-router').validateUser(user);
         },
     };
+
+    root.RouteBehavior = {
+		attached: function() {
+			Polymer.dom(this.root).querySelectorAll('excess-route').forEach(function(route) {
+				if (route.routeAlias) {
+					var meta = document.createElement('iron-meta');
+					meta.key = route.routeAlias;
+					meta.value = route;
+				}
+			});
+		},
+
+		urlFor: function(spec, params) {
+			var paramObj = params;
+
+			if (params && params.constructor === Array) {
+				paramObj = {};
+				for (var i = 0; i < params.length; i+=2) {
+					paramObj[params[i]] = params[i+1];
+				}
+			}
+
+			return Excess.RouteManager.getRoutePath(spec, paramObj);
+		},
+
+		namedRoute: function(name) {
+			return document.createElement('iron-meta').byKey(name);
+		},
+
+		isRouteActive: function(name) {
+			var r = this.namedRoute(name);
+			return r && r.active;
+		},
+
+    };
 })(window);
 </script>
 {% end %}
