@@ -13,8 +13,10 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 
 <link rel="import" href="{% url "/component/rf-behaviors" .base.r %}">
+<link rel="import" href="{% url "/component/rf-login" .base.r %}">
 <link rel="import" href="{% url "/component/rf-splash" .base.r %}">
 <link rel="import" href="{% url "/component/rf-feed-base" .base.r %}">
+<link rel="import" href="{% url "/component/rf-settings-base" .base.r %}">
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
 <link rel="import" href="{% url "/component/rf-share-services" .base.r %}">
 <link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
@@ -38,15 +40,13 @@ neon-animated-pages, lazy-pages {
 
 		<excess-route route="/web/logout" route-alias="logout"></excess-route>
 
-		<excess-route route="/web/settings" route-alias="settings-base"></excess-route>
 		<excess-route route="/web/settings/general" route-alias="settings-general"></excess-route>
-		<excess-route route="/web/settings/feed/add" route-alias="settings-add-feed"></excess-route>
-		<excess-route route="/web/settings/feed/add/discover" route-alias="settings-add-feed-discover"></excess-route>
-		<excess-route route="/web/settings/feed/add/discover/not-found" route-alias="settings-add-feed-discover-not-found"></excess-route>
-		<excess-route route="/web/settings/feed/add/discover/select" route-alias="settings-add-feed-discover-select"></excess-route>
-		<excess-route route="/web/settings/feed/add/discover/select/none" route-alias="settings-add-feed-discover-select-none"></excess-route>
-		<excess-route route="/web/settings/feed/add/discover/select/error" route-alias="settings-add-feed-discover-select-error"></excess-route>
-		<excess-route route="/web/settings/feed/manage" route-alias="settings-manage-feeds"></excess-route>
+		<excess-route route="/web/settings/feeds/discover" route-alias="settings-add-feed-discover"></excess-route>
+		<excess-route route="/web/settings/feeds/discover/not-found" route-alias="settings-add-feed-discover-not-found"></excess-route>
+		<excess-route route="/web/settings/feeds/discover/select" route-alias="settings-add-feed-discover-select"></excess-route>
+		<excess-route route="/web/settings/feeds/discover/select/none" route-alias="settings-add-feed-discover-select-none"></excess-route>
+		<excess-route route="/web/settings/feeds/discover/select/error" route-alias="settings-add-feed-discover-select-error"></excess-route>
+		<excess-route route="/web/settings/feeds/manage" route-alias="settings-manage-feeds"></excess-route>
 		<excess-route route="/web/settings/share-services" route-alias="settings-share-services"></excess-route>
 		<excess-route route="/web/settings/admin" route-alias="settings-admin"></excess-route>
 
@@ -55,7 +55,6 @@ neon-animated-pages, lazy-pages {
         <lazy-pages id="splash" entry-animation="fade-in-animation" exit-animation="fade-out-animation" attr-for-selected="route" selected="[[ topLevelNavigation ]]">
 			<rf-splash route="splash"></rf-splash>
 			<template is="dom-if" route="login">
-				<link rel="import" href="{% url "/component/rf-login" .base.r %}">
 				<rf-login></rf-login>
 			</template>
 			<section route="logout"><!-- Empty section for the logout route to match --></section>
@@ -63,7 +62,6 @@ neon-animated-pages, lazy-pages {
 				<rf-feed-base user="[[ user ]]"></rf-feed-base>
 			</template>
 			<template is="dom-if" route="settings">
-				<link rel="import" href="{% url "/component/rf-settings-base" .base.r %}">
 				<rf-settings-base user="[[ user ]]"></rf-settings-base>
 			</template>
         </lazy-pages>

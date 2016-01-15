@@ -1,16 +1,23 @@
 {% define "content" %}
-<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/excess-router/excess-router.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
+<link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
-<link rel="import" href="/dist/more-routing/more-route-template-helpers.html">
-<link rel="import" href="/dist/more-routing/more-routing.html">
+<link rel="import" href="/dist/lazy-pages/lazy-pages.html">
 
 <link rel="import" href="{% url "/component/rf-app-scaffold" .base.r %}">
-<link rel="import" href="{% url "/component/rf-lazy-loader" .base.r %}">
+<link rel="import" href="{% url "/component/rf-settings-general" .base.r %}">
+<link rel="import" href="{% url "/component/rf-settings-add-feed" .base.r %}">
+<link rel="import" href="{% url "/component/rf-settings-manage-feeds" .base.r %}">
+<link rel="import" href="{% url "/component/rf-settings-share-services" .base.r %}">
+<link rel="import" href="{% url "/component/rf-settings-admin" .base.r %}">
 
 <dom-module id="rf-settings-base">
     <style>
+neon-animated-pages, lazy-pages {
+    position: static;
+}
 .drawer-menu a {
     display: block;
     color: var(--text-primary-color);
@@ -43,31 +50,33 @@
 
     </style>
     <template>
+		<excess-route route="/web/settings/:subsettings*" route-alias="settings" subsettings="{{ subsettings }}"></excess-route>
+
         <rf-app-scaffold>
             <div class="drawer-title">{% __ "Settings" .base.lang %}</div>
             <div class="drawer-menu">
-                <a is="pushstate-anchor" href="[[ urlFor('settings-general') ]]" class="item">
+                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'general') ]]" class="item">
                     <span>{% __ "General" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('settings-add-feed') ]]" class="item">
+                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'feeds/discover') ]]" class="item">
                     <span>{% __ "Add Feed" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('settings-manage-feeds') ]]" class="item">
+                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'feeds/manage') ]]" class="item">
                     <span>{% __ "Manage Feeds" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('settings-share-services') ]]" class="item">
+                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'share-services') ]]" class="item">
                     <span>{% __ "Share Services" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('settings-admin') ]]" class="item" hidden$="{{ !user.Admin }}">
+                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'admin') ]]" class="item" hidden$="{{ !user.Admin }}">
                     <span>{% __ "Administration" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
                 <hr>
-                <a is="pushstate-anchor" href="[[ urlFor('feed-base') ]]" class="item">
+                <a is="pushstate-anchor" href="[[ urlFor('feed-all') ]]" class="item">
                     <span>{% __ "Back to feeds" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
@@ -78,22 +87,34 @@
             </div>
             <div class="main-title layout horizontal center">
                 <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-general') }}">{% __ "General" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-add-feed') }}">{% __ "Add Feed" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-manage-feeds') }}">{% __ "Manage Feeds" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-share-services') }}">{% __ "Share Services" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(activeSettings, 'settings-admin') }}">{% __ "Administration" .base.lang %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive('general') }}">{% __ "General" .base.lang %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive('feeds/discover') }}">{% __ "Add Feed" .base.lang %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive('feeds/manage') }}">{% __ "Manage Feeds" .base.lang %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive('share-services') }}">{% __ "Share Services" .base.lang %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive('admin') }}">{% __ "Administration" .base.lang %}</span>
             </div>
             <div class="main-content">
-                <more-route-selector on-more-route-change="onRouteChange">
-                    <iron-pages>
-                        <rf-lazy-loader route="settings-general" import="/component/rf-settings-general" property-payload="[[ _computeSettingsUserPayload(user) ]]"></rf-lazy-loader>
-                        <rf-lazy-loader route="settings-add-feed" import="/component/rf-settings-add-feed" property-payload="[[ _computeSettingsUserPayload(user) ]]"></rf-lazy-loader>
-                        <rf-lazy-loader route="settings-manage-feeds" import="/component/rf-settings-manage-feeds" property-payload="[[ _computeSettingsUserPayload(user) ]]"></rf-lazy-loader>
-                        <rf-lazy-loader route="settings-share-services" import="/component/rf-settings-share-services" property-payload="[[ _computeSettingsUserPayload(user) ]]"></rf-lazy-loader>
-                        <rf-lazy-loader route="settings-admin" import="/component/rf-settings-admin" hidden$="{{ !user.Admin }}" property-payload="[[ _computeSettingsUserPayload(user) ]]"></rf-lazy-loader>
-                    </iron-pages>
-                </more-route-selector>
+				<lazy-pages id="settings-pages" entry-animation="fade-in-animation" exit-animation="fade-out-animation" attr-for-selected="route" selected="[[ subsettings ]]">
+					<template is="dom-if" route="general">
+						<rf-settings-general user="[[ user ]]"></rf-settings-general>
+					</template>
+
+					<template is="dom-if" route="feeds/discover">
+						<rf-settings-add-feed user="[[ user ]]"></rf-settings-add-feed>
+					</template>
+
+					<template is="dom-if" route="feeds/manage">
+						<rf-settings-manage-feeds user="[[ user ]]"></rf-settings-manage-feeds>
+					</template>
+
+					<template is="dom-if" route="share-services">
+						<rf-settings-share-services user="[[ user ]]"></rf-settings-share-services>
+					</template>
+
+					<template is="dom-if" route="admin">
+						<rf-settings-admin user="[[ user ]]"></rf-settings-admin>
+					</template>
+				</lazy-pages>
             </div>
         </rf-app-scaffold>
     </template>
@@ -103,38 +124,15 @@
             is: "rf-settings-base",
             behaviors: [
                 UserBehavior,
-                MoreRouting.TemplateHelpers
+				RouteBehavior,
             ],
             properties: {
                 user: Object,
-                activeSettings: {
-                    type: String,
-                    notify: true
-                }
+				subsettings: String,
             },
 
-            onRouteChange: function(event, detail) {
-                if (MoreRouting.isCurrentUrl('settings-general')) {
-                    this.activeSettings = 'settings-general';
-                } else if (MoreRouting.isCurrentUrl('settings-add-feed')) {
-                    this.activeSettings = 'settings-add-feed';
-                } else if (MoreRouting.isCurrentUrl('settings-manage-feeds')) {
-                    this.activeSettings = 'settings-manage-feeds';
-                } else if (MoreRouting.isCurrentUrl('settings-share-services')) {
-                    this.activeSettings = 'settings-share-services';
-                } else if (MoreRouting.isCurrentUrl('settings-admin')) {
-                    this.activeSettings = 'settings-admin';
-                } else {
-                    this.activeSettings = '';
-                }
-            },
-
-            _computeSettingsIsActive(active, current) {
-                return active == current;
-            },
-
-            _computeSettingsUserPayload: function(user) {
-                return {user: user};
+            _computeSettingsIsActive(current) {
+                return this.subsettings == current;
             },
 
         })
