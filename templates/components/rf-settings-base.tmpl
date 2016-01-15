@@ -88,11 +88,11 @@ neon-animated-pages, lazy-pages {
             </div>
             <div class="main-title layout horizontal center">
                 <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive('general') }}">{% __ "General" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive('feeds/discover') }}">{% __ "Add Feed" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive('feeds/manage') }}">{% __ "Manage Feeds" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive('share-services') }}">{% __ "Share Services" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive('admin') }}">{% __ "Administration" .base.lang %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'general') }}">{% __ "General" .base.lang %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'feeds/discover/search') }}">{% __ "Add Feed" .base.lang %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'feeds/manage') }}">{% __ "Manage Feeds" .base.lang %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'share-services') }}">{% __ "Share Services" .base.lang %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'admin') }}">{% __ "Administration" .base.lang %}</span>
             </div>
             <div class="main-content">
 				<lazy-pages id="settings-pages" entry-animation="fade-in-animation" exit-animation="fade-out-animation" attr-for-selected="route" selected="[[ subsettings ]]">
@@ -132,8 +132,8 @@ neon-animated-pages, lazy-pages {
 				subsettings: String,
             },
 
-            _computeSettingsIsActive(current) {
-                return this.subsettings == current;
+            _computeSettingsIsActive(subsettings, target) {
+                return subsettings == target;
             },
 
         })
