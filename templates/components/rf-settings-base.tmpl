@@ -1,10 +1,11 @@
 {% define "content" %}
 <link rel="import" href="/dist/excess-router/excess-router.html">
+<link rel="import" href="/dist/iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="/dist/lazy-pages/lazy-pages.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
-<link rel="import" href="/dist/lazy-pages/lazy-pages.html">
 
 <link rel="import" href="{% url "/component/rf-app-scaffold" .base.r %}">
 <link rel="import" href="{% url "/component/rf-settings-general" .base.r %}">
@@ -76,11 +77,11 @@ neon-animated-pages, lazy-pages {
                     <paper-ripple></paper-ripple>
                 </a>
                 <hr>
-                <a is="pushstate-anchor" href="[[ urlFor('feed-all') ]]" class="item">
+                <a is="pushstate-anchor" href="[[ urlFor('@feed-all') ]]" class="item">
                     <span>{% __ "Back to feeds" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('logout') ]]" class="item">
+                <a is="pushstate-anchor" href="[[ urlFor('@logout') ]]" class="item">
                     <span>{% __ "Logout" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
