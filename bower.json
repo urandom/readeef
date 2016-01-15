@@ -45,7 +45,6 @@
     "paper-toast": "PolymerElements/paper-toast",
     "paper-toggle-button": "PolymerElements/paper-toggle-button",
     "paper-toolbar": "PolymerElements/paper-toolbar",
-    "plastik-lazy-route-selector": "Plastikit/plastik-lazy-route-selector",
     "polymer": "Polymer/polymer",
     "pushstate-anchor": "erikringsmuth/pushstate-anchor",
     "excess-router": "~0.9.10",

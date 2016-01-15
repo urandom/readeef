@@ -59,7 +59,7 @@ neon-animated-pages, lazy-pages {
                     <span>{% __ "General" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'feeds/discover') ]]" class="item">
+                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'feeds/discover/search') ]]" class="item">
                     <span>{% __ "Add Feed" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
@@ -99,7 +99,7 @@ neon-animated-pages, lazy-pages {
 						<rf-settings-general user="[[ user ]]"></rf-settings-general>
 					</template>
 
-					<template is="dom-if" route="feeds/discover">
+					<template is="dom-if" route="feeds/discover/search">
 						<rf-settings-add-feed user="[[ user ]]"></rf-settings-add-feed>
 					</template>
 
