@@ -3,11 +3,95 @@
 
 <script>
 (function(root) {
+	var randomThemeInterval, themeClasses = [
+		'blue', 'indigo', 'cyan', 'teal', 'green',
+		'light-green', 'lime', 'red', 'pink', 'purple',
+		'deep-purple', 'yellow', 'amber', 'deep-orange',
+		'grep',
+	];
+
+	function applyThemeFor(element, theme, updateStyles) {
+		if (theme == '__random__') {
+            var index = Math.floor(Math.random() * themeClasses.length - 1);
+
+			var cls = "theme-__random__ theme-" + themeClasses[index];
+		} else {
+			var cls = "theme-" + theme;
+		}
+
+		for (var i = 0, c; c = element.classList[i]; ++i) {
+			if (c.indexOf('theme-') == 0) {
+				element.classList.remove(c);
+			}
+		}
+
+		element.classList.add(cls);
+
+		if (updateStyles) {
+			Polymer.updateStyles();
+		}
+	};
+
+	var ThemeBehaviorBase = {
+		currentTheme: function() {
+			var router = Polymer.dom(document).querySelector('rf-router');
+
+			if (router && router.user && router.user.ProfileData) {
+				return router.user.ProfileData.theme;
+			}
+
+			return themeClasses[0];
+		},
+	};
+
     root.UserBehavior = {
         validateUser: function(user) {
             Polymer.dom(document).querySelector('rf-router').validateUser(user);
         },
     };
+
+	root.ThemeBehavior = [ThemeBehaviorBase, {
+		attached: function() {
+			var themables = document.createElement('iron-meta').byKey('themable-elements');
+
+			if (!themables) {
+				themables = [];
+				var meta = document.createElement('iron-meta');
+				meta.key = 'themable-elements';
+				meta.value = themables;
+			}
+
+			themables.push(this);
+			applyThemeFor(this, this.currentTheme(), true)
+		},
+
+		detached: function() {
+			var themables = document.createElement('iron-meta').byKey('themable-elements');
+
+			themables.splice(themables.indexOf(this), 1);
+		},
+	}];
+
+	root.ThemeManagerBehavior = [ThemeBehaviorBase, {
+		applyTheme: function() {
+			var themables = document.createElement('iron-meta').byKey('themable-elements');
+
+			if (themables) {
+				clearInterval(randomThemeInterval);
+				var theme = this.currentTheme();
+
+				themables.forEach(function(element) {
+					applyThemeFor(element, theme);
+				});
+
+				if (theme == '__random__') {
+					randomThemeInterval = setInterval(this.applyTheme.bind(this), 1800000);
+				}
+
+				Polymer.updateStyles();
+			}
+		},
+	}]
 
     root.RouteBehavior = {
 		attached: function() {
