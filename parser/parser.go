@@ -9,6 +9,8 @@ import (
 
 var (
 	unknownTime = time.Unix(0, 0)
+
+	redditRFC3339 = "2006-01-02T15:04:05+07:00"
 )
 
 func ParseFeed(source []byte, funcs ...func([]byte) (Feed, error)) (Feed, error) {
@@ -42,6 +44,7 @@ func parseDate(date string) (time.Time, error) {
 		time.RFC3339,
 		time.RFC3339Nano,
 		http.TimeFormat,
+		redditRFC3339,
 	}
 
 	date = strings.TrimSpace(date)
