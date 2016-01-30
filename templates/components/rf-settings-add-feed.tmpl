@@ -17,6 +17,9 @@
 <dom-module id="rf-settings-add-feed">
     <template>
 		<style>
+lazy-pages > * {
+	position: relative;
+}
 .card {
     @apply(--card-style);
     @apply(--shadow-elevation-4dp);
@@ -26,6 +29,9 @@
 }
 neon-animated-pages, lazy-pages {
     position: static;
+}
+a {
+	color: inherit;
 }
 a[is="pushstate-anchor"] {
     position: relative;
@@ -49,11 +55,11 @@ li paper-checkbox {
     margin-right: 16px;
 }
 		</style>
-		<excess-route route="/web/settings/feeds/discover/:discoverStage+" route-alias="settings-feed-discover" discover-stage="{{ discoverStage }}"></excess-route>
+		<excess-route route="/web/settings/discovery/:discoverStage+" route-alias="settings-discovery" discover-stage="{{ discoverStage }}"></excess-route>
 
         <div class="card" class="layout vertical start">
             <div class="layout vertical">
-				<lazy-pages entry-animation="fade-in-animation" exit-animation="fade-out-animation" attr-for-selected="route" selected="[[ discoverStage ]]">
+				<lazy-pages attr-for-selected="route" selected="[[ discoverStage ]]" rescue-selection="search">
 					<section route="search">
 						<p>
 							{% __ "Enter keywords to use when searching for public feeds. A website address that contains one more more feeds may also be used. Finally, feed addresses may be entered directly." .base.lang %}
@@ -73,7 +79,7 @@ li paper-checkbox {
 						</div>
 					</section>
 
-					<section route="discover/not-found">
+					<section route="not-found">
 						<p>{% __ "No feeds found" .base.lang %}</p>
 
 						<div class="layout horizontal end-justified">
@@ -84,7 +90,7 @@ li paper-checkbox {
 						</div>
 					</section>
 
-					<section route="discover/select">
+					<section route="select">
 						<div hidden$="[[ _computeHideDiscoveredFeeds(discoveredFeeds) ]]">
 							<h4>{% __ "No feeds found" .base.lang %}</h4>
 						</div>
@@ -120,7 +126,7 @@ li paper-checkbox {
 						</div>
 					</section>
 
-					<section route="discover/select/error">
+					<section route="select/error">
 						<p>{% __ "Error adding selected feeds: " .base.lang %}<br>
 							<template is="dom-repeat" items="[[ addFeedErrors ]]">
 								<span>[[ _computeFeedErrorEntry(item) ]]</span>
@@ -179,6 +185,13 @@ li paper-checkbox {
                     observer: '_loadingChanged',
                 }
             },
+
+			attached: function() {
+				this.namedRoute('settings').addEventListener('route-params-changed', function(event) {
+					this.debounce('default-discovery-route', this._transitionToDefault.bind(this));
+				}.bind(this));
+				this.debounce('default-discovery-route', this._transitionToDefault.bind(this));
+			},
 
             onRouteChange: function(event, detail) {
                 this.loading = false;
@@ -253,9 +266,9 @@ li paper-checkbox {
                 this.discoveredFeeds = data.arguments.Feeds;
 
                 if (!this.discoveredFeeds || !this.discoveredFeeds.length) {
-					Excess.RouteManager.transitionTo('settings-feed-discover', {discoverStage: 'not-found'});
+					Excess.RouteManager.transitionTo('@settings-discovery', {discoverStage: 'not-found'});
                 } else {
-					Excess.RouteManager.transitionTo('settings-feed-discover', {discoverStage: 'select'});
+					Excess.RouteManager.transitionTo('@settings-discovery', {discoverStage: 'select'});
                 }
             },
 
@@ -274,7 +287,7 @@ li paper-checkbox {
                 }
 
                 if (!links.length) {
-					Excess.RouteManager.transitionTo('settings-feed-discover', {discoverStage: ['select', 'none']});
+					Excess.RouteManager.transitionTo('@settings-discovery', {discoverStage: ['select', 'none']});
                     return;
                 }
 
@@ -289,7 +302,7 @@ li paper-checkbox {
                 this.discoveredFeeds = null;
 
                 this.$['add-feed-success'].show();
-				Excess.RouteManager.transitionTo('settings-feed-discover', {discoverStage: 'search'});
+				Excess.RouteManager.transitionTo('@settings-discovery', {discoverStage: 'search'});
             },
 
             onAddFeedError: function(event, data) {
@@ -298,7 +311,7 @@ li paper-checkbox {
                 if (data.arguments.Success) {
                     this.fire('iron-signal', {name: 'rf-feeds-added'});
                 }
-				Excess.RouteManager.transitionTo('settings-feed-discover', {discoverStage: ['select', 'error']});
+				Excess.RouteManager.transitionTo('@settings-discovery', {discoverStage: ['select', 'error']});
             },
 
 			_discoverStageChanged: function() {
@@ -309,7 +322,6 @@ li paper-checkbox {
                 var dependants = Polymer.dom(this.root).querySelectorAll('.loading-dependant');
                 dependants.forEach(function(d) {
                     if (loading) {
-                        d.reset();
                         d.active = true;
                     } else {
                         d.active = false;
@@ -339,6 +351,17 @@ li paper-checkbox {
 
                 return div.textContent || "";
             },
+
+			_transitionToDefault() {
+				var route = this.namedRoute('settings');
+				if (route.routeParams && route.routeParams.subsettings == 'discovery') {
+					route = this.namedRoute('settings-discovery');
+					if (!route || !route.discoverStage) {
+						Excess.RouteManager.transitionTo('@settings-discovery', {discoverStage: 'search'});
+					}
+				}
+			},
+
         })
     </script>
 </dom-module>

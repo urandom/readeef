@@ -20,6 +20,9 @@
 neon-animated-pages, lazy-pages {
     position: static;
 }
+lazy-pages > * {
+	position: relative;
+}
 .drawer-menu a {
     display: block;
     color: var(--text-primary-color);
@@ -43,7 +46,7 @@ neon-animated-pages, lazy-pages {
 }
 
 		</style>
-		<excess-route route="/web/settings/:subsettings*" route-alias="settings" subsettings="{{ subsettings }}"></excess-route>
+		<excess-route route="/web/settings/:subsettings" route-alias="settings" subsettings="{{ subsettings }}"></excess-route>
 
         <rf-app-scaffold>
             <div class="drawer-title">{% __ "Settings" .base.lang %}</div>
@@ -52,11 +55,11 @@ neon-animated-pages, lazy-pages {
                     <span>{% __ "General" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'feeds/discover/search') ]]" class="item">
+                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'discovery') ]]" class="item">
                     <span>{% __ "Add Feed" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'feeds/manage') ]]" class="item">
+                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'management') ]]" class="item">
                     <span>{% __ "Manage Feeds" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
@@ -81,22 +84,22 @@ neon-animated-pages, lazy-pages {
             <div class="main-title layout horizontal center">
                 <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
                 <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'general') }}">{% __ "General" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'feeds/discover/search') }}">{% __ "Add Feed" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'feeds/manage') }}">{% __ "Manage Feeds" .base.lang %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'discovery') }}">{% __ "Add Feed" .base.lang %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'management') }}">{% __ "Manage Feeds" .base.lang %}</span>
                 <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'share-services') }}">{% __ "Share Services" .base.lang %}</span>
                 <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'admin') }}">{% __ "Administration" .base.lang %}</span>
             </div>
             <div class="main-content">
-				<lazy-pages id="settings-pages" entry-animation="fade-in-animation" exit-animation="fade-out-animation" attr-for-selected="route" selected="[[ subsettings ]]">
+				<lazy-pages id="settings-pages" attr-for-selected="route" selected="[[ subsettings ]]">
 					<template is="dom-if" route="general">
 						<rf-settings-general user="[[ user ]]"></rf-settings-general>
 					</template>
 
-					<template is="dom-if" route="feeds/discover/search">
+					<template is="dom-if" route="discovery">
 						<rf-settings-add-feed user="[[ user ]]"></rf-settings-add-feed>
 					</template>
 
-					<template is="dom-if" route="feeds/manage">
+					<template is="dom-if" route="management">
 						<rf-settings-manage-feeds user="[[ user ]]"></rf-settings-manage-feeds>
 					</template>
 
@@ -108,6 +111,7 @@ neon-animated-pages, lazy-pages {
 						<rf-settings-admin user="[[ user ]]"></rf-settings-admin>
 					</template>
 				</lazy-pages>
+				<br style="clear:both">
             </div>
         </rf-app-scaffold>
     </template>
