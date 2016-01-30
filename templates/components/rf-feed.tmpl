@@ -14,13 +14,17 @@
 <link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
 
 <dom-module id="rf-feed">
-    <style>
+    <template>
+		<style>
+a {
+	color: inherit;
+}
+
 .list-container {
     margin: 16px 0 8px;
 }
 
-.card,
-rf-article /deep/ .card {
+.card {
     @apply(--card-style);
     @apply(--shadow-elevation-4dp);
     padding: 8px;
@@ -77,93 +81,15 @@ rf-article /deep/ .card {
     text-decoration: none;
 }
 
-rf-article /deep/ .index {
-    font-family: "Roboto Condensed", serif;
-    font-size: smaller;
-    font-style: italic;
-    padding-left: 0.7em;
-    white-space: nowrap;
+.short-description {
+	@apply(--description-style);
 }
 
-.short-description,
-rf-article /deep/ .article-description {
-    font-family: "Roboto Slab", sans-serif;
+.publish-date {
+	@apply(--publish-date-style);
 }
 
-rf-article /deep/ .article-description img {
-    max-width: 100%;
-    height: auto;
-}
-
-rf-article /deep/ .article-anchor {
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 1.2em;
-}
-
-rf-article /deep/ .article-link {
-    position: relative;
-    margin: 0 0.29em;
-    padding: 0.7em 0.57em;
-    text-transform: uppercase;
-    text-decoration: none;
-    text-align: center;
-    border-radius: 3px;
-}
-
-.feed-origin,
-rf-article /deep/ .feed-origin {
-    font-family: "Roboto Condensed", serif;
-    font-size: 11px;
-    line-height: 24px;
-    font-weight: 200;
-    padding-right: 1em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.publish-date,
-rf-article /deep/ .publish-date {
-    font-family: "Roboto Condensed", sans-serif;
-    font-size: 12px;
-    font-style: italic;
-    line-height: 14px;
-}
-
-rf-article /deep/ .article-control {
-    font-family: "Roboto Condensed", sans-serif;
-}
-
-rf-article /deep/ .article-top-image {
-    text-align: center;
-}
-
-rf-article /deep/ .article-top-image img {
-    width: auto;
-    height: auto;
-    max-width: 100%;
-}
-
-rf-article /deep/ .article-summary {
-    font-family: "Roboto Slab", sans-serif;
-}
-
-@media(min-width: 768px) {
-    rf-article /deep/ .card {
-        padding: 16px;
-    }
-}
-
-
-@media(min-width: 1350px) {
-    rf-article /deep/ .card {
-        padding: 32px;
-    }
-}
-
-    </style>
-    <template>
+		</style>
 		<iron-pages attr-for-selected="route" selected="[[ display ]]">
 			<div route="feed" class="list-container">
 				<iron-list items="[[ articles ]]" id="list">

@@ -22,13 +22,13 @@
 <link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
 
 <dom-module id="rf-router">
-    <style>
+    <template>
+		<style>
 neon-animated-pages, lazy-pages {
     position: static;
 }
-    </style>
+		</style>
 
-    <template>
 		<excess-router-config path-style="path" manual-start="true" base-path="{% url "/" .base.r %}"></excess-router-config>
 
 		<excess-route route="/web/:toplevel/(.*)?" route-alias="toplevel" toplevel="{{ topLevelNavigation }}"></excess-route>

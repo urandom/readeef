@@ -5,7 +5,8 @@
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
 
 <dom-module id="rf-article">
-    <style>
+    <template>
+		<style>
 #article-container {
     position: relative;
     overflow: hidden;
@@ -22,6 +23,89 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+
+#article-container > ::content a {
+	color: inherit;
+}
+
+#article-container > ::content .index {
+    font-family: "Roboto Condensed", serif;
+    font-size: smaller;
+    font-style: italic;
+    padding-left: 0.7em;
+    white-space: nowrap;
+}
+
+#article-container > ::content .article-description {
+	@apply(--description-style);
+}
+
+#article-container > ::content .article-description img {
+    max-width: 100%;
+    height: auto;
+}
+
+#article-container > ::content .article-anchor {
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1.2em;
+}
+
+#article-container > ::content .article-link {
+    position: relative;
+    margin: 0 0.29em;
+    padding: 0.7em 0.57em;
+    text-transform: uppercase;
+    text-decoration: none;
+    text-align: center;
+    border-radius: 3px;
+}
+
+#article-container > ::content .feed-origin {
+	@apply(--feed-origin-style);
+}
+
+#article-container > ::content .publish-date {
+	@apply(--publish-date-style);
+}
+
+#article-container > ::content .article-control {
+    font-family: "Roboto Condensed", sans-serif;
+}
+
+#article-container > ::content .article-top-image {
+    text-align: center;
+}
+
+#article-container > ::content .article-top-image img {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+}
+
+#article-container > ::content .article-summary {
+    font-family: "Roboto Slab", sans-serif;
+}
+
+#article-container > ::content .card {
+    @apply(--card-style);
+    @apply(--shadow-elevation-4dp);
+    padding: 8px;
+    margin-bottom: 16px;
+}
+
+@media(min-width: 768px) {
+    #article-container > ::content .card {
+        padding: 16px;
+    }
+}
+
+
+@media(min-width: 1350px) {
+    #article-container > ::content .card {
+        padding: 32px;
+    }
 }
 
 .article {
@@ -59,8 +143,18 @@
     -webkit-transform: translate3d(0px, -105%, 0px);
     transform: translate3d(0px, -105%, 0px);
 }
-    </style>
-    <template>
+
+.clearfix:before,
+.clearfix:after {
+    display: table;
+    content: " ";
+}
+
+.clearfix:after {
+    clear: both;
+}
+
+		</style>
         <div id="article-container" class="layout horizontal">
             <div class="article previous-article" hidden id="article-0"></div>
             <div class="article active-article height-provider" id="article-1"></div>

@@ -10,7 +10,11 @@
 <link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
 
 <dom-module id="rf-login">
-    <style>
+    <template>
+		<style>
+:host {
+	@apply(--app-theme);
+}
 .overlay {
     background: #eee;
     @apply(--layout-fit);
@@ -38,9 +42,8 @@
 #submit {
     background: #259b24;
 }
-    </style>
+		</style>
 
-    <template>
         <div class="overlay"></div>
 
         <div class="main">

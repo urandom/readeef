@@ -4,24 +4,6 @@
     var userTTL = 1000 * 60 * 60 * 24 * 15,
         state = {VALIDATING: 1 << 0};
 
-    function randomTheme() {
-        if (document.body.classList.contains('theme-__random__')) {
-            var classes = ['blue', 'indigo', 'cyan', 'teal', 'green', 'light-green', 'lime', 'red', 'pink', 'purple', 'deep-purple', 'yellow', 'amber', 'deep-orange', 'grep'],
-                index = Math.floor(Math.random() * classes.length - 1);
-
-            for (var i = 0, c; c = document.body.classList[i]; ++i) {
-                if (c != "theme-__random__" && c.indexOf('theme-') == 0) {
-                    document.body.classList.remove(c);
-                    break;
-                }
-            }
-
-            document.body.classList.add('theme-' + classes[index]);
-            Polymer.updateStyles();
-        }
-    };
-    setInterval(randomTheme, 1800000);
-
     Polymer({
         is: "rf-router",
         properties: {
@@ -43,6 +25,7 @@
         },
 		behaviors: [
 			RouteBehavior,
+			ThemeManagerBehavior,
 		],
 		_routingStarted: false,
         _state: 0,
@@ -108,8 +91,7 @@
                 this._state &= ~state.VALIDATING;
 
                 if (user.ProfileData.theme) {
-                    document.body.classList.add('theme-' + user.ProfileData.theme);
-                    randomTheme();
+					this.applyTheme();
                 }
 
                 if (user.ProfileData.shareServices) {

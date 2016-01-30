@@ -15,7 +15,16 @@
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
 
 <dom-module id="rf-settings-general">
-    <style>
+    
+    <template>
+		<style>
+.card {
+    @apply(--card-style);
+    @apply(--shadow-elevation-4dp);
+    padding: 16px;
+    margin: 16px 0 8px;
+    max-width: 50em;
+}
 .theme-bubbles {
     margin: 8px 0;
 }
@@ -46,10 +55,6 @@ a[data-language] {
 
     @apply(--layout-horizontal);
     @apply(--layout-center);
-}
-
-paper-dropdown-menu /deep/ paper-menu-button {
-    padding: 0;
 }
 
 .theme[data-theme="blue"] {
@@ -103,9 +108,7 @@ paper-dropdown-menu /deep/ paper-menu-button {
     color: var(--paper-yellow-900);
     background: var(--paper-blue-grey-100);
 }
-
-    </style>
-    <template>
+		</style>
         <div class="card layout vertical start">
             <h2>
                 {% __ "Personalize your feed reader" .base.lang %}

@@ -5,7 +5,8 @@
         is: 'rf-login',
         behaviors: [
             Polymer.NeonAnimationRunnerBehavior,
-            UserBehavior
+			UserBehavior,
+			ThemeBehavior,
         ],
         properties: {
             invalid: {

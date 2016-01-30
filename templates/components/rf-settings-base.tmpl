@@ -15,7 +15,8 @@
 <link rel="import" href="{% url "/component/rf-settings-admin" .base.r %}">
 
 <dom-module id="rf-settings-base">
-    <style>
+    <template>
+		<style>
 neon-animated-pages, lazy-pages {
     position: static;
 }
@@ -35,22 +36,13 @@ neon-animated-pages, lazy-pages {
     margin-left: 4px;
 }
 
-.main-content /deep/ .card {
-    @apply(--card-style);
-    @apply(--shadow-elevation-4dp);
-    padding: 16px;
-    margin: 16px 0 8px;
-    max-width: 50em;
-}
-
 .main-title .title-text {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-    </style>
-    <template>
+		</style>
 		<excess-route route="/web/settings/:subsettings*" route-alias="settings" subsettings="{{ subsettings }}"></excess-route>
 
         <rf-app-scaffold>
@@ -126,6 +118,7 @@ neon-animated-pages, lazy-pages {
             behaviors: [
                 UserBehavior,
 				RouteBehavior,
+				ThemeBehavior,
             ],
             properties: {
                 user: Object,

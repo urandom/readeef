@@ -8,27 +8,28 @@
 		'light-green', 'lime', 'red', 'pink', 'purple',
 		'deep-purple', 'yellow', 'amber', 'deep-orange',
 		'grep',
+	], styleProperties = [
+		'--text-primary-color', '--text-primary-color-inverse',
+		'--paper-toolbar-background', '--paper-toolbar-color',
+		'--paper-fab-notify-background', '--paper-fab-keyboard-focus-background',
+	], general = [
+		'#0a0a0a', '#ffffff',
+		'var(--paper-#{THEME}-500)', 'var(--text-primary-color-inverse)',
+		'var(--paper-#{THEME}-800)', 'var(--paper-#{THEME}-100)',
 	];
 
 	function applyThemeFor(element, theme, updateStyles) {
 		if (theme == '__random__') {
             var index = Math.floor(Math.random() * themeClasses.length - 1);
-
-			var cls = "theme-__random__ theme-" + themeClasses[index];
-		} else {
-			var cls = "theme-" + theme;
+			theme = themeClasses[index];
 		}
 
-		for (var i = 0, c; c = element.classList[i]; ++i) {
-			if (c.indexOf('theme-') == 0) {
-				element.classList.remove(c);
-			}
+		for (var i = 0, sp; sp = styleProperties[i]; i++) {
+			element.customStyle[sp] = general[i].replace(/#{THEME}/, theme);
 		}
-
-		element.classList.add(cls);
 
 		if (updateStyles) {
-			Polymer.updateStyles();
+			element.updateStyles();
 		}
 	};
 
@@ -62,7 +63,7 @@
 			}
 
 			themables.push(this);
-			applyThemeFor(this, this.currentTheme(), true)
+			applyThemeFor(this, this.currentTheme(), true);
 		},
 
 		detached: function() {

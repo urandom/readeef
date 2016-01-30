@@ -6,7 +6,8 @@
 <link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
 
 <dom-module id="rf-keyboard-shortcuts">
-    <style>
+    <template>
+		<style>
 #shortcut-help-dialog ul {
     padding: 0;
 }
@@ -26,8 +27,7 @@
     border-radius: 3px;
 }
 
-    </style>
-    <template>
+		</style>
         <paper-dialog id="shortcut-help-dialog" entry-animation="scale-up-animation" exit-animation="fade-out-animation" modal>
             <h2>Keyboard shortcuts</h2>
 

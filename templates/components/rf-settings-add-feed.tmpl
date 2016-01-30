@@ -15,7 +15,15 @@
 <link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
 
 <dom-module id="rf-settings-add-feed">
-    <style>
+    <template>
+		<style>
+.card {
+    @apply(--card-style);
+    @apply(--shadow-elevation-4dp);
+    padding: 16px;
+    margin: 16px 0 8px;
+    max-width: 50em;
+}
 neon-animated-pages, lazy-pages {
     position: static;
 }
@@ -40,8 +48,7 @@ li {
 li paper-checkbox {
     margin-right: 16px;
 }
-    </style>
-    <template>
+		</style>
 		<excess-route route="/web/settings/feeds/discover/:discoverStage+" route-alias="settings-feed-discover" discover-stage="{{ discoverStage }}"></excess-route>
 
         <div class="card" class="layout vertical start">

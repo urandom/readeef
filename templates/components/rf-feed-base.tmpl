@@ -27,7 +27,8 @@
 <link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
 
 <dom-module id="rf-feed-base">
-    <style>
+    <template>
+		<style>
 .drawer-menu a {
     color: var(--text-primary-color);
     text-decoration: none;
@@ -81,6 +82,7 @@
 
 .update-available .main-title [icon="refresh"] {
     background: var(--paper-fab-notify-background);
+	transition: var(--background-transition);
     color: var(--text-primary-color-inverse);
 }
 
@@ -101,8 +103,7 @@
 .main-title [icon="arrow-back"] {
     margin-right: 24px;
 }
-    </style>
-    <template>
+		</style>
 		<excess-route route="/web/feed/:tagOrId/(.*)?" route-alias="feed" tag-or-id="{{ tagOrId }}"></excess-route>
 		<excess-route route="/web/feed/:tagOrId/article/:articleId/(.*)?" route-alias="article" active="{{ articleActive }}" article-id="{{ articleId }}"></excess-route>
 		<excess-route route="/web/feed/:tagOrId/article/:articleId/:formatType" route-alias="article-format" format-type="{{ formatType }}"></excess-route>
@@ -272,6 +273,7 @@
             behaviors: [
                 UserBehavior,
 				RouteBehavior,
+				ThemeBehavior,
             ],
             properties: {
                 user: Object,

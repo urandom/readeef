@@ -13,6 +13,15 @@
 
 <dom-module id="rf-settings-admin">
     <template>
+		<style>
+.card {
+    @apply(--card-style);
+    @apply(--shadow-elevation-4dp);
+    padding: 16px;
+    margin: 16px 0 8px;
+    max-width: 50em;
+}
+		</style>
         <template is="dom-if" if="[[ user.Admin ]]">
             <div class="card layout vertical">
                 <div hidden$="[[ !users.length ]]">

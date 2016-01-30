@@ -8,24 +8,31 @@
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
 
 <dom-module id="rf-settings-manage-feeds">
-    <style>
-/deep/ .feed-favicon {
+    <template>
+		<style>
+.card {
+    @apply(--card-style);
+    @apply(--shadow-elevation-4dp);
+    padding: 16px;
+    margin: 16px 0 8px;
+    max-width: 50em;
+}
+.feed-favicon {
     margin-right: 5px;
 }
 
-/deep/ .feed-title {
+.feed-title {
     color: var(--text-primary-color);
     font-size: 16px;
     padding: 0 8px;
     min-width: 10em;
 }
 
-/deep/ .feed {
+.feed {
     line-height: 16px;
 }
 
-    </style>
-    <template>
+		</style>
         <div class="card layout vertical start">
             <div hidden$="[[ _computeHideEmptyMessage(feeds) ]]">
                 {% __ "You are not subscribed to any feeds yet" .base.lang %}

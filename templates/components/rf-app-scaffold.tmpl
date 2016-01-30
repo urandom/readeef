@@ -6,9 +6,11 @@
 <link rel="import" href="/dist/paper-toolbar/paper-toolbar.html">
 
 <dom-module id="rf-app-scaffold">
-    <style>
+    <template>
+		<style>
 paper-toolbar {
     font-size: 24px;
+	transition: var(--background-transition);
 }
 
 .card {
@@ -45,13 +47,11 @@ paper-toolbar {
     width: 100%;
     margin: 2px 16px;
 }
-paper-header-panel[main] /deep/ .main-title-container {
+paper-header-panel[main] .main-title-container {
     font-size: 24px;
 }
 
-    </style>
-
-    <template>
+		</style>
         <paper-drawer-panel id="drawer" on-paper-responsive-change="onResponsiveChange" class$="[[_computeDrawerClass(narrow)]]" responsive-width="768px">
             <paper-header-panel drawer mode="[[_computeDrawerPanelMode(narrow)]]">
                 <paper-toolbar>
