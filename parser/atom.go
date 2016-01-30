@@ -24,6 +24,7 @@ type atomItem struct {
 	Content     rssContent `xml:"content"`
 	Link        atomLink   `xml:"link"`
 	Date        string     `xml:"updated"`
+	PubDate     string     `xml:"published"`
 }
 
 type atomLink struct {
@@ -57,7 +58,9 @@ func ParseAtom(b []byte) (Feed, error) {
 		article.Description = getLargerContent(i.Content, i.Description)
 
 		var err error
-		if i.Date != "" {
+		if i.PubDate != "" {
+			article.Date, err = parseDate(i.PubDate)
+		} else if i.Date != "" {
 			article.Date, err = parseDate(i.Date)
 		} else {
 			err = io.EOF
