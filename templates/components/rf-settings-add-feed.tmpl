@@ -83,7 +83,7 @@ li paper-checkbox {
 						<p>{% __ "No feeds found" .base.lang %}</p>
 
 						<div class="layout horizontal end-justified">
-							<a is="pushstate-anchor" href="[[ urlFor('settings-add-feed-discover') ]]" style="position: relative;">
+							<a is="pushstate-anchor" href="[[ urlFor('@settings-discovery', 'discoverStage', 'search') ]]" style="position: relative;">
 								<paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
 								<paper-ripple></paper-ripple>
 							</a>
@@ -107,7 +107,7 @@ li paper-checkbox {
 						</div>
 
 						<div class="layout horizontal end-justified">
-							<a is="pushstate-anchor" href="[[ urlFor('settings-add-feed-discover') ]]">
+							<a is="pushstate-anchor" href="[[ urlFor('@settings-discovery', 'discoverStage', 'search') ]]">
 								<paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
 								<paper-ripple></paper-ripple>
 							</a>
@@ -116,10 +116,10 @@ li paper-checkbox {
 						</div>
 					</section>
 
-					<section route="discover/select/none">
+					<section route="select/none">
 						<p>{% __ "No feeds were selected" .base.lang %}</p>
 						<div class="layout horizontal end-justified">
-							<a is="pushstate-anchor" href="[[ urlFor('settings-add-feed-discover-select') ]]">
+							<a is="pushstate-anchor" href="[[ urlFor('@settings-discovery', 'discoverStage', 'select') ]]">
 								<paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
 								<paper-ripple></paper-ripple>
 							</a>
@@ -134,7 +134,7 @@ li paper-checkbox {
 							</template>
 						</p>
 						<div class="layout horizontal end-justified">
-							<a is="pushstate-anchor" href="[[ urlFor('settings-add-feed-discover-select') ]]">
+							<a is="pushstate-anchor" href="[[ urlFor('@settings-discovery', 'discoverStage', 'select') ]]">
 								<span>{% __ "Back" .base.lang %}</span>
 								<paper-ripple></paper-ripple>
 							</a>
