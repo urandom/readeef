@@ -46,7 +46,7 @@ lazy-pages > * {
 }
 
 		</style>
-		<excess-route route="/web/settings/:subsettings" route-alias="settings" subsettings="{{ subsettings }}"></excess-route>
+		<excess-route route="/web/settings/:subsettings/(.*)?" route-alias="settings" subsettings="{{ subsettings }}"></excess-route>
 
         <rf-app-scaffold>
             <div class="drawer-title">{% __ "Settings" .base.lang %}</div>
