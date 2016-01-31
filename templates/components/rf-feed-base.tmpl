@@ -702,7 +702,9 @@
             },
 
 			_articleActiveChanged: function(active, old) {
-				this.display = active ? 'article' : 'feed';
+				this.debounce('article-route-change', function() {
+					this.display = active ? 'article' : 'feed';
+				}.bind(this));
 			},
 
             _userProfileChanged: function(userProfileRecord) {
