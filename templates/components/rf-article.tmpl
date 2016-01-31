@@ -380,15 +380,11 @@
         },
 
         created: function() {
-            this._instances = new Array(3);
             this.setScrollDirection('y');
         },
 
         ready: function() {
-            if (!this.ctor) {
-                var template = Polymer.dom(this).querySelector('template');
-                this.templatize(template);
-            }
+			this._instances = this._createPool();
         },
 
         onTrack: function(event) {
@@ -633,9 +629,10 @@
                         return;
                     }
 
-                    if (!this._instances[i + 1]) {
-                        return this._renderInstance(index, i);
+                    if (this._instances[i + 1].hasAttribute('unused')) {
+						this._instances[i + 1].removeAttribute('unused')
                     }
+					// TODO: assignModel?
 
                     this._forwardItemPath(key + '.index', localIndex);
                     this._forwardItemPath(key + '.ordinalPosition', ordinal(localIndex + 1));
@@ -650,9 +647,9 @@
                 index = this.articles.findIndex(activeId),
                 direction = 0;
 
-            if (this._instances[0] && this._instances[0]._templateInstance.item.article.Id == activeId) {
+            if (this._instanceId(-1) == activeId) {
                 direction = -1;
-            } else if (this._instances[2] && this._instances[2]._templateInstance.item.article.Id == activeId) {
+            } else if (this._instanceId(1) == activeId) {
                 direction = 1;
             }
 
@@ -667,9 +664,10 @@
                 previous.classList.remove('previous-article');
                 previous.classList.add('next-article');
 
+				var temp = this._instances[0];
                 this._instances[0] = this._instances[1];
                 this._instances[1] = this._instances[2];
-                this._instances[2] = null;
+                this._instances[2] = temp;
             } else if (direction === -1) {
                 active.classList.remove('active-article');
                 active.classList.add('next-article');
@@ -680,21 +678,22 @@
                 next.classList.remove('next-article');
                 next.classList.add('previous-article');
 
+				var temp = this._instances[2];
                 this._instances[2] = this._instances[1];
                 this._instances[1] = this._instances[0];
-                this._instances[0] = null;
+                this._instances[0] = temp;
             }
 
             if (direction !== 1) {
-                this._renderInstance(index, -1);
+                this._assignModel(index, -1);
             }
 
             if (direction !== -1) {
-                this._renderInstance(index, 1);
+                this._assignModel(index, 1);
             }
 
             if (direction !== 1 && direction !== -1) {
-                this._renderInstance(index, 0);
+                this._assignModel(index, 0);
             }
 
             this.cancelDebouncer('container-clear-height');
@@ -725,52 +724,6 @@
             }
 
             Polymer.dom.flush();
-        },
-
-        _renderInstance: function(index, offset) {
-            var condition, selector;
-
-            switch (offset) {
-                case -1:
-                    condition = index > 0;
-                    selector = '.previous-article';
-                    break;
-                case 1:
-                    condition = index < this.articles.length - 1;
-                    selector = '.next-article';
-                    break;
-                case 0:
-                    condition = true;
-                    selector = '.active-article';
-                    break;
-            }
-
-            if (condition) {
-                var el = Polymer.dom(this.root).querySelector(selector);
-                el.innerHTML = '';
-
-                var inst = this._generateArticle(index + offset, offset);
-                this._instances[offset + 1] = inst.root.querySelector('*');
-                Polymer.dom(el).appendChild(inst.root);
-            } else {
-                this._instances[offset + 1] = null;
-            }
-        },
-
-        _generateArticle: function(index, direction) {
-            var article = this.articles[index];
-            var model = {
-                article: article,
-                index: index,
-                ordinalPosition: ordinal(index + 1),
-            }
-
-            var inst = this.stamp(null);
-            inst.item = model;
-
-            this._stylizeArticleDescription(inst.root.querySelector('*'), article);
-
-            return inst;
         },
 
         _stylizeArticleDescription: function(inst, article) {
@@ -901,6 +854,64 @@
                 }
             }
         },
+
+		_ensureTemplatized: function() {
+			if (!this.ctor) {
+				// Template instance props that should be excluded from forwarding
+				var props = {};
+				props.item = true;
+
+				this._instanceProps = props;
+				this._userTemplate = Polymer.dom(this).querySelector('template');
+
+				if (this._userTemplate) {
+					this.templatize(this._userTemplate);
+				} else {
+					console.warn('rf-article requires a template to be provided in light-dom');
+				}
+			}
+		},
+
+		_createPool: function() {
+			var physicalItems = new Array(3),
+				selectors = ['.previous-article', '.active-article', '.next-article'];
+
+			this._ensureTemplatized();
+
+			for (var i = 0; i < 3; i++) {
+				var inst = this.stamp(null);
+				// First element child is item; Safari doesn't support children[0]
+				// on a doc fragment
+				physicalItems[i] = inst.root.querySelector('*');
+				Polymer.dom(this.root).querySelector(selectors[i]).appendChild(inst.root);
+			}
+			return physicalItems;
+		},
+
+		_assignModel: function(index, direction) {
+			var el = this._instances[direction + 1],
+				inst = el._templateInstance,
+				article = this.articles[index + direction],
+				model = {
+					article: article,
+					index: index + direction,
+					ordinalPosition: ordinal(index + direction + 1),
+				};
+
+			if (article !== undefined && article !== null) {
+				inst.item = model;
+				el.removeAttribute('unused');
+
+				this._stylizeArticleDescription(el, article);
+			} else {
+				el.setAttribute('unused', '');
+			}
+		},
+
+		_instanceId: function(direction) {
+			var inst = this._instances[direction + 1]
+			return !inst.hasAttribute('unused') && inst._templateInstance.item && inst._templateInstance.item.article ? inst._templateInstance.item.article.Id : -1;
+		},
 
     });
 })()
