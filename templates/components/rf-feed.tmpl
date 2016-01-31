@@ -420,9 +420,8 @@ a {
 					case null:
 						break;
 					default:
-						return this.async(function() {
-							Excess.RouteManager.transitionTo('@article', {tagOrId: this.tagOrId, articleId: this.articleId});
-						});
+						this.set('articles.' + index + '.formatted', false);
+						this.set('articles.' + index + '.summarized', false);
 				}
 			},
 
@@ -462,7 +461,7 @@ a {
                         return this.urlFor('@article', {tagOrId: this.tagOrId, articleId: articleId});
                     case "summary":
                     case "format":
-                        return this.urlFor('@article-format', {tagOrId: this.tagOrId, articleId: articleId, formatType: type});
+                        return this.urlFor('@article', {tagOrId: this.tagOrId, articleId: articleId, formatType: type});
                 }
             },
 
