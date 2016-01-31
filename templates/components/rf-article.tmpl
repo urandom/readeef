@@ -602,7 +602,7 @@
             }
 
             var parts = record.path.split('.'), article;
-            if (parts.length == 3 && parts[0] == "articles" && !isNaN(parts[1])) {
+            if (parts.length == 3 && parts[0] == "articles" && /#\d+/.test(parts[1])) {
                 parts = parts.splice(1);
                 parts.splice(1, 0, 'article')
                 this._forwardItemPath(parts.join('.'), record.value);
