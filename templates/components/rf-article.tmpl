@@ -623,19 +623,22 @@
 
                 [-1, 0, 1].forEach(function(i) {
                     var localIndex = index + i,
-                        key = Polymer.Collection.get(this.articles).getKey(this.articles[localIndex]);
+						article = this.articles[localIndex],
+                        key = Polymer.Collection.get(this.articles).getKey(article);
 
                     if (localIndex == -1) {
                         return;
                     }
 
-                    if (this._instances[i + 1].hasAttribute('unused')) {
-						this._instances[i + 1].removeAttribute('unused');
-						this._assignModel(index + i, i);
-                    }
+					if (!this._instances[i+1]._templateInstance.item ||
+							this._instances[i+1]._templateInstance.item.article.Id != article.Id) {
+						this._assignModel(index, i);
+					}
 
-                    this._forwardItemPath(key + '.index', localIndex);
-                    this._forwardItemPath(key + '.ordinalPosition', ordinal(localIndex + 1));
+                    if (!this._instances[i + 1].hasAttribute('unused')) {
+						this._forwardItemPath(key + '.index', localIndex);
+						this._forwardItemPath(key + '.ordinalPosition', ordinal(localIndex + 1));
+                    }
                 }.bind(this));
             }
         },
@@ -684,11 +687,11 @@
                 this._instances[0] = temp;
             }
 
-            if (direction !== 1) {
+			if (direction !== 1 && index > 0) {
                 this._assignModel(index, -1);
             }
 
-            if (direction !== -1) {
+			if (direction !== -1 && index < this.articles.length - 1) {
                 this._assignModel(index, 1);
             }
 
@@ -750,11 +753,13 @@
                             }
                         } while (floater = floater.parentNode);
 
-                        if (floater.parentNode) {
-                            floater.parentNode.classList.add('clearfix');
-                        }
-                        floater.style.float = "right";
-                        floater.style.margin = "0.7em";
+						if (floater) {
+							if (floater.parentNode) {
+								floater.parentNode.classList.add('clearfix');
+							}
+							floater.style.float = "right";
+							floater.style.margin = "0.7em";
+						}
                     } else {
                         this.style.display = "block";
                         this.style.margin = "0 auto";
