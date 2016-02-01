@@ -659,10 +659,6 @@
             },
 
 			_articleIdChanged: function(id, old) {
-				if (id === null) {
-					return;
-				}
-
 				var index = this.articles.findIndex(id),
 					article = this.articles[index];
 				if (article) {

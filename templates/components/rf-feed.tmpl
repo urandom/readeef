@@ -193,11 +193,14 @@ a {
 					type: Number,
 					observer: '_articleIdChanged',
 				},
+				articleActive: {
+					type: Boolean,
+					observer: '_articleActiveChanged',
+				},
 				formatType: {
 					type: String,
 					observer: '_formatTypeChanged',
 				},
-				articleActive: Boolean,
 				display: String,
                 user: Object,
                 feeds: Object,
@@ -363,17 +366,28 @@ a {
 					}
 				}
 
-				if (id === null || index === -1) {
+				if (index === -1) {
 					this.$.article.selectedId = 0;
-					this.$.list.scrollTarget = this._scroller;
-					this.$.list.scrollToIndex(prevIndex);
-					if (id !== null) {
-						this.async(function() {
-							Excess.RouteManager.transitionTo('@feed', {tagOrId: this.tagOrId});
-						});
-					}
+
+					this.async(function() {
+						Excess.RouteManager.transitionTo('@feed', {tagOrId: this.tagOrId});
+					});
 				} else {
 					this._showArticle(id);
+				}
+			},
+
+			_articleActiveChanged: function(active, old) {
+				if (active) {
+					this._scroller.scrollTop = 0;
+					this.$.list.scrollTarget = null;
+				} else {
+					this.$.list.scrollTarget = this._scroller;
+
+					var index = this.articles.findIndex(this.articleId);
+					if (index != -1) {
+						this.$.list.scrollToIndex(index);
+					}
 				}
 			},
 
@@ -454,8 +468,6 @@ a {
 				var index = this.articles.findIndex(id);
 
 				this.$.article.selectedId = id - 0;
-				this._scroller.scrollTop = 0;
-				this.$.list.scrollTarget = null;
 
 				if (!this.articles[index].Read) {
 					this.$['article-read'].send({id: id - 0, value: true});
