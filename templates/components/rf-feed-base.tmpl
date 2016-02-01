@@ -7,6 +7,7 @@
 <link rel="import" href="/dist/iron-icons/hardware-icons.html">
 <link rel="import" href="/dist/iron-icons/social-icons.html">
 <link rel="import" href="/dist/iron-pages/iron-pages.html">
+<link rel="import" href="/dist/iron-scroll-threshold/iron-scroll-threshold.html">
 <link rel="import" href="/dist/iron-signals/iron-signals.html">
 <link rel="import" href="/dist/lazy-pages/lazy-pages.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
@@ -638,10 +639,7 @@
                     this.$['scroll-threshold'].clearLower();
                     return;
                 }
-                this.debounce('feed-refresh', function() {
-                    this.loading = true;
-					this._getFeedArticles({offset: this.articles.length});
-                });
+				this._fetchNextArticles();
             },
 
             _tagOrIdChanged: function(tagOrId, old) {
@@ -678,15 +676,7 @@
 					if (index == 0) {
 						this.debounce('auto-update-timeout', this._updateArticles);
 					} else if (index == this.articles.length - 1) {
-						// Force the article to be treated as unread,
-						// so that newly received articles that are
-						// older than it can be placed at the end
-						this._treatAsUnread = index;
-
-						this.debounce('feed-refresh', function() {
-							this.loading = true;
-							this._getFeedArticles({offset: this.articles.length});
-						});
+						this._fetchNextArticles(index);
 					}
 				} else if (!this.articles.length) {
 					this.cancelDebouncer('feed-refresh');
@@ -988,6 +978,20 @@
                 return articles;
             },
 
+			_fetchNextArticles: function(indexAsUnread) {
+				if (arguments.length > 0 && indexAsUnread != -1) {
+					// Force the article to be treated as unread,
+					// so that newly received articles that are
+					// older than it can be placed at the end
+					this._treatAsUnread = indexAsUnread;
+				}
+
+				this.debounce('feed-refresh', function() {
+					this.loading = true;
+					this._getFeedArticles({offset: this.articles.length});
+				});
+			},
+
             _handleArticleWorkerMessage: function(event) {
                 this.$.feed.preArticlesUpdate(event.data.inserts, event.data.stateChange);
 
@@ -1020,7 +1024,7 @@
                 if (event.data.requestedArticle !== undefined) {
 					this._getFeedArticles();
                     if (event.data.requestedArticle) {
-						if (!this.isRouteActive('article')) {
+						if (!this.articleActive) {
 							Excess.RouteManager.transitionTo('@article',
 									{tagOrId: this.tagOrId, articleId: event.data.requestedArticle});
 						}
@@ -1031,6 +1035,13 @@
                     this._minArticleId = event.data.minId;
                     this._maxArticleId = event.data.maxId;
                     this.loading = false;
+
+					if (this.articleActive) {
+						var index = this.articles.findIndex(this.articleId);
+						if (index == this.articles.length - 1) {
+							this._fetchNextArticles(index);
+						}
+					}
                 }
 
                 if (!updated) {

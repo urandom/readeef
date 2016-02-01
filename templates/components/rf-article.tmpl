@@ -630,9 +630,9 @@
                     }
 
                     if (this._instances[i + 1].hasAttribute('unused')) {
-						this._instances[i + 1].removeAttribute('unused')
+						this._instances[i + 1].removeAttribute('unused');
+						this._assignModel(index + i, i);
                     }
-					// TODO: assignModel?
 
                     this._forwardItemPath(key + '.index', localIndex);
                     this._forwardItemPath(key + '.ordinalPosition', ordinal(localIndex + 1));
