@@ -346,6 +346,10 @@ a {
             },
 
 			_articleIdChanged: function(id, old) {
+				if (!this._scroller) {
+					return;
+				}
+
 				var prevIndex = this.articles.findIndex(old),
 					index = this.articles.findIndex(id);
 
@@ -360,10 +364,6 @@ a {
 					}
 				}
 
-				if (!this._scroller) {
-					return;
-				}
-
 				if (id === null || index === -1) {
 					this.$.article.selectedId = 0;
 					this.$.list.scrollTarget = this._scroller;
@@ -374,13 +374,7 @@ a {
 						});
 					}
 				} else {
-					this.$.article.selectedId = id - 0;
-					this._scroller.scrollTop = 0;
-					this.$.list.scrollTarget = null;
-
-					if (!this.articles[index].Read) {
-						this.$['article-read'].send({id: id - 0, value: true});
-					}
+					this._showArticle(id);
 				}
 			},
 
@@ -429,20 +423,26 @@ a {
                 if (!record.base.length) {
                     this.$.article.selectedId = 0;
                 } else if (record.path == 'articles.splices') {
-                    if (!this.articleActive) {
-                        var newIndex = this._preUpdateFirstVisibleIndex,
-                            originalIndex = newIndex, changeCount = 0;
+					var newIndex = this._preUpdateFirstVisibleIndex,
+						originalIndex = newIndex, changeCount = 0,
+						newList = false;
 
-                        for (var i = 0, s; s = record.value.indexSplices[i]; ++i) {
-                            if (s.index <= originalIndex) {
-                                changeCount += s.addedCount - s.removed.length;
-                                newIndex = newIndex + changeCount;
-                            }
-                        }
+					for (var i = 0, s; s = record.value.indexSplices[i]; ++i) {
+						if (s.index <= originalIndex) {
+							changeCount += s.addedCount - s.removed.length;
+							newIndex = newIndex + changeCount;
+						}
+					}
 
+					newList = changeCount == record.base.length;
+
+                    if (this.articleActive) {
+						if (newList) {
+							this._showArticle(this.articleId);
+						}
+					} else {
                         this.async(function() {
-                            // A brand new list of articles
-                            if (changeCount == record.base.length) {
+                            if (newList) {
                                 newIndex = 0;
                             }
                             this.$.list.scrollToIndex(newIndex);
@@ -450,6 +450,18 @@ a {
                     }
                 }
             },
+
+			_showArticle: function(id) {
+				var index = this.articles.findIndex(id);
+
+				this.$.article.selectedId = id - 0;
+				this._scroller.scrollTop = 0;
+				this.$.list.scrollTarget = null;
+
+				if (!this.articles[index].Read) {
+					this.$['article-read'].send({id: id - 0, value: true});
+				}
+			},
 
             _computeHideFormattingButtons: function(item, type) {
                 return !this.user.capabilities.Extractor || item.article[type];
