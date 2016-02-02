@@ -227,7 +227,7 @@
             <div class="main-content">
                 <iron-scroll-threshold id="scroll-threshold" lower-threshold="100" on-lower-trigger="onLowerScrollThresholdTrigger"></iron-scroll-threshold>
 
-                <rf-feed id="feed" user="[[ user ]]" feeds="[[ feeds ]]" articles="[[ articles ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]" article-id="[[ articleId ]]" format-type="[[ formatType ]]" article-active="[[ articleActive ]]" display="[[ display ]]" on-feed-article-state="onFeedArticleState"></rf-feed>
+                <rf-feed id="feed" user="[[ user ]]" feeds="[[ feeds ]]" articles="[[ articles ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]" article-id="[[ articleId ]]" format-type="[[ formatType ]]" display="[[ display ]]" on-feed-article-state="onFeedArticleState"></rf-feed>
 
                 <div class="card empty-list" hidden$="[[ _computeHideEmptyMessage(articles.*, loading) ]]">
                     <span>{% __ "There are no articles in this section" .base.lang %}</span>
@@ -851,7 +851,7 @@
             },
 
             _searchAvailable: function(tagOrId) {
-                return this.user.capabilities.Search &&
+                return this.user && this.user.capabilities.Search &&
                     tagOrId != 'favorite' &&
                     tagOrId.indexOf('popular:') != 0 &&
                     tagOrId.indexOf('search:') != 0;

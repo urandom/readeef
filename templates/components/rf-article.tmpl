@@ -144,16 +144,6 @@
     transform: translate3d(0px, -105%, 0px);
 }
 
-.clearfix:before,
-.clearfix:after {
-    display: table;
-    content: " ";
-}
-
-.clearfix:after {
-    clear: both;
-}
-
 		</style>
         <div id="article-container" class="layout horizontal">
             <div class="article previous-article" hidden id="article-0"></div>
@@ -754,8 +744,10 @@
                         } while (floater = floater.parentNode);
 
 						if (floater) {
-							if (floater.parentNode) {
-								floater.parentNode.classList.add('clearfix');
+							if (floater.parentNode && !floater.parentNode.querySelector('br[style]')) {
+								var clear = document.createElement('br');
+								clear.style.clear = "both";
+								floater.parentNode.appendChild(clear);
 							}
 							floater.style.float = "right";
 							floater.style.margin = "0.7em";
