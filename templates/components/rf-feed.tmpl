@@ -386,7 +386,9 @@ a {
 
 					var index = this.articles.findIndex(this.articleId);
 					if (index != -1) {
-						this.$.list.scrollToIndex(index);
+						this.async(function() {
+							this.$.list.scrollToIndex(index);
+						});
 					}
 				}
 			},
