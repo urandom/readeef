@@ -36,27 +36,6 @@
             }
         },
 
-        attached: function() {
-            this.show();
-        },
-
-        show: function() {
-            this.$['login-card'].style.display = '';
-            this.playAnimation('entry');
-        },
-
-        hide: function() {
-            var self = this;
-
-            this.playAnimation('exit');
-
-            var onFinish = function() {
-                self.$['login-card'].style.display = 'none';
-                self.removeEventListener('neon-animation-finish', onFinish);
-            }
-            this.addEventListener('neon-animation-finish', onFinish);
-        },
-
         onKeypress: function(event) {
             var code = event.keyCode || event.charCode, key = event.keyIdentifier;
 

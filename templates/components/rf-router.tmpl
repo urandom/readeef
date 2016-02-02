@@ -1,5 +1,6 @@
 {% define "content" %}
 <link rel="import" href="/dist/excess-router/excess-router.html">
+<link rel="import" href="/dist/iron-icon/iron-icon.html">
 <link rel="import" href="/dist/iron-icons/iron-icons.html">
 <link rel="import" href="/dist/iron-meta/iron-meta.html">
 <link rel="import" href="/dist/iron-localstorage/iron-localstorage.html">
@@ -9,6 +10,7 @@
 <link rel="import" href="/dist/neon-animation/neon-animatable.html">
 <link rel="import" href="/dist/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="/dist/paper-material/paper-material.html">
 <link rel="import" href="/dist/paper-toast/paper-toast.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
@@ -57,7 +59,15 @@ neon-animated-pages, lazy-pages {
 			<template is="dom-if" route="login">
 				<rf-login></rf-login>
 			</template>
-			<section route="logout"><!-- Empty section for the logout route to match --></section>
+			<neon-animatable route="logout">
+				<div class="layout fit vertical center">
+					<div class="layout horizontal center" style="height: 100%">
+						<paper-material elevation="2" style="padding: 2em;">
+							<iron-icon icon="exit-to-app"></iron-icon>
+						</paper-material>
+					</div>
+				</div>
+			</neon-animatable>
 			<template is="dom-if" route="feed">
 				<rf-feed-base user="[[ user ]]"></rf-feed-base>
 			</template>

@@ -115,21 +115,12 @@
 			}
 
 			if (this.topLevelNavigation == "login" && this.loginRedirect) {
-				var login = Polymer.dom(this.root).querySelector('rf-login');
-				if (login) {
-					login.hide();
-				}
-
 				try {
 					Excess.RouteManager.transitionTo(this.decodeURI(this.loginRedirect));
 				} catch(e) {
 					Excess.RouteManager.transitionTo('@feed-all');
 				}
 			} else if (this.topLevelNavigation == "login") {
-				var login = Polymer.dom(this.root).querySelector('rf-login');
-				if (login) {
-					login.hide();
-				}
 				Excess.RouteManager.transitionTo('@feed-all');
 			} else if (this.topLevelNavigation != "feed" &&
 					this.topLevelNavigation != "settings") {
@@ -143,7 +134,7 @@
             this._setUser(null);
             this.async(function() {
 				Excess.RouteManager.transitionTo('@login');
-            });
+            }, 250);
         },
 
         connectionUnauthorized: function() {
@@ -190,13 +181,6 @@
 				} else if (this.topLevelNavigation != "login") {
 					Excess.RouteManager.transitionTo('@login-from', {url: this.encodeURI(location.pathname)});
 				}
-			}
-
-			if (value == "login") {
-                var login = Polymer.dom(this.root).querySelector('rf-login');
-                if (login) {
-                    login.show();
-                }
 			}
 		},
     });

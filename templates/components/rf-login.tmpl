@@ -47,7 +47,7 @@
         <div class="overlay"></div>
 
         <div class="main">
-            <div class="card-container {{ {wide: wide} | tokenList }}" on-keypress="onKeypress">
+            <div class="card-container" on-keypress="onKeypress">
                 <div class="card" id="login-card">
                     <div class="layout vertical">
                         <paper-input id="login" label="{% __ "User name" .base.lang %}" invalid="{{ invalid }}" error-message="{% __ "The login credentials are incorrect" .base.lang %}" tabindex="1" required></paper-input>

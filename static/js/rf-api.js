@@ -121,7 +121,7 @@
         },
 
         onRequestResponse: function(event) {
-            if (!event.detail.response) {
+            if (!event.detail.response || !this.user) {
                 initializing = false;
                 if (webSocket != null) {
                     clearHeartbeat();
