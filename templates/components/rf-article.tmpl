@@ -584,7 +584,7 @@
                 this._debounceTemplate(function() { this._render(id) });
                 this.debounce('animation', function() {
                     slideFromTop(elements[1]);
-                }.bind(this));
+                }.bind(this), 1);
             } else {
                 if (this._trackState && id == this._trackState.selectedId) {
                     this._debounceTemplate(function() { this._render(id) });

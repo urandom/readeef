@@ -64,6 +64,7 @@ static/dist/iron-overlay-behavior/iron-overlay-behavior.html
 static/dist/iron-overlay-behavior/iron-overlay-manager.html
 static/dist/iron-pages/iron-pages.html
 static/dist/iron-resizable-behavior/iron-resizable-behavior.html
+static/dist/iron-scroll-target-behavior/iron-scroll-target-behavior.html
 static/dist/iron-scroll-threshold/iron-scroll-threshold.html
 static/dist/iron-selector/iron-multi-selectable.html
 static/dist/iron-selector/iron-selectable.html
