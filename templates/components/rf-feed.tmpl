@@ -51,6 +51,9 @@ a {
     word-wrap: break-word;
     text-overflow: ellipsis;
     overflow: hidden;
+    font-size: 12px;
+    font-weight: 200;
+	@apply(--description-style);
 }
 
 .article .title-wrapper .title {
@@ -65,12 +68,6 @@ a {
     line-height: 24px;
 }
 
-.short-description {
-    font-size: 12px;
-    line-height: 14px;
-    font-weight: 200;
-}
-
 .misc-info {
     padding-left: 0.5em;
     padding-top: 0.5em;
@@ -80,8 +77,8 @@ a {
     text-decoration: none;
 }
 
-.short-description {
-	@apply(--description-style);
+.feed-origin {
+	@apply(--feed-origin-style);
 }
 
 .publish-date {

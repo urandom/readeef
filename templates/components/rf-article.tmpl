@@ -46,6 +46,11 @@
     height: auto;
 }
 
+#article-container > ::content .article-description .centered-block {
+	display: block;
+	margin: 8px auto;
+}
+
 #article-container > ::content .article-anchor {
     text-decoration: none;
     font-weight: 500;
@@ -737,8 +742,7 @@
                             }
 
                             if (floater == description) {
-                                this.style.display = "block";
-                                this.style.margin = "0 auto";
+								this.classList.add('centered-block');
                                 return;
                             }
                         } while (floater = floater.parentNode);
@@ -753,8 +757,7 @@
 							floater.style.margin = "0.7em";
 						}
                     } else {
-                        this.style.display = "block";
-                        this.style.margin = "0 auto";
+						this.classList.add('centered-block');
                     }
                 }, image;
 
