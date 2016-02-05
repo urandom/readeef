@@ -257,6 +257,11 @@ a {
 					if (index != -1) {
 						this.async(function() {
 							this.$.list.scrollToIndex(index);
+
+							// Workaround for https://github.com/PolymerElements/iron-list/issues/186
+							this.async(function() {
+								this.$.list.style.transform = "";
+							});
 						});
 					}
 				}
@@ -455,6 +460,11 @@ a {
                                 newIndex = 0;
                             }
                             this.$.list.scrollToIndex(newIndex);
+
+							// Workaround for https://github.com/PolymerElements/iron-list/issues/186
+							this.async(function() {
+								this.$.list.style.transform = "";
+							});
                         });
                     }
 
