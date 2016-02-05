@@ -388,7 +388,11 @@ a {
 					article = this.articles[index];
 
 				if (index == -1) {
-					type = null;
+					if (this.articles.length == 0) {
+						// Still waiting for the articles to arrive
+						this._repeatFormatTypeChange = true;
+					}
+					return;
 				}
 
 				switch (type) {
@@ -453,6 +457,13 @@ a {
                             this.$.list.scrollToIndex(newIndex);
                         });
                     }
+
+					if (this._repeatFormatTypeChange) {
+						this._repeatFormatTypeChange = false;
+						this.async(function() {
+							this._formatTypeChanged(this.formatType, null);
+						});
+					}
                 }
             },
 

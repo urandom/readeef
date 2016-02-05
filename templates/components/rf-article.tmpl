@@ -844,10 +844,10 @@
                         if (propName == 'article.formattedDescription' && article.formatted ||
                                 propName == 'article.formatted' && article.formattedDescription) {
                             this._stylizeArticleDescription(inst, article);
-                        } else {
-                            path = 'item.' + propName;
-                            inst._templateInstance.notifyPath(path, value, true);
                         }
+
+						path = 'item.' + propName;
+						inst._templateInstance.notifyPath(path, value, true);
                     } else {
                         inst._templateInstance.item.article = value;
                     }
