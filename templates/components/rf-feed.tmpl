@@ -84,17 +84,16 @@ a {
 .publish-date {
 	@apply(--publish-date-style);
 }
-
 		</style>
 		<iron-pages attr-for-selected="route" selected="[[ display ]]" on-iron-select="onFeedPagesSelect">
 			<div route="feed" class="list-container">
 				<iron-list items="[[ articles ]]" id="list">
 					<template>
-						<a is="pushstate-anchor" href="[[ _computeArticleLink(item.Id, 'main') ]]" class="list-article">
+						<a href="[[ _computeArticleLink(item, 'main') ]]" class="list-article">
 							<div class$="[[ _computeArticleClass(item.Read, item.Favorite) ]]" data-feed-id$="[[ item.FeedId ]]" data-article-id$="[[ item.Id ]]">
 								<div class="card layout vertical">
 									<div class="title-wrapper layout horizontal center">
-										<paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.Favorite) ]]" on-tap="onFavoriteToggle" on-click="onFavoriteClick"></paper-icon-button>
+										<paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.Favorite) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
 										<span class="title" title$="[[ item.Title ]]" inner-h-t-m-l="[[ _computeArticleTitle(item.Title, item.Hit.*) ]]"></span>
 									</div>
 									<div class="detail-wrapper layout horizontal center">
@@ -149,12 +148,12 @@ a {
 										<paper-ripple></paper-ripple>
 									</a>
 									<paper-spinner active="[[ item.article.summarizing ]]"></paper-spinner>
-									<a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'summary') ]]" class="article-link article-control" hidden="[[ _computeHideFormattingButtons(item, 'summarizing') ]]">
+									<a href="[[ _computeArticleLink(item.article, 'summary', item.article.*) ]]" class="article-link article-control" hidden="[[ _computeHideFormattingButtons(item, 'summarizing') ]]">
 										{% __ "Summarize" .base.lang %}
 										<paper-ripple></paper-ripple>
 									</a>
 									<paper-spinner active="[[ item.article.formatting ]]"></paper-spinner>
-									<a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'format') ]]" class="article-link article-control" hidden="[[ _computeHideFormattingButtons(item, 'formatting') ]]">
+									<a href="[[ _computeArticleLink(item.article, 'format', item.article.*) ]]" class="article-link article-control" hidden="[[ _computeHideFormattingButtons(item, 'formatting') ]]">
 										{% __ "Format" .base.lang %}
 										<paper-ripple></paper-ripple>
 									</a>
@@ -303,12 +302,6 @@ a {
 			onChangeArticleId: function(event, data) {
 				Excess.RouteManager.transitionTo('@article', {tagOrId: this.tagOrId, articleId: data});
 			},
-
-            onFavoriteClick: function(event) {
-                // Stop the pushstate-anchor from activating
-                event.preventDefault();
-                event.stopPropagation();
-            },
 
             onFavoriteToggle: function(event) {
                 event.preventDefault();
@@ -477,13 +470,17 @@ a {
                 return !this.user.capabilities.Extractor || item.article[type];
             },
 
-            _computeArticleLink: function(articleId, type) {
+            _computeArticleLink: function(article, type) {
+				if ((type == "summary" && article.summarized) ||
+						(type == "format" && article.formatted)) {
+					type = "main";
+				}
                 switch (type) {
                     case "main":
-                        return this.urlFor('@article', {tagOrId: this.tagOrId, articleId: articleId});
+                        return this.urlFor('@article', {tagOrId: this.tagOrId, articleId: article.Id});
                     case "summary":
                     case "format":
-                        return this.urlFor('@article', {tagOrId: this.tagOrId, articleId: articleId, formatType: type});
+                        return this.urlFor('@article', {tagOrId: this.tagOrId, articleId: article.Id, formatType: type});
                 }
             },
 

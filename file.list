@@ -131,7 +131,6 @@ static/dist/polymer/polymer-mini.html
 static/dist/polymer/polymer.html
 static/dist/promise-polyfill/Promise.js
 static/dist/promise-polyfill/promise-polyfill-lite.html
-static/dist/pushstate-anchor/pushstate-anchor.html
 static/dist/web-animations-js/web-animations-next-lite.min.js
 static/dist/webcomponentsjs/webcomponents-lite.min.js
 static/images/readeef-114.png

@@ -5,7 +5,6 @@
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/polymer/polymer.html">
-<link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
 
 <link rel="import" href="{% url "/component/rf-app-scaffold" .base.r %}">
 <link rel="import" href="{% url "/component/rf-settings-general" .base.r %}">
@@ -51,32 +50,32 @@ lazy-pages > * {
         <rf-app-scaffold>
             <div class="drawer-title">{% __ "Settings" .base.lang %}</div>
             <div class="drawer-menu">
-                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'general') ]]" class="item">
+                <a href="[[ urlFor('@settings', 'subsettings', 'general') ]]" class="item">
                     <span>{% __ "General" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'discovery') ]]" class="item">
+                <a href="[[ urlFor('@settings', 'subsettings', 'discovery') ]]" class="item">
                     <span>{% __ "Add Feed" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'management') ]]" class="item">
+                <a href="[[ urlFor('@settings', 'subsettings', 'management') ]]" class="item">
                     <span>{% __ "Manage Feeds" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'share-services') ]]" class="item">
+                <a href="[[ urlFor('@settings', 'subsettings', 'share-services') ]]" class="item">
                     <span>{% __ "Share Services" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('@settings', 'subsettings', 'admin') ]]" class="item" hidden$="{{ !user.Admin }}">
+                <a href="[[ urlFor('@settings', 'subsettings', 'admin') ]]" class="item" hidden$="{{ !user.Admin }}">
                     <span>{% __ "Administration" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
                 <hr>
-                <a is="pushstate-anchor" href="[[ urlFor('@feed-all') ]]" class="item">
+                <a href="[[ urlFor('@feed-all') ]]" class="item">
                     <span>{% __ "Back to feeds" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('@logout') ]]" class="item">
+                <a href="[[ urlFor('@logout') ]]" class="item">
                     <span>{% __ "Logout" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>

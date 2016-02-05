@@ -20,7 +20,6 @@
 <link rel="import" href="/dist/paper-spinner/paper-spinner.html">
 <link rel="import" href="/dist/paper-toast/paper-toast.html">
 <link rel="import" href="/dist/polymer/polymer.html">
-<link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
 
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
 <link rel="import" href="{% url "/component/rf-app-scaffold" .base.r %}">
@@ -112,14 +111,14 @@
             <div class="drawer-title">{% __ "Feeds" .base.lang %}</div>
             <div class="drawer-menu">
                 <div hidden$="[[  _computeHideFeedItems(feeds) ]]">
-                    <a is="pushstate-anchor" href="[[ feedUrlFor('favorite') ]]" class="item">
+                    <a href="[[ feedUrlFor('favorite') ]]" class="item">
                         <span>{% __ "Favorite" .base.lang %}</span>
                         <paper-ripple></paper-ripple>
                     </a>
 
                     <div class="layout horizontal center" hidden$="[[ !user.capabilities.Popularity ]]">
                         <paper-icon-button icon="expand-more" expands="popular-feeds" class="item" on-tap="onToggleExpand"></paper-icon-button>
-                        <a is="pushstate-anchor" href="[[ feedUrlFor('popular:all') ]]" class="layout horizontal flex">
+                        <a href="[[ feedUrlFor('popular:all') ]]" class="layout horizontal flex">
                             <div style="position: relative" class="flex item">
                                 {% __ "Popular" .base.lang %}
                                 <paper-ripple></paper-ripple>
@@ -129,14 +128,14 @@
                     <iron-collapse id="popular-feeds" hidden$="[[ !user.capabilities.Popularity ]]">
                         <div class="menu submenu">
                             <template is="dom-repeat" items="[[ tags ]]">
-                                <a is="pushstate-anchor" href="[[ feedUrlFor(item.name, 'popular:tag') ]]" class="item">
+                                <a href="[[ feedUrlFor(item.name, 'popular:tag') ]]" class="item">
                                     <span>[[ item.name ]]</span>
                                     <paper-ripple></paper-ripple>
                                 </a>
                             </template>
 
                             <template is="dom-repeat" items="[[ feeds ]]">
-                                <a is="pushstate-anchor" href="[[ feedUrlFor(item.Id, 'popular') ]]" class="item">
+                                <a href="[[ feedUrlFor(item.Id, 'popular') ]]" class="item">
                                     <img src="[[ _computeFavIconUrl(item) ]]" alt="favicon" class="feed-favicon">
                                     <span>[[ item.Title ]]</span>
                                     <paper-ripple></paper-ripple>
@@ -149,7 +148,7 @@
                     <template is="dom-repeat" items="[[ _computeNavigationTags(tags) ]]">
                         <div class="layout horizontal center">
                             <paper-icon-button icon="expand-more" expands$="[[ _computeNavigationExpandTag(item) ]]" class="item" on-tap="onToggleExpand"></paper-icon-button>
-                            <a is="pushstate-anchor" href="[[ repeaterTagUrl(item.name) ]]" class="layout horizontal flex">
+                            <a href="[[ repeaterTagUrl(item.name) ]]" class="layout horizontal flex">
                                 <div style="position: relative" class="flex item">
                                     <span>[[ item.name ]]</span>
                                     <paper-ripple></paper-ripple>
@@ -159,7 +158,7 @@
                         <iron-collapse id="[[ _computeNavigationExpandTag(item) ]]">
                             <div class="menu submenu">
                                 <template is="dom-repeat" items="[[ item.feeds ]]">
-                                    <a is="pushstate-anchor" href="[[ feedUrlFor(item.Id) ]]" class="item">
+                                    <a href="[[ feedUrlFor(item.Id) ]]" class="item">
                                         <img src="[[ _computeFavIconUrl(item) ]]" alt="favicon" class="feed-favicon">
                                         <span>[[ item.Title ]]</span>
                                         <paper-ripple></paper-ripple>
@@ -171,11 +170,11 @@
                     </template>
                     <hr>
                 </div>
-                <a is="pushstate-anchor" href="[[ urlFor('@settings-general') ]]" class="item">
+                <a href="[[ urlFor('@settings-general') ]]" class="item">
                     <span>{% __ "Settings" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('@logout') ]]" class="item">
+                <a href="[[ urlFor('@logout') ]]" class="item">
                     <span>{% __ "Logout" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>

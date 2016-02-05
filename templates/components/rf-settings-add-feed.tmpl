@@ -32,13 +32,14 @@ neon-animated-pages, lazy-pages {
 }
 a {
 	color: inherit;
-}
-a[is="pushstate-anchor"] {
     position: relative;
     text-decoration: none;
 }
 
-a[is="pushstate-anchor"] paper-material {
+a[target] {
+    text-decoration: underline;
+}
+a paper-material {
     padding: 0.7em 0.57em;
     text-transform: uppercase;
 }
@@ -83,7 +84,7 @@ li paper-checkbox {
 						<p>{% __ "No feeds found" .base.lang %}</p>
 
 						<div class="layout horizontal end-justified">
-							<a is="pushstate-anchor" href="[[ urlFor('@settings-discovery', 'discoverStage', 'search') ]]" style="position: relative;">
+							<a href="[[ urlFor('@settings-discovery', 'discoverStage', 'search') ]]" style="position: relative;">
 								<paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
 								<paper-ripple></paper-ripple>
 							</a>
@@ -100,14 +101,14 @@ li paper-checkbox {
 							<template is="dom-repeat" items="{{ discoveredFeeds }}">
 								<li class="layout horizontal center">
 									<paper-checkbox checked="{{ item.selected }}"></paper-checkbox>
-									<a href="[[ item.Link ]]">[[ item.Title ]]<br><small>[[ item.Description ]]</small></a>
+									<a href="[[ item.Link ]]" target="_blank">[[ item.Title ]]<br><small>[[ item.Description ]]</small></a>
 								</li>
 							</template>
 							</ul>
 						</div>
 
 						<div class="layout horizontal end-justified">
-							<a is="pushstate-anchor" href="[[ urlFor('@settings-discovery', 'discoverStage', 'search') ]]">
+							<a href="[[ urlFor('@settings-discovery', 'discoverStage', 'search') ]]">
 								<paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
 								<paper-ripple></paper-ripple>
 							</a>
@@ -119,7 +120,7 @@ li paper-checkbox {
 					<section route="select/none">
 						<p>{% __ "No feeds were selected" .base.lang %}</p>
 						<div class="layout horizontal end-justified">
-							<a is="pushstate-anchor" href="[[ urlFor('@settings-discovery', 'discoverStage', 'select') ]]">
+							<a href="[[ urlFor('@settings-discovery', 'discoverStage', 'select') ]]">
 								<paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
 								<paper-ripple></paper-ripple>
 							</a>
@@ -134,7 +135,7 @@ li paper-checkbox {
 							</template>
 						</p>
 						<div class="layout horizontal end-justified">
-							<a is="pushstate-anchor" href="[[ urlFor('@settings-discovery', 'discoverStage', 'select') ]]">
+							<a href="[[ urlFor('@settings-discovery', 'discoverStage', 'select') ]]">
 								<span>{% __ "Back" .base.lang %}</span>
 								<paper-ripple></paper-ripple>
 							</a>

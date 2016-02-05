@@ -46,7 +46,6 @@
     "paper-toggle-button": "PolymerElements/paper-toggle-button",
     "paper-toolbar": "PolymerElements/paper-toolbar",
     "polymer": "Polymer/polymer",
-    "pushstate-anchor": "erikringsmuth/pushstate-anchor",
     "excess-router": "~0.9.10",
     "lazy-pages": "~0.8.5"
   },
