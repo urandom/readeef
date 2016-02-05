@@ -261,7 +261,7 @@ a {
 							// Workaround for https://github.com/PolymerElements/iron-list/issues/186
 							this.async(function() {
 								this.$.list.style.transform = "";
-							});
+							}, 10);
 						});
 					}
 				}
@@ -343,7 +343,7 @@ a {
             },
 
             onToggleArticleSummary: function() {
-				Excess.RouteManager.transitionTo('@article-format', {
+				Excess.RouteManager.transitionTo('@article', {
 					tagOrId: this.tagOrId,
 					articleId: this.articleId,
 					formatType: 'summary',
@@ -351,7 +351,7 @@ a {
             },
 
             onToggleArticleFormat: function() {
-				Excess.RouteManager.transitionTo('@article-format', {
+				Excess.RouteManager.transitionTo('@article', {
 					tagOrId: this.tagOrId,
 					articleId: this.articleId,
 					formatType: 'format',
@@ -464,7 +464,7 @@ a {
 							// Workaround for https://github.com/PolymerElements/iron-list/issues/186
 							this.async(function() {
 								this.$.list.style.transform = "";
-							});
+							}, 10);
                         });
                     }
 
