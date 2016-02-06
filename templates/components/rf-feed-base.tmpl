@@ -275,7 +275,10 @@
 				ThemeBehavior,
             ],
             properties: {
-                user: Object,
+				user: {
+					type: Object,
+					observer: '_userChanged',
+				},
                 tagOrId: {
                     type: String,
                     observer: '_tagOrIdChanged',
@@ -640,6 +643,10 @@
                 }
 				this._fetchNextArticles();
             },
+
+			_userChanged: function(user, old) {
+				this.refresh();
+			},
 
             _tagOrIdChanged: function(tagOrId, old) {
                 this.articles = this._createArticles();

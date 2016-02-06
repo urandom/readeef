@@ -170,10 +170,10 @@ a {
         <rf-api id="article-format" method="format-article" on-rf-api-message="onArticleFormatMessage" user="[[ user ]]"></rf-api>
 
         <rf-keyboard-shortcut route-name="article" key-code="86, 118" label="v" description="Open the article's link in a new tab" on-press="onOpenArticleLink"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="article" key-code="77, 109" label="m" description="Toggle the read state of the article" on-press="onToggleArticleRead"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="article" key-code="70, 102" label="f" description="Toggle the favorite state of the article" on-press="onToggleArticleFavorite"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="article" key-code="83, 115" label="s" description="Summarize the article" on-press="onToggleArticleSummary"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="article" key-code="67, 99" label="c" description="Format the article's content" on-press="onToggleArticleFormat"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="77, 109" label="m" description="Toggle the read state of the article" on-press="onToggleArticleState" data-type="read"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="70, 102" label="f" description="Toggle the favorite state of the article" on-press="onToggleArticleState" data-type="favorite"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="83, 115" label="s" description="Summarize the article" on-press="onToggleArticleFormat" data-type="summary"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="67, 99" label="c" description="Format the article's content" on-press="onToggleArticleFormat" data-type="format"></rf-keyboard-shortcut>
     </template>
 
     <script>
@@ -332,30 +332,35 @@ a {
                 window.open(article.Link, this._computeArticleTarget(article));
             },
 
-            onToggleArticleRead: function() {
-                this.articleState(this.articleId,
-                        {Read: !this.articles.find(this.articleId).Read});
+            onToggleArticleState: function(event) {
+				switch (event.target.dataset['type']) {
+				case "read":
+					var options = {Read: !this.articles.find(this.articleId).Read};
+					break;
+				case "favorite":
+					var options = {Favorite: !this.articles.find(this.articleId).Favorite};
+					break;
+				default:
+					throw new Error("unknown type " + event.target.dataset['type']);
+				}
+
+                this.articleState(this.articleId, options);
             },
 
-            onToggleArticleFavorite: function() {
-                this.articleState(this.articleId,
-                        {Favorite: !this.articles.find(this.articleId).Favorite});
-            },
+            onToggleArticleFormat: function(event) {
+				var type = event.target.dataset['type'],
+				    article = this.articles.find(this.articleId),
+					options = {
+						tagOrId: this.tagOrId,
+						articleId: this.articleId,
+					};
 
-            onToggleArticleSummary: function() {
-				Excess.RouteManager.transitionTo('@article', {
-					tagOrId: this.tagOrId,
-					articleId: this.articleId,
-					formatType: 'summary',
-				});
-            },
+				if ((type == 'summary' && !article.summarized) ||
+						(type == 'format' && !article.formatted)) {
+					options.formatType = type;
+				}
 
-            onToggleArticleFormat: function() {
-				Excess.RouteManager.transitionTo('@article', {
-					tagOrId: this.tagOrId,
-					articleId: this.articleId,
-					formatType: 'format',
-				});
+				Excess.RouteManager.transitionTo('@article', options);
             },
 
 			_articleIdChanged: function(id, old) {
@@ -496,13 +501,14 @@ a {
 						(type == "format" && article.formatted)) {
 					type = "main";
 				}
-                switch (type) {
-                    case "main":
-                        return this.urlFor('@article', {tagOrId: this.tagOrId, articleId: article.Id});
-                    case "summary":
-                    case "format":
-                        return this.urlFor('@article', {tagOrId: this.tagOrId, articleId: article.Id, formatType: type});
-                }
+
+				var options = {tagOrId: this.tagOrId, articleId: article.Id};
+
+				if (type != "main") {
+					options.formatType = type;
+				}
+
+				return this.urlFor('@article', options);
             },
 
 
