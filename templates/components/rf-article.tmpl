@@ -227,6 +227,10 @@
             {opacity: 0.3, transform: "translate3d(0px, -105%, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
         ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+
+		animations[element.id].onfinish = function() {
+			element.removeAttribute('style');
+		};
     }
 
     function slideFromLeft(left, active, cb) {
