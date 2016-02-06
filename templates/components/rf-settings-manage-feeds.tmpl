@@ -43,7 +43,9 @@
                     <li class="layout vertical feed" title="[[ item.Title ]]">
                         <div class="layout horizontal center wrap">
                             <img src="[[ _computeFavIconUrl(item) ]]" alt="favicon" class="feed-favicon">
-                            <span class="feed-title flex">[[ item.Title ]]</span>
+							<a href="[[ item.Link ]]" target="_blank" class="feed-title flex">
+								[[ item.Title ]]
+							</a>
                             <paper-icon-button icon="warning" on-tap="onDisplayFeedErrors" hidden$="[[ _computeHideFeedErrors(item) ]]"></paper-icon-button>
                             <paper-toast text="[[ _computeToastFeedErrorsText(item) ]]"></paper-toast>
                             <paper-input value="[[ _computeFeedTags(item) ]]" on-change="onFeedTagsChange" placeholder="{% __ "Comma-separated tag list" .base.lang %}" no-label-float="true"></paper-input>
