@@ -665,26 +665,13 @@
             },
 
 			_articleIdChanged: function(id, old) {
-				var index = this.articles.findIndex(id),
-					article = this.articles[index];
-				if (article) {
-					this.cancelDebouncer('article-read-state');
-					this._readState = article.Read;
-					this._ignoreReadDebouncer = false;
-					this._shareServices.forEach(function(service) {
-						service.article = article;
-					}.bind(this));
-
-					if (index == 0) {
-						this.debounce('auto-update-timeout', this._updateArticles);
-					} else if (index == this.articles.length - 1) {
-						this._fetchNextArticles(index);
-					}
-				} else if (!this.articles.length) {
+				if (!this.articles.length) {
 					this.cancelDebouncer('feed-refresh');
 
 					this.$['get-article'].args = {id: id - 0};
 					this.refresh('get-article');
+				} else {
+					this._processArticle(id);
 				}
 			},
 
@@ -994,6 +981,28 @@
 				});
 			},
 
+			_processArticle: function(id) {
+				var index = this.articles.findIndex(id),
+					article = this.articles[index];
+
+				if (!article) {
+					return;
+				}
+
+				this.cancelDebouncer('article-read-state');
+				this._readState = article.Read;
+				this._ignoreReadDebouncer = false;
+				this._shareServices.forEach(function(service) {
+					service.article = article;
+				}.bind(this));
+
+				if (index == 0) {
+					this.debounce('auto-update-timeout', this._updateArticles);
+				} else if (index == this.articles.length - 1) {
+					this._fetchNextArticles(index);
+				}
+			},
+
             _handleArticleWorkerMessage: function(event) {
                 this.$.feed.preArticlesUpdate(event.data.inserts, event.data.stateChange);
 
@@ -1026,7 +1035,9 @@
                 if (event.data.requestedArticle !== undefined) {
 					this._getFeedArticles();
                     if (event.data.requestedArticle) {
-						if (!this.articleActive) {
+						if (this.articleActive) {
+							this._processArticle(this.articleId);
+						} else {
 							Excess.RouteManager.transitionTo('@article',
 									{tagOrId: this.tagOrId, articleId: event.data.requestedArticle});
 						}
