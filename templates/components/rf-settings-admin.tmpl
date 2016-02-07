@@ -1,5 +1,4 @@
 {% define "content" %}
-<link rel="import" href="/dist/iron-flex-layout/classes/iron-flex-layout.html">
 <link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="/dist/neon-animation/animations/scale-up-animation.html">
 <link rel="import" href="/dist/paper-button/paper-button.html">
@@ -10,6 +9,7 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
+<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-settings-admin">
     <template>
@@ -22,6 +22,7 @@
     max-width: 50em;
 }
 		</style>
+		<style include="rf-layout"></style>
         <template is="dom-if" if="[[ user.Admin ]]">
             <div class="card layout vertical">
                 <div hidden$="[[ !users.length ]]">

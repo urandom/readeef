@@ -1,7 +1,6 @@
 {% define "content" %}
 <link rel="import" href="/dist/excess-router/excess-router.html">
 <link rel="import" href="/dist/iron-collapse/iron-collapse.html">
-<link rel="import" href="/dist/iron-flex-layout/classes/iron-flex-layout.html">
 <link rel="import" href="/dist/iron-icon/iron-icon.html">
 <link rel="import" href="/dist/iron-icons/iron-icons.html">
 <link rel="import" href="/dist/iron-icons/hardware-icons.html">
@@ -25,6 +24,7 @@
 <link rel="import" href="{% url "/component/rf-app-scaffold" .base.r %}">
 <link rel="import" href="{% url "/component/rf-feed" .base.r %}">
 <link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
+<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-feed-base">
     <template>
@@ -104,6 +104,7 @@
     margin-right: 24px;
 }
 		</style>
+		<style include="rf-layout"></style>
 		<excess-route route="/web/feed/:tagOrId/(.*)?" route-alias="feed" tag-or-id="{{ tagOrId }}"></excess-route>
 		<excess-route route="/web/feed/:tagOrId/article/:articleId/:formatType?" route-alias="article" active="{{ articleActive }}" article-id="{{ articleId }}" format-type="{{ formatType }}"></excess-route>
 

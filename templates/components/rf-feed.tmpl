@@ -1,6 +1,5 @@
 {% define "content" %}
 <link rel="import" href="/dist/excess-router/excess-router.html">
-<link rel="import" href="/dist/iron-flex-layout/classes/iron-flex-layout.html">
 <link rel="import" href="/dist/iron-list/iron-list.html">
 <link rel="import" href="/dist/iron-pages/iron-pages.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
@@ -12,6 +11,7 @@
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
 <link rel="import" href="{% url "/component/rf-article" .base.r %}">
 <link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
+<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-feed">
     <template>
@@ -86,6 +86,7 @@ a {
 	@apply(--publish-date-style);
 }
 		</style>
+		<style include="rf-layout"></style>
 		<iron-pages attr-for-selected="route" selected="[[ display ]]" on-iron-select="onFeedPagesSelect">
 			<div route="feed" class="list-container">
 				<iron-list items="[[ articles ]]" id="list">

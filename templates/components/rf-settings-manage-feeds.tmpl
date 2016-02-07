@@ -1,11 +1,11 @@
 {% define "content" %}
-<link rel="import" href="/dist/iron-flex-layout/classes/iron-flex-layout.html">
 <link rel="import" href="/dist/iron-signals/iron-signals.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
+<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-settings-manage-feeds">
     <template>
@@ -33,6 +33,7 @@
 }
 
 		</style>
+		<style include="rf-layout"></style>
         <div class="card layout vertical start">
             <div hidden$="[[ _computeHideEmptyMessage(feeds) ]]">
                 {% __ "You are not subscribed to any feeds yet" .base.lang %}

@@ -9,6 +9,7 @@ templates/components/rf-button-link.tmpl
 templates/components/rf-feed-base.tmpl
 templates/components/rf-feed.tmpl
 templates/components/rf-keyboard-shortcuts.tmpl
+templates/components/rf-layout.tmpl
 templates/components/rf-lazy-loader.tmpl
 templates/components/rf-login.tmpl
 templates/components/rf-router.tmpl
@@ -44,8 +45,6 @@ static/dist/iron-collapse/iron-collapse.html
 static/dist/iron-dropdown/iron-dropdown-scroll-manager.html
 static/dist/iron-dropdown/iron-dropdown.html
 static/dist/iron-fit-behavior/iron-fit-behavior.html
-static/dist/iron-flex-layout/classes/iron-flex-layout.html
-static/dist/iron-flex-layout/classes/iron-shadow-flex-layout.html
 static/dist/iron-flex-layout/iron-flex-layout.html
 static/dist/iron-form-element-behavior/iron-form-element-behavior.html
 static/dist/iron-icon/iron-icon.html
