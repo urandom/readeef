@@ -255,8 +255,10 @@ a {
 
 				if (this.display == 'article') {
 					this._scroller.scrollTop = 0;
+					this.$.article.selectedId = this.articleId;
 					this.$.list.scrollTarget = null;
 				} else {
+					this.$.article.selectedId = 0;
 					this.$.list.scrollTarget = this._scroller;
 
 					var index = this.articles.findIndex(this.articleId);
