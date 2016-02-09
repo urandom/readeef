@@ -147,14 +147,6 @@
     -webkit-transform: translate3d(105%, 0px, 0px);
     transform: translate3d(105%, 0px, 0px);
 }
-
-.active-article.from-top,
-.previous-article.from-top,
-.next-article.from-top {
-    -webkit-transform: translate3d(0px, -105%, 0px);
-    transform: translate3d(0px, -105%, 0px);
-}
-
 		</style>
         <div id="article-container" class="layout horizontal">
             <div class="article previous-article" hidden id="article-0"></div>
@@ -239,12 +231,12 @@
         animations[left.id] = left.animate([
             {opacity: 0.3, transform: "translate3d(-105%, 0px, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
-        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards'});
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
 
         animations[active.id] = active.animate([
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
             {opacity: 0.3, transform: "translate3d(105%, 0px, 0px)"},
-        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards'});
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
 
 		animations[active.id].onfinish = cb;
     }
@@ -255,12 +247,12 @@
 		animations[right.id] = right.animate([
             {opacity: 0.3, transform: "translate3d(105%, 0px, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
-        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards'});
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
 
         animations[active.id] = active.animate([
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
             {opacity: 0.3, transform: "translate3d(-105%, 0px, 0px)"},
-        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards'});
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
 
 		animations[active.id].onfinish = cb;
     }
@@ -484,18 +476,18 @@
 							this._trackState.previous.animate([
                                 {transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
                                 {transform: "translate3d(0px, 0px, 0px)"},
-                            ], {duration: duration, easing: easing, fill: 'forwards'});
+                            ], {duration: duration, easing: easing});
                         }
                         if (direction < 0) {
 							this._trackState.next.animate([
                                 {transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
                                 {transform: "translate3d(0px, 0px, 0px)"},
-                            ], {duration: duration, easing: easing, fill: 'forwards'});
+                            ], {duration: duration, easing: easing});
                         }
 						this._trackState.active.animate([
                             {transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
                             {transform: "translate3d(" + (direction > 0 ? '' : '-') + "105%, 0px, 0px)"},
-                        ], {duration: duration, easing: easing, fill: 'forwards'}).onfinish = function() {
+                        ], {duration: duration, easing: easing}).onfinish = function() {
                             this.async(function() {
 								this._trackState.previous.removeAttribute('style');
 								this._trackState.active.removeAttribute('style');
@@ -518,15 +510,15 @@
 						this._trackState.previous.animate([
                             {transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
                             {transform: "translate3d(-105%, 0px, 0px)"},
-                        ], {duration: 200, fill: 'forwards'});
+                        ], {duration: 200});
                         this._trackState.next.animate([
                             {transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
                             {transform: "translate3d(105%, 0px, 0px)"},
-                        ], {duration: 200, fill: 'forwards'});
+                        ], {duration: 200});
                         this._trackState.active.animate([
                             {transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
                             {transform: "translate3d(0px, 0px, 0px)"},
-                        ], {duration: 200, fill: 'forwards'}).onfinish = function() {
+                        ], {duration: 200}).onfinish = function() {
 							this.async(function() {
 								this._trackState.previous.removeAttribute('style');
 								this._trackState.active.removeAttribute('style');
