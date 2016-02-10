@@ -166,6 +166,7 @@
 
     var animations = {}, httpRe = /^https?:/, templateRe = /\{\{\s*\.\s*\}\}/;
 
+	window.anims = animations;
     if ('webkitTransition' in document.body) {
         transitionEventName = 'webkitTransitionEnd';
         transitionProperty = 'webkitTransition';
@@ -214,15 +215,13 @@
         {% end %}
     }
 
-    function slideFromTop(element) {
+    function slideFromTop(element, cb) {
 		animations[element.id] = element.animate([
             {opacity: 0.3, transform: "translate3d(0px, -105%, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
         ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
 
-		animations[element.id].onfinish = function() {
-			element.removeAttribute('style');
-		};
+		animations[element.id].onfinish = cb;
     }
 
     function slideFromLeft(left, active, cb) {
@@ -231,12 +230,12 @@
         animations[left.id] = left.animate([
             {opacity: 0.3, transform: "translate3d(-105%, 0px, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
-        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards'});
 
         animations[active.id] = active.animate([
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
             {opacity: 0.3, transform: "translate3d(105%, 0px, 0px)"},
-        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards'});
 
 		animations[active.id].onfinish = cb;
     }
@@ -247,48 +246,25 @@
 		animations[right.id] = right.animate([
             {opacity: 0.3, transform: "translate3d(105%, 0px, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
-        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards'});
 
         animations[active.id] = active.animate([
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
             {opacity: 0.3, transform: "translate3d(-105%, 0px, 0px)"},
-        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards'});
 
 		animations[active.id].onfinish = cb;
     }
 
-	function stopRunningAnimations(finish) {
+	function stopRunningAnimations() {
 		var hadRunning = false;
-
-		if (finish) {
-			var emitter = null;
-			for (var key in animations) {
-				if (animations[key].playState == 'running') {
-					var oldHandler = animations[key].onfinish;
-					if (oldHandler) {
-						animations[key].onfinish = function() {
-							oldHandler.apply(this, arguments);
-							finish.apply(this, arguments);
-						};
-						emitter = null;
-						break;
-					} else {
-						emitter = animations[key];
-					}
-				}
-			}
-			if (emitter) {
-				emitter.onfinish = finish;
-			}
-		}
 
 		for (var key in animations) {
 			if (animations[key].playState == 'running') {
 				hadRunning = true;
 				animations[key].finish();
-			} else if (animations[key].playState != 'finished') {
-				animations[key].cancel();
 			}
+			animations[key].cancel();
 			delete animations[key];
 		}
 
@@ -473,25 +449,32 @@
                         }
 
                         if (direction > 0) {
-							this._trackState.previous.animate([
-                                {transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
-                                {transform: "translate3d(0px, 0px, 0px)"},
-                            ], {duration: duration, easing: easing});
+							animations[this._trackState.previous.id] =
+								this._trackState.previous.animate([
+									{transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
+									{transform: "translate3d(0px, 0px, 0px)"},
+								], {duration: duration, easing: easing, fill: 'forwards'});
                         }
                         if (direction < 0) {
-							this._trackState.next.animate([
-                                {transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
-                                {transform: "translate3d(0px, 0px, 0px)"},
-                            ], {duration: duration, easing: easing});
+							animations[this._trackState.next.id] =
+								this._trackState.next.animate([
+									{transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
+									{transform: "translate3d(0px, 0px, 0px)"},
+								], {duration: duration, easing: easing, fill: 'forwards'});
                         }
-						this._trackState.active.animate([
-                            {transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
-                            {transform: "translate3d(" + (direction > 0 ? '' : '-') + "105%, 0px, 0px)"},
-                        ], {duration: duration, easing: easing}).onfinish = function() {
+						animations[this._trackState.active.id] =
+							this._trackState.active.animate([
+								{transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
+								{transform: "translate3d(" + (direction > 0 ? '' : '-') + "105%, 0px, 0px)"},
+							], {duration: duration, easing: easing, fill: 'forwards'});
+						
+						animations[this._trackState.active.id].onfinish = function() {
                             this.async(function() {
 								this._trackState.previous.removeAttribute('style');
 								this._trackState.active.removeAttribute('style');
 								this._trackState.next.removeAttribute('style');
+
+								stopRunningAnimations();
 
 								if (direction > 0) {
 									this.translate3d(0, 0, 0, this._trackState.previous);
@@ -507,18 +490,23 @@
 							});
 						}.bind(this);
                     } else {
-						this._trackState.previous.animate([
-                            {transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
-                            {transform: "translate3d(-105%, 0px, 0px)"},
-                        ], {duration: 200});
-                        this._trackState.next.animate([
-                            {transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
-                            {transform: "translate3d(105%, 0px, 0px)"},
-                        ], {duration: 200});
-                        this._trackState.active.animate([
-                            {transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
-                            {transform: "translate3d(0px, 0px, 0px)"},
-                        ], {duration: 200}).onfinish = function() {
+						animations[this._trackState.previous.id] =
+							this._trackState.previous.animate([
+								{transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
+								{transform: "translate3d(-105%, 0px, 0px)"},
+							], {duration: 200, fill: 'forwards'});
+						animations[this._trackState.next.id] =
+							this._trackState.next.animate([
+								{transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
+								{transform: "translate3d(105%, 0px, 0px)"},
+							], {duration: 200, fill: 'forwards'});
+						animations[this._trackState.active.id] =
+							this._trackState.active.animate([
+								{transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
+								{transform: "translate3d(0px, 0px, 0px)"},
+							], {duration: 200, fill: 'forwards'});
+
+						animations[this._trackState.active.id].onfinish = function() {
 							this.async(function() {
 								this._trackState.previous.removeAttribute('style');
 								this._trackState.active.removeAttribute('style');
@@ -526,6 +514,8 @@
 
 								this._trackState.previous.setAttribute('hidden', '');
 								this._trackState.next.setAttribute('hidden', '');
+
+								stopRunningAnimations();
 							});
 						}.bind(this);
                     }
@@ -540,11 +530,9 @@
                 return;
             }
 
-            if (stopRunningAnimations(function() {
-                this._selectedIdChanged.call(this, id, oldValue);
-            }.bind(this))) {
-                return;
-            }
+			if (stopRunningAnimations() && oldValue) {
+				this._render(oldValue);
+			}
 
             var index = this.articles.findIndex(id),
                 oldIndex = this.articles.findIndex(oldValue),
@@ -564,13 +552,7 @@
                 Polymer.dom(this.root).querySelector('.next-article'),
             ];
             if (direction === 0) {
-                this._debounceTemplate(function() {
-					this._render(id);
-					Polymer.Base.translate3d(0, '-105%', 0, elements[1]);
-				});
-                this.debounce('animation', function() {
-                    slideFromTop(elements[1]);
-                }.bind(this), 1);
+				slideFromTop(elements[1], function() { this._render(id) }.bind(this));
             } else {
                 if (this._trackState && id == this._trackState.selectedId) {
                     this._debounceTemplate(function() { this._render(id) });
@@ -700,6 +682,8 @@
                     el.setAttribute('hidden', '');
                 }
             }.bind(this));
+
+			stopRunningAnimations();
 
             var newHeight = window.getComputedStyle(this.$['article-container']).getPropertyValue('height');
             if (oldHeight != newHeight) {
