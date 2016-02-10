@@ -129,7 +129,8 @@ func (fm *FeedManager) RemoveFeed(f content.Feed) {
 }
 
 func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
-	if u, err := url.Parse(link); err == nil {
+	u, err := url.Parse(link)
+	if err == nil {
 		if !u.IsAbs() {
 			return nil, ErrNoAbsolute
 		}
@@ -140,7 +141,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 	}
 
 	f := fm.repo.FeedByLink(link)
-	err := f.Err()
+	err = f.Err()
 	if err != nil && err != content.ErrNoContent {
 		return f, err
 	}
@@ -148,7 +149,8 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 	if err != nil {
 		fm.logger.Infoln("Discovering feeds in " + link)
 
-		feeds, err := fm.discoverParserFeeds(link)
+		feeds, err := fm.discoverSecureParserFeeds(u)
+
 		if err != nil {
 			return nil, err
 		}
@@ -194,7 +196,8 @@ func (fm *FeedManager) RemoveFeedByLink(link string) (content.Feed, error) {
 func (fm *FeedManager) DiscoverFeeds(link string) ([]content.Feed, error) {
 	feeds := []content.Feed{}
 
-	if u, err := url.Parse(link); err == nil {
+	u, err := url.Parse(link)
+	if err == nil {
 		if !u.IsAbs() {
 			return feeds, ErrNoAbsolute
 		}
@@ -204,14 +207,15 @@ func (fm *FeedManager) DiscoverFeeds(link string) ([]content.Feed, error) {
 	}
 
 	f := fm.repo.FeedByLink(link)
-	err := f.Err()
+	err = f.Err()
 	if err != nil && err != content.ErrNoContent {
 		return feeds, f.Err()
 	} else {
 		if err != nil {
 			fm.logger.Debugln("Discovering feeds in " + link)
 
-			discovered, err := fm.discoverParserFeeds(link)
+			discovered, err := fm.discoverSecureParserFeeds(u)
+
 			if err != nil {
 				return feeds, err
 			}
@@ -516,6 +520,22 @@ func (fm *FeedManager) scheduleFeeds() {
 
 		fm.AddFeed(f)
 	}
+}
+
+func (fm FeedManager) discoverSecureParserFeeds(u *url.URL) (feeds []content.Feed, err error) {
+	if u.Scheme == "http" {
+		fm.logger.Debugln("Testing secure link of", u)
+
+		u.Scheme = "https"
+		feeds, err = fm.discoverParserFeeds(u.String())
+		u.Scheme = "http"
+	}
+
+	if u.Scheme != "http" || err != nil {
+		feeds, err = fm.discoverParserFeeds(u.String())
+	}
+
+	return
 }
 
 func (fm FeedManager) discoverParserFeeds(link string) ([]content.Feed, error) {
