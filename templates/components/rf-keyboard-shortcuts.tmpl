@@ -6,7 +6,8 @@
 <link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
 
 <dom-module id="rf-keyboard-shortcuts">
-    <style>
+    <template>
+		<style>
 #shortcut-help-dialog ul {
     padding: 0;
 }
@@ -26,8 +27,7 @@
     border-radius: 3px;
 }
 
-    </style>
-    <template>
+		</style>
         <paper-dialog id="shortcut-help-dialog" entry-animation="scale-up-animation" exit-animation="fade-out-animation" modal>
             <h2>Keyboard shortcuts</h2>
 
@@ -50,7 +50,7 @@
             </div>
         </paper-dialog>
 
-        <rf-keyboard-shortcut route-name="splash" key-code="63" label="?" description="Keyboard shortcut list" on-press="onShortcutHelp"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="toplevel" key-code="63" label="?" description="Keyboard shortcut list" on-press="onShortcutHelp"></rf-keyboard-shortcut>
 
     </template>
 
@@ -169,10 +169,10 @@ Polymer({
                 }
 
                 for (var routeName in routed) {
-                    if (MoreRouting.isCurrentUrl(routeName)) {
+                    if (isRouteActive(routeName)) {
                         var shortcut = routed[routeName], ignore = false;
                         if (shortcut._notRoutes.some(function(r) {
-                            return MoreRouting.isCurrentUrl(r);
+                            return isRouteActive(r);
                         })) {
                             return;
                         }
@@ -183,6 +183,11 @@ Polymer({
             });
         })();
     }
+	
+	function isRouteActive(name) {
+		var r = document.createElement('iron-meta').byKey(name);
+		return r && r.active;
+	}
 
     Polymer({
         is: 'rf-keyboard-shortcut',

@@ -1,7 +1,7 @@
 {% define "content" %}
+<link rel="import" href="/dist/excess-router/excess-router.html">
 <link rel="import" href="/dist/iron-pages/iron-pages.html">
-<link rel="import" href="/dist/more-routing/more-route-template-helpers.html">
-<link rel="import" href="/dist/more-routing/more-routing.html">
+<link rel="import" href="/dist/lazy-pages/lazy-pages.html">
 <link rel="import" href="/dist/paper-button/paper-button.html">
 <link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
@@ -12,15 +12,34 @@
 
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
 <link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
+<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-settings-add-feed">
-    <style>
-a[is="pushstate-anchor"] {
+    <template>
+		<style>
+lazy-pages > * {
+	position: relative;
+}
+.card {
+    @apply(--card-style);
+    @apply(--shadow-elevation-4dp);
+    padding: 16px;
+    margin: 16px 8px 8px;
+    max-width: 50em;
+}
+neon-animated-pages, lazy-pages {
+    position: static;
+}
+a {
+	color: inherit;
     position: relative;
     text-decoration: none;
 }
 
-a[is="pushstate-anchor"] paper-material {
+a[target] {
+    text-decoration: underline;
+}
+a paper-material {
     padding: 0.7em 0.57em;
     text-transform: uppercase;
 }
@@ -36,94 +55,94 @@ li {
 li paper-checkbox {
     margin-right: 16px;
 }
-    </style>
-    <template>
+		</style>
+		<style include="rf-layout"></style>
+		<excess-route route="/web/settings/discovery/:discoverStage+" route-alias="settings-discovery" discover-stage="{{ discoverStage }}"></excess-route>
+
         <div class="card" class="layout vertical start">
             <div class="layout vertical">
-                <more-route-selector on-more-route-change="onRouteChange">
-                    <iron-pages>
-                        <section route="settings-add-feed-discover">
-                            <p>
-                                {% __ "Enter keywords to use when searching for public feeds. A website address that contains one more more feeds may also be used. Finally, feed addresses may be entered directly." .base.lang %}
-                            </p>
+				<lazy-pages attr-for-selected="route" selected="[[ discoverStage ]]" rescue-selection="search">
+					<section route="search">
+						<p>
+							{% __ "Enter keywords to use when searching for public feeds. A website address that contains one more more feeds may also be used. Finally, feed addresses may be entered directly." .base.lang %}
+						</p>
 
-                            <paper-input id="feed-url" label="{% __ "URL or keywords" .base.lang %}" on-keypress="onUrlKeypress"></paper-input>
+						<paper-input id="feed-url" label="{% __ "URL or keywords" .base.lang %}" on-keypress="onUrlKeypress"></paper-input>
 
-                            <p>
-                                {% __ "Alternatively, you may provide an OPML file that contains a list of feeds." .base.lang %}
-                            </p>
+						<p>
+							{% __ "Alternatively, you may provide an OPML file that contains a list of feeds." .base.lang %}
+						</p>
 
-                            <paper-input type="file" id="opml" name="opml" accept=".opml" tabindex="2"></paper-input>
+						<paper-input type="file" id="opml" name="opml" accept=".opml" tabindex="2"></paper-input>
 
-                            <div class="layout horizontal end-justified">
-                                <paper-spinner class="loading-dependant" hidden$="[[ !loading ]]"></paper-spinner>
-                                <paper-button id="find-feeds" on-tap="onFindFeeds" autofocus hidden$="[[ loading ]]">{% __ "Find" .base.lang %}</paper-button>
-                            </div>
-                        </section>
+						<div class="layout horizontal end-justified">
+							<paper-spinner class="loading-dependant" hidden$="[[ !loading ]]"></paper-spinner>
+							<paper-button id="find-feeds" on-tap="onFindFeeds" autofocus hidden$="[[ loading ]]">{% __ "Find" .base.lang %}</paper-button>
+						</div>
+					</section>
 
-                        <section route="settings-add-feed-discover-not-found">
-                            <p>{% __ "No feeds found" .base.lang %}</p>
+					<section route="not-found">
+						<p>{% __ "No feeds found" .base.lang %}</p>
 
-                            <div class="layout horizontal end-justified">
-                                <a is="pushstate-anchor" href="[[ urlFor('settings-add-feed-discover') ]]" style="position: relative;">
-                                    <paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
-                                    <paper-ripple></paper-ripple>
-                                </a>
-                            </div>
-                        </section>
+						<div class="layout horizontal end-justified">
+							<a href="[[ urlFor('@settings-discovery', 'discoverStage', 'search') ]]" style="position: relative;">
+								<paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
+								<paper-ripple></paper-ripple>
+							</a>
+						</div>
+					</section>
 
-                        <section route="settings-add-feed-discover-select">
-                            <div hidden$="[[ _computeHideDiscoveredFeeds(discoveredFeeds) ]]">
-                                <h4>{% __ "No feeds found" .base.lang %}</h4>
-                            </div>
-                            <div hidden$="[[ _computeHideDiscoveredFeeds(discoveredFeeds, 1) ]]">
-                                <p>{% __ "Found the following feeds:" .base.lang %}</p>
-                                <ul>
-                                <template is="dom-repeat" items="{{ discoveredFeeds }}">
-                                    <li class="layout horizontal center">
-                                        <paper-checkbox checked="{{ item.selected }}"></paper-checkbox>
-                                        <a href="[[ item.Link ]]">[[ item.Title ]]<br><small>[[ item.Description ]]</small></a>
-                                    </li>
-                                </template>
-                                </ul>
-                            </div>
+					<section route="select">
+						<div hidden$="[[ _computeHideDiscoveredFeeds(discoveredFeeds) ]]">
+							<h4>{% __ "No feeds found" .base.lang %}</h4>
+						</div>
+						<div hidden$="[[ _computeHideDiscoveredFeeds(discoveredFeeds, 1) ]]">
+							<p>{% __ "Found the following feeds:" .base.lang %}</p>
+							<ul>
+							<template is="dom-repeat" items="{{ discoveredFeeds }}">
+								<li class="layout horizontal center">
+									<paper-checkbox checked="{{ item.selected }}"></paper-checkbox>
+									<a href="[[ item.Link ]]" target="_blank">[[ item.Title ]]<br><small>[[ item.Description ]]</small></a>
+								</li>
+							</template>
+							</ul>
+						</div>
 
-                            <div class="layout horizontal end-justified">
-                                <a is="pushstate-anchor" href="[[ urlFor('settings-add-feed-discover') ]]">
-                                    <paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
-                                    <paper-ripple></paper-ripple>
-                                </a>
-                                <paper-spinner class="loading-dependant" hidden$="[[ !loading ]]"></paper-spinner>
-                                <paper-button on-tap="onAddFeeds" autofocus hidden$="[[ _computeHideAddFeed(discoveredFeeds, loading) ]]">{% __ "Add" .base.lang %}</paper-button>
-                            </div>
-                        </section>
+						<div class="layout horizontal end-justified">
+							<a href="[[ urlFor('@settings-discovery', 'discoverStage', 'search') ]]">
+								<paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
+								<paper-ripple></paper-ripple>
+							</a>
+							<paper-spinner class="loading-dependant" hidden$="[[ !loading ]]"></paper-spinner>
+							<paper-button on-tap="onAddFeeds" autofocus hidden$="[[ _computeHideAddFeed(discoveredFeeds, loading) ]]">{% __ "Add" .base.lang %}</paper-button>
+						</div>
+					</section>
 
-                        <section route="settings-add-feed-discover-select-none">
-                            <p>{% __ "No feeds were selected" .base.lang %}</p>
-                            <div class="layout horizontal end-justified">
-                                <a is="pushstate-anchor" href="[[ urlFor('settings-add-feed-discover-select') ]]">
-                                    <paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
-                                    <paper-ripple></paper-ripple>
-                                </a>
-                            </div>
-                        </section>
+					<section route="select/none">
+						<p>{% __ "No feeds were selected" .base.lang %}</p>
+						<div class="layout horizontal end-justified">
+							<a href="[[ urlFor('@settings-discovery', 'discoverStage', 'select') ]]">
+								<paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
+								<paper-ripple></paper-ripple>
+							</a>
+						</div>
+					</section>
 
-                        <section route="settings-add-feed-discover-select-error">
-                            <p>{% __ "Error adding selected feeds: " .base.lang %}<br>
-                                <template is="dom-repeat" items="[[ addFeedErrors ]]">
-                                    <span>[[ _computeFeedErrorEntry(item) ]]</span>
-                                    <br>
-                                </template>
-                            </p>
-                            <div class="layout horizontal end-justified">
-                                <a is="pushstate-anchor" href="[[ urlFor('settings-add-feed-discover-select') ]]">
-                                    <span>{% __ "Back" .base.lang %}</span>
-                                    <paper-ripple></paper-ripple>
-                                </a>
-                            </div>
-                        </section>
-                    </iron-pages>
-                </more-route-selector>
+					<section route="select/error">
+						<p>{% __ "Error adding selected feeds: " .base.lang %}<br>
+							<template is="dom-repeat" items="[[ addFeedErrors ]]">
+								<span>[[ _computeFeedErrorEntry(item) ]]</span>
+								<br>
+							</template>
+						</p>
+						<div class="layout horizontal end-justified">
+							<a href="[[ urlFor('@settings-discovery', 'discoverStage', 'select') ]]">
+								<span>{% __ "Back" .base.lang %}</span>
+								<paper-ripple></paper-ripple>
+							</a>
+						</div>
+					</section>
+				</lazy-pages>
             </div>
 
         </div>
@@ -142,11 +161,14 @@ li paper-checkbox {
         Polymer({
             is: "rf-settings-add-feed",
             behaviors: [
-                NestedRouteBehavior,
-                MoreRouting.TemplateHelpers,
+				RouteBehavior,
             ],
             properties: {
                 user: Object,
+				discoverStage: {
+					type: String,
+					observer: '_discoverStageChanged'
+				},
                 discoveredFeeds: {
                     type: Array,
                     value: function() {
@@ -166,9 +188,12 @@ li paper-checkbox {
                 }
             },
 
-            attached: function() {
-                this.defaultNestedRoute('settings-add-feed', 'settings-add-feed-discover');
-            },
+			attached: function() {
+				this.namedRoute('settings').addEventListener('route-params-changed', function(event) {
+					this.debounce('default-discovery-route', this._transitionToDefault.bind(this));
+				}.bind(this));
+				this.debounce('default-discovery-route', this._transitionToDefault.bind(this));
+			},
 
             onRouteChange: function(event, detail) {
                 this.loading = false;
@@ -243,9 +268,9 @@ li paper-checkbox {
                 this.discoveredFeeds = data.arguments.Feeds;
 
                 if (!this.discoveredFeeds || !this.discoveredFeeds.length) {
-                    MoreRouting.navigateTo('settings-add-feed-discover-not-found');
+					Excess.RouteManager.transitionTo('@settings-discovery', {discoverStage: 'not-found'});
                 } else {
-                    MoreRouting.navigateTo('settings-add-feed-discover-select');
+					Excess.RouteManager.transitionTo('@settings-discovery', {discoverStage: 'select'});
                 }
             },
 
@@ -264,7 +289,7 @@ li paper-checkbox {
                 }
 
                 if (!links.length) {
-                    MoreRouting.navigateTo('settings-add-feed-discover-select-none')
+					Excess.RouteManager.transitionTo('@settings-discovery', {discoverStage: ['select', 'none']});
                     return;
                 }
 
@@ -279,7 +304,7 @@ li paper-checkbox {
                 this.discoveredFeeds = null;
 
                 this.$['add-feed-success'].show();
-                MoreRouting.navigateTo('settings-add-feed-discover');
+				Excess.RouteManager.transitionTo('@settings-discovery', {discoverStage: 'search'});
             },
 
             onAddFeedError: function(event, data) {
@@ -288,14 +313,17 @@ li paper-checkbox {
                 if (data.arguments.Success) {
                     this.fire('iron-signal', {name: 'rf-feeds-added'});
                 }
-                MoreRouting.navigateTo('settings-add-feed-discover-select-error');
+				Excess.RouteManager.transitionTo('@settings-discovery', {discoverStage: ['select', 'error']});
             },
+
+			_discoverStageChanged: function() {
+				this.loading = false;
+			},
 
             _loadingChanged: function(loading, old) {
                 var dependants = Polymer.dom(this.root).querySelectorAll('.loading-dependant');
                 dependants.forEach(function(d) {
                     if (loading) {
-                        d.reset();
                         d.active = true;
                     } else {
                         d.active = false;
@@ -325,6 +353,17 @@ li paper-checkbox {
 
                 return div.textContent || "";
             },
+
+			_transitionToDefault() {
+				var route = this.namedRoute('settings');
+				if (route.routeParams && route.routeParams.subsettings == 'discovery') {
+					route = this.namedRoute('settings-discovery');
+					if (!route || !route.discoverStage) {
+						Excess.RouteManager.transitionTo('@settings-discovery', {discoverStage: 'search'});
+					}
+				}
+			},
+
         })
     </script>
 </dom-module>

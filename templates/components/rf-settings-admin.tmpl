@@ -1,17 +1,28 @@
 {% define "content" %}
-<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="/dist/neon-animation/animations/scale-up-animation.html">
 <link rel="import" href="/dist/paper-button/paper-button.html">
 <link rel="import" href="/dist/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="/dist/paper-dialog/paper-dialog.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
-<link rel="import" href="/dist/neon-animation/animations/scale-up-animation.html">
-<link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="/dist/polymer/polymer.html">
 
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
+<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-settings-admin">
     <template>
+		<style>
+.card {
+    @apply(--card-style);
+    @apply(--shadow-elevation-4dp);
+    padding: 16px;
+    margin: 16px 8px 8px;
+    max-width: 50em;
+}
+		</style>
+		<style include="rf-layout"></style>
         <template is="dom-if" if="[[ user.Admin ]]">
             <div class="card layout vertical">
                 <div hidden$="[[ !users.length ]]">

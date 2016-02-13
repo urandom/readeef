@@ -1,5 +1,6 @@
 {% define "content" %}
-<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="/dist/neon-animation/animations/scale-up-animation.html">
 <link rel="import" href="/dist/paper-button/paper-button.html">
 <link rel="import" href="/dist/paper-dialog/paper-dialog.html">
 <link rel="import" href="/dist/paper-dropdown-menu/paper-dropdown-menu.html">
@@ -8,13 +9,25 @@
 <link rel="import" href="/dist/paper-item/paper-item.html">
 <link rel="import" href="/dist/paper-menu/paper-menu.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
-<link rel="import" href="/dist/neon-animation/animations/scale-up-animation.html">
-<link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="/dist/polymer/polymer.html">
 
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
+<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-settings-general">
-    <style>
+    
+    <template>
+		<style>
+paper-button {
+	color: var(--text-primary-color);
+}
+.card {
+    @apply(--card-style);
+    @apply(--shadow-elevation-4dp);
+    padding: 16px;
+    margin: 16px 8px 8px;
+    max-width: 50em;
+}
 .theme-bubbles {
     margin: 8px 0;
 }
@@ -45,10 +58,6 @@ a[data-language] {
 
     @apply(--layout-horizontal);
     @apply(--layout-center);
-}
-
-paper-dropdown-menu /deep/ paper-menu-button {
-    padding: 0;
 }
 
 .theme[data-theme="blue"] {
@@ -102,10 +111,9 @@ paper-dropdown-menu /deep/ paper-menu-button {
     color: var(--paper-yellow-900);
     background: var(--paper-blue-grey-100);
 }
-
-    </style>
-    <template>
-        <div class="card" class="layout vertical start">
+		</style>
+		<style include="rf-layout"></style>
+        <div class="card layout vertical start">
             <h2>
                 {% __ "Personalize your feed reader" .base.lang %}
             </h2>

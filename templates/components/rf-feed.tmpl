@@ -1,26 +1,30 @@
 {% define "content" %}
-<link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/excess-router/excess-router.html">
 <link rel="import" href="/dist/iron-list/iron-list.html">
 <link rel="import" href="/dist/iron-pages/iron-pages.html">
-<link rel="import" href="/dist/more-routing/more-route-template-helpers.html">
-<link rel="import" href="/dist/more-routing/more-routing.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/dist/paper-material/paper-material.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/paper-spinner/paper-spinner.html">
-<link rel="import" href="/dist/iron-scroll-threshold/iron-scroll-threshold.html">
+<link rel="import" href="/dist/polymer/polymer.html">
 
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
 <link rel="import" href="{% url "/component/rf-article" .base.r %}">
 <link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
+<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-feed">
-    <style>
+    <template>
+		<style>
+a {
+	color: inherit;
+}
+
 .list-container {
     margin: 16px 0 8px;
 }
 
-.card,
-rf-article /deep/ .card {
+.card {
     @apply(--card-style);
     @apply(--shadow-elevation-4dp);
     padding: 8px;
@@ -48,6 +52,9 @@ rf-article /deep/ .card {
     word-wrap: break-word;
     text-overflow: ellipsis;
     overflow: hidden;
+    font-size: 12px;
+    font-weight: 200;
+	@apply(--description-style);
 }
 
 .article .title-wrapper .title {
@@ -62,12 +69,6 @@ rf-article /deep/ .card {
     line-height: 24px;
 }
 
-.short-description {
-    font-size: 12px;
-    line-height: 14px;
-    font-weight: 200;
-}
-
 .misc-info {
     padding-left: 0.5em;
     padding-top: 0.5em;
@@ -77,201 +78,133 @@ rf-article /deep/ .card {
     text-decoration: none;
 }
 
-rf-article /deep/ .index {
-    font-family: "Roboto Condensed", serif;
-    font-size: smaller;
-    font-style: italic;
-    padding-left: 0.7em;
-    white-space: nowrap;
+.feed-origin {
+	@apply(--feed-origin-style);
 }
 
-.short-description,
-rf-article /deep/ .article-description {
-    font-family: "Roboto Slab", sans-serif;
+.publish-date {
+	@apply(--publish-date-style);
 }
+		</style>
+		<style include="rf-layout"></style>
+		<iron-pages attr-for-selected="route" selected="[[ display ]]" on-iron-select="onFeedPagesSelect">
+			<div route="feed" class="list-container">
+				<iron-list items="[[ articles ]]" id="list">
+					<template>
+						<a href="[[ _computeArticleLink(item, 'main') ]]" class="list-article">
+							<div class$="[[ _computeArticleClass(item.Read, item.Favorite) ]]" data-feed-id$="[[ item.FeedId ]]" data-article-id$="[[ item.Id ]]">
+								<div class="card layout vertical">
+									<div class="title-wrapper layout horizontal center">
+										<paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.Favorite) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
+										<span class="title" title$="[[ item.Title ]]" inner-h-t-m-l="[[ _computeArticleTitle(item.Title, item.Hit.*) ]]"></span>
+									</div>
+									<div class="detail-wrapper layout horizontal center">
+										<span class="short-description flex">
+											<img src$="[[ item.Thumbnail ]]" class="top-image">
+											<span inner-h-t-m-l="[[ _computeArticleDescription(item.Description, item.Hit.*) ]]"></span>
+											<br style="clear: both">
+										</span>
+									</div>
+									<span class="misc-info layout horizontal center">
+										<span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
+										<span class="publish-date">[[ item.RelativeDate ]]</span>
+									</span>
+									<!-- allow the inner elements to receiver pointer events -->
+									<paper-ripple style="pointer-events: none;"></paper-ripple>
+								</div>
+							</div>
+						</a>
+					</template>
+				</iron-list>
+			</div>
+			<rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" articles="[[ articles ]]" on-change-article-id="onChangeArticleId">
+				<template>
+					<div class="article-detail" data-article-id$="[[ item.article.Id ]]">
+						<div class="card layout vertical">
+							<a class="article-anchor title-wrapper" href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]">
+								<paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.article.Favorite) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
+								<span class="title" title$="[[ item.article.Title ]]">[[ item.article.Title ]]</span>
+								<small class="index">[[ item.ordinalPosition ]]</small>
+							</a>
+							<div class="misc-info layout horizontal center">
+								<span class="feed-origin" title$="[[ item.article.FeedOrigin ]]" hidden$="[[ !item.article.FeedOrigin ]]">[[ item.article.FeedOrigin ]]</span>
+								<span class="publish-date">[[ item.article.RelativeDate ]]</span>
+							</div>
+							<div class="article-content">
+								<div class="article-description" hidden$="[[ item.article.summarized ]]"></div>
 
-rf-article /deep/ .article-description img {
-    max-width: 100%;
-    height: auto;
-}
+								<div hidden$="[[ !item.article.summarized ]]">
+									<div class="article-top-image" hidden$="[[ !item.article.topImage ]]">
+										<img src$="[[ item.article.topImage ]]">
+									</div>
+									<ul class="article-summary">
+										<template is="dom-repeat" as="point" items="[[ item.article.keyPoints ]]">
+											<li>[[ point ]]</li>
+										</template>
+									</ul>
+								</div>
 
-rf-article /deep/ .article-anchor {
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 1.2em;
-}
-
-rf-article /deep/ .article-link {
-    position: relative;
-    margin: 0 0.29em;
-    padding: 0.7em 0.57em;
-    text-transform: uppercase;
-    text-decoration: none;
-    text-align: center;
-    border-radius: 3px;
-}
-
-.feed-origin,
-rf-article /deep/ .feed-origin {
-    font-family: "Roboto Condensed", serif;
-    font-size: 11px;
-    line-height: 24px;
-    font-weight: 200;
-    padding-right: 1em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.publish-date,
-rf-article /deep/ .publish-date {
-    font-family: "Roboto Condensed", sans-serif;
-    font-size: 12px;
-    font-style: italic;
-    line-height: 14px;
-}
-
-rf-article /deep/ .article-control {
-    font-family: "Roboto Condensed", sans-serif;
-}
-
-rf-article /deep/ .article-top-image {
-    text-align: center;
-}
-
-rf-article /deep/ .article-top-image img {
-    width: auto;
-    height: auto;
-    max-width: 100%;
-}
-
-rf-article /deep/ .article-summary {
-    font-family: "Roboto Slab", sans-serif;
-}
-
-@media(min-width: 768px) {
-    rf-article /deep/ .card {
-        padding: 16px;
-    }
-}
-
-
-@media(min-width: 1350px) {
-    rf-article /deep/ .card {
-        padding: 32px;
-    }
-}
-
-    </style>
-    <template>
-        <more-route-selector>
-            <iron-pages>
-                <div route="feed" class="list-container">
-                    <iron-list items="[[ articles ]]" id="list">
-                        <template>
-                            <a is="pushstate-anchor" href="[[ _computeArticleLink(item.Id, 'main') ]]" class="list-article">
-                                <div class$="[[ _computeArticleClass(item.Read, item.Favorite) ]]" data-feed-id$="[[ item.FeedId ]]" data-article-id$="[[ item.Id ]]">
-                                    <div class="card layout vertical">
-                                        <div class="title-wrapper layout horizontal center">
-                                            <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.Favorite) ]]" on-tap="onFavoriteToggle" on-click="onFavoriteClick"></paper-icon-button>
-                                            <span class="title" title$="[[ item.Title ]]" inner-h-t-m-l="[[ _computeArticleTitle(item.Title, item.Hit.*) ]]"></span>
-                                        </div>
-                                        <div class="detail-wrapper layout horizontal center">
-                                            <span class="short-description flex">
-                                                <img src$="[[ item.Thumbnail ]]" class="top-image">
-                                                <span inner-h-t-m-l="[[ _computeArticleDescription(item.Description, item.Hit.*) ]]"></span>
-                                                <br style="clear: both">
-                                            </span>
-                                        </div>
-                                        <span class="misc-info layout horizontal center">
-                                            <span class="feed-origin" title$="[[ item.FeedOrigin ]]" hidden$="[[ !item.FeedOrigin ]]">[[ item.FeedOrigin ]]</span>
-                                            <span class="publish-date">[[ item.RelativeDate ]]</span>
-                                        </span>
-                                        <!-- allow the inner elements to receiver pointer events -->
-                                        <paper-ripple style="pointer-events: none;"></paper-ripple>
-                                    </div>
-                                </div>
-                            </a>
-                        </template>
-                    </iron-list>
-                </div>
-                <rf-article route="article" user="[[ user ]]" id="article" narrow="[[ narrow ]]" articles="[[ articles ]]" on-next-article="onNextArticle" on-previous-article="onPreviousArticle">
-                    <template>
-                        <div class="article-detail" data-article-id$="[[ item.article.Id ]]">
-                            <div class="card layout vertical">
-                                <a class="article-anchor title-wrapper" href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]">
-                                    <paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.article.Favorite) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
-                                    <span class="title" title$="[[ item.article.Title ]]">[[ item.article.Title ]]</span>
-                                    <small class="index">[[ item.ordinalPosition ]]</small>
-                                </a>
-                                <div class="misc-info layout horizontal center">
-                                    <span class="feed-origin" title$="[[ item.article.FeedOrigin ]]" hidden$="[[ !item.article.FeedOrigin ]]">[[ item.article.FeedOrigin ]]</span>
-                                    <span class="publish-date">[[ item.article.RelativeDate ]]</span>
-                                </div>
-                                <div class="article-content">
-                                    <div class="article-description" hidden$="[[ item.article.summarized ]]"></div>
-
-                                    <div hidden$="[[ !item.article.summarized ]]">
-                                        <div class="article-top-image" hidden$="[[ !item.article.topImage ]]">
-                                            <img src$="[[ item.article.topImage ]]">
-                                        </div>
-                                        <ul class="article-summary">
-                                            <template is="dom-repeat" as="point" items="[[ item.article.keyPoints ]]">
-                                                <li>[[ point ]]</li>
-                                            </template>
-                                        </ul>
-                                    </div>
-
-                                    <div class="article-buttons layout horizontal">
-                                        <a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]" class="article-link flex article-control">
-                                            {% __ "View" .base.lang %}
-                                            <paper-ripple></paper-ripple>
-                                        </a>
-                                        <paper-spinner active="[[ item.article.summarizing ]]"></paper-spinner>
-                                        <a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'summary') ]]" class="article-link article-control" hidden="[[ _computeHideFormattingButtons(item, 'summarizing') ]]">
-                                            {% __ "Summarize" .base.lang %}
-                                            <paper-ripple></paper-ripple>
-                                        </a>
-                                        <paper-spinner active="[[ item.article.formatting ]]"></paper-spinner>
-                                        <a is="pushstate-anchor" href="[[ _computeArticleLink(item.article.Id, 'format') ]]" class="article-link article-control" hidden="[[ _computeHideFormattingButtons(item, 'formatting') ]]">
-                                            {% __ "Format" .base.lang %}
-                                            <paper-ripple></paper-ripple>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </rf-article>
-            </iron-pages>
-        </more-route-selector>
+								<div class="article-buttons layout horizontal">
+									<a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]" class="article-link flex article-control">
+										{% __ "View" .base.lang %}
+										<paper-ripple></paper-ripple>
+									</a>
+									<paper-spinner active="[[ item.article.summarizing ]]"></paper-spinner>
+									<paper-material elevation="[[ _computeElevationFormattingButtons(item.article, 'summary', item.article.*) ]]">
+										<a href="[[ _computeArticleLink(item.article, 'summary', item.article.*) ]]" class="article-link article-control">
+											{% __ "Summarize" .base.lang %}
+											<paper-ripple></paper-ripple>
+										</a>
+									</paper-material>
+									<paper-spinner active="[[ item.article.formatting ]]"></paper-spinner>
+									<paper-material elevation="[[ _computeElevationFormattingButtons(item.article, 'format', item.article.*) ]]">
+										<a href="[[ _computeArticleLink(item.article, 'format', item.article.*) ]]" class="article-link article-control">
+											{% __ "Format" .base.lang %}
+											<paper-ripple></paper-ripple>
+										</a>
+									</paper-material>
+								</div>
+							</div>
+						</div>
+					</div>
+				</template>
+			</rf-article>
+		</iron-pages>
         
         <rf-api id="article-read" method="article-read-state" tag="content-list" on-rf-api-message="onArticleStateMessage" user="[[ user ]]"></rf-api>
         <rf-api id="article-favorite" method="article-favorite-state" tag="content-list"on-rf-api-message="onArticleStateMessage"  user="[[ user ]]"></rf-api>
         <rf-api id="article-format" method="format-article" on-rf-api-message="onArticleFormatMessage" user="[[ user ]]"></rf-api>
 
         <rf-keyboard-shortcut route-name="article" key-code="86, 118" label="v" description="Open the article's link in a new tab" on-press="onOpenArticleLink"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="article" key-code="77, 109" label="m" description="Toggle the read state of the article" on-press="onToggleArticleRead"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="article" key-code="70, 102" label="f" description="Toggle the favorite state of the article" on-press="onToggleArticleFavorite"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="article" key-code="83, 115" label="s" description="Summarize the article" on-press="onToggleArticleSummary"></rf-keyboard-shortcut>
-        <rf-keyboard-shortcut route-name="article" key-code="67, 99" label="c" description="Format the article's content" on-press="onToggleArticleFormat"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="77, 109" label="m" description="Toggle the read state of the article" on-press="onToggleArticleState" data-type="read"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="70, 102" label="f" description="Toggle the favorite state of the article" on-press="onToggleArticleState" data-type="favorite"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="83, 115" label="s" description="Summarize the article" on-press="onToggleArticleFormat" data-type="summary"></rf-keyboard-shortcut>
+        <rf-keyboard-shortcut route-name="article" key-code="67, 99" label="c" description="Format the article's content" on-press="onToggleArticleFormat" data-type="format"></rf-keyboard-shortcut>
     </template>
 
     <script>
         "use strict";
         Polymer({
             is: "rf-feed",
+            behaviors: [
+				RouteBehavior,
+            ],
             properties: {
                 tagOrId: String,
+				articleId: {
+					type: Number,
+					observer: '_articleIdChanged',
+				},
+				formatType: {
+					type: String,
+					observer: '_formatTypeChanged',
+				},
+				display: String,
                 user: Object,
                 feeds: Object,
                 articles: Array,
                 narrow: Boolean,
             },
-            behaviors: [
-                NestedRouteBehavior,
-                MoreRouting.TemplateHelpers,
-            ],
             observers: [
                 '_articlesChanged(articles.*)',
             ],
@@ -301,99 +234,41 @@ rf-article /deep/ .article-summary {
                 var el = Polymer.dom(this);
                 while (el = (el.parentNode || el.host)) {
                     if ('scroller' in el) {
-                        this._scroller =
-                            Polymer.dom(this.root).querySelector('.list-container').scroller = el.scroller;
+                        this._scroller = this.$.list.scrollTarget = el.scroller;
                         break;
                     }
                 }
 
-                this.routeParamObserver('article', 'articleId', function(id) {
-                    var prevIndex = this.articles.findIndex(this._articleId),
-                        index = this.articles.findIndex(id);
-                    if (prevIndex != -1) {
-                        var article = this.articles[prevIndex];
-                        if (article.summarized) {
-                            this.set('articles.' + prevIndex + '.summarized', false);
-                        }
-
-                        if (article.formatted) {
-                            this.set('articles.' + prevIndex + '.formatted', false);
-                        }
-                    }
-
-                    if (id === null || index === -1) {
-                        this.$.article.selectedId = 0;
-                        // FIXME: https://github.com/PolymerElements/iron-list/issues/71
-                        this.$.list._scroller = this._scroller;
-                        this.$.list.scrollToIndex(prevIndex);
-                        if (id !== null) {
-                            this.async(function() {
-                                MoreRouting.navigateTo('feed', {tagOrId: this.tagOrId});
-                            });
-                        }
-                    } else {
-                        this.$.article.selectedId = id - 0;
-                        this._scroller.scrollTop = 0;
-                        // FIXME: https://github.com/PolymerElements/iron-list/issues/71
-                        this.$.list._scroller = null;
-
-                        if (!this.articles[index].Read) {
-                            this.$['article-read'].send({id: id - 0, value: true});
-                        }
-                    }
-
-                    this._articleId = id;
-                }.bind(this));
-
-                this.routeParamObserver('article-format', 'type', function(type) {
-                    var route = MoreRouting.getRouteByName('article-format'),
-                        articleId = route.params.articleId,
-                        index = this.articles.findIndex(articleId),
-                        article = this.articles[index];
-
-                    if (index == -1) {
-                        type = null;
-                    }
-
-                    switch (type) {
-                        case "format":
-                            this.set('articles.' + index + '.summarized', false);
-                            if (article.formatted || article.formattedDescription) {
-                                this.set('articles.' + index + '.formatted', !article.formatted);
-                                return;
-                            }
-
-                            if (!article.formatted && !article.formatting) {
-                                this.set('articles.' + index + '.formatting', true);
-                                this.$['article-format'].send({id: articleId - 0});
-                            }
-                            break;
-                        case "summary":
-                            this.set('articles.' + index + '.formatted', false);
-                            if (article.summarized || article.keyPoints) {
-                                this.set('articles.' + index + '.summarized', !article.summarized);
-                                return;
-                            }
-
-                            if (!article.summarized && !article.summarizing) {
-                                this.set('articles.' + index + '.summarizing', true);
-                                this.$['article-format'].send({id: articleId - 0});
-                            }
-                            break;
-                        case null:
-                            break;
-                        default:
-                            return this.async(function() {
-                                MoreRouting.navigateTo('article',
-                                        {tagOrId: route.params.tagOrId, articleId: articleId});
-                            });
-                    }
-                }.bind(this));
-
-                setInterval(function() {
+                this._updateRelativeDateInterval = setInterval(function() {
                     this._updateRelativeDates();
                 }.bind(this), 60000);
             },
+
+			detached: function() {
+				clearInterval(this._updateRelativeDateInterval);
+			},
+
+			onFeedPagesSelect: function(event) {
+				if (!this._scroller) {
+					return;
+				}
+
+				if (this.display == 'article') {
+					this._scroller.scrollTop = 0;
+					this.$.article.selectedId = this.articleId - 0;
+					this.$.list.scrollTarget = null;
+				} else {
+					this.$.article.selectedId = 0;
+					this.$.list.scrollTarget = this._scroller;
+
+					var index = this.articles.findIndex(this.articleId);
+					if (index != -1) {
+						this.async(function() {
+							this.$.list.scrollToIndex(index);
+						});
+					}
+				}
+			},
 
             onArticleStateMessage: function(event, data) {
                 var index = this.articles.findIndex(data.arguments.Id);
@@ -432,11 +307,9 @@ rf-article /deep/ .article-summary {
                 }
             },
 
-            onFavoriteClick: function(event) {
-                // Stop the pushstate-anchor from activating
-                event.preventDefault();
-                event.stopPropagation();
-            },
+			onChangeArticleId: function(event, data) {
+				Excess.RouteManager.transitionTo('@article', {tagOrId: this.tagOrId, articleId: data});
+			},
 
             onFavoriteToggle: function(event) {
                 event.preventDefault();
@@ -458,74 +331,191 @@ rf-article /deep/ .article-summary {
             },
 
             onOpenArticleLink: function() {
-                var article = this.articles.find(MoreRouting.getRoute('article').params.articleId);
+                var article = this.articles.find(this.articleId);
                 window.open(article.Link, this._computeArticleTarget(article));
             },
 
-            onToggleArticleRead: function() {
-                var articleRoute = MoreRouting.getRoute('article');
-                this.articleState(articleRoute.params.articleId,
-                        {Read: !this.articles.find(articleRoute.params.articleId).Read});
+            onToggleArticleState: function(event) {
+				switch (event.target.dataset['type']) {
+				case "read":
+					var options = {Read: !this.articles.find(this.articleId).Read};
+					break;
+				case "favorite":
+					var options = {Favorite: !this.articles.find(this.articleId).Favorite};
+					break;
+				default:
+					throw new Error("unknown type " + event.target.dataset['type']);
+				}
+
+                this.articleState(this.articleId, options);
             },
 
-            onToggleArticleFavorite: function() {
-                var articleRoute = MoreRouting.getRoute('article');
-                this.articleState(articleRoute.params.articleId,
-                        {Favorite: !this.articles.find(articleRoute.params.articleId).Favorite});
+            onToggleArticleFormat: function(event) {
+				var type = event.target.dataset['type'],
+				    article = this.articles.find(this.articleId),
+					options = {
+						tagOrId: this.tagOrId,
+						articleId: this.articleId,
+					};
+
+				if ((type == 'summary' && !article.summarized) ||
+						(type == 'format' && !article.formatted)) {
+					options.formatType = type;
+				}
+
+				Excess.RouteManager.transitionTo('@article', options);
             },
 
-            onToggleArticleSummary: function() {
-                MoreRouting.navigateTo('article-format',
-                        {tagOrId: this.tagOrId,
-                        articleId: MoreRouting.getRoute('article').params.articleId,
-                        type: 'summary'});
-            },
+			_articleIdChanged: function(id, old) {
+				if (!this._scroller) {
+					return;
+				}
 
-            onToggleArticleFormat: function() {
-                MoreRouting.navigateTo('article-format',
-                        {tagOrId: this.tagOrId,
-                        articleId: MoreRouting.getRoute('article').params.articleId,
-                        type: 'format'});
-            },
+				var prevIndex = this.articles.findIndex(old),
+					index = this.articles.findIndex(id);
+
+				if (prevIndex != -1) {
+					var article = this.articles[prevIndex];
+					if (article.summarized) {
+						this.set('articles.' + prevIndex + '.summarized', false);
+					}
+
+					if (article.formatted) {
+						this.set('articles.' + prevIndex + '.formatted', false);
+					}
+				}
+
+				if (index === -1) {
+					this.$.article.selectedId = 0;
+
+					this.async(function() {
+						Excess.RouteManager.transitionTo('@feed', {tagOrId: this.tagOrId});
+					});
+				} else {
+					this._showArticle(id);
+				}
+			},
+
+			_formatTypeChanged: function(type, old) {
+				var index = this.articles.findIndex(this.articleId),
+					article = this.articles[index];
+
+				if (index == -1) {
+					if (this.articles.length == 0) {
+						// Still waiting for the articles to arrive
+						this._repeatFormatTypeChange = true;
+					}
+					return;
+				}
+
+				switch (type) {
+					case "format":
+						this.set('articles.' + index + '.summarized', false);
+						if (article.formatted || article.formattedDescription) {
+							this.set('articles.' + index + '.formatted', !article.formatted);
+							return;
+						}
+
+						if (!article.formatted && !article.formatting) {
+							this.set('articles.' + index + '.formatting', true);
+							this.$['article-format'].send({id: this.articleId - 0});
+						}
+						break;
+					case "summary":
+						this.set('articles.' + index + '.formatted', false);
+						if (article.summarized || article.keyPoints) {
+							this.set('articles.' + index + '.summarized', !article.summarized);
+							return;
+						}
+
+						if (!article.summarized && !article.summarizing) {
+							this.set('articles.' + index + '.summarizing', true);
+							this.$['article-format'].send({id: this.articleId - 0});
+						}
+						break;
+					case null:
+						break;
+					default:
+						this.set('articles.' + index + '.formatted', false);
+						this.set('articles.' + index + '.summarized', false);
+				}
+			},
 
             _articlesChanged: function(record) {
                 if (!record.base.length) {
                     this.$.article.selectedId = 0;
                 } else if (record.path == 'articles.splices') {
-                    if (!MoreRouting.isCurrentUrl('article')) {
-                        var newIndex = this._preUpdateFirstVisibleIndex,
-                            originalIndex = newIndex, changeCount = 0;
+					var newIndex = this._preUpdateFirstVisibleIndex,
+						originalIndex = newIndex, changeCount = 0,
+						newList = false;
 
-                        for (var i = 0, s; s = record.value.indexSplices[i]; ++i) {
-                            if (s.index <= originalIndex) {
-                                changeCount += s.addedCount - s.removed.length;
-                                newIndex = newIndex + changeCount;
-                            }
-                        }
+					for (var i = 0, s; s = record.value.indexSplices[i]; ++i) {
+						if (s.index <= originalIndex) {
+							changeCount += s.addedCount - s.removed.length;
+							newIndex = newIndex + changeCount;
+						}
+					}
 
+					newList = changeCount == record.base.length;
+
+                    if (this.display == 'article') {
+						if (newList) {
+							this._showArticle(this.articleId);
+						}
+					} else {
                         this.async(function() {
-                            // A brand new list of articles
-                            if (changeCount == record.base.length) {
+                            if (newList) {
                                 newIndex = 0;
                             }
                             this.$.list.scrollToIndex(newIndex);
                         });
                     }
+
+					if (this._repeatFormatTypeChange) {
+						this._repeatFormatTypeChange = false;
+						this.async(function() {
+							this._formatTypeChanged(this.formatType, null);
+						});
+					}
                 }
             },
+
+			_showArticle: function(id) {
+				var index = this.articles.findIndex(id);
+
+				this.$.article.selectedId = id - 0;
+
+				if (!this.articles[index].Read) {
+					this.$['article-read'].send({id: id - 0, value: true});
+				}
+			},
 
             _computeHideFormattingButtons: function(item, type) {
                 return !this.user.capabilities.Extractor || item.article[type];
             },
 
-            _computeArticleLink: function(articleId, type) {
-                switch (type) {
-                    case "main":
-                        return this.urlFor('article', {tagOrId: this.tagOrId, articleId: articleId});
-                    case "summary":
-                    case "format":
-                        return this.urlFor('article-format', {tagOrId: this.tagOrId, articleId: articleId, type: type});
-                }
+			_computeElevationFormattingButtons: function(article, type) {
+				if ((type == "summary" && article.summarized) ||
+						(type == "format" && article.formatted)) {
+					return 2;
+				}
+
+				return 0;
+			},
+
+            _computeArticleLink: function(article, type) {
+				if ((type == "summary" && article.summarized) ||
+						(type == "format" && article.formatted)) {
+					type = "main";
+				}
+
+				var options = {tagOrId: this.tagOrId, articleId: article.Id};
+
+				if (type != "main") {
+					options.formatType = type;
+				}
+
+				return this.urlFor('@article', options);
             },
 
 
@@ -576,7 +566,7 @@ rf-article /deep/ .article-summary {
             },
 
             _updateRelativeDates: function() {
-                if (!MoreRouting.isCurrentUrl('feed') || !this.articles || !this.articles.length) {
+                if (this.tagOrId == "" || !this.articles || !this.articles.length) {
                     return;
                 }
 

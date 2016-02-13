@@ -1,14 +1,14 @@
 {% define "content" %}
+<link rel="import" href="/dist/excess-router/excess-router.html">
 <link rel="import" href="/dist/iron-collapse/iron-collapse.html">
 <link rel="import" href="/dist/iron-icon/iron-icon.html">
 <link rel="import" href="/dist/iron-icons/iron-icons.html">
 <link rel="import" href="/dist/iron-icons/hardware-icons.html">
 <link rel="import" href="/dist/iron-icons/social-icons.html">
 <link rel="import" href="/dist/iron-pages/iron-pages.html">
+<link rel="import" href="/dist/iron-scroll-threshold/iron-scroll-threshold.html">
 <link rel="import" href="/dist/iron-signals/iron-signals.html">
-<link rel="import" href="/dist/more-routing/more-route-template-helpers.html">
-<link rel="import" href="/dist/more-routing/more-routing.html">
-<link rel="import" href="/dist/more-routing/more-routing.html">
+<link rel="import" href="/dist/lazy-pages/lazy-pages.html">
 <link rel="import" href="/dist/paper-fab/paper-fab.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
@@ -19,15 +19,16 @@
 <link rel="import" href="/dist/paper-spinner/paper-spinner.html">
 <link rel="import" href="/dist/paper-toast/paper-toast.html">
 <link rel="import" href="/dist/polymer/polymer.html">
-<link rel="import" href="/dist/pushstate-anchor/pushstate-anchor.html">
 
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
 <link rel="import" href="{% url "/component/rf-app-scaffold" .base.r %}">
 <link rel="import" href="{% url "/component/rf-feed" .base.r %}">
 <link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
+<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-feed-base">
-    <style>
+    <template>
+		<style>
 .drawer-menu a {
     color: var(--text-primary-color);
     text-decoration: none;
@@ -65,7 +66,7 @@
     margin-left: 4px;
 }
 
-rf-app-scaffold /deep/ .main-title-container paper-fab {
+.main-title paper-fab {
     position: fixed;
     right: 50px;
     top: 32px;
@@ -81,6 +82,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
 .update-available .main-title [icon="refresh"] {
     background: var(--paper-fab-notify-background);
+	transition: var(--background-transition);
     color: var(--text-primary-color-inverse);
 }
 
@@ -101,20 +103,23 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 .main-title [icon="arrow-back"] {
     margin-right: 24px;
 }
-    </style>
-    <template>
+		</style>
+		<style include="rf-layout"></style>
+		<excess-route route="/web/feed/:tagOrId/(.*)?" route-alias="feed" tag-or-id="{{ tagOrId }}"></excess-route>
+		<excess-route route="/web/feed/:tagOrId/article/:articleId/:formatType?" route-alias="article" active="{{ articleActive }}" article-id="{{ articleId }}" format-type="{{ formatType }}"></excess-route>
+
         <rf-app-scaffold narrow="{{ narrow }}" class$="[[ _computeScaffoldClass(_updateAvailable) ]]">
             <div class="drawer-title">{% __ "Feeds" .base.lang %}</div>
             <div class="drawer-menu">
                 <div hidden$="[[  _computeHideFeedItems(feeds) ]]">
-                    <a is="pushstate-anchor" href="[[ feedUrlFor('favorite') ]]" class="item">
+                    <a href="[[ feedUrlFor('favorite') ]]" class="item">
                         <span>{% __ "Favorite" .base.lang %}</span>
                         <paper-ripple></paper-ripple>
                     </a>
 
                     <div class="layout horizontal center" hidden$="[[ !user.capabilities.Popularity ]]">
                         <paper-icon-button icon="expand-more" expands="popular-feeds" class="item" on-tap="onToggleExpand"></paper-icon-button>
-                        <a is="pushstate-anchor" href="[[ feedUrlFor('popular:all') ]]" class="layout horizontal flex">
+                        <a href="[[ feedUrlFor('popular:all') ]]" class="layout horizontal flex">
                             <div style="position: relative" class="flex item">
                                 {% __ "Popular" .base.lang %}
                                 <paper-ripple></paper-ripple>
@@ -124,14 +129,14 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     <iron-collapse id="popular-feeds" hidden$="[[ !user.capabilities.Popularity ]]">
                         <div class="menu submenu">
                             <template is="dom-repeat" items="[[ tags ]]">
-                                <a is="pushstate-anchor" href="[[ feedUrlFor(item.name, 'popular:tag') ]]" class="item">
+                                <a href="[[ feedUrlFor(item.name, 'popular:tag') ]]" class="item">
                                     <span>[[ item.name ]]</span>
                                     <paper-ripple></paper-ripple>
                                 </a>
                             </template>
 
                             <template is="dom-repeat" items="[[ feeds ]]">
-                                <a is="pushstate-anchor" href="[[ feedUrlFor(item.Id, 'popular') ]]" class="item">
+                                <a href="[[ feedUrlFor(item.Id, 'popular') ]]" class="item">
                                     <img src="[[ _computeFavIconUrl(item) ]]" alt="favicon" class="feed-favicon">
                                     <span>[[ item.Title ]]</span>
                                     <paper-ripple></paper-ripple>
@@ -144,7 +149,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     <template is="dom-repeat" items="[[ _computeNavigationTags(tags) ]]">
                         <div class="layout horizontal center">
                             <paper-icon-button icon="expand-more" expands$="[[ _computeNavigationExpandTag(item) ]]" class="item" on-tap="onToggleExpand"></paper-icon-button>
-                            <a is="pushstate-anchor" href="[[ repeaterTagUrl(item.name) ]]" class="layout horizontal flex">
+                            <a href="[[ repeaterTagUrl(item.name) ]]" class="layout horizontal flex">
                                 <div style="position: relative" class="flex item">
                                     <span>[[ item.name ]]</span>
                                     <paper-ripple></paper-ripple>
@@ -154,7 +159,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                         <iron-collapse id="[[ _computeNavigationExpandTag(item) ]]">
                             <div class="menu submenu">
                                 <template is="dom-repeat" items="[[ item.feeds ]]">
-                                    <a is="pushstate-anchor" href="[[ feedUrlFor(item.Id) ]]" class="item">
+                                    <a href="[[ feedUrlFor(item.Id) ]]" class="item">
                                         <img src="[[ _computeFavIconUrl(item) ]]" alt="favicon" class="feed-favicon">
                                         <span>[[ item.Title ]]</span>
                                         <paper-ripple></paper-ripple>
@@ -166,72 +171,70 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     </template>
                     <hr>
                 </div>
-                <a is="pushstate-anchor" href="[[ urlFor('settings-general') ]]" class="item">
+                <a href="[[ urlFor('@settings-general') ]]" class="item">
                     <span>{% __ "Settings" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
-                <a is="pushstate-anchor" href="[[ urlFor('logout') ]]" class="item">
+                <a href="[[ urlFor('@logout') ]]" class="item">
                     <span>{% __ "Logout" .base.lang %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
             </div>
             <div class="main-title">
-                <more-route-selector>
-                    <iron-pages>
-                        <section route="feed" class="layout horizontal center flex">
-                            <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-                            <paper-icon-button icon="arrow-back" style="visibility: hidden;" hidden$="[[ _computeHidePlaceholderIcon(searchVisible, narrow) ]]"></paper-icon-button>
-                            <span class="flex title-text" hidden$="[[ searchVisible ]]">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
-                            <span class="search-feed flex layout horizontal center" hidden$="[[ !searchVisible ]]">
-                                <paper-icon-button icon="clear" on-tap="toggleSearch"></paper-icon-button>
-                                <paper-input class="search-input" placeholder="{% __ "Search" .base.lang %}" no-label-float on-keyup="onSearchKeyUp" on-keypress="onSearchKeyPress" autofocus></paper-input>
-                            </span>
+				<iron-pages attr-for-selected="route" selected="[[ display ]]">
+					<section route="feed" class="layout horizontal center flex">
+						<paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+						<paper-icon-button icon="arrow-back" style="visibility: hidden;" hidden$="[[ _computeHidePlaceholderIcon(searchVisible, narrow) ]]"></paper-icon-button>
+						<span class="flex title-text" hidden$="[[ searchVisible ]]">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
+						<span class="search-feed flex layout horizontal center" hidden$="[[ !searchVisible ]]">
+							<paper-icon-button icon="clear" on-tap="toggleSearch"></paper-icon-button>
+							<paper-input class="search-input" placeholder="{% __ "Search" .base.lang %}" no-label-float on-keyup="onSearchKeyUp" on-keypress="onSearchKeyPress" autofocus></paper-input>
+						</span>
 
-                            <paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(tagOrId, searchVisible) ]]" title="{% __ "Search" .base.lang %}" on-tap="toggleSearch"></paper-icon-button>
-                            <paper-icon-button icon="refresh" title="{% __ "Refresh" .base.lang %}" on-tap="onRefresh" hidden$="[[ !narrow ]]"></paper-icon-button>
-                            <paper-menu-button horizontal-align="right">
-                                <paper-icon-button icon="more-vert" class="dropdown-trigger" title="{% __ "More options" .base.lang %}"></paper-icon-button>
-                                {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
-                                <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selected-values="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
-                                    <paper-item name="older-first">{% __ "Older first" .base.lang %}</paper-item>
-                                    <paper-item name="unread-only">{% __ "Unread only" .base.lang %}</paper-item>
-                                    <paper-item name="mark-all-as-read">{% __ "Mark all as read" .base.lang %}</paper-item>
-                                </paper-menu>
-                            </paper-menu-button>
-                        </section>
-                        <section route="article" class="layout horizontal center flex">
-                            <paper-icon-button icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
-                            <span class="title-text-article flex">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
-                            <paper-icon-button icon="[[ _computeReadStateIcon(_readState) ]]" title="{% __ "Mark article as read/unread" .base.lang %}" on-tap="onReadStateTap"></paper-icon-button>
+						<paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(tagOrId, searchVisible) ]]" title="{% __ "Search" .base.lang %}" on-tap="toggleSearch"></paper-icon-button>
+						<paper-icon-button icon="refresh" title="{% __ "Refresh" .base.lang %}" on-tap="onRefresh" hidden$="[[ !narrow ]]"></paper-icon-button>
+						<paper-menu-button horizontal-align="right">
+							<paper-icon-button icon="more-vert" class="dropdown-trigger" title="{% __ "More options" .base.lang %}"></paper-icon-button>
+							{%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
+							<paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selected-values="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
+								<paper-item name="older-first">{% __ "Older first" .base.lang %}</paper-item>
+								<paper-item name="unread-only">{% __ "Unread only" .base.lang %}</paper-item>
+								<paper-item name="mark-all-as-read">{% __ "Mark all as read" .base.lang %}</paper-item>
+							</paper-menu>
+						</paper-menu-button>
+					</section>
+					<section route="article" class="layout horizontal center flex">
+						<paper-icon-button icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
+						<span class="title-text-article flex">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
+						<paper-icon-button icon="[[ _computeReadStateIcon(_readState) ]]" title="{% __ "Mark article as read/unread" .base.lang %}" on-tap="onReadStateTap"></paper-icon-button>
 
-                            <paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(_articleId, articles.splices, 'previous') ]]" title="{% __ "Previous article" .base.lang %}" on-tap="onPreviousArticle"></paper-icon-button>
-                            <paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(_articleId, articles.splices, 'next') ]]" title="{% __ "Next article" .base.lang %}" on-tap="onNextArticle"></paper-icon-button>
+						<paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(articleId, articles.splices, 'previous') ]]" title="{% __ "Previous article" .base.lang %}" on-tap="onPreviousArticle"></paper-icon-button>
+						<paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(articleId, articles.splices, 'next') ]]" title="{% __ "Next article" .base.lang %}" on-tap="onNextArticle"></paper-icon-button>
 
-                            <paper-menu-button horizontal-align="right" hidden$="[[ !_shareServices.length ]]">
-                                <paper-icon-button icon="social:share" title="{% __ "Share article" .base.lang %}" class="dropdown-trigger"></paper-icon-button>
-                                {%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
-                                <paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onShareServiceActivate" style="background: #fff">
-                                    <template is="dom-repeat" items="[[ _shareServices ]]">
-                                        <paper-item name="[[ item.name ]]">[[ item.description ]]</paper-item>
-                                    </template>
-                                </paper-menu>
-                            </paper-menu-button>
-                        </section>
-                    </iron-pages>
-                </more-route-selector>
+						<paper-menu-button horizontal-align="right" hidden$="[[ !_shareServices.length ]]">
+							<paper-icon-button icon="social:share" title="{% __ "Share article" .base.lang %}" class="dropdown-trigger"></paper-icon-button>
+							{%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
+							<paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onShareServiceActivate" style="background: #fff">
+								<template is="dom-repeat" items="[[ _shareServices ]]">
+									<paper-item name="[[ item.name ]]">[[ item.description ]]</paper-item>
+								</template>
+							</paper-menu>
+						</paper-menu-button>
+					</section>
+				</iron-pages>
                 <paper-fab icon="refresh" on-tap="onRefresh" hidden$="[[ narrow ]]"></paper-fab>
             </div>
             <div class="main-content">
                 <iron-scroll-threshold id="scroll-threshold" lower-threshold="100" on-lower-trigger="onLowerScrollThresholdTrigger"></iron-scroll-threshold>
 
-                <rf-feed id="feed" user="[[ user ]]" feeds="[[ feeds ]]" articles="[[ articles ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]" on-feed-article-state="onFeedArticleState"></rf-feed>
+                <rf-feed id="feed" user="[[ user ]]" feeds="[[ feeds ]]" articles="[[ articles ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]" article-id="[[ articleId ]]" format-type="[[ formatType ]]" display="[[ display ]]" on-feed-article-state="onFeedArticleState"></rf-feed>
 
                 <div class="card empty-list" hidden$="[[ _computeHideEmptyMessage(articles.*, loading) ]]">
                     <span>{% __ "There are no articles in this section" .base.lang %}</span>
                 </div>
 
                 <div class="layout vertical center" hidden$="[[ !loading ]]">
-                    <paper-spinner id="loading-spinner"></paper-spinner>
+                    <paper-spinner id="loading-spinner" active="[[ loading ]]"></paper-spinner>
                 </div>
 
             </div>
@@ -239,9 +242,9 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
         <paper-toast id="no-new-articles" text="{% __ "Articles are up-to-date" .base.lang %}"></paper-toast>
 
-        <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage" user="{{ user }}"></rf-api>
+        <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage" user="[[ user ]]"></rf-api>
         <rf-api id="user-settings" method="set-user-attribute" tag="feed-base" user="[[ user ]]"></rf-api>
-        <rf-api id="feed-articles" method="get-feed-articles" args="[[ _computeFeedArticlesArguments(user.*, tagOrId, limit) ]]" on-rf-api-message="onFeedArticlesMessage" on-rf-api-error="onFeedArticlesError" user="[[ user ]]"></rf-api>
+        <rf-api id="feed-articles" method="get-feed-articles" on-rf-api-message="onFeedArticlesMessage" on-rf-api-error="onFeedArticlesError" user="[[ user ]]"></rf-api>
         <rf-api id="get-article" method="get-article" on-rf-api-message="onGetArticleMessage" user="[[ user ]]"></rf-api>
         <rf-api id="feed-read-all" method="read-state" on-rf-api-message="onFeedReadAllMessage" user="[[ user ]]"></rf-api>
         <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="onFeedUpdateNotify" user="[[ user ]]" receiver="true"></rf-api>
@@ -269,15 +272,23 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             is: "rf-feed-base",
             behaviors: [
                 UserBehavior,
-                NestedRouteBehavior,
-                MoreRouting.TemplateHelpers,
+				RouteBehavior,
+				ThemeBehavior,
             ],
             properties: {
-                user: Object,
+				user: {
+					type: Object,
+					observer: '_userChanged',
+				},
                 tagOrId: {
                     type: String,
                     observer: '_tagOrIdChanged',
                 },
+				articleId: {
+					type: Number,
+					observer: '_articleIdChanged',
+				},
+				formatType: String,
                 feeds: {
                     type: Array,
                     notify: true,
@@ -294,7 +305,6 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 },
                 loading: {
                     type: Boolean,
-                    observer: '_loadingChanged',
                 },
                 tags: Array,
                 searchVisible: {
@@ -305,7 +315,11 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     type: Number,
                     value: 200,
                 },
-                _articleId: String,
+				articleActive: {
+					type: Boolean,
+					observer: '_articleActiveChanged',
+				},
+				display: String,
                 _readState: Boolean,
                 _shareServices: Array,
                 _updateAvailable: {
@@ -324,7 +338,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 if (prefix) {
                     tagOrId = prefix + ":" + tagOrId;
                 }
-                return this.urlFor('feed', {tagOrId: tagOrId})
+				return Excess.RouteManager.getRoutePath('@feed', {tagOrId: tagOrId});
             },
 
             repeaterTagUrl: function(name) {
@@ -347,7 +361,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     }
                 } else if (this.tagOrId.indexOf("search:") == 0) {
                     var tagOrId = this._extractSearchTokens(this.tagOrId)[0];
-                    MoreRouting.navigateTo('feed', {tagOrId: tagOrId});
+					Excess.RouteManager.transitionTo('@feed', {tagOrId: tagOrId});
                 }
             },
 
@@ -361,7 +375,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                             this.$['get-article'].send();
                             break;
                         default:
-                            this.$['feed-articles'].send({minId: this._minArticleId, maxId: this._maxArticleId});
+							this._getFeedArticles({minId: this._minArticleId, maxId: this._maxArticleId});
                     }
                 });
             },
@@ -371,7 +385,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
             attached: function() {
-                this.defaultNestedRoute('feed-base', 'feed', {tagOrId: 'all'});
+                //this.defaultNestedRoute('feed-base', 'feed', {tagOrId: 'all'});
 
                 this._appendArticleWorker = new Worker('/js/append-articles-worker.js');
                 this._appendArticleWorker.addEventListener('message', this._handleArticleWorkerMessage.bind(this));
@@ -386,65 +400,6 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     document.title = this._originalTitle;
                 }.bind(this), false);
                 window.addEventListener("blur", function() {this._focused = false}.bind(this), false);
-
-                // Set the property async, or it might be set too early for the template
-                this.async(function() {
-                    this.routeParamObserver('feed', 'tagOrId', function(value) {
-                        if (value === null) {
-                            return;
-                        }
-
-                        this.tagOrId = value;
-
-                        if (value.indexOf("search:") == 0) {
-                            this.searchVisible = true;
-                            var term = this._extractSearchTokens(value)[1];
-
-                            Polymer.dom(this.root).querySelectorAll('.search-input').forEach(function(input) {
-                                input.value = term;
-                            });
-                        } else {
-                            this.searchVisible = false;
-                        }
-                    }.bind(this));
-
-                    this.routeParamObserver('article', 'articleId', function(value) {
-                        if (value === null) {
-                            return;
-                        }
-
-                        var index = this.articles.findIndex(value),
-                            article = this.articles[index];
-                        if (article) {
-                            this._articleId = value;
-                            this.cancelDebouncer('article-read-state');
-                            this._readState = article.Read;
-                            this._ignoreReadDebouncer = false;
-                            this._shareServices.forEach(function(service) {
-                                service.article = article;
-                            }.bind(this));
-
-                            if (index == 0) {
-                                this.debounce('auto-update-timeout', this._updateArticles);
-                            } else if (index == this.articles.length - 1) {
-                                // Force the article to be treated as unread,
-                                // so that newly received articles that are
-                                // older than it can be placed at the end
-                                this._treatAsUnread = index;
-
-                                this.debounce('feed-refresh', function() {
-                                    this.loading = true;
-                                    this.$['feed-articles'].send({offset: this.articles.length});
-                                });
-                            }
-                        } else if (!this.articles.length) {
-                            this.cancelDebouncer('feed-refresh');
-
-                            this.$['get-article'].args = {id: value - 0};
-                            this.refresh('get-article');
-                        }
-                    }.bind(this));
-                });
 
                 this._originalTitle = document.title;
             },
@@ -581,7 +536,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
             onArticleUp: function() {
-                MoreRouting.navigateTo('feed', {tagOrId: this.tagOrId});
+				Excess.RouteManager.transitionTo('@feed', {tagOrId: this.tagOrId});
             },
 
             onToggleSearch: function() {
@@ -597,8 +552,8 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
 
                 this._ignoreReadDebouncer = true;
                 this.flushDebouncer('article-read-state');
-                this.$.feed.articleState(this._articleId,
-                    {Read: !this.articles.find(this._articleId).Read});
+                this.$.feed.articleState(this.articleId,
+                    {Read: !this.articles.find(this.articleId).Read});
             },
 
             onPreviousArticle: function() {
@@ -618,7 +573,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
             onRefresh: function() {
-                MoreRouting.navigateTo('feed', {tagOrId: MoreRouting.getRoute('feed').params.tagOrId});
+				Excess.RouteManager.transitionTo('@feed', {tagOrId: this.tagOrId});
                 this.refresh();
             },
 
@@ -665,7 +620,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 switch (code) {
                     case 13: // Enter
                         if (target.value !== "") {
-                            MoreRouting.navigateTo('feed', {
+							Excess.RouteManager.transitionTo('@feed', {
                                 tagOrId: "search:" + this._extractSearchTokens(this.tagOrId)[0] + ":" + target.value,
                             });
                         }
@@ -683,33 +638,53 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
             onLowerScrollThresholdTrigger: function(event) {
-                if (this.noMoreArticles || MoreRouting.isCurrentUrl('article') || this.loading) {
+                if (this.noMoreArticles || this.articleActive || this.loading) {
                     this.$['scroll-threshold'].clearLower();
                     return;
                 }
-                this.debounce('feed-refresh', function() {
-                    this.loading = true;
-                    this.$['feed-articles'].send({offset: this.articles.length});
-                });
+				this._fetchNextArticles();
             },
 
-            _tagOrIdChanged: function(tagOrId, oldValue) {
+			_userChanged: function(user, old) {
+				this.refresh();
+			},
+
+            _tagOrIdChanged: function(tagOrId, old) {
                 this.articles = this._createArticles();
                 this.refresh();
+
+				if (tagOrId.indexOf("search:") == 0) {
+					this.searchVisible = true;
+					var term = this._extractSearchTokens(tagOrId)[1];
+
+					Polymer.dom(this.root).querySelectorAll('.search-input').forEach(function(input) {
+						input.value = term;
+					});
+				} else {
+					this.searchVisible = false;
+				}
             },
 
-            _feedsChanged: function(newValue, oldValue) {
+			_articleIdChanged: function(id, old) {
+				if (!this.articles.length) {
+					this.cancelDebouncer('feed-refresh');
+
+					this.$['get-article'].args = {id: id - 0};
+					this.refresh('get-article');
+				} else {
+					this._processArticle(id);
+				}
+			},
+
+            _feedsChanged: function(newValue, old) {
                 this._updateTags();
             },
 
-            _loadingChanged: function(loading, old) {
-                if (loading) {
-                    this.$['loading-spinner'].reset();
-                    this.$['loading-spinner'].active = true;
-                } else {
-                    this.$['loading-spinner'].active = false;
-                }
-            },
+			_articleActiveChanged: function(active, old) {
+				this.debounce('article-route-change', function() {
+					this.display = active ? 'article' : 'feed';
+				}.bind(this));
+			},
 
             _userProfileChanged: function(userProfileRecord) {
                 if (this.user) {
@@ -831,18 +806,21 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
 
-            _computeFeedArticlesArguments: function(userRecord, tagOrId, limit) {
+            _getFeedArticles: function(args) {
                 if (!this.user) {
-                    return {};
+                    return;
                 }
 
-                return {
-                    id: tagOrId,
-                    limit: limit,
+
+                var defaults = {
+                    id: this.tagOrId,
+                    limit: this.limit,
                     offset: 0,
-                    olderFirst: userRecord.base.ProfileData.olderFirst || false,
-                    unreadOnly: userRecord.base.ProfileData.unreadOnly || false,
+                    olderFirst: this.user.ProfileData.olderFirst || false,
+                    unreadOnly: this.user.ProfileData.unreadOnly || false,
                 };
+
+				this.$['feed-articles'].send(Polymer.Base.mixin(defaults, args || {}));
             },
 
             _extractSearchTokens: function(tagOrId) {
@@ -867,7 +845,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
             },
 
             _searchAvailable: function(tagOrId) {
-                return this.user.capabilities.Search &&
+                return this.user && this.user.capabilities.Search &&
                     tagOrId != 'favorite' &&
                     tagOrId.indexOf('popular:') != 0 &&
                     tagOrId.indexOf('search:') != 0;
@@ -900,14 +878,13 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                     return;
                 }
 
-                this.$['feed-articles'].send({minId: this._minArticleId, maxId: this._maxArticleId});
+				this._getFeedArticles({minId: this._minArticleId, maxId: this._maxArticleId});
             },
 
             _previousArticle: function(unread) {
-                var route = MoreRouting.getRouteByName('article'),
-                    article;
-                if (route.active) {
-                    var index = this.articles.findIndex(route.params.articleId);
+                var article;
+                if (this.articleActive) {
+                    var index = this.articles.findIndex(this.articleId);
 
                     if (unread) {
                         while (article = this.articles[--index]) {
@@ -932,15 +909,14 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 }
 
                 if (article) {
-                    MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: article.Id});
+					Excess.RouteManager.transitionTo('@article', {tagOrId: this.tagOrId, articleId: article.Id});
                 }
             },
 
             _nextArticle: function(unread) {
-                var route = MoreRouting.getRouteByName('article'),
-                    article;
-                if (route.active) {
-                    var index = this.articles.findIndex(route.params.articleId);
+                var article;
+                if (this.articleActive) {
+                    var index = this.articles.findIndex(this.articleId);
 
                     if (unread) {
                         while (article = this.articles[++index]) {
@@ -965,7 +941,7 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 }
 
                 if (article) {
-                    MoreRouting.navigateTo('article', {tagOrId: this.tagOrId, articleId: article.Id});
+					Excess.RouteManager.transitionTo('@article', {tagOrId: this.tagOrId, articleId: article.Id});
                 }
             },
 
@@ -991,6 +967,42 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 this._maxArticleId = 0;
                 return articles;
             },
+
+			_fetchNextArticles: function(indexAsUnread) {
+				if (arguments.length > 0 && indexAsUnread != -1) {
+					// Force the article to be treated as unread,
+					// so that newly received articles that are
+					// older than it can be placed at the end
+					this._treatAsUnread = indexAsUnread;
+				}
+
+				this.debounce('feed-refresh', function() {
+					this.loading = true;
+					this._getFeedArticles({offset: this.articles.length});
+				});
+			},
+
+			_processArticle: function(id) {
+				var index = this.articles.findIndex(id),
+					article = this.articles[index];
+
+				if (!article) {
+					return;
+				}
+
+				this.cancelDebouncer('article-read-state');
+				this._readState = article.Read;
+				this._ignoreReadDebouncer = false;
+				this._shareServices.forEach(function(service) {
+					service.article = article;
+				}.bind(this));
+
+				if (index == 0) {
+					this.debounce('auto-update-timeout', this._updateArticles);
+				} else if (index == this.articles.length - 1) {
+					this._fetchNextArticles(index);
+				}
+			},
 
             _handleArticleWorkerMessage: function(event) {
                 this.$.feed.preArticlesUpdate(event.data.inserts, event.data.stateChange);
@@ -1022,17 +1034,28 @@ rf-app-scaffold /deep/ .main-title-container paper-fab {
                 this.$['scroll-threshold'].clearLower();
 
                 if (event.data.requestedArticle !== undefined) {
-                    this.$['feed-articles'].send();
+					this._getFeedArticles();
                     if (event.data.requestedArticle) {
-                        MoreRouting.navigateTo('article',
-                                {tagOrId: this.tagOrId, articleId: event.data.requestedArticle});
+						if (this.articleActive) {
+							this._processArticle(this.articleId);
+						} else {
+							Excess.RouteManager.transitionTo('@article',
+									{tagOrId: this.tagOrId, articleId: event.data.requestedArticle});
+						}
                     } else {
-                        MoreRouting.navigateTo('feed', {tagOrId: this.tagOrId});
+						Excess.RouteManager.transitionTo('@feed', {tagOrId: this.tagOrId});
                     }
                 } else {
                     this._minArticleId = event.data.minId;
                     this._maxArticleId = event.data.maxId;
                     this.loading = false;
+
+					if (this.articleActive) {
+						var index = this.articles.findIndex(this.articleId);
+						if (index == this.articles.length - 1) {
+							this._fetchNextArticles(index);
+						}
+					}
                 }
 
                 if (!updated) {

@@ -40,146 +40,6 @@ body {
     font-size: 14px;
 }
 
-html /deep/ .clearfix:before,
-html /deep/ .clearfix:after {
-    display: table;
-    content: " ";
-}
-
-html a, html /deep/ a {
-    color: inherit;
-}
-
-html /deep/ .clearfix:after {
-    clear: both;
-}
-
-html /deep/ paper-toast {
-    left: inherit;
-    margin-left: 12px;
-}
-
-html /deep/ paper-toolbar,
-html /deep/ paper-fab {
-    transition: background 0.30s ease-in, color 0.30s ease-in;
-}
-
-/* https://github.com/Polymer/polymer/issues/2263 */
-body /deep/ * {
-    --text-primary-color: #0a0a0a;
-    --text-primary-color-inverse: #ffffff;
-
-    --paper-toolbar-background: var(--paper-blue-grey-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-blue-grey-800);
-    --paper-fab-keyboard-focus-background: var(--paper-blue-grey-100);
-}
-
-body.theme-blue /deep/ * {
-    --paper-toolbar-background: var(--paper-blue-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-blue-800);
-    --paper-fab-keyboard-focus-background: var(--paper-blue-100);
-}
-
-body.theme-indigo /deep/ * {
-    --paper-toolbar-background: var(--paper-indigo-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-indigo-800);
-    --paper-fab-keyboard-focus-background: var(--paper-indigo-100);
-}
-
-body.theme-cyan /deep/ * {
-    --paper-toolbar-background: var(--paper-cyan-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-cyan-800);
-    --paper-fab-keyboard-focus-background: var(--paper-cyan-100);
-}
-
-body.theme-teal /deep/ * {
-    --paper-toolbar-background: var(--paper-teal-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-teal-800);
-    --paper-fab-keyboard-focus-background: var(--paper-teal-100);
-}
-
-body.theme-green /deep/ * {
-    --paper-toolbar-background: var(--paper-green-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-green-800);
-    --paper-fab-keyboard-focus-background: var(--paper-green-100);
-}
-
-body.theme-light-green /deep/ * {
-    --paper-toolbar-background: var(--paper-light-green-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-light-green-800);
-    --paper-fab-keyboard-focus-background: var(--paper-light-green-100);
-}
-
-body.theme-lime /deep/ * {
-    --paper-toolbar-background: var(--paper-lime-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-lime-800);
-    --paper-fab-keyboard-focus-background: var(--paper-lime-100);
-}
-
-body.theme-red /deep/ * {
-    --paper-toolbar-background: var(--paper-red-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-red-800);
-    --paper-fab-keyboard-focus-background: var(--paper-red-100);
-}
-
-body.theme-pink /deep/ * {
-    --paper-toolbar-background: var(--paper-pink-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-pink-800);
-    --paper-fab-keyboard-focus-background: var(--paper-pink-100);
-}
-
-body.theme-purple /deep/ * {
-    --paper-toolbar-background: var(--paper-purple-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-purple-800);
-    --paper-fab-keyboard-focus-background: var(--paper-purple-100);
-}
-
-body.theme-deep-purple /deep/ * {
-    --paper-toolbar-background: var(--paper-deep-purple-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-deep-purple-800);
-    --paper-fab-keyboard-focus-background: var(--paper-deep-purple-100);
-}
-
-body.theme-yellow /deep/ * {
-    --paper-toolbar-background: var(--paper-yellow-500);
-    --paper-toolbar-color: var(--text-primary-color);
-    --paper-fab-notify-background: var(--paper-yellow-800);
-    --paper-fab-keyboard-focus-background: var(--paper-yellow-100);
-}
-
-body.theme-amber /deep/ * {
-    --paper-toolbar-background: var(--paper-amber-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-amber-800);
-    --paper-fab-keyboard-focus-background: var(--paper-amber-100);
-}
-
-body.theme-deep-orange /deep/ * {
-    --paper-toolbar-background: var(--paper-deep-orange-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-deep-orange-800);
-    --paper-fab-keyboard-focus-background: var(--paper-deep-orange-100);
-}
-
-body.theme-grey /deep/ * {
-    --paper-toolbar-background: var(--paper-grey-500);
-    --paper-toolbar-color: var(--text-primary-color-inverse);
-    --paper-fab-notify-background: var(--paper-grey-800);
-    --paper-fab-keyboard-focus-background: var(--paper-grey-100);
-}
-
 :root {
     --card-style: {
         position: relative;
@@ -189,7 +49,31 @@ body.theme-grey /deep/ * {
 
         @apply(--shadow-transition);
         @apply(--shadow-elevation-8dp);
-    }
+    };
+
+	--description-style: {
+		font-family: "Roboto Slab", sans-serif;
+	};
+
+	--feed-origin-style: {
+		font-family: "Roboto Condensed", serif;
+		font-size: 11px;
+		line-height: 24px;
+		font-weight: 200;
+		padding-right: 1em;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	};
+
+	--publish-date-style: {
+		font-family: "Roboto Condensed", sans-serif;
+		font-size: 12px;
+		font-style: italic;
+		line-height: 14px;
+	};
+
+	--background-transition: background 0.30s ease-in, color 0.30s ease-in;
 }
 
 </style>
@@ -197,7 +81,7 @@ body.theme-grey /deep/ * {
 {% define "body-attrs" %} unresolved class="fullbleed" {% end %}
 
 {% define "content" %}
-    <rf-router data-language="{% .base.lang %}"></rf-router>
+    <rf-router data-language="{% .base.lang %}" data-uri-prefix="{% url "/" .base.r %}"></rf-router>
 {% end %}
 
 {% define "scripts" %}

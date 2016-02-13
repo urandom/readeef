@@ -1,30 +1,39 @@
 {% define "content" %}
-<link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/iron-signals/iron-signals.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
+<link rel="import" href="/dist/polymer/polymer.html">
 
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
+<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-settings-manage-feeds">
-    <style>
-/deep/ .feed-favicon {
+    <template>
+		<style>
+.card {
+    @apply(--card-style);
+    @apply(--shadow-elevation-4dp);
+    padding: 16px;
+    margin: 16px 8px 8px;
+    max-width: 50em;
+}
+.feed-favicon {
     margin-right: 5px;
 }
 
-/deep/ .feed-title {
+.feed-title {
     color: var(--text-primary-color);
     font-size: 16px;
     padding: 0 8px;
     min-width: 10em;
 }
 
-/deep/ .feed {
+.feed {
     line-height: 16px;
 }
 
-    </style>
-    <template>
+		</style>
+		<style include="rf-layout"></style>
         <div class="card layout vertical start">
             <div hidden$="[[ _computeHideEmptyMessage(feeds) ]]">
                 {% __ "You are not subscribed to any feeds yet" .base.lang %}
@@ -35,7 +44,9 @@
                     <li class="layout vertical feed" title="[[ item.Title ]]">
                         <div class="layout horizontal center wrap">
                             <img src="[[ _computeFavIconUrl(item) ]]" alt="favicon" class="feed-favicon">
-                            <span class="feed-title flex">[[ item.Title ]]</span>
+							<a href="[[ item.Link ]]" target="_blank" class="feed-title flex">
+								[[ item.Title ]]
+							</a>
                             <paper-icon-button icon="warning" on-tap="onDisplayFeedErrors" hidden$="[[ _computeHideFeedErrors(item) ]]"></paper-icon-button>
                             <paper-toast text="[[ _computeToastFeedErrorsText(item) ]]"></paper-toast>
                             <paper-input value="[[ _computeFeedTags(item) ]]" on-change="onFeedTagsChange" placeholder="{% __ "Comma-separated tag list" .base.lang %}" no-label-float="true"></paper-input>

@@ -1,82 +1,80 @@
 {% define "content" %}
+<link rel="import" href="/dist/excess-router/excess-router.html">
+<link rel="import" href="/dist/iron-icon/iron-icon.html">
 <link rel="import" href="/dist/iron-icons/iron-icons.html">
+<link rel="import" href="/dist/iron-meta/iron-meta.html">
 <link rel="import" href="/dist/iron-localstorage/iron-localstorage.html">
 <link rel="import" href="/dist/iron-pages/iron-pages.html">
-<link rel="import" href="/dist/more-routing/more-routing.html">
+<link rel="import" href="/dist/lazy-pages/lazy-pages.html">
 <link rel="import" href="/dist/neon-animation/neon-animated-pages.html">
 <link rel="import" href="/dist/neon-animation/neon-animatable.html">
 <link rel="import" href="/dist/neon-animation/animations/fade-in-animation.html">
 <link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="/dist/paper-material/paper-material.html">
 <link rel="import" href="/dist/paper-toast/paper-toast.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
-<link rel="import" href="{% url "/component/rf-lazy-loader" .base.r %}">
+<link rel="import" href="{% url "/component/rf-behaviors" .base.r %}">
+<link rel="import" href="{% url "/component/rf-login" .base.r %}">
 <link rel="import" href="{% url "/component/rf-splash" .base.r %}">
+<link rel="import" href="{% url "/component/rf-feed-base" .base.r %}">
+<link rel="import" href="{% url "/component/rf-settings-base" .base.r %}">
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
 <link rel="import" href="{% url "/component/rf-share-services" .base.r %}">
 <link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
 
 <dom-module id="rf-router">
-    <style>
-neon-animated-pages {
+    <template>
+		<style>
+neon-animated-pages, lazy-pages {
     position: static;
 }
-    </style>
+		</style>
 
-    <template>
-        <more-routing-config driver="path"></more-routing-config>
-        <more-route name="splash" path="{% url "/" .base.r %}">
-            <more-route path="/web">
-                <more-route name="login" path="/login">
-                    <more-route name="login-from" path="/from/:url"></more-route>
-                </more-route>
-                <more-route name="logout" path="/logout"></more-route>
-                <more-route name="feed-base" path="/feed">
-                    <more-route name="feed" path="/:tagOrId">
-                        <more-route name="article" path="/article/:articleId">
-                            <more-route name="article-format" path="/:type"></more-route>
-                        </more-route>
-                    </more-route>
-                </more-route>
-                <more-route name="settings-base" path="/settings">
-                    <more-route name="settings-general" path="/general"></more-route>
-                    <more-route name="settings-add-feed" path="/feed/add">
-                        <more-route name="settings-add-feed-discover" path="/discover">
-                            <more-route name="settings-add-feed-discover-not-found" path="/not-found"></more-route>
-                            <more-route name="settings-add-feed-discover-select" path="/select">
-                                <more-route name="settings-add-feed-discover-select-none" path="/none"></more-route>
-                                <more-route name="settings-add-feed-discover-select-error" path="/error"></more-route>
-                            </more-route>
-                        </more-route>
-                    </more-route>
-                    <more-route name="settings-manage-feeds" path="/feed/manage"></more-route>
-                    <more-route name="settings-share-services" path="/share-services"></more-route>
-                    <more-route name="settings-admin" path="/admin"></more-route>
-                </more-route>
-            </more-route>
-        </more-route>
+		<excess-router-config path-style="path" manual-start="true" base-path="{% url "/" .base.r %}"></excess-router-config>
+
+		<excess-route route="/web/:toplevel/(.*)?" route-alias="toplevel" toplevel="{{ topLevelNavigation }}"></excess-route>
+		<excess-route route="/(.*)?" redirect-to="/web/splash" activation-modifiers="x"></excess-route>
+
+		<excess-route route="/web/login" route-alias="login"></excess-route>
+		<excess-route route="/web/login/from/:url" route-alias="login-from" url="{{ loginRedirect }}"></excess-route>
+		<excess-route route="/web/feed/all" route-alias="feed-all"></excess-route>
+
+		<excess-route route="/web/logout" route-alias="logout"></excess-route>
+
+		<excess-route route="/web/settings/general" route-alias="settings-general"></excess-route>
+		<excess-route route="/web/settings/feeds/discover" route-alias="settings-add-feed-discover"></excess-route>
+		<excess-route route="/web/settings/feeds/discover/not-found" route-alias="settings-add-feed-discover-not-found"></excess-route>
+		<excess-route route="/web/settings/feeds/discover/select" route-alias="settings-add-feed-discover-select"></excess-route>
+		<excess-route route="/web/settings/feeds/discover/select/none" route-alias="settings-add-feed-discover-select-none"></excess-route>
+		<excess-route route="/web/settings/feeds/discover/select/error" route-alias="settings-add-feed-discover-select-error"></excess-route>
+		<excess-route route="/web/settings/feeds/manage" route-alias="settings-manage-feeds"></excess-route>
+		<excess-route route="/web/settings/share-services" route-alias="settings-share-services"></excess-route>
+		<excess-route route="/web/settings/admin" route-alias="settings-admin"></excess-route>
 
         <iron-localstorage name="user" value="[[ user ]]" on-iron-localstorage-load="onUserLoad"></iron-localstorage>
 
-        <neon-animated-pages id="splash" selected="1" entry-animation="fade-in-animation" exit-animation="fade-out-animation">
-            <neon-animatable>
-                <more-route-selector on-more-route-change="onRouteChange">
-                    <iron-pages>
-                        <rf-splash route="splash"></rf-splash>
-                        <rf-lazy-loader route="login" import="/component/rf-login"></rf-lazy-loader>
-                        <rf-lazy-loader route="login-from" import="/component/rf-login"></rf-lazy-loader>
-                        <section route="logout"><!-- Empty section for the logout route to match --></section>
-                        <rf-lazy-loader route="feed-base" import="/component/rf-feed-base" property-payload="[[ _computeFeedBasePayload(user) ]]"></rf-lazy-loader>
-                        <rf-lazy-loader route="settings-base" import="/component/rf-settings-base" property-payload="[[ _computeSettingsBasePayload(user) ]]"></rf-lazy-loader>
-                    </iron-pages>
-                </more-route-selector>
-            </neon-animatable>
-
-            <neon-animatable>
-                <rf-splash></rf-splash>
-            </neon-animatable>
-
-        </neon-animated-pages>
+        <lazy-pages id="splash" entry-animation="fade-in-animation" exit-animation="fade-out-animation" attr-for-selected="route" selected="[[ topLevelNavigation ]]">
+			<rf-splash route="splash"></rf-splash>
+			<template is="dom-if" route="login">
+				<rf-login></rf-login>
+			</template>
+			<neon-animatable route="logout">
+				<div class="layout fit vertical center">
+					<div class="layout horizontal center" style="height: 100%">
+						<paper-material elevation="2" style="padding: 2em;">
+							<iron-icon icon="exit-to-app"></iron-icon>
+						</paper-material>
+					</div>
+				</div>
+			</neon-animatable>
+			<template is="dom-if" route="feed">
+				<rf-feed-base user="[[ user ]]"></rf-feed-base>
+			</template>
+			<template is="dom-if" route="settings">
+				<rf-settings-base user="[[ user ]]"></rf-settings-base>
+			</template>
+        </lazy-pages>
 
         <paper-toast id="api-error"></paper-toast>
 

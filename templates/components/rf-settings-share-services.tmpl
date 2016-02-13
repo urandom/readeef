@@ -1,17 +1,25 @@
 {% define "content" %}
-<link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/paper-toggle-button/paper-toggle-button.html">
+<link rel="import" href="/dist/polymer/polymer.html">
 
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
+<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-settings-share-services">
-    <style>
+    <template>
+		<style>
+a {
+	color: inherit;
+}
+.card {
+    @apply(--card-style);
+    @apply(--shadow-elevation-4dp);
+    padding: 16px;
+    margin: 16px 0 8px;
+    max-width: 50em;
+}
 .layout.horizontal.wrap .card {
     margin-left: 8px;
-    margin-right: 8px;
-}
-.layout.horizontal.wrap .card:first-child {
-    margin-left: 0;
     margin-right: 8px;
 }
 ul {
@@ -29,8 +37,8 @@ ul {
     --paper-toggle-button-checked-button-color: var(--paper-toolbar-background);
     --paper-toggle-button-checked-ink-color: var(--paper-toolbar-background);
 }
-    </style>
-    <template>
+		</style>
+		<style include="rf-layout"></style>
         <div class="layout horizontal wrap">
             <template is="dom-repeat" items="[[ shareServiceCategories ]]">
                 <div class="card">

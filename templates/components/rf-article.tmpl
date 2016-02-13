@@ -5,7 +5,8 @@
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
 
 <dom-module id="rf-article">
-    <style>
+    <template>
+		<style>
 #article-container {
     position: relative;
     overflow: hidden;
@@ -22,6 +23,100 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+
+#article-container > ::content a {
+	color: inherit;
+}
+
+#article-container > ::content .index {
+    font-family: "Roboto Condensed", serif;
+    font-size: smaller;
+    font-style: italic;
+    padding-left: 0.7em;
+    white-space: nowrap;
+}
+
+#article-container > ::content .article-description {
+	@apply(--description-style);
+}
+
+#article-container > ::content .article-description img {
+    max-width: 100%;
+    height: auto;
+}
+
+#article-container > ::content .article-description .centered-block {
+	display: block;
+	margin: 8px auto;
+}
+
+#article-container > ::content .article-anchor {
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1.2em;
+}
+
+#article-container > ::content .article-link {
+    position: relative;
+    margin: 0 0.29em;
+    padding: 0.7em 0.57em;
+    text-transform: uppercase;
+    text-decoration: none;
+    text-align: center;
+    border-radius: 3px;
+}
+
+#article-container > ::content paper-material .article-link {
+	position: static;
+	display: block;
+	margin: 0;
+}
+
+#article-container > ::content .feed-origin {
+	@apply(--feed-origin-style);
+}
+
+#article-container > ::content .publish-date {
+	@apply(--publish-date-style);
+}
+
+#article-container > ::content .article-control {
+    font-family: "Roboto Condensed", sans-serif;
+}
+
+#article-container > ::content .article-top-image {
+    text-align: center;
+}
+
+#article-container > ::content .article-top-image img {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+}
+
+#article-container > ::content .article-summary {
+    font-family: "Roboto Slab", sans-serif;
+}
+
+#article-container > ::content .card {
+    @apply(--card-style);
+    @apply(--shadow-elevation-4dp);
+    padding: 8px;
+    margin-bottom: 16px;
+}
+
+@media(min-width: 768px) {
+    #article-container > ::content .card {
+        padding: 16px;
+    }
+}
+
+
+@media(min-width: 1350px) {
+    #article-container > ::content .card {
+        padding: 32px;
+    }
 }
 
 .article {
@@ -52,15 +147,7 @@
     -webkit-transform: translate3d(105%, 0px, 0px);
     transform: translate3d(105%, 0px, 0px);
 }
-
-.active-article.from-top,
-.previous-article.from-top,
-.next-article.from-top {
-    -webkit-transform: translate3d(0px, -105%, 0px);
-    transform: translate3d(0px, -105%, 0px);
-}
-    </style>
-    <template>
+		</style>
         <div id="article-container" class="layout horizontal">
             <div class="article previous-article" hidden id="article-0"></div>
             <div class="article active-article height-provider" id="article-1"></div>
@@ -77,11 +164,9 @@
 (function() {
     "use strict";
 
-    var animations = {}, transitionEvents = {},
-        httpRe = /^https?:/, templateRe = /\{\{\s*\.\s*\}\}/,
-        transformPrefix = '', transitionProperty = 'transition',
-        transitionEventName = 'transitionend';
+    var animations = {}, httpRe = /^https?:/, templateRe = /\{\{\s*\.\s*\}\}/;
 
+	window.anims = animations;
     if ('webkitTransition' in document.body) {
         transitionEventName = 'webkitTransitionEnd';
         transitionProperty = 'webkitTransition';
@@ -130,90 +215,59 @@
         {% end %}
     }
 
-    function animateTransform(element, startX, startY, startOpacity, transition, endX, endY, endOpacity, cb) {
-        Polymer.Base.translate3d(startX, startY, 0, element);
-        element.style.opacity = startOpacity;
-
-        // Force redraw in order to avoid the upcoming transition to apply to
-        // the translate that was just set
-        element.offsetHeight;
-
-        element.style.webkitTransition = transition.replace(/\btransform\b/, '-webkit-transform');
-        element.style[transitionProperty] = transformPrefix ?
-            transition.replace(/\btransform\b/, transformPrefix + 'transform') : transition;
-
-        var one = function() {
-            element.removeEventListener(transitionEventName, one);
-            element.style.webkitTransition = '';
-            element.style.transition = '';
-
-            delete transitionEvents[element.id];
-
-            if (cb) {
-                cb();
-            }
-        };
-
-        element.addEventListener(transitionEventName, one);
-        transitionEvents[element.id] = one;
-
-        element.style.opacity = endOpacity;
-        Polymer.Base.translate3d(endX, endY, 0, element);
-    }
-
     function slideFromTop(element) {
-        animateTransform(element, 0, '-105%', 0.3,
-                'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                0, 0, 1, null);
+		animations[element.id] = element.animate([
+            {opacity: 0.3, transform: "translate3d(0px, -105%, 0px)"},
+            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
     }
 
     function slideFromLeft(left, active, cb) {
         left.removeAttribute('hidden');
 
-        animateTransform(left, '-105%', 0, 0.3,
-                'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                0, 0, 1, null);
+        animations[left.id] = left.animate([
+            {opacity: 0.3, transform: "translate3d(-105%, 0px, 0px)"},
+            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards'});
 
-        animateTransform(active, 0, 0, 1,
-                'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                '105%', 0, 0.3, cb);
+        animations[active.id] = active.animate([
+            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
+            {opacity: 0.3, transform: "translate3d(105%, 0px, 0px)"},
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards'});
+
+		animations[active.id].onfinish = cb;
     }
 
     function slideFromRight(active, right, cb) {
         right.removeAttribute('hidden');
 
-        animateTransform(right, '105%', 0, 0.3,
-                'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                0, 0, 1, null);
+		animations[right.id] = right.animate([
+            {opacity: 0.3, transform: "translate3d(105%, 0px, 0px)"},
+            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards'});
 
-        animateTransform(active, 0, 0, 1,
-                'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                '-105%', 0, 0.3, cb);
+        animations[active.id] = active.animate([
+            {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
+            {opacity: 0.3, transform: "translate3d(-105%, 0px, 0px)"},
+        ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards'});
+
+		animations[active.id].onfinish = cb;
     }
 
-    function stopRunningAnimations(elements, finish) {
-        var finishSet = false;
-        for (var i = 0, element; element = elements[i]; ++i) {
-            element.style.webkitTransition = '';
-            element.style.transition = '';
+	function stopRunningAnimations() {
+		var hadRunning = false;
 
-            if (finishSet) {
-                finish = null;
-            }
-            if (transitionEvents[element.id]) {
-                transitionEvents[element.id].call(element);
-                if (finish) {
-                    setTimeout((function(finish) {
-                        return finish;
-                    })(finish), 0);
-                }
+		for (var key in animations) {
+			if (animations[key].playState == 'running') {
+				hadRunning = true;
+				animations[key].finish();
+			}
+			animations[key].cancel();
+			delete animations[key];
+		}
 
-                finishSet = true;
-            }
-        }
-
-        return finishSet;
-    }
+		return hadRunning;
+	}
 
     function responsiveIframe(iframe) {
         var ratio = iframe.width && iframe.height ?
@@ -286,15 +340,11 @@
         },
 
         created: function() {
-            this._instances = new Array(3);
             this.setScrollDirection('y');
         },
 
         ready: function() {
-            if (!this.ctor) {
-                var template = Polymer.dom(this).querySelector('template');
-                this.templatize(template);
-            }
+			this._instances = this._createPool();
         },
 
         onTrack: function(event) {
@@ -397,67 +447,75 @@
                         }
 
                         if (direction > 0) {
-                            animateTransform(this._trackState.previous,
-                                (this._trackState.previousDx - this._trackState.containerWidth), 0, 1,
-                                'transform ' + duration + 'ms ' + easing,
-                                0, 0, 1, null);
+							animations[this._trackState.previous.id] =
+								this._trackState.previous.animate([
+									{transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
+									{transform: "translate3d(0px, 0px, 0px)"},
+								], {duration: duration, easing: easing, fill: 'forwards'});
                         }
                         if (direction < 0) {
-                            animateTransform(this._trackState.next,
-                                (this._trackState.previousDx + this._trackState.containerWidth), 0, 1,
-                                'transform ' + duration + 'ms ' + easing,
-                                0, 0, 1, null);
+							animations[this._trackState.next.id] =
+								this._trackState.next.animate([
+									{transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
+									{transform: "translate3d(0px, 0px, 0px)"},
+								], {duration: duration, easing: easing, fill: 'forwards'});
                         }
-                        animateTransform(this._trackState.active,
-                            this._trackState.previousDx, 0, 1,
-                            'transform ' + duration + 'ms ' + easing,
-                            (direction > 0 ? '' : '-') + "105%", 0, 1, 
-                            function() {
-                                this.async(function() {
-                                    this._trackState.previous.removeAttribute('style');
-                                    this._trackState.active.removeAttribute('style');
-                                    this._trackState.next.removeAttribute('style');
+						animations[this._trackState.active.id] =
+							this._trackState.active.animate([
+								{transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
+								{transform: "translate3d(" + (direction > 0 ? '' : '-') + "105%, 0px, 0px)"},
+							], {duration: duration, easing: easing, fill: 'forwards'});
+						
+						animations[this._trackState.active.id].onfinish = function() {
+                            this.async(function() {
+								this._trackState.previous.removeAttribute('style');
+								this._trackState.active.removeAttribute('style');
+								this._trackState.next.removeAttribute('style');
 
-                                    if (direction > 0) {
-                                        this.translate3d(0, 0, 0, this._trackState.previous);
+								stopRunningAnimations();
 
-                                        this._trackState.selectedId = this.articles[index - 1].Id;
-                                    } else {
-                                        this.translate3d(0, 0, 0, this._trackState.next);
+								if (direction > 0) {
+									this.translate3d(0, 0, 0, this._trackState.previous);
 
-                                        this._trackState.selectedId = this.articles[index + 1].Id;
-                                    }
+									this._trackState.selectedId = this.articles[index - 1].Id;
+								} else {
+									this.translate3d(0, 0, 0, this._trackState.next);
 
-                                    MoreRouting.navigateTo('article', {
-                                        tagOrId: MoreRouting.getRoute('article').params.tagOrId,
-                                        articleId: this._trackState.selectedId,
-                                    });
-                                });
-                            }.bind(this));
+									this._trackState.selectedId = this.articles[index + 1].Id;
+								}
+
+								this.fire('change-article-id', this._trackState.selectedId);
+							});
+						}.bind(this);
                     } else {
-                        animateTransform(this._trackState.previous,
-                            (this._trackState.previousDx - this._trackState.containerWidth), 0, 1,
-                            'transform 200ms',
-                            '-105%', 0, 1, null);
+						animations[this._trackState.previous.id] =
+							this._trackState.previous.animate([
+								{transform: "translate3d(" + (this._trackState.previousDx - this._trackState.containerWidth) + "px, 0px, 0px)"},
+								{transform: "translate3d(-105%, 0px, 0px)"},
+							], {duration: 200, fill: 'forwards'});
+						animations[this._trackState.next.id] =
+							this._trackState.next.animate([
+								{transform: "translate3d(" + (this._trackState.previousDx + this._trackState.containerWidth) + "px, 0px, 0px)"},
+								{transform: "translate3d(105%, 0px, 0px)"},
+							], {duration: 200, fill: 'forwards'});
+						animations[this._trackState.active.id] =
+							this._trackState.active.animate([
+								{transform: "translate3d(" + this._trackState.previousDx + "px, 0px, 0px)"},
+								{transform: "translate3d(0px, 0px, 0px)"},
+							], {duration: 200, fill: 'forwards'});
 
-                        animateTransform(this._trackState.next,
-                            (this._trackState.previousDx + this._trackState.containerWidth), 0, 1,
-                            'transform 200ms',
-                            '105%', 0, 1, null);
+						animations[this._trackState.active.id].onfinish = function() {
+							this.async(function() {
+								this._trackState.previous.removeAttribute('style');
+								this._trackState.active.removeAttribute('style');
+								this._trackState.next.removeAttribute('style');
 
-                        animateTransform(this._trackState.active,
-                            this._trackState.previousDx, 0, 1,
-                            'transform 200ms',
-                            0, 0, 1,function() {
-                                this.async(function() {
-                                    this._trackState.previous.removeAttribute('style');
-                                    this._trackState.active.removeAttribute('style');
-                                    this._trackState.next.removeAttribute('style');
+								this._trackState.previous.setAttribute('hidden', '');
+								this._trackState.next.setAttribute('hidden', '');
 
-                                    this._trackState.previous.setAttribute('hidden', '');
-                                    this._trackState.next.setAttribute('hidden', '');
-                                });
-                            }.bind(this));
+								stopRunningAnimations();
+							});
+						}.bind(this);
                     }
 
                     this.$['article-container'].classList.remove('disable-select');
@@ -470,16 +528,9 @@
                 return;
             }
 
-            var elements = [
-                Polymer.dom(this.root).querySelector('.previous-article'),
-                Polymer.dom(this.root).querySelector('.active-article'),
-                Polymer.dom(this.root).querySelector('.next-article'),
-            ];
-            if (stopRunningAnimations(elements, function() {
-                this._selectedIdChanged.call(this, id, oldValue);
-            }.bind(this))) {
-                return;
-            }
+			if (stopRunningAnimations() && oldValue) {
+				this._render(oldValue);
+			}
 
             var index = this.articles.findIndex(id),
                 oldIndex = this.articles.findIndex(oldValue),
@@ -493,11 +544,14 @@
                 }
             }
 
+			var elements = [
+                Polymer.dom(this.root).querySelector('.previous-article'),
+                Polymer.dom(this.root).querySelector('.active-article'),
+                Polymer.dom(this.root).querySelector('.next-article'),
+            ];
             if (direction === 0) {
-                this._debounceTemplate(function() { this._render(id) });
-                this.debounce('animation', function() {
-                    slideFromTop(elements[1]);
-                }.bind(this));
+				this._render(id);
+				slideFromTop(elements[1]);
             } else {
                 if (this._trackState && id == this._trackState.selectedId) {
                     this._debounceTemplate(function() { this._render(id) });
@@ -515,7 +569,7 @@
             }
 
             var parts = record.path.split('.'), article;
-            if (parts.length == 3 && parts[0] == "articles" && !isNaN(parts[1])) {
+            if (parts.length == 3 && parts[0] == "articles" && /#\d+/.test(parts[1])) {
                 parts = parts.splice(1);
                 parts.splice(1, 0, 'article')
                 this._forwardItemPath(parts.join('.'), record.value);
@@ -536,18 +590,22 @@
 
                 [-1, 0, 1].forEach(function(i) {
                     var localIndex = index + i,
-                        key = Polymer.Collection.get(this.articles).getKey(this.articles[localIndex]);
+						article = this.articles[localIndex],
+                        key = Polymer.Collection.get(this.articles).getKey(article);
 
                     if (localIndex == -1) {
                         return;
                     }
 
-                    if (!this._instances[i + 1]) {
-                        return this._renderInstance(index, i);
-                    }
+					if (!this._instances[i+1]._templateInstance.item ||
+							this._instances[i+1]._templateInstance.item.article.Id != article.Id) {
+						this._assignModel(index, i);
+					}
 
-                    this._forwardItemPath(key + '.index', localIndex);
-                    this._forwardItemPath(key + '.ordinalPosition', ordinal(localIndex + 1));
+                    if (!this._instances[i + 1].hasAttribute('unused')) {
+						this._forwardItemPath(key + '.index', localIndex);
+						this._forwardItemPath(key + '.ordinalPosition', ordinal(localIndex + 1));
+                    }
                 }.bind(this));
             }
         },
@@ -559,9 +617,9 @@
                 index = this.articles.findIndex(activeId),
                 direction = 0;
 
-            if (this._instances[0] && this._instances[0]._templateInstance.item.article.Id == activeId) {
+            if (this._instanceId(-1) == activeId) {
                 direction = -1;
-            } else if (this._instances[2] && this._instances[2]._templateInstance.item.article.Id == activeId) {
+            } else if (this._instanceId(1) == activeId) {
                 direction = 1;
             }
 
@@ -576,9 +634,10 @@
                 previous.classList.remove('previous-article');
                 previous.classList.add('next-article');
 
+				var temp = this._instances[0];
                 this._instances[0] = this._instances[1];
                 this._instances[1] = this._instances[2];
-                this._instances[2] = null;
+                this._instances[2] = temp;
             } else if (direction === -1) {
                 active.classList.remove('active-article');
                 active.classList.add('next-article');
@@ -589,21 +648,22 @@
                 next.classList.remove('next-article');
                 next.classList.add('previous-article');
 
+				var temp = this._instances[2];
                 this._instances[2] = this._instances[1];
                 this._instances[1] = this._instances[0];
-                this._instances[0] = null;
+                this._instances[0] = temp;
             }
 
-            if (direction !== 1) {
-                this._renderInstance(index, -1);
+			if (direction !== 1 && index > 0) {
+                this._assignModel(index, -1);
             }
 
-            if (direction !== -1) {
-                this._renderInstance(index, 1);
+			if (direction !== -1 && index < this.articles.length - 1) {
+                this._assignModel(index, 1);
             }
 
             if (direction !== 1 && direction !== -1) {
-                this._renderInstance(index, 0);
+                this._assignModel(index, 0);
             }
 
             this.cancelDebouncer('container-clear-height');
@@ -622,6 +682,8 @@
                 }
             }.bind(this));
 
+			stopRunningAnimations();
+
             var newHeight = window.getComputedStyle(this.$['article-container']).getPropertyValue('height');
             if (oldHeight != newHeight) {
                 this.$['article-container'].style.height = oldHeight;
@@ -634,52 +696,6 @@
             }
 
             Polymer.dom.flush();
-        },
-
-        _renderInstance: function(index, offset) {
-            var condition, selector;
-
-            switch (offset) {
-                case -1:
-                    condition = index > 0;
-                    selector = '.previous-article';
-                    break;
-                case 1:
-                    condition = index < this.articles.length - 1;
-                    selector = '.next-article';
-                    break;
-                case 0:
-                    condition = true;
-                    selector = '.active-article';
-                    break;
-            }
-
-            if (condition) {
-                var el = Polymer.dom(this.root).querySelector(selector);
-                el.innerHTML = '';
-
-                var inst = this._generateArticle(index + offset, offset);
-                this._instances[offset + 1] = inst.root.querySelector('*');
-                Polymer.dom(el).appendChild(inst.root);
-            } else {
-                this._instances[offset + 1] = null;
-            }
-        },
-
-        _generateArticle: function(index, direction) {
-            var article = this.articles[index];
-            var model = {
-                article: article,
-                index: index,
-                ordinalPosition: ordinal(index + 1),
-            }
-
-            var inst = this.stamp(null);
-            inst.item = model;
-
-            this._stylizeArticleDescription(inst.root.querySelector('*'), article);
-
-            return inst;
         },
 
         _stylizeArticleDescription: function(inst, article) {
@@ -700,20 +716,22 @@
                             }
 
                             if (floater == description) {
-                                this.style.display = "block";
-                                this.style.margin = "0 auto";
+								this.classList.add('centered-block');
                                 return;
                             }
                         } while (floater = floater.parentNode);
 
-                        if (floater.parentNode) {
-                            floater.parentNode.classList.add('clearfix');
-                        }
-                        floater.style.float = "right";
-                        floater.style.margin = "0.7em";
+						if (floater) {
+							if (floater.parentNode && !floater.parentNode.querySelector('br[style]')) {
+								var clear = document.createElement('br');
+								clear.style.clear = "both";
+								floater.parentNode.appendChild(clear);
+							}
+							floater.style.float = "right";
+							floater.style.margin = "0.7em";
+						}
                     } else {
-                        this.style.display = "block";
-                        this.style.margin = "0 auto";
+						this.classList.add('centered-block');
                     }
                 }, image;
 
@@ -800,16 +818,74 @@
                         if (propName == 'article.formattedDescription' && article.formatted ||
                                 propName == 'article.formatted' && article.formattedDescription) {
                             this._stylizeArticleDescription(inst, article);
-                        } else {
-                            path = 'item.' + propName;
-                            inst._templateInstance.notifyPath(path, value, true);
                         }
+
+						path = 'item.' + propName;
+						inst._templateInstance.notifyPath(path, value, true);
                     } else {
                         inst._templateInstance.item.article = value;
                     }
                 }
             }
         },
+
+		_ensureTemplatized: function() {
+			if (!this.ctor) {
+				// Template instance props that should be excluded from forwarding
+				var props = {};
+				props.item = true;
+
+				this._instanceProps = props;
+				this._userTemplate = Polymer.dom(this).querySelector('template');
+
+				if (this._userTemplate) {
+					this.templatize(this._userTemplate);
+				} else {
+					console.warn('rf-article requires a template to be provided in light-dom');
+				}
+			}
+		},
+
+		_createPool: function() {
+			var physicalItems = new Array(3),
+				selectors = ['.previous-article', '.active-article', '.next-article'];
+
+			this._ensureTemplatized();
+
+			for (var i = 0; i < 3; i++) {
+				var inst = this.stamp(null);
+				// First element child is item; Safari doesn't support children[0]
+				// on a doc fragment
+				physicalItems[i] = inst.root.querySelector('*');
+				Polymer.dom(this.root).querySelector(selectors[i]).appendChild(inst.root);
+			}
+			return physicalItems;
+		},
+
+		_assignModel: function(index, direction) {
+			var el = this._instances[direction + 1],
+				inst = el._templateInstance,
+				article = this.articles[index + direction],
+				model = {
+					article: article,
+					index: index + direction,
+					ordinalPosition: ordinal(index + direction + 1),
+				};
+
+			if (article !== undefined && article !== null) {
+				inst.item = model;
+				el.removeAttribute('unused');
+
+				this._stylizeArticleDescription(el, article);
+			} else {
+				el.setAttribute('unused', '');
+			}
+		},
+
+		_instanceId: function(direction) {
+			var inst = this._instances[direction + 1]
+			return !inst.hasAttribute('unused') && inst._templateInstance.item && inst._templateInstance.item.article ? inst._templateInstance.item.article.Id : -1;
+		},
 
     });
 })()

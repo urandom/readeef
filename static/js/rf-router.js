@@ -4,24 +4,6 @@
     var userTTL = 1000 * 60 * 60 * 24 * 15,
         state = {VALIDATING: 1 << 0};
 
-    function randomTheme() {
-        if (document.body.classList.contains('theme-__random__')) {
-            var classes = ['blue', 'indigo', 'cyan', 'teal', 'green', 'light-green', 'lime', 'red', 'pink', 'purple', 'deep-purple', 'yellow', 'amber', 'deep-orange', 'grep'],
-                index = Math.floor(Math.random() * classes.length - 1);
-
-            for (var i = 0, c; c = document.body.classList[i]; ++i) {
-                if (c != "theme-__random__" && c.indexOf('theme-') == 0) {
-                    document.body.classList.remove(c);
-                    break;
-                }
-            }
-
-            document.body.classList.add('theme-' + classes[index]);
-            Polymer.updateStyles();
-        }
-    };
-    setInterval(randomTheme, 1800000);
-
     Polymer({
         is: "rf-router",
         properties: {
@@ -32,17 +14,32 @@
                 type: Object,
                 readOnly: true,
                 notify: true
-            }
+			},
+			topLevelNavigation: {
+				type: String,
+				observer: '_topLevelNavigationChanged',
+			},
+			loginRedirect: {
+				type: String,
+			},
         },
+		behaviors: [
+			RouteBehavior,
+			ThemeManagerBehavior,
+		],
+		_routingStarted: false,
         _state: 0,
 
         attached: function() {
+			Excess.RouteManager.start();
+			this._routingStarted = true;
+
             this.async(function() {
                 if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING) {
-                    if (!MoreRouting.getRouteByName('splash').children[0].active || !location.pathname) {
-                        MoreRouting.navigateTo('login');
-                    } else if (!MoreRouting.isCurrentUrl('login')) {
-                        MoreRouting.navigateTo('login-from', {url: this.encodeURI(location.pathname)});
+                    if (this.topLevelNavigation == "splash" || !location.pathname) {
+						Excess.RouteManager.transitionTo('@login');
+                    } else if (this.topLevelNavigation != "login") {
+						Excess.RouteManager.transitionTo('@login-from', {url: this.encodeURI(location.pathname)});
                     }
                 }
             });
@@ -50,33 +47,6 @@
             document.addEventListener('rf-lazy-insert', function(event) {
                 Polymer.updateStyles();
             }.bind(this));
-        },
-
-        onRouteChange: function(event, detail) {
-            // For some reason, MoreRouting keeps logout active for some time after redirecting
-            if (MoreRouting.isCurrentUrl('logout') && !MoreRouting.isCurrentUrl('login')) {
-                this.debounce('logout', function() {
-                    this.logout();
-                });
-                return;
-            }
-
-            if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING) {
-                if (MoreRouting.isCurrentUrl('login')) {
-                    this.$.splash.selected = 0;
-                } else if (!MoreRouting.getRouteByName('splash').children[0].active || !location.pathname) {
-                    MoreRouting.navigateTo('login');
-                } else {
-                    MoreRouting.navigateTo('login-from', {url: this.encodeURI(location.pathname)});
-                }
-            }
-
-            if (MoreRouting.isCurrentUrl('login')) {
-                var login = Polymer.dom(this.root).querySelector('rf-login');
-                if (login) {
-                    login.show();
-                }
-            }
         },
 
         onUserLoad: function(event, detail) {
@@ -120,34 +90,8 @@
                 this._setUser(user);
                 this._state &= ~state.VALIDATING;
 
-                if (MoreRouting.getRouteByName('login-from').active) {
-                    var login = Polymer.dom(this.root).querySelector('rf-login');
-                    if (login) {
-                        login.hide();
-                    }
-
-                    var url = MoreRouting.getRouteByName('login-from').params.url;
-
-                    try {
-                        MoreRouting.navigateTo(this.decodeURI(url));
-                    } catch(e) {
-                        MoreRouting.navigateTo('feed', {tagOrId: 'all'});
-                    }
-                } else if (MoreRouting.getRouteByName('login').active) {
-                    var login = Polymer.dom(this.root).querySelector('rf-login');
-                    if (login) {
-                        login.hide();
-                    }
-                    MoreRouting.navigateTo('feed', {tagOrId: 'all'});
-                } else if (!MoreRouting.isCurrentUrl('feed-base') &&
-                        !MoreRouting.isCurrentUrl('settings-base')) {
-                    MoreRouting.navigateTo('feed', {tagOrId: 'all'});
-                }
-                this.$.splash.selected = 0;
-
                 if (user.ProfileData.theme) {
-                    document.body.classList.add('theme-' + user.ProfileData.theme);
-                    randomTheme();
+					this.applyTheme();
                 }
 
                 if (user.ProfileData.shareServices) {
@@ -155,6 +99,8 @@
                         RfShareServices.get(name).active = true;
                     });
                 }
+
+				this.debounce('validate-redirect', this.validateRedirect);
             }.bind(this);
 
             authCheck.user = user;
@@ -162,27 +108,52 @@
             authCheck.send();
         },
 
+		validateRedirect: function() {
+			if (!this._routingStarted) {
+				this.debounce('validate-redirect', this.validateRedirect, 50);
+				return;
+			}
+
+			if (this.topLevelNavigation == "login" && this.loginRedirect) {
+				try {
+					Excess.RouteManager.transitionTo(this.decodeURI(this.loginRedirect));
+				} catch(e) {
+					Excess.RouteManager.transitionTo('@feed-all');
+				}
+			} else if (this.topLevelNavigation == "login") {
+				Excess.RouteManager.transitionTo('@feed-all');
+			} else if (this.topLevelNavigation != "feed" &&
+					this.topLevelNavigation != "settings") {
+				Excess.RouteManager.transitionTo('@feed-all');
+			}
+		},
+
         logout: function() {
             this.$.logout.send();
             this.$['auth-check'].close();
             this._setUser(null);
             this.async(function() {
-                MoreRouting.navigateTo('login');
-            });
+				Excess.RouteManager.transitionTo('@login');
+            }, 250);
         },
 
         connectionUnauthorized: function() {
             this._state &= ~state.VALIDATING;
-            if (MoreRouting.isCurrentUrl('feed-base') || MoreRouting.isCurrentUrl('settings-base')) {
-                MoreRouting.navigateTo('login-from', {url: location.pathname});
-            } else if (!MoreRouting.isCurrentUrl('login')) {
-                MoreRouting.navigateTo('login');
-            } else {
+			switch (this.topLevelNavigation) {
+			case "feed":
+			case "settings":
+				Excess.RouteManager.transitionTo('@login-from', {url: this.encodeURI(location.pathname)});
+				break;
+			case "login":
                 var login = Polymer.dom(this.root).querySelector('rf-login');
                 if (login) {
                     login.invalid = true;
                 }
-            }
+				break;
+			default:
+				Excess.RouteManager.transitionTo('@login');
+				break;
+			}
         },
 
         unhandledAPIError: function(data) {
@@ -198,87 +169,19 @@
             return decodeURIComponent(encodedURI.replace(/\$/g, '%'));
         },
 
-        _computeFeedBasePayload: function(user) {
-            return {user: user};
-        },
+		_topLevelNavigationChanged: function(value, old) {
+			if (value == "logout") {
+				this.logout();
+                return;
+			}
 
-        _computeSettingsBasePayload: function(user) {
-            return {user: user};
-        },
-
+            if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING && value != "login") {
+				if (this.topLevelNavigation == "splash" || !location.pathname) {
+					Excess.RouteManager.transitionTo('@login');
+				} else if (this.topLevelNavigation != "login") {
+					Excess.RouteManager.transitionTo('@login-from', {url: this.encodeURI(location.pathname)});
+				}
+			}
+		},
     });
-
-    root.UserBehavior = {
-        validateUser: function(user) {
-            Polymer.dom(document).querySelector('rf-router').validateUser(user);
-        },
-    };
-
-    root.NestedRouteBehavior = {
-        defaultNestedRoute: function(parentName, nestedName, nestedParams) {
-            if (!MoreRouting.isCurrentUrl(nestedName)) {
-                MoreRouting.navigateTo(nestedName, nestedParams || {});
-            }
-
-            MoreRouting.getRouteByName(parentName).__subscribe(function(name, value) {
-                if (name == "active") {
-                    // Change the route with async, otherwise once it finishes,
-                    // the current one will continue and will revert it
-                    this.async(function() {
-                        if (value) {
-                            if (!MoreRouting.isCurrentUrl(nestedName)) {
-                                var route = MoreRouting.getRoute(nestedName), toNotify = {};
-                                for (var key in nestedParams) {
-                                    if (route.params[key] === nestedParams[key]) {
-                                        toNotify[key] = nestedParams[key];
-                                    }
-                                }
-
-                                MoreRouting.navigateTo(MoreRouting.urlFor(nestedName, nestedParams || {}));
-
-                                for (var key in toNotify) {
-                                    route.params.__notify(key, toNotify[key]);
-                                }
-                            }
-                        }
-                    }.bind(this));
-                }
-            }.bind(this));
-        },
-
-        routeParamObserver: function(routeName, param, cb) {
-            var route = MoreRouting.getRoute(routeName), debouncer;
-
-            route.params.__subscribe(function(name, value) {
-                if (name == param) {
-                    debouncer = Polymer.Debounce(debouncer, cb.bind(this, value));
-                }
-            });
-
-            route.__subscribe(function(key, value) {
-                if (key == 'active' && route.params[param] !== undefined) {
-                    if (value) {
-                        debouncer = Polymer.Debounce(debouncer, cb.bind(this, route.params[param]));
-                    } else {
-                        debouncer = Polymer.Debounce(debouncer, cb.bind(this, null, true));
-                    }
-                }
-            });
-
-            if (route.active) {
-                debouncer = Polymer.Debounce(debouncer, cb.bind(this, route.params[param]));
-            }
-        },
-
-        isActiveUrl: function(routeName) {
-            var params = {};
-            for (var i = 1, p; p = arguments[i]; i += 2) {
-                params[arguments[i]] = arguments[i+1];
-            }
-
-            return MoreRouting.isCurrentUrl(routeName, params);
-        },
-
-    };
-
 })(window);
