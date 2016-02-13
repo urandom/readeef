@@ -3,7 +3,7 @@
 
 <script>
 (function(root) {
-	var randomThemeInterval, themeClasses = [
+	var themeClasses = [
 		'blue', 'indigo', 'cyan', 'teal', 'green',
 		'light-green', 'lime', 'red', 'pink', 'purple',
 		'deep-purple', 'yellow', 'amber', 'deep-orange',
@@ -78,7 +78,7 @@
 			var themables = document.createElement('iron-meta').byKey('themable-elements');
 
 			if (themables) {
-				clearInterval(randomThemeInterval);
+				clearInterval(this.__randomThemeInterval);
 				var theme = this.currentTheme();
 
 				themables.forEach(function(element) {
@@ -86,7 +86,7 @@
 				});
 
 				if (theme == '__random__') {
-					randomThemeInterval = setInterval(this.applyTheme.bind(this), 1800000);
+					this.__randomThemeInterval = setInterval(this.applyTheme.bind(this), 1800000);
 				}
 
 				Polymer.updateStyles();
