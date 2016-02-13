@@ -207,8 +207,8 @@
             };
 
             webSocket.onclose = function(event) {
-                initializing = false;
                 setTimeout(function() {
+					initializing = false;
                     this._init();
                 }.bind(this), this.retryTimeout * 1000)
             }.bind(this);
@@ -233,7 +233,14 @@
 
             initializing = true;
 
-            return this.$.nonce.generateRequest();
+			try {
+				return this.$.nonce.generateRequest();
+			} catch(e) {
+				setTimeout(function() {
+					initializing = false;
+					this._init();
+				}.bind(this), this.retryTimeout * 1000);
+			}
         },
 
     });
