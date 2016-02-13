@@ -215,13 +215,11 @@
         {% end %}
     }
 
-    function slideFromTop(element, cb) {
+    function slideFromTop(element) {
 		animations[element.id] = element.animate([
             {opacity: 0.3, transform: "translate3d(0px, -105%, 0px)"},
             {opacity: 1, transform: "translate3d(0px, 0px, 0px)"},
         ], {duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)'});
-
-		animations[element.id].onfinish = cb;
     }
 
     function slideFromLeft(left, active, cb) {
@@ -552,7 +550,8 @@
                 Polymer.dom(this.root).querySelector('.next-article'),
             ];
             if (direction === 0) {
-				slideFromTop(elements[1], function() { this._render(id) }.bind(this));
+				this._render(id);
+				slideFromTop(elements[1]);
             } else {
                 if (this._trackState && id == this._trackState.selectedId) {
                     this._debounceTemplate(function() { this._render(id) });

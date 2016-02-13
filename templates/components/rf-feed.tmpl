@@ -255,7 +255,7 @@ a {
 
 				if (this.display == 'article') {
 					this._scroller.scrollTop = 0;
-					this.$.article.selectedId = this.articleId;
+					this.$.article.selectedId = this.articleId - 0;
 					this.$.list.scrollTarget = null;
 				} else {
 					this.$.article.selectedId = 0;
