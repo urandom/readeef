@@ -1,6 +1,7 @@
 (function() {
-    var webSocket = null, messagePool = [], requestPool = [], receivers = [], initializing = false,
-        heartbeatMisses = 0, heartbeatInterval = null;
+		var webSocket = null, messagePool = [], requestPool = [], receivers = [], instances = [],
+			initializing = false, disconnected = false,
+			heartbeatMisses = 0, heartbeatInterval = null;
 
     function generateSignature(uri, method, body, contentType, date, nonce, secret) {
         var message, bodyHash;
@@ -77,12 +78,22 @@
         retryTimeout: 10,
 
         attached: function() {
+			instances.push(this);
             if (this.receiver) {
                 receivers.push({instance: this, method: this.method, tag: this.tag});
             }
 
             this._init();
         },
+
+		detached: function() {
+			for (var i = 0, inst; inst = instances[i]; ++i) {
+				if (inst === this) {
+					instances.splice(i, 1);
+					break;
+				}
+			}
+		},
 
         send: function(data) {
             if (!webSocket || webSocket.readyState != WebSocket.OPEN) {
@@ -179,6 +190,13 @@
                         }
                     }, 5000);
                 }
+
+				if (disconnected) {
+					disconnected = false;
+					for (var i = 0, inst; inst = instances[i]; ++i) {
+						inst.fire('rf-api-reconnect');
+					}
+				}
             };
 
             webSocket.onmessage = function(event) {
@@ -207,6 +225,7 @@
             };
 
             webSocket.onclose = function(event) {
+				disconnected = true;
                 setTimeout(function() {
 					initializing = false;
                     this._init();
@@ -236,6 +255,7 @@
 			try {
 				return this.$.nonce.generateRequest();
 			} catch(e) {
+				disconnected = true;
 				setTimeout(function() {
 					initializing = false;
 					this._init();
