@@ -188,7 +188,7 @@
                         } catch (e) {
                             clearHeartbeat();
                         }
-                    }, 5000);
+                    }, 30000);
                 }
 
 				if (disconnected) {
@@ -246,11 +246,18 @@
                 return;
             }
 
+            initializing = true;
+
+			clearInterval(this._lifespanWatcher);
+			this._lifespanWatcher = setInterval(function() {
+				if (webSocket == null || webSocket.readyState != WebSocket.OPEN) {
+					this._init();
+				}
+			}, 300000);
+
             if (webSocket != null) {
                 clearHeartbeat();
             }
-
-            initializing = true;
 
 			try {
 				return this.$.nonce.generateRequest();

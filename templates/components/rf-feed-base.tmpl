@@ -385,10 +385,9 @@
             },
 
             attached: function() {
-                //this.defaultNestedRoute('feed-base', 'feed', {tagOrId: 'all'});
-
                 this._appendArticleWorker = new Worker('/js/append-articles-worker.js');
-                this._appendArticleWorker.addEventListener('message', this._handleArticleWorkerMessage.bind(this));
+                this._appendArticleWorker.addEventListener('message',
+						this._handleArticleWorkerMessage.bind(this));
 
                 this._shareServices = RfShareServices.getActive();
 
@@ -399,10 +398,19 @@
                     this._focused = true;
                     document.title = this._originalTitle;
                 }.bind(this), false);
-                window.addEventListener("blur", function() {this._focused = false}.bind(this), false);
+                window.addEventListener("blur",
+						function() {this._focused = false}.bind(this), false);
 
                 this._originalTitle = document.title;
+
+				this._refreshInterval = setInterval(function() {
+					this._getFeedArticles();
+				}.bind(this), 1800000);
             },
+
+			detached: function() {
+				clearInterval(this._refreshInterval);
+			},
 
             onFeedArticleState: function(event, detail) {
                 if ('Read' in detail) {
