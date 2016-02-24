@@ -253,7 +253,7 @@
 				if (webSocket == null || webSocket.readyState != WebSocket.OPEN) {
 					this._init();
 				}
-			}, 300000);
+			}.bind(this), 300000);
 
             if (webSocket != null) {
                 clearHeartbeat();
