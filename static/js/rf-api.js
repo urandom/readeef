@@ -235,6 +235,12 @@
 
         onRequestError: function(event, detail) {
             this.fire('rf-api-error', detail);
+
+			disconnected = true;
+			setTimeout(function() {
+				initializing = false;
+				this._init();
+			}.bind(this), this.retryTimeout * 1000);
         },
 
         _init: function() {
@@ -248,26 +254,11 @@
 
             initializing = true;
 
-			clearInterval(this._lifespanWatcher);
-			this._lifespanWatcher = setInterval(function() {
-				if (webSocket == null || webSocket.readyState != WebSocket.OPEN) {
-					this._init();
-				}
-			}.bind(this), 300000);
-
             if (webSocket != null) {
                 clearHeartbeat();
             }
 
-			try {
-				return this.$.nonce.generateRequest();
-			} catch(e) {
-				disconnected = true;
-				setTimeout(function() {
-					initializing = false;
-					this._init();
-				}.bind(this), this.retryTimeout * 1000);
-			}
+			return this.$.nonce.generateRequest();
         },
 
     });
