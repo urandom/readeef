@@ -191,7 +191,7 @@
 							<paper-input class="search-input" placeholder="{% __ "Search" .base.lang %}" no-label-float on-keyup="onSearchKeyUp" on-keypress="onSearchKeyPress" autofocus></paper-input>
 						</span>
 
-						<paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(tagOrId, searchVisible) ]]" title="{% __ "Search" .base.lang %}" on-tap="toggleSearch"></paper-icon-button>
+						<paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(user.*, tagOrId, searchVisible) ]]" title="{% __ "Search" .base.lang %}" on-tap="toggleSearch"></paper-icon-button>
 						<paper-icon-button icon="refresh" title="{% __ "Refresh" .base.lang %}" on-tap="onRefresh" hidden$="[[ !narrow ]]"></paper-icon-button>
 						<paper-menu-button horizontal-align="right">
 							<paper-icon-button icon="more-vert" class="dropdown-trigger" title="{% __ "More options" .base.lang %}"></paper-icon-button>
@@ -780,7 +780,7 @@
                 return 'feeds-' + item.name;
             },
 
-            _computeHideSearchButton: function(tagOrId, searchVisible) {
+            _computeHideSearchButton: function(userRecord, tagOrId, searchVisible) {
                 return !this._searchAvailable(tagOrId) || searchVisible;
             },
 
