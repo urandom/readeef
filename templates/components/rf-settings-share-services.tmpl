@@ -1,9 +1,9 @@
 {% define "content" %}
+<link rel="import" href="/dist/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="/dist/paper-toggle-button/paper-toggle-button.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
-<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-settings-share-services">
     <template>
@@ -38,7 +38,8 @@ ul {
     --paper-toggle-button-checked-ink-color: var(--paper-toolbar-background);
 }
 		</style>
-		<style include="rf-layout"></style>
+		<style include="iron-flex"></style>
+		<style include="iron-flex-alignment"></style>
         <div class="layout horizontal wrap">
             <template is="dom-repeat" items="[[ shareServiceCategories ]]">
                 <div class="card">

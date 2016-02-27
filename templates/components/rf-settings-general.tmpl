@@ -1,4 +1,5 @@
 {% define "content" %}
+<link rel="import" href="/dist/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="/dist/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="/dist/neon-animation/animations/scale-up-animation.html">
 <link rel="import" href="/dist/paper-button/paper-button.html">
@@ -12,7 +13,6 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
-<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-settings-general">
     
@@ -112,7 +112,8 @@ a[data-language] {
     background: var(--paper-blue-grey-100);
 }
 		</style>
-		<style include="rf-layout"></style>
+		<style include="iron-flex"></style>
+		<style include="iron-flex-alignment"></style>
         <div class="card layout vertical start">
             <h2>
                 {% __ "Personalize your feed reader" .base.lang %}

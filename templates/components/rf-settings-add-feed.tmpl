@@ -1,5 +1,6 @@
 {% define "content" %}
 <link rel="import" href="/dist/excess-router/excess-router.html">
+<link rel="import" href="/dist/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="/dist/iron-pages/iron-pages.html">
 <link rel="import" href="/dist/lazy-pages/lazy-pages.html">
 <link rel="import" href="/dist/paper-button/paper-button.html">
@@ -12,7 +13,6 @@
 
 <link rel="import" href="{% url "/component/rf-api" .base.r %}">
 <link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
-<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-settings-add-feed">
     <template>
@@ -56,7 +56,8 @@ li paper-checkbox {
     margin-right: 16px;
 }
 		</style>
-		<style include="rf-layout"></style>
+		<style include="iron-flex"></style>
+		<style include="iron-flex-alignment"></style>
 		<excess-route route="/web/settings/discovery/:discoverStage+" route-alias="settings-discovery" discover-stage="{{ discoverStage }}"></excess-route>
 
         <div class="card" class="layout vertical start">

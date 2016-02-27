@@ -1,5 +1,6 @@
 {% define "content" %}
 <link rel="import" href="/dist/excess-router/excess-router.html">
+<link rel="import" href="/dist/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="/dist/lazy-pages/lazy-pages.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
@@ -11,7 +12,6 @@
 <link rel="import" href="{% url "/component/rf-settings-manage-feeds" .base.r %}">
 <link rel="import" href="{% url "/component/rf-settings-share-services" .base.r %}">
 <link rel="import" href="{% url "/component/rf-settings-admin" .base.r %}">
-<link rel="import" href="{% url "/component/rf-layout" .base.r %}">
 
 <dom-module id="rf-settings-base">
     <template>
@@ -45,7 +45,8 @@ lazy-pages > * {
 }
 
 		</style>
-		<style include="rf-layout"></style>
+		<style include="iron-flex"></style>
+		<style include="iron-flex-alignment"></style>
 		<excess-route route="/web/settings/:subsettings/(.*)?" route-alias="settings" subsettings="{{ subsettings }}"></excess-route>
 
         <rf-app-scaffold>

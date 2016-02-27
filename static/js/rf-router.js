@@ -77,7 +77,11 @@
                     return this.connectionUnauthorized();
                 }
 
-                var user = event.detail.arguments.User;
+				// Preserve the MD5API value
+				user = Polymer.Base.mixin(
+					Polymer.Base.mixin({}, event.detail.arguments.User),
+					user);
+
                 user.authTime = new Date().getTime();
                 user.capabilities = event.detail.arguments.Capabilities;
 
@@ -116,7 +120,13 @@
 
 			if (this.topLevelNavigation == "login" && this.loginRedirect) {
 				try {
-					Excess.RouteManager.transitionTo(this.decodeURI(this.loginRedirect));
+					var redirect = this.decodeURI(this.loginRedirect),
+						lang = this.user.ProfileData.language;
+
+					if (lang && (redirect.substr(0, 2 + lang.length) == "/" + lang + "/")) {
+						redirect = redirect.substr(1 + lang.length);
+					}
+					Excess.RouteManager.transitionTo(redirect);
 				} catch(e) {
 					Excess.RouteManager.transitionTo('@feed-all');
 				}
