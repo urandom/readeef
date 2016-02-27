@@ -182,7 +182,7 @@ func (fm *FeedManager) RemoveFeedByLink(link string) (content.Feed, error) {
 		return f, f.Err()
 	}
 
-	if f.Validate != nil {
+	if f.Validate() != nil {
 		return f, nil
 	}
 

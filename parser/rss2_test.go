@@ -50,7 +50,7 @@ var rss2Xml = `
 func TestRss2Parse(t *testing.T) {
 	f, err := ParseRss2([]byte(""))
 	if err == nil {
-		t.Fatalf("Expected an error, got none, feed: '%s'\n", f)
+		t.Fatalf("Expected an error, got none, feed: '%v'\n", f)
 	}
 
 	f, err = ParseRss2([]byte(rss2Xml))

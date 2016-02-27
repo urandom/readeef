@@ -21,7 +21,7 @@ var atomXml = `` +
 func TestAtomParse(t *testing.T) {
 	f, err := ParseAtom([]byte(""))
 	if err == nil {
-		t.Fatalf("Expected an error, got none, feed: '%s'\n", f)
+		t.Fatalf("Expected an error, got none, feed: '%v'\n", f)
 	}
 
 	f, err = ParseAtom([]byte(atomXml))

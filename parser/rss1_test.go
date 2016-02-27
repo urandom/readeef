@@ -84,7 +84,7 @@ var rss1Xml = `
 func TestRss1Parse(t *testing.T) {
 	f, err := ParseRss1([]byte(""))
 	if err == nil {
-		t.Fatalf("Expected an error, got none, feed: '%s'\n", f)
+		t.Fatalf("Expected an error, got none, feed: '%v'\n", f)
 	}
 
 	f, err = ParseRss1([]byte(rss1Xml))
