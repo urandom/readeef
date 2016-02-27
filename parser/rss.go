@@ -13,7 +13,9 @@ type rssImage struct {
 	Height  int      `xml:"height"`
 }
 
-type rssItem struct {
+// RssItem is the base content for both rss1 and rss2 feeds. The only reason
+// it's public is because of the refrect package
+type RssItem struct {
 	XMLName     xml.Name   `xml:"item"`
 	Id          string     `xml:"guid"`
 	Title       string     `xml:"title"`

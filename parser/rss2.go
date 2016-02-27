@@ -19,7 +19,7 @@ type rss2Channel struct {
 	Link        string    `xml:"parserfeed link"`
 	Description string    `xml:"description"`
 	Image       rssImage  `xml:"image"`
-	Items       []rssItem `xml:"item"`
+	Items       []RssItem `xml:"item"`
 	TTL         int       `xml:"ttl"`
 	SkipHours   []int     `xml:"skipHours>hour"`
 	SkipDays    []string  `xml:"skipDays>day"`

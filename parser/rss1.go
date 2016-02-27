@@ -27,7 +27,7 @@ type rss1Channel struct {
 }
 
 type rss1Item struct {
-	rssItem
+	RssItem
 
 	Id string `xml:"about,attr"`
 }
