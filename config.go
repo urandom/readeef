@@ -178,7 +178,6 @@ var DefaultCfg string = `
 	providers
 	providers = Facebook
 	providers = GoogleP
-	providers = Twitter
 	providers = Reddit
 	providers = Linkedin
 	providers = StumbleUpon

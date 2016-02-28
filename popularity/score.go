@@ -42,8 +42,6 @@ func New(providers []string, logger webfw.Logger) Popularity {
 			scoreProviders = append(scoreProviders, Reddit{})
 		case "StumbleUpon":
 			scoreProviders = append(scoreProviders, StumbleUpon{})
-		case "Twitter":
-			scoreProviders = append(scoreProviders, Twitter{})
 		}
 	}
 
