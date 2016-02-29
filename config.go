@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/urandom/readeef/popularity"
 	"github.com/urandom/webfw"
 
 	"gopkg.in/gcfg.v1"
@@ -46,14 +47,7 @@ type Config struct {
 		From         string
 	}
 
-	Popularity struct {
-		Delay     string
-		Providers []string
-
-		Converted struct {
-			Delay time.Duration
-		}
-	}
+	Popularity popularity.Config
 
 	FeedParser struct {
 		Processors []string

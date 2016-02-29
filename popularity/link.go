@@ -1,6 +1,7 @@
 package popularity
 
 import (
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -11,6 +12,13 @@ var (
 )
 
 func realLink(link, text string) string {
+	u, err := url.Parse(link)
+	if err != nil {
+		return ""
+	}
+	u.RawQuery = ""
+	link = u.String()
+
 	if link, ok := processReddit(link, text); ok {
 		return link
 	}

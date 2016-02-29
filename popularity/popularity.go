@@ -3,6 +3,7 @@ package popularity
 import (
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/urandom/webfw"
 )
@@ -10,6 +11,20 @@ import (
 type Popularity struct {
 	scoreProviders []scoreProvider
 	logger         webfw.Logger
+}
+
+type Config struct {
+	Delay     string
+	Providers []string
+
+	TwitterConsumerKey       string `gcfg:"twitter-consumer-key"`
+	TwitterConsumerSecret    string `gcfg:"twitter-consumer-secret"`
+	TwitterAccessToken       string `gcfg:"twitter-access-token"`
+	TwitterAccessTokenSecret string `gcfg:"twitter-access-token-secret"`
+
+	Converted struct {
+		Delay time.Duration
+	}
 }
 
 type scoreProvider interface {
@@ -26,11 +41,11 @@ type scoreResponse struct {
 	err   error
 }
 
-func New(providers []string, logger webfw.Logger) Popularity {
+func New(config Config, logger webfw.Logger) Popularity {
 	p := Popularity{logger: logger}
 
 	scoreProviders := []scoreProvider{}
-	for _, p := range providers {
+	for _, p := range config.Providers {
 		switch p {
 		case "Facebook":
 			scoreProviders = append(scoreProviders, Facebook{})
@@ -42,6 +57,8 @@ func New(providers []string, logger webfw.Logger) Popularity {
 			scoreProviders = append(scoreProviders, Reddit{})
 		case "StumbleUpon":
 			scoreProviders = append(scoreProviders, StumbleUpon{})
+		case "Twitter":
+			scoreProviders = append(scoreProviders, NewTwitter(config))
 		}
 	}
 
