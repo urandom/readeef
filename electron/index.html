@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Readeef feed reader</title>
+  </head>
+  <body>
+    <h1>Please enter the url of your readeef server:</h1>
+	<form id="form">
+		<input name="server" placeholder="readeef url"><input type="submit">
+	</form>
+    <script>
+var electron = require('electron');
+var checker = require('./url-checker');
+var form = document.getElementById('form');
+
+form.addEventListener('submit', function(event) {
+	event.preventDefault();
+
+	var url = form.server.value;
+	checker.Check(url).then(
+		function(result) {
+			electron.ipcRenderer.sendSync('set-config-item-sync', "url", url);
+
+			electron.remote.getCurrentWindow().loadURL(url);
+		}, function(statusText) {
+			alert("The url '" + url + "' isn't valid");
+
+			throw new Error("Error checking url " + url + ": " + statusText);
+		}
+	);
+});
+	</script>
+  </body>
+</html>

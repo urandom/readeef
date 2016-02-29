@@ -34,6 +34,10 @@ func (con Proxy) Handler(c context.Context) http.Handler {
 			return
 		}
 
+		if r.Method == "HEAD" {
+			return
+		}
+
 		r.ParseForm()
 		var err error
 

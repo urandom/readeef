@@ -56,11 +56,13 @@ func (con Component) Handler(c context.Context) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		params := webfw.GetParams(c, r)
 
-		err := rnd.Render(w, renderer.RenderData{"apiPattern": con.apiPattern, "config": cfg},
-			c.GetAll(r), "components/"+params["name"]+".tmpl")
+		if r.Method != "HEAD" {
+			err := rnd.Render(w, renderer.RenderData{"apiPattern": con.apiPattern, "config": cfg},
+				c.GetAll(r), "components/"+params["name"]+".tmpl")
 
-		if err != nil {
-			webfw.GetLogger(c).Print(err)
+			if err != nil {
+				webfw.GetLogger(c).Print(err)
+			}
 		}
 	})
 }

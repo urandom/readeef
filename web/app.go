@@ -39,9 +39,13 @@ func (con App) Handler(c context.Context) http.Handler {
 			data["history"] = "/web/" + params["history"]
 		}
 
-		err := rnd.Render(w, data, c.GetAll(r), "app.tmpl")
-		if err != nil {
-			webfw.GetLogger(c).Print(err)
+		if r.Method != "HEAD" {
+			err := rnd.Render(w, data, c.GetAll(r), "app.tmpl")
+			if err != nil {
+				webfw.GetLogger(c).Print(err)
+			}
 		}
+
+		w.Header().Set("X-Readeef", "1")
 	})
 }
