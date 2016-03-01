@@ -26,6 +26,7 @@
 		behaviors: [
 			RouteBehavior,
 			ThemeManagerBehavior,
+			ConnectionUserBehavior,
 		],
 		_routingStarted: false,
         _state: 0,
@@ -71,44 +72,15 @@
             this._state |= state.VALIDATING;
 
             var authCheck = this.$['auth-check'];
-            var validateMessage = function(event) {
-                authCheck.removeEventListener('rf-api-message', validateMessage);
-                if (!event.detail.arguments.Auth) {
-                    return this.connectionUnauthorized();
-                }
 
-				// Preserve the MD5API value
-				user = Polymer.Base.mixin(
-					Polymer.Base.mixin({}, event.detail.arguments.User),
-					user);
+			if (!authCheck.connection) {
+				setTimeout(function() {
+					this.validateUser(user);
+				}.bind(this), 100);
+				return;
+			}
 
-                user.authTime = new Date().getTime();
-                user.capabilities = event.detail.arguments.Capabilities;
-
-                user.ProfileData = user.ProfileData || {};
-
-                if (('language' in user.ProfileData) && user.ProfileData.language != this.dataset.language) {
-                    location.href = location.href.replace('/' + this.dataset.language + '/', '/' + user.ProfileData.language + '/');
-                }
-
-                this._setUser(user);
-                this._state &= ~state.VALIDATING;
-
-                if (user.ProfileData.theme) {
-					this.applyTheme();
-                }
-
-                if (user.ProfileData.shareServices) {
-                    user.ProfileData.shareServices.forEach(function(name) {
-                        RfShareServices.get(name).active = true;
-                    });
-                }
-
-				this.debounce('validate-redirect', this.validateRedirect);
-            }.bind(this);
-
-            authCheck.user = user;
-            authCheck.addEventListener('rf-api-message', validateMessage);
+			this.getConnection().user = user;
             authCheck.send();
         },
 
@@ -178,6 +150,41 @@
         decodeURI: function(encodedURI) {
             return decodeURIComponent(encodedURI.replace(/\$/g, '%'));
         },
+
+		onAuthCheckMessage: function(event) {
+			if (!event.detail.arguments.Auth) {
+				return this.connectionUnauthorized();
+			}
+
+			var requestUser = this.getConnection().user;
+
+			var user = event.detail.arguments.User;
+
+			user.MD5API = requestUser.MD5API;
+			user.authTime = new Date().getTime();
+			user.capabilities = event.detail.arguments.Capabilities;
+
+			user.ProfileData = user.ProfileData || {};
+
+			if (('language' in user.ProfileData) && user.ProfileData.language != this.dataset.language) {
+				location.href = location.href.replace('/' + this.dataset.language + '/', '/' + user.ProfileData.language + '/');
+			}
+
+			this._setUser(user);
+			this._state &= ~state.VALIDATING;
+
+			if (user.ProfileData.theme) {
+				this.applyTheme();
+			}
+
+			if (user.ProfileData.shareServices) {
+				user.ProfileData.shareServices.forEach(function(name) {
+					RfShareServices.get(name).active = true;
+				});
+			}
+
+			this.debounce('validate-redirect', this.validateRedirect);
+		},
 
 		_topLevelNavigationChanged: function(value, old) {
 			if (value == "logout") {

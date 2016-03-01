@@ -58,9 +58,9 @@
             </ul>
         </div>
 
-        <rf-api id="list-feeds" method="list-feeds" tag="settings" on-rf-api-message="onAllFeedsMessage" user="[[ user ]]"></rf-api>
-        <rf-api id="set-feed-tags" method="set-feed-tags" on-rf-api-message="onSetFeedTagsMessage" user="[[ user ]]"></rf-api>
-        <rf-api id="remove-feed" method="remove-feed" on-rf-api-message="onRemoveFeedMessage" user="[[ user ]]"></rf-api>
+        <rf-api id="list-feeds" method="list-feeds" tag="settings" on-rf-api-message="onAllFeedsMessage"></rf-api>
+        <rf-api id="set-feed-tags" method="set-feed-tags" on-rf-api-message="onSetFeedTagsMessage"></rf-api>
+        <rf-api id="remove-feed" method="remove-feed" on-rf-api-message="onRemoveFeedMessage"></rf-api>
 
         <iron-signals on-iron-signal-rf-feeds-added="onSignalFeedsAdded"></iron-signals>
     </template>

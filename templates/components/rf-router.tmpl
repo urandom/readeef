@@ -15,6 +15,7 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 
 <link rel="import" href="{% url "/component/rf-behaviors" .base.r %}">
+<link rel="import" href="{% url "/component/rf-connection" .base.r %}">
 <link rel="import" href="{% url "/component/rf-login" .base.r %}">
 <link rel="import" href="{% url "/component/rf-splash" .base.r %}">
 <link rel="import" href="{% url "/component/rf-feed-base" .base.r %}">
@@ -79,8 +80,9 @@ neon-animated-pages, lazy-pages {
         <paper-toast id="api-error"></paper-toast>
 
         <rf-keyboard-shortcuts></rf-keyboard-shortcuts>
+		<rf-connection user="[[ user ]]" nonce-url="{% .apiPattern %}v1/nonce" websocket-url="{% .apiPattern %}v1/"></rf-connection>
             
-        <rf-api id="auth-check" method="get-auth-data"></rf-api>
+        <rf-api id="auth-check" method="get-auth-data" on-rf-api-message="onAuthCheckMessage"></rf-api>
         <rf-api id="logout" method="logout"></rf-api>
     </template>
     <script src="/js/rf-router.js"></script>

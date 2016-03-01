@@ -150,9 +150,9 @@ li paper-checkbox {
 
         <paper-toast id="add-feed-success" text="{% __ "Feed was added successfully" .base.lang %}"></paper-toast>
 
-        <rf-api user="[[ user ]]" id="discover-feeds" method="discover-feeds" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError" handles-errors></rf-api>
-        <rf-api user="[[ user ]]" id="parse-opml" method="parse-opml" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError" handles-errors></rf-api>
-        <rf-api user="[[ user ]]" id="add-feeds" method="add-feeds" on-rf-api-message="onAddFeedMessage" on-rf-api-error="onAddFeedError" handles-errors></rf-api>
+        <rf-api id="discover-feeds" method="discover-feeds" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError" handles-errors></rf-api>
+        <rf-api id="parse-opml" method="parse-opml" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError" handles-errors></rf-api>
+        <rf-api id="add-feeds" method="add-feeds" on-rf-api-message="onAddFeedMessage" on-rf-api-error="onAddFeedError" handles-errors></rf-api>
 
         <rf-keyboard-shortcut route-name="settings-add-feed-discover-select" key-code="13" on-press="onAddFeeds"></rf-keyboard-shortcut>
     </template>

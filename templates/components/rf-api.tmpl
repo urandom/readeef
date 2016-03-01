@@ -1,14 +1,29 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
-<link rel="import" href="/dist/iron-ajax/iron-ajax.html">
 
 <dom-module id="rf-api">
-    <template>
-        <iron-ajax id="nonce" url="{% .apiPattern %}v{{version}}/nonce" handleAs="json" data-api-pattern="{% .apiPattern %}"></iron-ajax>
-    </template>
-    <script src="/dist/cryptojs/rollups/md5.js"></script>
-    <script src="/dist/cryptojs/rollups/hmac-sha256.js"></script>
-    <script src="/dist/cryptojs/components/enc-base64-min.js"></script>
-    <script src="/js/rf-api.js"></script>
+    <script>
+Polymer({
+	is: 'rf-api',
+	properties: {
+		method: String,
+		args: Object,
+		receiver: Boolean,
+		tag: {
+			type: String,
+			value: ""
+		},
+		handlesErrors: Boolean,
+	},
+	behaviors: [
+		ConnectionAPIBehavior,
+	],
+
+	send: function(data) {
+		this.connection.send(this, data);
+	},
+
+});
+	</script>
 </dom-module>
 {% end %}

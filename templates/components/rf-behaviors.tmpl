@@ -92,7 +92,38 @@
 				Polymer.updateStyles();
 			}
 		},
-	}]
+	}];
+
+	root.ConnectionManagerBehavior = {
+		ready: function() {
+			var meta = document.createElement('iron-meta');
+			meta.key = 'connection-manager';
+			meta.value = this;
+		},
+	};
+
+	root.ConnectionUserBehavior = {
+		properties: {
+			connection: Object,
+		},
+
+		ready: function() {
+			this.connection = this.getConnection();
+			if (!this.connection) {
+				throw new Error("No connection available");
+			}
+		},
+
+		getConnection: function() {
+			return document.createElement('iron-meta').byKey('connection-manager');
+		},
+	};
+
+	root.ConnectionAPIBehavior = [root.ConnectionUserBehavior, {
+		ready: function() {
+			this.connection.registerAPI(this);
+		},
+	}];
 
     root.RouteBehavior = {
 		attached: function() {

@@ -172,9 +172,9 @@ a {
 			</rf-article>
 		</iron-pages>
         
-        <rf-api id="article-read" method="article-read-state" tag="content-list" on-rf-api-message="onArticleStateMessage" user="[[ user ]]"></rf-api>
-        <rf-api id="article-favorite" method="article-favorite-state" tag="content-list"on-rf-api-message="onArticleStateMessage"  user="[[ user ]]"></rf-api>
-        <rf-api id="article-format" method="format-article" on-rf-api-message="onArticleFormatMessage" user="[[ user ]]"></rf-api>
+        <rf-api id="article-read" method="article-read-state" tag="content-list" on-rf-api-message="onArticleStateMessage"></rf-api>
+        <rf-api id="article-favorite" method="article-favorite-state" tag="content-list"on-rf-api-message="onArticleStateMessage"></rf-api>
+        <rf-api id="article-format" method="format-article" on-rf-api-message="onArticleFormatMessage"></rf-api>
 
         <rf-keyboard-shortcut route-name="article" key-code="86, 118" label="v" description="Open the article's link in a new tab" on-press="onOpenArticleLink"></rf-keyboard-shortcut>
         <rf-keyboard-shortcut route-name="article" key-code="77, 109" label="m" description="Toggle the read state of the article" on-press="onToggleArticleState" data-type="read"></rf-keyboard-shortcut>

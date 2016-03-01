@@ -181,8 +181,8 @@ a[data-language] {
             </div>
         </paper-dialog>
 
-        <rf-api id="user-settings" method="set-user-attribute" tag="current-user" user="[[ user ]]"></rf-api>
-        <rf-api id="password-change" method="set-user-attribute" tag="password-change" on-rf-api-message="onPasswordChangeMessage" user="[[ user ]]"></rf-api>
+        <rf-api id="user-settings" method="set-user-attribute" tag="current-user"></rf-api>
+        <rf-api id="password-change" method="set-user-attribute" tag="password-change" on-rf-api-message="onPasswordChangeMessage"></rf-api>
     </template>
 
     <script>
@@ -190,32 +190,27 @@ a[data-language] {
         Polymer({
             is: "rf-settings-general",
             behaviors: [
-                UserBehavior
+                UserBehavior,
+				ThemeManagerBehavior,
             ],
             properties: {
-                user: Object
+				user: {
+					type: Object,
+				},
             },
 
             attached: function() {
                 Polymer.dom(this.root).querySelectorAll('.theme').forEach(function(e) {
                     e.addEventListener('tap', function(event) {
-                        var theme = e.dataset.theme, classes = document.body.classList;
+                        var theme = e.dataset.theme;
 
                         this.user.ProfileData.theme = theme;
-
-                        for (var i = 0, c; c = classes[i]; ++i) {
-                            if (c.indexOf('theme-') == 0) {
-                                document.body.classList.remove(c);
-                            }
-                        }
-
-                        document.body.classList.add('theme-' + theme);
-                        Polymer.updateStyles();
-
                         this.$['user-settings'].send({
                             attribute: "ProfileData",
                             value: this.user.ProfileData
                         });
+
+						this.applyTheme();
                     }.bind(this), false);
                 }.bind(this));
             },
@@ -323,7 +318,8 @@ a[data-language] {
                 if (data.success) {
                     this.logout();
                 }
-            }
+            },
+
         })
     </script>
 </dom-module>

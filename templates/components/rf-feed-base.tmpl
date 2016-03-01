@@ -243,12 +243,12 @@
 
         <paper-toast id="no-new-articles" text="{% __ "Articles are up-to-date" .base.lang %}"></paper-toast>
 
-        <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage" user="[[ user ]]"></rf-api>
-        <rf-api id="user-settings" method="set-user-attribute" tag="feed-base" user="[[ user ]]"></rf-api>
-        <rf-api id="feed-articles" method="get-feed-articles" on-rf-api-message="onFeedArticlesMessage" on-rf-api-error="onFeedArticlesError" on-rf-api-reconnect="onFeedArticlesReconnect" user="[[ user ]]"></rf-api>
-        <rf-api id="get-article" method="get-article" on-rf-api-message="onGetArticleMessage" user="[[ user ]]"></rf-api>
-        <rf-api id="feed-read-all" method="read-state" on-rf-api-message="onFeedReadAllMessage" user="[[ user ]]"></rf-api>
-        <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="onFeedUpdateNotify" user="[[ user ]]" receiver="true"></rf-api>
+        <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage"></rf-api>
+        <rf-api id="user-settings" method="set-user-attribute" tag="feed-base"></rf-api>
+        <rf-api id="feed-articles" method="get-feed-articles" on-rf-api-message="onFeedArticlesMessage" on-rf-api-error="onFeedArticlesError" on-rf-api-reconnect="onFeedArticlesReconnect"></rf-api>
+        <rf-api id="get-article" method="get-article" on-rf-api-message="onGetArticleMessage"></rf-api>
+        <rf-api id="feed-read-all" method="read-state" on-rf-api-message="onFeedReadAllMessage"></rf-api>
+        <rf-api id="feed-update-notifier" method="feed-update-notifier" on-rf-api-message="onFeedUpdateNotify" receiver="true"></rf-api>
 
         <iron-signals on-iron-signal-rf-feeds-added="onSignalFeedsChanged"></iron-signals>
         <iron-signals on-iron-signal-rf-feed-removed="onSignalFeedsChanged"></iron-signals>
@@ -381,10 +381,6 @@
                 });
             },
 
-            ready: function() {
-                this.$['list-feeds'].send();
-            },
-
             attached: function() {
                 this._appendArticleWorker = new Worker('/js/append-articles-worker.js');
                 this._appendArticleWorker.addEventListener('message',
@@ -407,6 +403,10 @@
 				this._refreshInterval = setInterval(function() {
 					this._getFeedArticles();
 				}.bind(this), 1800000);
+
+				this.async(function() {
+					this.$['list-feeds'].send();
+				});
             },
 
 			detached: function() {

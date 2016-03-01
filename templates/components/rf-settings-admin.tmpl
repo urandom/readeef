@@ -54,10 +54,10 @@
             </div>
         </paper-dialog>
 
-        <rf-api user="[[ user ]]" id="list-users" method="list-users" on-rf-api-message="onListUsersMessage"></rf-api>
-        <rf-api user="[[ user ]]" id="add-user" method="add-user" on-rf-api-message="onCreateUserMessage" on-rf-api-error="onCreateUserError" handles-errors></rf-api>
-        <rf-api user="[[ user ]]" id="remove-user" method="remove-user" on-rf-api-message="onRemoveUserMessage"></rf-api>
-        <rf-api user="[[ user ]]" id="toggle-active-user" method="set-attribute-for-user" tag="active" on-rf-api-message="onToggleActiveUserMessage"></rf-api>
+        <rf-api id="list-users" method="list-users" on-rf-api-message="onListUsersMessage"></rf-api>
+        <rf-api id="add-user" method="add-user" on-rf-api-message="onCreateUserMessage" on-rf-api-error="onCreateUserError" handles-errors></rf-api>
+        <rf-api id="remove-user" method="remove-user" on-rf-api-message="onRemoveUserMessage"></rf-api>
+        <rf-api id="toggle-active-user" method="set-attribute-for-user" tag="active" on-rf-api-message="onToggleActiveUserMessage"></rf-api>
     </template>
     <script>
         "use strict";
