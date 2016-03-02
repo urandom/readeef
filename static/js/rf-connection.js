@@ -58,6 +58,9 @@
 
 		registerAPI: function(api) {
 			this.instances.push(api);
+			if (api.receiver) {
+				this.receivers.push({instance: api, method: api.method, tag: api.tag});
+			}
 		},
 
         send: function(api, data) {
