@@ -33,19 +33,20 @@ app.on('ready', function() {
 			maximized: false 
 		} 
 	}
-
-	// Create the browser window.
-	mainWindow = new BrowserWindow({
+	var windowOptions = {
 		x: lastWindowState.x,
 		y: lastWindowState.y,
 		width: lastWindowState.width, 
 		height: lastWindowState.height
-	});
+	};
 
 	// and load the index.html of the app.
 	if (storage.get("url")) {
+		windowOptions['node-integration'] = false;
+		mainWindow = new BrowserWindow(windowOptions);
 		mainWindow.loadURL(storage.get('url'));
 	} else {
+		mainWindow = new BrowserWindow(windowOptions);
 		mainWindow.loadURL('file://' + __dirname + '/index.html');
 	}
 
