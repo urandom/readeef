@@ -1,9 +1,11 @@
 package processor
 
 import (
+	"bytes"
 	"net/url"
 	"strings"
 	"text/template"
+	"unicode"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/urandom/readeef/parser"
@@ -55,23 +57,83 @@ func ProxyArticleLinks(d *goquery.Document, urlTemplate *template.Template) bool
 			return
 		}
 
-		u, err := url.Parse(val)
-		if err != nil || !u.IsAbs() || u.Scheme != "http" {
+		if link, err := processUrl(val, urlTemplate); err == nil {
+			s.SetAttr("src", link)
+		} else {
 			return
 		}
 
-		buf := util.BufferPool.GetBuffer()
-		defer util.BufferPool.Put(buf)
+		changed = true
+		return
+	})
 
-		if err := urlTemplate.Execute(buf, url.QueryEscape(u.String())); err != nil {
+	d.Find("[srcset]").Each(func(i int, s *goquery.Selection) {
+		var val string
+		var ok bool
+
+		if val, ok = s.Attr("srcset"); !ok {
 			return
 		}
 
-		s.SetAttr("src", buf.String())
+		var res, buf bytes.Buffer
+
+		expectUrl := true
+		for _, r := range val {
+			if unicode.IsSpace(r) {
+				if buf.Len() != 0 {
+					// From here on, only descriptors follow, until the end, or the comma
+					expectUrl = false
+					if link, err := processUrl(buf.String(), urlTemplate); err == nil {
+						res.WriteString(link)
+					} else {
+						return
+					}
+					buf.Reset()
+				} // Else, whitespace right before the link
+				res.WriteRune(r)
+			} else if r == ',' {
+				// End of the current image candidate string
+				expectUrl = true
+				res.WriteRune(r)
+			} else if expectUrl {
+				// The link
+				buf.WriteRune(r)
+			} else {
+				// The actual descriptor text
+				res.WriteRune(r)
+			}
+		}
+
+		if buf.Len() > 0 {
+			if link, err := processUrl(buf.String(), urlTemplate); err == nil {
+				res.WriteString(link)
+			} else {
+				return
+			}
+			buf.Reset()
+		}
+
+		s.SetAttr("srcset", res.String())
 
 		changed = true
 		return
 	})
 
 	return changed
+}
+
+func processUrl(link string, urlTemplate *template.Template) (string, error) {
+	u, err := url.Parse(link)
+	if err != nil || !u.IsAbs() || u.Scheme != "http" {
+		return "", err
+	}
+
+	buf := util.BufferPool.GetBuffer()
+	defer util.BufferPool.Put(buf)
+
+	if err := urlTemplate.Execute(buf, url.QueryEscape(u.String())); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
