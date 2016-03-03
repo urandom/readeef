@@ -57,7 +57,7 @@ func ProxyArticleLinks(d *goquery.Document, urlTemplate *template.Template) bool
 			return
 		}
 
-		if link, err := processUrl(val, urlTemplate); err == nil {
+		if link, err := processUrl(val, urlTemplate); err == nil && link != "" {
 			s.SetAttr("src", link)
 		} else {
 			return
@@ -83,7 +83,7 @@ func ProxyArticleLinks(d *goquery.Document, urlTemplate *template.Template) bool
 				if buf.Len() != 0 {
 					// From here on, only descriptors follow, until the end, or the comma
 					expectUrl = false
-					if link, err := processUrl(buf.String(), urlTemplate); err == nil {
+					if link, err := processUrl(buf.String(), urlTemplate); err == nil && link != "" {
 						res.WriteString(link)
 					} else {
 						return
@@ -105,7 +105,7 @@ func ProxyArticleLinks(d *goquery.Document, urlTemplate *template.Template) bool
 		}
 
 		if buf.Len() > 0 {
-			if link, err := processUrl(buf.String(), urlTemplate); err == nil {
+			if link, err := processUrl(buf.String(), urlTemplate); err == nil && link != "" {
 				res.WriteString(link)
 			} else {
 				return
