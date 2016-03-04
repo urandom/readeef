@@ -1,5 +1,8 @@
 {
-    "name": "readeef-client",
-    "version": "1.0.0",
-    "main": "main.js"
+  "name": "readeef-client",
+  "version": "1.0.0",
+  "main": "main.js",
+  "dependencies": {
+    "datauri": "^1.0.4"
+  }
 }

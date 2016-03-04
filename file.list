@@ -5,7 +5,6 @@ templates/components/rf-api.tmpl
 templates/components/rf-app-scaffold.tmpl
 templates/components/rf-article.tmpl
 templates/components/rf-behaviors.tmpl
-templates/components/rf-button-link.tmpl
 templates/components/rf-connection.tmpl
 templates/components/rf-feed-base.tmpl
 templates/components/rf-feed.tmpl
@@ -140,7 +139,6 @@ static/images/readeef-small.png
 static/images/readeef.png
 static/js/append-articles-worker.js
 static/js/relative-date-worker.js
-static/js/rf-button-link.js
 static/js/rf-connection.js
 static/js/rf-login.js
 static/js/rf-router.js

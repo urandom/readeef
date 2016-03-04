@@ -75,13 +75,6 @@ func addFiles() (*fs.FS, error) {
 		return nil, &ErrNotAdded{Path: "$path"}
 	}
 
-	size = int64(435)
-	mode = os.FileMode(436)
-	t = time.Unix(1413310756, 0)
-	if !wfs.Add(fs.NewFileListing("templates/components/rf-button-link.tmpl", size, mode, t, []byte("{% define \"content\" %}\n<link rel=\"import\" href=\"/dist/polymer/polymer.html\">\n<link rel=\"import\" href=\"/dist/paper-button/paper-button.html\">\n\n<polymer-element name=\"rf-button-link\" extends=\"paper-button\" attributes=\"href target\" role=\"link\">\n    <template>\n        <a href=\"{{ href }}\" target=\"{{ target }}\" id=\"link\"><shadow></shadow></a>\n    </template>\n    <script src=\"/js/rf-button-link.js\"></script>\n</polymer-element>\n{% end %}\n"))) {
-		return nil, &ErrNotAdded{Path: "$path"}
-	}
-
 	size = int64(621)
 	mode = os.FileMode(420)
 	t = time.Unix(1456855813, 0)
@@ -1010,13 +1003,6 @@ func addFiles() (*fs.FS, error) {
 	mode = os.FileMode(420)
 	t = time.Unix(1442340031, 0)
 	if !wfs.Add(fs.NewFileListing("static/js/relative-date-worker.js", size, mode, t, []byte("importScripts(\"/dist/moment/min/moment-with-locales.min.js\");\n\nself.addEventListener('message', function(event) {\n    \"use strict\";\n    var dates = {}, articles = event.data.articles;\n\n    if (event.data.lang) {\n        moment.locale(event.data.lang);\n    }\n\n    for (var i = 0, a; a = articles[i]; ++i) {\n        dates[a.Id] = moment(a.Date).fromNow();\n    }\n\n    self.postMessage({dates: dates, tagOrId: event.data.tagOrId});\n});\n"))) {
-		return nil, &ErrNotAdded{Path: "$path"}
-	}
-
-	size = int64(860)
-	mode = os.FileMode(436)
-	t = time.Unix(1413310756, 0)
-	if !wfs.Add(fs.NewFileListing("static/js/rf-button-link.js", size, mode, t, []byte("(function() {\n    Polymer('rf-button-link', {\n        href: '',\n        target: '',\n\n        openInBackground: function() {\n            if (navigator.userAgent.toLowerCase().indexOf('webkit') > -1) {\n                var event = document.createEvent(\"MouseEvents\");\n\n                // Mouse click with ctrl key opens in background\n                event.initMouseEvent(\"click\", true, true, window, 0, 0, 0, 0, 0,\n                    true, false, false, true, 0, null);\n\n                this.$.link.dispatchEvent(event);\n            } else {\n                this.$.link.click();\n\n                if (this.target) {\n                    var target = window.open('', this.target);\n                    if (target)  {\n                        target.blur();\n                    }\n                }\n                window.focus();\n            }\n        }\n    });\n})();\n"))) {
 		return nil, &ErrNotAdded{Path: "$path"}
 	}
 

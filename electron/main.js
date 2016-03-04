@@ -1,6 +1,7 @@
 var app = require('app');  // Module to control application life.
 var BrowserWindow = require('browser-window');  // Module to create native browser window.
 var ipcMain = require('electron').ipcMain;
+var Datauri = require('datauri');
 var storage = require('./storage');
 var checker = require('./url-checker');
 var menu = require('./menu');
@@ -11,6 +12,8 @@ require('crash-reporter').start({
 		companyName: "Sugr",
 		submitURL: "https://github.com/urandom/readeef/issues",
 });
+
+var iconuri = new Datauri(__dirname + '/readeef-144.png');
 
 var readeef = {
 	// Keep a global reference of the window object, if you don't, the window will
@@ -23,6 +26,7 @@ var readeef = {
 			'<div style="text-align: center; font-family: \'Helvetica Neue\', \'Helvetica\', \'Arial\', \'sans-serif\'">',
 			'<h1>readeef</h1>',
 			'<p>',
+			'<img src="' + iconuri.content + '"><br>',
 			'Version: ' + pkg.version,
 			'<br/>',
 			'Electron version: ' + process.versions.electron,
@@ -34,16 +38,16 @@ var readeef = {
 			'</div>'
 		].join('');
 		var aboutWindow = new BrowserWindow({
-				height: 180,
-				//icon: assets['icon-32'],
-				width: 400
+				height: 380,
+				icon: __dirname + '/readeef-144.png',
+				width: 600
 		});
 		aboutWindow.loadURL('data:text/html,' + info);
 	},
 	openConfigWindow: function () {
 		var configWindow = new BrowserWindow({
 				height: 440,
-				//icon: assets['icon-32'],
+				icon: __dirname + '/readeef-144.png',
 				width: 620
 		});
 		configWindow.loadURL('file://' + __dirname + '/index.html');
@@ -90,7 +94,8 @@ app.on('ready', function() {
 		x: lastWindowState.x,
 		y: lastWindowState.y,
 		width: lastWindowState.width, 
-		height: lastWindowState.height
+		height: lastWindowState.height,
+		icon: __dirname + '/readeef-144.png',
 	};
 
 	// and load the index.html of the app.
@@ -132,7 +137,16 @@ app.on('ready', function() {
 		readeef.mainWindow.focus();
 	});
 
+	ipcMain.on('main-window-is-focused', function(evt) {
+		evt.returnValue = JSON.stringify({success: true, value: readeef.mainWindow.isFocused()});
+	});
+
 	ipcMain.on('reload-main-window', function(evt) {
 		readeef.mainWindow.reload();
 	});
+
+	ipcMain.on('get-icon-uri', function(evt) {
+		evt.returnValue = JSON.stringify({success: true, value: iconuri.content});
+	});
+
 });
