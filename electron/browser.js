@@ -32,7 +32,7 @@ if (!result || !result.success || result.value === null || result.value) {
 		notification.onclick = function() {
 			ipc.send('focus-main-window');
 		};
-	}, 1000));
+	}, 5000));
 }
 
 window.open = function(url, name, features) {
