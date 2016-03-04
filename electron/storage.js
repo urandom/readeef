@@ -54,3 +54,8 @@ ipcMain.on('unset-config-item-sync', function(evt, key) {
 	exports.unset(key);
 	evt.returnValue = JSON.stringify({success: true});
 });
+
+ipcMain.on('get-config-item-sync', function(evt, key) {
+	var val = exports.get(key);
+	evt.returnValue = JSON.stringify({success: true, value: val});
+});

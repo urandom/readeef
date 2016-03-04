@@ -521,6 +521,15 @@
                     // Highlight a pinned tab
                     document.title = this._originalTitle + " (New content available)";
                 }
+
+				// Electron integration
+				var event = new CustomEvent("updates-available", {
+					detail: {
+						title: data.arguments.Feed.Title,
+						id: data.arguments.Feed.Id,
+					},
+				});
+				window.dispatchEvent(event);
             },
 
             onSignalFeedsChanged: function() {
