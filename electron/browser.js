@@ -11,6 +11,7 @@ if (!result || !result.success || !result.value) {
 
 urlParser.href = result.value;
 var host = urlParser.hostname;
+var notification;
 
 result = JSON.parse(ipc.sendSync('get-config-item-sync', 'show-notifications'));
 if (!result || !result.success || result.value === null || result.value) {
@@ -27,7 +28,11 @@ if (!result || !result.success || result.value === null || result.value) {
 			opts.icon = result.value;
 		}
 
-		var notification = new Notification('New articles', opts);
+		if (notification) {
+			notification.close();
+		}
+
+		notification = new Notification('New articles', opts);
 
 		notification.onclick = function() {
 			ipc.send('focus-main-window');
