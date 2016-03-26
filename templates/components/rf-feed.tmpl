@@ -122,7 +122,7 @@ a {
 				<template>
 					<div class="article-detail" data-article-id$="[[ item.article.Id ]]">
 						<div class="card layout vertical">
-							<a class="article-anchor title-wrapper" href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]">
+							<a class="article-header-anchor article-anchor title-wrapper" href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]" on-click="onArticleOpen">
 								<paper-icon-button class="favorite-button" icon="[[ _computeFavoriteIcon(item.article.Favorite) ]]" on-tap="onFavoriteToggle"></paper-icon-button>
 								<span class="title" title$="[[ item.article.Title ]]">[[ item.article.Title ]]</span>
 								<small class="index">[[ item.ordinalPosition ]]</small>
@@ -146,7 +146,7 @@ a {
 								</div>
 
 								<div class="article-buttons layout horizontal">
-									<a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]" class="article-link flex article-control">
+									<a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]" class="article-link flex article-control article-anchor" on-click="onArticleOpen">
 										{% __ "View" .base.lang %}
 										<paper-ripple></paper-ripple>
 									</a>
@@ -331,9 +331,27 @@ a {
                 }
             },
 
+			onArticleOpen: function(event) {
+                var el = Polymer.dom(event).localTarget, link, target;
+
+                do {
+					if (el.matches("a.article-anchor")) {
+						link = el.href;
+						target = el.target;
+                        break;
+                    }
+                } while (el = el.parentNode);
+
+				if (!link) {
+					return;
+				}
+
+				this._tryOpenArticleLink(link, target);
+			},
+
             onOpenArticleLink: function() {
                 var article = this.articles.find(this.articleId);
-                window.open(article.Link, this._computeArticleTarget(article));
+				this._tryOpenArticleLink(article.Link, this._computeArticleTarget(article));
             },
 
             onToggleArticleState: function(event) {
@@ -366,6 +384,17 @@ a {
 
 				Excess.RouteManager.transitionTo('@article', options);
             },
+
+			_tryOpenArticleLink: function(link, target) {
+				var pre = Polymer.Base.fire("pre-article-open", {link: link, target: target},
+						{node: document.body, cancelable: true});
+				if (pre.defaultPrevented) {
+					event.preventDefault();
+					return;
+				}
+
+                window.open(link, target);
+			},
 
 			_articleIdChanged: function(id, old) {
 				if (!this._scroller) {
