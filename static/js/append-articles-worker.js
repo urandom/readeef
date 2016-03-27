@@ -82,6 +82,7 @@ self.addEventListener('message', function(event) {
         if (articleMap[a.Id]) {
             continue;
         }
+		articleMap[a.Id] = a
 
         if (!unreadOnly || !a.Read) {
             if (feeds && feeds.length) {
