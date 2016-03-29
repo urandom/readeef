@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"crypto/md5"
 	"errors"
+	"io"
+	"io/ioutil"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -352,7 +354,11 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 	if err != nil {
 		data.UpdateError = err.Error()
 	} else if resp.StatusCode != http.StatusOK {
-		defer resp.Body.Close()
+		defer func() {
+			// Drain the body so that the connection can be reused
+			io.Copy(ioutil.Discard, resp.Body)
+			resp.Body.Close()
+		}()
 		data.UpdateError = httpStatusPrefix + strconv.Itoa(resp.StatusCode)
 	} else {
 		defer resp.Body.Close()

@@ -3,6 +3,8 @@ package popularity
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 )
@@ -30,7 +32,11 @@ func (r Reddit) Score(link string) (int64, error) {
 	if err != nil {
 		return score, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		// Drain the body so that the connection can be reused
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	dec := json.NewDecoder(resp.Body)
 

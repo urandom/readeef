@@ -3,6 +3,8 @@ package extractor
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 
@@ -41,7 +43,11 @@ func (e Readability) Extract(link string) (data data.ArticleExtract, err error) 
 		return
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		// Drain the body so that the connection can be reused
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 	dec := json.NewDecoder(resp.Body)
 
 	err = dec.Decode(&r)

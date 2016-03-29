@@ -3,6 +3,8 @@ package popularity
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 )
@@ -25,7 +27,11 @@ func (f Facebook) Score(link string) (int64, error) {
 	if err != nil {
 		return score, err
 	}
-	defer r.Body.Close()
+	defer func() {
+		// Drain the body so that the connection can be reused
+		io.Copy(ioutil.Discard, r.Body)
+		r.Body.Close()
+	}()
 
 	dec := json.NewDecoder(r.Body)
 
