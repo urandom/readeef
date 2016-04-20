@@ -306,5 +306,9 @@
     {
         "id": "You are not subscribed to any feeds yet",
         "translation": "Нямате абонамент към никакви емисии все още"
+    },
+    {
+        "id": "Export feeds",
+        "translation": "Експорт на емисии"
     }
 ]

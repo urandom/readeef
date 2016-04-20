@@ -262,7 +262,7 @@ li paper-checkbox {
 
             onDiscoverFeedsMessage: function(event, data) {
                 if (!data.arguments.SkipSelection) {
-                    data.arguments.Feeds.forEach(function(f) {
+                    (data.arguments.Feeds || []).forEach(function(f) {
                         f.selected = true;
                     });
                 }

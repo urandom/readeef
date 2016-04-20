@@ -12,32 +12,34 @@ type OpmlFeed struct {
 	Tags  []string
 }
 
-type opmlXml struct {
+type OpmlXml struct {
+	XMLName xml.Name `xml:"opml"`
 	Version string   `xml:"version,attr"`
-	Head    opmlHead `xml:"head"`
-	Body    opmlBody `xml:"body"`
+	Head    OpmlHead `xml:"head"`
+	Body    OpmlBody `xml:"body"`
 }
 
-type opmlHead struct {
+type OpmlHead struct {
 	Title string `xml:"title"`
 }
 
-type opmlBody struct {
-	Outline []opmlOutline `xml:"outline"`
+type OpmlBody struct {
+	Outline []OpmlOutline `xml:"outline"`
 }
 
-type opmlOutline struct {
-	Type    string        `xml:"type,attr,omitempty"`
-	Text    string        `xml:"text,attr,omitempty"`
-	Title   string        `xml:"title,attr,omitempty"`
-	XmlUrl  string        `xml:"xmlUrl,attr,omitempty"`
-	HtmlUrl string        `xml:"htmlUrl,attr,omitempty"`
-	Url     string        `xml:"url,attr,omitempty"`
-	Outline []opmlOutline `xml:"outline"`
+type OpmlOutline struct {
+	Type     string        `xml:"type,attr,omitempty"`
+	Text     string        `xml:"text,attr,omitempty"`
+	Title    string        `xml:"title,attr,omitempty"`
+	XmlUrl   string        `xml:"xmlUrl,attr,omitempty"`
+	HtmlUrl  string        `xml:"htmlUrl,attr,omitempty"`
+	Url      string        `xml:"url,attr,omitempty"`
+	Category string        `xml:"category,attr,omitempty"`
+	Outline  []OpmlOutline `xml:"outline"`
 }
 
 func ParseOpml(content []byte) (Opml, error) {
-	var o opmlXml
+	var o OpmlXml
 	opml := Opml{}
 
 	if err := xml.Unmarshal(content, &o); err != nil {
@@ -49,7 +51,7 @@ func ParseOpml(content []byte) (Opml, error) {
 	return opml, nil
 }
 
-func processOutline(opml *Opml, outlines []opmlOutline, tag string) {
+func processOutline(opml *Opml, outlines []OpmlOutline, tag string) {
 	for _, outline := range outlines {
 		if len(outline.Outline) == 0 {
 			feed := OpmlFeed{Title: outline.Text}

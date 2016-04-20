@@ -1,6 +1,7 @@
 {% define "content" %}
 <link rel="import" href="/dist/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="/dist/iron-signals/iron-signals.html">
+<link rel="import" href="/dist/paper-button/paper-button.html">
 <link rel="import" href="/dist/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="/dist/paper-input/paper-input.html">
 <link rel="import" href="/dist/polymer/polymer.html">
@@ -56,11 +57,16 @@
                     </li>
                 </template>
             </ul>
+
+			<paper-button on-tap="onExportFeeds" autofocus hidden$="[[ exporting ]]" class="self-end">{% __ "Export feeds" .base.lang %}</paper-button>
         </div>
 
         <rf-api id="list-feeds" method="list-feeds" tag="settings" on-rf-api-message="onAllFeedsMessage"></rf-api>
         <rf-api id="set-feed-tags" method="set-feed-tags" on-rf-api-message="onSetFeedTagsMessage"></rf-api>
         <rf-api id="remove-feed" method="remove-feed" on-rf-api-message="onRemoveFeedMessage"></rf-api>
+        <rf-api id="export-opml" method="export-opml" on-rf-api-message="onExportOPMLMessage"></rf-api>
+
+		<a id="opml-downloader" hidden download="feeds.opml"></a>
 
         <iron-signals on-iron-signal-rf-feeds-added="onSignalFeedsAdded"></iron-signals>
     </template>
@@ -71,13 +77,19 @@
             is: "rf-settings-manage-feeds",
             properties: {
                 user: Object,
-                feeds: Array
+                feeds: Array,
+				exporting: Boolean,
             },
             _urlParser: document.createElement('a'),
 
             attached: function() {
                 this.$['list-feeds'].send();
             },
+
+			onExportFeeds: function() {
+				this.exporting = true;
+				this.$['export-opml'].send();
+			},
 
             onAllFeedsMessage: function(event, detail) {
                 this.feeds = detail.arguments.Feeds;
@@ -122,6 +134,12 @@
 
                 this.fire('iron-signal', {name: 'rf-feeds-removed'});
             },
+
+			onExportOPMLMessage: function(event, data) {
+				this.exporting = false;
+				this.$['opml-downloader'].href="data:text/x-opml+xml,"+encodeURIComponent(data.arguments.opml);
+				this.$['opml-downloader'].click();
+			},
 
             onSignalFeedsAdded: function() {
                 this.$['list-feeds'].send();

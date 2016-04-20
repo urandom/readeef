@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -36,6 +37,11 @@ type listFeedsProcessor struct {
 type discoverFeedsProcessor struct {
 	Link string `json:"link"`
 
+	fm   *readeef.FeedManager
+	user content.User
+}
+
+type exportOpmlProcessor struct {
 	fm   *readeef.FeedManager
 	user content.User
 }
@@ -120,6 +126,7 @@ func (con Feed) Patterns() []webfw.MethodIdentifierTuple {
 		webfw.MethodIdentifierTuple{prefix + ":feed-id/articles/min/:min-id/max/:max-id/:limit/:offset/:older-first/:unread-only", webfw.MethodGet, "articles"},
 
 		webfw.MethodIdentifierTuple{prefix + "discover", webfw.MethodGet, "discover"},
+		webfw.MethodIdentifierTuple{prefix + "opml", webfw.MethodGet, "opml-export"},
 		webfw.MethodIdentifierTuple{prefix + "opml", webfw.MethodPost, "opml"},
 	}
 }
@@ -142,6 +149,8 @@ func (con Feed) Handler(c context.Context) http.Handler {
 		case "discover":
 			link := r.FormValue("url")
 			resp = discoverFeeds(user, con.fm, link)
+		case "opml-export":
+			resp = exportOpml(user)
 		case "opml":
 			buf := util.BufferPool.GetBuffer()
 			defer util.BufferPool.Put(buf)
@@ -238,6 +247,10 @@ func (p discoverFeedsProcessor) Process() responseError {
 	return discoverFeeds(p.user, p.fm, p.Link)
 }
 
+func (p exportOpmlProcessor) Process() responseError {
+	return exportOpml(p.user)
+}
+
 func (p parseOpmlProcessor) Process() responseError {
 	return parseOpml(p.user, p.fm, []byte(p.Opml))
 }
@@ -330,6 +343,50 @@ func discoverFeeds(user content.User, fm *readeef.FeedManager, link string) (res
 	}
 
 	resp.val["Feeds"] = respFeeds
+	return
+}
+
+func exportOpml(user content.User) (resp responseError) {
+	resp = newResponse()
+
+	o := parser.OpmlXml{
+		Version: "1.1",
+		Head:    parser.OpmlHead{Title: "Feed subscriptions of " + user.String() + " from readeef"},
+	}
+
+	if feeds := user.AllTaggedFeeds(); user.HasErr() {
+		resp.err = user.Err()
+		return
+	} else {
+		body := parser.OpmlBody{}
+		for _, f := range feeds {
+			d := f.Data()
+
+			tags := f.Tags()
+			category := make([]string, len(tags))
+			for i, t := range tags {
+				category[i] = string(t.Data().Value)
+			}
+			body.Outline = append(body.Outline, parser.OpmlOutline{
+				Text:     d.Title,
+				Title:    d.Title,
+				XmlUrl:   d.Link,
+				HtmlUrl:  d.SiteLink,
+				Category: strings.Join(category, ","),
+				Type:     "rss",
+			})
+		}
+
+		o.Body = body
+	}
+
+	var b []byte
+	if b, resp.err = xml.MarshalIndent(o, "", "    "); resp.err != nil {
+		return
+	}
+
+	resp.val["opml"] = xml.Header + string(b)
+
 	return
 }
 

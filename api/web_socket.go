@@ -272,6 +272,8 @@ func (a apiRequest) processor(
 		return &listFeedsProcessor{user: user}, nil
 	case "discover-feeds":
 		return &discoverFeedsProcessor{user: user, fm: fm}, nil
+	case "export-opml":
+		return &exportOpmlProcessor{user: user}, nil
 	case "parse-opml":
 		return &parseOpmlProcessor{user: user, fm: fm}, nil
 	case "add-feeds":
