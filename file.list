@@ -95,6 +95,8 @@ static/dist/paper-dialog-behavior/paper-dialog-behavior.html
 static/dist/paper-dialog-behavior/paper-dialog-shared-styles.html
 static/dist/paper-dialog/paper-dialog.html
 static/dist/paper-drawer-panel/paper-drawer-panel.html
+static/dist/paper-dropdown-menu/paper-dropdown-menu-icons.html
+static/dist/paper-dropdown-menu/paper-dropdown-menu-shared-styles.html
 static/dist/paper-dropdown-menu/paper-dropdown-menu.html
 static/dist/paper-fab/paper-fab.html
 static/dist/paper-header-panel/paper-header-panel.html

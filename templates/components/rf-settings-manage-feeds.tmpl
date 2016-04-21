@@ -58,7 +58,7 @@
                 </template>
             </ul>
 
-			<paper-button on-tap="onExportFeeds" autofocus hidden$="[[ exporting ]]" class="self-end">{% __ "Export feeds" .base.lang %}</paper-button>
+			<paper-button on-tap="onExportFeeds" autofocus hidden$="[[ _computeHideExportFeeds(feeds, exporting) ]]" class="self-end">{% __ "Export feeds" .base.lang %}</paper-button>
         </div>
 
         <rf-api id="list-feeds" method="list-feeds" tag="settings" on-rf-api-message="onAllFeedsMessage"></rf-api>
@@ -157,6 +157,10 @@
 
             _computeHideFeedErrors: function(feed) {
                 return !this.user.Admin || (!feed.UpdateError && !feed.SubscribeError);
+            },
+
+            _computeHideExportFeeds: function(feeds, exporting) {
+                return !feeds.length || exporting
             },
 
             _computeToastFeedErrorsText: function(feed) {
