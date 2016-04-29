@@ -123,6 +123,9 @@
 		ready: function() {
 			this.connection.registerAPI(this);
 		},
+		close: function() {
+			this.connection.close();
+		},
 	}];
 
     root.RouteBehavior = {

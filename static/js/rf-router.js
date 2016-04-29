@@ -115,7 +115,7 @@
             this.$['auth-check'].close();
             this._setUser(null);
             this.async(function() {
-				Excess.RouteManager.transitionTo('@login');
+				location.href = Excess.RouteManager.getRoutePath('@login');
             }, 250);
         },
 
