@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -245,7 +246,6 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 		}
 
 		req := ttRssRequest{}
-		dec := json.NewDecoder(r.Body)
 
 		resp := ttRssResponse{}
 
@@ -256,10 +256,16 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 
 		switch {
 		default:
+			var b []byte
 			in := map[string]interface{}{}
-			err = dec.Decode(&in)
-			if err != nil {
-				err = fmt.Errorf("Error decoding JSON request: %v", err)
+
+			if b, err = ioutil.ReadAll(r.Body); err != nil {
+				err = fmt.Errorf("reading request body: %s", err)
+				break
+			}
+
+			if err = json.Unmarshal(b, &in); err != nil {
+				err = fmt.Errorf("decoding JSON request: %s", err)
 				break
 			}
 
@@ -298,13 +304,13 @@ func (controller TtRss) Handler(c context.Context) http.Handler {
 				user = repo.UserByLogin(data.Login(req.User))
 				if repo.Err() != nil {
 					errType = "LOGIN_ERROR"
-					err = fmt.Errorf("Error getting TT-RSS user: %v\n", repo.Err())
+					err = fmt.Errorf("getting TT-RSS user: %s", repo.Err())
 					break
 				}
 
 				if !user.Authenticate(req.Password, []byte(config.Auth.Secret)) {
 					errType = "LOGIN_ERROR"
-					err = fmt.Errorf("Authentication for TT-RSS user '%s' failed\n", user.Data().Login)
+					err = fmt.Errorf("authentication for TT-RSS user '%s'", user.Data().Login)
 					break
 				}
 

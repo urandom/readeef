@@ -5,7 +5,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -170,15 +170,18 @@ func (con Feed) Handler(c context.Context) http.Handler {
 				if r.Method == "GET" {
 					resp = getFeedTags(user, data.FeedId(feedId))
 				} else if r.Method == "POST" {
-					decoder := json.NewDecoder(r.Body)
+					if b, err := ioutil.ReadAll(r.Body); err == nil {
+						tags := []data.TagValue{}
+						if err = json.Unmarshal(b, &tags); err != nil {
+							resp.err = fmt.Errorf("Error decoding request body: %s", err)
+							break
+						}
 
-					tags := []data.TagValue{}
-					if resp.err = decoder.Decode(&tags); resp.err != nil && resp.err != io.EOF {
+						resp = setFeedTags(user, data.FeedId(feedId), tags)
+					} else {
+						resp.err = fmt.Errorf("Error reading request body: %s", err)
 						break
 					}
-
-					resp.err = nil
-					resp = setFeedTags(user, data.FeedId(feedId), tags)
 				}
 			}
 		case "read":
