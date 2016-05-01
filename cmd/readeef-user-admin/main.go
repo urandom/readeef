@@ -42,6 +42,8 @@ func main() {
 		i.Login = data.Login(login)
 		i.Active = true
 
+		u.Data(i)
+
 		u.Password(pass, []byte(cfg.Auth.Secret))
 		u.Update()
 
@@ -178,4 +180,35 @@ func main() {
 func exitWithError(err string) {
 	fmt.Fprintf(os.Stderr, err+"\n")
 	os.Exit(1)
+}
+
+func init() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "\t%s [arguments] command\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, `Available commands:
+
+	add LOGIN PASSWORD 		add a new user
+	remove LOGIN 			remove an existing user
+	get LOGIN PROPERTY 		retrieve a property of a user
+		- firstname 			the first name
+		- lastname 			the last name
+		- email 			the email
+		- hashtype 			the password hash type
+		- salt 				the salt
+		- hash 				the password hash
+		- md5api 			the password-based key
+						used by the fever api emulation
+		- admin 			whether the user is an admin
+		- active 			whether the user is active
+	set LOGIN PROPERTY VALUE 	sets a new value to a given property
+		- instead of a salt/hashtype/hash and md5api, a password property is
+		used
+	list 				lists all users
+	list-detailed 			lists all users, including some properties
+
+`)
+		fmt.Fprintf(os.Stderr, "Available arguments:\n\n")
+		flag.PrintDefaults()
+	}
 }
