@@ -27,6 +27,7 @@ var (
 	templateDir string
 	staticDir   string
 	localeDir   string
+	singleLine  bool
 
 	sqstring      = regexp.MustCompile(`'([^\\']*(?:(?:\\'|\\)[^\\']*)*)'`)
 	dqstring      = regexp.MustCompile(`"([^\\"]*(?:(?:\\"|\\)[^\\"]*)*)"`)
@@ -99,19 +100,23 @@ func main() {
 	sort.Strings(locales)
 
 	buf := new(bytes.Buffer)
+	delim := "\n"
+	if singleLine {
+		delim = " "
+	}
 
 	for _, t := range templates {
-		buf.WriteString(t + "\n")
+		buf.WriteString(t + delim)
 	}
 
-	buf.WriteString("\n")
+	buf.WriteString(delim)
 	for _, s := range static {
-		buf.WriteString(s + "\n")
+		buf.WriteString(s + delim)
 	}
 
-	buf.WriteString("\n")
+	buf.WriteString(delim)
 	for _, s := range locales {
-		buf.WriteString(s + "\n")
+		buf.WriteString(s + delim)
 	}
 
 	buf.WriteTo(out)
@@ -380,6 +385,7 @@ func parseCSSContent(path, content string) (static []string, err error) {
 
 func init() {
 	flag.StringVar(&output, "output", "-", "the output file")
+	flag.BoolVar(&singleLine, "single-line", false, "list all files in a single line")
 	flag.StringVar(&templateDir, "template-dir", "templates", "the templates directory")
 	flag.StringVar(&staticDir, "static-dir", "static", "the static directory")
 	flag.StringVar(&localeDir, "locale-dir", "locale", "the locale directory")

@@ -11,8 +11,9 @@ import (
 
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/index/store/goleveldb"
-	"github.com/blevesearch/bleve/index/upside_down"
+	"github.com/blevesearch/bleve/index/upsidedown"
 	"github.com/blevesearch/bleve/search"
+	"github.com/blevesearch/bleve/search/query"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
@@ -63,7 +64,7 @@ func NewBleve(path string, size int64, logger webfw.Logger) (content.SearchProvi
 		mapping.AddDocumentMapping(mapping.DefaultType, docMapping)
 
 		logger.Infoln("Creating search index " + path)
-		index, err = bleve.NewUsing(path, mapping, upside_down.Name, goleveldb.Name, nil)
+		index, err = bleve.NewUsing(path, mapping, upsidedown.Name, goleveldb.Name, nil)
 
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("Error creating search index: %v\n", err))
@@ -98,13 +99,13 @@ func (b Bleve) IndexAllFeeds(repo content.Repo) error {
 }
 
 func (b Bleve) Search(term string, u content.User, feedIds []data.FeedId, limit, offset int) (ua []content.UserArticle, err error) {
-	var query bleve.Query
+	var q query.Query
 
-	query = bleve.NewQueryStringQuery(term)
+	q = bleve.NewQueryStringQuery(term)
 
 	if len(feedIds) > 0 {
-		queries := make([]bleve.Query, len(feedIds))
-		conjunct := make([]bleve.Query, 2)
+		queries := make([]query.Query, len(feedIds))
+		conjunct := make([]query.Query, 2)
 
 		for i, id := range feedIds {
 			q := bleve.NewTermQuery(strconv.FormatInt(int64(id), 10))
@@ -113,15 +114,15 @@ func (b Bleve) Search(term string, u content.User, feedIds []data.FeedId, limit,
 			queries[i] = q
 		}
 
-		disjunct := bleve.NewDisjunctionQuery(queries)
+		disjunct := bleve.NewDisjunctionQuery(queries...)
 
-		conjunct[0] = query
+		conjunct[0] = q
 		conjunct[1] = disjunct
 
-		query = bleve.NewConjunctionQuery(conjunct)
+		q = bleve.NewConjunctionQuery(conjunct...)
 	}
 
-	searchRequest := bleve.NewSearchRequest(query)
+	searchRequest := bleve.NewSearchRequest(q)
 
 	searchRequest.Highlight = bleve.NewHighlightWithStyle("html")
 
