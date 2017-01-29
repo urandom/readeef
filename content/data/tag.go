@@ -19,7 +19,7 @@ func (id *TagId) Scan(src interface{}) error {
 		return fmt.Errorf("Scan source '%#v' (%T) was not of type int64 (TagId)", src, src)
 	}
 
-	(*id) = TagId(asInt)
+	*id = TagId(asInt)
 
 	return nil
 }
@@ -31,6 +31,7 @@ func (id TagId) Value() (driver.Value, error) {
 func (val *TagValue) Scan(src interface{}) error {
 	switch t := src.(type) {
 	case string:
+		*val = TagValue(t)
 	case []byte:
 		*val = TagValue(t)
 	default:

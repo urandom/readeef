@@ -55,8 +55,8 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 
 	r.logger.Infof("Getting user using md5 api field '%v'\n", md5)
 
-	var data data.User
-	if err := r.db.Get(&data, r.db.SQL().Repo.GetUserByMD5API, md5); err != nil {
+	var d data.User
+	if err := r.db.Get(&d, r.db.SQL().Repo.GetUserByMD5API, md5); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -64,8 +64,8 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 		return
 	}
 
-	data.MD5API = md5
-	u.Data(data)
+	d.MD5API = md5
+	u.Data(d)
 
 	return
 }

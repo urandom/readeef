@@ -129,6 +129,19 @@ func (b Bleve) Search(term string, u content.User, feedIds []data.FeedId, limit,
 	searchRequest.Size = limit
 	searchRequest.From = offset
 
+	order := ""
+	if b.Order() == data.DescendingOrder {
+		order = "-"
+	}
+	switch b.Field() {
+	case data.SortByDate:
+		searchRequest.SortBy([]string{order + "Date"})
+	case data.SortById:
+		searchRequest.SortBy([]string{order + "ArticleId"})
+	case data.DefaultSort:
+		searchRequest.SortBy([]string{order + "_score"})
+	}
+
 	searchResult, err := b.index.Search(searchRequest)
 
 	if err != nil {

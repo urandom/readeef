@@ -27,6 +27,7 @@ type User struct {
 func (val *Login) Scan(src interface{}) error {
 	switch t := src.(type) {
 	case string:
+		*val = Login(t)
 	case []byte:
 		*val = Login(t)
 	default:

@@ -97,8 +97,9 @@ func (con Fever) Handler(c context.Context) http.Handler {
 
 		switch {
 		default:
-			if user == nil {
+			if user == nil || user.HasErr() {
 				resp["auth"] = 0
+				err = user.Err()
 				break
 			}
 
