@@ -3,11 +3,13 @@ package processor
 import (
 	"bytes"
 	"net/url"
+	"path"
 	"strings"
 	"text/template"
 	"unicode"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/pkg/errors"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/util"
@@ -33,7 +35,7 @@ func (p ProxyHTTP) Process(f parser.Feed) parser.Feed {
 
 	for i := range f.Articles {
 		if d, err := goquery.NewDocumentFromReader(strings.NewReader(f.Articles[i].Description)); err == nil {
-			if ProxyArticleLinks(d, p.urlTemplate) {
+			if ProxyArticleLinks(d, p.urlTemplate, f.Articles[i].Link) {
 				if content, err := d.Html(); err == nil {
 					// net/http tries to provide valid html, adding html, head and body tags
 					content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
@@ -47,7 +49,7 @@ func (p ProxyHTTP) Process(f parser.Feed) parser.Feed {
 	return f
 }
 
-func ProxyArticleLinks(d *goquery.Document, urlTemplate *template.Template) bool {
+func ProxyArticleLinks(d *goquery.Document, urlTemplate *template.Template, link string) bool {
 	changed := false
 	d.Find("[src]").Each(func(i int, s *goquery.Selection) {
 		var val string
@@ -57,7 +59,7 @@ func ProxyArticleLinks(d *goquery.Document, urlTemplate *template.Template) bool
 			return
 		}
 
-		if link, err := processUrl(val, urlTemplate); err == nil && link != "" {
+		if link, err := processUrl(val, urlTemplate, link); err == nil && link != "" {
 			s.SetAttr("src", link)
 		} else {
 			return
@@ -83,7 +85,7 @@ func ProxyArticleLinks(d *goquery.Document, urlTemplate *template.Template) bool
 				if buf.Len() != 0 {
 					// From here on, only descriptors follow, until the end, or the comma
 					expectUrl = false
-					if link, err := processUrl(buf.String(), urlTemplate); err == nil && link != "" {
+					if link, err := processUrl(buf.String(), urlTemplate, link); err == nil && link != "" {
 						res.WriteString(link)
 					} else {
 						return
@@ -105,7 +107,7 @@ func ProxyArticleLinks(d *goquery.Document, urlTemplate *template.Template) bool
 		}
 
 		if buf.Len() > 0 {
-			if link, err := processUrl(buf.String(), urlTemplate); err == nil && link != "" {
+			if link, err := processUrl(buf.String(), urlTemplate, link); err == nil && link != "" {
 				res.WriteString(link)
 			} else {
 				return
@@ -122,10 +124,31 @@ func ProxyArticleLinks(d *goquery.Document, urlTemplate *template.Template) bool
 	return changed
 }
 
-func processUrl(link string, urlTemplate *template.Template) (string, error) {
+func processUrl(link string, urlTemplate *template.Template, articleLink string) (string, error) {
 	u, err := url.Parse(link)
-	if err != nil || !u.IsAbs() || u.Scheme != "http" {
-		return "", err
+	if err != nil {
+		return "", errors.Wrapf(err, "parsing link %s", link)
+	}
+
+	if u.Scheme != "" && u.Scheme != "http" {
+		return "", nil
+	}
+
+	if !u.IsAbs() {
+		if ar, err := url.Parse(articleLink); err == nil {
+			if u.Scheme == "" {
+				u.Scheme = ar.Scheme
+			}
+			if u.Host == "" {
+				u.Host = ar.Host
+			}
+
+			if u.Path[0] != '/' {
+				u.Path = path.Join(path.Dir(ar.Path), u.Path)
+			}
+		} else {
+			return "", errors.Wrapf(err, "parsing article link %s", articleLink)
+		}
 	}
 
 	buf := util.BufferPool.GetBuffer()
