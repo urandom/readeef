@@ -179,6 +179,7 @@ var DefaultCfg string = `
 	processors
 	processors = cleanup
 	processors = top-image-marker
+	processors = absolutize-urls
 	# processors = relative-url
 	# processors = proxy-http
 

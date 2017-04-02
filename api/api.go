@@ -93,6 +93,8 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	var processors []parser.Processor
 	for _, p := range config.FeedParser.Processors {
 		switch p {
+		case "absolutize-urls":
+			processors = append(processors, processor.NewAbsolutizeURLs(logger))
 		case "relative-url":
 			processors = append(processors, processor.NewRelativeUrl(logger))
 		case "proxy-http":
