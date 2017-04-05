@@ -374,20 +374,19 @@ func (u *User) ArticlesById(ids []data.ArticleId, o ...data.ArticleQueryOptions)
 	login := u.Data().Login
 	u.logger.Infof("Getting articles %q for user %s\n", ids, login)
 
-	where := "("
+	where := "a.id IN ("
 
 	args := []interface{}{}
 	index := 1
 	for _, id := range ids {
 		if index > 1 {
-			where += ` OR `
+			where += `, `
 		}
 
-		where += fmt.Sprintf(`a.id = $%d`, index+1)
+		where += fmt.Sprintf(`$%d`, index+1)
 		args = append(args, id)
 		index = len(args) + 1
 	}
-
 	where += ")"
 
 	articles := getArticles(u, u.db, u.logger, opts, u, "", where, args)
