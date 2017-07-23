@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"path"
 	"reflect"
 	"strconv"
 	"time"
@@ -11,55 +12,35 @@ import (
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/parser"
-	"github.com/urandom/webfw"
-	"github.com/urandom/webfw/context"
 	"github.com/urandom/webfw/util"
 )
 
-type HubbubController struct {
-	webfw.BasePatternController
-
-	hubbub     *readeef.Hubbub
-	addFeed    chan<- content.Feed
-	removeFeed chan<- content.Feed
-}
-
-func NewHubbubController(h *readeef.Hubbub, relativePath string,
-	addFeed chan<- content.Feed, removeFeed chan<- content.Feed) HubbubController {
-
-	return HubbubController{
-		BasePatternController: webfw.NewBasePatternController(
-			"/v:version"+relativePath+"/:feed-id",
-			webfw.MethodGet|webfw.MethodPost, "hubbub-callback",
-		),
-		hubbub: h, addFeed: addFeed, removeFeed: removeFeed}
-}
-
-func (con HubbubController) Handler(c context.Context) http.Handler {
-	logger := webfw.GetLogger(c)
-	repo := readeef.GetRepo(c)
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func hubbubRegistration(
+	hubbub *readeef.Hubbub,
+	repo content.Repo,
+	addFeed chan<- content.Feed,
+	removeFeed chan<- content.Feed,
+	log readeef.Logger,
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		params := r.URL.Query()
-		pathParams := webfw.GetParams(c, r)
-		feedId, err := strconv.ParseInt(pathParams["feed-id"], 10, 64)
+
+		feedId, err := strconv.ParseInt(path.Base(r.URL.Path), 10, 64)
 
 		if err != nil {
-			logger.Print(err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		f := repo.FeedById(data.FeedId(feedId))
 		s := f.Subscription()
 
-		err = s.Err()
-
-		if err != nil {
-			logger.Print(err)
+		if s.HasErr() {
+			http.Error(w, s.Err().Error(), http.StatusInternalServerError)
 			return
 		}
 
-		logger.Infoln("Receiving hubbub event " + params.Get("hub.mode") + " for " + f.String())
+		log.Infoln("Receiving hubbub event " + params.Get("hub.mode") + " for " + f.String())
 
 		data := s.Data()
 		switch params.Get("hub.mode") {
@@ -75,7 +56,7 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 			w.Write([]byte(params.Get("hub.challenge")))
 		case "denied":
 			w.Write([]byte{})
-			logger.Printf("Unable to subscribe to '%s': %s\n", params.Get("hub.topic"), params.Get("hub.reason"))
+			log.Printf("Unable to subscribe to '%s': %s\n", params.Get("hub.topic"), params.Get("hub.reason"))
 		default:
 			w.Write([]byte{})
 
@@ -83,7 +64,7 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 			defer util.BufferPool.Put(buf)
 
 			if _, err := buf.ReadFrom(r.Body); err != nil {
-				logger.Print(err)
+				log.Print(err)
 				return
 			}
 
@@ -94,20 +75,20 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 				f.Update()
 
 				if f.HasErr() {
-					logger.Print(f.Err())
+					log.Print(f.Err())
 					return
 				}
 
 				newArticles = len(f.NewArticles()) > 0
 			} else {
-				logger.Print(err)
+				log.Print(err)
 				return
 			}
 
 			if newArticles {
-				for _, m := range con.hubbub.FeedMonitors() {
+				for _, m := range hubbub.FeedMonitors() {
 					if err := m.FeedUpdated(f); err != nil {
-						logger.Printf("Error invoking monitor '%s' on updated feed '%s': %v\n",
+						log.Printf("Error invoking monitor '%s' on updated feed '%s': %v\n",
 							reflect.TypeOf(m), f, err)
 					}
 				}
@@ -126,18 +107,14 @@ func (con HubbubController) Handler(c context.Context) http.Handler {
 		s.Data(data)
 		s.Update()
 		if s.HasErr() {
-			logger.Print(fmt.Errorf("Error updating subscription %s: %v\n", s, s.Err()))
+			log.Print(fmt.Errorf("Error updating subscription %s: %v\n", s, s.Err()))
 			return
 		}
 
 		if data.SubscriptionFailure {
-			con.removeFeed <- f
+			removeFeed <- f
 		} else {
-			con.addFeed <- f
+			addFeed <- f
 		}
-	})
-}
-
-func (con HubbubController) AuthRequired(c context.Context, r *http.Request) bool {
-	return false
+	}
 }

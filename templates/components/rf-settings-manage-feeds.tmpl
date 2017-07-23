@@ -6,7 +6,7 @@
 <link rel="import" href="/dist/paper-input/paper-input.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
-<link rel="import" href="{% url "/component/rf-api" .base.r %}">
+<link rel="import" href="{% url "/component/rf-api" %}">
 
 <dom-module id="rf-settings-manage-feeds">
     <template>
@@ -38,7 +38,7 @@
 		<style include="iron-flex-alignment"></style>
         <div class="card layout vertical start">
             <div hidden$="[[ _computeHideEmptyMessage(feeds) ]]">
-                {% __ "You are not subscribed to any feeds yet" .base.lang %}
+                {% __ "You are not subscribed to any feeds yet" %}
             </div>
 
             <ul>
@@ -51,14 +51,14 @@
 							</a>
                             <paper-icon-button icon="warning" on-tap="onDisplayFeedErrors" hidden$="[[ _computeHideFeedErrors(item) ]]"></paper-icon-button>
                             <paper-toast text="[[ _computeToastFeedErrorsText(item) ]]"></paper-toast>
-                            <paper-input value="[[ _computeFeedTags(item) ]]" on-change="onFeedTagsChange" placeholder="{% __ "Comma-separated tag list" .base.lang %}" no-label-float="true"></paper-input>
+                            <paper-input value="[[ _computeFeedTags(item) ]]" on-change="onFeedTagsChange" placeholder="{% __ "Comma-separated tag list" %}" no-label-float="true"></paper-input>
                             <paper-icon-button icon="remove" on-tap="onRemoveFeed"></paper-icon-button>
                         </div>
                     </li>
                 </template>
             </ul>
 
-			<paper-button on-tap="onExportFeeds" autofocus hidden$="[[ _computeHideExportFeeds(feeds, exporting) ]]" class="self-end">{% __ "Export feeds" .base.lang %}</paper-button>
+			<paper-button on-tap="onExportFeeds" autofocus hidden$="[[ _computeHideExportFeeds(feeds, exporting) ]]" class="self-end">{% __ "Export feeds" %}</paper-button>
         </div>
 
         <rf-api id="list-feeds" method="list-feeds" tag="settings" on-rf-api-message="onAllFeedsMessage"></rf-api>

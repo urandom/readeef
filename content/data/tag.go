@@ -9,8 +9,8 @@ type TagId int64
 type TagValue string
 
 type Tag struct {
-	Id    TagId
-	Value TagValue
+	Id    TagId    `json:"id"`
+	Value TagValue `json:"value"`
 }
 
 func (id *TagId) Scan(src interface{}) error {

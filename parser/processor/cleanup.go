@@ -4,22 +4,22 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/parser"
-	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/util"
 	"golang.org/x/net/html"
 )
 
 type Cleanup struct {
-	logger webfw.Logger
+	log readeef.Logger
 }
 
-func NewCleanup(l webfw.Logger) Cleanup {
-	return Cleanup{logger: l}
+func NewCleanup(l readeef.Logger) Cleanup {
+	return Cleanup{log: l}
 }
 
 func (p Cleanup) Process(f parser.Feed) parser.Feed {
-	p.logger.Infof("Cleaning up feed '%s'\n", f.Title)
+	p.log.Infof("Cleaning up feed '%s'\n", f.Title)
 
 	for i := range f.Articles {
 		f.Articles[i].Description = strings.TrimSpace(f.Articles[i].Description)

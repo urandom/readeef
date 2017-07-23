@@ -9,13 +9,13 @@ import (
 type Login string
 
 type User struct {
-	Login       Login
-	FirstName   string `db:"first_name"`
-	LastName    string `db:"last_name"`
-	Email       string
+	Login       Login  `json:"login"`
+	FirstName   string `db:"first_name" json:"firstName"`
+	LastName    string `db:"last_name" json:"lastName"`
+	Email       string `json:"email"`
 	HashType    string `db:"hash_type" json:"-"`
-	Admin       bool
-	Active      bool
+	Admin       bool   `json:"admin"`
+	Active      bool   `json:"active"`
 	ProfileJSON []byte `db:"profile_data" json:"-"`
 	Salt        []byte `json:"-"`
 	Hash        []byte `json:"-"`

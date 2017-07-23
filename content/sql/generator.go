@@ -22,7 +22,7 @@ func (r *Repo) UserArticle(u content.User) content.UserArticle {
 }
 
 func (r *Repo) ArticleScores() content.ArticleScores {
-	asc := &ArticleScores{db: r.db, logger: r.logger}
+	asc := &ArticleScores{db: r.db, log: r.log}
 
 	asc.Repo(r)
 
@@ -30,7 +30,7 @@ func (r *Repo) ArticleScores() content.ArticleScores {
 }
 
 func (r *Repo) ArticleThumbnail() content.ArticleThumbnail {
-	at := &ArticleThumbnail{db: r.db, logger: r.logger}
+	at := &ArticleThumbnail{db: r.db, log: r.log}
 
 	at.Repo(r)
 
@@ -38,7 +38,7 @@ func (r *Repo) ArticleThumbnail() content.ArticleThumbnail {
 }
 
 func (r *Repo) ArticleExtract() content.ArticleExtract {
-	ae := &ArticleExtract{db: r.db, logger: r.logger}
+	ae := &ArticleExtract{db: r.db, log: r.log}
 
 	ae.Repo(r)
 
@@ -70,7 +70,7 @@ func (r *Repo) TaggedFeed(u content.User) content.TaggedFeed {
 }
 
 func (r *Repo) Subscription() content.Subscription {
-	s := &Subscription{db: r.db, logger: r.logger}
+	s := &Subscription{db: r.db, log: r.log}
 
 	s.Repo(r)
 
@@ -81,11 +81,11 @@ func (r *Repo) Tag(u content.User) content.Tag {
 	t := &base.Tag{}
 	t.User(u)
 	t.Repo(r)
-	return &Tag{Tag: *t, db: r.db, logger: r.logger}
+	return &Tag{Tag: *t, db: r.db, log: r.log}
 }
 
 func (r *Repo) User() content.User {
-	u := &User{db: r.db, logger: r.logger}
+	u := &User{db: r.db, log: r.log}
 
 	u.Repo(r)
 
@@ -100,11 +100,11 @@ func (r *Repo) userArticle(u content.User) UserArticle {
 }
 
 func (r Repo) article() Article {
-	return Article{db: r.db, logger: r.logger}
+	return Article{db: r.db, log: r.log}
 }
 
 func (r Repo) feed() Feed {
-	return Feed{db: r.db, logger: r.logger}
+	return Feed{db: r.db, log: r.log}
 }
 
 func (r Repo) userFeed(u content.User) UserFeed {

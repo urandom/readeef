@@ -1,291 +1,484 @@
 package api
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"html"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/urandom/readeef"
+	"github.com/go-chi/chi"
+	"github.com/urandom/handler/method"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base/search"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/text-summary/summarize"
-	"github.com/urandom/webfw"
-	"github.com/urandom/webfw/context"
 )
 
-type Article struct {
-	config    readeef.Config
-	extractor content.Extractor
-}
-
-func NewArticle(config readeef.Config, extractor content.Extractor) Article {
-	return Article{config: config, extractor: extractor}
-}
-
-type Readability struct {
-	Content string
-}
-
-type articleReadStateProcessor struct {
-	Id    data.ArticleId `json:"id"`
-	Value bool           `json:"value"`
-
-	user content.User
-}
-
-type articleFavoriteStateProcessor struct {
-	Id    data.ArticleId `json:"id"`
-	Value bool           `json:"value"`
-
-	user content.User
-}
-
-type formatArticleProcessor struct {
-	Id data.ArticleId `json:"id"`
-
-	user          content.User
-	extractor     content.Extractor
-	webfwConfig   webfw.Config
-	readeefConfig readeef.Config
-}
-
-type getArticleProcessor struct {
-	Id data.ArticleId `json:"id"`
-
-	user content.User
-}
-
-func (con Article) Patterns() []webfw.MethodIdentifierTuple {
-	prefix := "/v:version/article/:article-id/"
-
-	return []webfw.MethodIdentifierTuple{
-		webfw.MethodIdentifierTuple{"", webfw.MethodGet, "fetch"},
-		webfw.MethodIdentifierTuple{prefix + "read/:value", webfw.MethodPost, "read"},
-		webfw.MethodIdentifierTuple{prefix + "favorite/:value", webfw.MethodPost, "favorite"},
-		webfw.MethodIdentifierTuple{prefix + "format", webfw.MethodGet, "format"},
+func getArticle(w http.ResponseWriter, r *http.Request) {
+	if article, stop := articleFromRequest(w, r); stop {
+		return
+	} else {
+		args{"article": article}.WriteJSON(w)
 	}
 }
 
-func (con Article) Handler(c context.Context) http.Handler {
-	logger := webfw.GetLogger(c)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := readeef.GetUser(c, r)
+func formatArticle(extractor content.Extractor) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
 
-		params := webfw.GetParams(c, r)
-		action := webfw.GetMultiPatternIdentifier(c, r)
+		article, stop := articleFromRequest(w, r)
+		if stop {
+			return
+		}
 
-		logger.Infof("Invoking Article controller with action '%s', article id '%s'\n", action, params["article-id"])
+		extract := article.Extract()
 
-		var articleId int64
-		var resp responseError
+		extractData := extract.Data()
+		if extract.HasErr() {
+			switch err := extract.Err(); err {
+			case content.ErrNoContent:
+				if extractData, err = extractor.Extract(article.Data().Link); err != nil {
+					http.Error(w, "Error getting article extract: "+err.Error(), http.StatusInternalServerError)
+					return
+				}
 
-		articleId, resp.err = strconv.ParseInt(params["article-id"], 10, 64)
-
-		if resp.err == nil {
-			id := data.ArticleId(articleId)
-			switch action {
-			case "fetch":
-				resp = fetchArticle(user, id)
-			case "read":
-				resp = articleReadState(user, id, params["value"] == "true")
-			case "favorite":
-				resp = articleFavoriteState(user, id, params["value"] == "true")
-			case "format":
-				resp = formatArticle(user, id, con.extractor, webfw.GetConfig(c), con.config)
+				extractData.ArticleId = article.Data().Id
+				extract.Data(extractData)
+				extract.Update()
+				if extract.HasErr() {
+					http.Error(w, "Error updating article extract: "+extract.Err().Error(), http.StatusInternalServerError)
+					return
+				}
+			default:
+				http.Error(w, "Error getting article extract: "+err.Error(), http.StatusInternalServerError)
+				return
 			}
 		}
 
-		var b []byte
-		if resp.err == nil {
-			b, resp.err = json.Marshal(resp.val)
+		processors := user.Repo().ArticleProcessors()
+		if len(processors) > 0 {
+			a := user.Repo().UserArticle(user)
+			a.Data(data.Article{Description: extractData.Content})
+
+			ua := []content.UserArticle{a}
+
+			if extractData.TopImage != "" {
+				a = user.Repo().UserArticle(user)
+				a.Data(data.Article{
+					Description: fmt.Sprintf(`<img src="%s">`, extractData.TopImage),
+				})
+
+				ua = append(ua, a)
+			}
+
+			for _, p := range processors {
+				ua = p.ProcessArticles(ua)
+			}
+
+			extractData.Content = ua[0].Data().Description
+
+			if extractData.TopImage != "" {
+				content := ua[1].Data().Description
+
+				content = strings.Replace(content, `<img src="`, "", -1)
+				i := strings.Index(content, `"`)
+				content = content[:i]
+
+				extractData.TopImage = content
+			}
 		}
 
-		if resp.err == nil {
-			w.Write(b)
+		s := summarize.NewFromString(extractData.Title, search.StripTags(extractData.Content))
+
+		s.Language = extractData.Language
+		keyPoints := s.KeyPoints()
+
+		for i := range keyPoints {
+			keyPoints[i] = html.UnescapeString(keyPoints[i])
+		}
+
+		args{
+			"keyPoints": keyPoints,
+			"content":   extractData.Content,
+			"topImage":  extractData.TopImage,
+		}.WriteJSON(w)
+	}
+}
+
+type articleState int
+
+const (
+	read articleState = iota
+	favorite
+)
+
+func articleStateChange(state articleState) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		article, stop := articleFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		var value bool
+		if stop = readJSON(w, r.Body, &value); stop {
+			return
+		}
+
+		in := article.Data()
+		var previousState bool
+
+		if state == read {
+			previousState = in.Read
 		} else {
-			webfw.GetLogger(c).Print(resp.err)
-
-			w.WriteHeader(http.StatusInternalServerError)
+			previousState = in.Favorite
 		}
-	})
-}
 
-func (con Article) AuthRequired(c context.Context, r *http.Request) bool {
-	return true
-}
-
-func (p articleReadStateProcessor) Process() responseError {
-	return articleReadState(p.user, p.Id, p.Value)
-}
-
-func (p articleFavoriteStateProcessor) Process() responseError {
-	return articleFavoriteState(p.user, p.Id, p.Value)
-}
-
-func (p formatArticleProcessor) Process() responseError {
-	return formatArticle(p.user, p.Id, p.extractor, p.webfwConfig, p.readeefConfig)
-}
-
-func (p getArticleProcessor) Process() responseError {
-	return fetchArticle(p.user, p.Id)
-}
-
-func fetchArticle(user content.User, id data.ArticleId) (resp responseError) {
-	resp = newResponse()
-
-	article := user.ArticleById(id)
-	if user.HasErr() {
-		resp.err = user.Err()
-		return
-	}
-
-	resp.val["Article"] = article
-	return
-}
-
-func articleReadState(user content.User, id data.ArticleId, read bool) (resp responseError) {
-	resp = newResponse()
-
-	article := user.ArticleById(id, data.ArticleQueryOptions{SkipProcessors: true})
-	if user.HasErr() {
-		resp.err = user.Err()
-		return
-	}
-
-	in := article.Data()
-	previouslyRead := in.Read
-
-	if previouslyRead != read {
-		article.Read(read)
-		if article.HasErr() {
-			resp.err = article.Err()
-			return
-		}
-	}
-
-	resp.val["Success"] = previouslyRead != read
-	resp.val["Read"] = read
-	resp.val["Id"] = in.Id
-	return
-}
-
-func articleFavoriteState(user content.User, id data.ArticleId, favorite bool) (resp responseError) {
-	resp = newResponse()
-
-	article := user.ArticleById(id, data.ArticleQueryOptions{SkipProcessors: true})
-	if user.HasErr() {
-		resp.err = user.Err()
-		return
-	}
-
-	in := article.Data()
-	previouslyFavorite := in.Favorite
-
-	if previouslyFavorite != favorite {
-		article.Favorite(favorite)
-		if article.HasErr() {
-			resp.err = article.Err()
-			return
-		}
-	}
-
-	resp.val["Success"] = previouslyFavorite != favorite
-	resp.val["Favorite"] = favorite
-	resp.val["Id"] = in.Id
-	return
-}
-
-func formatArticle(user content.User, id data.ArticleId, extractor content.Extractor, webfwConfig webfw.Config, readeefConfig readeef.Config) (resp responseError) {
-	resp = newResponse()
-
-	article := user.ArticleById(id)
-	if user.HasErr() {
-		resp.err = user.Err()
-		return
-	}
-
-	extract := article.Extract()
-	if article.HasErr() {
-		resp.err = article.Err()
-		return
-	}
-
-	extractData := extract.Data()
-	if extract.HasErr() {
-		switch err := extract.Err(); err {
-		case content.ErrNoContent:
-			if extractor == nil {
-				resp.err = fmt.Errorf("Error formatting article: A valid extractor is reequired")
-				return
+		if previousState != value {
+			if state == read {
+				article.Read(value)
+			} else {
+				article.Favorite(value)
 			}
 
-			extractData, resp.err = extractor.Extract(article.Data().Link)
-			if resp.err != nil {
+			if article.HasErr() {
+				http.Error(w, "Error setting article "+state.String()+" state: "+article.Err().Error(), http.StatusInternalServerError)
 				return
 			}
+		}
 
-			extractData.ArticleId = article.Data().Id
-			extract.Data(extractData)
-			extract.Update()
-			if extract.HasErr() {
-				resp.err = extract.Err()
+		args{
+			"success":      previousState != value,
+			state.String(): value,
+		}.WriteJSON(w)
+	}
+}
+
+type articleRepoType int
+
+const (
+	userRepoType articleRepoType = iota
+	favoriteRepoType
+	popularRepoType
+	tagRepoType
+	feedRepoType
+)
+
+func articlesReadStateChange(repoType articleRepoType) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		o, stop := articleUpdateStateOptions(w, r)
+		if stop {
+			return
+		}
+
+		var ar content.ArticleRepo
+
+		switch repoType {
+		case userRepoType:
+			ar = user
+		case favoriteRepoType:
+			ar = user
+			o.FavoriteOnly = true
+		case tagRepoType:
+			ar, stop = tagFromRequest(w, r)
+			if stop {
+				return
+			}
+		case feedRepoType:
+			ar, stop = feedFromRequest(w, r)
+			if stop {
 				return
 			}
 		default:
-			resp.err = err
+			http.Error(w, "Unknown type", http.StatusBadRequest)
 			return
 		}
-	}
 
-	processors := user.Repo().ArticleProcessors()
-	if len(processors) > 0 {
-		a := user.Repo().UserArticle(user)
-		a.Data(data.Article{Description: extractData.Content})
+		ar.ReadState(true, o)
 
-		ua := []content.UserArticle{a}
-
-		if extractData.TopImage != "" {
-			a = user.Repo().UserArticle(user)
-			a.Data(data.Article{
-				Description: fmt.Sprintf(`<img src="%s">`, extractData.TopImage),
-			})
-
-			ua = append(ua, a)
+		if e, ok := ar.(content.Error); ok && e.HasErr() {
+			http.Error(w, "Error setting read state: "+e.Err().Error(), http.StatusInternalServerError)
+			return
 		}
 
-		for _, p := range processors {
-			ua = p.ProcessArticles(ua)
+		args{"success": true}.WriteJSON(w)
+	}
+}
+
+func articleUpdateStateOptions(w http.ResponseWriter, r *http.Request) (data.ArticleUpdateStateOptions, bool) {
+	o := data.ArticleUpdateStateOptions{}
+
+	query := r.URL.Query()
+	if query.Get("until") != "" {
+		until, err := strconv.ParseInt(query.Get("until"), 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return o, true
 		}
 
-		extractData.Content = ua[0].Data().Description
+		o.BeforeDate = time.Unix(until, 0)
+	}
 
-		if extractData.TopImage != "" {
-			content := ua[1].Data().Description
-
-			content = strings.Replace(content, `<img src="`, "", -1)
-			i := strings.Index(content, `"`)
-			content = content[:i]
-
-			extractData.TopImage = content
+	if query.Get("beforeArticle") != "" {
+		before, err := strconv.ParseInt(query.Get("beforeArticle"), 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return o, true
 		}
+
+		o.BeforeId = data.ArticleId(before)
 	}
 
-	s := summarize.NewFromString(extractData.Title, search.StripTags(extractData.Content))
+	return o, false
+}
 
-	s.Language = extractData.Language
-	keyPoints := s.KeyPoints()
+func getArticles(repoType articleRepoType, subTypes ...articleRepoType) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
 
-	for i := range keyPoints {
-		keyPoints[i] = html.UnescapeString(keyPoints[i])
+		o, stop := articleQueryOptions(w, r)
+		if stop {
+			return
+		}
+
+		var ar content.ArticleRepo
+
+		switch repoType {
+		case favoriteRepoType:
+			o.FavoriteOnly = true
+			fallthrough
+		case userRepoType:
+			ar = user
+		case popularRepoType:
+			o.IncludeScores = true
+			o.HighScoredFirst = true
+			o.BeforeDate = time.Now()
+			o.AfterDate = time.Now().AddDate(0, 0, -5)
+
+			if len(subTypes) > 0 {
+				subType := subTypes[0]
+				switch subType {
+				case userRepoType:
+					ar = user
+				case tagRepoType:
+					tag, stop := tagFromRequest(w, r)
+					if stop {
+						return
+					}
+
+					ar = tag
+				case feedRepoType:
+					feed, stop := feedFromRequest(w, r)
+					if stop {
+						return
+					}
+
+					ar = feed
+				}
+			}
+		case tagRepoType:
+			tag, stop := tagFromRequest(w, r)
+			if stop {
+				return
+			}
+
+			ar = tag
+		case feedRepoType:
+			feed, stop := feedFromRequest(w, r)
+			if stop {
+				return
+			}
+
+			ar = feed
+		}
+
+		if as, ok := ar.(content.ArticleSorting); ok {
+			as.SortingByDate()
+			if r.URL.Query().Get("olderFirst") == "true" {
+				as.Order(data.AscendingOrder)
+			} else {
+				as.Order(data.DescendingOrder)
+			}
+		}
+
+		if ar != nil {
+			ua := ar.Articles(o)
+
+			if e, ok := ar.(content.Error); ok && e.HasErr() {
+				http.Error(w, "Error getting articles: "+e.Err().Error(), http.StatusInternalServerError)
+			}
+
+			args{"articles": ua}.WriteJSON(w)
+		}
+
+		http.Error(w, "Unknown article repository", http.StatusBadRequest)
+	}
+}
+
+func articleSearch(searchProvider content.SearchProvider, repoType articleRepoType) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		query := chi.URLParam(r, "*")
+		if query == "" {
+			http.Error(w, "No query provided", http.StatusBadRequest)
+			return
+		}
+
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		o, stop := articleQueryOptions(w, r)
+		if stop {
+			return
+		}
+
+		searchProvider.SortingByDate()
+		if r.URL.Query().Get("olderFirst") == "true" {
+			searchProvider.Order(data.AscendingOrder)
+		} else {
+			searchProvider.Order(data.DescendingOrder)
+		}
+
+		var as content.ArticleSearch
+		switch repoType {
+		case userRepoType:
+			as = user
+		case feedRepoType:
+			feed, stop := feedFromRequest(w, r)
+			if stop {
+				return
+			}
+
+			as = feed
+		case tagRepoType:
+			tag, stop := tagFromRequest(w, r)
+			if stop {
+				return
+			}
+
+			as = tag
+		default:
+			http.Error(w, "Unknown repo type: "+repoType.String(), http.StatusBadRequest)
+			return
+		}
+
+		ua := as.Query(query, searchProvider, o.Limit, o.Offset)
+		if e, ok := as.(content.Error); ok && e.HasErr() {
+			http.Error(w, "Error while searching: "+e.Err().Error(), http.StatusInternalServerError)
+			return
+		}
+
+		args{"articles": ua}.WriteJSON(w)
+	}
+}
+
+func articleQueryOptions(w http.ResponseWriter, r *http.Request) (data.ArticleQueryOptions, bool) {
+	o := data.ArticleQueryOptions{UnreadFirst: true}
+
+	query := r.URL.Query()
+	if query.Get("limit") != "" {
+		limit, err := strconv.Atoi(query.Get("limit"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return o, true
+		}
+
+		o.Limit = limit
 	}
 
-	resp.val["KeyPoints"] = keyPoints
-	resp.val["Content"] = extractData.Content
-	resp.val["TopImage"] = extractData.TopImage
-	resp.val["Id"] = id
-	return
+	if query.Get("offset") != "" {
+		offset, err := strconv.Atoi(query.Get("offset"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return o, true
+		}
+
+		o.Offset = offset
+	}
+
+	if query.Get("minID") != "" {
+		minID, err := strconv.ParseInt(query.Get("minID"), 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return o, true
+		}
+
+		o.BeforeId = data.ArticleId(minID)
+	}
+
+	if query.Get("maxID") != "" {
+		maxID, err := strconv.ParseInt(query.Get("maxID"), 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return o, true
+		}
+
+		o.AfterId = data.ArticleId(maxID)
+	}
+
+	if query.Get("unreadOnly") != "" {
+		unreadOnly := query.Get("unreadOnly") == "true"
+
+		o.UnreadOnly = unreadOnly
+	}
+
+	return o, false
+}
+
+func articleContext(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		id, err := strconv.ParseInt(chi.URLParam(r, "articleId"), 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		o := data.ArticleQueryOptions{}
+		if r.Method == method.POST {
+			o.SkipProcessors = true
+		}
+
+		article := user.ArticleById(data.ArticleId(id), o)
+		if article.HasErr() {
+			err := article.Err()
+			if err == content.ErrNoContent {
+				http.Error(w, "Not found", http.StatusNotFound)
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), "article", article)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func articleFromRequest(w http.ResponseWriter, r *http.Request) (article content.UserArticle, stop bool) {
+	var ok bool
+	if article, ok = r.Context().Value("article").(content.UserArticle); ok {
+		return article, false
+	}
+
+	http.Error(w, "Bad Request", http.StatusBadRequest)
+	return nil, true
 }

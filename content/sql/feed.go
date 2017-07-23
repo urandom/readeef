@@ -9,17 +9,17 @@ import (
 	"text/template"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/db"
-	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/util"
 )
 
 type Feed struct {
 	base.Feed
-	logger webfw.Logger
+	log readeef.Logger
 
 	db          *db.DB
 	newArticles []content.Article
@@ -90,7 +90,7 @@ func (f *Feed) Users() (u []content.User) {
 		return
 	}
 
-	f.logger.Infof("Getting users for feed %d\n", id)
+	f.log.Infof("Getting users for feed %d\n", id)
 
 	var in []data.User
 	if err := f.db.Select(&in, f.db.SQL().Feed.GetUsers, id); err != nil {
@@ -125,7 +125,7 @@ func (f *Feed) Update() {
 	i := f.Data()
 	id := i.Id
 	s := f.db.SQL()
-	f.logger.Infof("Updating feed %d\n", id)
+	f.log.Infof("Updating feed %d\n", id)
 
 	tx, err := f.db.Beginx()
 	if err != nil {
@@ -186,7 +186,7 @@ func (f *Feed) Delete() {
 		return
 	}
 
-	f.logger.Infof("Deleting feed %d\n", id)
+	f.log.Infof("Deleting feed %d\n", id)
 
 	tx, err := f.db.Beginx()
 	if err != nil {
@@ -243,7 +243,7 @@ func (f *Feed) SetNewArticlesUnread() {
 		}
 	}
 
-	f.logger.Infof("Setting new articles from feed %d as unread for all related users\n", id)
+	f.log.Infof("Setting new articles from feed %d as unread for all related users\n", id)
 
 	args := make([]interface{}, len(articles)+1)
 	placeholders := make([]string, len(articles))
@@ -265,7 +265,7 @@ func (f *Feed) SetNewArticlesUnread() {
 	}
 
 	sql := buf.String()
-	f.logger.Debugf("Read state insert feed SQL:\n%s\nArgs:%q\n", sql, args)
+	f.log.Debugf("Read state insert feed SQL:\n%s\nArgs:%q\n", sql, args)
 
 	tx, err := f.db.Beginx()
 	if err != nil {
@@ -303,7 +303,7 @@ func (f *Feed) AllArticles() (a []content.Article) {
 		return
 	}
 
-	f.logger.Infof("Getting all feed %d articles\n", id)
+	f.log.Infof("Getting all feed %d articles\n", id)
 
 	var data []data.Article
 	if err := f.db.Select(&data, f.db.SQL().Feed.GetAllArticles, id); err != nil {
@@ -331,7 +331,7 @@ func (f *Feed) LatestArticles() (a []content.Article) {
 		return
 	}
 
-	f.logger.Infof("Getting latest feed %d articles\n", id)
+	f.log.Infof("Getting latest feed %d articles\n", id)
 
 	var data []data.Article
 	if err := f.db.Select(&data, f.db.SQL().Feed.GetLatestArticles, id); err != nil {
@@ -359,7 +359,7 @@ func (f *Feed) AddArticles(articles []content.Article) {
 		return
 	}
 
-	f.logger.Infof("Adding %d articles to feed %d\n", len(articles), id)
+	f.log.Infof("Adding %d articles to feed %d\n", len(articles), id)
 
 	tx, err := f.db.Beginx()
 	if err != nil {
@@ -392,7 +392,7 @@ func (f *Feed) Subscription() (s content.Subscription) {
 		return
 	}
 
-	f.logger.Infof("Getting subcription for feed %d\n", id)
+	f.log.Infof("Getting subcription for feed %d\n", id)
 
 	var in data.Subscription
 	if err := f.db.Get(&in, f.db.SQL().Feed.GetHubbubSubscription, id); err != nil {
@@ -420,7 +420,7 @@ func (f *Feed) updateFeedArticles(tx *sqlx.Tx, articles []content.Article) (a []
 		d.FeedId = id
 		articles[i].Data(d)
 
-		updateArticle(articles[i], tx, f.db, f.logger)
+		updateArticle(articles[i], tx, f.db, f.log)
 
 		if articles[i].HasErr() {
 			f.Err(fmt.Errorf("Error updating article %s: %v\n", articles[i], articles[i].Err()))
@@ -461,7 +461,7 @@ func (uf *UserFeed) Detach() {
 	}
 
 	login := uf.User().Data().Login
-	uf.logger.Infof("Detaching feed %d from user %s\n", id, login)
+	uf.log.Infof("Detaching feed %d from user %s\n", id, login)
 
 	tx, err := uf.db.Beginx()
 	if err != nil {
@@ -507,12 +507,12 @@ func (uf *UserFeed) Articles(o ...data.ArticleQueryOptions) (ua []content.UserAr
 		opts = o[0]
 	}
 
-	uf.logger.Infof("Getting articles for feed %d with options: %#v\n", id, opts)
+	uf.log.Infof("Getting articles for feed %d with options: %#v\n", id, opts)
 
 	where := "uf.feed_id = $2"
 
 	u := uf.User()
-	ua = getArticles(u, uf.db, uf.logger, opts, uf, "", where, []interface{}{uf.Data().Id})
+	ua = getArticles(u, uf.db, uf.log, opts, uf, "", where, []interface{}{uf.Data().Id})
 
 	if u.HasErr() {
 		uf.Err(u.Err())
@@ -539,9 +539,9 @@ func (uf *UserFeed) Ids(o ...data.ArticleIdQueryOptions) (ids []data.ArticleId) 
 		opts = o[0]
 	}
 
-	uf.logger.Infof("Getting user %s feed %d article ids with options %#v\n", u.Data().Login, id, opts)
+	uf.log.Infof("Getting user %s feed %d article ids with options %#v\n", u.Data().Login, id, opts)
 
-	ids = articleIds(u, uf.db, uf.logger, opts, "", "a.feed_id = $2", []interface{}{id})
+	ids = articleIds(u, uf.db, uf.log, opts, "", "a.feed_id = $2", []interface{}{id})
 
 	if u.HasErr() {
 		uf.Err(u.Err())
@@ -568,9 +568,9 @@ func (uf *UserFeed) Count(o ...data.ArticleCountOptions) (count int64) {
 		opts = o[0]
 	}
 
-	uf.logger.Infof("Getting user %s feed %d article count with options %#v\n", u.Data().Login, id, opts)
+	uf.log.Infof("Getting user %s feed %d article count with options %#v\n", u.Data().Login, id, opts)
 
-	count = articleCount(u, uf.db, uf.logger, opts, "", "a.feed_id = $2", []interface{}{id})
+	count = articleCount(u, uf.db, uf.log, opts, "", "a.feed_id = $2", []interface{}{id})
 
 	if u.HasErr() {
 		uf.Err(u.Err())
@@ -597,10 +597,10 @@ func (uf *UserFeed) ReadState(read bool, o ...data.ArticleUpdateStateOptions) {
 	u := uf.User()
 	login := u.Data().Login
 	id := uf.Data().Id
-	uf.logger.Infof("Getting articles for user %s feed %d with opts: %#v\n", login, id, opts)
+	uf.log.Infof("Getting articles for user %s feed %d with opts: %#v\n", login, id, opts)
 
 	args := []interface{}{id}
-	readState(u, uf.db, uf.logger, opts, read, "", "uf.feed_id = $2",
+	readState(u, uf.db, uf.log, opts, read, "", "uf.feed_id = $2",
 		"", "a.feed_id = $2", args, args)
 	if u.HasErr() {
 		uf.Err(u.Err())
@@ -663,7 +663,7 @@ func (tf *TaggedFeed) Tags(tags ...[]content.Tag) []content.Tag {
 		}
 
 		login := tf.User().Data().Login
-		tf.logger.Infof("Getting tags for user %s and feed '%d'\n", login, id)
+		tf.log.Infof("Getting tags for user %s and feed '%d'\n", login, id)
 
 		var tagData []data.Tag
 		if err := tf.db.Select(&tagData, tf.db.SQL().Feed.GetUserTags, login, id); err != nil {
@@ -701,7 +701,7 @@ func (tf *TaggedFeed) UpdateTags() {
 	}
 
 	login := u.Data().Login
-	tf.logger.Infof("Deleting all tags for feed %d\n", id)
+	tf.log.Infof("Deleting all tags for feed %d\n", id)
 
 	tx, err := tf.db.Beginx()
 	if err != nil {
@@ -743,7 +743,7 @@ func (tf *TaggedFeed) UpdateTags() {
 
 	if len(tags) > 0 {
 		id := tf.Data().Id
-		tf.logger.Infof("Adding tags for feed %d\n", id)
+		tf.log.Infof("Adding tags for feed %d\n", id)
 
 		stmt, err := tx.Preparex(s.Feed.CreateUserTag)
 		if err != nil {

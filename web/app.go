@@ -1,51 +1,46 @@
 package web
 
 import (
+	"html/template"
 	"net/http"
 
-	"github.com/urandom/readeef"
-	"github.com/urandom/webfw"
-	"github.com/urandom/webfw/context"
-	"github.com/urandom/webfw/renderer"
+	"github.com/alexedwards/scs/session"
+	"github.com/pkg/errors"
+	"github.com/urandom/handler/lang"
+	"github.com/urandom/handler/method"
 )
 
-type App struct{}
+const (
+	baseTmpl = "templates/base.tmpl"
+	appTmpl  = "templates/app.tmpl"
+)
 
-func NewApp() App {
-	return App{}
+type mainPayload struct {
+	Language string
 }
 
-func (con App) Patterns() []webfw.MethodIdentifierTuple {
-	return []webfw.MethodIdentifierTuple{
-		webfw.MethodIdentifierTuple{"/", webfw.MethodAll, ""},
-		webfw.MethodIdentifierTuple{"/web/*history", webfw.MethodAll, "history"},
-	}
-}
-
-func (con App) Handler(c context.Context) http.Handler {
-	cfg := readeef.GetConfig(c)
-	rnd := webfw.GetRenderer(c)
-
-	if cfg.Logger.Level == "debug" {
-		rnd.SkipCache(true)
+func MainHandler(fs http.FileSystem) (http.Handler, error) {
+	tmpl, err := prepareTemplate(template.New("main"), fs, baseTmpl, appTmpl)
+	if err != nil {
+		return nil, errors.Wrap(err, "preparing main template")
 	}
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		action := webfw.GetMultiPatternIdentifier(c, r)
+	return method.HTTP(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var err error
 
-		data := renderer.RenderData{}
-		if action == "history" {
-			params := webfw.GetParams(c, r)
-			data["history"] = "/web/" + params["history"]
-		}
-
-		if r.Method != "HEAD" {
-			err := rnd.Render(w, data, c.GetAll(r), "app.tmpl")
-			if err != nil {
-				webfw.GetLogger(c).Print(err)
+		data := lang.Data(r)
+		if err = tmpl.Funcs(requestFuncMaps(r)).Execute(w, mainPayload{
+			Language: data.Current.String(),
+		}); err == nil {
+			if err = session.PutBool(r, visitorKey, true); err == nil {
+				err = session.Save(w, r)
 			}
 		}
 
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
 		w.Header().Set("X-Readeef", "1")
-	})
+	}), method.GET, method.HEAD), nil
 }

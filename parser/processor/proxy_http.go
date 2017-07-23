@@ -10,28 +10,28 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/pkg/errors"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/parser"
-	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/util"
 )
 
 type ProxyHTTP struct {
-	logger      webfw.Logger
 	urlTemplate *template.Template
+	log         readeef.Logger
 }
 
-func NewProxyHTTP(l webfw.Logger, urlTemplate string) (ProxyHTTP, error) {
-	l.Infof("URL Template: %s\n", urlTemplate)
+func NewProxyHTTP(urlTemplate string, log readeef.Logger) (ProxyHTTP, error) {
+	log.Infof("URL Template: %s\n", urlTemplate)
 	t, err := template.New("proxy-http-url-template").Parse(urlTemplate)
 	if err != nil {
-		return ProxyHTTP{}, err
+		return ProxyHTTP{}, errors.Wrap(err, "parsing template")
 	}
 
-	return ProxyHTTP{logger: l, urlTemplate: t}, nil
+	return ProxyHTTP{urlTemplate: t, log: log}, nil
 }
 
 func (p ProxyHTTP) Process(f parser.Feed) parser.Feed {
-	p.logger.Infof("Proxying urls of feed '%s'\n", f.Title)
+	p.log.Infof("Proxying urls of feed '%s'\n", f.Title)
 
 	for i := range f.Articles {
 		if d, err := goquery.NewDocumentFromReader(strings.NewReader(f.Articles[i].Description)); err == nil {

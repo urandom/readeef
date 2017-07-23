@@ -1,68 +1,59 @@
 package web
 
 import (
+	"html/template"
 	"net/http"
+	"path"
 
-	"github.com/urandom/readeef"
-	"github.com/urandom/webfw"
-	"github.com/urandom/webfw/context"
-	"github.com/urandom/webfw/middleware"
-	"github.com/urandom/webfw/renderer"
+	"golang.org/x/text/language"
+
+	"github.com/pkg/errors"
+	"github.com/urandom/handler/lang"
+	"github.com/urandom/handler/method"
 )
 
-type Component struct {
-	webfw.BasePatternController
-	dispatcher *webfw.Dispatcher
-	apiPattern string
+const (
+	componentsPrefix = "/templates/components/"
+)
+
+type componentPayload struct {
+	APIPattern   string
+	Language     string
+	Languages    []language.Tag
+	HasLanguages bool
 }
 
-func NewComponent(dispatcher *webfw.Dispatcher, apiPattern string) Component {
-	return Component{
-		BasePatternController: webfw.NewBasePatternController("/component/:name", webfw.MethodAll, ""),
-		dispatcher:            dispatcher,
-		apiPattern:            apiPattern,
-	}
-}
-
-func (con Component) Handler(c context.Context) http.Handler {
-	i18nmw, i18nFound := con.dispatcher.Middleware("I18N")
-	urlmw, urlFound := con.dispatcher.Middleware("Url")
-	logger := webfw.GetLogger(c)
-	cfg := readeef.GetConfig(c)
-
-	rnd := renderer.NewRenderer(con.dispatcher.Config.Renderer.Dir, "raw.tmpl")
-	rnd.Delims("{%", "%}")
-
-	if cfg.Logger.Level == "debug" {
-		rnd.SkipCache(true)
+func ComponentHandler(fs http.FileSystem) (http.Handler, error) {
+	baseTmpl, err := prepareTemplate(template.New("components"), fs)
+	if err != nil {
+		return nil, errors.Wrap(err, "preparing components template")
 	}
 
-	if i18nFound {
-		if i18n, ok := i18nmw.(middleware.I18N); ok {
-			rnd.Funcs(i18n.TemplateFuncMap())
+	cache := map[string]*template.Template{}
+
+	return method.HTTP(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var err error
+
+		name := path.Base(r.URL.Path)
+
+		tmpl := cache[name]
+		if tmpl == nil {
+			tmpl, err = prepareTemplate(baseTmpl, fs, componentsPrefix+name+".tmpl")
+			cache[name] = tmpl
 		}
-	} else {
-		logger.Infoln("I18N middleware not found")
-	}
 
-	if urlFound {
-		if url, ok := urlmw.(middleware.Url); ok {
-			rnd.Funcs(url.TemplateFuncMap(c))
+		if err == nil {
+			data := lang.Data(r)
+			err = tmpl.Funcs(requestFuncMaps(r)).Execute(w, componentPayload{
+				APIPattern:   "/api/v2",
+				Language:     data.Current.String(),
+				Languages:    data.Languages,
+				HasLanguages: len(data.Languages) > 0,
+			})
 		}
-	} else {
-		logger.Infoln("Url middleware not found")
-	}
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		params := webfw.GetParams(c, r)
-
-		if r.Method != "HEAD" {
-			err := rnd.Render(w, renderer.RenderData{"apiPattern": con.apiPattern, "config": cfg},
-				c.GetAll(r), "components/"+params["name"]+".tmpl")
-
-			if err != nil {
-				webfw.GetLogger(c).Print(err)
-			}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-	})
+	}), method.GET, method.HEAD), nil
 }

@@ -23,26 +23,26 @@ const (
 )
 
 type Article struct {
-	Id     ArticleId
-	Guid   sql.NullString
-	FeedId FeedId `db:"feed_id"`
+	Id     ArticleId      `json:"id"`
+	Guid   sql.NullString `json:"-"`
+	FeedId FeedId         `db:"feed_id" json:"feedID"`
 
-	Title       string
-	Description string
-	Link        string
-	Date        time.Time
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Link        string    `json:"link"`
+	Date        time.Time `json:"date"`
 
-	Read          bool
-	Favorite      bool
-	Score         int64
-	Thumbnail     string `json:",omitempty"`
-	ThumbnailLink string `db:"thumbnail_link" json:",omitempty"`
+	Read          bool   `json:"read"`
+	Favorite      bool   `json:"favorite"`
+	Score         int64  `json:"score,omitempty"`
+	Thumbnail     string `json:"thumbnail,omitempty"`
+	ThumbnailLink string `db:"thumbnail_link" json:"thumbnailLink,omitempty"`
 
 	IsNew bool `json:"-"`
 
 	Hit struct {
 		Fragments map[string][]string `json:"fragments,omitempty"`
-	}
+	} `json:"hits"`
 }
 
 type ArticleScores struct {

@@ -1,40 +1,21 @@
 package web
 
 import (
-	"fmt"
+	"context"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"time"
 
-	"github.com/urandom/readeef"
-	"github.com/urandom/webfw"
-	"github.com/urandom/webfw/context"
+	"github.com/alexedwards/scs/session"
+	"github.com/pkg/errors"
+	"github.com/urandom/handler/method"
 )
 
-type Proxy struct {
-	webfw.BasePatternController
-}
-
-func NewProxy() Proxy {
-	return Proxy{
-		BasePatternController: webfw.NewBasePatternController("/proxy", webfw.MethodGet, ""),
-	}
-}
-
-func (con Proxy) Handler(c context.Context) http.Handler {
-	logger := webfw.GetLogger(c)
-	config := readeef.GetConfig(c)
-	client := readeef.NewTimeoutClient(config.Timeout.Converted.Connect, config.Timeout.Converted.ReadWrite)
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sess := webfw.GetSession(c, r)
-
-		if _, ok := sess.Get(readeef.AuthNameKey); !ok {
+func ProxyHandler() http.Handler {
+	return method.Get(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if ok, err := session.GetBool(r, visitorKey); !ok || err != nil {
 			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
-		if r.Method == "HEAD" {
 			return
 		}
 
@@ -47,7 +28,7 @@ func (con Proxy) Handler(c context.Context) http.Handler {
 
 			u, err = url.Parse(r.Form.Get("url"))
 			if err != nil {
-				err = fmt.Errorf("Error parsing url to proxy (%s): %v", r.Form.Get("url"), err)
+				err = errors.Wrapf(err, "parsing url to proxy (%s)", r.Form.Get("url"))
 				break
 			}
 			if u.Scheme == "" {
@@ -58,15 +39,18 @@ func (con Proxy) Handler(c context.Context) http.Handler {
 
 			req, err = http.NewRequest("GET", u.String(), nil)
 			if err != nil {
-				err = fmt.Errorf("Error creating proxy request to %s: %v", u, err)
+				err = errors.Wrapf(err, "creating proxy request to %s", u)
 				break
 			}
 
+			ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
+			defer cancel()
+
 			var resp *http.Response
 
-			resp, err = client.Do(req)
+			resp, err = http.DefaultClient.Do(req.WithContext(ctx))
 			if err != nil {
-				err = fmt.Errorf("Error getting proxy response from %s: %v", u, err)
+				err = errors.Wrapf(err, "Error getting proxy response from %s", u)
 				break
 			}
 
@@ -82,7 +66,7 @@ func (con Proxy) Handler(c context.Context) http.Handler {
 
 			b, err = ioutil.ReadAll(resp.Body)
 			if err != nil {
-				err = fmt.Errorf("Error reading proxy response from %s: %v", u, err)
+				err = errors.Wrapf(err, "reading proxy response from %s", u)
 				break
 			}
 
@@ -90,11 +74,8 @@ func (con Proxy) Handler(c context.Context) http.Handler {
 		}
 
 		if err != nil {
-			logger.Infoln(err)
-			w.WriteHeader(http.StatusNotAcceptable)
+			http.Error(w, err.Error(), http.StatusNotAcceptable)
 			return
 		}
-
-		return
-	})
+	}))
 }

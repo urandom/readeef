@@ -1,14 +1,14 @@
 package sql
 
 import (
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/sql/db"
-	"github.com/urandom/webfw"
 )
 
 type ArticleScores struct {
 	base.ArticleScores
-	logger webfw.Logger
+	log readeef.Logger
 
 	db *db.DB
 }
@@ -29,7 +29,7 @@ func (asc *ArticleScores) Update() {
 		data.Score = asc.Calculate()
 		asc.Data(data)
 	}
-	asc.logger.Infof("Updating scores for article %d", data.ArticleId)
+	asc.log.Infof("Updating scores for article %d", data.ArticleId)
 
 	tx, err := asc.db.Beginx()
 	if err != nil {

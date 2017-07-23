@@ -1,21 +1,21 @@
 {% define "content" %}
-<link rel="import" href="{% url "/component/rf-share-service" .base.r %}">
+<link rel="import" href="{% url "/component/rf-share-service" %}">
 
-<rf-share-service name="evernote" description="{% __ "Evernote" .base.lang %}" category="{% __ "Read-it-later" .base.lang %}" link="https://www.evernote.com"></rf-share-service>
-<rf-share-service name="instapaper" description="{% __ "Instapaper" .base.lang %}" category="{% __ "Read-it-later" .base.lang %}" link="http://www.instapaper.com"></rf-share-service>
-<rf-share-service name="readability" description="{% __ "Readability" .base.lang %}" category="{% __ "Read-it-later" .base.lang %}" link="https://www.readability.com"></rf-share-service>
-<rf-share-service name="pocket" description="{% __ "Pocket" .base.lang %}" category="{% __ "Read-it-later" .base.lang %}" link="https://getpocket.com"></rf-share-service>
+<rf-share-service name="evernote" description="{% __ "Evernote" %}" category="{% __ "Read-it-later" %}" link="https://www.evernote.com"></rf-share-service>
+<rf-share-service name="instapaper" description="{% __ "Instapaper" %}" category="{% __ "Read-it-later" %}" link="http://www.instapaper.com"></rf-share-service>
+<rf-share-service name="readability" description="{% __ "Readability" %}" category="{% __ "Read-it-later" %}" link="https://www.readability.com"></rf-share-service>
+<rf-share-service name="pocket" description="{% __ "Pocket" %}" category="{% __ "Read-it-later" %}" link="https://getpocket.com"></rf-share-service>
 
-<rf-share-service name="googlep" description="{% __ "Google+" .base.lang %}" category="{% __ "Social network" .base.lang %}" link="https://plus.google.com"></rf-share-service>
-<rf-share-service name="facebook" description="{% __ "Facebook" .base.lang %}" category="{% __ "Social network" .base.lang %}" link="http://www.facebook.com"></rf-share-service>
-<rf-share-service name="twitter" description="{% __ "Twitter" .base.lang %}" category="{% __ "Social network" .base.lang %}" link="https://twitter.com"></rf-share-service>
-<rf-share-service name="pinterest" description="{% __ "Pinterest" .base.lang %}" category="{% __ "Social network" .base.lang %}" link="http://pinterest.com"></rf-share-service>
+<rf-share-service name="googlep" description="{% __ "Google+" %}" category="{% __ "Social network" %}" link="https://plus.google.com"></rf-share-service>
+<rf-share-service name="facebook" description="{% __ "Facebook" %}" category="{% __ "Social network" %}" link="http://www.facebook.com"></rf-share-service>
+<rf-share-service name="twitter" description="{% __ "Twitter" %}" category="{% __ "Social network" %}" link="https://twitter.com"></rf-share-service>
+<rf-share-service name="pinterest" description="{% __ "Pinterest" %}" category="{% __ "Social network" %}" link="http://pinterest.com"></rf-share-service>
 
-<rf-share-service name="tumblr" description="{% __ "Tumblr" .base.lang %}" category="{% __ "Blogging" .base.lang %}" link="http://www.tumblr.com"></rf-share-service>
-<rf-share-service name="flipboard" description="{% __ "Flipboard" .base.lang %}" category="{% __ "Blogging" .base.lang %}" link="https://www.flipboard.com"></rf-share-service>
+<rf-share-service name="tumblr" description="{% __ "Tumblr" %}" category="{% __ "Blogging" %}" link="http://www.tumblr.com"></rf-share-service>
+<rf-share-service name="flipboard" description="{% __ "Flipboard" %}" category="{% __ "Blogging" %}" link="https://www.flipboard.com"></rf-share-service>
 
-<rf-share-service name="email" description="{% __ "Email" .base.lang %}" category="{% __ "Email" .base.lang %}"></rf-share-service>
-<rf-share-service name="gmail" description="{% __ "Gmail" .base.lang %}" category="{% __ "Email" .base.lang %}" link="https://mail.google.com"></rf-share-service>
+<rf-share-service name="email" description="{% __ "Email" %}" category="{% __ "Email" %}"></rf-share-service>
+<rf-share-service name="gmail" description="{% __ "Gmail" %}" category="{% __ "Email" %}" link="https://mail.google.com"></rf-share-service>
 
 <script>
 RfShareServices.getAll().forEach(function(service) {

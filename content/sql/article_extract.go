@@ -1,14 +1,14 @@
 package sql
 
 import (
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/sql/db"
-	"github.com/urandom/webfw"
 )
 
 type ArticleExtract struct {
 	base.ArticleExtract
-	logger webfw.Logger
+	log readeef.Logger
 
 	db *db.DB
 }
@@ -25,7 +25,7 @@ func (ae *ArticleExtract) Update() {
 
 	data := ae.Data()
 	s := ae.db.SQL()
-	ae.logger.Infof("Updating extract for article %d", data.ArticleId)
+	ae.log.Infof("Updating extract for article %d", data.ArticleId)
 
 	tx, err := ae.db.Beginx()
 	if err != nil {

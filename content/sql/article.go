@@ -6,18 +6,18 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/db"
-	"github.com/urandom/webfw"
 )
 
 type Article struct {
 	base.Article
 
-	logger webfw.Logger
-	db     *db.DB
+	log readeef.Logger
+	db  *db.DB
 }
 
 type UserArticle struct {
@@ -26,7 +26,7 @@ type UserArticle struct {
 }
 
 func (a *Article) Update() {
-	a.logger.Infof("Updating article %d\n", a.Data().Id)
+	a.log.Infof("Updating article %d\n", a.Data().Id)
 
 	tx, err := a.db.Beginx()
 	if err != nil {
@@ -35,7 +35,7 @@ func (a *Article) Update() {
 	}
 	defer tx.Rollback()
 
-	updateArticle(a, tx, a.db, a.logger)
+	updateArticle(a, tx, a.db, a.log)
 
 	if !a.HasErr() {
 		tx.Commit()
@@ -55,7 +55,7 @@ func (a *Article) Thumbnail() (at content.ArticleThumbnail) {
 		return
 	}
 
-	a.logger.Infof("Getting article '%d' thumbnail\n", id)
+	a.log.Infof("Getting article '%d' thumbnail\n", id)
 
 	var i data.ArticleThumbnail
 	if err := a.db.Get(&i, a.db.SQL().Article.GetThumbnail, id); err != nil {
@@ -84,7 +84,7 @@ func (a *Article) Extract() (ae content.ArticleExtract) {
 		return
 	}
 
-	a.logger.Infof("Getting article '%d' extract\n", id)
+	a.log.Infof("Getting article '%d' extract\n", id)
 
 	var i data.ArticleExtract
 	if err := a.db.Get(&i, a.db.SQL().Article.GetExtract, id); err != nil {
@@ -113,7 +113,7 @@ func (a *Article) Scores() (as content.ArticleScores) {
 		return
 	}
 
-	a.logger.Infof("Getting article '%d' scores\n", id)
+	a.log.Infof("Getting article '%d' scores\n", id)
 
 	var i data.ArticleScores
 	if err := a.db.Get(&i, a.db.SQL().Article.GetScores, id); err != nil {
@@ -129,7 +129,7 @@ func (a *Article) Scores() (as content.ArticleScores) {
 	return
 }
 
-func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logger) {
+func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log readeef.Logger) {
 	if a.HasErr() {
 		return
 	}
@@ -139,7 +139,7 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logge
 		return
 	}
 
-	logger.Infof("Updating article %s\n", a)
+	log.Infof("Updating article %s\n", a)
 
 	d := a.Data()
 	s := db.SQL()
@@ -158,7 +158,7 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, logger webfw.Logge
 	}
 
 	if num, err := res.RowsAffected(); err != nil && err == sql.ErrNoRows || num == 0 {
-		logger.Infof("Creating article %s\n", a)
+		log.Infof("Creating article %s\n", a)
 
 		aId, err := db.CreateWithId(tx, s.Article.Create, d.FeedId, d.Link, d.Guid,
 			d.Title, d.Description, d.Date)
@@ -185,7 +185,7 @@ func (ua *UserArticle) Read(read bool) {
 	}
 
 	login := ua.User().Data().Login
-	ua.logger.Infof("Setting read state %v on %s for %s\n", read, ua, login)
+	ua.log.Infof("Setting read state %v on %s for %s\n", read, ua, login)
 
 	d := ua.Data()
 
@@ -243,7 +243,7 @@ func (ua *UserArticle) Favorite(favorite bool) {
 	}
 
 	login := ua.User().Data().Login
-	ua.logger.Infof("Setting favorite state %v on %s for %s\n", favorite, ua, login)
+	ua.log.Infof("Setting favorite state %v on %s for %s\n", favorite, ua, login)
 
 	d := ua.Data()
 

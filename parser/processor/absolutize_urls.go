@@ -6,20 +6,20 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/parser"
-	"github.com/urandom/webfw"
 )
 
 type AbsolutizeURLs struct {
-	logger webfw.Logger
+	log readeef.Logger
 }
 
-func NewAbsolutizeURLs(l webfw.Logger) AbsolutizeURLs {
-	return AbsolutizeURLs{logger: l}
+func NewAbsolutizeURLs(l readeef.Logger) AbsolutizeURLs {
+	return AbsolutizeURLs{log: l}
 }
 
 func (p AbsolutizeURLs) Process(f parser.Feed) parser.Feed {
-	p.logger.Infof("Converting relative urls of feed '%s' to absolute\n", f.Title)
+	p.log.Infof("Converting relative urls of feed '%s' to absolute\n", f.Title)
 
 	for i := range f.Articles {
 		if d, err := goquery.NewDocumentFromReader(strings.NewReader(f.Articles[i].Description)); err == nil {

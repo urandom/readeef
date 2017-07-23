@@ -1,16 +1,16 @@
 package sql
 
 import (
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/db"
-	"github.com/urandom/webfw"
 )
 
 type Tag struct {
 	base.Tag
-	logger webfw.Logger
+	log readeef.Logger
 
 	db *db.DB
 }
@@ -28,7 +28,7 @@ func (t *Tag) Update() {
 	i := t.Data()
 	id := i.Id
 	s := t.db.SQL()
-	t.logger.Infof("Updating tag %d\n", id)
+	t.log.Infof("Updating tag %d\n", id)
 
 	tx, err := t.db.Beginx()
 	if err != nil {
@@ -81,7 +81,7 @@ func (t *Tag) AllFeeds() (tf []content.TaggedFeed) {
 		return
 	}
 
-	t.logger.Infof("Getting all feeds for tag %s\n", t)
+	t.log.Infof("Getting all feeds for tag %s\n", t)
 	u := t.User()
 
 	var d []data.Feed
@@ -118,10 +118,10 @@ func (t *Tag) Articles(o ...data.ArticleQueryOptions) (ua []content.UserArticle)
 		return
 	}
 
-	t.logger.Infof("Getting articles for tag %s with options: %#v\n", t, opts)
+	t.log.Infof("Getting articles for tag %s with options: %#v\n", t, opts)
 	u := t.User()
 
-	ua = getArticles(u, t.db, t.logger, opts, t,
+	ua = getArticles(u, t.db, t.log, opts, t,
 		t.db.SQL().Tag.GetArticlesJoin, "", []interface{}{t.String()})
 
 	if u.HasErr() {
@@ -151,9 +151,9 @@ func (t *Tag) Ids(o ...data.ArticleIdQueryOptions) (ids []data.ArticleId) {
 
 	u := t.User()
 	tag := t.Data().Value
-	t.logger.Infof("Getting user %s tag %s article ids with options %#v\n", u.Data().Login, tag, opts)
+	t.log.Infof("Getting user %s tag %s article ids with options %#v\n", u.Data().Login, tag, opts)
 
-	ids = articleIds(u, t.db, t.logger, opts, t.db.SQL().Tag.ArticleCountJoin, "", []interface{}{tag})
+	ids = articleIds(u, t.db, t.log, opts, t.db.SQL().Tag.ArticleCountJoin, "", []interface{}{tag})
 
 	if u.HasErr() {
 		t.Err(u.Err())
@@ -182,9 +182,9 @@ func (t *Tag) Count(o ...data.ArticleCountOptions) (count int64) {
 
 	u := t.User()
 	tag := t.Data().Value
-	t.logger.Infof("Getting user %s tag %s count with options %#v\n", u.Data().Login, tag, opts)
+	t.log.Infof("Getting user %s tag %s count with options %#v\n", u.Data().Login, tag, opts)
 
-	count = articleCount(u, t.db, t.logger, opts, t.db.SQL().Tag.ArticleCountJoin, "", []interface{}{tag})
+	count = articleCount(u, t.db, t.log, opts, t.db.SQL().Tag.ArticleCountJoin, "", []interface{}{tag})
 
 	if u.HasErr() {
 		t.Err(u.Err())
@@ -214,11 +214,11 @@ func (t *Tag) ReadState(read bool, o ...data.ArticleUpdateStateOptions) {
 	u := t.User()
 	login := u.Data().Login
 	tag := t.Data().Value
-	t.logger.Infof("Getting articles for user %s tag %s with options: %#v\n", login, tag, opts)
+	t.log.Infof("Getting articles for user %s tag %s with options: %#v\n", login, tag, opts)
 
 	s := t.db.SQL()
 	args := []interface{}{tag}
-	readState(u, t.db, t.logger, opts, read,
+	readState(u, t.db, t.log, opts, read,
 		s.Tag.ReadStateInsertJoin, "",
 		s.Tag.ReadStateDeleteJoin, "",
 		args, args)

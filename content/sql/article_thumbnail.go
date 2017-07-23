@@ -1,14 +1,14 @@
 package sql
 
 import (
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/sql/db"
-	"github.com/urandom/webfw"
 )
 
 type ArticleThumbnail struct {
 	base.ArticleThumbnail
-	logger webfw.Logger
+	log readeef.Logger
 
 	db *db.DB
 }
@@ -25,7 +25,7 @@ func (at *ArticleThumbnail) Update() {
 
 	data := at.Data()
 	s := at.db.SQL()
-	at.logger.Infof("Updating thumbnail for article %d", data.ArticleId)
+	at.log.Infof("Updating thumbnail for article %d", data.ArticleId)
 
 	tx, err := at.db.Beginx()
 	if err != nil {

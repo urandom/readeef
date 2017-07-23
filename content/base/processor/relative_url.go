@@ -4,25 +4,25 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/parser/processor"
-	"github.com/urandom/webfw"
 )
 
-type RelativeUrl struct {
-	logger webfw.Logger
+type RelativeURL struct {
+	log readeef.Logger
 }
 
-func NewRelativeUrl(l webfw.Logger) RelativeUrl {
-	return RelativeUrl{logger: l}
+func NewRelativeURL(log readeef.Logger) RelativeURL {
+	return RelativeURL{log: log}
 }
 
-func (p RelativeUrl) ProcessArticles(ua []content.UserArticle) []content.UserArticle {
+func (p RelativeURL) ProcessArticles(ua []content.UserArticle) []content.UserArticle {
 	if len(ua) == 0 {
 		return ua
 	}
 
-	p.logger.Infof("Proxying urls of feed '%d'\n", ua[0].Data().FeedId)
+	p.log.Infof("Proxying urls of feed '%d'\n", ua[0].Data().FeedId)
 
 	for i := range ua {
 		data := ua[i].Data()

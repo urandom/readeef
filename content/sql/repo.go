@@ -4,22 +4,22 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/db"
-	"github.com/urandom/webfw"
 )
 
 type Repo struct {
 	base.Repo
-	logger webfw.Logger
+	log readeef.Logger
 
 	db *db.DB
 }
 
-func NewRepo(db *db.DB, logger webfw.Logger) *Repo {
-	return &Repo{db: db, logger: logger}
+func NewRepo(db *db.DB, log readeef.Logger) *Repo {
+	return &Repo{db: db, log: log}
 }
 
 func (r *Repo) UserByLogin(login data.Login) (u content.User) {
@@ -29,7 +29,7 @@ func (r *Repo) UserByLogin(login data.Login) (u content.User) {
 		return
 	}
 
-	r.logger.Infof("Getting user '%s'\n", login)
+	r.log.Infof("Getting user '%s'\n", login)
 
 	var data data.User
 	if err := r.db.Get(&data, r.db.SQL().Repo.GetUser, login); err != nil {
@@ -53,7 +53,7 @@ func (r *Repo) UserByMD5Api(md5 []byte) (u content.User) {
 		return
 	}
 
-	r.logger.Infof("Getting user using md5 api field '%v'\n", md5)
+	r.log.Infof("Getting user using md5 api field '%v'\n", md5)
 
 	var d data.User
 	if err := r.db.Get(&d, r.db.SQL().Repo.GetUserByMD5API, md5); err != nil {
@@ -75,7 +75,7 @@ func (r *Repo) AllUsers() (users []content.User) {
 		return
 	}
 
-	r.logger.Infoln("Getting all users")
+	r.log.Infoln("Getting all users")
 
 	var data []data.User
 	if err := r.db.Select(&data, r.db.SQL().Repo.GetUsers); err != nil {
@@ -104,7 +104,7 @@ func (r *Repo) FeedById(id data.FeedId) (f content.Feed) {
 		return
 	}
 
-	r.logger.Infof("Getting feed '%d'\n", id)
+	r.log.Infof("Getting feed '%d'\n", id)
 
 	i := data.Feed{}
 	if err := r.db.Get(&i, r.db.SQL().Repo.GetFeed, id); err != nil {
@@ -128,7 +128,7 @@ func (r *Repo) FeedByLink(link string) (f content.Feed) {
 		return
 	}
 
-	r.logger.Infof("Getting feed by link '%s'\n", link)
+	r.log.Infof("Getting feed by link '%s'\n", link)
 
 	i := data.Feed{}
 	if err := r.db.Get(&i, r.db.SQL().Repo.GetFeedByLink, link); err != nil {
@@ -150,7 +150,7 @@ func (r *Repo) AllFeeds() (feeds []content.Feed) {
 		return
 	}
 
-	r.logger.Infoln("Getting all feeds")
+	r.log.Infoln("Getting all feeds")
 
 	var data []data.Feed
 	if err := r.db.Select(&data, r.db.SQL().Repo.GetFeeds); err != nil {
@@ -173,7 +173,7 @@ func (r *Repo) AllUnsubscribedFeeds() (feeds []content.Feed) {
 		return
 	}
 
-	r.logger.Infoln("Getting all unsubscribed feeds")
+	r.log.Infoln("Getting all unsubscribed feeds")
 
 	var data []data.Feed
 	if err := r.db.Select(&data, r.db.SQL().Repo.GetUnsubscribedFeeds); err != nil {
@@ -196,7 +196,7 @@ func (r *Repo) AllSubscriptions() (s []content.Subscription) {
 		return
 	}
 
-	r.logger.Infoln("Getting all subscriptions")
+	r.log.Infoln("Getting all subscriptions")
 
 	var data []data.Subscription
 	if err := r.db.Select(&data, r.db.SQL().Repo.GetHubbubSubscriptions); err != nil {
@@ -219,7 +219,7 @@ func (r *Repo) FailSubscriptions() {
 		return
 	}
 
-	r.logger.Infoln("Marking all subscriptions as failed")
+	r.log.Infoln("Marking all subscriptions as failed")
 
 	if _, err := r.db.Exec(r.db.SQL().Repo.FailHubbubSubscriptions); err != nil {
 		r.Err(err)
@@ -232,7 +232,7 @@ func (r *Repo) DeleteStaleUnreadRecords() {
 		return
 	}
 
-	r.logger.Infoln("Deleting stale article unread records")
+	r.log.Infoln("Deleting stale article unread records")
 
 	if _, err := r.db.Exec(r.db.SQL().Repo.DeleteStaleUnreadRecords, time.Now().AddDate(0, -1, 0)); err != nil {
 		r.Err(err)

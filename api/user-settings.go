@@ -2,159 +2,118 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
+	"io/ioutil"
 	"net/http"
 
-	"github.com/urandom/readeef"
-	"github.com/urandom/readeef/content"
-	"github.com/urandom/webfw"
-	"github.com/urandom/webfw/context"
-	"github.com/urandom/webfw/util"
+	"github.com/go-chi/chi"
+	"github.com/urandom/readeef/content/data"
 )
 
-type UserSettings struct {
-	webfw.BasePatternController
+const (
+	firstNameSetting = "first-name"
+	lastNameSetting  = "last-name"
+	emailSetting     = "email"
+	profileSetting   = "profile"
+	activeSetting    = "is-active"
+	passwordSetting  = "password"
+)
+
+func getSettingKeys(w http.ResponseWriter, r *http.Request) {
+	args{"keys": []string{
+		firstNameSetting, lastNameSetting,
+		emailSetting, profileSetting,
+		activeSetting, passwordSetting,
+	}}.WriteJSON(w)
 }
 
-type getUserAttributeProcessor struct {
-	Attribute string `json:"attribute"`
-
-	user content.User
-}
-
-type setUserAttributeProcessor struct {
-	Attribute string          `json:"attribute"`
-	Value     json.RawMessage `json:"value"`
-
-	user   content.User
-	secret []byte
-}
-
-func NewUserSettings() UserSettings {
-	return UserSettings{
-		webfw.NewBasePatternController("/v:version/user-settings/:attribute", webfw.MethodGet|webfw.MethodPost, ""),
-	}
-}
-
-func (con UserSettings) Handler(c context.Context) http.Handler {
-	cfg := readeef.GetConfig(c)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := readeef.GetUser(c, r)
-
-		params := webfw.GetParams(c, r)
-		attr := params["attribute"]
-
-		var resp responseError
-		if r.Method == "GET" {
-			resp = getUserAttribute(user, attr)
-		} else if r.Method == "POST" {
-			buf := util.BufferPool.GetBuffer()
-			defer util.BufferPool.Put(buf)
-
-			buf.ReadFrom(r.Body)
-
-			resp = setUserAttribute(user, []byte(cfg.Auth.Secret), attr, buf.Bytes())
-		}
-
-		var b []byte
-		if resp.err == nil {
-			b, resp.err = json.Marshal(resp.val)
-		}
-
-		if resp.err != nil {
-			webfw.GetLogger(c).Print(resp.err)
-
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		w.Write(b)
-	})
-}
-
-func (con UserSettings) AuthRequired(c context.Context, r *http.Request) bool {
-	return true
-}
-
-func (p getUserAttributeProcessor) Process() responseError {
-	return getUserAttribute(p.user, p.Attribute)
-}
-
-func (p setUserAttributeProcessor) Process() responseError {
-	return setUserAttribute(p.user, p.secret, p.Attribute, p.Value)
-}
-
-func getUserAttribute(user content.User, attr string) (resp responseError) {
-	resp = newResponse()
-	in := user.Data()
-	resp.val["Login"] = in.Login
-
-	switch attr {
-	case "FirstName":
-		resp.val[attr] = in.FirstName
-	case "LastName":
-		resp.val[attr] = in.LastName
-	case "Email":
-		resp.val[attr] = in.Email
-	case "ProfileData":
-		resp.val[attr] = in.ProfileData
-	default:
-		resp.err = errors.New("Error getting user attribute: unknown attribute " + attr)
+func getSettingValue(w http.ResponseWriter, r *http.Request) {
+	user, stop := userFromRequest(w, r)
+	if stop {
 		return
 	}
 
-	return
+	in := user.Data()
+
+	var val interface{}
+	switch chi.URLParam(r, "key") {
+	case firstNameSetting:
+		val = in.FirstName
+	case lastNameSetting:
+		val = in.LastName
+	case emailSetting:
+		val = in.Email
+	case profileSetting:
+		val = in.ProfileData
+	case activeSetting:
+		val = in.Active
+	default:
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+
+	args{"value": val}.WriteJSON(w)
 }
 
-func setUserAttribute(user content.User, secret []byte, attr string, data []byte) (resp responseError) {
-	resp = newResponse()
-	in := user.Data()
-	resp.val["Login"] = in.Login
-
-	switch attr {
-	case "FirstName":
-		resp.err = json.Unmarshal(data, &in.FirstName)
-	case "LastName":
-		resp.err = json.Unmarshal(data, &in.LastName)
-	case "Email":
-		resp.err = json.Unmarshal(data, &in.Email)
-	case "ProfileData":
-		if resp.err = json.Unmarshal(data, &in.ProfileData); resp.err == nil {
-			in.ProfileJSON = []byte{}
-		}
-	case "Active":
-		in.Active = string(data) == "true"
-	case "Password":
-		passwd := struct {
-			Current string
-			New     string
-		}{}
-		if resp.err = json.Unmarshal(data, &passwd); resp.err != nil {
-			/* TODO: non-fatal error */
+func setSettingValue(secret []byte) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
 			return
 		}
-		if user.Authenticate(passwd.Current, secret) {
-			user.Password(passwd.New, secret)
-			resp.err = user.Err()
+
+		if name := data.Login(chi.URLParam(r, "name")); name != "" {
+			user = user.Repo().UserByLogin(name)
+			if user.HasErr() {
+				http.Error(w, "Error getting user: "+user.Err().Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		b, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Error reading request body: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		in := user.Data()
+
+		switch chi.URLParam(r, "key") {
+		case firstNameSetting:
+			err = json.Unmarshal(b, &in.FirstName)
+		case lastNameSetting:
+			err = json.Unmarshal(b, &in.LastName)
+		case emailSetting:
+			err = json.Unmarshal(b, &in.Email)
+		case profileSetting:
+			if err = json.Unmarshal(b, &in.ProfileData); err == nil {
+				in.ProfileJSON = []byte{}
+			}
+		case activeSetting:
+			in.Active = string(b) == "true"
+		case passwordSetting:
+			passwd := struct {
+				Current string
+				New     string
+			}{}
+
+			if err = json.Unmarshal(b, &passwd); err == nil {
+				if user.Authenticate(passwd.Current, secret) {
+					user.Password(passwd.New, secret)
+					err = user.Err()
+				} else {
+					http.Error(w, "Not authorized", http.StatusUnauthorized)
+					return
+				}
+			}
+		default:
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+
+		if err == nil {
+			args{"success": true}.WriteJSON(w)
 		} else {
-			resp.err = errors.New("Error change user password: current password is invalid")
+			http.Error(w, "Error parsing request body: "+err.Error(), http.StatusBadRequest)
 		}
-	default:
-		resp.err = errors.New("Error getting user attribute: unknown attribute " + attr)
 	}
-
-	if resp.err != nil {
-		return
-	}
-
-	user.Data(in)
-	user.Update()
-	if resp.err = user.Err(); resp.err != nil {
-		return
-	}
-
-	resp.val["Success"] = true
-	resp.val["Attribute"] = attr
-
-	return
 }

@@ -21,10 +21,10 @@
 <link rel="import" href="/dist/paper-toast/paper-toast.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
-<link rel="import" href="{% url "/component/rf-api" .base.r %}">
-<link rel="import" href="{% url "/component/rf-app-scaffold" .base.r %}">
-<link rel="import" href="{% url "/component/rf-feed" .base.r %}">
-<link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
+<link rel="import" href="{% url "/component/rf-api" %}">
+<link rel="import" href="{% url "/component/rf-app-scaffold" %}">
+<link rel="import" href="{% url "/component/rf-feed" %}">
+<link rel="import" href="{% url "/component/rf-keyboard-shortcuts" %}">
 
 <dom-module id="rf-feed-base">
     <template>
@@ -110,11 +110,11 @@
 		<excess-route route="/web/feed/:tagOrId/article/:articleId/:formatType?" route-alias="article" active="{{ articleActive }}" article-id="{{ articleId }}" format-type="{{ formatType }}"></excess-route>
 
         <rf-app-scaffold narrow="{{ narrow }}" class$="[[ _computeScaffoldClass(_updateAvailable) ]]">
-            <div class="drawer-title">{% __ "Feeds" .base.lang %}</div>
+            <div class="drawer-title">{% __ "Feeds" %}</div>
             <div class="drawer-menu">
                 <div hidden$="[[  _computeHideFeedItems(feeds) ]]">
                     <a href="[[ feedUrlFor('favorite') ]]" class="item">
-                        <span>{% __ "Favorite" .base.lang %}</span>
+                        <span>{% __ "Favorite" %}</span>
                         <paper-ripple></paper-ripple>
                     </a>
 
@@ -122,7 +122,7 @@
                         <paper-icon-button icon="expand-more" expands="popular-feeds" class="item" on-tap="onToggleExpand"></paper-icon-button>
                         <a href="[[ feedUrlFor('popular:all') ]]" class="layout horizontal flex">
                             <div style="position: relative" class="flex item">
-                                {% __ "Popular" .base.lang %}
+                                {% __ "Popular" %}
                                 <paper-ripple></paper-ripple>
                             </div>
                         </a>
@@ -173,11 +173,11 @@
                     <hr>
                 </div>
                 <a href="[[ urlFor('@settings-general') ]]" class="item">
-                    <span>{% __ "Settings" .base.lang %}</span>
+                    <span>{% __ "Settings" %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
                 <a href="[[ urlFor('@logout') ]]" class="item">
-                    <span>{% __ "Logout" .base.lang %}</span>
+                    <span>{% __ "Logout" %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
             </div>
@@ -189,31 +189,31 @@
 						<span class="flex title-text" hidden$="[[ searchVisible ]]">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
 						<span class="search-feed flex layout horizontal center" hidden$="[[ !searchVisible ]]">
 							<paper-icon-button icon="clear" on-tap="toggleSearch"></paper-icon-button>
-							<paper-input class="search-input" placeholder="{% __ "Search" .base.lang %}" no-label-float on-keyup="onSearchKeyUp" on-keypress="onSearchKeyPress" autofocus></paper-input>
+							<paper-input class="search-input" placeholder="{% __ "Search" %}" no-label-float on-keyup="onSearchKeyUp" on-keypress="onSearchKeyPress" autofocus></paper-input>
 						</span>
 
-						<paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(user.*, tagOrId, searchVisible) ]]" title="{% __ "Search" .base.lang %}" on-tap="toggleSearch"></paper-icon-button>
-						<paper-icon-button icon="refresh" title="{% __ "Refresh" .base.lang %}" on-tap="onRefresh" hidden$="[[ !narrow ]]"></paper-icon-button>
+						<paper-icon-button icon="search" hidden$="[[ _computeHideSearchButton(user.*, tagOrId, searchVisible) ]]" title="{% __ "Search" %}" on-tap="toggleSearch"></paper-icon-button>
+						<paper-icon-button icon="refresh" title="{% __ "Refresh" %}" on-tap="onRefresh" hidden$="[[ !narrow ]]"></paper-icon-button>
 						<paper-menu-button horizontal-align="right">
-							<paper-icon-button icon="more-vert" class="dropdown-trigger" title="{% __ "More options" .base.lang %}"></paper-icon-button>
+							<paper-icon-button icon="more-vert" class="dropdown-trigger" title="{% __ "More options" %}"></paper-icon-button>
 							{%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
 							<paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onFeedMenuItemActivate" style="background: #fff" selected-values="[[ _computeOptionsMenuSelectedValues(user.*) ]]">
-								<paper-item name="older-first">{% __ "Older first" .base.lang %}</paper-item>
-								<paper-item name="unread-only">{% __ "Unread only" .base.lang %}</paper-item>
-								<paper-item name="mark-all-as-read">{% __ "Mark all as read" .base.lang %}</paper-item>
+								<paper-item name="older-first">{% __ "Older first" %}</paper-item>
+								<paper-item name="unread-only">{% __ "Unread only" %}</paper-item>
+								<paper-item name="mark-all-as-read">{% __ "Mark all as read" %}</paper-item>
 							</paper-menu>
 						</paper-menu-button>
 					</section>
 					<section route="article" class="layout horizontal center flex">
 						<paper-icon-button icon="arrow-back" on-tap="onArticleUp"></paper-icon-button>
 						<span class="title-text-article flex">[[ _computeFeedTitle(tagOrId, feeds) ]]</span>
-						<paper-icon-button icon="[[ _computeReadStateIcon(_readState) ]]" title="{% __ "Mark article as read/unread" .base.lang %}" on-tap="onReadStateTap"></paper-icon-button>
+						<paper-icon-button icon="[[ _computeReadStateIcon(_readState) ]]" title="{% __ "Mark article as read/unread" %}" on-tap="onReadStateTap"></paper-icon-button>
 
-						<paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(articleId, articles.splices, 'previous') ]]" title="{% __ "Previous article" .base.lang %}" on-tap="onPreviousArticle"></paper-icon-button>
-						<paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(articleId, articles.splices, 'next') ]]" title="{% __ "Next article" .base.lang %}" on-tap="onNextArticle"></paper-icon-button>
+						<paper-icon-button icon="hardware:keyboard-arrow-left" style$="[[ _computeHideArticleArrow(articleId, articles.splices, 'previous') ]]" title="{% __ "Previous article" %}" on-tap="onPreviousArticle"></paper-icon-button>
+						<paper-icon-button icon="hardware:keyboard-arrow-right" style$="[[ _computeHideArticleArrow(articleId, articles.splices, 'next') ]]" title="{% __ "Next article" %}" on-tap="onNextArticle"></paper-icon-button>
 
 						<paper-menu-button horizontal-align="right" hidden$="[[ !_shareServices.length ]]">
-							<paper-icon-button icon="social:share" title="{% __ "Share article" .base.lang %}" class="dropdown-trigger"></paper-icon-button>
+							<paper-icon-button icon="social:share" title="{% __ "Share article" %}" class="dropdown-trigger"></paper-icon-button>
 							{%/* The second instance of the menu doesn't initialize its style correctly. Inline the background color */%}
 							<paper-menu class="dropdown-content options-menu" multi attr-for-selected="name" on-iron-activate="onShareServiceActivate" style="background: #fff">
 								<template is="dom-repeat" items="[[ _shareServices ]]">
@@ -231,7 +231,7 @@
                 <rf-feed id="feed" user="[[ user ]]" feeds="[[ feeds ]]" articles="[[ articles ]]" narrow="[[ narrow ]]" tag-or-id="[[ tagOrId ]]" article-id="[[ articleId ]]" format-type="[[ formatType ]]" display="[[ display ]]" on-feed-article-state="onFeedArticleState"></rf-feed>
 
                 <div class="card empty-list" hidden$="[[ _computeHideEmptyMessage(articles.*, loading) ]]">
-                    <span>{% __ "There are no articles in this section" .base.lang %}</span>
+                    <span>{% __ "There are no articles in this section" %}</span>
                 </div>
 
                 <div class="layout vertical center" hidden$="[[ !loading ]]">
@@ -241,7 +241,7 @@
             </div>
         </rf-app-scaffold>
 
-        <paper-toast id="no-new-articles" text="{% __ "Articles are up-to-date" .base.lang %}"></paper-toast>
+        <paper-toast id="no-new-articles" text="{% __ "Articles are up-to-date" %}"></paper-toast>
 
         <rf-api id="list-feeds" method="list-feeds" on-rf-api-message="onAllFeedsMessage"></rf-api>
         <rf-api id="user-settings" method="set-user-attribute" tag="feed-base"></rf-api>
@@ -343,7 +343,7 @@
             },
 
             repeaterTagUrl: function(name) {
-                if (name == "{% __ "All" .base.lang %}") {
+                if (name == "{% __ "All" %}") {
                     return this.feedUrlFor('all');
                 } else {
                     return this.feedUrlFor(name, 'tag');
@@ -442,7 +442,7 @@
                     unreadIds: data.arguments.UnreadIds,
                     favoriteIds: data.arguments.FavoriteIds,
                     updateRequest: !!data.arguments.MaxId,
-                    lang: "{% .base.lang %}",
+                    lang: "{% .Language %}",
                 };
 
                 delete this._treatAsUnread;
@@ -729,20 +729,20 @@
 
             _computeFeedTitle: function(tagOrId) {
                 if (tagOrId == "all") {
-                    return '{% __ "All feed articles" .base.lang %}';
+                    return '{% __ "All feed articles" %}';
                 } else if (tagOrId == "favorite") {
-                    return '{% __ "Favorite feed articles" .base.lang %}';
+                    return '{% __ "Favorite feed articles" %}';
                 } else if (tagOrId.indexOf("popular:") == 0) {
                     var sub = tagOrId.substring("popular:".length);
 
                     if (sub == "all") {
-                        return '{% __ "Popular feed articles" .base.lang %}';
+                        return '{% __ "Popular feed articles" %}';
                     } else if (sub.indexOf("tag:") == 0) {
-                        return '{% __ "Popular articles from { Tag }" .base.lang %}'.replace(/{\s*Tag\s*}/, tagOrId.substring("tag:".length));
+                        return '{% __ "Popular articles from { Tag }" %}'.replace(/{\s*Tag\s*}/, tagOrId.substring("tag:".length));
                     } else if (!isNaN(sub)) {
                         var feed = this.feeds.filter(function(f) { return f.Id == sub })[0];
                         if (feed) {
-                            return '{% __ "Popular articles from { Tag }" .base.lang %}'.replace(/{\s*Tag\s*}/, feed.Title);
+                            return '{% __ "Popular articles from { Tag }" %}'.replace(/{\s*Tag\s*}/, feed.Title);
                         }
                     }
                 } else if (tagOrId.indexOf("search:") == 0) {
@@ -751,19 +751,19 @@
                         term = parts[1];
 
                     if (sub == "all") {
-                        return '{% __ "Search results for { Term }" .base.lang %}'.replace(/{\s*Term\s*}/, term);
+                        return '{% __ "Search results for { Term }" %}'.replace(/{\s*Term\s*}/, term);
                     } else if (sub.indexOf("tag:") == 0) {
-                        return '{% __ "Search results for { Term } from { Tag }" .base.lang %}'.replace(/{\s*Term\s*}/, term).replace(/{\s*Tag\s*}/, tagOrId.substring("tag:".length));
+                        return '{% __ "Search results for { Term } from { Tag }" %}'.replace(/{\s*Term\s*}/, term).replace(/{\s*Tag\s*}/, tagOrId.substring("tag:".length));
                     } else if (!isNaN(sub)) {
                         var feed = this.feeds.filter(function(f) { return f.Id == sub })[0];
                         if (feed) {
-                            return '{% __ "Search results for { Term } from { Tag }" .base.lang %}'.replace(/{\s*Term\s*}/, term).replace(/{\s*Tag\s*}/, feed.Title);
+                            return '{% __ "Search results for { Term } from { Tag }" %}'.replace(/{\s*Term\s*}/, term).replace(/{\s*Tag\s*}/, feed.Title);
                         }
                     }
                 } else if (tagOrId.indexOf("tag:") == 0) {
                     var sub = tagOrId.substring("tag:".length);
 
-                    return '{% __ "Articles from { Tag }" .base.lang %}'.replace(/{\s*Tag\s*}/, tagOrId.substring("tag:".length));
+                    return '{% __ "Articles from { Tag }" %}'.replace(/{\s*Tag\s*}/, tagOrId.substring("tag:".length));
                 } else if (!isNaN(tagOrId)) {
                     var feed = this.feeds.filter(function(f) { return f.Id == tagOrId })[0];
                     if (feed) {
@@ -783,7 +783,7 @@
             },
 
             _computeNavigationTags: function(tags) {
-                return [].concat({name: '{% __ "All" .base.lang %}', feeds: this.feeds}, this.tags);
+                return [].concat({name: '{% __ "All" %}', feeds: this.feeds}, this.tags);
             },
 
             _computeNavigationExpandTag: function(item) {

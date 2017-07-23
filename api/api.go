@@ -1,36 +1,29 @@
 package api
 
 import (
-	"fmt"
-	"time"
+	"context"
+	"encoding/json"
+	"io"
+	"io/ioutil"
+	"net/http"
 
+	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/go-chi/chi"
+	"github.com/pkg/errors"
+	"github.com/urandom/handler/auth"
+	"github.com/urandom/handler/method"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base/extractor"
-	"github.com/urandom/readeef/content/base/monitor"
 	contentProcessor "github.com/urandom/readeef/content/base/processor"
 	"github.com/urandom/readeef/content/base/search"
-	"github.com/urandom/readeef/content/base/thumbnailer"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/parser/processor"
-	"github.com/urandom/webfw"
-	"github.com/urandom/webfw/context"
-	"github.com/urandom/webfw/middleware"
-	"github.com/urandom/webfw/renderer"
 )
 
-type responseError struct {
-	val     map[string]interface{}
-	err     error
-	errType string
-}
-
-func newResponse() responseError {
-	return responseError{val: make(map[string]interface{})}
-}
-
+/*
 func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, logger webfw.Logger) error {
 	repo, err := repo.New(config.DB.Driver, config.DB.Connect, logger)
 	if err != nil {
@@ -38,7 +31,7 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 	}
 
 	capabilities := capabilities{
-		I18N:       len(dispatcher.Config.I18n.Languages) > 1,
+		I18N:       len(config.I18n.Languages) > 1,
 		Popularity: len(config.Popularity.Providers) > 0,
 	}
 
@@ -254,11 +247,346 @@ func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, lo
 
 	return nil
 }
+*/
+
+func Prepare(config readeef.Config, log readeef.Logger) error {
+	repo, err := repo.New(config.DB.Driver, config.DB.Connect, log)
+	if err != nil {
+		return errors.Wrap(err, "creating repo")
+	}
+
+	features := features{
+		I18N:       len(config.I18n.Languages) > 1,
+		Popularity: len(config.Popularity.Providers) > 0,
+	}
+
+	if processors, err := initArticleProcessors(config.Content.ArticleProcessors, config.Content.ProxyHTTPURLTemplate, &features, log); err == nil {
+		repo.ArticleProcessors(processors)
+	} else {
+		return errors.Wrap(err, "initializing article processors")
+	}
+
+	if err := initAdminUser(repo, []byte(config.Auth.Secret)); err != nil {
+		return errors.Wrap(err, "initializing admin user")
+	}
+
+	feedManager := readeef.NewFeedManager(repo, config, log)
+
+	if processors, err := initParserProcessors(config.FeedParser.Processors, config.FeedParser.ProxyHTTPURLTemplate, &features, log); err == nil {
+		feedManager.ParserProcessors(processors)
+	} else {
+		return errors.Wrap(err, "initializing parser processors")
+	}
+
+	searchProvider := initSearchProvider(config, repo, log)
+
+	if searchProvider != nil {
+		features.Search = true
+	}
+
+	extractor, err := initContentExtractor(config)
+	if err != nil {
+		return errors.Wrap(err, "initializing content extractor")
+	}
+
+	if extractor != nil {
+		features.Extractor = true
+	}
+
+	return nil
+}
+
+func initArticleProcessors(names []string, proxyTemplate string, features *features, log readeef.Logger) ([]content.ArticleProcessor, error) {
+	var processors []content.ArticleProcessor
+
+	for _, p := range names {
+		switch p {
+		case "relative-url":
+			processors = append(processors, contentProcessor.NewRelativeURL(log))
+		case "proxy-http":
+			template := proxyTemplate
+
+			if template != "" {
+				p, err := contentProcessor.NewProxyHTTP(template, log)
+				if err != nil {
+					return nil, errors.Wrap(err, "initializing proxy http processor")
+				}
+				processors = append(processors, p)
+				features.ProxyHTTP = true
+			}
+		case "insert-thumbnail-target":
+			processors = append(processors, contentProcessor.NewInsertThumbnailTarget(log))
+		}
+	}
+
+	return processors, nil
+}
+
+func initParserProcessors(names []string, proxyTemplate string, features *features, log readeef.Logger) ([]parser.Processor, error) {
+	var processors []parser.Processor
+
+	for _, p := range names {
+		switch p {
+		case "absolutize-urls":
+			processors = append(processors, processor.NewAbsolutizeURLs(log))
+		case "relative-url":
+			processors = append(processors, processor.NewRelativeURL(log))
+		case "proxy-http":
+			template := proxyTemplate
+
+			if template != "" {
+				p, err := processor.NewProxyHTTP(template, log)
+				if err != nil {
+					return nil, errors.Wrap(err, "initializing proxy http processor")
+				}
+				processors = append(processors, p)
+				features.ProxyHTTP = true
+			}
+		case "cleanup":
+			processors = append(processors, processor.NewCleanup(log))
+		case "top-image-marker":
+			processors = append(processors, processor.NewTopImageMarker(log))
+		}
+	}
+
+	return processors, nil
+}
+
+func initSearchProvider(config readeef.Config, repo content.Repo, log readeef.Logger) content.SearchProvider {
+	var searchProvider content.SearchProvider
+	var err error
+
+	switch config.Content.SearchProvider {
+	case "elastic":
+		if searchProvider, err = search.NewElastic(
+			config.Content.ElasticURL,
+			config.Content.SearchBatchSize,
+			log,
+		); err != nil {
+			log.Printf("Error initializing Elastic search: %v\n", err)
+		}
+	case "bleve":
+		fallthrough
+	default:
+		if searchProvider, err = search.NewBleve(
+			config.Content.BlevePath,
+			config.Content.SearchBatchSize,
+			log,
+		); err != nil {
+			log.Printf("Error initializing Bleve search: %v\n", err)
+		}
+	}
+
+	if searchProvider != nil {
+		if searchProvider.IsNewIndex() {
+			go func() {
+				searchProvider.IndexAllFeeds(repo)
+			}()
+		}
+	}
+
+	return searchProvider
+}
+
+func initContentExtractor(config readeef.Config) (content.Extractor, error) {
+	switch config.Content.Extractor {
+	case "readability":
+		if ce, err := extractor.NewReadability(config.Content.ReadabilityKey); err == nil {
+			return ce, nil
+		} else {
+			return nil, errors.Wrap(err, "initializing Readability extractor")
+		}
+	case "goose":
+		fallthrough
+	default:
+		//TODO: pass the filesystem to the goose extractor
+		if ce, err := extractor.NewGoose("templates"); err == nil {
+			return ce, nil
+		} else {
+			return nil, errors.Wrap(err, "initializing Goose extractor")
+		}
+	}
+}
+
+func Mux(
+	ctx context.Context,
+	repo content.Repo,
+	config readeef.Config,
+	storage content.TokenStorage,
+	extractor content.Extractor,
+	searchProvider content.SearchProvider,
+	feedManager *readeef.FeedManager,
+	hubbub *readeef.Hubbub,
+	features features,
+	log readeef.Logger,
+) (http.Handler, error) {
+	secret := []byte(config.Auth.Secret)
+
+	r := chi.NewRouter()
+
+	r.Route("/api", func(r chi.Router) {
+		r.Route("/v2/token", func(r chi.Router) {
+			r.Method(method.POST, "/", tokenCreate(repo, secret, log))
+			r.Method(method.DELETE, "/", tokenDelete(storage, secret, log))
+		})
+
+		r.Route("/v2/hubbub", func(r chi.Router) {
+			r.Get("/", hubbubRegistration(hubbub, repo, feedManager.AddFeedChannel(), feedManager.RemoveFeedChannel(), log))
+			r.Post("/", hubbubRegistration(hubbub, repo, feedManager.AddFeedChannel(), feedManager.RemoveFeedChannel(), log))
+		})
+
+		r.Route("/v2", func(r chi.Router) {
+			r.Use(func(next http.Handler) http.Handler {
+				return auth.RequireToken(next, tokenValidator(repo, storage, log), secret)
+			})
+			r.Use(func(next http.Handler) http.Handler {
+				return userContext(repo, next, log)
+			})
+			r.Use(userValidator)
+
+			r.Get("/features", featuresHandler(features))
+
+			r.Route("/feed", func(r chi.Router) {
+				r.Get("/", listFeeds)
+				r.Post("/", addFeed(feedManager))
+
+				r.Get("/discover", discoverFeeds(feedManager))
+
+				r.Route("/{feedId:[0-9]+}", func(r chi.Router) {
+					r.Use(feedContext)
+
+					r.Delete("/", deleteFeed(feedManager))
+
+					r.Get("/tags", getFeedTags)
+					r.Post("/tags", setFeedTags)
+
+				})
+			})
+
+			r.Route("/article", func(r chi.Router) {
+				r.Route("/{articleId:[0-9]+}", func(r chi.Router) {
+					r.Use(articleContext)
+
+					r.Get("/", getArticle)
+					if extractor != nil {
+						r.Get("/format", formatArticle(extractor))
+					}
+					r.Post("/read", articleStateChange(read))
+					r.Post("/favorite", articleStateChange(favorite))
+				})
+
+				r.Route("/favorite", func(r chi.Router) {
+					r.Get("/", getArticles(favoriteRepoType))
+
+					r.Post("/read", articlesReadStateChange(favoriteRepoType))
+				})
+
+				r.Route("/popular", func(r chi.Router) {
+					r.With(feedContext).Get("/feed/{feedId:[0-9]+}",
+						getArticles(popularRepoType, feedRepoType))
+					r.With(tagContext).Get("/tag/{tagId:[0-9]+}",
+						getArticles(popularRepoType, tagRepoType))
+					r.Get("/", getArticles(popularRepoType, userRepoType))
+				})
+
+				r.Route("/feed/{feedId:[0-9]+}", func(r chi.Router) {
+					r.Use(feedContext)
+
+					r.Get("/", getArticles(feedRepoType))
+
+					r.Post("/read", articlesReadStateChange(feedRepoType))
+				})
+
+				r.Route("/tag/{tagId:[0-9]+}", func(r chi.Router) {
+					r.Use(tagContext)
+
+					r.Get("/", getArticles(tagRepoType))
+
+					r.Post("/read", articlesReadStateChange(tagRepoType))
+				})
+
+				r.Get("/", getArticles(userRepoType))
+
+				r.Route("/search", func(r chi.Router) {
+					r.Get("/*", articleSearch(searchProvider, userRepoType))
+					r.With(feedContext).Get("/feed/{feedId:[0-9]+}/*", articleSearch(searchProvider, feedRepoType))
+					r.With(tagContext).Get("/tag/{tagId:[0-9]+}/*", articleSearch(searchProvider, tagRepoType))
+				})
+
+				r.Post("/read", articlesReadStateChange(userRepoType))
+			})
+
+			r.Route("/opml", func(r chi.Router) {
+				r.Get("/", exportOPML(feedManager))
+				r.Post("/", importOPML(feedManager))
+			})
+
+			r.Get("/events", eventSocket(ctx, storage, feedManager))
+
+			r.Route("/user", func(r chi.Router) {
+				r.Route("/", func(r chi.Router) {
+					r.Use(adminValidator)
+
+					r.Get("/", listUsers)
+
+					r.Post("/", addUser(secret))
+					r.Delete("/{name}", deleteUser)
+
+					r.Post("/{name}/settings/{key}", setSettingValue(secret))
+				})
+
+				r.Get("/data", getUserData)
+
+				r.Route("/settings", func(r chi.Router) {
+					r.Get("/", getSettingKeys)
+					r.Get("/{key}", getSettingValue)
+					r.Post("/{key}", setSettingValue(secret))
+				})
+			})
+		})
+	})
+
+	return r, nil
+}
+
+func tokenValidator(
+	repo content.Repo,
+	storage content.TokenStorage,
+	log readeef.Logger,
+) auth.TokenValidator {
+	return auth.TokenValidatorFunc(func(token string, claims jwt.Claims) bool {
+		exists, err := storage.Exists(token)
+
+		if err != nil {
+			log.Printf("Error using token storage: %+v\n", err)
+			return false
+		}
+
+		if exists {
+			return false
+		}
+
+		if c, ok := claims.(*jwt.StandardClaims); ok {
+			u := repo.UserByLogin(data.Login(c.Subject))
+			err := u.Err()
+
+			if err != nil {
+				if err != content.ErrNoContent {
+					log.Printf("Error getting user %s from repo: %+v\n", c.Subject, err)
+				}
+
+				return false
+			}
+		}
+
+		return true
+	})
+}
 
 func initAdminUser(repo content.Repo, secret []byte) error {
 	users := repo.AllUsers()
 	if repo.HasErr() {
-		return repo.Err()
+		return errors.Wrap(repo.Err(), "getting all users")
 	}
 
 	if len(users) > 0 {
@@ -270,5 +598,23 @@ func initAdminUser(repo content.Repo, secret []byte) error {
 	u.Password("admin", secret)
 	u.Update()
 
-	return u.Err()
+	if u.HasErr() {
+		return errors.Wrap(u.Err(), "updating user")
+	}
+
+	return nil
+}
+
+func readJSON(w http.ResponseWriter, r io.Reader, data interface{}) (stop bool) {
+	if b, err := ioutil.ReadAll(r); err == nil {
+		if err = json.Unmarshal(b, data); err != nil {
+			http.Error(w, "Error decoding JSON request: "+err.Error(), http.StatusBadRequest)
+			return true
+		}
+	} else {
+		http.Error(w, "Error reading request body: "+err.Error(), http.StatusInternalServerError)
+		return true
+	}
+
+	return false
 }

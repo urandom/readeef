@@ -3,6 +3,7 @@ package content
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/urandom/readeef/content/data"
 )
@@ -43,4 +44,10 @@ type User interface {
 
 type UserRelated interface {
 	User(u ...User) User
+}
+
+type TokenStorage interface {
+	Store(token string, expiration time.Time) error
+	Exists(token string) (bool, error)
+	RemoveExpired() error
 }

@@ -11,8 +11,8 @@
 <link rel="import" href="/dist/paper-toast/paper-toast.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
-<link rel="import" href="{% url "/component/rf-api" .base.r %}">
-<link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
+<link rel="import" href="{% url "/component/rf-api" %}">
+<link rel="import" href="{% url "/component/rf-keyboard-shortcuts" %}">
 
 <dom-module id="rf-settings-add-feed">
     <template>
@@ -65,29 +65,29 @@ li paper-checkbox {
 				<lazy-pages attr-for-selected="route" selected="[[ discoverStage ]]" rescue-selection="search">
 					<section route="search">
 						<p>
-							{% __ "Enter keywords to use when searching for public feeds. A website address that contains one more more feeds may also be used. Finally, feed addresses may be entered directly." .base.lang %}
+							{% __ "Enter keywords to use when searching for public feeds. A website address that contains one more more feeds may also be used. Finally, feed addresses may be entered directly." %}
 						</p>
 
-						<paper-input id="feed-url" label="{% __ "URL or keywords" .base.lang %}" on-keypress="onUrlKeypress"></paper-input>
+						<paper-input id="feed-url" label="{% __ "URL or keywords" %}" on-keypress="onUrlKeypress"></paper-input>
 
 						<p>
-							{% __ "Alternatively, you may provide an OPML file that contains a list of feeds." .base.lang %}
+							{% __ "Alternatively, you may provide an OPML file that contains a list of feeds." %}
 						</p>
 
 						<paper-input type="file" id="opml" name="opml" accept=".opml" tabindex="2"></paper-input>
 
 						<div class="layout horizontal end-justified">
 							<paper-spinner class="loading-dependant" hidden$="[[ !loading ]]"></paper-spinner>
-							<paper-button id="find-feeds" on-tap="onFindFeeds" autofocus hidden$="[[ loading ]]">{% __ "Find" .base.lang %}</paper-button>
+							<paper-button id="find-feeds" on-tap="onFindFeeds" autofocus hidden$="[[ loading ]]">{% __ "Find" %}</paper-button>
 						</div>
 					</section>
 
 					<section route="not-found">
-						<p>{% __ "No feeds found" .base.lang %}</p>
+						<p>{% __ "No feeds found" %}</p>
 
 						<div class="layout horizontal end-justified">
 							<a href="[[ urlFor('@settings-discovery', 'discoverStage', 'search') ]]" style="position: relative;">
-								<paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
+								<paper-material elevation="0">{% __ "Back" %}</paper-material>
 								<paper-ripple></paper-ripple>
 							</a>
 						</div>
@@ -95,10 +95,10 @@ li paper-checkbox {
 
 					<section route="select">
 						<div hidden$="[[ _computeHideDiscoveredFeeds(discoveredFeeds) ]]">
-							<h4>{% __ "No feeds found" .base.lang %}</h4>
+							<h4>{% __ "No feeds found" %}</h4>
 						</div>
 						<div hidden$="[[ _computeHideDiscoveredFeeds(discoveredFeeds, 1) ]]">
-							<p>{% __ "Found the following feeds:" .base.lang %}</p>
+							<p>{% __ "Found the following feeds:" %}</p>
 							<ul>
 							<template is="dom-repeat" items="{{ discoveredFeeds }}">
 								<li class="layout horizontal center">
@@ -111,26 +111,26 @@ li paper-checkbox {
 
 						<div class="layout horizontal end-justified">
 							<a href="[[ urlFor('@settings-discovery', 'discoverStage', 'search') ]]">
-								<paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
+								<paper-material elevation="0">{% __ "Back" %}</paper-material>
 								<paper-ripple></paper-ripple>
 							</a>
 							<paper-spinner class="loading-dependant" hidden$="[[ !loading ]]"></paper-spinner>
-							<paper-button on-tap="onAddFeeds" autofocus hidden$="[[ _computeHideAddFeed(discoveredFeeds, loading) ]]">{% __ "Add" .base.lang %}</paper-button>
+							<paper-button on-tap="onAddFeeds" autofocus hidden$="[[ _computeHideAddFeed(discoveredFeeds, loading) ]]">{% __ "Add" %}</paper-button>
 						</div>
 					</section>
 
 					<section route="select/none">
-						<p>{% __ "No feeds were selected" .base.lang %}</p>
+						<p>{% __ "No feeds were selected" %}</p>
 						<div class="layout horizontal end-justified">
 							<a href="[[ urlFor('@settings-discovery', 'discoverStage', 'select') ]]">
-								<paper-material elevation="0">{% __ "Back" .base.lang %}</paper-material>
+								<paper-material elevation="0">{% __ "Back" %}</paper-material>
 								<paper-ripple></paper-ripple>
 							</a>
 						</div>
 					</section>
 
 					<section route="select/error">
-						<p>{% __ "Error adding selected feeds: " .base.lang %}<br>
+						<p>{% __ "Error adding selected feeds: " %}<br>
 							<template is="dom-repeat" items="[[ addFeedErrors ]]">
 								<span>[[ _computeFeedErrorEntry(item) ]]</span>
 								<br>
@@ -138,7 +138,7 @@ li paper-checkbox {
 						</p>
 						<div class="layout horizontal end-justified">
 							<a href="[[ urlFor('@settings-discovery', 'discoverStage', 'select') ]]">
-								<span>{% __ "Back" .base.lang %}</span>
+								<span>{% __ "Back" %}</span>
 								<paper-ripple></paper-ripple>
 							</a>
 						</div>
@@ -148,7 +148,7 @@ li paper-checkbox {
 
         </div>
 
-        <paper-toast id="add-feed-success" text="{% __ "Feed was added successfully" .base.lang %}"></paper-toast>
+        <paper-toast id="add-feed-success" text="{% __ "Feed was added successfully" %}"></paper-toast>
 
         <rf-api id="discover-feeds" method="discover-feeds" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError" handles-errors></rf-api>
         <rf-api id="parse-opml" method="parse-opml" on-rf-api-message="onDiscoverFeedsMessage" on-rf-api-error="onDiscoverFeedsError" handles-errors></rf-api>

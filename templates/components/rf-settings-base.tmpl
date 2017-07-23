@@ -6,12 +6,12 @@
 <link rel="import" href="/dist/paper-ripple/paper-ripple.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
-<link rel="import" href="{% url "/component/rf-app-scaffold" .base.r %}">
-<link rel="import" href="{% url "/component/rf-settings-general" .base.r %}">
-<link rel="import" href="{% url "/component/rf-settings-add-feed" .base.r %}">
-<link rel="import" href="{% url "/component/rf-settings-manage-feeds" .base.r %}">
-<link rel="import" href="{% url "/component/rf-settings-share-services" .base.r %}">
-<link rel="import" href="{% url "/component/rf-settings-admin" .base.r %}">
+<link rel="import" href="{% url "/component/rf-app-scaffold" %}">
+<link rel="import" href="{% url "/component/rf-settings-general" %}">
+<link rel="import" href="{% url "/component/rf-settings-add-feed" %}">
+<link rel="import" href="{% url "/component/rf-settings-manage-feeds" %}">
+<link rel="import" href="{% url "/component/rf-settings-share-services" %}">
+<link rel="import" href="{% url "/component/rf-settings-admin" %}">
 
 <dom-module id="rf-settings-base">
     <template>
@@ -50,45 +50,45 @@ lazy-pages > * {
 		<excess-route route="/web/settings/:subsettings/(.*)?" route-alias="settings" subsettings="{{ subsettings }}"></excess-route>
 
         <rf-app-scaffold>
-            <div class="drawer-title">{% __ "Settings" .base.lang %}</div>
+            <div class="drawer-title">{% __ "Settings" %}</div>
             <div class="drawer-menu">
                 <a href="[[ urlFor('@settings', 'subsettings', 'general') ]]" class="item">
-                    <span>{% __ "General" .base.lang %}</span>
+                    <span>{% __ "General" %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
                 <a href="[[ urlFor('@settings', 'subsettings', 'discovery') ]]" class="item">
-                    <span>{% __ "Add Feed" .base.lang %}</span>
+                    <span>{% __ "Add Feed" %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
                 <a href="[[ urlFor('@settings', 'subsettings', 'management') ]]" class="item">
-                    <span>{% __ "Manage Feeds" .base.lang %}</span>
+                    <span>{% __ "Manage Feeds" %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
                 <a href="[[ urlFor('@settings', 'subsettings', 'share-services') ]]" class="item">
-                    <span>{% __ "Share Services" .base.lang %}</span>
+                    <span>{% __ "Share Services" %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
                 <a href="[[ urlFor('@settings', 'subsettings', 'admin') ]]" class="item" hidden$="{{ !user.Admin }}">
-                    <span>{% __ "Administration" .base.lang %}</span>
+                    <span>{% __ "Administration" %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
                 <hr>
                 <a href="[[ urlFor('@feed-all') ]]" class="item">
-                    <span>{% __ "Back to feeds" .base.lang %}</span>
+                    <span>{% __ "Back to feeds" %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
                 <a href="[[ urlFor('@logout') ]]" class="item">
-                    <span>{% __ "Logout" .base.lang %}</span>
+                    <span>{% __ "Logout" %}</span>
                     <paper-ripple></paper-ripple>
                 </a>
             </div>
             <div class="main-title layout horizontal center">
                 <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'general') }}">{% __ "General" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'discovery') }}">{% __ "Add Feed" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'management') }}">{% __ "Manage Feeds" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'share-services') }}">{% __ "Share Services" .base.lang %}</span>
-                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'admin') }}">{% __ "Administration" .base.lang %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'general') }}">{% __ "General" %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'discovery') }}">{% __ "Add Feed" %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'management') }}">{% __ "Manage Feeds" %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'share-services') }}">{% __ "Share Services" %}</span>
+                <span class="flex title-text" hidden$="{{ !_computeSettingsIsActive(subsettings, 'admin') }}">{% __ "Administration" %}</span>
             </div>
             <div class="main-content">
 				<lazy-pages id="settings-pages" attr-for-selected="route" selected="[[ subsettings ]]">

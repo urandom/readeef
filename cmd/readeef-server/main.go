@@ -61,7 +61,7 @@ func main() {
 		}
 	}
 
-	accessLogger := webfw.NewStandardLogger(accessWriter, "", 0)
+	accessLogger := readeef.NewStandardLogger(accessWriter, "", 0)
 
 	dispatcher := server.Dispatcher("/api/")
 	dispatcher.Logger = logger

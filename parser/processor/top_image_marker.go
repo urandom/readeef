@@ -4,21 +4,21 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/parser"
-	"github.com/urandom/webfw"
 	"golang.org/x/net/html"
 )
 
 type TopImageMarker struct {
-	logger webfw.Logger
+	log readeef.Logger
 }
 
-func NewTopImageMarker(l webfw.Logger) TopImageMarker {
-	return TopImageMarker{logger: l}
+func NewTopImageMarker(l readeef.Logger) TopImageMarker {
+	return TopImageMarker{log: l}
 }
 
 func (p TopImageMarker) Process(f parser.Feed) parser.Feed {
-	p.logger.Infof("Locating suitable top images in articles of '%s'\n", f.Title)
+	p.log.Infof("Locating suitable top images in articles of '%s'\n", f.Title)
 
 	for i := range f.Articles {
 		if d, err := goquery.NewDocumentFromReader(strings.NewReader(f.Articles[i].Description)); err == nil {

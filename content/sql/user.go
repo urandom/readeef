@@ -6,12 +6,12 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/base/processor"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/db"
-	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/util"
 )
 
@@ -54,7 +54,7 @@ type readStateDeleteData struct {
 
 type User struct {
 	base.User
-	logger webfw.Logger
+	log readeef.Logger
 
 	db *db.DB
 }
@@ -75,7 +75,7 @@ func (u *User) Update() {
 	}
 
 	i := u.Data()
-	u.logger.Infof("Updating user %s\n", i.Login)
+	u.log.Infof("Updating user %s\n", i.Login)
 
 	tx, err := u.db.Beginx()
 	if err != nil {
@@ -137,7 +137,7 @@ func (u *User) Delete() {
 	}
 
 	i := u.Data()
-	u.logger.Infof("Deleting user %s\n", i.Login)
+	u.log.Infof("Deleting user %s\n", i.Login)
 
 	tx, err := u.db.Beginx()
 	if err != nil {
@@ -177,7 +177,7 @@ func (u *User) FeedById(id data.FeedId) (uf content.UserFeed) {
 	}
 
 	login := u.Data().Login
-	u.logger.Infof("Getting user feed for user %s and feed %d\n", login, id)
+	u.log.Infof("Getting user feed for user %s and feed %d\n", login, id)
 
 	var i data.Feed
 	if err := u.db.Get(&i, u.db.SQL().User.GetFeed, id, login); err != nil {
@@ -218,7 +218,7 @@ func (u *User) AddFeed(f content.Feed) (uf content.UserFeed) {
 	}
 
 	login := u.Data().Login
-	u.logger.Infof("Getting user feed for user %s and feed %d\n", login, d.Id)
+	u.log.Infof("Getting user feed for user %s and feed %d\n", login, d.Id)
 
 	tx, err := u.db.Beginx()
 	if err != nil {
@@ -260,7 +260,7 @@ func (u *User) AllFeeds() (uf []content.UserFeed) {
 	}
 
 	login := u.Data().Login
-	u.logger.Infof("Getting all feeds for user %s\n", login)
+	u.log.Infof("Getting all feeds for user %s\n", login)
 
 	var data []data.Feed
 	if err := u.db.Select(&data, u.db.SQL().User.GetFeeds, login); err != nil {
@@ -288,7 +288,7 @@ func (u *User) AllTaggedFeeds() (tf []content.TaggedFeed) {
 	}
 
 	login := u.Data().Login
-	u.logger.Infof("Getting all tagged feeds for user %s\n", login)
+	u.log.Infof("Getting all tagged feeds for user %s\n", login)
 
 	var tuples []feedTagTuple
 
@@ -339,9 +339,9 @@ func (u *User) ArticleById(id data.ArticleId, o ...data.ArticleQueryOptions) (ua
 	}
 
 	login := u.Data().Login
-	u.logger.Infof("Getting article '%d' for user %s\n", id, login)
+	u.log.Infof("Getting article '%d' for user %s\n", id, login)
 
-	articles := getArticles(u, u.db, u.logger, opts, u,
+	articles := getArticles(u, u.db, u.log, opts, u,
 		"", "a.id = $2", []interface{}{id})
 
 	if len(articles) > 0 {
@@ -372,7 +372,7 @@ func (u *User) ArticlesById(ids []data.ArticleId, o ...data.ArticleQueryOptions)
 	}
 
 	login := u.Data().Login
-	u.logger.Infof("Getting articles %q for user %s\n", ids, login)
+	u.log.Infof("Getting articles %q for user %s\n", ids, login)
 
 	where := "a.id IN ("
 
@@ -389,7 +389,7 @@ func (u *User) ArticlesById(ids []data.ArticleId, o ...data.ArticleQueryOptions)
 	}
 	where += ")"
 
-	articles := getArticles(u, u.db, u.logger, opts, u, "", where, args)
+	articles := getArticles(u, u.db, u.log, opts, u, "", where, args)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -414,9 +414,9 @@ func (u *User) Articles(o ...data.ArticleQueryOptions) (ua []content.UserArticle
 	}
 
 	login := u.Data().Login
-	u.logger.Infof("Getting articles for user %s with options: %#v\n", login, opts)
+	u.log.Infof("Getting articles for user %s with options: %#v\n", login, opts)
 
-	articles := getArticles(u, u.db, u.logger, opts, u, "", "", nil)
+	articles := getArticles(u, u.db, u.log, opts, u, "", "", nil)
 	ua = make([]content.UserArticle, len(articles))
 	for i := range articles {
 		ua[i] = articles[i]
@@ -440,9 +440,9 @@ func (u *User) Ids(o ...data.ArticleIdQueryOptions) (ids []data.ArticleId) {
 		opts = o[0]
 	}
 
-	u.logger.Infof("Getting user %s article ids using options: %#v\n", u.Data().Login, opts)
+	u.log.Infof("Getting user %s article ids using options: %#v\n", u.Data().Login, opts)
 
-	return articleIds(u, u.db, u.logger, opts, "", "", nil)
+	return articleIds(u, u.db, u.log, opts, "", "", nil)
 }
 
 func (u *User) Count(o ...data.ArticleCountOptions) (count int64) {
@@ -460,9 +460,9 @@ func (u *User) Count(o ...data.ArticleCountOptions) (count int64) {
 		opts = o[0]
 	}
 
-	u.logger.Infof("Getting user %s article count using options: %#v\n", u.Data().Login, opts)
+	u.log.Infof("Getting user %s article count using options: %#v\n", u.Data().Login, opts)
 
-	return articleCount(u, u.db, u.logger, opts, "", "", nil)
+	return articleCount(u, u.db, u.log, opts, "", "", nil)
 }
 
 func (u *User) Query(term string, sp content.SearchProvider, paging ...int) (ua []content.UserArticle) {
@@ -500,9 +500,9 @@ func (u *User) ReadState(read bool, o ...data.ArticleUpdateStateOptions) {
 	}
 
 	login := u.Data().Login
-	u.logger.Infof("Getting articles for user %s with options: %#v\n", login, opts)
+	u.log.Infof("Getting articles for user %s with options: %#v\n", login, opts)
 
-	readState(u, u.db, u.logger, opts, read, "", "", "", "", nil, nil)
+	readState(u, u.db, u.log, opts, read, "", "", "", "", nil, nil)
 }
 
 func (u *User) Tags() (tags []content.Tag) {
@@ -516,7 +516,7 @@ func (u *User) Tags() (tags []content.Tag) {
 	}
 
 	login := u.Data().Login
-	u.logger.Infof("Getting all tags for user %s\n", login)
+	u.log.Infof("Getting all tags for user %s\n", login)
 
 	var tagData []data.Tag
 
@@ -543,7 +543,7 @@ func (u *User) TagById(id data.TagId) (t content.Tag) {
 		return
 	}
 
-	u.logger.Infof("Getting tag '%d'\n", id)
+	u.log.Infof("Getting tag '%d'\n", id)
 
 	i := data.Tag{}
 	if err := u.db.Get(&i, u.db.SQL().User.GetTag, id); err != nil {
@@ -567,7 +567,7 @@ func (u *User) TagByValue(v data.TagValue) (t content.Tag) {
 		return
 	}
 
-	u.logger.Infof("Getting tag '%s' by value\n", v)
+	u.log.Infof("Getting tag '%s' by value\n", v)
 
 	i := data.Tag{}
 	if err := u.db.Get(&i, u.db.SQL().User.GetTagByValue, v); err != nil {
@@ -584,7 +584,7 @@ func (u *User) TagByValue(v data.TagValue) (t content.Tag) {
 	return
 }
 
-func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleQueryOptions, sorting content.ArticleSorting, join, where string, args []interface{}) (ua []content.UserArticle) {
+func getArticles(u content.User, dbo *db.DB, log readeef.Logger, opts data.ArticleQueryOptions, sorting content.ArticleSorting, join, where string, args []interface{}) (ua []content.UserArticle) {
 	if u.HasErr() {
 		return
 	}
@@ -610,7 +610,7 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 		opts.UnreadFirst = false
 		opts.UnreadOnly = true
 
-		ua = internalGetArticles(u, dbo, logger, opts, sorting, join, where, args)
+		ua = internalGetArticles(u, dbo, log, opts, sorting, join, where, args)
 
 		if !originalUnreadOnly && (opts.Limit == 0 || opts.Limit > len(ua)) {
 			if opts.Limit > 0 {
@@ -619,7 +619,7 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 			opts.UnreadOnly = false
 			opts.ReadOnly = true
 
-			readOnly := internalGetArticles(u, dbo, logger, opts, sorting, join, where, args)
+			readOnly := internalGetArticles(u, dbo, log, opts, sorting, join, where, args)
 
 			ua = append(ua, readOnly...)
 		}
@@ -627,10 +627,10 @@ func getArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Arti
 		return
 	}
 
-	return internalGetArticles(u, dbo, logger, opts, sorting, join, where, args)
+	return internalGetArticles(u, dbo, log, opts, sorting, join, where, args)
 }
 
-func internalGetArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleQueryOptions, sorting content.ArticleSorting, join, where string, args []interface{}) (ua []content.UserArticle) {
+func internalGetArticles(u content.User, dbo *db.DB, log readeef.Logger, opts data.ArticleQueryOptions, sorting content.ArticleSorting, join, where string, args []interface{}) (ua []content.UserArticle) {
 	renderData := getArticlesData{}
 	s := dbo.SQL()
 	if opts.IncludeScores {
@@ -737,7 +737,7 @@ func internalGetArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts d
 
 	sql := buf.String()
 	var data []data.Article
-	logger.Debugf("Articles SQL:\n%s\nArgs:%v\n", sql, args)
+	log.Debugf("Articles SQL:\n%s\nArgs:%v\n", sql, args)
 	if err := dbo.Select(&data, sql, args...); err != nil {
 		u.Err(err)
 		return
@@ -764,7 +764,7 @@ func internalGetArticles(u content.User, dbo *db.DB, logger webfw.Logger, opts d
 	return
 }
 
-func articleIds(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleIdQueryOptions, join, where string, args []interface{}) (ids []data.ArticleId) {
+func articleIds(u content.User, dbo *db.DB, log readeef.Logger, opts data.ArticleIdQueryOptions, join, where string, args []interface{}) (ids []data.ArticleId) {
 	if u.HasErr() {
 		return
 	}
@@ -854,7 +854,7 @@ func articleIds(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Artic
 
 	sql := buf.String()
 
-	logger.Debugf("Article ids SQL:\n%s\nArgs:%v\n", sql, args)
+	log.Debugf("Article ids SQL:\n%s\nArgs:%v\n", sql, args)
 	if err := dbo.Select(&ids, sql, args...); err != nil {
 		u.Err(err)
 		return
@@ -863,7 +863,7 @@ func articleIds(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Artic
 	return
 }
 
-func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleCountOptions, join, where string, args []interface{}) (count int64) {
+func articleCount(u content.User, dbo *db.DB, log readeef.Logger, opts data.ArticleCountOptions, join, where string, args []interface{}) (count int64) {
 	if u.HasErr() {
 		return
 	}
@@ -953,7 +953,7 @@ func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Art
 
 	sql := buf.String()
 
-	logger.Debugf("Article count SQL:\n%s\nArgs:%v\n", sql, args)
+	log.Debugf("Article count SQL:\n%s\nArgs:%v\n", sql, args)
 	if err := dbo.Get(&count, sql, args...); err != nil {
 		u.Err(err)
 		return
@@ -962,7 +962,7 @@ func articleCount(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Art
 	return
 }
 
-func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.ArticleUpdateStateOptions, read bool, join, joinPredicate, deleteJoin, deleteWhere string, insertArgs, deleteArgs []interface{}) {
+func readState(u content.User, dbo *db.DB, log readeef.Logger, opts data.ArticleUpdateStateOptions, read bool, join, joinPredicate, deleteJoin, deleteWhere string, insertArgs, deleteArgs []interface{}) {
 	if u.HasErr() {
 		return
 	}
@@ -1058,7 +1058,7 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 		}
 
 		sql := buf.String()
-		logger.Debugf("Read state delete SQL:\n%s\nArgs:%v\n", sql, args)
+		log.Debugf("Read state delete SQL:\n%s\nArgs:%v\n", sql, args)
 
 		stmt, err := tx.Preparex(sql)
 
@@ -1135,7 +1135,7 @@ func readState(u content.User, dbo *db.DB, logger webfw.Logger, opts data.Articl
 		}
 
 		sql := buf.String()
-		logger.Debugf("Read state insert SQL:\n%s\nArgs:%q\n", sql, args)
+		log.Debugf("Read state insert SQL:\n%s\nArgs:%q\n", sql, args)
 
 		stmt, err := tx.Preparex(sql)
 

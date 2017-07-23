@@ -5,24 +5,25 @@ import (
 	"text/template"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/pkg/errors"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/parser/processor"
-	"github.com/urandom/webfw"
 )
 
 type ProxyHTTP struct {
-	logger      webfw.Logger
 	urlTemplate *template.Template
+	logger      readeef.Logger
 }
 
-func NewProxyHTTP(l webfw.Logger, urlTemplate string) (ProxyHTTP, error) {
-	l.Infof("URL Template: %s\n", urlTemplate)
+func NewProxyHTTP(urlTemplate string, log readeef.Logger) (ProxyHTTP, error) {
+	log.Infof("URL Template: %s\n", urlTemplate)
 	t, err := template.New("proxy-http-url-template").Parse(urlTemplate)
 	if err != nil {
-		return ProxyHTTP{}, err
+		return ProxyHTTP{}, errors.Wrap(err, "parsing template")
 	}
 
-	return ProxyHTTP{logger: l, urlTemplate: t}, nil
+	return ProxyHTTP{logger: log, urlTemplate: t}, nil
 }
 
 func (p ProxyHTTP) ProcessArticles(ua []content.UserArticle) []content.UserArticle {

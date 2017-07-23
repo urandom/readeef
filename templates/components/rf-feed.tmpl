@@ -9,9 +9,9 @@
 <link rel="import" href="/dist/paper-spinner/paper-spinner.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
-<link rel="import" href="{% url "/component/rf-api" .base.r %}">
-<link rel="import" href="{% url "/component/rf-article" .base.r %}">
-<link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
+<link rel="import" href="{% url "/component/rf-api" %}">
+<link rel="import" href="{% url "/component/rf-article" %}">
+<link rel="import" href="{% url "/component/rf-keyboard-shortcuts" %}">
 
 <dom-module id="rf-feed">
     <template>
@@ -147,20 +147,20 @@ a {
 
 								<div class="article-buttons layout horizontal">
 									<a href$="[[ item.article.Link ]]" target$="[[ _computeArticleTarget(item.article) ]]" class="article-link flex article-control article-anchor" on-click="onArticleOpen">
-										{% __ "View" .base.lang %}
+										{% __ "View" %}
 										<paper-ripple></paper-ripple>
 									</a>
 									<paper-spinner active="[[ item.article.summarizing ]]"></paper-spinner>
 									<paper-material elevation="[[ _computeElevationFormattingButtons(item.article, 'summary', item.article.*) ]]">
 										<a href="[[ _computeArticleLink(item.article, 'summary', item.article.*) ]]" class="article-link article-control">
-											{% __ "Summarize" .base.lang %}
+											{% __ "Summarize" %}
 											<paper-ripple></paper-ripple>
 										</a>
 									</paper-material>
 									<paper-spinner active="[[ item.article.formatting ]]"></paper-spinner>
 									<paper-material elevation="[[ _computeElevationFormattingButtons(item.article, 'format', item.article.*) ]]">
 										<a href="[[ _computeArticleLink(item.article, 'format', item.article.*) ]]" class="article-link article-control">
-											{% __ "Format" .base.lang %}
+											{% __ "Format" %}
 											<paper-ripple></paper-ripple>
 										</a>
 									</paper-material>
@@ -603,7 +603,7 @@ a {
                 this._relativeDateWorker.postMessage({
                     articles: [].concat(this.articles),
                     tagOrId: this.tagOrId,
-                    lang: "{% .base.lang %}",
+                    lang: "{% .Language %}",
                 });
             },
 

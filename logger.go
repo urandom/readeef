@@ -2,19 +2,19 @@ package readeef
 
 import (
 	"io"
+	"log"
 	"os"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/urandom/webfw"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-type Logger struct {
+type logger struct {
 	*logrus.Logger
 }
 
-func NewLogger(cfg Config) webfw.Logger {
-	logger := Logger{Logger: logrus.New()}
+func NewLogger(cfg Config) Logger {
+	logger := logger{Logger: logrus.New()}
 
 	var writer io.Writer
 	if cfg.Logger.File == "-" {
@@ -49,14 +49,67 @@ func NewLogger(cfg Config) webfw.Logger {
 	return logger
 }
 
-func (l Logger) Print(args ...interface{}) {
+func (l logger) Print(args ...interface{}) {
 	l.Logger.Error(args)
 }
 
-func (l Logger) Printf(format string, args ...interface{}) {
+func (l logger) Printf(format string, args ...interface{}) {
 	l.Logger.Errorf(format, args...)
 }
 
-func (l Logger) Errorln(args ...interface{}) {
+func (l logger) Errorln(args ...interface{}) {
 	l.Logger.Errorln(args...)
+}
+
+// The logger interface provides some common methods for outputting messages.
+// It may be used to exchange the default log.Logger error logger with another
+// provider.
+type Logger interface {
+	Fatal(v ...interface{})
+	Fatalf(format string, v ...interface{})
+	Fatalln(v ...interface{})
+
+	Print(v ...interface{})
+	Printf(format string, v ...interface{})
+	Println(v ...interface{})
+
+	Info(v ...interface{})
+	Infof(format string, v ...interface{})
+	Infoln(v ...interface{})
+
+	Debug(v ...interface{})
+	Debugf(format string, v ...interface{})
+	Debugln(v ...interface{})
+}
+
+type StandardLogger struct {
+	*log.Logger
+}
+
+func NewStandardLogger(out io.Writer, prefix string, flag int) StandardLogger {
+	return StandardLogger{Logger: log.New(out, prefix, flag)}
+}
+
+func (st StandardLogger) Info(v ...interface{}) {
+	st.Print(v...)
+}
+
+func (st StandardLogger) Infof(format string, v ...interface{}) {
+	st.Printf(format, v...)
+}
+
+func (st StandardLogger) Infoln(v ...interface{}) {
+	st.Println(v...)
+}
+
+func (st StandardLogger) Debug(v ...interface{}) {
+	st.Print(v...)
+}
+
+func (st StandardLogger) Debugf(format string, v ...interface{}) {
+	st.Printf(format, v...)
+}
+
+func (st StandardLogger) Debugln(v ...interface{}) {
+	st.Println(v...)
 }

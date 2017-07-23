@@ -10,15 +10,15 @@ import (
 	"golang.org/x/net/html"
 )
 
-type RelativeUrl struct {
+type RelativeURL struct {
 	logger webfw.Logger
 }
 
-func NewRelativeUrl(l webfw.Logger) RelativeUrl {
-	return RelativeUrl{logger: l}
+func NewRelativeURL(l webfw.Logger) RelativeURL {
+	return RelativeURL{logger: l}
 }
 
-func (p RelativeUrl) Process(f parser.Feed) parser.Feed {
+func (p RelativeURL) Process(f parser.Feed) parser.Feed {
 	p.logger.Infof("Converting urls of feed '%s' to protocol-relative schemes\n", f.Title)
 
 	for i := range f.Articles {

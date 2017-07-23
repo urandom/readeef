@@ -14,15 +14,15 @@
 <link rel="import" href="/dist/paper-toast/paper-toast.html">
 <link rel="import" href="/dist/polymer/polymer.html">
 
-<link rel="import" href="{% url "/component/rf-behaviors" .base.r %}">
-<link rel="import" href="{% url "/component/rf-connection" .base.r %}">
-<link rel="import" href="{% url "/component/rf-login" .base.r %}">
-<link rel="import" href="{% url "/component/rf-splash" .base.r %}">
-<link rel="import" href="{% url "/component/rf-feed-base" .base.r %}">
-<link rel="import" href="{% url "/component/rf-settings-base" .base.r %}">
-<link rel="import" href="{% url "/component/rf-api" .base.r %}">
-<link rel="import" href="{% url "/component/rf-share-services" .base.r %}">
-<link rel="import" href="{% url "/component/rf-keyboard-shortcuts" .base.r %}">
+<link rel="import" href="{% url "/component/rf-behaviors" %}">
+<link rel="import" href="{% url "/component/rf-connection" %}">
+<link rel="import" href="{% url "/component/rf-login" %}">
+<link rel="import" href="{% url "/component/rf-splash" %}">
+<link rel="import" href="{% url "/component/rf-feed-base" %}">
+<link rel="import" href="{% url "/component/rf-settings-base" %}">
+<link rel="import" href="{% url "/component/rf-api" %}">
+<link rel="import" href="{% url "/component/rf-share-services" %}">
+<link rel="import" href="{% url "/component/rf-keyboard-shortcuts" %}">
 
 <dom-module id="rf-router">
     <template>
@@ -32,7 +32,7 @@ neon-animated-pages, lazy-pages {
 }
 		</style>
 
-		<excess-router-config path-style="path" manual-start="true" base-path="{% url "/" .base.r %}"></excess-router-config>
+		<excess-router-config path-style="path" manual-start="true" base-path="{% url "/" %}"></excess-router-config>
 
 		<excess-route route="/web/:toplevel/(.*)?" route-alias="toplevel" toplevel="{{ topLevelNavigation }}"></excess-route>
 		<excess-route route="/(.*)?" redirect-to="/web/splash" activation-modifiers="x"></excess-route>
@@ -80,7 +80,7 @@ neon-animated-pages, lazy-pages {
         <paper-toast id="api-error"></paper-toast>
 
         <rf-keyboard-shortcuts></rf-keyboard-shortcuts>
-		<rf-connection user="[[ user ]]" nonce-url="{% .apiPattern %}v1/nonce" websocket-url="{% .apiPattern %}v1/"></rf-connection>
+		<rf-connection user="[[ user ]]" nonce-url="{% .APIPattern %}/nonce" websocket-url="{% .APIPattern %}/"></rf-connection>
             
         <rf-api id="auth-check" method="get-auth-data" on-rf-api-message="onAuthCheckMessage"></rf-api>
         <rf-api id="logout" method="logout"></rf-api>

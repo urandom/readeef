@@ -1,4 +1,4 @@
-{% define "title" %} {% __ "Readeef: Your feed reader" .base.lang %} {% end %}
+{% define "title" %} {% __ "Readeef: Your feed reader" %} {% end %}
 
 {% define "meta" %}
     <meta name="mobile-web-app-capable" content="yes">
@@ -29,7 +29,7 @@
     <link rel="import" href="/dist/font-roboto/roboto.html">
     <link rel="import" href="/dist/paper-styles/color.html">
     <link rel="import" href="/dist/paper-styles/shadow.html">
-    <link rel="import" href="{% url "/component/rf-router" .base.r %}">
+    <link rel="import" href="{% url "/component/rf-router" %}">
 {% end %}
 
 {% define "styles" %}
@@ -81,7 +81,7 @@ body {
 {% define "body-attrs" %} unresolved {% end %}
 
 {% define "content" %}
-    <rf-router data-language="{% .base.lang %}" data-uri-prefix="{% url "/" .base.r %}"></rf-router>
+    <rf-router data-language="{% .Language %}" data-uri-prefix="{% url "/" %}"></rf-router>
 {% end %}
 
 {% define "scripts" %}

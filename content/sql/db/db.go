@@ -5,12 +5,13 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/urandom/webfw"
+	"github.com/pkg/errors"
+	"github.com/urandom/readeef"
 )
 
 type DB struct {
 	*sqlx.DB
-	logger webfw.Logger
+	log readeef.Logger
 }
 
 var (
@@ -19,8 +20,8 @@ var (
 	helpers = make(map[string]Helper)
 )
 
-func New(logger webfw.Logger) *DB {
-	return &DB{logger: logger}
+func New(log readeef.Logger) *DB {
+	return &DB{log: log}
 }
 
 func (db *DB) Open(driver, connect string) (err error) {
@@ -47,13 +48,13 @@ func (db *DB) init() error {
 	helper := helpers[db.DriverName()]
 
 	if helper == nil {
-		return fmt.Errorf("No helper provided for driver '%s'", db.DriverName())
+		return errors.Errorf("no helper provided for driver '%s'", db.DriverName())
 	}
 
 	for _, sql := range helper.InitSQL() {
 		_, err := db.Exec(sql)
 		if err != nil {
-			return fmt.Errorf("Error executing '%s': %v", sql, err)
+			return errors.Wrapf(err, "executing '%s'", sql)
 		}
 	}
 
@@ -62,7 +63,7 @@ func (db *DB) init() error {
 		if err == sql.ErrNoRows {
 			version = dbVersion
 		} else {
-			return fmt.Errorf("Error getting the current db_version: %v\n", err)
+			return errors.Wrap(err, "getting the current db_version")
 		}
 	}
 
@@ -71,10 +72,10 @@ func (db *DB) init() error {
 	}
 
 	if version < dbVersion {
-		db.logger.Infof("Database version mismatch: current is %d, expected %d\n", version, dbVersion)
-		db.logger.Infof("Running upgrade function for %s driver\n", db.DriverName())
+		db.log.Infof("Database version mismatch: current is %d, expected %d\n", version, dbVersion)
+		db.log.Infof("Running upgrade function for %s driver\n", db.DriverName())
 		if err := helper.Upgrade(db, version, dbVersion); err != nil {
-			return fmt.Errorf("Error running upgrade function for %s driver: %v\n", db.DriverName(), err)
+			return errors.Wrapf(err, "Error running upgrade function for %s driver", db.DriverName())
 		}
 	}
 
@@ -84,7 +85,7 @@ func (db *DB) init() error {
 		_, err = db.Exec(`INSERT INTO readeef(db_version) VALUES($1)`, dbVersion)
 	}
 	if err != nil {
-		return fmt.Errorf("Error initializing readeef utility table: %v", err)
+		return errors.Wrap(err, "initializing readeef utility table")
 	}
 
 	return nil

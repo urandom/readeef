@@ -1,48 +1,21 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
-	"io"
-	"net/http"
-	"sync"
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/webfw"
-	"github.com/urandom/webfw/context"
-	"golang.org/x/net/websocket"
 )
 
 type WebSocket struct {
 	webfw.BasePatternController
-	fm           *readeef.FeedManager
-	sp           content.SearchProvider
-	extractor    content.Extractor
-	capabilities capabilities
-	updateFeed   chan content.Feed
+	fm         *readeef.FeedManager
+	sp         content.SearchProvider
+	extractor  content.Extractor
+	features   features
+	updateFeed chan content.Feed
 }
-
-type apiRequest struct {
-	Method    string          `json:"method"`
-	Tag       string          `json:"tag"`
-	Arguments json.RawMessage `json:"arguments"`
-}
-
-type apiResponse struct {
-	Success   bool                   `json:"success"`
-	ErrorType string                 `json:"errorType"`
-	Error     string                 `json:"error"`
-	Method    string                 `json:"method"`
-	Tag       string                 `json:"tag"`
-	Arguments map[string]interface{} `json:"arguments"`
-}
-
-type Processor interface {
-	Process() responseError
-}
-
-type heartbeatProcessor struct{}
 
 var (
 	errTypeInternal           = "error-internal"
@@ -53,14 +26,14 @@ var (
 	errTypeUnauthorized       = "error-unauthorized"
 	errTypeResourceNotFound   = "error-resource-not-found"
 
-	errNoId               = errors.New("No Id given")
-	errInvalidMethodValue = errors.New("Invalid method")
-	errInvalidArgValue    = errors.New("Invalid argument value")
-	errInternal           = errors.New("Internal server error")
-	errUnauthorized       = errors.New("Unauthorized")
-	errResourceNotFound   = errors.New("Resource not found")
+	errNoId             = errors.New("No Id given")
+	errInvalidArgValue  = errors.New("Invalid argument value")
+	errInternal         = errors.New("Internal server error")
+	errUnauthorized     = errors.New("Unauthorized")
+	errResourceNotFound = errors.New("Resource not found")
 )
 
+/*
 func NewWebSocket(fm *readeef.FeedManager, sp content.SearchProvider,
 	extractor content.Extractor, capabilities capabilities) WebSocket {
 	return WebSocket{
@@ -237,78 +210,6 @@ func (con WebSocket) AuthReject(c context.Context, r *http.Request) {
 	c.Set(r, readeef.CtxKey("forbidden"), true)
 }
 
-func (a apiRequest) processor(
-	c context.Context,
-	s context.Session,
-	user content.User,
-	fm *readeef.FeedManager,
-	sp content.SearchProvider,
-	extractor content.Extractor,
-	capabilities capabilities,
-	secret []byte,
-) (Processor, error) {
-
-	switch a.Method {
-	case "heartbeat":
-		return &heartbeatProcessor{}, nil
-	case "get-auth-data":
-		return &getAuthDataProcessor{user: user, session: s, capabilities: capabilities}, nil
-	case "logout":
-		return &logoutProcessor{session: s}, nil
-	case "article-read-state":
-		return &articleReadStateProcessor{user: user}, nil
-	case "article-favorite-state":
-		return &articleFavoriteStateProcessor{user: user}, nil
-	case "format-article":
-		return &formatArticleProcessor{
-			user:          user,
-			extractor:     extractor,
-			webfwConfig:   webfw.GetConfig(c),
-			readeefConfig: readeef.GetConfig(c),
-		}, nil
-	case "get-article":
-		return &getArticleProcessor{user: user}, nil
-	case "list-feeds":
-		return &listFeedsProcessor{user: user}, nil
-	case "discover-feeds":
-		return &discoverFeedsProcessor{user: user, fm: fm}, nil
-	case "export-opml":
-		return &exportOpmlProcessor{user: user}, nil
-	case "parse-opml":
-		return &parseOpmlProcessor{user: user, fm: fm}, nil
-	case "add-feeds":
-		return &addFeedsProcessor{user: user, fm: fm}, nil
-	case "remove-feed":
-		return &removeFeedProcessor{user: user, fm: fm}, nil
-	case "get-feed-tags":
-		return &getFeedTagsProcessor{user: user}, nil
-	case "set-feed-tags":
-		return &setFeedTagsProcessor{user: user}, nil
-	case "read-state":
-		return &readStateProcessor{user: user}, nil
-	case "get-feed-articles":
-		return &getFeedArticlesProcessor{user: user, sp: sp}, nil
-	case "get-user-attribute":
-		return &getUserAttributeProcessor{user: user}, nil
-	case "set-user-attribute":
-		return &setUserAttributeProcessor{user: user, secret: secret}, nil
-	case "list-users":
-		return &listUsersProcessor{user: user}, nil
-	case "add-user":
-		return &addUserProcessor{user: user, secret: secret}, nil
-	case "remove-user":
-		return &removeUserProcessor{user: user}, nil
-	case "set-attribute-for-user":
-		return &setAttributeForUserProcessor{user: user, secret: secret}, nil
-	default:
-		return nil, errInvalidMethodValue
-	}
-}
-
-func (p heartbeatProcessor) Process() responseError {
-	return responseError{}
-}
-
 func forbidden(c context.Context, r *http.Request) bool {
 	if v, ok := c.Get(r, readeef.CtxKey("forbidden")); ok {
 		if f, ok := v.(bool); ok {
@@ -318,3 +219,4 @@ func forbidden(c context.Context, r *http.Request) bool {
 
 	return false
 }
+*/

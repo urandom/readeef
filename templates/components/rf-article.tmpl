@@ -2,7 +2,7 @@
 <link rel="import" href="/dist/polymer/polymer.html">
 <link rel="import" href="/dist/neon-animation/web-animations.html">
 
-<link rel="import" href="{% url "/component/rf-api" .base.r %}">
+<link rel="import" href="{% url "/component/rf-api" %}">
 
 <dom-module id="rf-article">
     <template>
@@ -156,7 +156,7 @@
         </div>
     </template>
 
-    {% if .base.langs %}
+    {% if .HasLanguages %}
     <script src="/dist/moment/min/moment-with-locales.min.js"></script>
     {% end %}
 
@@ -181,12 +181,12 @@
         transformPrefix = '-ms-';
     }
 
-    {% if .base.langs %}
-    moment.locale('{% .base.lang %}');
+    {% if .HasLanguages %}
+    moment.locale('{% .Language %}');
     {% end %}
 
     function ordinal(value) {
-        {% if .base.langs %}
+        {% if .HasLanguages %}
         return moment.localeData().ordinal(value);
         {% else %}
         var str = value.toString(), suff = str.slice(-1), ord = '';

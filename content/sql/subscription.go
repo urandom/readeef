@@ -1,14 +1,14 @@
 package sql
 
 import (
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/sql/db"
-	"github.com/urandom/webfw"
 )
 
 type Subscription struct {
 	base.Subscription
-	logger webfw.Logger
+	log readeef.Logger
 
 	db *db.DB
 }
@@ -24,7 +24,7 @@ func (s *Subscription) Update() {
 	}
 
 	i := s.Data()
-	s.logger.Infof("Updating subscription to %s\n", i.Link)
+	s.log.Infof("Updating subscription to %s\n", i.Link)
 
 	tx, err := s.db.Beginx()
 	if err != nil {
@@ -79,7 +79,7 @@ func (s *Subscription) Delete() {
 	}
 
 	i := s.Data()
-	s.logger.Infof("Deleting subscription to %s\n", i.Link)
+	s.log.Infof("Deleting subscription to %s\n", i.Link)
 
 	tx, err := s.db.Beginx()
 	if err != nil {
