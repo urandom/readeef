@@ -3,256 +3,35 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
 	"github.com/urandom/handler/auth"
 	"github.com/urandom/handler/method"
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/api/fever"
+	"github.com/urandom/readeef/api/ttrss"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base/extractor"
+	"github.com/urandom/readeef/content/base/monitor"
 	contentProcessor "github.com/urandom/readeef/content/base/processor"
 	"github.com/urandom/readeef/content/base/search"
+	"github.com/urandom/readeef/content/base/thumbnailer"
+	"github.com/urandom/readeef/content/base/token"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/parser/processor"
 )
 
-/*
-func RegisterControllers(config readeef.Config, dispatcher *webfw.Dispatcher, logger webfw.Logger) error {
-	repo, err := repo.New(config.DB.Driver, config.DB.Connect, logger)
-	if err != nil {
-		return err
-	}
-
-	capabilities := capabilities{
-		I18N:       len(config.I18n.Languages) > 1,
-		Popularity: len(config.Popularity.Providers) > 0,
-	}
-
-	var ap []content.ArticleProcessor
-	for _, p := range config.Content.ArticleProcessors {
-		switch p {
-		case "relative-url":
-			ap = append(ap, contentProcessor.NewRelativeUrl(logger))
-		case "proxy-http":
-			template := config.Content.ProxyHTTPURLTemplate
-
-			if template != "" {
-				p, err := contentProcessor.NewProxyHTTP(logger, template)
-				if err != nil {
-					return fmt.Errorf("Error initializing Proxy HTTP article processor: %v", err)
-				}
-				ap = append(ap, p)
-				capabilities.ProxyHTTP = true
-			}
-		case "insert-thumbnail-target":
-			ap = append(ap, contentProcessor.NewInsertThumbnailTarget(logger))
-		}
-	}
-
-	repo.ArticleProcessors(ap)
-
-	if err := initAdminUser(repo, []byte(config.Auth.Secret)); err != nil {
-		return err
-	}
-
-	mw := make([]string, 0, len(dispatcher.Config.Dispatcher.Middleware))
-	for _, m := range dispatcher.Config.Dispatcher.Middleware {
-		switch m {
-		case "I18N", "Static", "Url", "Sitemap":
-		case "Session":
-			if capabilities.ProxyHTTP {
-				mw = append(mw, m)
-			}
-		default:
-			mw = append(mw, m)
-		}
-	}
-
-	dispatcher.Config.Dispatcher.Middleware = mw
-
-	dispatcher.Context.SetGlobal(readeef.CtxKey("config"), config)
-	dispatcher.Context.SetGlobal(context.BaseCtxKey("readeefConfig"), config)
-	dispatcher.Context.SetGlobal(readeef.CtxKey("repo"), repo)
-
-	fm := readeef.NewFeedManager(repo, config, logger)
-
-	var processors []parser.Processor
-	for _, p := range config.FeedParser.Processors {
-		switch p {
-		case "absolutize-urls":
-			processors = append(processors, processor.NewAbsolutizeURLs(logger))
-		case "relative-url":
-			processors = append(processors, processor.NewRelativeUrl(logger))
-		case "proxy-http":
-			template := config.FeedParser.ProxyHTTPURLTemplate
-
-			if template != "" {
-				p, err := processor.NewProxyHTTP(logger, template)
-				if err != nil {
-					return fmt.Errorf("Error initializing Proxy HTTP processor: %v", err)
-				}
-				processors = append(processors, p)
-				capabilities.ProxyHTTP = true
-			}
-		case "cleanup":
-			processors = append(processors, processor.NewCleanup(logger))
-		case "top-image-marker":
-			processors = append(processors, processor.NewTopImageMarker(logger))
-		}
-	}
-
-	fm.ParserProcessors(processors)
-
-	var sp content.SearchProvider
-
-	switch config.Content.SearchProvider {
-	case "elastic":
-		if sp, err = search.NewElastic(config.Content.ElasticURL, config.Content.SearchBatchSize, logger); err != nil {
-			logger.Printf("Error initializing Elastic search: %v\n", err)
-		}
-	case "bleve":
-		fallthrough
-	default:
-		if sp, err = search.NewBleve(config.Content.BlevePath, config.Content.SearchBatchSize, logger); err != nil {
-			logger.Printf("Error initializing Bleve search: %v\n", err)
-		}
-	}
-
-	if sp != nil {
-		if sp.IsNewIndex() {
-			go func() {
-				sp.IndexAllFeeds(repo)
-			}()
-		}
-	}
-
-	var ce content.Extractor
-
-	switch config.Content.Extractor {
-	case "readability":
-		if ce, err = extractor.NewReadability(config.Content.ReadabilityKey); err != nil {
-			return fmt.Errorf("Error initializing Readability extractor: %v\n", err)
-		}
-	case "goose":
-		fallthrough
-	default:
-		if ce, err = extractor.NewGoose(dispatcher.Config.Renderer.Dir); err != nil {
-			return fmt.Errorf("Error initializing Goose extractor: %v\n", err)
-		}
-	}
-
-	if ce != nil {
-		capabilities.Extractor = true
-	}
-
-	var t content.Thumbnailer
-	switch config.Content.Thumbnailer {
-	case "extract":
-		if t, err = thumbnailer.NewExtract(ce, logger); err != nil {
-			return fmt.Errorf("Error initializing Extract thumbnailer: %v\n", err)
-		}
-	case "description":
-		fallthrough
-	default:
-		t = thumbnailer.NewDescription(logger)
-	}
-
-	monitors := []content.FeedMonitor{monitor.NewUnread(repo, logger)}
-	for _, m := range config.FeedManager.Monitors {
-		switch m {
-		case "index":
-			if sp != nil {
-				monitors = append(monitors, monitor.NewIndex(sp, logger))
-				capabilities.Search = true
-			}
-		case "thumbnailer":
-			if t != nil {
-				monitors = append(monitors, monitor.NewThumbnailer(t, logger))
-			}
-		}
-	}
-
-	webSocket := NewWebSocket(fm, sp, ce, capabilities)
-	dispatcher.Handle(webSocket)
-
-	monitors = append(monitors, webSocket)
-
-	if config.Hubbub.CallbackURL != "" {
-		hubbub := readeef.NewHubbub(repo, config, logger, dispatcher.Pattern,
-			fm.RemoveFeedChannel())
-		if err := hubbub.InitSubscriptions(); err != nil {
-			return fmt.Errorf("Error initializing hubbub subscriptions: %v", err)
-		}
-
-		hubbub.FeedMonitors(monitors)
-		fm.Hubbub(hubbub)
-	}
-
-	fm.FeedMonitors(monitors)
-
-	fm.Start()
-
-	nonce := readeef.NewNonce()
-
-	controllers := []webfw.Controller{
-		NewAuth(capabilities),
-		NewFeed(fm, sp),
-		NewArticle(config, ce),
-		NewUser(),
-		NewUserSettings(),
-		NewNonce(nonce),
-	}
-
-	if fm.Hubbub() != nil {
-		controllers = append(controllers, NewHubbubController(fm.Hubbub(), config.Hubbub.RelativePath,
-			fm.AddFeedChannel(), fm.RemoveFeedChannel()))
-	}
-
-	for _, e := range config.API.Emulators {
-		switch e {
-		case "tt-rss":
-			controllers = append(controllers, NewTtRss(fm, sp))
-		case "fever":
-			controllers = append(controllers, NewFever())
-		}
-	}
-
-	for _, c := range controllers {
-		dispatcher.Handle(c)
-	}
-
-	middleware.InitializeDefault(dispatcher)
-	dispatcher.RegisterMiddleware(readeef.Auth{Pattern: dispatcher.Pattern, Nonce: nonce, IgnoreURLPrefix: config.Auth.IgnoreURLPrefix})
-
-	dispatcher.Renderer = renderer.NewRenderer(dispatcher.Config.Renderer.Dir,
-		dispatcher.Config.Renderer.Base)
-
-	dispatcher.Renderer.Delims("{%", "%}")
-
-	go func() {
-		for {
-			select {
-			case <-time.After(5 * time.Minute):
-				nonce.Clean(45 * time.Second)
-			}
-		}
-	}()
-
-	return nil
-}
-*/
-
-func Prepare(config readeef.Config, log readeef.Logger) error {
+func Prepare(ctx context.Context, config readeef.Config, log readeef.Logger) (http.Handler, error) {
 	repo, err := repo.New(config.DB.Driver, config.DB.Connect, log)
 	if err != nil {
-		return errors.Wrap(err, "creating repo")
+		return nil, errors.Wrap(err, "creating repo")
 	}
 
 	features := features{
@@ -263,11 +42,11 @@ func Prepare(config readeef.Config, log readeef.Logger) error {
 	if processors, err := initArticleProcessors(config.Content.ArticleProcessors, config.Content.ProxyHTTPURLTemplate, &features, log); err == nil {
 		repo.ArticleProcessors(processors)
 	} else {
-		return errors.Wrap(err, "initializing article processors")
+		return nil, errors.Wrap(err, "initializing article processors")
 	}
 
 	if err := initAdminUser(repo, []byte(config.Auth.Secret)); err != nil {
-		return errors.Wrap(err, "initializing admin user")
+		return nil, errors.Wrap(err, "initializing admin user")
 	}
 
 	feedManager := readeef.NewFeedManager(repo, config, log)
@@ -275,7 +54,7 @@ func Prepare(config readeef.Config, log readeef.Logger) error {
 	if processors, err := initParserProcessors(config.FeedParser.Processors, config.FeedParser.ProxyHTTPURLTemplate, &features, log); err == nil {
 		feedManager.ParserProcessors(processors)
 	} else {
-		return errors.Wrap(err, "initializing parser processors")
+		return nil, errors.Wrap(err, "initializing parser processors")
 	}
 
 	searchProvider := initSearchProvider(config, repo, log)
@@ -286,14 +65,58 @@ func Prepare(config readeef.Config, log readeef.Logger) error {
 
 	extractor, err := initContentExtractor(config)
 	if err != nil {
-		return errors.Wrap(err, "initializing content extractor")
+		return nil, errors.Wrap(err, "initializing content extractor")
 	}
 
 	if extractor != nil {
 		features.Extractor = true
 	}
 
-	return nil
+	thumbnailer, err := initThumbnailer(config, extractor, log)
+	if err != nil {
+		return nil, errors.Wrap(err, "initializing thumbnailer")
+	}
+
+	monitors := initFeedMonitors(config, repo, searchProvider, thumbnailer, &features, log)
+	for _, m := range monitors {
+		feedManager.AddFeedMonitor(m)
+	}
+
+	storage, err := initTokenStorage(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "initializing token storage")
+	}
+
+	hubbub, err := initHubbub(config, repo, monitors, feedManager, log)
+	if err != nil {
+		return nil, errors.Wrap(err, "initializing hubbub")
+	}
+
+	routes := []routes{tokenRoutes(repo, storage, []byte(config.Auth.Secret), log)}
+
+	if hubbub != nil {
+		feedManager.Hubbub(hubbub)
+		routes = append(routes, hubbubRoutes(hubbub, repo, feedManager, log))
+	}
+
+	emulatorRoutes := emulatorRoutes(ctx, repo, searchProvider, feedManager, config, log)
+	routes = append(routes, emulatorRoutes...)
+
+	routes = append(routes, mainRoutes(
+		userMiddleware(repo, storage, []byte(config.Auth.Secret), log),
+		featureRoutes(features),
+		feedsRoutes(feedManager),
+		articlesRoutes(extractor, searchProvider),
+		opmlRoutes(feedManager),
+		eventsRoutes(ctx, storage, feedManager),
+		userRoutes([]byte(config.Auth.Secret)),
+	))
+
+	handler := Mux(routes)
+
+	feedManager.Start()
+
+	return handler, nil
 }
 
 func initArticleProcessors(names []string, proxyTemplate string, features *features, log readeef.Logger) ([]content.ArticleProcessor, error) {
@@ -408,179 +231,289 @@ func initContentExtractor(config readeef.Config) (content.Extractor, error) {
 	}
 }
 
-func Mux(
+func initThumbnailer(config readeef.Config, ce content.Extractor, log readeef.Logger) (content.Thumbnailer, error) {
+	switch config.Content.Thumbnailer {
+	case "extract":
+		if t, err := thumbnailer.NewExtract(ce, log); err == nil {
+			return t, nil
+		} else {
+			return nil, errors.Wrap(err, "initializing Extract thumbnailer")
+		}
+	case "description":
+		fallthrough
+	default:
+		return thumbnailer.NewDescription(log), nil
+	}
+}
+
+func initFeedMonitors(
+	config readeef.Config,
+	repo content.Repo,
+	searchProvider content.SearchProvider,
+	thumbnailer content.Thumbnailer,
+	features *features,
+	log readeef.Logger,
+) []content.FeedMonitor {
+	monitors := []content.FeedMonitor{monitor.NewUnread(repo, log)}
+
+	for _, m := range config.FeedManager.Monitors {
+		switch m {
+		case "index":
+			if searchProvider != nil {
+				monitors = append(monitors, monitor.NewIndex(searchProvider, log))
+				features.Search = true
+			}
+		case "thumbnailer":
+			if thumbnailer != nil {
+				monitors = append(monitors, monitor.NewThumbnailer(thumbnailer, log))
+			}
+		}
+	}
+
+	return monitors
+}
+
+func initHubbub(
+	config readeef.Config,
+	repo content.Repo,
+	monitors []content.FeedMonitor,
+	feedManager *readeef.FeedManager,
+	log readeef.Logger,
+) (*readeef.Hubbub, error) {
+	if config.Hubbub.CallbackURL != "" {
+		hubbub := readeef.NewHubbub(repo, config, log, "/api/v2/hubbub",
+			feedManager.RemoveFeedChannel())
+
+		if err := hubbub.InitSubscriptions(); err != nil {
+			return nil, errors.Wrap(err, "initializing hubbub subscriptions")
+		}
+
+		hubbub.FeedMonitors(monitors)
+
+		return hubbub, nil
+	}
+
+	return nil, nil
+}
+
+func initTokenStorage(config readeef.Config) (content.TokenStorage, error) {
+	return token.NewBoltStorage(config.Auth.TokenStoragePath)
+}
+
+type routes struct {
+	path  string
+	route func(r chi.Router)
+}
+
+func tokenRoutes(repo content.Repo, storage content.TokenStorage, secret []byte, log readeef.Logger) routes {
+	return routes{path: "/v2/token", route: func(r chi.Router) {
+		r.Method(method.POST, "/", tokenCreate(repo, secret, log))
+		r.Method(method.DELETE, "/", tokenDelete(storage, secret, log))
+	}}
+}
+
+func hubbubRoutes(hubbub *readeef.Hubbub, repo content.Repo, feedManager *readeef.FeedManager, log readeef.Logger) routes {
+	handler := hubbubRegistration(hubbub, repo, feedManager.AddFeedChannel(), feedManager.RemoveFeedChannel(), log)
+
+	return routes{path: "/v2/hubbub", route: func(r chi.Router) {
+		r.Get("/", handler)
+		r.Post("/", handler)
+	}}
+}
+
+func emulatorRoutes(
 	ctx context.Context,
 	repo content.Repo,
-	config readeef.Config,
-	storage content.TokenStorage,
-	extractor content.Extractor,
 	searchProvider content.SearchProvider,
 	feedManager *readeef.FeedManager,
-	hubbub *readeef.Hubbub,
-	features features,
+	config readeef.Config,
 	log readeef.Logger,
-) (http.Handler, error) {
-	secret := []byte(config.Auth.Secret)
+) []routes {
+	rr := make([]routes, 0, len(config.API.Emulators))
 
+	for _, e := range config.API.Emulators {
+		switch e {
+		case "tt-rss":
+			rr = append(rr, routes{
+				path: fmt.Sprintf("/v%d/tt-rss/", ttrss.API_LEVEL),
+				route: func(r chi.Router) {
+					r.Get("/", ttrss.FakeWebHandler)
+
+					r.Post("/api/", ttrss.Handler(
+						ctx, repo, searchProvider, feedManager,
+						[]byte(config.Auth.Secret), config.FeedManager.Converted.UpdateInterval,
+						log,
+					))
+				},
+			})
+		case "fever":
+			rr = append(rr, routes{
+				path: fmt.Sprintf("/v%d/fever/", fever.API_VERSION),
+				route: func(r chi.Router) {
+					r.Post("/", fever.Handler(repo, log))
+				},
+			})
+		}
+	}
+
+	return rr
+}
+
+type middleware func(next http.Handler) http.Handler
+
+func mainRoutes(middleware []middleware, subroutes ...routes) routes {
+	return routes{path: "/v2", route: func(r chi.Router) {
+		for _, m := range middleware {
+			r.Use(m)
+		}
+
+		for _, sub := range subroutes {
+			r.Route(sub.path, sub.route)
+		}
+	}}
+}
+
+func userMiddleware(repo content.Repo, storage content.TokenStorage, secret []byte, log readeef.Logger) []middleware {
+	return []middleware{
+		func(next http.Handler) http.Handler {
+			return auth.RequireToken(next, tokenValidator(repo, storage, log), secret)
+		},
+		func(next http.Handler) http.Handler {
+			return userContext(repo, next, log)
+		},
+		userValidator,
+	}
+}
+
+func featureRoutes(features features) routes {
+	return routes{path: "/features", route: func(r chi.Router) {
+		r.Get("/", featuresHandler(features))
+	}}
+}
+
+func feedsRoutes(feedManager *readeef.FeedManager) routes {
+	return routes{path: "/feed", route: func(r chi.Router) {
+		r.Get("/", listFeeds)
+		r.Post("/", addFeed(feedManager))
+
+		r.Get("/discover", discoverFeeds(feedManager))
+
+		r.Route("/{feedId:[0-9]+}", func(r chi.Router) {
+			r.Use(feedContext)
+
+			r.Delete("/", deleteFeed(feedManager))
+
+			r.Get("/tags", getFeedTags)
+			r.Post("/tags", setFeedTags)
+
+		})
+	}}
+}
+
+func articlesRoutes(extractor content.Extractor, searchProvider content.SearchProvider) routes {
+	return routes{path: "/article", route: func(r chi.Router) {
+		r.Get("/", getArticles(userRepoType))
+
+		if searchProvider != nil {
+			r.Route("/search", func(r chi.Router) {
+				r.Get("/*", articleSearch(searchProvider, userRepoType))
+				r.With(feedContext).Get("/feed/{feedId:[0-9]+}/*", articleSearch(searchProvider, feedRepoType))
+				r.With(tagContext).Get("/tag/{tagId:[0-9]+}/*", articleSearch(searchProvider, tagRepoType))
+			})
+		}
+
+		r.Post("/read", articlesReadStateChange(userRepoType))
+
+		r.Route("/{articleId:[0-9]+}", func(r chi.Router) {
+			r.Use(articleContext)
+
+			r.Get("/", getArticle)
+			if extractor != nil {
+				r.Get("/format", formatArticle(extractor))
+			}
+			r.Post("/read", articleStateChange(read))
+			r.Post("/favorite", articleStateChange(favorite))
+		})
+
+		r.Route("/favorite", func(r chi.Router) {
+			r.Get("/", getArticles(favoriteRepoType))
+
+			r.Post("/read", articlesReadStateChange(favoriteRepoType))
+		})
+
+		r.Route("/popular", func(r chi.Router) {
+			r.With(feedContext).Get("/feed/{feedId:[0-9]+}",
+				getArticles(popularRepoType, feedRepoType))
+			r.With(tagContext).Get("/tag/{tagId:[0-9]+}",
+				getArticles(popularRepoType, tagRepoType))
+			r.Get("/", getArticles(popularRepoType, userRepoType))
+		})
+
+		r.Route("/feed/{feedId:[0-9]+}", func(r chi.Router) {
+			r.Use(feedContext)
+
+			r.Get("/", getArticles(feedRepoType))
+
+			r.Post("/read", articlesReadStateChange(feedRepoType))
+		})
+
+		r.Route("/tag/{tagId:[0-9]+}", func(r chi.Router) {
+			r.Use(tagContext)
+
+			r.Get("/", getArticles(tagRepoType))
+
+			r.Post("/read", articlesReadStateChange(tagRepoType))
+		})
+
+	}}
+}
+
+func opmlRoutes(feedManager *readeef.FeedManager) routes {
+	return routes{path: "/opml", route: func(r chi.Router) {
+		r.Get("/", exportOPML(feedManager))
+		r.Post("/", importOPML(feedManager))
+	}}
+}
+
+func eventsRoutes(ctx context.Context, storage content.TokenStorage, feedManager *readeef.FeedManager) routes {
+	return routes{path: "/events", route: func(r chi.Router) {
+		r.Get("/", eventSocket(ctx, storage, feedManager))
+	}}
+}
+
+func userRoutes(secret []byte) routes {
+	return routes{path: "/user", route: func(r chi.Router) {
+		r.Route("/", func(r chi.Router) {
+			r.Use(adminValidator)
+
+			r.Get("/", listUsers)
+
+			r.Post("/", addUser(secret))
+			r.Delete("/{name}", deleteUser)
+
+			r.Post("/{name}/settings/{key}", setSettingValue(secret))
+		})
+
+		r.Get("/data", getUserData)
+
+		r.Route("/settings", func(r chi.Router) {
+			r.Get("/", getSettingKeys)
+			r.Get("/{key}", getSettingValue)
+			r.Post("/{key}", setSettingValue(secret))
+		})
+	}}
+}
+
+func Mux(routes []routes) http.Handler {
 	r := chi.NewRouter()
 
 	r.Route("/api", func(r chi.Router) {
-		r.Route("/v2/token", func(r chi.Router) {
-			r.Method(method.POST, "/", tokenCreate(repo, secret, log))
-			r.Method(method.DELETE, "/", tokenDelete(storage, secret, log))
-		})
-
-		r.Route("/v2/hubbub", func(r chi.Router) {
-			r.Get("/", hubbubRegistration(hubbub, repo, feedManager.AddFeedChannel(), feedManager.RemoveFeedChannel(), log))
-			r.Post("/", hubbubRegistration(hubbub, repo, feedManager.AddFeedChannel(), feedManager.RemoveFeedChannel(), log))
-		})
-
-		r.Route("/v2", func(r chi.Router) {
-			r.Use(func(next http.Handler) http.Handler {
-				return auth.RequireToken(next, tokenValidator(repo, storage, log), secret)
-			})
-			r.Use(func(next http.Handler) http.Handler {
-				return userContext(repo, next, log)
-			})
-			r.Use(userValidator)
-
-			r.Get("/features", featuresHandler(features))
-
-			r.Route("/feed", func(r chi.Router) {
-				r.Get("/", listFeeds)
-				r.Post("/", addFeed(feedManager))
-
-				r.Get("/discover", discoverFeeds(feedManager))
-
-				r.Route("/{feedId:[0-9]+}", func(r chi.Router) {
-					r.Use(feedContext)
-
-					r.Delete("/", deleteFeed(feedManager))
-
-					r.Get("/tags", getFeedTags)
-					r.Post("/tags", setFeedTags)
-
-				})
-			})
-
-			r.Route("/article", func(r chi.Router) {
-				r.Route("/{articleId:[0-9]+}", func(r chi.Router) {
-					r.Use(articleContext)
-
-					r.Get("/", getArticle)
-					if extractor != nil {
-						r.Get("/format", formatArticle(extractor))
-					}
-					r.Post("/read", articleStateChange(read))
-					r.Post("/favorite", articleStateChange(favorite))
-				})
-
-				r.Route("/favorite", func(r chi.Router) {
-					r.Get("/", getArticles(favoriteRepoType))
-
-					r.Post("/read", articlesReadStateChange(favoriteRepoType))
-				})
-
-				r.Route("/popular", func(r chi.Router) {
-					r.With(feedContext).Get("/feed/{feedId:[0-9]+}",
-						getArticles(popularRepoType, feedRepoType))
-					r.With(tagContext).Get("/tag/{tagId:[0-9]+}",
-						getArticles(popularRepoType, tagRepoType))
-					r.Get("/", getArticles(popularRepoType, userRepoType))
-				})
-
-				r.Route("/feed/{feedId:[0-9]+}", func(r chi.Router) {
-					r.Use(feedContext)
-
-					r.Get("/", getArticles(feedRepoType))
-
-					r.Post("/read", articlesReadStateChange(feedRepoType))
-				})
-
-				r.Route("/tag/{tagId:[0-9]+}", func(r chi.Router) {
-					r.Use(tagContext)
-
-					r.Get("/", getArticles(tagRepoType))
-
-					r.Post("/read", articlesReadStateChange(tagRepoType))
-				})
-
-				r.Get("/", getArticles(userRepoType))
-
-				r.Route("/search", func(r chi.Router) {
-					r.Get("/*", articleSearch(searchProvider, userRepoType))
-					r.With(feedContext).Get("/feed/{feedId:[0-9]+}/*", articleSearch(searchProvider, feedRepoType))
-					r.With(tagContext).Get("/tag/{tagId:[0-9]+}/*", articleSearch(searchProvider, tagRepoType))
-				})
-
-				r.Post("/read", articlesReadStateChange(userRepoType))
-			})
-
-			r.Route("/opml", func(r chi.Router) {
-				r.Get("/", exportOPML(feedManager))
-				r.Post("/", importOPML(feedManager))
-			})
-
-			r.Get("/events", eventSocket(ctx, storage, feedManager))
-
-			r.Route("/user", func(r chi.Router) {
-				r.Route("/", func(r chi.Router) {
-					r.Use(adminValidator)
-
-					r.Get("/", listUsers)
-
-					r.Post("/", addUser(secret))
-					r.Delete("/{name}", deleteUser)
-
-					r.Post("/{name}/settings/{key}", setSettingValue(secret))
-				})
-
-				r.Get("/data", getUserData)
-
-				r.Route("/settings", func(r chi.Router) {
-					r.Get("/", getSettingKeys)
-					r.Get("/{key}", getSettingValue)
-					r.Post("/{key}", setSettingValue(secret))
-				})
-			})
-		})
+		for _, sub := range routes {
+			r.Route(sub.path, sub.route)
+		}
 	})
 
-	return r, nil
-}
-
-func tokenValidator(
-	repo content.Repo,
-	storage content.TokenStorage,
-	log readeef.Logger,
-) auth.TokenValidator {
-	return auth.TokenValidatorFunc(func(token string, claims jwt.Claims) bool {
-		exists, err := storage.Exists(token)
-
-		if err != nil {
-			log.Printf("Error using token storage: %+v\n", err)
-			return false
-		}
-
-		if exists {
-			return false
-		}
-
-		if c, ok := claims.(*jwt.StandardClaims); ok {
-			u := repo.UserByLogin(data.Login(c.Subject))
-			err := u.Err()
-
-			if err != nil {
-				if err != content.ErrNoContent {
-					log.Printf("Error getting user %s from repo: %+v\n", c.Subject, err)
-				}
-
-				return false
-			}
-		}
-
-		return true
-	})
+	return r
 }
 
 func initAdminUser(repo content.Repo, secret []byte) error {

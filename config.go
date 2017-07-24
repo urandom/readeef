@@ -38,8 +38,9 @@ type Config struct {
 		Connect string
 	}
 	Auth struct {
-		Secret          string
-		IgnoreURLPrefix []string `gcfg:"ignore-url-prefix"`
+		Secret           string
+		TokenStoragePath string   `gcfg:"token-storage-path"`
+		IgnoreURLPrefix  []string `gcfg:"ignore-url-prefix"`
 	}
 	Hubbub struct {
 		CallbackURL  string `gcfg:"callback-url"` // http://www.example.com

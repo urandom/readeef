@@ -17,7 +17,7 @@ type action struct {
 }
 
 const (
-	FEVER_API_VERSION = 2
+	API_VERSION = 2
 )
 
 var (
@@ -34,8 +34,8 @@ var (
 )
 
 // /api/v2/fever/
-func Handler(repo content.Repo, log readeef.Logger) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func Handler(repo content.Repo, log readeef.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		var err error
 		var user content.User
 
@@ -45,7 +45,7 @@ func Handler(repo content.Repo, log readeef.Logger) http.Handler {
 			user = readeefUser(repo, r.FormValue("api_key"), log)
 		}
 
-		resp := resp{"api_version": FEVER_API_VERSION}
+		resp := resp{"api_version": API_VERSION}
 
 		if user == nil || user.HasErr() {
 			resp["auth"] = 0
@@ -71,11 +71,11 @@ func Handler(repo content.Repo, log readeef.Logger) http.Handler {
 		}
 
 		if err != nil {
-			log.Print("Error calling %s: %+v", lastName, err)
+			log.Printf("Error calling %s: %+v", lastName, err)
 		}
 
 		writeJSON(w, resp)
-	})
+	}
 }
 
 func writeJSON(w http.ResponseWriter, data interface{}) {

@@ -3,15 +3,15 @@ package monitor
 import (
 	"time"
 
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/webfw"
 )
 
 type Unread struct {
-	logger webfw.Logger
+	log readeef.Logger
 }
 
-func NewUnread(repo content.Repo, l webfw.Logger) Unread {
+func NewUnread(repo content.Repo, l readeef.Logger) Unread {
 	go func() {
 		repo.DeleteStaleUnreadRecords()
 
@@ -20,11 +20,11 @@ func NewUnread(repo content.Repo, l webfw.Logger) Unread {
 		}
 	}()
 
-	return Unread{logger: l}
+	return Unread{log: l}
 }
 
 func (i Unread) FeedUpdated(feed content.Feed) error {
-	i.logger.Infof("Adding 'unread' states for all new articles of %s' for all users\n", feed)
+	i.log.Infof("Adding 'unread' states for all new articles of %s' for all users\n", feed)
 
 	feed.SetNewArticlesUnread()
 

@@ -14,7 +14,7 @@ type subscribeContent struct {
 	} `json:"status"`
 }
 
-func registerSettingActions(feedManager readeef.FeedManager, update time.Duration) {
+func registerSettingActions(feedManager *readeef.FeedManager, update time.Duration) {
 	actions["getPref"] = func(req request, user content.User) (interface{}, error) {
 		return getPref(req, user, update)
 	}
@@ -38,7 +38,7 @@ func getPref(req request, user content.User, update time.Duration) (interface{},
 	case "FEEDS_SORT_BY_UNREAD", "ENABLE_FEED_CATS", "SHOW_CONTENT_PREVIEW":
 		return genericContent{Value: true}, nil
 	case "FRESH_ARTICLE_MAX_AGE":
-		return genericContent{Value: (-1 * TTRSS_FRESH_DURATION).Hours()}, nil
+		return genericContent{Value: (-1 * FRESH_DURATION).Hours()}, nil
 	default:
 		return unknown(req, user)
 	}
@@ -48,7 +48,7 @@ func shareToPublished(req request, user content.User) (interface{}, error) {
 	return nil, errors.WithStack(newErr("unsupported operation", "Publishing failed"))
 }
 
-func subscribeToFeed(req request, user content.User, feedManager readeef.FeedManager) (interface{}, error) {
+func subscribeToFeed(req request, user content.User, feedManager *readeef.FeedManager) (interface{}, error) {
 	f := user.Repo().FeedByLink(req.FeedUrl)
 	for _, u := range f.Users() {
 		if u.Data().Login == user.Data().Login {
@@ -77,7 +77,7 @@ func subscribeToFeed(req request, user content.User, feedManager readeef.FeedMan
 	}{1}}, nil
 }
 
-func unsubscribeFeed(req request, user content.User, feedManager readeef.FeedManager) (interface{}, error) {
+func unsubscribeFeed(req request, user content.User, feedManager *readeef.FeedManager) (interface{}, error) {
 	f := user.FeedById(req.FeedId)
 	f.Detach()
 	users := f.Users()

@@ -35,7 +35,7 @@ func getCategories(req request, user content.User) (interface{}, error) {
 	count := user.Count(data.ArticleCountOptions{UnreadOnly: true, UntaggedOnly: true})
 	if count > 0 || !req.UnreadOnly {
 		cContent = append(cContent,
-			cat{Id: strconv.FormatInt(TTRSS_CAT_UNCATEGORIZED, 10), Title: "Uncategorized", Unread: count},
+			cat{Id: strconv.FormatInt(CAT_UNCATEGORIZED, 10), Title: "Uncategorized", Unread: count},
 		)
 	}
 
@@ -44,7 +44,7 @@ func getCategories(req request, user content.User) (interface{}, error) {
 
 	if count > 0 || !req.UnreadOnly {
 		cContent = append(cContent,
-			cat{Id: strconv.FormatInt(TTRSS_CAT_SPECIAL, 10), Title: "Special", Unread: count},
+			cat{Id: strconv.FormatInt(CAT_SPECIAL, 10), Title: "Special", Unread: count},
 		)
 	}
 

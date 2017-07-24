@@ -79,7 +79,7 @@ func getHeadlines(req request, user content.User, searchProvider content.SearchP
 	o := data.ArticleQueryOptions{Limit: limit, Offset: req.Skip, UnreadFirst: true, SkipSessionProcessors: true}
 
 	if req.IsCat {
-		if req.FeedId == TTRSS_CAT_UNCATEGORIZED {
+		if req.FeedId == CAT_UNCATEGORIZED {
 			setupSorting(req, user)
 			articleRepo = user
 			o.UntaggedOnly = true
@@ -95,17 +95,17 @@ func getHeadlines(req request, user content.User, searchProvider content.SearchP
 			feedTitle = string(t.Data().Value)
 		}
 	} else {
-		if req.FeedId == TTRSS_FAVORITE_ID {
+		if req.FeedId == FAVORITE_ID {
 			setupSorting(req, user)
 			o.FavoriteOnly = true
 			articleRepo = user
 			feedTitle = "Starred articles"
-		} else if req.FeedId == TTRSS_FRESH_ID {
+		} else if req.FeedId == FRESH_ID {
 			setupSorting(req, user)
-			o.AfterDate = time.Now().Add(TTRSS_FRESH_DURATION)
+			o.AfterDate = time.Now().Add(FRESH_DURATION)
 			articleRepo = user
 			feedTitle = "Fresh articles"
-		} else if req.FeedId == TTRSS_ALL_ID {
+		} else if req.FeedId == ALL_ID {
 			setupSorting(req, user)
 			articleRepo = user
 			feedTitle = "All articles"

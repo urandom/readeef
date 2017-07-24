@@ -34,7 +34,7 @@ func login(
 	sessId := sessionManager.update(session{login: login, lastVisit: time.Now()})
 
 	return genericContent{
-		ApiLevel:  TTRSS_API_LEVEL,
+		ApiLevel:  API_LEVEL,
 		SessionId: sessId,
 	}, nil
 }

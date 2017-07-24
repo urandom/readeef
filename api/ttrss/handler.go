@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/urandom/handler/method"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
@@ -63,48 +62,47 @@ type errorContent struct {
 }
 
 const (
-	TTRSS_API_STATUS_OK  = 0
-	TTRSS_API_STATUS_ERR = 1
-	TTRSS_VERSION        = "1.8.0"
-	TTRSS_API_LEVEL      = 12
+	API_STATUS_OK  = 0
+	API_STATUS_ERR = 1
+	API_VERSION    = "1.8.0"
+	API_LEVEL      = 12
 
-	TTRSS_ARCHIVED_ID      = 0
-	TTRSS_FAVORITE_ID      = -1
-	TTRSS_PUBLISHED_ID     = -2
-	TTRSS_FRESH_ID         = -3
-	TTRSS_ALL_ID           = -4
-	TTRSS_RECENTLY_READ_ID = -6
+	ARCHIVED_ID      = 0
+	FAVORITE_ID      = -1
+	PUBLISHED_ID     = -2
+	FRESH_ID         = -3
+	ALL_ID           = -4
+	RECENTLY_READ_ID = -6
 
-	TTRSS_FRESH_DURATION = -24 * time.Hour
+	FRESH_DURATION = -24 * time.Hour
 
-	TTRSS_CAT_UNCATEGORIZED      = 0
-	TTRSS_CAT_SPECIAL            = -1 // Starred, Published, Archived, etc.
-	TTRSS_CAT_LABELS             = -2
-	TTRSS_CAT_ALL_EXCEPT_VIRTUAL = -3 // i.e: labels
-	TTRSS_CAT_ALL                = -4
+	CAT_UNCATEGORIZED      = 0
+	CAT_SPECIAL            = -1 // Starred, Published, Archived, etc.
+	CAT_LABELS             = -2
+	CAT_ALL_EXCEPT_VIRTUAL = -3 // i.e: labels
+	CAT_ALL                = -4
 )
 
 var (
 	actions = make(map[string]action)
 )
 
-// /v{TTRSS_API_LEVEL}/tt-rss/api/
 func Handler(
 	ctx context.Context,
 	repo content.Repo,
 	searchProvider content.SearchProvider,
-	feedManager readeef.FeedManager,
+	feedManager *readeef.FeedManager,
 	secret []byte,
 	update time.Duration,
 	log readeef.Logger,
-) http.Handler {
+) http.HandlerFunc {
 	sessionManager := newSession(ctx)
 
 	registerAuthActions(sessionManager, secret)
 	registerArticleActions(searchProvider)
 	registerSettingActions(feedManager, update)
 
-	return method.Post(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		resp := response{}
 
 		req, stop := readJSON(w, r.Body)
@@ -150,22 +148,19 @@ func Handler(
 		}
 
 		if err == nil {
-			resp.Status = TTRSS_API_STATUS_OK
+			resp.Status = API_STATUS_OK
 		} else {
 			log.Infof("Error processing TT-RSS API request: %+v\n", err)
-			resp.Status = TTRSS_API_STATUS_ERR
+			resp.Status = API_STATUS_ERR
 			con = errorContent{Error: errorKind(err)}
 		}
 
 		writeJson(w, req, resp, con, log)
-	}))
+	}
 }
 
-// /v{TTRSS_API_LEVEL}/tt-rss
-func FakeWebHandler() http.Handler {
-	return method.Get(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/", http.StatusMovedPermanently)
-	}))
+func FakeWebHandler(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/", http.StatusMovedPermanently)
 }
 
 func readJSON(w http.ResponseWriter, r io.Reader) (req request, stop bool) {

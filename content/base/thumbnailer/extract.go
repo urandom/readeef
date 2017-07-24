@@ -5,21 +5,23 @@ import (
 	_ "image/png"
 	"strings"
 
+	"github.com/pkg/errors"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
-	"github.com/urandom/webfw"
 )
 
 type Extract struct {
 	extractor content.Extractor
-	logger    webfw.Logger
+	log       readeef.Logger
 }
 
-func NewExtract(e content.Extractor, l webfw.Logger) (content.Thumbnailer, error) {
+func NewExtract(e content.Extractor, l readeef.Logger) (content.Thumbnailer, error) {
 	if e == nil {
-		return nil, fmt.Errorf("A valid extractor is required")
+		return nil, errors.New("A valid extractor is required")
 	}
-	return Extract{extractor: e, logger: l}, nil
+
+	return Extract{extractor: e, log: l}, nil
 }
 
 func (t Extract) Generate(a content.Article) error {
@@ -31,13 +33,13 @@ func (t Extract) Generate(a content.Article) error {
 		Processed: true,
 	}
 
-	t.logger.Debugf("Generating thumbnail for article %s\n", a)
+	t.log.Debugf("Generating thumbnail for article %s\n", a)
 
 	td.Thumbnail, td.Link =
 		generateThumbnailFromDescription(strings.NewReader(ad.Description))
 
 	if td.Link == "" {
-		t.logger.Debugf("%s description doesn't contain suitable link, getting extract\n", a)
+		t.log.Debugf("%s description doesn't contain suitable link, getting extract\n", a)
 
 		extract := a.Extract()
 		if a.HasErr() {
@@ -49,7 +51,7 @@ func (t Extract) Generate(a content.Article) error {
 		if extract.HasErr() {
 			switch err := extract.Err(); err {
 			case content.ErrNoContent:
-				t.logger.Debugf("Generating article extract for %s\n", a)
+				t.log.Debugf("Generating article extract for %s\n", a)
 				extractData, err = t.extractor.Extract(a.Data().Link)
 				if err != nil {
 					return err
@@ -67,9 +69,9 @@ func (t Extract) Generate(a content.Article) error {
 		}
 
 		if extractData.TopImage == "" {
-			t.logger.Debugf("Extract for %s doesn't contain a top image\n", a)
+			t.log.Debugf("Extract for %s doesn't contain a top image\n", a)
 		} else {
-			t.logger.Debugf("Generating thumbnail from top image %s of %s\n", extractData.TopImage, a)
+			t.log.Debugf("Generating thumbnail from top image %s of %s\n", extractData.TopImage, a)
 			td.Thumbnail = generateThumbnailFromImageLink(extractData.TopImage)
 			td.Link = extractData.TopImage
 		}

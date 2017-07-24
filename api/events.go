@@ -125,7 +125,7 @@ func (e event) WriteJSON(w io.Writer, flusher http.Flusher, data interface{}, lo
 
 func (fm *feedMonitor) FeedUpdated(feed content.Feed) error {
 	fm.ops <- func(conns connMap) {
-		for addr, d := range conns {
+		for _, d := range conns {
 			if _, ok := d.feedSet[feed.Data().Id]; ok {
 				if !d.validator() {
 					close(d.done)

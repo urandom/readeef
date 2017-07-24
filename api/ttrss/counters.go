@@ -26,22 +26,22 @@ func getUnread(req request, user content.User) (interface{}, error) {
 		tagId := data.TagId(req.FeedId)
 		if tagId > 0 {
 			ar = user.TagById(tagId)
-		} else if tagId == TTRSS_CAT_UNCATEGORIZED {
+		} else if tagId == CAT_UNCATEGORIZED {
 			ar = user
 			o.UntaggedOnly = true
-		} else if tagId == TTRSS_CAT_SPECIAL {
+		} else if tagId == CAT_SPECIAL {
 			ar = user
 			o.FavoriteOnly = true
 		}
 	} else {
 		switch req.FeedId {
-		case TTRSS_FAVORITE_ID:
+		case FAVORITE_ID:
 			ar = user
 			o.FavoriteOnly = true
-		case TTRSS_FRESH_ID:
+		case FRESH_ID:
 			ar = user
-			o.AfterDate = time.Now().Add(TTRSS_FRESH_DURATION)
-		case TTRSS_ALL_ID, 0:
+			o.AfterDate = time.Now().Add(FRESH_DURATION)
+		case ALL_ID, 0:
 			ar = user
 		default:
 			if req.FeedId > 0 {
@@ -79,23 +79,23 @@ func getCounters(req request, user content.User) (interface{}, error) {
 	cContent = append(cContent,
 		counter{Id: "subscribed-feeds", Counter: int64(len(feeds))})
 
-	cContent = append(cContent, counter{Id: TTRSS_ARCHIVED_ID})
+	cContent = append(cContent, counter{Id: ARCHIVED_ID})
 
 	cContent = append(cContent,
-		counter{Id: TTRSS_FAVORITE_ID,
+		counter{Id: FAVORITE_ID,
 			Counter:    user.Count(data.ArticleCountOptions{UnreadOnly: true, FavoriteOnly: true}),
 			AuxCounter: user.Count(data.ArticleCountOptions{FavoriteOnly: true})})
 
-	cContent = append(cContent, counter{Id: TTRSS_PUBLISHED_ID})
+	cContent = append(cContent, counter{Id: PUBLISHED_ID})
 
-	freshTime := time.Now().Add(TTRSS_FRESH_DURATION)
+	freshTime := time.Now().Add(FRESH_DURATION)
 	cContent = append(cContent,
-		counter{Id: TTRSS_FRESH_ID,
+		counter{Id: FRESH_ID,
 			Counter:    user.Count(data.ArticleCountOptions{UnreadOnly: true, AfterDate: freshTime}),
 			AuxCounter: 0})
 
 	cContent = append(cContent,
-		counter{Id: TTRSS_ALL_ID,
+		counter{Id: ALL_ID,
 			Counter:    user.Count(),
 			AuxCounter: 0})
 
@@ -106,7 +106,7 @@ func getCounters(req request, user content.User) (interface{}, error) {
 
 	}
 
-	cContent = append(cContent, counter{Id: TTRSS_CAT_LABELS, Counter: 0, Kind: "cat"})
+	cContent = append(cContent, counter{Id: CAT_LABELS, Counter: 0, Kind: "cat"})
 
 	for _, t := range user.Tags() {
 		cContent = append(cContent,
@@ -120,7 +120,7 @@ func getCounters(req request, user content.User) (interface{}, error) {
 
 	cContent = append(cContent,
 		counter{
-			Id:      TTRSS_CAT_UNCATEGORIZED,
+			Id:      CAT_UNCATEGORIZED,
 			Counter: user.Count(data.ArticleCountOptions{UnreadOnly: true, UntaggedOnly: true}),
 			Kind:    "cat",
 		},

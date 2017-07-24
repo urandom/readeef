@@ -4,21 +4,21 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/webfw"
 )
 
 type Thumbnailer struct {
 	thumbnailer content.Thumbnailer
-	logger      webfw.Logger
+	log         readeef.Logger
 }
 
-func NewThumbnailer(t content.Thumbnailer, l webfw.Logger) Thumbnailer {
-	return Thumbnailer{thumbnailer: t, logger: l}
+func NewThumbnailer(t content.Thumbnailer, l readeef.Logger) Thumbnailer {
+	return Thumbnailer{thumbnailer: t, log: l}
 }
 
 func (t Thumbnailer) FeedUpdated(feed content.Feed) error {
-	t.logger.Debugln("Generating thumbnailer processors")
+	t.log.Debugln("Generating thumbnailer processors")
 
 	processors := t.generateProcessors(feed.NewArticles())
 	numProcessors := 20

@@ -25,11 +25,11 @@ type genericContent struct {
 }
 
 func getApiLevel(req request, user content.User) (interface{}, error) {
-	return genericContent{Level: TTRSS_API_LEVEL}, nil
+	return genericContent{Level: API_LEVEL}, nil
 }
 
 func getVersion(req request, user content.User) (interface{}, error) {
-	return genericContent{Version: TTRSS_VERSION}, nil
+	return genericContent{Version: API_VERSION}, nil
 }
 
 func getConfig(req request, user content.User) (interface{}, error) {

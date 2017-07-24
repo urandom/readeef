@@ -9,19 +9,18 @@ import (
 
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
-	"github.com/urandom/webfw"
 	"github.com/urandom/webfw/util"
 )
 
 type Hubbub struct {
 	config        Config
 	repo          content.Repo
-	pattern       string
+	endpoint      string
 	removeFeed    chan<- content.Feed
 	subscribe     chan content.Subscription
 	unsubscribe   chan content.Subscription
 	client        *http.Client
-	logger        webfw.Logger
+	log           Logger
 	subscriptions []content.Subscription
 	feedMonitors  []content.FeedMonitor
 }
@@ -38,11 +37,11 @@ var (
 	ErrNotSubscribed = errors.New("Feed is not subscribed")
 )
 
-func NewHubbub(repo content.Repo, c Config, l webfw.Logger, pattern string,
+func NewHubbub(repo content.Repo, c Config, l Logger, endpoint string,
 	removeFeed chan<- content.Feed) *Hubbub {
 
 	return &Hubbub{
-		repo: repo, config: c, logger: l, pattern: pattern,
+		repo: repo, config: c, log: l, endpoint: endpoint,
 		removeFeed: removeFeed,
 		subscribe:  make(chan content.Subscription), unsubscribe: make(chan content.Subscription),
 		client: NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
@@ -89,7 +88,7 @@ func (h Hubbub) Subscribe(f content.Feed) error {
 
 	data := s.Data()
 	if data.FeedId == fdata.Id {
-		h.logger.Infoln("Already subscribed to " + fdata.HubLink)
+		h.log.Infoln("Already subscribed to " + fdata.HubLink)
 		return ErrSubscribed
 	}
 
@@ -135,7 +134,7 @@ func (h Hubbub) Unsubscribe(f content.Feed) error {
 	}
 
 	if s.Data().FeedId != fdata.Id {
-		h.logger.Infoln("Not subscribed to " + fdata.HubLink)
+		h.log.Infoln("Not subscribed to " + fdata.HubLink)
 		return ErrNotSubscribed
 	}
 
@@ -149,7 +148,7 @@ func (h Hubbub) InitSubscriptions() error {
 	h.repo.FailSubscriptions()
 	subscriptions := h.repo.AllSubscriptions()
 
-	h.logger.Infof("Initializing %d hubbub subscriptions", len(subscriptions))
+	h.log.Infof("Initializing %d hubbub subscriptions", len(subscriptions))
 
 	go func() {
 		for _, s := range subscriptions {
@@ -187,7 +186,7 @@ func (h Hubbub) InitSubscriptions() error {
 							continue
 						}
 
-						h.logger.Infof("Renewing subscription to %s\n", s)
+						h.log.Infof("Renewing subscription to %s\n", s)
 						h.subscription(s, f, true)
 					}
 				}
@@ -202,15 +201,15 @@ func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe b
 	var err error
 
 	fdata := f.Data()
-	u := callbackURL(h.config, h.pattern, fdata.Id)
+	u := callbackURL(h.config, h.endpoint, fdata.Id)
 
 	body := url.Values{}
 	body.Set("hub.callback", u)
 	if subscribe {
-		h.logger.Infoln("Subscribing to hubbub for " + f.String() + " with url " + u)
+		h.log.Infoln("Subscribing to hubbub for " + f.String() + " with url " + u)
 		body.Set("hub.mode", "subscribe")
 	} else {
-		h.logger.Infoln("Unsubscribing to hubbub for " + f.String() + " with url " + u)
+		h.log.Infoln("Unsubscribing to hubbub for " + f.String() + " with url " + u)
 		body.Set("hub.mode", "unsubscribe")
 	}
 	body.Set("hub.topic", fdata.Link)
@@ -239,18 +238,18 @@ func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe b
 		}
 	} else {
 		fdata.SubscribeError = err.Error()
-		h.logger.Printf("Error subscribing to hub feed '%s': %s\n", f, err)
+		h.log.Printf("Error subscribing to hub feed '%s': %s\n", f, err)
 
 		f.Data(fdata)
 		f.Update()
 		if f.HasErr() {
-			h.logger.Printf("Error updating feed database record for '%s': %s\n", f, f.Err())
+			h.log.Printf("Error updating feed database record for '%s': %s\n", f, f.Err())
 		}
 
 		h.removeFeed <- f
 	}
 }
 
-func callbackURL(c Config, pattern string, feedId data.FeedId) string {
-	return fmt.Sprintf("%s%sv%d%s/%d", c.Hubbub.CallbackURL, pattern, c.API.Version, c.Hubbub.RelativePath, feedId)
+func callbackURL(c Config, endpoint string, feedId data.FeedId) string {
+	return fmt.Sprintf("%s%s/%d", c.Hubbub.CallbackURL, endpoint, feedId)
 }

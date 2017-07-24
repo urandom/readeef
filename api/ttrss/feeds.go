@@ -41,27 +41,27 @@ type feedTreeContent struct {
 func getFeeds(req request, user content.User) (interface{}, error) {
 	fContent := feedsContent{}
 
-	if req.CatId == TTRSS_CAT_ALL || req.CatId == TTRSS_CAT_SPECIAL {
+	if req.CatId == CAT_ALL || req.CatId == CAT_SPECIAL {
 		unreadFav := user.Count(data.ArticleCountOptions{UnreadOnly: true, FavoriteOnly: true})
 
 		if unreadFav > 0 || !req.UnreadOnly {
 			fContent = append(fContent, feed{
-				Id:     TTRSS_FAVORITE_ID,
-				Title:  specialTitle(TTRSS_FAVORITE_ID),
+				Id:     FAVORITE_ID,
+				Title:  specialTitle(FAVORITE_ID),
 				Unread: unreadFav,
-				CatId:  TTRSS_FAVORITE_ID,
+				CatId:  FAVORITE_ID,
 			})
 		}
 
-		freshTime := time.Now().Add(TTRSS_FRESH_DURATION)
+		freshTime := time.Now().Add(FRESH_DURATION)
 		unreadFresh := user.Count(data.ArticleCountOptions{UnreadOnly: true, AfterDate: freshTime})
 
 		if unreadFresh > 0 || !req.UnreadOnly {
 			fContent = append(fContent, feed{
-				Id:     TTRSS_FRESH_ID,
-				Title:  specialTitle(TTRSS_FRESH_ID),
+				Id:     FRESH_ID,
+				Title:  specialTitle(FRESH_ID),
 				Unread: unreadFresh,
-				CatId:  TTRSS_FAVORITE_ID,
+				CatId:  FAVORITE_ID,
 			})
 		}
 
@@ -69,20 +69,20 @@ func getFeeds(req request, user content.User) (interface{}, error) {
 
 		if unreadAll > 0 || !req.UnreadOnly {
 			fContent = append(fContent, feed{
-				Id:     TTRSS_ALL_ID,
-				Title:  specialTitle(TTRSS_ALL_ID),
+				Id:     ALL_ID,
+				Title:  specialTitle(ALL_ID),
 				Unread: unreadAll,
-				CatId:  TTRSS_FAVORITE_ID,
+				CatId:  FAVORITE_ID,
 			})
 		}
 	}
 
 	var feeds []content.UserFeed
 	var catId int
-	if req.CatId == TTRSS_CAT_ALL || req.CatId == TTRSS_CAT_ALL_EXCEPT_VIRTUAL {
+	if req.CatId == CAT_ALL || req.CatId == CAT_ALL_EXCEPT_VIRTUAL {
 		feeds = user.AllFeeds()
 	} else {
-		if req.CatId == TTRSS_CAT_UNCATEGORIZED {
+		if req.CatId == CAT_UNCATEGORIZED {
 			tagged := user.AllTaggedFeeds()
 			for _, t := range tagged {
 				if len(t.Tags()) == 0 {
@@ -147,7 +147,7 @@ func catchupFeed(req request, user content.User) (interface{}, error) {
 		tagId := data.TagId(req.FeedId)
 		ar = user.TagById(tagId)
 
-		if tagId == TTRSS_CAT_UNCATEGORIZED {
+		if tagId == CAT_UNCATEGORIZED {
 			o.UntaggedOnly = true
 		}
 	} else {
@@ -240,17 +240,17 @@ func getFeedTree(req request, user content.User) (interface{}, error) {
 
 func specialTitle(id data.FeedId) (t string) {
 	switch id {
-	case TTRSS_FAVORITE_ID:
+	case FAVORITE_ID:
 		t = "Starred articles"
-	case TTRSS_FRESH_ID:
+	case FRESH_ID:
 		t = "Fresh articles"
-	case TTRSS_ALL_ID:
+	case ALL_ID:
 		t = "All articles"
-	case TTRSS_PUBLISHED_ID:
+	case PUBLISHED_ID:
 		t = "Published articles"
-	case TTRSS_ARCHIVED_ID:
+	case ARCHIVED_ID:
 		t = "Archived articles"
-	case TTRSS_RECENTLY_READ_ID:
+	case RECENTLY_READ_ID:
 		t = "Recently read"
 	}
 
@@ -271,13 +271,13 @@ func feedListCategoryFeed(u content.User, f content.UserFeed, id data.FeedId, in
 	} else {
 		c.Name = specialTitle(id)
 		switch id {
-		case TTRSS_FAVORITE_ID:
+		case FAVORITE_ID:
 			copts.FavoriteOnly = true
 			c.Unread = u.Count(copts)
-		case TTRSS_FRESH_ID:
-			copts.AfterDate = time.Now().Add(TTRSS_FRESH_DURATION)
+		case FRESH_ID:
+			copts.AfterDate = time.Now().Add(FRESH_DURATION)
 			c.Unread = u.Count(copts)
-		case TTRSS_ALL_ID:
+		case ALL_ID:
 			c.Unread = u.Count(copts)
 		}
 
@@ -290,7 +290,7 @@ func feedListCategoryFeed(u content.User, f content.UserFeed, id data.FeedId, in
 }
 
 func createSpecialCategory(user content.User) (category, error) {
-	ids := [...]data.FeedId{TTRSS_ALL_ID, TTRSS_FRESH_ID, TTRSS_FAVORITE_ID, TTRSS_PUBLISHED_ID, TTRSS_ARCHIVED_ID, TTRSS_RECENTLY_READ_ID}
+	ids := [...]data.FeedId{ALL_ID, FRESH_ID, FAVORITE_ID, PUBLISHED_ID, ARCHIVED_ID, RECENTLY_READ_ID}
 
 	special := category{Id: "CAT:-1", Items: make([]category, len(ids)), Name: "Special", Type: "category", BareId: -1}
 
