@@ -7,13 +7,14 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/webfw/util"
 )
 
 type Hubbub struct {
-	config        Config
+	config        config.Config
 	repo          content.Repo
 	endpoint      string
 	removeFeed    chan<- content.Feed
@@ -37,7 +38,7 @@ var (
 	ErrNotSubscribed = errors.New("Feed is not subscribed")
 )
 
-func NewHubbub(repo content.Repo, c Config, l Logger, endpoint string,
+func NewHubbub(repo content.Repo, c config.Config, l Logger, endpoint string,
 	removeFeed chan<- content.Feed) *Hubbub {
 
 	return &Hubbub{
@@ -250,6 +251,6 @@ func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe b
 	}
 }
 
-func callbackURL(c Config, endpoint string, feedId data.FeedId) string {
+func callbackURL(c config.Config, endpoint string, feedId data.FeedId) string {
 	return fmt.Sprintf("%s%s/%d", c.Hubbub.CallbackURL, endpoint, feedId)
 }

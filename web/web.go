@@ -17,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/handler/lang"
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/config"
 )
 
 const (
@@ -25,7 +26,7 @@ const (
 
 type sessionWrapper struct{}
 
-func Mux(fs http.FileSystem, engine session.Engine, config readeef.Config) (http.Handler, error) {
+func Mux(fs http.FileSystem, engine session.Engine, config config.Config) (http.Handler, error) {
 	hasProxy := false
 	for _, p := range config.FeedParser.Processors {
 		if p == "proxy-http" {
@@ -66,12 +67,16 @@ func Mux(fs http.FileSystem, engine session.Engine, config readeef.Config) (http
 		handler = manager(mux)
 	}
 
-	if len(config.I18n.Languages) > 0 {
-		handler = lang.I18N(
-			handler,
-			lang.Languages(languageTags(config.I18n.Languages)),
-			lang.Session(sessionWrapper{}),
-		)
+	if languages, err := readeef.GetLanguages(fs); err == nil {
+		if len(languages) > 0 {
+			handler = lang.I18N(
+				handler,
+				lang.Languages(languages),
+				lang.Session(sessionWrapper{}),
+			)
+		}
+	} else {
+		return nil, errors.WithMessage(err, "getting supported languages")
 	}
 
 	return handler, nil

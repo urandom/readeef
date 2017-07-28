@@ -15,6 +15,7 @@ import (
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api/fever"
 	"github.com/urandom/readeef/api/ttrss"
+	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base/extractor"
 	"github.com/urandom/readeef/content/base/monitor"
@@ -28,14 +29,19 @@ import (
 	"github.com/urandom/readeef/parser/processor"
 )
 
-func Prepare(ctx context.Context, config readeef.Config, log readeef.Logger) (http.Handler, error) {
+func Prepare(ctx context.Context, fs http.FileSystem, config config.Config, log readeef.Logger) (http.Handler, error) {
 	repo, err := repo.New(config.DB.Driver, config.DB.Connect, log)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating repo")
 	}
 
+	languageSupport := false
+	if languages, err := readeef.GetLanguages(fs); err == nil {
+		languageSupport = len(languages) > 0
+	}
+
 	features := features{
-		I18N:       len(config.I18n.Languages) > 1,
+		I18N:       languageSupport,
 		Popularity: len(config.Popularity.Providers) > 0,
 	}
 
@@ -57,13 +63,13 @@ func Prepare(ctx context.Context, config readeef.Config, log readeef.Logger) (ht
 		return nil, errors.Wrap(err, "initializing parser processors")
 	}
 
-	searchProvider := initSearchProvider(config, repo, log)
+	searchProvider := initSearchProvider(config.Content, repo, log)
 
 	if searchProvider != nil {
 		features.Search = true
 	}
 
-	extractor, err := initContentExtractor(config)
+	extractor, err := initContentExtractor(config.Content)
 	if err != nil {
 		return nil, errors.Wrap(err, "initializing content extractor")
 	}
@@ -72,17 +78,17 @@ func Prepare(ctx context.Context, config readeef.Config, log readeef.Logger) (ht
 		features.Extractor = true
 	}
 
-	thumbnailer, err := initThumbnailer(config, extractor, log)
+	thumbnailer, err := initThumbnailer(config.Content, extractor, log)
 	if err != nil {
 		return nil, errors.Wrap(err, "initializing thumbnailer")
 	}
 
-	monitors := initFeedMonitors(config, repo, searchProvider, thumbnailer, &features, log)
+	monitors := initFeedMonitors(config.FeedManager, repo, searchProvider, thumbnailer, &features, log)
 	for _, m := range monitors {
 		feedManager.AddFeedMonitor(m)
 	}
 
-	storage, err := initTokenStorage(config)
+	storage, err := initTokenStorage(config.Auth)
 	if err != nil {
 		return nil, errors.Wrap(err, "initializing token storage")
 	}
@@ -175,15 +181,15 @@ func initParserProcessors(names []string, proxyTemplate string, features *featur
 	return processors, nil
 }
 
-func initSearchProvider(config readeef.Config, repo content.Repo, log readeef.Logger) content.SearchProvider {
+func initSearchProvider(config config.Content, repo content.Repo, log readeef.Logger) content.SearchProvider {
 	var searchProvider content.SearchProvider
 	var err error
 
-	switch config.Content.SearchProvider {
+	switch config.SearchProvider {
 	case "elastic":
 		if searchProvider, err = search.NewElastic(
-			config.Content.ElasticURL,
-			config.Content.SearchBatchSize,
+			config.ElasticURL,
+			config.SearchBatchSize,
 			log,
 		); err != nil {
 			log.Printf("Error initializing Elastic search: %v\n", err)
@@ -192,8 +198,8 @@ func initSearchProvider(config readeef.Config, repo content.Repo, log readeef.Lo
 		fallthrough
 	default:
 		if searchProvider, err = search.NewBleve(
-			config.Content.BlevePath,
-			config.Content.SearchBatchSize,
+			config.BlevePath,
+			config.SearchBatchSize,
 			log,
 		); err != nil {
 			log.Printf("Error initializing Bleve search: %v\n", err)
@@ -211,10 +217,10 @@ func initSearchProvider(config readeef.Config, repo content.Repo, log readeef.Lo
 	return searchProvider
 }
 
-func initContentExtractor(config readeef.Config) (content.Extractor, error) {
-	switch config.Content.Extractor {
+func initContentExtractor(config config.Content) (content.Extractor, error) {
+	switch config.Extractor {
 	case "readability":
-		if ce, err := extractor.NewReadability(config.Content.ReadabilityKey); err == nil {
+		if ce, err := extractor.NewReadability(config.ReadabilityKey); err == nil {
 			return ce, nil
 		} else {
 			return nil, errors.Wrap(err, "initializing Readability extractor")
@@ -231,8 +237,8 @@ func initContentExtractor(config readeef.Config) (content.Extractor, error) {
 	}
 }
 
-func initThumbnailer(config readeef.Config, ce content.Extractor, log readeef.Logger) (content.Thumbnailer, error) {
-	switch config.Content.Thumbnailer {
+func initThumbnailer(config config.Content, ce content.Extractor, log readeef.Logger) (content.Thumbnailer, error) {
+	switch config.Thumbnailer {
 	case "extract":
 		if t, err := thumbnailer.NewExtract(ce, log); err == nil {
 			return t, nil
@@ -247,7 +253,7 @@ func initThumbnailer(config readeef.Config, ce content.Extractor, log readeef.Lo
 }
 
 func initFeedMonitors(
-	config readeef.Config,
+	config config.FeedManager,
 	repo content.Repo,
 	searchProvider content.SearchProvider,
 	thumbnailer content.Thumbnailer,
@@ -256,7 +262,7 @@ func initFeedMonitors(
 ) []content.FeedMonitor {
 	monitors := []content.FeedMonitor{monitor.NewUnread(repo, log)}
 
-	for _, m := range config.FeedManager.Monitors {
+	for _, m := range config.Monitors {
 		switch m {
 		case "index":
 			if searchProvider != nil {
@@ -274,7 +280,7 @@ func initFeedMonitors(
 }
 
 func initHubbub(
-	config readeef.Config,
+	config config.Config,
 	repo content.Repo,
 	monitors []content.FeedMonitor,
 	feedManager *readeef.FeedManager,
@@ -296,8 +302,8 @@ func initHubbub(
 	return nil, nil
 }
 
-func initTokenStorage(config readeef.Config) (content.TokenStorage, error) {
-	return token.NewBoltStorage(config.Auth.TokenStoragePath)
+func initTokenStorage(config config.Auth) (content.TokenStorage, error) {
+	return token.NewBoltStorage(config.TokenStoragePath)
 }
 
 type routes struct {
@@ -326,7 +332,7 @@ func emulatorRoutes(
 	repo content.Repo,
 	searchProvider content.SearchProvider,
 	feedManager *readeef.FeedManager,
-	config readeef.Config,
+	config config.Config,
 	log readeef.Logger,
 ) []routes {
 	rr := make([]routes, 0, len(config.API.Emulators))

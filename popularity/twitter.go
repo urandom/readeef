@@ -5,17 +5,18 @@ import (
 	"net/url"
 
 	"github.com/ChimeraCoder/anaconda"
+	"github.com/urandom/readeef/config"
 )
 
 type Twitter struct {
 	api *anaconda.TwitterApi
 }
 
-func NewTwitter(config Config) Twitter {
-	anaconda.SetConsumerKey(config.TwitterConsumerKey)
-	anaconda.SetConsumerSecret(config.TwitterConsumerSecret)
+func NewTwitter(config config.Popularity) Twitter {
+	anaconda.SetConsumerKey(config.Twitter.ConsumerKey)
+	anaconda.SetConsumerSecret(config.Twitter.ConsumerSecret)
 
-	return Twitter{api: anaconda.NewTwitterApi(config.TwitterAccessToken, config.TwitterAccessTokenSecret)}
+	return Twitter{api: anaconda.NewTwitterApi(config.Twitter.AccessToken, config.Twitter.AccessTokenSecret)}
 }
 
 func (t Twitter) Score(link string) (int64, error) {

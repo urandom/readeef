@@ -15,28 +15,26 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/parser"
-	"github.com/urandom/readeef/popularity"
 	"github.com/urandom/webfw/util"
 )
 
 // TODO: split up this struct and modify the api
 
 type FeedManager struct {
-	config           Config
+	config           config.Config
 	repo             content.Repo
 	addFeed          chan content.Feed
 	removeFeed       chan content.Feed
-	scoreArticle     chan content.Article
 	done             chan bool
 	client           *http.Client
 	log              Logger
 	activeFeeds      map[data.FeedId]bool
 	lastUpdateHash   map[data.FeedId][md5.Size]byte
 	hubbub           *Hubbub
-	popularity       popularity.Popularity
 	parserProcessors []parser.Processor
 	feedMonitors     []content.FeedMonitor
 }
@@ -51,15 +49,15 @@ var (
 	httpStatusPrefix = "HTTP Status: "
 )
 
-func NewFeedManager(repo content.Repo, c Config, l Logger) *FeedManager {
+func NewFeedManager(repo content.Repo, c config.Config, l Logger) *FeedManager {
 	return &FeedManager{
 		repo: repo, config: c, log: l,
-		addFeed: make(chan content.Feed, 2), removeFeed: make(chan content.Feed, 2),
-		scoreArticle: make(chan content.Article), done: make(chan bool),
+		addFeed:        make(chan content.Feed, 2),
+		removeFeed:     make(chan content.Feed, 2),
+		done:           make(chan bool),
 		activeFeeds:    map[data.FeedId]bool{},
 		lastUpdateHash: map[data.FeedId][md5.Size]byte{},
 		client:         NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite),
-		popularity:     popularity.New(c.Popularity, l),
 	}
 }
 
@@ -98,8 +96,6 @@ func (fm FeedManager) Start() {
 	go fm.reactToChanges()
 
 	go fm.scheduleFeeds()
-
-	go fm.scoreArticles()
 }
 
 func (fm *FeedManager) Stop() {
@@ -299,8 +295,6 @@ func (fm *FeedManager) startUpdatingFeed(f content.Feed) {
 			}
 		}
 	}()
-
-	go fm.scoreFeedContent(f)
 }
 
 func (fm *FeedManager) stopUpdatingFeed(f content.Feed) {
@@ -394,120 +388,6 @@ func (fm *FeedManager) requestFeedContent(f content.Feed) {
 		return
 	default:
 		fm.updateFeed(f)
-	}
-}
-
-func (fm *FeedManager) scoreFeedContent(f content.Feed) {
-	if f == nil {
-		fm.log.Infoln("No feed provided")
-		return
-	}
-
-	data := f.Data()
-
-	if len(fm.config.Popularity.Providers) == 0 {
-		fm.log.Infoln("No popularity providers configured")
-		return
-	}
-
-	if !fm.activeFeeds[data.Id] {
-		fm.log.Infof("Feed '%s' no longer active for scoring\n", f)
-		return
-	}
-
-	fm.log.Infoln("Scoring feed content for " + f.String())
-
-	articles := f.LatestArticles()
-	if f.HasErr() {
-		fm.log.Printf("Error getting latest feed articles for '%s': %v\n", f, f.Err())
-		return
-	}
-
-	for i := range articles {
-		sa := fm.repo.Article()
-		sa.Data(articles[i].Data())
-		fm.scoreArticle <- sa
-	}
-
-	fm.log.Infoln("Done scoring feed content for " + f.String())
-
-	select {
-	case <-time.After(30 * time.Minute):
-		go fm.scoreFeedContent(f)
-	case <-fm.done:
-		return
-	}
-}
-
-func (fm *FeedManager) scoreArticles() {
-	for {
-		select {
-		case sa := <-fm.scoreArticle:
-			time.Sleep(fm.config.Popularity.Converted.Delay)
-
-			ascc := make(chan content.ArticleScores)
-
-			go func() {
-				asc := sa.Scores()
-
-				if asc.HasErr() {
-					err := asc.Err()
-					if err == content.ErrNoContent {
-						asc.Data(data.ArticleScores{ArticleId: sa.Data().Id})
-					} else {
-						asc.Err(err)
-						fm.log.Printf("Error getting scores for article '%s': %v\n", sa, err)
-					}
-				}
-
-				ascc <- asc
-			}()
-
-			data := sa.Data()
-
-			fm.log.Infof("Scoring '%s' using %+v\n", sa, fm.config.Popularity.Providers)
-			score, err := fm.popularity.Score(data.Link, data.Description)
-			if err != nil {
-				fm.log.Printf("Error getting article popularity: %v\n", err)
-				continue
-			}
-
-			asc := <-ascc
-			ai := asc.Data()
-
-			if !asc.HasErr() {
-				age := ageInDays(data.Date)
-				switch age {
-				case 0:
-					ai.Score1 = score
-				case 1:
-					ai.Score2 = score - ai.Score1
-				case 2:
-					ai.Score3 = score - ai.Score1 - ai.Score2
-				case 3:
-					ai.Score4 = score - ai.Score1 - ai.Score2 - ai.Score3
-				default:
-					ai.Score5 = score - ai.Score1 - ai.Score2 - ai.Score3 - ai.Score4
-				}
-
-				score := asc.Calculate()
-				penalty := float64(time.Now().Unix()-data.Date.Unix()) / (60 * 60) * float64(age)
-
-				if penalty > 0 {
-					ai.Score = int64(float64(score) / penalty)
-				} else {
-					ai.Score = score
-				}
-
-				asc.Data(ai)
-				asc.Update()
-				if asc.HasErr() {
-					fm.log.Printf("Error updating article scores: %v\n", asc.Err())
-				}
-			}
-		case <-fm.done:
-			return
-		}
 	}
 }
 
@@ -640,10 +520,4 @@ func (fm FeedManager) processParserFeed(pf parser.Feed) parser.Feed {
 	}
 
 	return pf
-}
-
-func ageInDays(published time.Time) int {
-	now := time.Now()
-	sub := now.Sub(published)
-	return int(sub / (24 * time.Hour))
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/urandom/readeef/config"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -13,15 +14,15 @@ type logger struct {
 	*logrus.Logger
 }
 
-func NewLogger(cfg Config) Logger {
+func NewLogger(cfg config.Logger) Logger {
 	logger := logger{Logger: logrus.New()}
 
 	var writer io.Writer
-	if cfg.Logger.File == "-" {
+	if cfg.File == "-" {
 		writer = os.Stderr
 	} else {
 		writer = &lumberjack.Logger{
-			Filename:   cfg.Logger.File,
+			Filename:   cfg.File,
 			MaxSize:    20,
 			MaxBackups: 5,
 			MaxAge:     28,
@@ -30,14 +31,14 @@ func NewLogger(cfg Config) Logger {
 
 	logger.Out = writer
 
-	switch cfg.Logger.Formatter {
+	switch cfg.Formatter {
 	case "text":
 		logger.Formatter = &logrus.TextFormatter{}
 	case "json":
 		logger.Formatter = &logrus.JSONFormatter{}
 	}
 
-	switch cfg.Logger.Level {
+	switch cfg.Level {
 	case "info":
 		logger.Level = logrus.InfoLevel
 	case "debug":
