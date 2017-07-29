@@ -119,7 +119,7 @@ func tokenRoutes(repo content.Repo, storage content.TokenStorage, secret []byte,
 }
 
 func hubbubRoutes(hubbub *readeef.Hubbub, repo content.Repo, feedManager *readeef.FeedManager, log readeef.Logger) routes {
-	handler := hubbubRegistration(hubbub, repo, feedManager.AddFeedChannel(), feedManager.RemoveFeedChannel(), log)
+	handler := hubbubRegistration(hubbub, repo, feedManager, log)
 
 	return routes{path: "/hubbub", route: func(r chi.Router) {
 		r.Get("/", handler)

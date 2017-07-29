@@ -1,36 +1,37 @@
 package extractor
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
+	"io"
+	"io/ioutil"
 	"net/http"
-	"path/filepath"
 	"strings"
 
 	goose "github.com/advancedlogic/GoOse"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
-	"github.com/urandom/webfw/renderer"
-	"github.com/urandom/webfw/util"
+)
+
+const (
+	rawTmpl   = "templates/raw.tmpl"
+	gooseTmpl = "templates/goose-format-result.tmpl"
 )
 
 type Goose struct {
-	renderer renderer.Renderer
+	template *template.Template
+	buf      bytes.Buffer
 }
 
 func NewGoose(templateDir string, fs http.FileSystem) (content.Extractor, error) {
-	rawTmpl := "raw.tmpl"
-	f, err := fs.Open(filepath.Join(templateDir, rawTmpl))
+	tmpl, err := prepareTemplate(template.New("goose"), fs, rawTmpl, gooseTmpl)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Goose extractor requires %s template in %s", rawTmpl, templateDir)
+		return nil, errors.Wrap(err, "parsing goose template")
 	}
 
-	f.Close()
-	renderer := renderer.NewRenderer(templateDir, rawTmpl)
-	renderer.Delims("{%", "%}")
-
-	return Goose{renderer: renderer}, nil
+	return Goose{template: tmpl}, nil
 }
 
 func (e Goose) Extract(link string) (data data.ArticleExtract, err error) {
@@ -45,8 +46,7 @@ func (e Goose) Extract(link string) (data data.ArticleExtract, err error) {
 	formatted, err := g.ExtractFromURL(link)
 
 	content := formatted.CleanedText
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
+	e.buf.Reset()
 
 	paragraphs := strings.Split(content, "\n")
 	var html []template.HTML
@@ -57,14 +57,50 @@ func (e Goose) Extract(link string) (data data.ArticleExtract, err error) {
 		}
 	}
 
-	e.renderer.Render(buf,
-		renderer.RenderData{"paragraphs": html, "topImage": formatted.TopImage},
-		nil, "goose-format-result.tmpl")
+	if err = e.template.Execute(&e.buf, map[string]interface{}{
+		"paragraphs": html, "topImage": formatted.TopImage,
+	}); err != nil {
+		return data, errors.Wrap(err, "executing goose template")
+	}
 
-	data.Content = buf.String()
+	data.Content = e.buf.String()
 	data.Title = formatted.Title
 	data.TopImage = formatted.TopImage
 	data.Language = formatted.MetaLang
 
 	return data, err
+}
+
+func prepareTemplate(t *template.Template, fs http.FileSystem, paths ...string) (*template.Template, error) {
+	for _, path := range paths {
+		f, err := fs.Open(path)
+		if err != nil {
+			return nil, errors.Wrapf(err, "opening template %s", path)
+		}
+
+		t, err = parseTemplate(t, f)
+		if err != nil {
+			f.Close()
+			return nil, errors.Wrapf(err, "parsing template %s", path)
+		}
+
+		if err = f.Close(); err != nil {
+			return nil, errors.Wrapf(err, "closing template %s", path)
+		}
+	}
+
+	return t, nil
+}
+
+func parseTemplate(t *template.Template, r io.Reader) (*template.Template, error) {
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading template data from reader")
+	}
+
+	if t, err = t.Parse(string(b)); err != nil {
+		return nil, errors.Wrap(err, "parsing template data")
+	}
+
+	return t, nil
 }

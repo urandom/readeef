@@ -1,6 +1,7 @@
 package ttrss
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
@@ -59,7 +60,7 @@ func subscribeToFeed(req request, user content.User, feedManager *readeef.FeedMa
 	}
 
 	if f.HasErr() {
-		return nil, errors.Wrapf(f.Err(), "getting feed by link %s", req.FeedUrl)
+		return nil, errors.WithMessage(f.Err(), fmt.Sprintf("getting feed by link %s", req.FeedUrl))
 	}
 
 	f, err := feedManager.AddFeedByLink(req.FeedUrl)
@@ -69,7 +70,7 @@ func subscribeToFeed(req request, user content.User, feedManager *readeef.FeedMa
 
 	uf := user.AddFeed(f)
 	if uf.HasErr() {
-		return nil, errors.Wrapf(uf.Err(), "adding feed %s to user", req.FeedUrl)
+		return nil, errors.WithMessage(uf.Err(), fmt.Sprintf("adding feed %s to user", req.FeedUrl))
 	}
 
 	return subscribeContent{Status: struct {
@@ -88,7 +89,7 @@ func unsubscribeFeed(req request, user content.User, feedManager *readeef.FeedMa
 			return nil, errors.WithStack(newErr("no feed", "FEED_NOT_FOUND"))
 		}
 
-		return nil, errors.Wrapf(err, "getting feed by id %d", req.FeedId)
+		return nil, errors.WithMessage(err, fmt.Sprintf("getting feed by id %d", req.FeedId))
 	}
 
 	if len(users) == 0 {

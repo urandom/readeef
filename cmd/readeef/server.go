@@ -76,7 +76,9 @@ func runServer(config config.Config, args []string) error {
 	feedManager := readeef.NewFeedManager(repo, config, log)
 
 	if processors, err := initParserProcessors(config.FeedParser.Processors, config.FeedParser.ProxyHTTPURLTemplate, log); err == nil {
-		feedManager.ParserProcessors(processors)
+		for _, p := range processors {
+			feedManager.AddParserProcessor(p)
+		}
 	} else {
 		return errors.WithMessage(err, "initializing parser processors")
 	}
@@ -104,7 +106,7 @@ func runServer(config config.Config, args []string) error {
 	}
 
 	if hubbub != nil {
-		feedManager.Hubbub(hubbub)
+		feedManager.SetHubbub(hubbub)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -117,7 +119,7 @@ func runServer(config config.Config, args []string) error {
 
 	mux.Handle("/api", handler)
 
-	feedManager.Start()
+	feedManager.Start(ctx)
 
 	server := makeHTTPServer(mux)
 
@@ -363,14 +365,11 @@ func initHubbub(
 	log readeef.Logger,
 ) (*readeef.Hubbub, error) {
 	if config.Hubbub.CallbackURL != "" {
-		hubbub := readeef.NewHubbub(repo, config, log, "/api/v2/hubbub",
-			feedManager.RemoveFeedChannel())
+		hubbub := readeef.NewHubbub(config, log, "/api/v2/hubbub", feedManager)
 
-		if err := hubbub.InitSubscriptions(); err != nil {
+		if err := hubbub.InitSubscriptions(repo); err != nil {
 			return nil, errors.WithMessage(err, "initializing hubbub subscriptions")
 		}
-
-		hubbub.FeedMonitors(monitors)
 
 		return hubbub, nil
 	}

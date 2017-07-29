@@ -15,15 +15,13 @@ import (
 
 type Hubbub struct {
 	config        config.Config
-	repo          content.Repo
 	endpoint      string
-	removeFeed    chan<- content.Feed
 	subscribe     chan content.Subscription
 	unsubscribe   chan content.Subscription
 	client        *http.Client
 	log           Logger
 	subscriptions []content.Subscription
-	feedMonitors  []content.FeedMonitor
+	monitor       content.FeedMonitor
 }
 
 type SubscriptionError struct {
@@ -38,33 +36,24 @@ var (
 	ErrNotSubscribed = errors.New("Feed is not subscribed")
 )
 
-func NewHubbub(repo content.Repo, c config.Config, l Logger, endpoint string,
-	removeFeed chan<- content.Feed) *Hubbub {
+func NewHubbub(c config.Config, l Logger, endpoint string, monitor content.FeedMonitor) *Hubbub {
 
 	return &Hubbub{
-		repo: repo, config: c, log: l, endpoint: endpoint,
-		removeFeed: removeFeed,
-		subscribe:  make(chan content.Subscription), unsubscribe: make(chan content.Subscription),
-		client: NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite)}
+		config: c, log: l, endpoint: endpoint,
+		subscribe: make(chan content.Subscription), unsubscribe: make(chan content.Subscription),
+		client:  NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite),
+		monitor: monitor}
 }
 
-func (h *Hubbub) Client(c ...*http.Client) *http.Client {
-	if len(c) > 0 {
-		h.client = c[0]
+func (h *Hubbub) ProcessFeedUpdate(feed content.Feed) error {
+	if err := h.monitor.FeedUpdated(feed); err != nil {
+		return errors.WithMessage(err, "notifying monitor of updated feed")
 	}
 
-	return h.client
+	return nil
 }
 
-func (h *Hubbub) FeedMonitors(m ...[]content.FeedMonitor) []content.FeedMonitor {
-	if len(m) > 0 {
-		h.feedMonitors = m[0]
-	}
-
-	return h.feedMonitors
-}
-
-func (h Hubbub) Subscribe(f content.Feed) error {
+func (h *Hubbub) Subscribe(f content.Feed) error {
 	if u, err := url.Parse(h.config.Hubbub.CallbackURL); err != nil {
 		return ErrNotConfigured
 	} else {
@@ -111,7 +100,7 @@ func (h Hubbub) Subscribe(f content.Feed) error {
 	return nil
 }
 
-func (h Hubbub) Unsubscribe(f content.Feed) error {
+func (h *Hubbub) Unsubscribe(f content.Feed) error {
 	if u, err := url.Parse(h.config.Hubbub.CallbackURL); err != nil {
 		return ErrNotConfigured
 	} else {
@@ -145,15 +134,15 @@ func (h Hubbub) Unsubscribe(f content.Feed) error {
 	return nil
 }
 
-func (h Hubbub) InitSubscriptions() error {
-	h.repo.FailSubscriptions()
-	subscriptions := h.repo.AllSubscriptions()
+func (h *Hubbub) InitSubscriptions(repo content.Repo) error {
+	repo.FailSubscriptions()
+	subscriptions := repo.AllSubscriptions()
 
 	h.log.Infof("Initializing %d hubbub subscriptions", len(subscriptions))
 
 	go func() {
 		for _, s := range subscriptions {
-			f := h.repo.FeedById(s.Data().FeedId)
+			f := repo.FeedById(s.Data().FeedId)
 			if f.Err() != nil {
 				continue
 			}
@@ -182,7 +171,7 @@ func (h Hubbub) InitSubscriptions() error {
 			case <-after:
 				for _, s := range subscriptions {
 					if s.Data().VerificationTime.Add(time.Duration(s.Data().LeaseDuration)).Before(time.Now().Add(-30 * time.Minute)) {
-						f := h.repo.FeedById(s.Data().FeedId)
+						f := repo.FeedById(s.Data().FeedId)
 						if f.Err() != nil {
 							continue
 						}
@@ -195,8 +184,8 @@ func (h Hubbub) InitSubscriptions() error {
 		}
 	}()
 
-	if h.repo.HasErr() {
-		return errors.Wrap(h.repo.Err(), "initializing subscriptions")
+	if repo.HasErr() {
+		return errors.Wrap(repo.Err(), "initializing subscriptions")
 	}
 
 	return nil
@@ -251,7 +240,7 @@ func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe b
 			h.log.Printf("Error updating feed database record for '%s': %s\n", f, f.Err())
 		}
 
-		h.removeFeed <- f
+		h.monitor.FeedDeleted(f)
 	}
 }
 

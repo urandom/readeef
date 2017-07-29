@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"path"
-	"reflect"
 	"strconv"
 	"time"
 
@@ -86,11 +85,9 @@ func hubbubRegistration(
 			}
 
 			if newArticles {
-				for _, m := range hubbub.FeedMonitors() {
-					if err := m.FeedUpdated(f); err != nil {
-						log.Printf("Error invoking monitor '%s' on updated feed '%s': %v\n",
-							reflect.TypeOf(m), f, err)
-					}
+				if err := hubbub.ProcessFeedUpdate(f); err != nil {
+					+log.Printf("Error processing feed update for '%s': %v\n", f, err)
+
 				}
 			}
 

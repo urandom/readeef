@@ -1,10 +1,10 @@
-{% define "content" %}
+{{ define "content" }}
 <div class="article-content">
     <div style="text-align: center">
-        <img src="{% .topImage %}">
+        <img src="{{ .topImage }}">
     </div>
-    {% range .paragraphs %}
-        <p>{% . %} </p>
-    {% end %}
+    {{ range .paragraphs }}
+        <p>{{ . }} </p>
+    {{ end }}
 </div>
-{% end %}
+{{ end }}
