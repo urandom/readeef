@@ -1,12 +1,12 @@
 package readeef
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
@@ -195,7 +195,11 @@ func (h Hubbub) InitSubscriptions() error {
 		}
 	}()
 
-	return h.repo.Err()
+	if h.repo.HasErr() {
+		return errors.Wrap(h.repo.Err(), "initializing subscriptions")
+	}
+
+	return nil
 }
 
 func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe bool) {

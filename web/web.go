@@ -13,6 +13,7 @@ import (
 	ttemplate "text/template"
 
 	"github.com/alexedwards/scs/session"
+	"github.com/go-chi/chi"
 	"github.com/nicksnyder/go-i18n/i18n"
 	"github.com/pkg/errors"
 	"github.com/urandom/handler/lang"
@@ -27,6 +28,61 @@ const (
 type sessionWrapper struct{}
 
 func Mux(fs http.FileSystem, engine session.Engine, config config.Config) (http.Handler, error) {
+	var err error
+
+	r := chi.NewRouter()
+
+	r.Route("/web", func(r chi.Router) {
+		if languages, err := readeef.GetLanguages(fs); err == nil {
+			if len(languages) > 0 {
+				r.Use(func(next http.Handler) http.Handler {
+					return lang.I18N(
+						next,
+						lang.Languages(languages),
+						lang.Session(sessionWrapper{}),
+					)
+				})
+			}
+		} else {
+			err = errors.WithMessage(err, "getting supported languages")
+			return
+		}
+
+		if hasProxy(config) {
+			r.Use(session.Manage(engine, session.Lifetime(10*24*time.Hour)))
+			r.Get("/proxy", ProxyHandler)
+		}
+
+		main, err := MainHandler(fs)
+		if err != nil {
+			err = errors.WithMessage(err, "creating main handler")
+			return
+		}
+
+		r.Get("/", main)
+
+		componentHandler, err := ComponentHandler(fs)
+		if err != nil {
+			err = errors.Wrap(err, "creating component handler")
+			return
+		}
+
+		r.Get("/component", componentHandler)
+	})
+
+	fileServer := http.FileServer(fs)
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		fileServer.ServeHTTP(w, r)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+func hasProxy(config config.Config) bool {
 	hasProxy := false
 	for _, p := range config.FeedParser.Processors {
 		if p == "proxy-http" {
@@ -44,42 +100,7 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config) (http.
 		}
 	}
 
-	mux := http.NewServeMux()
-
-	mainHandler, err := MainHandler(fs)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating main handler")
-	}
-	mux.Handle("/web/", mainHandler)
-
-	componentHandler, err := ComponentHandler(fs)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating component handler")
-	}
-	mux.Handle("/web/component/", componentHandler)
-
-	var handler http.Handler = mux
-
-	if hasProxy {
-		mux.Handle("/web/proxy", ProxyHandler())
-
-		manager := session.Manage(engine, session.Lifetime(10*24*time.Hour))
-		handler = manager(mux)
-	}
-
-	if languages, err := readeef.GetLanguages(fs); err == nil {
-		if len(languages) > 0 {
-			handler = lang.I18N(
-				handler,
-				lang.Languages(languages),
-				lang.Session(sessionWrapper{}),
-			)
-		}
-	} else {
-		return nil, errors.WithMessage(err, "getting supported languages")
-	}
-
-	return handler, nil
+	return hasProxy
 }
 
 func (s sessionWrapper) Get(r *http.Request, key string) (string, error) {

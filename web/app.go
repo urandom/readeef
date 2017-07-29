@@ -7,7 +7,6 @@ import (
 	"github.com/alexedwards/scs/session"
 	"github.com/pkg/errors"
 	"github.com/urandom/handler/lang"
-	"github.com/urandom/handler/method"
 )
 
 const (
@@ -19,13 +18,13 @@ type mainPayload struct {
 	Language string
 }
 
-func MainHandler(fs http.FileSystem) (http.Handler, error) {
+func MainHandler(fs http.FileSystem) (http.HandlerFunc, error) {
 	tmpl, err := prepareTemplate(template.New("main"), fs, baseTmpl, appTmpl)
 	if err != nil {
 		return nil, errors.Wrap(err, "preparing main template")
 	}
 
-	return method.HTTP(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		var err error
 
 		data := lang.Data(r)
@@ -42,5 +41,5 @@ func MainHandler(fs http.FileSystem) (http.Handler, error) {
 		}
 
 		w.Header().Set("X-Readeef", "1")
-	}), method.GET, method.HEAD), nil
+	}, nil
 }

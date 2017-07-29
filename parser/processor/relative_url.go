@@ -5,21 +5,21 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/parser"
-	"github.com/urandom/webfw"
 	"golang.org/x/net/html"
 )
 
 type RelativeURL struct {
-	logger webfw.Logger
+	log readeef.Logger
 }
 
-func NewRelativeURL(l webfw.Logger) RelativeURL {
-	return RelativeURL{logger: l}
+func NewRelativeURL(l readeef.Logger) RelativeURL {
+	return RelativeURL{log: l}
 }
 
 func (p RelativeURL) Process(f parser.Feed) parser.Feed {
-	p.logger.Infof("Converting urls of feed '%s' to protocol-relative schemes\n", f.Title)
+	p.log.Infof("Converting urls of feed '%s' to protocol-relative schemes\n", f.Title)
 
 	for i := range f.Articles {
 		if d, err := goquery.NewDocumentFromReader(strings.NewReader(f.Articles[i].Description)); err == nil {

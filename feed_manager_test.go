@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/urandom/webfw"
+	"github.com/urandom/readeef"
 )
 
 func TestFeedManager(t *testing.T) {
@@ -40,7 +40,7 @@ func TestFeedManager(t *testing.T) {
 	}
 
 	conf.Updater.Converted.Interval = 100 * time.Millisecond
-	fm := NewFeedManager(db, conf, webfw.NewStandardLogger(os.Stderr, "", 0), &UpdateFeedReceiverManager{})
+	fm := NewFeedManager(db, conf, readeef.NewStandardLogger(os.Stderr, "", 0), &UpdateFeedReceiverManager{})
 	fm.AddUpdateReceiver(rec)
 
 	fm.Start()

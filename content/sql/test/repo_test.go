@@ -4,10 +4,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/urandom/readeef/content/sql/sqlite3"
+	"github.com/urandom/readeef"
 	dbo "github.com/urandom/readeef/content/sql/db"
+	"github.com/urandom/readeef/content/sql/sqlite3"
 	"github.com/urandom/readeef/tests"
-	"github.com/urandom/webfw"
 )
 
 func TestRepo(t *testing.T) {
@@ -15,7 +15,7 @@ func TestRepo(t *testing.T) {
 }
 
 var (
-	logger = webfw.NewStandardLogger(os.Stderr, "", 0)
+	logger = readeef.NewStandardLogger(os.Stderr, "", 0)
 	db     = dbo.New(logger)
 	repo   = sqlite3.NewRepo(db, logger)
 )

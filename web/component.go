@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/urandom/handler/lang"
-	"github.com/urandom/handler/method"
 )
 
 const (
@@ -23,7 +22,7 @@ type componentPayload struct {
 	HasLanguages bool
 }
 
-func ComponentHandler(fs http.FileSystem) (http.Handler, error) {
+func ComponentHandler(fs http.FileSystem) (http.HandlerFunc, error) {
 	baseTmpl, err := prepareTemplate(template.New("components"), fs)
 	if err != nil {
 		return nil, errors.Wrap(err, "preparing components template")
@@ -31,7 +30,7 @@ func ComponentHandler(fs http.FileSystem) (http.Handler, error) {
 
 	cache := map[string]*template.Template{}
 
-	return method.HTTP(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		var err error
 
 		name := path.Base(r.URL.Path)
@@ -55,5 +54,5 @@ func ComponentHandler(fs http.FileSystem) (http.Handler, error) {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
-	}), method.GET, method.HEAD), nil
+	}, nil
 }

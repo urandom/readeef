@@ -2,16 +2,16 @@ package search
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"strconv"
 
 	"gopkg.in/olivere/elastic.v3"
 
+	"github.com/pkg/errors"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
-	"github.com/urandom/webfw"
 )
 
 const (
@@ -22,29 +22,29 @@ const (
 type Elastic struct {
 	base.ArticleSorting
 	client    *elastic.Client
-	logger    webfw.Logger
+	log       readeef.Logger
 	newIndex  bool
 	batchSize int64
 }
 
-func NewElastic(url string, size int64, logger webfw.Logger) (content.SearchProvider, error) {
+func NewElastic(url string, size int64, log readeef.Logger) (content.SearchProvider, error) {
 	var client *elastic.Client
 	var exists bool
 
 	client, err := elastic.NewClient(elastic.SetURL(url))
 	if err != nil {
-		return nil, fmt.Errorf("Cannot connect to elastic server '%s': %v", url, err)
+		return nil, errors.Wrapf(err, "connecting to elastic server '%s'", url)
 	}
 
 	if exists, err = client.IndexExists(elasticIndexName).Do(); err != nil {
 		return nil, err
 	} else if !exists {
 		if _, err = client.CreateIndex(elasticIndexName).Do(); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "creating index")
 		}
 	}
 
-	return &Elastic{client: client, logger: logger, batchSize: size, newIndex: !exists}, nil
+	return &Elastic{client: client, log: log, batchSize: size, newIndex: !exists}, nil
 }
 
 func (e Elastic) IsNewIndex() bool {
@@ -52,7 +52,7 @@ func (e Elastic) IsNewIndex() bool {
 }
 
 func (e Elastic) IndexAllFeeds(repo content.Repo) error {
-	e.logger.Infoln("Indexing all articles")
+	e.log.Infoln("Indexing all articles")
 
 	for _, f := range repo.AllFeeds() {
 		articles := f.AllArticles()
@@ -165,16 +165,16 @@ func (e Elastic) BatchIndex(articles []content.Article, op data.IndexOperation) 
 		var req elastic.BulkableRequest
 		switch op {
 		case data.BatchAdd:
-			e.logger.Debugf("Indexing article '%d' of feed id '%d'\n", d.Id, d.FeedId)
+			e.log.Debugf("Indexing article '%d' of feed id '%d'\n", d.Id, d.FeedId)
 
 			id, doc := prepareArticle(d)
 			req = elastic.NewBulkIndexRequest().Index(elasticIndexName).Type(elasticArticleType).Id(id).Doc(doc)
 		case data.BatchDelete:
-			e.logger.Debugf("Removing article '%d' of feed id '%d' from the index\n", d.Id, d.FeedId)
+			e.log.Debugf("Removing article '%d' of feed id '%d' from the index\n", d.Id, d.FeedId)
 
 			req = elastic.NewBulkDeleteRequest().Index(elasticIndexName).Type(elasticArticleType).Id(strconv.FormatInt(int64(d.Id), 10))
 		default:
-			return fmt.Errorf("Unknown operation type %v", op)
+			return errors.Errorf("unknown operation type %v", op)
 		}
 
 		bulk.Add(req)
@@ -182,7 +182,7 @@ func (e Elastic) BatchIndex(articles []content.Article, op data.IndexOperation) 
 
 		if count >= e.batchSize {
 			if _, err := bulk.Do(); err != nil {
-				return fmt.Errorf("Error indexing article batch: %v\n", err)
+				return errors.Wrap(err, "indexing article batch")
 			}
 			bulk = e.client.Bulk()
 			count = 0
@@ -191,7 +191,7 @@ func (e Elastic) BatchIndex(articles []content.Article, op data.IndexOperation) 
 
 	if count > 0 {
 		if _, err := bulk.Do(); err != nil {
-			return fmt.Errorf("Error indexing article batch: %v\n", err)
+			return errors.Wrap(err, "indexing article batch")
 		}
 	}
 

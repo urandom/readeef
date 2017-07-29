@@ -1,15 +1,16 @@
 package extractor
 
 import (
-	"errors"
 	"fmt"
 	"html/template"
+	"net/http"
+	"path/filepath"
 	"strings"
 
 	goose "github.com/advancedlogic/GoOse"
+	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
-	"github.com/urandom/webfw/fs"
 	"github.com/urandom/webfw/renderer"
 	"github.com/urandom/webfw/util"
 )
@@ -18,12 +19,13 @@ type Goose struct {
 	renderer renderer.Renderer
 }
 
-func NewGoose(templateDir string) (content.Extractor, error) {
+func NewGoose(templateDir string, fs http.FileSystem) (content.Extractor, error) {
 	rawTmpl := "raw.tmpl"
-	f, err := fs.DefaultFS.OpenRoot(templateDir, rawTmpl)
+	f, err := fs.Open(filepath.Join(templateDir, rawTmpl))
 	if err != nil {
-		return nil, fmt.Errorf("Goose extractor requires %s template in %s: %v\n", rawTmpl, templateDir, err)
+		return nil, errors.Wrapf(err, "Goose extractor requires %s template in %s", rawTmpl, templateDir)
 	}
+
 	f.Close()
 	renderer := renderer.NewRenderer(templateDir, rawTmpl)
 	renderer.Delims("{%", "%}")
@@ -63,5 +65,6 @@ func (e Goose) Extract(link string) (data data.ArticleExtract, err error) {
 	data.Title = formatted.Title
 	data.TopImage = formatted.TopImage
 	data.Language = formatted.MetaLang
-	return
+
+	return data, err
 }

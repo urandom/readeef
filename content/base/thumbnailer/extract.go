@@ -1,7 +1,6 @@
 package thumbnailer
 
 import (
-	"fmt"
 	_ "image/png"
 	"strings"
 
@@ -79,7 +78,7 @@ func (t Extract) Generate(a content.Article) error {
 
 	thumbnail.Data(td)
 	if thumbnail.Update(); thumbnail.HasErr() {
-		return fmt.Errorf("Error saving thumbnail of %s to database :%v\n", a, thumbnail.Err())
+		return errors.Wrapf(thumbnail.Err(), "saving thumbnail of %s to database", a)
 	}
 
 	return nil

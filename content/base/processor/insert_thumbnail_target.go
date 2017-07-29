@@ -6,17 +6,17 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/webfw"
 )
 
 type InsertThumbnailTarget struct {
-	logger      webfw.Logger
+	log         readeef.Logger
 	urlTemplate *template.Template
 }
 
-func NewInsertThumbnailTarget(l webfw.Logger) InsertThumbnailTarget {
-	return InsertThumbnailTarget{logger: l}
+func NewInsertThumbnailTarget(l readeef.Logger) InsertThumbnailTarget {
+	return InsertThumbnailTarget{log: l}
 }
 
 func (p InsertThumbnailTarget) ProcessArticles(ua []content.UserArticle) []content.UserArticle {
@@ -24,7 +24,7 @@ func (p InsertThumbnailTarget) ProcessArticles(ua []content.UserArticle) []conte
 		return ua
 	}
 
-	p.logger.Infof("Proxying urls of feed '%d'\n", ua[0].Data().FeedId)
+	p.log.Infof("Proxying urls of feed '%d'\n", ua[0].Data().FeedId)
 
 	for i := range ua {
 		data := ua[i].Data()
@@ -34,7 +34,7 @@ func (p InsertThumbnailTarget) ProcessArticles(ua []content.UserArticle) []conte
 		}
 
 		if d, err := goquery.NewDocumentFromReader(strings.NewReader(data.Description)); err == nil {
-			if insertThumbnailTarget(d, data.ThumbnailLink, p.logger) {
+			if insertThumbnailTarget(d, data.ThumbnailLink, p.log) {
 				if content, err := d.Html(); err == nil {
 					// net/http tries to provide valid html, adding html, head and body tags
 					content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
@@ -49,7 +49,7 @@ func (p InsertThumbnailTarget) ProcessArticles(ua []content.UserArticle) []conte
 	return ua
 }
 
-func insertThumbnailTarget(d *goquery.Document, thumbnailLink string, logger webfw.Logger) bool {
+func insertThumbnailTarget(d *goquery.Document, thumbnailLink string, log readeef.Logger) bool {
 	changed := false
 
 	if d.Find(".top-image").Length() > 0 {
@@ -58,7 +58,7 @@ func insertThumbnailTarget(d *goquery.Document, thumbnailLink string, logger web
 
 	thumbDoc, err := goquery.NewDocumentFromReader(strings.NewReader(fmt.Sprintf(`<img src="%s">`, thumbnailLink)))
 	if err != nil {
-		logger.Infof("Error generating thumbnail image node: %v\n", err)
+		log.Infof("Error generating thumbnail image node: %v\n", err)
 		return changed
 	}
 

@@ -14,7 +14,7 @@ type logger struct {
 	*logrus.Logger
 }
 
-func NewLogger(cfg config.Logger) Logger {
+func NewLogger(cfg config.Log) Logger {
 	logger := logger{Logger: logrus.New()}
 
 	var writer io.Writer

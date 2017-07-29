@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 )
@@ -24,23 +25,22 @@ type readability struct {
 
 func NewReadability(key string) (content.Extractor, error) {
 	if key == "" {
-		return nil, fmt.Errorf("Readability API key cannot be empty")
+		return nil, errors.New("Readability API key cannot be empty")
 	}
 	return Readability{key: key}, nil
 }
 
-func (e Readability) Extract(link string) (data data.ArticleExtract, err error) {
+func (e Readability) Extract(link string) (data.ArticleExtract, error) {
 	url := fmt.Sprintf("http://readability.com/api/content/v1/parser?url=%s&token=%s",
 		url.QueryEscape(link), e.key,
 	)
 
 	var r readability
-	var resp *http.Response
 
-	resp, err = http.Get(url)
+	resp, err := http.Get(url)
 
 	if err != nil {
-		return
+		return data.ArticleExtract{}, errors.Wrap(err, "getting url response")
 	}
 
 	defer func() {
@@ -52,13 +52,14 @@ func (e Readability) Extract(link string) (data data.ArticleExtract, err error) 
 
 	err = dec.Decode(&r)
 	if err != nil {
-		err = fmt.Errorf("Error extracting content from %s: %v", link, err)
-		return
+		return data.ArticleExtract{}, errors.Wrapf(err, "extracting content from %s", link)
 	}
 
+	data := data.ArticleExtract{}
 	data.Title = r.Title
 	data.Content = r.Content
 	data.TopImage = r.LeadImage
 	data.Language = "en"
-	return
+
+	return data, nil
 }

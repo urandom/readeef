@@ -7,6 +7,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
@@ -17,23 +19,20 @@ import (
 	"github.com/urandom/readeef/api/ttrss"
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/base/extractor"
-	"github.com/urandom/readeef/content/base/monitor"
-	contentProcessor "github.com/urandom/readeef/content/base/processor"
-	"github.com/urandom/readeef/content/base/search"
-	"github.com/urandom/readeef/content/base/thumbnailer"
 	"github.com/urandom/readeef/content/base/token"
-	"github.com/urandom/readeef/content/data"
-	"github.com/urandom/readeef/content/repo"
-	"github.com/urandom/readeef/parser"
-	"github.com/urandom/readeef/parser/processor"
 )
 
-func Prepare(ctx context.Context, fs http.FileSystem, config config.Config, log readeef.Logger) (http.Handler, error) {
-	repo, err := repo.New(config.DB.Driver, config.DB.Connect, log)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating repo")
-	}
+func Mux(
+	ctx context.Context,
+	repo content.Repo,
+	feedManager *readeef.FeedManager,
+	hubbub *readeef.Hubbub,
+	searchProvider content.SearchProvider,
+	extractor content.Extractor,
+	fs http.FileSystem,
+	config config.Config,
+	log readeef.Logger,
+) (http.Handler, error) {
 
 	languageSupport := false
 	if languages, err := readeef.GetLanguages(fs); err == nil {
@@ -43,49 +42,9 @@ func Prepare(ctx context.Context, fs http.FileSystem, config config.Config, log 
 	features := features{
 		I18N:       languageSupport,
 		Popularity: len(config.Popularity.Providers) > 0,
-	}
-
-	if processors, err := initArticleProcessors(config.Content.ArticleProcessors, config.Content.ProxyHTTPURLTemplate, &features, log); err == nil {
-		repo.ArticleProcessors(processors)
-	} else {
-		return nil, errors.Wrap(err, "initializing article processors")
-	}
-
-	if err := initAdminUser(repo, []byte(config.Auth.Secret)); err != nil {
-		return nil, errors.Wrap(err, "initializing admin user")
-	}
-
-	feedManager := readeef.NewFeedManager(repo, config, log)
-
-	if processors, err := initParserProcessors(config.FeedParser.Processors, config.FeedParser.ProxyHTTPURLTemplate, &features, log); err == nil {
-		feedManager.ParserProcessors(processors)
-	} else {
-		return nil, errors.Wrap(err, "initializing parser processors")
-	}
-
-	searchProvider := initSearchProvider(config.Content, repo, log)
-
-	if searchProvider != nil {
-		features.Search = true
-	}
-
-	extractor, err := initContentExtractor(config.Content)
-	if err != nil {
-		return nil, errors.Wrap(err, "initializing content extractor")
-	}
-
-	if extractor != nil {
-		features.Extractor = true
-	}
-
-	thumbnailer, err := initThumbnailer(config.Content, extractor, log)
-	if err != nil {
-		return nil, errors.Wrap(err, "initializing thumbnailer")
-	}
-
-	monitors := initFeedMonitors(config.FeedManager, repo, searchProvider, thumbnailer, &features, log)
-	for _, m := range monitors {
-		feedManager.AddFeedMonitor(m)
+		ProxyHTTP:  hasProxy(config),
+		Search:     searchProvider != nil,
+		Extractor:  extractor != nil,
 	}
 
 	storage, err := initTokenStorage(config.Auth)
@@ -93,15 +52,9 @@ func Prepare(ctx context.Context, fs http.FileSystem, config config.Config, log 
 		return nil, errors.Wrap(err, "initializing token storage")
 	}
 
-	hubbub, err := initHubbub(config, repo, monitors, feedManager, log)
-	if err != nil {
-		return nil, errors.Wrap(err, "initializing hubbub")
-	}
-
 	routes := []routes{tokenRoutes(repo, storage, []byte(config.Auth.Secret), log)}
 
 	if hubbub != nil {
-		feedManager.Hubbub(hubbub)
 		routes = append(routes, hubbubRoutes(hubbub, repo, feedManager, log))
 	}
 
@@ -118,191 +71,38 @@ func Prepare(ctx context.Context, fs http.FileSystem, config config.Config, log 
 		userRoutes([]byte(config.Auth.Secret)),
 	))
 
-	handler := Mux(routes)
+	r := chi.NewRouter()
 
-	feedManager.Start()
+	r.Route("/v2", func(r chi.Router) {
+		for _, sub := range routes {
+			r.Route(sub.path, sub.route)
+		}
+	})
 
-	return handler, nil
+	return r, nil
 }
 
-func initArticleProcessors(names []string, proxyTemplate string, features *features, log readeef.Logger) ([]content.ArticleProcessor, error) {
-	var processors []content.ArticleProcessor
-
-	for _, p := range names {
-		switch p {
-		case "relative-url":
-			processors = append(processors, contentProcessor.NewRelativeURL(log))
-		case "proxy-http":
-			template := proxyTemplate
-
-			if template != "" {
-				p, err := contentProcessor.NewProxyHTTP(template, log)
-				if err != nil {
-					return nil, errors.Wrap(err, "initializing proxy http processor")
-				}
-				processors = append(processors, p)
-				features.ProxyHTTP = true
-			}
-		case "insert-thumbnail-target":
-			processors = append(processors, contentProcessor.NewInsertThumbnailTarget(log))
+func hasProxy(config config.Config) bool {
+	for _, p := range config.Content.ArticleProcessors {
+		if p == "proxy-http" {
+			return true
 		}
 	}
 
-	return processors, nil
-}
-
-func initParserProcessors(names []string, proxyTemplate string, features *features, log readeef.Logger) ([]parser.Processor, error) {
-	var processors []parser.Processor
-
-	for _, p := range names {
-		switch p {
-		case "absolutize-urls":
-			processors = append(processors, processor.NewAbsolutizeURLs(log))
-		case "relative-url":
-			processors = append(processors, processor.NewRelativeURL(log))
-		case "proxy-http":
-			template := proxyTemplate
-
-			if template != "" {
-				p, err := processor.NewProxyHTTP(template, log)
-				if err != nil {
-					return nil, errors.Wrap(err, "initializing proxy http processor")
-				}
-				processors = append(processors, p)
-				features.ProxyHTTP = true
-			}
-		case "cleanup":
-			processors = append(processors, processor.NewCleanup(log))
-		case "top-image-marker":
-			processors = append(processors, processor.NewTopImageMarker(log))
+	for _, p := range config.FeedParser.Processors {
+		if p == "proxy-http" {
+			return true
 		}
 	}
 
-	return processors, nil
-}
-
-func initSearchProvider(config config.Content, repo content.Repo, log readeef.Logger) content.SearchProvider {
-	var searchProvider content.SearchProvider
-	var err error
-
-	switch config.SearchProvider {
-	case "elastic":
-		if searchProvider, err = search.NewElastic(
-			config.ElasticURL,
-			config.SearchBatchSize,
-			log,
-		); err != nil {
-			log.Printf("Error initializing Elastic search: %v\n", err)
-		}
-	case "bleve":
-		fallthrough
-	default:
-		if searchProvider, err = search.NewBleve(
-			config.BlevePath,
-			config.SearchBatchSize,
-			log,
-		); err != nil {
-			log.Printf("Error initializing Bleve search: %v\n", err)
-		}
-	}
-
-	if searchProvider != nil {
-		if searchProvider.IsNewIndex() {
-			go func() {
-				searchProvider.IndexAllFeeds(repo)
-			}()
-		}
-	}
-
-	return searchProvider
-}
-
-func initContentExtractor(config config.Content) (content.Extractor, error) {
-	switch config.Extractor {
-	case "readability":
-		if ce, err := extractor.NewReadability(config.ReadabilityKey); err == nil {
-			return ce, nil
-		} else {
-			return nil, errors.Wrap(err, "initializing Readability extractor")
-		}
-	case "goose":
-		fallthrough
-	default:
-		//TODO: pass the filesystem to the goose extractor
-		if ce, err := extractor.NewGoose("templates"); err == nil {
-			return ce, nil
-		} else {
-			return nil, errors.Wrap(err, "initializing Goose extractor")
-		}
-	}
-}
-
-func initThumbnailer(config config.Content, ce content.Extractor, log readeef.Logger) (content.Thumbnailer, error) {
-	switch config.Thumbnailer {
-	case "extract":
-		if t, err := thumbnailer.NewExtract(ce, log); err == nil {
-			return t, nil
-		} else {
-			return nil, errors.Wrap(err, "initializing Extract thumbnailer")
-		}
-	case "description":
-		fallthrough
-	default:
-		return thumbnailer.NewDescription(log), nil
-	}
-}
-
-func initFeedMonitors(
-	config config.FeedManager,
-	repo content.Repo,
-	searchProvider content.SearchProvider,
-	thumbnailer content.Thumbnailer,
-	features *features,
-	log readeef.Logger,
-) []content.FeedMonitor {
-	monitors := []content.FeedMonitor{monitor.NewUnread(repo, log)}
-
-	for _, m := range config.Monitors {
-		switch m {
-		case "index":
-			if searchProvider != nil {
-				monitors = append(monitors, monitor.NewIndex(searchProvider, log))
-				features.Search = true
-			}
-		case "thumbnailer":
-			if thumbnailer != nil {
-				monitors = append(monitors, monitor.NewThumbnailer(thumbnailer, log))
-			}
-		}
-	}
-
-	return monitors
-}
-
-func initHubbub(
-	config config.Config,
-	repo content.Repo,
-	monitors []content.FeedMonitor,
-	feedManager *readeef.FeedManager,
-	log readeef.Logger,
-) (*readeef.Hubbub, error) {
-	if config.Hubbub.CallbackURL != "" {
-		hubbub := readeef.NewHubbub(repo, config, log, "/api/v2/hubbub",
-			feedManager.RemoveFeedChannel())
-
-		if err := hubbub.InitSubscriptions(); err != nil {
-			return nil, errors.Wrap(err, "initializing hubbub subscriptions")
-		}
-
-		hubbub.FeedMonitors(monitors)
-
-		return hubbub, nil
-	}
-
-	return nil, nil
+	return false
 }
 
 func initTokenStorage(config config.Auth) (content.TokenStorage, error) {
+	if err := os.MkdirAll(filepath.Dir(config.TokenStoragePath), 0777); err != nil {
+		return nil, errors.Wrapf(err, "creating token storage path %s", config.TokenStoragePath)
+	}
+
 	return token.NewBoltStorage(config.TokenStoragePath)
 }
 
@@ -312,7 +112,7 @@ type routes struct {
 }
 
 func tokenRoutes(repo content.Repo, storage content.TokenStorage, secret []byte, log readeef.Logger) routes {
-	return routes{path: "/v2/token", route: func(r chi.Router) {
+	return routes{path: "/token", route: func(r chi.Router) {
 		r.Method(method.POST, "/", tokenCreate(repo, secret, log))
 		r.Method(method.DELETE, "/", tokenDelete(storage, secret, log))
 	}}
@@ -321,7 +121,7 @@ func tokenRoutes(repo content.Repo, storage content.TokenStorage, secret []byte,
 func hubbubRoutes(hubbub *readeef.Hubbub, repo content.Repo, feedManager *readeef.FeedManager, log readeef.Logger) routes {
 	handler := hubbubRegistration(hubbub, repo, feedManager.AddFeedChannel(), feedManager.RemoveFeedChannel(), log)
 
-	return routes{path: "/v2/hubbub", route: func(r chi.Router) {
+	return routes{path: "/hubbub", route: func(r chi.Router) {
 		r.Get("/", handler)
 		r.Post("/", handler)
 	}}
@@ -368,7 +168,7 @@ func emulatorRoutes(
 type middleware func(next http.Handler) http.Handler
 
 func mainRoutes(middleware []middleware, subroutes ...routes) routes {
-	return routes{path: "/v2", route: func(r chi.Router) {
+	return routes{path: "/", route: func(r chi.Router) {
 		for _, m := range middleware {
 			r.Use(m)
 		}
@@ -508,40 +308,6 @@ func userRoutes(secret []byte) routes {
 			r.Post("/{key}", setSettingValue(secret))
 		})
 	}}
-}
-
-func Mux(routes []routes) http.Handler {
-	r := chi.NewRouter()
-
-	r.Route("/api", func(r chi.Router) {
-		for _, sub := range routes {
-			r.Route(sub.path, sub.route)
-		}
-	})
-
-	return r
-}
-
-func initAdminUser(repo content.Repo, secret []byte) error {
-	users := repo.AllUsers()
-	if repo.HasErr() {
-		return errors.Wrap(repo.Err(), "getting all users")
-	}
-
-	if len(users) > 0 {
-		return nil
-	}
-
-	u := repo.User()
-	u.Data(data.User{Login: data.Login("admin"), Active: true, Admin: true})
-	u.Password("admin", secret)
-	u.Update()
-
-	if u.HasErr() {
-		return errors.Wrap(u.Err(), "updating user")
-	}
-
-	return nil
 }
 
 func readJSON(w http.ResponseWriter, r io.Reader, data interface{}) (stop bool) {

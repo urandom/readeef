@@ -9,73 +9,70 @@ import (
 
 	"github.com/alexedwards/scs/session"
 	"github.com/pkg/errors"
-	"github.com/urandom/handler/method"
 )
 
-func ProxyHandler() http.Handler {
-	return method.Get(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if ok, err := session.GetBool(r, visitorKey); !ok || err != nil {
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
+func ProxyHandler(w http.ResponseWriter, r *http.Request) {
+	if ok, err := session.GetBool(r, visitorKey); !ok || err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
-		r.ParseForm()
-		var err error
+	r.ParseForm()
+	var err error
 
-		switch {
-		default:
-			var u *url.URL
+	switch {
+	default:
+		var u *url.URL
 
-			u, err = url.Parse(r.Form.Get("url"))
-			if err != nil {
-				err = errors.Wrapf(err, "parsing url to proxy (%s)", r.Form.Get("url"))
-				break
-			}
-			if u.Scheme == "" {
-				u.Scheme = "http"
-			}
-
-			var req *http.Request
-
-			req, err = http.NewRequest("GET", u.String(), nil)
-			if err != nil {
-				err = errors.Wrapf(err, "creating proxy request to %s", u)
-				break
-			}
-
-			ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
-			defer cancel()
-
-			var resp *http.Response
-
-			resp, err = http.DefaultClient.Do(req.WithContext(ctx))
-			if err != nil {
-				err = errors.Wrapf(err, "Error getting proxy response from %s", u)
-				break
-			}
-
-			defer resp.Body.Close()
-
-			for k, values := range resp.Header {
-				for _, v := range values {
-					w.Header().Add(k, v)
-				}
-			}
-
-			var b []byte
-
-			b, err = ioutil.ReadAll(resp.Body)
-			if err != nil {
-				err = errors.Wrapf(err, "reading proxy response from %s", u)
-				break
-			}
-
-			_, err = w.Write(b)
-		}
-
+		u, err = url.Parse(r.Form.Get("url"))
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotAcceptable)
-			return
+			err = errors.Wrapf(err, "parsing url to proxy (%s)", r.Form.Get("url"))
+			break
 		}
-	}))
+		if u.Scheme == "" {
+			u.Scheme = "http"
+		}
+
+		var req *http.Request
+
+		req, err = http.NewRequest("GET", u.String(), nil)
+		if err != nil {
+			err = errors.Wrapf(err, "creating proxy request to %s", u)
+			break
+		}
+
+		ctx, cancel := context.WithTimeout(req.Context(), 30*time.Second)
+		defer cancel()
+
+		var resp *http.Response
+
+		resp, err = http.DefaultClient.Do(req.WithContext(ctx))
+		if err != nil {
+			err = errors.Wrapf(err, "Error getting proxy response from %s", u)
+			break
+		}
+
+		defer resp.Body.Close()
+
+		for k, values := range resp.Header {
+			for _, v := range values {
+				w.Header().Add(k, v)
+			}
+		}
+
+		var b []byte
+
+		b, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			err = errors.Wrapf(err, "reading proxy response from %s", u)
+			break
+		}
+
+		_, err = w.Write(b)
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotAcceptable)
+		return
+	}
 }

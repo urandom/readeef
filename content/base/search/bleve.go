@@ -2,8 +2,6 @@ package search
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"html"
 	"os"
 	"strconv"
@@ -14,16 +12,17 @@ import (
 	"github.com/blevesearch/bleve/index/upsidedown"
 	"github.com/blevesearch/bleve/search"
 	"github.com/blevesearch/bleve/search/query"
+	"github.com/pkg/errors"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
-	"github.com/urandom/webfw"
 )
 
 type Bleve struct {
 	base.ArticleSorting
 	index     bleve.Index
-	logger    webfw.Logger
+	log       readeef.Logger
 	newIndex  bool
 	batchSize int64
 }
@@ -37,18 +36,18 @@ type indexArticle struct {
 	Date        time.Time `json:"date"`
 }
 
-func NewBleve(path string, size int64, logger webfw.Logger) (content.SearchProvider, error) {
+func NewBleve(path string, size int64, log readeef.Logger) (content.SearchProvider, error) {
 	var err error
 	var exists bool
 	var index bleve.Index
 
 	_, err = os.Stat(path)
 	if err == nil {
-		logger.Infoln("Opening search index " + path)
+		log.Infoln("Opening search index " + path)
 		index, err = bleve.Open(path)
 
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Error opening search index: %v\n", err))
+			return nil, errors.Wrap(err, "opening bleve search index")
 		}
 
 		exists = true
@@ -63,18 +62,17 @@ func NewBleve(path string, size int64, logger webfw.Logger) (content.SearchProvi
 
 		mapping.AddDocumentMapping(mapping.DefaultType, docMapping)
 
-		logger.Infoln("Creating search index " + path)
+		log.Infoln("Creating search index " + path)
 		index, err = bleve.NewUsing(path, mapping, upsidedown.Name, goleveldb.Name, nil)
 
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Error creating search index: %v\n", err))
+			return nil, errors.Wrap(err, "creating search index")
 		}
 	} else {
-		return nil, errors.New(
-			fmt.Sprintf("Error getting stat of '%s': %v\n", path, err))
+		return nil, errors.Wrapf(err, "getting file '%s' stat", path)
 	}
 
-	return &Bleve{logger: logger, index: index, batchSize: size, newIndex: !exists}, nil
+	return &Bleve{log: log, index: index, batchSize: size, newIndex: !exists}, nil
 }
 
 func (b Bleve) IsNewIndex() bool {
@@ -82,7 +80,7 @@ func (b Bleve) IsNewIndex() bool {
 }
 
 func (b Bleve) IndexAllFeeds(repo content.Repo) error {
-	b.logger.Infoln("Indexing all articles")
+	b.log.Infoln("Indexing all articles")
 
 	for _, f := range repo.AllFeeds() {
 		articles := f.AllArticles()
@@ -195,22 +193,22 @@ func (b Bleve) BatchIndex(articles []content.Article, op data.IndexOperation) er
 
 		switch op {
 		case data.BatchAdd:
-			b.logger.Debugf("Indexing article '%d' of feed id '%d'\n", d.Id, d.FeedId)
+			b.log.Debugf("Indexing article '%d' of feed id '%d'\n", d.Id, d.FeedId)
 
 			batch.Index(prepareArticle(d))
 		case data.BatchDelete:
-			b.logger.Debugf("Removing article '%d' of feed id '%d' from index\n", d.Id, d.FeedId)
+			b.log.Debugf("Removing article '%d' of feed id '%d' from index\n", d.Id, d.FeedId)
 
 			batch.Delete(strconv.FormatInt(int64(d.Id), 10))
 		default:
-			return fmt.Errorf("Unknown operation type %v", op)
+			return errors.Errorf("unknown operation type %v", op)
 		}
 
 		count++
 
 		if count >= b.batchSize {
 			if err := b.index.Batch(batch); err != nil {
-				return fmt.Errorf("Error indexing article batch: %v\n", err)
+				return errors.Wrap(err, "Error indexing article batch")
 			}
 			batch = b.index.NewBatch()
 			count = 0
@@ -219,7 +217,7 @@ func (b Bleve) BatchIndex(articles []content.Article, op data.IndexOperation) er
 
 	if count > 0 {
 		if err := b.index.Batch(batch); err != nil {
-			return fmt.Errorf("Error indexing article batch: %v\n", err)
+			return errors.Wrap(err, "Error indexing article batch")
 		}
 	}
 
