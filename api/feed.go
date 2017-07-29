@@ -158,7 +158,7 @@ func deleteFeed(feedManager *readeef.FeedManager) http.HandlerFunc {
 		if feed, stop := feedFromRequest(w, r); stop {
 			return
 		} else {
-			if feed.Delete(); feed.HasErr() {
+			if feed.Detach(); feed.HasErr() {
 				http.Error(w, "Error deleting feed: "+feed.Err().Error(), http.StatusInternalServerError)
 
 				return
