@@ -9,7 +9,11 @@ type Server struct {
 	Port     int    `toml:"port"`
 	CertFile string `toml:"cert-file"`
 	KeyFile  string `toml:"key-file"`
-	Devel    bool   `toml:"devel"`
+
+	AutoCert struct {
+		Host       string `toml:"host"`
+		StorageDir string `toml:"storage-dir"`
+	} `toml:"auto-cert"`
 }
 
 type Log struct {

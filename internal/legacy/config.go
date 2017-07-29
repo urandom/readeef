@@ -207,7 +207,11 @@ func (c Config) convertToV2() (config.Config, error) {
 		return config.Config{}, errors.WithMessage(err, "creating config")
 	}
 
-	cfg.Server = config.Server(c.Server)
+	cfg.Server.Address = c.Server.Address
+	cfg.Server.Port = c.Server.Port
+	cfg.Server.CertFile = c.Server.CertFile
+	cfg.Server.KeyFile = c.Server.KeyFile
+
 	cfg.Log = config.Log(c.Logger)
 	cfg.API = config.API(c.API)
 	cfg.Timeout = config.Timeout(c.Timeout)

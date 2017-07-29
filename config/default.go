@@ -20,8 +20,9 @@ func defaultConfig() (Config, error) {
 
 var defaultCfg = `
 [server]
-	port = 8080
-	devel = true
+	port = 80
+[server.auto-cert]
+	storage-dir = "./storage/certs"
 [log]
 	level = "error"    # error, info, debug
 	file = "-"         # stderr, or a filename

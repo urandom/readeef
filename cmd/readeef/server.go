@@ -2,10 +2,15 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
+
+	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/alexedwards/scs/engine/boltstore"
 	"github.com/alexedwards/scs/session"
@@ -27,6 +32,10 @@ import (
 	"github.com/urandom/readeef/web"
 )
 
+var (
+	serverDevelPort int
+)
+
 func runServer(config config.Config, args []string) error {
 	fs, err := readeef.NewFileSystem()
 	if err != nil {
@@ -44,13 +53,14 @@ func runServer(config config.Config, args []string) error {
 		return errors.WithMessage(err, "creating web mux")
 	}
 
-	http.Handle("/", handler)
+	mux := http.NewServeMux()
+	mux.Handle("/", handler)
 
 	log := initLog(config.Log)
 
 	repo, err := repo.New(config.DB.Driver, config.DB.Connect, log)
 	if err != nil {
-		return errors.WithMessage(err, "creating repo")
+		return errors.WithMessage(err, "creating content repo")
 	}
 
 	if processors, err := initArticleProcessors(config.Content.ArticleProcessors, config.Content.ProxyHTTPURLTemplate, log); err == nil {
@@ -105,9 +115,54 @@ func runServer(config config.Config, args []string) error {
 		return errors.WithMessage(err, "creating api mux")
 	}
 
-	http.Handle("/api", handler)
+	mux.Handle("/api", handler)
 
 	feedManager.Start()
+
+	server := makeHTTPServer(mux)
+
+	if serverDevelPort > 0 {
+		server.Addr = fmt.Sprintf(":%d", serverDevelPort)
+
+		if err = server.ListenAndServe(); err != nil {
+			return errors.Wrap(err, "starting devel server")
+		}
+	}
+
+	server.Addr = fmt.Sprintf("%s:%d", config.Server.Address, config.Server.Port)
+
+	if config.Server.AutoCert.Host != "" {
+		if err := os.MkdirAll(config.Server.AutoCert.StorageDir, 0777); err != nil {
+			return errors.Wrapf(err, "creating autocert storage dir %s", config.Server.AutoCert.StorageDir)
+		}
+
+		hostPolicy := func(ctx context.Context, host string) error {
+			if host == config.Server.AutoCert.Host {
+				return nil
+			}
+			return errors.Errorf("acme/autocert: only %s host is allowed", config.Server.AutoCert.Host)
+		}
+
+		m := autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: hostPolicy,
+			Cache:      autocert.DirCache(config.Server.AutoCert.StorageDir),
+		}
+
+		server.TLSConfig = &tls.Config{GetCertificate: m.GetCertificate}
+
+		if err := server.ListenAndServeTLS("", ""); err != nil {
+			return errors.Wrap(err, "starting auto-cert server")
+		}
+	} else if config.Server.CertFile != "" && config.Server.KeyFile != "" {
+		if err := server.ListenAndServeTLS(config.Server.CertFile, config.Server.KeyFile); err != nil {
+			return errors.Wrap(err, "starting tls server")
+		}
+	} else {
+		if err = server.ListenAndServe(); err != nil {
+			return errors.Wrap(err, "starting server")
+		}
+	}
 
 	return nil
 }
@@ -323,8 +378,18 @@ func initHubbub(
 	return nil, nil
 }
 
+func makeHTTPServer(mux http.Handler) *http.Server {
+	return &http.Server{
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Second,
+		IdleTimeout:  120 * time.Second,
+		Handler:      mux,
+	}
+}
+
 func init() {
 	flags := flag.NewFlagSet("server", flag.ExitOnError)
+	flags.IntVar(&serverDevelPort, "devel-port", 0, "when specified, runs an http server on that port")
 
 	commands = append(commands, Command{
 		Name:  "server",
