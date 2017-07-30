@@ -14,7 +14,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/nfnt/resize"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/webfw/util"
+	"github.com/urandom/readeef/pool"
 )
 
 const (
@@ -28,8 +28,8 @@ func generateThumbnail(r io.Reader) (b []byte, mimeType string, err error) {
 	}
 
 	thumb := resize.Thumbnail(256, 192, img, resize.Lanczos3)
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
 
 	switch imgType {
 	case "gif":
@@ -65,8 +65,8 @@ func generateThumbnailFromDescription(description io.Reader) (t, link string) {
 				}
 				defer resp.Body.Close()
 
-				buf := util.BufferPool.GetBuffer()
-				defer util.BufferPool.Put(buf)
+				buf := pool.Buffer.Get()
+				defer pool.Buffer.Put(buf)
 
 				if _, err := buf.ReadFrom(resp.Body); err != nil {
 					return true
@@ -114,8 +114,8 @@ func generateThumbnailFromImageLink(link string) (t string) {
 	}
 	defer resp.Body.Close()
 
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
 
 	if _, err := buf.ReadFrom(resp.Body); err != nil {
 		return

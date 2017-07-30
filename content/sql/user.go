@@ -12,7 +12,7 @@ import (
 	"github.com/urandom/readeef/content/base/processor"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/db"
-	"github.com/urandom/webfw/util"
+	"github.com/urandom/readeef/pool"
 )
 
 var (
@@ -727,8 +727,8 @@ func internalGetArticles(u content.User, dbo *db.DB, log readeef.Logger, opts da
 		args = append(args, opts.Limit, opts.Offset)
 	}
 
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
 
 	if err := getArticlesTemplate.Execute(buf, renderData); err != nil {
 		u.Err(fmt.Errorf("Error executing get-articles template: %v", err))
@@ -844,8 +844,8 @@ func articleIds(u content.User, dbo *db.DB, log readeef.Logger, opts data.Articl
 		renderData.Where = "WHERE " + strings.Join(whereSlice, " AND ")
 	}
 
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
 
 	if err := getArticleIdsTemplate.Execute(buf, renderData); err != nil {
 		u.Err(fmt.Errorf("Error executing article-ids template: %v", err))
@@ -943,8 +943,8 @@ func articleCount(u content.User, dbo *db.DB, log readeef.Logger, opts data.Arti
 		renderData.Where = "WHERE " + strings.Join(whereSlice, " AND ")
 	}
 
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
 
 	if err := articleCountTemplate.Execute(buf, renderData); err != nil {
 		u.Err(fmt.Errorf("Error executing article-count template: %v", err))
@@ -999,8 +999,8 @@ func readState(u content.User, dbo *db.DB, log readeef.Logger, opts data.Article
 	if read {
 		args := append([]interface{}{u.Data().Login}, deleteArgs...)
 
-		buf := util.BufferPool.GetBuffer()
-		defer util.BufferPool.Put(buf)
+		buf := pool.Buffer.Get()
+		defer pool.Buffer.Put(buf)
 
 		data := readStateDeleteData{}
 
@@ -1076,8 +1076,8 @@ func readState(u content.User, dbo *db.DB, log readeef.Logger, opts data.Article
 	} else {
 		args := append([]interface{}{u.Data().Login}, insertArgs...)
 
-		buf := util.BufferPool.GetBuffer()
-		defer util.BufferPool.Put(buf)
+		buf := pool.Buffer.Get()
+		defer pool.Buffer.Put(buf)
 
 		data := readStateInsertData{}
 

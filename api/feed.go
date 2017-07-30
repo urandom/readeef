@@ -184,39 +184,19 @@ func discoverFeeds(feedManager *readeef.FeedManager) http.HandlerFunc {
 			return
 		}
 
-		if u, err := url.Parse(query); err == nil {
-			feeds, err := discoverFeedsByURL(u, user, feedManager)
-			if err == nil {
-				args{"feeds": feeds}.WriteJSON(w)
-			} else {
-				http.Error(w, "Error discovering feeds: "+err.Error(), http.StatusInternalServerError)
-			}
+		feeds, err := discoverFeedsByQuery(query, user, feedManager)
+		if err == nil {
+			args{"feeds": feeds}.WriteJSON(w)
 		} else {
-			// TODO: handle text searches
-			http.Error(w, "Not a URL", http.StatusBadRequest)
-			return
+			http.Error(w, "Error discovering feeds: "+err.Error(), http.StatusInternalServerError)
 		}
 	}
 }
 
-func discoverFeedsByURL(u *url.URL, user content.User, feedManager *readeef.FeedManager) ([]content.Feed, error) {
-	if !u.IsAbs() {
-		u.Scheme = "http"
-		if u.Host == "" {
-			parts := strings.SplitN(u.Path, "/", 2)
-			u.Host = parts[0]
-
-			if len(parts) > 1 {
-				u.Path = "/" + parts[1]
-			} else {
-				u.Path = ""
-			}
-		}
-	}
-
-	feeds, err := feedManager.DiscoverFeeds(u.String())
+func discoverFeedsByQuery(query string, user content.User, feedManager *readeef.FeedManager) ([]content.Feed, error) {
+	feeds, err := feedManager.DiscoverFeeds(query)
 	if err != nil {
-		return nil, errors.Wrap(err, "discovering feeds")
+		return nil, err
 	}
 
 	uf := user.AllFeeds()

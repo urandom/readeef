@@ -4,10 +4,8 @@ import (
 	"context"
 	"reflect"
 	"regexp"
-	"strings"
 	"time"
 
-	"net/http"
 	"net/url"
 
 	"github.com/pkg/errors"
@@ -16,7 +14,6 @@ import (
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/feed"
 	"github.com/urandom/readeef/parser"
-	"github.com/urandom/webfw/util"
 )
 
 // TODO: split up this struct and modify the api
@@ -114,13 +111,20 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 	if err != nil {
 		fm.log.Infoln("Discovering feeds in " + link)
 
-		feeds, err := fm.discoverSecureParserFeeds(u)
-
+		parsedFeeds, err := feed.Search(link)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithMessage(err, "searching for feeds")
 		}
 
-		f = feeds[0]
+		var f content.Feed
+		for link, parserFeed := range parsedFeeds {
+			f = fm.repo.Feed()
+
+			f.Data(data.Feed{Link: link})
+			f.Refresh(fm.processParserFeed(parserFeed))
+
+			break
+		}
 
 		f.Update()
 		if f.HasErr() {
@@ -159,35 +163,20 @@ func (fm *FeedManager) RemoveFeedByLink(link string) (content.Feed, error) {
 }
 
 func (fm *FeedManager) DiscoverFeeds(link string) ([]content.Feed, error) {
-	feeds := []content.Feed{}
 
-	u, err := url.Parse(link)
-	if err == nil {
-		if !u.IsAbs() {
-			return feeds, ErrNoAbsolute
-		}
-		link = u.String()
-	} else {
-		return feeds, err
+	parsedFeeds, err := feed.Search(link)
+	if err != nil {
+		return []content.Feed{}, errors.WithMessage(err, "discovering feeds")
 	}
+	feeds := make([]content.Feed, 0, len(parsedFeeds))
 
-	f := fm.repo.FeedByLink(link)
-	err = f.Err()
-	if err != nil && err != content.ErrNoContent {
-		return feeds, f.Err()
-	} else {
-		if err != nil {
-			fm.log.Debugln("Discovering feeds in " + link)
+	for link, parserFeed := range parsedFeeds {
+		feed := fm.repo.Feed()
 
-			discovered, err := fm.discoverSecureParserFeeds(u)
+		feed.Data(data.Feed{Link: link})
+		feed.Refresh(fm.processParserFeed(parserFeed))
 
-			if err != nil {
-				return feeds, err
-			}
-
-			fm.log.Debugf("Discovered %d feeds in %s\n", len(discovered), link)
-			feeds = append(feeds, discovered...)
-		}
+		feeds = append(feeds, feed)
 	}
 
 	return feeds, nil
@@ -210,8 +199,8 @@ func (fm *FeedManager) startUpdatingFeed(ctx context.Context, f content.Feed) {
 	if data.HubLink != "" && fm.hubbub != nil {
 		err := fm.hubbub.Subscribe(f)
 
-		if err == nil || err == ErrSubscribed {
-			return
+		if err != nil && err != ErrSubscribed {
+			fm.log.Printf("Error subscribing to feed hublink: %+v\n", err)
 		}
 	}
 
@@ -271,92 +260,6 @@ func (fm *FeedManager) stopUpdatingFeed(f content.Feed) {
 			}
 		}
 	}
-}
-
-func (fm FeedManager) discoverSecureParserFeeds(u *url.URL) (feeds []content.Feed, err error) {
-	if u.Scheme == "http" {
-		fm.log.Debugln("Testing secure link of", u)
-
-		u.Scheme = "https"
-		feeds, err = fm.discoverParserFeeds(u.String())
-		u.Scheme = "http"
-	}
-
-	if u.Scheme != "http" || err != nil {
-		feeds, err = fm.discoverParserFeeds(u.String())
-	}
-
-	return
-}
-
-func (fm FeedManager) discoverParserFeeds(link string) ([]content.Feed, error) {
-	fm.log.Debugf("Fetching feed link body %s\n", link)
-	resp, err := http.Get(link)
-	if err != nil {
-		return []content.Feed{}, err
-	}
-	defer resp.Body.Close()
-
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
-
-	buf.ReadFrom(resp.Body)
-
-	if parserFeed, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
-		fm.log.Debugf("Discovering link %s contains feed data\n", link)
-
-		feed := fm.repo.Feed()
-
-		feed.Data(data.Feed{Link: link})
-		feed.Refresh(fm.processParserFeed(parserFeed))
-
-		return []content.Feed{feed}, nil
-	} else {
-		fm.log.Debugf("Searching for html links within the discovering link %s\n", link)
-
-		html := commentPattern.ReplaceAllString(buf.String(), "")
-		links := linkPattern.FindAllStringSubmatch(html, -1)
-
-		feeds := []content.Feed{}
-		for _, l := range links {
-			attrs := l[1]
-			if strings.Contains(attrs, `"application/rss+xml"`) || strings.Contains(attrs, `'application/rss+xml'`) {
-				index := strings.Index(attrs, "href=")
-				attr := attrs[index+6:]
-				index = strings.IndexByte(attr, attrs[index+5])
-				href := attr[:index]
-
-				if u, err := url.Parse(href); err != nil {
-					return []content.Feed{}, ErrNoFeed
-				} else {
-					if !u.IsAbs() {
-						l, _ := url.Parse(link)
-
-						u.Scheme = l.Scheme
-
-						if u.Host == "" {
-							u.Host = l.Host
-						}
-
-						href = u.String()
-					}
-
-					fs, err := fm.discoverParserFeeds(href)
-					if err != nil {
-						return []content.Feed{}, err
-					}
-
-					feeds = append(feeds, fs[0])
-				}
-			}
-		}
-
-		if len(feeds) != 0 {
-			return feeds, nil
-		}
-	}
-
-	return []content.Feed{}, ErrNoFeed
 }
 
 func (fm FeedManager) updateFeed(f content.Feed) {

@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/urandom/webfw/util"
+	"github.com/urandom/readeef/pool"
 )
 
 type GoogleP struct{}
@@ -25,8 +25,8 @@ type googlepResult struct {
 func (f GoogleP) Score(link string) (int64, error) {
 	var score int64 = -1
 
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
 
 	request := map[string]interface{}{
 		"method":     "pos.plusones.get",

@@ -10,7 +10,7 @@ import (
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
-	"github.com/urandom/webfw/util"
+	"github.com/urandom/readeef/pool"
 )
 
 type Hubbub struct {
@@ -21,7 +21,7 @@ type Hubbub struct {
 	client        *http.Client
 	log           Logger
 	subscriptions []content.Subscription
-	monitor       content.FeedMonitor
+	feedManager   *FeedManager
 }
 
 type SubscriptionError struct {
@@ -36,21 +36,17 @@ var (
 	ErrNotSubscribed = errors.New("Feed is not subscribed")
 )
 
-func NewHubbub(c config.Config, l Logger, endpoint string, monitor content.FeedMonitor) *Hubbub {
+func NewHubbub(c config.Config, l Logger, endpoint string, feedManager *FeedManager) *Hubbub {
 
 	return &Hubbub{
 		config: c, log: l, endpoint: endpoint,
 		subscribe: make(chan content.Subscription), unsubscribe: make(chan content.Subscription),
-		client:  NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite),
-		monitor: monitor}
+		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite),
+		feedManager: feedManager}
 }
 
-func (h *Hubbub) ProcessFeedUpdate(feed content.Feed) error {
-	if err := h.monitor.FeedUpdated(feed); err != nil {
-		return errors.WithMessage(err, "notifying monitor of updated feed")
-	}
-
-	return nil
+func (h *Hubbub) ProcessFeedUpdate(feed content.Feed) {
+	h.feedManager.processFeedUpdateMonitors(feed)
 }
 
 func (h *Hubbub) Subscribe(f content.Feed) error {
@@ -208,8 +204,8 @@ func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe b
 	}
 	body.Set("hub.topic", fdata.Link)
 
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
 
 	buf.WriteString(body.Encode())
 	req, _ := http.NewRequest("POST", s.Data().Link, buf)
@@ -239,8 +235,6 @@ func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe b
 		if f.HasErr() {
 			h.log.Printf("Error updating feed database record for '%s': %s\n", f, f.Err())
 		}
-
-		h.monitor.FeedDeleted(f)
 	}
 }
 

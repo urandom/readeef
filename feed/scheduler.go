@@ -1,0 +1,164 @@
+package feed
+
+import (
+	"bytes"
+	"context"
+	"crypto/md5"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/parser"
+	"github.com/urandom/readeef/pool"
+)
+
+type Scheduler struct {
+	ops    chan feedOp
+	client *http.Client
+}
+
+type UpdateData struct {
+	Feed    parser.Feed
+	message string
+}
+
+func NewScheduler() Scheduler {
+	return Scheduler{
+		ops:    make(chan feedOp),
+		client: &http.Client{Timeout: 30 * time.Second},
+	}
+}
+
+type feedOp func(feedMap)
+type feedMap map[data.FeedId]schedulePayload
+
+type schedulePayload struct {
+	feed       content.Feed
+	update     time.Duration
+	updateData chan UpdateData
+}
+
+func (s Scheduler) ScheduleFeed(ctx context.Context, feed content.Feed, update time.Duration) <-chan UpdateData {
+	ret := make(chan UpdateData)
+
+	s.ops <- func(feedMap feedMap) {
+		if _, ok := feedMap[feed.Data().Id]; ok {
+			return
+		}
+
+		payload := schedulePayload{
+			feed:       feed,
+			update:     update,
+			updateData: ret,
+		}
+		feedMap[feed.Data().Id] = payload
+
+		go s.updateFeed(ctx, payload, []byte{})
+	}
+
+	return ret
+}
+
+func (s Scheduler) unscheduleFeed(ctx context.Context, feed content.Feed) {
+	s.ops <- func(feedMap feedMap) {
+		payload := feedMap[feed.Data().Id]
+		close(payload.updateData)
+
+		delete(feedMap, feed.Data().Id)
+	}
+}
+
+func (s Scheduler) updateFeed(ctx context.Context, payload schedulePayload, contentHash []byte) {
+	select {
+	case <-ctx.Done():
+		s.unscheduleFeed(ctx, payload.feed)
+		return
+	default:
+		var data UpdateData
+		in := payload.feed.Data()
+		now := time.Now()
+
+		if len(contentHash) == 0 || (!in.SkipHours[now.Hour()] && !in.SkipDays[now.Weekday().String()]) {
+			data, contentHash = s.downloadFeed(payload, contentHash)
+		}
+
+		if data.isUpdated() {
+			select {
+			case <-ctx.Done():
+				s.unscheduleFeed(ctx, payload.feed)
+				return
+			default:
+				payload.updateData <- data
+
+				<-time.After(payload.update)
+				s.updateFeed(ctx, payload, contentHash)
+			}
+		}
+	}
+}
+
+func (s Scheduler) downloadFeed(payload schedulePayload, contentHash []byte) (UpdateData, []byte) {
+	feed := payload.feed
+	data := feed.Data()
+
+	resp, err := s.client.Get(data.Link)
+
+	if err != nil {
+		return UpdateData{message: err.Error()}, contentHash
+	} else if resp.StatusCode != http.StatusOK {
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
+
+		return UpdateData{message: "HTTP Status: " + strconv.Itoa(resp.StatusCode)}, contentHash
+	} else {
+		defer resp.Body.Close()
+
+		buf := pool.Buffer.Get()
+		defer pool.Buffer.Put(buf)
+
+		if _, err := buf.ReadFrom(resp.Body); err == nil {
+			hash := md5.Sum(buf.Bytes())
+			if bytes.Equal(contentHash, hash[:]) {
+				return UpdateData{}, contentHash
+			}
+
+			contentHash = hash[:]
+			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
+				return UpdateData{Feed: pf}, contentHash
+			} else {
+				return UpdateData{message: err.Error()}, contentHash
+			}
+		} else {
+			return UpdateData{message: err.Error()}, contentHash
+		}
+	}
+}
+
+func (u UpdateData) isUpdated() bool {
+	return len(u.Feed.Articles) > 0 && !u.IsErr()
+}
+
+func (u UpdateData) IsErr() bool {
+	return u.message != ""
+}
+
+func (u UpdateData) Error() string {
+	return u.message
+}
+
+func (s Scheduler) loop(ctx context.Context) {
+	feedMap := feedMap{}
+
+	for {
+		select {
+		case op := <-s.ops:
+			op(feedMap)
+		case <-ctx.Done():
+			return
+		}
+	}
+}

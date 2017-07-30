@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"path"
 	"strconv"
@@ -11,14 +10,13 @@ import (
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/parser"
-	"github.com/urandom/webfw/util"
+	"github.com/urandom/readeef/pool"
 )
 
 func hubbubRegistration(
 	hubbub *readeef.Hubbub,
 	repo content.Repo,
-	addFeed chan<- content.Feed,
-	removeFeed chan<- content.Feed,
+	feedManager *readeef.FeedManager,
 	log readeef.Logger,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -48,10 +46,12 @@ func hubbubRegistration(
 				data.LeaseDuration = int64(lease) * int64(time.Second)
 			}
 			data.VerificationTime = time.Now()
+			data.SubscriptionFailure = false
 
 			w.Write([]byte(params.Get("hub.challenge")))
 		case "unsubscribe":
-			// Nothing to do here, the subscription will be removed along with the feed by the manager
+			data.SubscriptionFailure = true
+
 			w.Write([]byte(params.Get("hub.challenge")))
 		case "denied":
 			w.Write([]byte{})
@@ -59,15 +59,13 @@ func hubbubRegistration(
 		default:
 			w.Write([]byte{})
 
-			buf := util.BufferPool.GetBuffer()
-			defer util.BufferPool.Put(buf)
+			buf := pool.Buffer.Get()
+			defer pool.Buffer.Put(buf)
 
 			if _, err := buf.ReadFrom(r.Body); err != nil {
 				log.Print(err)
 				return
 			}
-
-			newArticles := false
 
 			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
 				f.Refresh(pf)
@@ -77,41 +75,21 @@ func hubbubRegistration(
 					log.Print(f.Err())
 					return
 				}
-
-				newArticles = len(f.NewArticles()) > 0
 			} else {
 				log.Print(err)
 				return
 			}
 
-			if newArticles {
-				if err := hubbub.ProcessFeedUpdate(f); err != nil {
-					+log.Printf("Error processing feed update for '%s': %v\n", f, err)
-
-				}
-			}
+			hubbub.ProcessFeedUpdate(f)
 
 			return
-		}
-
-		switch params.Get("hub.mode") {
-		case "subscribe":
-			data.SubscriptionFailure = false
-		case "unsubscribe", "denied":
-			data.SubscriptionFailure = true
 		}
 
 		s.Data(data)
 		s.Update()
 		if s.HasErr() {
-			log.Print(fmt.Errorf("Error updating subscription %s: %v\n", s, s.Err()))
+			log.Printf("Error updating subscription %s: %+v\n", s, s.Err())
 			return
-		}
-
-		if data.SubscriptionFailure {
-			removeFeed <- f
-		} else {
-			addFeed <- f
 		}
 	}
 }

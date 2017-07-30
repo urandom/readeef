@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/parser"
-	"github.com/urandom/webfw/util"
+	"github.com/urandom/readeef/pool"
 )
 
 type ProxyHTTP struct {
@@ -151,8 +151,8 @@ func processUrl(link string, urlTemplate *template.Template, articleLink string)
 		}
 	}
 
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
 
 	if err := urlTemplate.Execute(buf, url.QueryEscape(u.String())); err != nil {
 		return "", err

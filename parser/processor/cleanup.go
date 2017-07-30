@@ -6,7 +6,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/parser"
-	"github.com/urandom/webfw/util"
+	"github.com/urandom/readeef/pool"
 	"golang.org/x/net/html"
 )
 
@@ -30,8 +30,8 @@ func (p Cleanup) Process(f parser.Feed) parser.Feed {
 					break
 				}
 
-				buf := util.BufferPool.GetBuffer()
-				defer util.BufferPool.Put(buf)
+				buf := pool.Buffer.Get()
+				defer pool.Buffer.Put(buf)
 
 				for _, n := range nodes {
 					err = html.Render(buf, n)

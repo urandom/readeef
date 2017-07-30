@@ -14,7 +14,7 @@ import (
 	"github.com/urandom/readeef/content/base"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/db"
-	"github.com/urandom/webfw/util"
+	"github.com/urandom/readeef/pool"
 )
 
 type Feed struct {
@@ -254,8 +254,8 @@ func (f *Feed) SetNewArticlesUnread() {
 		placeholders[i] = fmt.Sprintf("$%d", i+2)
 	}
 
-	buf := util.BufferPool.GetBuffer()
-	defer util.BufferPool.Put(buf)
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
 
 	data := readStateInsertFeedData{NewArticleIds: strings.Join(placeholders, ", ")}
 
