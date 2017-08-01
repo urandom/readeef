@@ -1,6 +1,7 @@
 package base
 
 func init() {
+	sqlStmts.Article.GetArticlesTemplate = getArticlesUserlessTemplate
 	sqlStmts.User.GetArticlesTemplate = getArticlesTemplate
 	sqlStmts.User.GetArticlesScoreJoin = getArticlesScoreJoin
 	sqlStmts.User.GetArticlesUntaggedJoin = getArticlesUntaggedJoin
@@ -27,6 +28,19 @@ func init() {
 }
 
 const (
+	getArticlesUserlessTemplate = `
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
+	COALESCE(at.thumbnail, '') as thumbnail,
+	COALESCE(at.link, '') as thumbnail_link
+	{{ .Columns }}
+FROM articles a
+{{ .Join }}
+LEFT OUTER JOIN articles_thumbnails at
+    ON a.id = at.article_id
+{{ .Where }}
+{{ .Order }}
+{{ .Limit }}
+`
 	getArticlesTemplate = `
 SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 	CASE WHEN au.article_id IS NULL THEN 1 ELSE 0 END AS read,

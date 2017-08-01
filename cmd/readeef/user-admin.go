@@ -12,6 +12,7 @@ import (
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/content/repo/sql"
 )
 
 var (
@@ -19,89 +20,94 @@ var (
 )
 
 func runUserAdmin(config config.Config, args []string) error {
-	log := readeef.NewLogger(config.Log)
-	repo, err := repo.New(config.DB.Driver, config.DB.Connect, log)
-	if err != nil {
-		return errors.WithMessage(err, "creating content repo")
-	}
-
 	if len(args) == 0 {
 		return errors.New("no command")
 	}
 
+	log := readeef.NewLogger(config.Log)
+	service, err := sql.NewService(config.DB.Driver, config.DB.Connect, log)
+	if err != nil {
+		return errors.WithMessage(err, "creating content repo")
+	}
+
 	if f, ok := userAdminCommands[args[0]]; ok {
-		return f(args[1:], repo, config, log)
+		return f(args[1:], service, config, log)
 	}
 
 	return errors.Errorf("unknown command %s", args[0])
 }
 
-func userAdminAdd(args []string, repo content.Repo, config config.Config, log readeef.Logger) error {
+func userAdminAdd(args []string, service repo.Service, config config.Config, log readeef.Logger) error {
 	if len(args) != 2 {
 		return errors.New("invalid number of arguments")
 	}
 
-	u := repo.User()
-	i := u.Data()
+	u := content.User{}
 
-	i.Login = data.Login(args[0])
-	i.Active = true
+	u.Login = data.Login(args[0])
+	u.Active = true
 
-	u.Data(i)
-	u.Password(args[1], []byte(config.Auth.Secret))
+	err := u.Password(args[1], []byte(config.Auth.Secret))
+	if err == nil {
+		err == service.UserRepo().Update(u)
+	}
 
-	if u.HasErr() {
-		return errors.WithMessage(u.Err(), "creating user")
+	if err != nil {
+		return errors.WithMessage(err, "creating admin user")
 	}
 
 	return nil
 }
 
-func userAdminRemove(args []string, repo content.Repo, config config.Config, log readeef.Logger) error {
+func userAdminRemove(args []string, service repo.Service, config config.Config, log readeef.Logger) error {
 	if len(args) != 1 {
 		return errors.New("invalid number of arguments")
 	}
 
-	u := repo.UserByLogin(data.Login(args[0]))
-	u.Delete()
+	repo := service.UserRepo()
 
-	if u.HasErr() {
+	u, err := repo.Get(data.Login(args[0]))
+	if err == nil {
+		err = repo.Delete(u)
+	}
+
+	if err != nil {
 		return errors.WithMessage(u.Err(), "deleting user")
 	}
 
 	return nil
 }
 
-func userAdminGet(args []string, repo content.Repo, config config.Config, log readeef.Logger) error {
+func userAdminGet(args []string, service repo.Service, config config.Config, log readeef.Logger) error {
 	if len(args) != 2 {
 		return errors.New("invalid number of arguments")
 	}
 
-	u := repo.UserByLogin(data.Login(args[0]))
-	if u.HasErr() {
-		return errors.WithMessage(u.Err(), "getting user")
+	u, err := service.UserRepo().Get(content.Login(args[0]))
+	if err != nil {
+		return errors.WithMessage(err, "getting user")
 	}
 
 	prop := strings.ToLower(args[1])
 	switch prop {
 	case "firstname":
-		fmt.Println(u.Data().FirstName)
+		fmt.Println(u.FirstName)
 	case "lastname":
-		fmt.Println(u.Data().LastName)
+		fmt.Println(u.LastName)
 	case "email":
-		fmt.Println(u.Data().Email)
+		fmt.Println(u.Email)
 	case "hashtype":
-		fmt.Println(u.Data().HashType)
+		fmt.Println(u.HashType)
 	case "salt":
-		fmt.Println(u.Data().Salt)
+		fmt.Println(u.Salt)
 	case "hash":
-		fmt.Println(u.Data().Hash)
+		fmt.Println(u.Hash)
 	case "md5api":
-		fmt.Println(u.Data().MD5API)
+		fmt.Println(u.MD5API)
 	case "admin":
-		fmt.Println(u.Data().Admin)
+		fmt.Println(u.Admin)
 	case "active":
-		fmt.Println(u.Data().Active)
+		fmt.Println(u.Active)
 	default:
 		return errors.Errorf("unknown property %s", args[1])
 	}
@@ -109,35 +115,34 @@ func userAdminGet(args []string, repo content.Repo, config config.Config, log re
 	return nil
 }
 
-func userAdminSet(args []string, repo content.Repo, config config.Config, log readeef.Logger) error {
+func userAdminSet(args []string, service repo.Service, config config.Config, log readeef.Logger) error {
 	if len(args) != 3 {
 		return errors.New("invalid number of arguments")
 	}
 
-	u := repo.UserByLogin(data.Login(args[0]))
-	if u.HasErr() {
-		return errors.WithMessage(u.Err(), "getting user")
+	repo := service.UserRepo()
+	u, err := repo.Get(data.Login(args[0]))
+	if err != nil {
+		return errors.WithMessage(err, "getting user")
 	}
-
-	in := u.Data()
 
 	prop := strings.ToLower(args[1])
 	switch prop {
 	case "firstname":
-		in.FirstName = args[2]
+		u.FirstName = args[2]
 	case "lastname":
-		in.LastName = args[2]
+		u.LastName = args[2]
 	case "email":
-		in.Email = args[2]
+		u.Email = args[2]
 	case "admin", "active":
 		enabled := false
 		if args[2] == "1" || args[2] == "true" || args[2] == "on" {
 			enabled = true
 		}
 		if prop == "admin" {
-			in.Admin = enabled
+			u.Admin = enabled
 		} else {
-			in.Active = enabled
+			u.Active = enabled
 		}
 	case "password":
 		u.Password(args[2], []byte(config.Auth.Secret))
@@ -145,49 +150,45 @@ func userAdminSet(args []string, repo content.Repo, config config.Config, log re
 		return errors.Errorf("unknown property %s", args[1])
 	}
 
-	u.Data(in)
-	u.Update()
-
-	if u.HasErr() {
+	if err = repo.Update(u); err != nil {
 		return errors.WithMessage(u.Err(), "updating user")
 	}
 
 	return nil
 }
 
-func userAdminList(args []string, repo content.Repo, config config.Config, log readeef.Logger) error {
-	users := repo.AllUsers()
-	if repo.HasErr() {
-		return errors.WithMessage(repo.Err(), "getting all users")
+func userAdminList(args []string, service repo.Service, config config.Config, log readeef.Logger) error {
+	users, err := service.UserRepo().All()
+	if err != nil {
+		return errors.WithMessage(err, "getting all users")
 	}
 
 	for _, u := range users {
-		fmt.Println(u.Data().Login)
+		fmt.Println(u.Login)
 	}
 
 	return nil
 }
 
-func userAdminListDetailed(args []string, repo content.Repo, config config.Config, log readeef.Logger) error {
-	users := repo.AllUsers()
-	if repo.HasErr() {
-		return errors.WithMessage(repo.Err(), "getting all users")
+func userAdminListDetailed(args []string, service repo.Service, config config.Config, log readeef.Logger) error {
+	users, err := service.UserRepo().All()
+	if err != nil {
+		return errors.WithMessage(err, "getting all users")
 	}
 
 	for _, u := range users {
-		in := u.Data()
-		fmt.Printf("Login: %s", in.Login)
-		if in.FirstName != "" {
-			fmt.Printf(", first name: %s", in.FirstName)
+		fmt.Printf("Login: %s", u.Login)
+		if u.FirstName != "" {
+			fmt.Printf(", first name: %s", u.FirstName)
 		}
-		if in.LastName != "" {
-			fmt.Printf(", last name: %s", in.LastName)
+		if u.LastName != "" {
+			fmt.Printf(", last name: %s", u.LastName)
 		}
-		if in.Email != "" {
-			fmt.Printf(", email: %s", in.Email)
+		if u.Email != "" {
+			fmt.Printf(", email: %s", u.Email)
 		}
-		if in.HashType != "" {
-			fmt.Printf(", has type: %s", in.HashType)
+		if u.HashType != "" {
+			fmt.Printf(", has type: %s", u.HashType)
 		}
 		fmt.Printf("\n")
 	}

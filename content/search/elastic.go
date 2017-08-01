@@ -10,8 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/base"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 )
 
 const (
@@ -20,14 +19,14 @@ const (
 )
 
 type Elastic struct {
-	base.ArticleSorting
 	client    *elastic.Client
 	log       readeef.Logger
 	newIndex  bool
 	batchSize int64
+	service   repo.Service
 }
 
-func NewElastic(url string, size int64, log readeef.Logger) (content.SearchProvider, error) {
+func NewElastic(url string, size int64, service repo.Service, log readeef.Logger) (content.SearchProvider, error) {
 	var client *elastic.Client
 	var exists bool
 
@@ -44,33 +43,23 @@ func NewElastic(url string, size int64, log readeef.Logger) (content.SearchProvi
 		}
 	}
 
-	return &Elastic{client: client, log: log, batchSize: size, newIndex: !exists}, nil
+	return &Elastic{client: client, log: log, batchSize: size, service: service, newIndex: !exists}, nil
 }
 
 func (e Elastic) IsNewIndex() bool {
 	return e.newIndex
 }
 
-func (e Elastic) IndexAllFeeds(repo content.Repo) error {
-	e.log.Infoln("Indexing all articles")
-
-	for _, f := range repo.AllFeeds() {
-		articles := f.AllArticles()
-		if f.HasErr() {
-			return f.Err()
-		}
-
-		if err := e.BatchIndex(articles, data.BatchAdd); err != nil {
-			return err
-		}
-	}
-
-	return repo.Err()
-}
-
 func (e Elastic) Search(
-	term string, u content.User, feedIds []data.FeedId, limit, offset int,
+	term string,
+	u content.User,
+	feedIDs []content.FeedID,
+	opts ...content.QueryOpts,
 ) (ua []content.UserArticle, err error) {
+
+	o := content.QueryOptions{}
+	o.Apply(opts)
+
 	search := e.client.Search().Index(elasticIndexName)
 
 	var query elastic.Query
@@ -80,25 +69,32 @@ func (e Elastic) Search(
 	}
 	query = elastic.NewCommonTermsQuery("_all", term)
 
-	if len(feedIds) > 0 {
-		idFilter := elastic.NewBoolQuery()
-
-		for _, id := range feedIds {
-			idFilter = idFilter.Should(elastic.NewTermQuery("feed_id", int64(id)))
+	if len(feedIDs) == 0 {
+		var err error
+		if feedIDs, err = b.service.FeedRepo().IDs(); err != nil {
+			return []content.Article{}, errors.WithMessage(err, "getting feed ids")
+		} else if len(feedIDs) == 0 {
+			return []content.Article{}, nil
 		}
-
-		query = elastic.NewBoolQuery().Must(query).Filter(idFilter)
 	}
+
+	idFilter := elastic.NewBoolQuery()
+
+	for _, id := range feedIDs {
+		idFilter = idFilter.Should(elastic.NewTermQuery("feed_id", int64(id)))
+	}
+
+	query = elastic.NewBoolQuery().Must(query).Filter(idFilter)
 
 	search.Query(query)
 	search.Highlight(elastic.NewHighlight().PreTags("<mark>").PostTags("</mark>").Field("title").Field("description"))
-	search.From(offset).Size(limit)
+	search.From(o.Offset).Size(o.Limit)
 
-	switch e.Field() {
-	case data.SortByDate:
-		search.Sort("date", e.Order() == data.AscendingOrder)
-	case data.SortById, data.DefaultSort:
-		search.Sort("article_id", e.Order() == data.AscendingOrder)
+	switch o.SortField {
+	case content.SortByDate:
+		search.Sort("date", o.SortOrder == content.AscendingOrder)
+	case content.SortById, content.DefaultSort:
+		search.Sort("article_id", o.SortOrder == content.AscendingOrder)
 	}
 
 	var res *elastic.SearchResult
@@ -112,46 +108,43 @@ func (e Elastic) Search(
 		return
 	}
 
-	articleIds := []data.ArticleId{}
-	highlightMap := map[data.ArticleId]elastic.SearchHitHighlight{}
+	articleIDs := []content.ArticleID{}
+	highlightMap := map[content.ArticleID]elastic.SearchHitHighlight{}
 
 	if res.Hits != nil && res.Hits.Hits != nil {
 		for _, hit := range res.Hits.Hits {
 			a := indexArticle{}
 			if err := json.Unmarshal(*hit.Source, &a); err == nil {
-				if id, err := strconv.ParseInt(a.ArticleId, 10, 64); err == nil {
-					articleId := data.ArticleId(id)
-					articleIds = append(articleIds, articleId)
-					highlightMap[articleId] = hit.Highlight
+				if id, err := strconv.ParseInt(a.ArticleID, 10, 64); err == nil {
+					articleID := content.ArticleId(id)
+					articleIDs = append(articleIDs, articleID)
+					highlightMap[articleID] = hit.Highlight
 				}
 			}
 		}
 	}
 
-	ua = u.ArticlesById(articleIds)
-	if u.HasErr() {
-		return ua, u.Err()
+	articles, err := b.service.ArticleRepo().All(content.IDs(articleIDs))
+	if err != nil {
+		return []content.Article{}, errors.WithMessage(err, "getting articles by ids")
 	}
 
-	for i := range ua {
-		data := ua[i].Data()
-
-		if highlight, ok := highlightMap[data.Id]; ok {
-			data.Hit.Fragments = map[string][]string{}
+	for i := range articles {
+		if highlight, ok := highlightMap[articles[i].ID]; ok {
+			articles[i].Hit.Fragments = map[string][]string{}
 			if len(highlight["title"]) > 0 {
-				data.Hit.Fragments["Title"] = highlight["title"]
+				articles[i].Hit.Fragments["Title"] = highlight["title"]
 			}
 			if len(highlight["description"]) > 0 {
-				data.Hit.Fragments["Description"] = highlight["description"]
+				articles[i].Hit.Fragments["Description"] = highlight["description"]
 			}
-			ua[i].Data(data)
 		}
 	}
 
-	return
+	return articles, nil
 }
 
-func (e Elastic) BatchIndex(articles []content.Article, op data.IndexOperation) error {
+func (e Elastic) BatchIndex(articles []content.Article, op indexOperation) error {
 	if len(articles) == 0 {
 		return nil
 	}
@@ -160,19 +153,19 @@ func (e Elastic) BatchIndex(articles []content.Article, op data.IndexOperation) 
 	count := int64(0)
 
 	for i := range articles {
-		d := articles[i].Data()
+		a := articles[i]
 
 		var req elastic.BulkableRequest
 		switch op {
-		case data.BatchAdd:
-			e.log.Debugf("Indexing article '%d' of feed id '%d'\n", d.Id, d.FeedId)
+		case BatchAdd:
+			e.log.Debugf("Indexing article '%d' of feed id '%d'\n", a.Id, a.FeedId)
 
-			id, doc := prepareArticle(d)
+			id, doc := prepareArticle(a)
 			req = elastic.NewBulkIndexRequest().Index(elasticIndexName).Type(elasticArticleType).Id(id).Doc(doc)
-		case data.BatchDelete:
-			e.log.Debugf("Removing article '%d' of feed id '%d' from the index\n", d.Id, d.FeedId)
+		case BatchDelete:
+			e.log.Debugf("Removing article '%d' of feed id '%d' from the index\n", a.Id, a.FeedId)
 
-			req = elastic.NewBulkDeleteRequest().Index(elasticIndexName).Type(elasticArticleType).Id(strconv.FormatInt(int64(d.Id), 10))
+			req = elastic.NewBulkDeleteRequest().Index(elasticIndexName).Type(elasticArticleType).Id(strconv.FormatInt(int64(a.Id), 10))
 		default:
 			return errors.Errorf("unknown operation type %v", op)
 		}

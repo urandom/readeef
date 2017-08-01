@@ -42,18 +42,18 @@ func main() {
 					config, exists, legacyErr := legacy.ReadConfig(*configPath)
 
 					if legacyErr != nil {
-						log.Fatalf("Error reading config %s: %+v\n", *configPath, err)
+						log.Fatalf("Error reading config %s: %+v", *configPath, err)
 					}
 
 					if exists {
 						if err = saveLegacyConfig(config, *configPath); err != nil {
-							log.Fatalf("Error saving converted legacy config %s: %+v\n", *configPath, err)
+							log.Fatalf("Error saving converted legacy config %s: %+v", *configPath, err)
 						}
 					}
 				}
 
 				if err := cmd.Run(config, cmd.Flags.Args()); err != nil {
-					log.Fatalf("Error running %s: %+v\n", cmd.Name, err)
+					log.Fatalf("Error running %s: %+v", cmd.Name, err)
 				}
 
 				os.Exit(0)

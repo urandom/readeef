@@ -6,7 +6,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/config"
-	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/content/repo/sql"
+	"github.com/urandom/readeef/content/search"
 )
 
 var (
@@ -19,9 +20,9 @@ func runSearchIndex(config config.Config, args []string) error {
 	}
 
 	log := readeef.NewLogger(config.Log)
-	repo, err := repo.New(config.DB.Driver, config.DB.Connect, log)
+	service, err := sql.NewService(config.DB.Driver, config.DB.Connect, log)
 	if err != nil {
-		return errors.WithMessage(err, "creating content repo")
+		return errors.WithMessage(err, "creating content service")
 	}
 
 	searchProvider := initSearchProvider(config.Content, repo, log)
@@ -31,7 +32,7 @@ func runSearchIndex(config config.Config, args []string) error {
 
 	log.Info("Starting feed indexing")
 
-	if err := searchProvider.IndexAllFeeds(repo); err != nil {
+	if err := search.Reindex(searchProvider, service.ArticleRepo()); err != nil {
 		return errors.WithMessage(err, "indexing all feeds")
 	}
 

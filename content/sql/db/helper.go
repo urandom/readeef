@@ -6,7 +6,7 @@ type Helper interface {
 	SQL() SqlStmts
 	InitSQL() []string
 
-	CreateWithId(tx *sqlx.Tx, sql string, args ...interface{}) (int64, error)
+	CreateWithID(tx *sqlx.Tx, sql string, args ...interface{}) (int64, error)
 	Upgrade(db *DB, old, new int) error
 }
 
@@ -30,6 +30,8 @@ type ArticleStmts struct {
 	GetExtract    string
 	CreateExtract string
 	UpdateExtract string
+
+	GetArticlesTemplate string
 }
 
 type FeedStmts struct {

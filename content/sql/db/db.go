@@ -34,11 +34,11 @@ func (db *DB) Open(driver, connect string) (err error) {
 	return
 }
 
-func (db *DB) CreateWithId(tx *sqlx.Tx, sql string, args ...interface{}) (int64, error) {
+func (db *DB) CreateWithID(tx *sqlx.Tx, sql string, args ...interface{}) (int64, error) {
 	driver := db.DriverName()
 
 	if h, ok := helpers[driver]; ok {
-		return h.CreateWithId(tx, sql, args...)
+		return h.CreateWithID(tx, sql, args...)
 	} else {
 		panic("No helper registered for " + driver)
 	}

@@ -262,7 +262,7 @@ func initParserProcessors(names []string, proxyTemplate string, log readeef.Logg
 	return processors, nil
 }
 
-func initSearchProvider(config config.Content, repo content.Repo, log readeef.Logger) content.SearchProvider {
+func initSearchProvider(config config.Content, service repo.Service, log readeef.Logger) content.SearchProvider {
 	var searchProvider content.SearchProvider
 	var err error
 
@@ -290,7 +290,9 @@ func initSearchProvider(config config.Content, repo content.Repo, log readeef.Lo
 	if searchProvider != nil {
 		if searchProvider.IsNewIndex() {
 			go func() {
-				searchProvider.IndexAllFeeds(repo)
+				if err := search.Reindex(searchProvider, service.ArticleRepo()); err != nil {
+					log.Printf("Error reindexing all articles: %+v", err)
+				}
 			}()
 		}
 	}

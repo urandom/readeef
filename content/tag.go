@@ -1,12 +1,14 @@
 package content
 
-import (
-	"encoding/json"
-	"fmt"
+type TagID int64
+type TagValue string
 
-	"github.com/urandom/readeef/content/data"
-)
+type Tag struct {
+	ID    TagId    `json:"id"`
+	Value TagValue `json:"value"`
+}
 
+/*
 type Tag interface {
 	Error
 	ArticleSearch
@@ -22,3 +24,4 @@ type Tag interface {
 
 	AllFeeds() []TaggedFeed
 }
+*/

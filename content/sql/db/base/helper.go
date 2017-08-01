@@ -48,7 +48,7 @@ func (h Helper) Upgrade(db *db.DB, old, new int) error {
 	return nil
 }
 
-func (h Helper) CreateWithId(tx *sqlx.Tx, sql string, args ...interface{}) (int64, error) {
+func (h Helper) CreateWithID(tx *sqlx.Tx, sql string, args ...interface{}) (int64, error) {
 	var id int64
 
 	stmt, err := tx.Preparex(sql)

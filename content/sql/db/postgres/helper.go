@@ -20,7 +20,7 @@ func (h Helper) InitSQL() []string {
 	return initSQL
 }
 
-func (h Helper) CreateWithId(tx *sqlx.Tx, sql string, args ...interface{}) (int64, error) {
+func (h Helper) CreateWithID(tx *sqlx.Tx, sql string, args ...interface{}) (int64, error) {
 	var id int64
 
 	sql += " RETURNING id"
