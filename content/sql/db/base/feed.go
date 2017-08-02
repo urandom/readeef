@@ -1,6 +1,7 @@
 package base
 
 func init() {
+	sqlStmts.Feed.IDs = feedIDs
 	sqlStmts.Feed.Create = createFeed
 	sqlStmts.Feed.Update = updateFeed
 	sqlStmts.Feed.Delete = deleteFeed
@@ -16,6 +17,7 @@ func init() {
 }
 
 const (
+	feedIDs    = `SELECT id FROM feeds`
 	createFeed = `
 INSERT INTO feeds(link, title, description, hub_link, site_link, update_error, subscribe_error)
 	SELECT $1, $2, $3, $4, $5, $6, $7 EXCEPT SELECT link, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds WHERE link = $1`

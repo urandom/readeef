@@ -24,9 +24,10 @@ import (
 	"github.com/urandom/readeef/content/base/monitor"
 	contentProcessor "github.com/urandom/readeef/content/base/processor"
 	"github.com/urandom/readeef/content/base/search"
-	"github.com/urandom/readeef/content/base/thumbnailer"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/extract"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/content/repo/sql"
+	"github.com/urandom/readeef/content/thumbnail"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/parser/processor"
 	"github.com/urandom/readeef/web"
@@ -58,22 +59,16 @@ func runServer(config config.Config, args []string) error {
 
 	log := initLog(config.Log)
 
-	repo, err := repo.New(config.DB.Driver, config.DB.Connect, log)
+	service, err := sql.NewService(config.DB.Driver, config.DB.Connect, log)
 	if err != nil {
-		return errors.WithMessage(err, "creating content repo")
+		return errors.WithMessage(err, "creating content service")
 	}
 
-	if processors, err := initArticleProcessors(config.Content.ArticleProcessors, config.Content.ProxyHTTPURLTemplate, log); err == nil {
-		repo.ArticleProcessors(processors)
-	} else {
-		return errors.WithMessage(err, "initializing article processors")
-	}
-
-	if err = initAdminUser(repo, []byte(config.Auth.Secret)); err != nil {
+	if err = initAdminUser(service.UserRepo(), []byte(config.Auth.Secret)); err != nil {
 		return errors.WithMessage(err, "initializing admin user")
 	}
 
-	feedManager := readeef.NewFeedManager(repo, config, log)
+	feedManager := readeef.NewFeedManager(service.FeedRepo(), config, log)
 
 	if processors, err := initParserProcessors(config.FeedParser.Processors, config.FeedParser.ProxyHTTPURLTemplate, log); err == nil {
 		for _, p := range processors {
@@ -83,24 +78,27 @@ func runServer(config config.Config, args []string) error {
 		return errors.WithMessage(err, "initializing parser processors")
 	}
 
-	searchProvider := initSearchProvider(config.Content, repo, log)
+	searchProvider := initSearchProvider(config.Content, service.ArticleRepo(), log)
 
-	extractor, err := initContentExtractor(config.Content, fs)
+	extractor, err := initArticleExtractor(config.Content, fs)
 	if err != nil {
-		return errors.WithMessage(err, "initializing content extractor")
+		return errors.WithMessage(err, "initializing content extract generator")
 	}
 
-	thumbnailer, err := initThumbnailer(config.Content, extractor, log)
+	thumbnailer, err := initThumbnailGenerator(config.Content, extractor, log)
 	if err != nil {
-		return errors.Wrap(err, "initializing thumbnailer")
+		return errors.Wrap(err, "initializing thumbnail generator")
 	}
 
-	monitors := initFeedMonitors(config.FeedManager, repo, searchProvider, thumbnailer, log)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	monitors := initFeedMonitors(ctx, config.FeedManager, repo, searchProvider, thumbnailer, log)
 	for _, m := range monitors {
 		feedManager.AddFeedMonitor(m)
 	}
 
-	hubbub, err := initHubbub(config, repo, monitors, feedManager, log)
+	hubbub, err := initHubbub(config, service, monitors, feedManager, log)
 	if err != nil {
 		return errors.WithMessage(err, "initializing hubbub")
 	}
@@ -109,8 +107,10 @@ func runServer(config config.Config, args []string) error {
 		feedManager.SetHubbub(hubbub)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	articleProcessors, err := initArticleProcessors(config.Content.Article.Processors, config.Content.ProxyHTTPURLTemplate, log)
+	if err != nil {
+		return errors.WithMessage(err, "initializing article processors")
+	}
 
 	handler, err = api.Mux(ctx, repo, feedManager, hubbub, searchProvider, extractor, fs, config, log)
 	if err != nil {
@@ -186,23 +186,21 @@ func initLog(config config.Log) readeef.Logger {
 	return readeef.NewLogger(config)
 }
 
-func initAdminUser(repo content.Repo, secret []byte) error {
-	users := repo.AllUsers()
-	if repo.HasErr() {
-		return errors.Wrap(repo.Err(), "getting all users")
+func initAdminUser(repo repo.User, secret []byte) error {
+	users, err := repo.All()
+	if err != nil {
+		return errors.WithMessage(err, "getting all users")
 	}
 
 	if len(users) > 0 {
 		return nil
 	}
 
-	u := repo.User()
-	u.Data(data.User{Login: data.Login("admin"), Active: true, Admin: true})
+	u := content.User{Login: "admin", Active: true, Admin: true}
 	u.Password("admin", secret)
-	u.Update()
 
-	if u.HasErr() {
-		return errors.Wrap(u.Err(), "updating user")
+	if err = repo.Update(u); err != nil {
+		return errors.WithMessage(err, "updating user")
 	}
 
 	return nil
@@ -262,15 +260,15 @@ func initParserProcessors(names []string, proxyTemplate string, log readeef.Logg
 	return processors, nil
 }
 
-func initSearchProvider(config config.Content, service repo.Service, log readeef.Logger) content.SearchProvider {
-	var searchProvider content.SearchProvider
+func initSearchProvider(config config.Content, repo repo.Article, log readeef.Logger) search.Provider {
+	var searchProvider search.Provider
 	var err error
 
-	switch config.SearchProvider {
+	switch config.Search.Provider {
 	case "elastic":
 		if searchProvider, err = search.NewElastic(
-			config.ElasticURL,
-			config.SearchBatchSize,
+			config.Search.ElasticURL,
+			config.Search.BatchSize,
 			log,
 		); err != nil {
 			log.Printf("Error initializing Elastic search: %+v\n", err)
@@ -279,8 +277,8 @@ func initSearchProvider(config config.Content, service repo.Service, log readeef
 		fallthrough
 	default:
 		if searchProvider, err = search.NewBleve(
-			config.BlevePath,
-			config.SearchBatchSize,
+			config.Search.BlevePath,
+			config.Search.BatchSize,
 			log,
 		); err != nil {
 			log.Printf("Error initializing Bleve search: %+v\n", err)
@@ -290,7 +288,7 @@ func initSearchProvider(config config.Content, service repo.Service, log readeef
 	if searchProvider != nil {
 		if searchProvider.IsNewIndex() {
 			go func() {
-				if err := search.Reindex(searchProvider, service.ArticleRepo()); err != nil {
+				if err := search.Reindex(searchProvider, repo); err != nil {
 					log.Printf("Error reindexing all articles: %+v", err)
 				}
 			}()
@@ -300,13 +298,13 @@ func initSearchProvider(config config.Content, service repo.Service, log readeef
 	return searchProvider
 }
 
-func initContentExtractor(config config.Content, fs http.FileSystem) (content.Extractor, error) {
-	switch config.Extractor {
+func initArticleExtractor(config config.Content, fs http.FileSystem) (extract.Generator, error) {
+	switch config.Extract.Generator {
 	case "readability":
-		if ce, err := extractor.NewReadability(config.ReadabilityKey); err == nil {
+		if ce, err := extractor.NewReadability(config.Extract.ReadabilityKey); err == nil {
 			return ce, nil
 		} else {
-			return nil, errors.WithMessage(err, "initializing Readability extractor")
+			return nil, errors.WithMessage(err, "initializing Readability extract generator")
 		}
 	case "goose":
 		fallthrough
@@ -314,34 +312,35 @@ func initContentExtractor(config config.Content, fs http.FileSystem) (content.Ex
 		if ce, err := extractor.NewGoose("templates", fs); err == nil {
 			return ce, nil
 		} else {
-			return nil, errors.WithMessage(err, "initializing Goose extractor")
+			return nil, errors.WithMessage(err, "initializing Goose extract generator")
 		}
 	}
 }
 
-func initThumbnailer(config config.Content, ce content.Extractor, log readeef.Logger) (content.Thumbnailer, error) {
-	switch config.Thumbnailer {
+func initThumbnailGenerator(config config.Content, extract extract.Generator, log readeef.Logger) (thumbnail.Generator, error) {
+	switch config.ThumbnailGenerator {
 	case "extract":
-		if t, err := thumbnailer.NewExtract(ce, log); err == nil {
+		if t, err := thumbnail.FromExtract(extract, log); err == nil {
 			return t, nil
 		} else {
-			return nil, errors.WithMessage(err, "initializing Extract thumbnailer")
+			return nil, errors.WithMessage(err, "initializing Extract thumbnail generator")
 		}
 	case "description":
 		fallthrough
 	default:
-		return thumbnailer.NewDescription(log), nil
+		return thumbnail.FromDescription(log), nil
 	}
 }
 
 func initFeedMonitors(
+	ctx context.Context,
 	config config.FeedManager,
-	repo content.Repo,
-	searchProvider content.SearchProvider,
+	repo repo.Article,
+	searchProvider search.Provider,
 	thumbnailer content.Thumbnailer,
 	log readeef.Logger,
 ) []content.FeedMonitor {
-	monitors := []content.FeedMonitor{monitor.NewUnread(repo, log)}
+	monitors := []content.FeedMonitor{monitor.NewUnread(ctx, repo, log)}
 
 	for _, m := range config.Monitors {
 		switch m {
@@ -361,7 +360,7 @@ func initFeedMonitors(
 
 func initHubbub(
 	config config.Config,
-	repo content.Repo,
+	service repo.Service,
 	monitors []content.FeedMonitor,
 	feedManager *readeef.FeedManager,
 	log readeef.Logger,
@@ -369,7 +368,7 @@ func initHubbub(
 	if config.Hubbub.CallbackURL != "" {
 		hubbub := readeef.NewHubbub(config, log, "/api/v2/hubbub", feedManager)
 
-		if err := hubbub.InitSubscriptions(repo); err != nil {
+		if err := hubbub.InitSubscriptions(service); err != nil {
 			return nil, errors.WithMessage(err, "initializing hubbub subscriptions")
 		}
 

@@ -1,4 +1,4 @@
-package extractor
+package extract
 
 import (
 	"bytes"
@@ -9,10 +9,9 @@ import (
 	"net/http"
 	"strings"
 
-	goose "github.com/advancedlogic/GoOse"
+	goOse "github.com/advancedlogic/GoOse"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
 )
 
 const (
@@ -20,28 +19,28 @@ const (
 	gooseTmpl = "templates/goose-format-result.tmpl"
 )
 
-type Goose struct {
+type goose struct {
 	template *template.Template
 	buf      bytes.Buffer
 }
 
-func NewGoose(templateDir string, fs http.FileSystem) (content.Extractor, error) {
+func WithGoose(templateDir string, fs http.FileSystem) (content.Extractor, error) {
 	tmpl, err := prepareTemplate(template.New("goose"), fs, rawTmpl, gooseTmpl)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing goose template")
 	}
 
-	return Goose{template: tmpl}, nil
+	return goose{template: tmpl}, nil
 }
 
-func (e Goose) Extract(link string) (data data.ArticleExtract, err error) {
+func (e goose) Extract(link string) (data content.ArticleExtract, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New(fmt.Sprintf("%v", r))
 		}
 	}()
 
-	g := goose.New()
+	g := goOse.New()
 	/* TODO: preserve links */
 	formatted, err := g.ExtractFromURL(link)
 

@@ -4,5 +4,6 @@ package repo
 type Service interface {
 	UserRepo() UserRepo
 	FeedRepo() FeedRepo
+	SubscriptionRepo() SubscriptionRepo
 	ArticleRepo() ArticleRepo
 }

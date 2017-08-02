@@ -25,7 +25,7 @@ func runSearchIndex(config config.Config, args []string) error {
 		return errors.WithMessage(err, "creating content service")
 	}
 
-	searchProvider := initSearchProvider(config.Content, repo, log)
+	searchProvider := initSearchProvider(config.Content, service.ArticleRepo(), log)
 	if searchProvider == nil {
 		return errors.Errorf("unknown search provider %s", config.Content.SearchProvider)
 	}

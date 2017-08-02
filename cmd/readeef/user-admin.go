@@ -27,7 +27,7 @@ func runUserAdmin(config config.Config, args []string) error {
 	log := readeef.NewLogger(config.Log)
 	service, err := sql.NewService(config.DB.Driver, config.DB.Connect, log)
 	if err != nil {
-		return errors.WithMessage(err, "creating content repo")
+		return errors.WithMessage(err, "creating content service")
 	}
 
 	if f, ok := userAdminCommands[args[0]]; ok {

@@ -1,4 +1,4 @@
-package thumbnailer
+package thumbnail
 
 import (
 	"strings"
@@ -9,15 +9,15 @@ import (
 	"github.com/urandom/readeef/content/data"
 )
 
-type Description struct {
+type description struct {
 	log readeef.Logger
 }
 
-func NewDescription(l readeef.Logger) content.Thumbnailer {
-	return Description{log: l}
+func FromDescription(l readeef.Logger) content.Thumbnailer {
+	return description{log: l}
 }
 
-func (t Description) Generate(a content.Article) error {
+func (t description) Generate(a content.Article) error {
 	ad := a.Data()
 
 	thumbnail := a.Repo().ArticleThumbnail()

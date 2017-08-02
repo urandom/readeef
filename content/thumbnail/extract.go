@@ -1,4 +1,4 @@
-package thumbnailer
+package thumbnail
 
 import (
 	_ "image/png"
@@ -10,20 +10,20 @@ import (
 	"github.com/urandom/readeef/content/data"
 )
 
-type Extract struct {
+type extract struct {
 	extractor content.Extractor
 	log       readeef.Logger
 }
 
-func NewExtract(e content.Extractor, l readeef.Logger) (content.Thumbnailer, error) {
+func FromExtract(e content.Extractor, l readeef.Logger) (content.Thumbnailer, error) {
 	if e == nil {
 		return nil, errors.New("A valid extractor is required")
 	}
 
-	return Extract{extractor: e, log: l}, nil
+	return extract{extractor: e, log: l}, nil
 }
 
-func (t Extract) Generate(a content.Article) error {
+func (t extract) Generate(a content.Article) error {
 	ad := a.Data()
 
 	thumbnail := a.Repo().ArticleThumbnail()

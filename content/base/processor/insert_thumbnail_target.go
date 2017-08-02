@@ -19,15 +19,15 @@ func NewInsertThumbnailTarget(l readeef.Logger) InsertThumbnailTarget {
 	return InsertThumbnailTarget{log: l}
 }
 
-func (p InsertThumbnailTarget) ProcessArticles(ua []content.UserArticle) []content.UserArticle {
-	if len(ua) == 0 {
-		return ua
+func (p InsertThumbnailTarget) ProcessArticles(articles []content.Article) []content.Article {
+	if len(articles) == 0 {
+		return articles
 	}
 
-	p.log.Infof("Proxying urls of feed '%d'\n", ua[0].Data().FeedId)
+	p.log.Infof("Proxying urls of feed '%d'\n", articles[0].Data().FeedId)
 
-	for i := range ua {
-		data := ua[i].Data()
+	for i := range articles {
+		data := articles[i].Data()
 
 		if data.ThumbnailLink == "" {
 			continue
@@ -40,13 +40,13 @@ func (p InsertThumbnailTarget) ProcessArticles(ua []content.UserArticle) []conte
 					content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
 
 					data.Description = content
-					ua[i].Data(data)
+					articles[i].Data(data)
 				}
 			}
 		}
 	}
 
-	return ua
+	return articles
 }
 
 func insertThumbnailTarget(d *goquery.Document, thumbnailLink string, log readeef.Logger) bool {

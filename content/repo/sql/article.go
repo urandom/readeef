@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -100,6 +101,100 @@ func (r articleRepo) All(opts ...content.QueryOpt) ([]content.Article, error) {
 	}
 
 	return articles, err
+}
+
+func (r articleRepo) Read(
+	article content.Article,
+	state bool,
+	user content.User,
+	articles ...content.Article,
+) error {
+	r.log.Infof("Setting articles read state")
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return errors.Wrap(err, "creating transaction")
+	}
+	defer tx.Rollback()
+
+	var stmt *sqlx.Stmt
+	if state {
+		stmt, err = tx.Preparex(r.db.SQL().Article.DeleteUserUnread)
+	} else {
+		stmt, err = tx.Preparex(r.db.SQL().Article.CreateUserUnread)
+	}
+	if err != nil {
+		return errors.Wrap(err, "creating article read statement")
+	}
+	defer stmt.Close()
+
+	for i := 0; i < len(articles)+1; i++ {
+		if i > 0 {
+			article = articles[i-1]
+		}
+
+		if _, err = stmt.Exec(user.Login, article.ID); err != nil {
+			return errors.Wrap(err, "executing article read statement")
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(err, "committing transaction")
+	}
+
+	return nil
+}
+
+func (r articleRepo) Favorite(
+	article content.Article,
+	state bool,
+	user content.User,
+	articles ...content.Article,
+) error {
+	r.log.Infof("Setting articles favorite state")
+
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return errors.Wrap(err, "creating transaction")
+	}
+	defer tx.Rollback()
+
+	var stmt *sqlx.Stmt
+	if state {
+		stmt, err = tx.Preparex(r.db.SQL().Article.CreateUserFavorite)
+	} else {
+		stmt, err = tx.Preparex(r.db.SQL().Article.DeleteUserFavorite)
+	}
+	if err != nil {
+		return errors.Wrap(err, "creating article favorite statement")
+	}
+	defer stmt.Close()
+
+	for i := 0; i < len(articles)+1; i++ {
+		if i > 0 {
+			article = articles[i-1]
+		}
+
+		if _, err = stmt.Exec(user.Login, article.ID); err != nil {
+			return errors.Wrap(err, "executing article favorite statement")
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(err, "committing transaction")
+	}
+
+	return nil
+}
+
+func (r articleRepo) RemoveStaleUnreadRecords() error {
+	r.log.Infof("Removing stale unread article records")
+
+	_, err := r.db.Exec(r.db.SQL().Repo.DeleteStaleUnreadRecords, time.Now().AddDate(0, -1, 0))
+	if err != nil {
+		return errors.Wrap(err, "removing stale unread article records")
+	}
+
+	return nil
 }
 
 func getArticles(login content.Login, dbo *db.DB, log readeef.Logger, opts content.QueryOptions, join, where string, args []interface{}) ([]content.Article, error) {

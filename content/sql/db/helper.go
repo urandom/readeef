@@ -35,6 +35,7 @@ type ArticleStmts struct {
 }
 
 type FeedStmts struct {
+	IDs    string
 	Create string
 	Update string
 	Delete string

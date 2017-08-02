@@ -1,26 +1,32 @@
 package monitor
 
 import (
+	"context"
 	"time"
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/repo"
 )
 
 type Unread struct {
 	log readeef.Logger
 }
 
-func NewUnread(repo content.Repo, l readeef.Logger) Unread {
+func NewUnread(ctx context.Context, repo repo.Article, log readeef.Logger) Unread {
 	go func() {
 		repo.DeleteStaleUnreadRecords()
 
-		for range time.Tick(24 * time.Hour) {
+		ticker := time.NewTicker(24 * time.Hour)
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
 			repo.DeleteStaleUnreadRecords()
 		}
 	}()
 
-	return Unread{log: l}
+	return Unread{log: log}
 }
 
 func (i Unread) FeedUpdated(feed content.Feed) error {

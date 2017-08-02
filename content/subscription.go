@@ -1,23 +1,31 @@
 package content
 
 import (
-	"encoding/json"
-	"fmt"
-
-	"github.com/urandom/readeef/content/data"
+	"errors"
+	"net/url"
+	"time"
 )
 
-type Subscription interface {
-	Error
-	RepoRelated
+type Subscription struct {
+	Link                string
+	FeedID              FeedID    `db:"feed_id"`
+	LeaseDuration       int64     `db:"lease_duration"`
+	VerificationTime    time.Time `db:"verification_time"`
+	SubscriptionFailure bool      `db:"subscription_failure"`
+}
 
-	fmt.Stringer
-	json.Marshaler
+func (s Subscription) Validate() error {
+	if s.Link == "" {
+		return NewValidationError(errors.New("No subscription link"))
+	}
 
-	Data(data ...data.Subscription) data.Subscription
+	if u, err := url.Parse(s.Link); err != nil || !u.IsAbs() {
+		return NewValidationError(errors.New("Invalid subscription link"))
+	}
 
-	Validate() error
+	if s.FeedID == 0 {
+		return NewValidationError(errors.New("Invalid feed id"))
+	}
 
-	Update()
-	Delete()
+	return nil
 }

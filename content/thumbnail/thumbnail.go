@@ -1,4 +1,4 @@
-package thumbnailer
+package thumbnail
 
 import (
 	"bytes"
@@ -20,6 +20,10 @@ import (
 const (
 	minTopImageArea = 320 * 240
 )
+
+type Generator interface {
+	Generate(article content.Article) error
+}
 
 func generateThumbnail(r io.Reader) (b []byte, mimeType string, err error) {
 	img, imgType, err := image.Decode(r)

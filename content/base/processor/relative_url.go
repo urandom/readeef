@@ -17,15 +17,15 @@ func NewRelativeURL(log readeef.Logger) RelativeURL {
 	return RelativeURL{log: log}
 }
 
-func (p RelativeURL) ProcessArticles(ua []content.UserArticle) []content.UserArticle {
-	if len(ua) == 0 {
-		return ua
+func (p RelativeURL) ProcessArticles(articles []content.Article) []content.Article {
+	if len(articles) == 0 {
+		return articles
 	}
 
-	p.log.Infof("Proxying urls of feed '%d'\n", ua[0].Data().FeedId)
+	p.log.Infof("Proxying urls of feed '%d'\n", articles[0].Data().FeedId)
 
-	for i := range ua {
-		data := ua[i].Data()
+	for i := range articles {
+		data := articles[i].Data()
 
 		if d, err := goquery.NewDocumentFromReader(strings.NewReader(data.Description)); err == nil {
 			if processor.RelativizeArticleLinks(d) {
@@ -34,11 +34,11 @@ func (p RelativeURL) ProcessArticles(ua []content.UserArticle) []content.UserArt
 					content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
 
 					data.Description = content
-					ua[i].Data(data)
+					articles[i].Data(data)
 				}
 			}
 		}
 	}
 
-	return ua
+	return articles
 }

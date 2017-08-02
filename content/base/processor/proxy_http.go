@@ -26,15 +26,15 @@ func NewProxyHTTP(urlTemplate string, log readeef.Logger) (ProxyHTTP, error) {
 	return ProxyHTTP{logger: log, urlTemplate: t}, nil
 }
 
-func (p ProxyHTTP) ProcessArticles(ua []content.UserArticle) []content.UserArticle {
-	if len(ua) == 0 {
-		return ua
+func (p ProxyHTTP) ProcessArticles(articles []content.Article) []content.Article {
+	if len(articles) == 0 {
+		return articles
 	}
 
-	p.logger.Infof("Proxying urls of feed '%d'\n", ua[0].Data().FeedId)
+	p.logger.Infof("Proxying urls of feed '%d'\n", articles[0].Data().FeedId)
 
-	for i := range ua {
-		data := ua[i].Data()
+	for i := range articles {
+		data := articles[i].Data()
 
 		if d, err := goquery.NewDocumentFromReader(strings.NewReader(data.Description)); err == nil {
 			if processor.ProxyArticleLinks(d, p.urlTemplate, data.Link) {
@@ -43,11 +43,11 @@ func (p ProxyHTTP) ProcessArticles(ua []content.UserArticle) []content.UserArtic
 					content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
 
 					data.Description = content
-					ua[i].Data(data)
+					articles[i].Data(data)
 				}
 			}
 		}
 	}
 
-	return ua
+	return articles
 }

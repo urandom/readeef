@@ -20,6 +20,8 @@ import (
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base/token"
+	"github.com/urandom/readeef/content/extract"
+	"github.com/urandom/readeef/content/search"
 )
 
 func Mux(
@@ -27,8 +29,8 @@ func Mux(
 	repo content.Repo,
 	feedManager *readeef.FeedManager,
 	hubbub *readeef.Hubbub,
-	searchProvider content.SearchProvider,
-	extractor content.Extractor,
+	searchProvider search.Provider,
+	extractor extract.Generator,
 	fs http.FileSystem,
 	config config.Config,
 	log readeef.Logger,

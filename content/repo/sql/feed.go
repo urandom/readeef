@@ -1,6 +1,8 @@
 package sql
 
 import (
+	"database/sql"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
@@ -15,8 +17,56 @@ type feedRepo struct {
 	log readeef.Logger
 }
 
+func (r feedRepo) Get(id content.FeedID) (content.Feed, error) {
+	r.log.Infof("Getting feed %d", id)
+
+	var feed content.Feed
+	if err := r.db.Get(&feed, r.db.SQL().Repo.GetFeed, id); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
+
+		return content.Feed{}, errors.Wrapf(err, "getting feed %d", id)
+	}
+
+	return feed, nil
+}
+
+func (r feedRepo) FindByLink(link string) (content.Feed, error) {
+	r.log.Infof("Getting feed by link %s", link)
+
+	var feed content.Feed
+	if err := r.db.Get(&feed, r.db.SQL().Repo.GetFeedByLink, link); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
+
+		return content.Feed{}, errors.Wrapf(err, "getting feed by link %s", link)
+	}
+
+	return feed, nil
+}
+
 func (r feedRepo) IDs() ([]content.FeedID, error) {
-	panic("not implemented")
+	r.log.Info("Getting feed IDs")
+
+	var ids []content.FeedID
+	if err := r.db.Select(&ids, r.db.SQL().Feed.IDs); err != nil {
+		return []content.FeedID{}, errors.Wrap(err, "getting feed ids")
+	}
+
+	return ids, nil
+}
+
+func (r feedRepo) Unsubscribed() ([]content.Feed, error) {
+	r.log.Infoln("Getting all unsubscribed feeds")
+
+	var feeds []content.Feed
+	if err := r.db.Select(&feeds, r.db.SQL().Repo.GetUnsubscribedFeeds); err != nil {
+		return []content.Feed{}, errors.Wrap(err, "getting unsubscribed feeds")
+	}
+
+	return feeds, nil
 }
 
 // Update updates or creates the feed data in the database.

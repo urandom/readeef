@@ -10,3 +10,9 @@ type Error interface {
 var (
 	ErrNoContent = errors.New("No content")
 )
+
+func IsNoContent(err error) bool {
+	cause := errors.Cause(err)
+
+	return cause == ErrNoContent
+}

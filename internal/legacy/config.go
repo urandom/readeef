@@ -218,7 +218,16 @@ func (c Config) convertToV2() (config.Config, error) {
 	cfg.DB = config.DB(c.DB)
 	cfg.FeedParser = config.FeedParser(c.FeedParser)
 	cfg.FeedManager = config.FeedManager(c.FeedManager)
-	cfg.Content = config.Content(c.Content)
+
+	cfg.Content.Article.Processors = c.Content.ArticleProcessors
+	cfg.Content.Article.ProxyHTTPURLTemplate = c.Content.ProxyHTTPURLTemplate
+	cfg.Content.Search.Provider = c.Content.SearchProvider
+	cfg.Content.Search.BatchSize = c.Content.SearchBatchSize
+	cfg.Content.Search.BlevePath = c.Content.BlevePath
+	cfg.Content.Search.ElasticURL = c.Content.ElasticURL
+	cfg.Content.Extract.Generator = c.Content.Extractor
+	cfg.Content.Extract.ReadabilityKey = c.Content.ReadabilityKey
+	cfg.Content.ThumbnailGenerator = c.Content.Thumbnailer
 
 	cfg.Auth.Secret = c.Auth.Secret
 

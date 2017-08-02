@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/sql/db"
 )
 
@@ -28,14 +29,18 @@ func NewService(driver, source string, log readeef.Logger) (Service, error) {
 	}
 }
 
-func (s Service) UserRepo() repo.UserRepo {
+func (s Service) UserRepo() repo.User {
 	return userRepo{db, log}
 }
 
-func (s Service) FeedRepo() repo.FeedRepo {
+func (s Service) FeedRepo() repo.Feed {
 	return feedRepo{db, log}
 }
 
-func (s Service) ArticleRepo() repo.ArticleRepo {
+func (s Service) SubscriptionRepo() repo.Subscription {
+	return subscriptionRepo{db, log}
+}
+
+func (s Service) ArticleRepo() repo.Article {
 	return articleRepo{db, log}
 }

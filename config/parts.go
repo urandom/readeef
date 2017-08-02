@@ -87,17 +87,24 @@ type FeedManager struct {
 }
 
 type Content struct {
-	Extractor         string   `toml:"extractor"`
-	Thumbnailer       string   `toml:"thumbnailer"`
-	SearchProvider    string   `toml:"search-provider"`
-	ArticleProcessors []string `toml:"article-processors"`
+	ThumbnailGenerator string `toml:"thumbnail-generator"`
 
-	SearchBatchSize int64 `toml:"search-batch-size"`
+	Extract struct {
+		Generator      string `toml:"generator"`
+		ReadabilityKey string `toml:"readability-key"`
+	} `toml:"extract"`
 
-	ReadabilityKey       string `toml:"readability-key"`
-	BlevePath            string `toml:"bleve-path"`
-	ElasticURL           string `toml:"elastic-url"`
-	ProxyHTTPURLTemplate string `toml:"proxy-http-url-template"`
+	Search struct {
+		Provider   string `toml:"provider"`
+		BatchSize  int64  `toml:"batch-size"`
+		BlevePath  string `toml:"bleve-path"`
+		ElasticURL string `toml:"elastic-url"`
+	} `toml:"search"`
+
+	Article struct {
+		Processors           []string `toml:"processors"`
+		ProxyHTTPURLTemplate string   `toml:"proxy-http-url-template"`
+	} `toml:"article"`
 }
 
 type converter interface {

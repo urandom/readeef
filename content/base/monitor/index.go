@@ -6,14 +6,15 @@ import (
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/search"
 )
 
 type Index struct {
-	provider content.SearchProvider
+	provider search.Provider
 	log      readeef.Logger
 }
 
-func NewIndex(sp content.SearchProvider, l readeef.Logger) Index {
+func NewIndex(sp search.Provider, l readeef.Logger) Index {
 	return Index{provider: sp, log: l}
 }
 

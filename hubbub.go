@@ -10,6 +10,7 @@ import (
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/pool"
 )
 
@@ -130,16 +131,20 @@ func (h *Hubbub) Unsubscribe(f content.Feed) error {
 	return nil
 }
 
-func (h *Hubbub) InitSubscriptions(repo content.Repo) error {
-	repo.FailSubscriptions()
-	subscriptions := repo.AllSubscriptions()
+func (h *Hubbub) InitSubscriptions(service repo.Service) error {
+	subscriptions, err := service.SubscriptionRepo().All()
+	if err != nil {
+		return errors.WithMessage(err, "getting subscriptions")
+	}
 
 	h.log.Infof("Initializing %d hubbub subscriptions", len(subscriptions))
 
+	feedRepo := service.FeedRepo()
 	go func() {
 		for _, s := range subscriptions {
-			f := repo.FeedById(s.Data().FeedId)
-			if f.Err() != nil {
+			f, err := feedRepo.Get(s.FeedID)
+			if err != nil {
+				h.log.Printf("Error getting subscription feed: %+v\n", err)
 				continue
 			}
 
@@ -167,8 +172,9 @@ func (h *Hubbub) InitSubscriptions(repo content.Repo) error {
 			case <-after:
 				for _, s := range subscriptions {
 					if s.Data().VerificationTime.Add(time.Duration(s.Data().LeaseDuration)).Before(time.Now().Add(-30 * time.Minute)) {
-						f := repo.FeedById(s.Data().FeedId)
-						if f.Err() != nil {
+						f, err := feedRepo.Get(s.Feedid)
+						if err != nil {
+							h.log.Printf("Error getting subscription feed: %+v\n", err)
 							continue
 						}
 
@@ -179,10 +185,6 @@ func (h *Hubbub) InitSubscriptions(repo content.Repo) error {
 			}
 		}
 	}()
-
-	if repo.HasErr() {
-		return errors.Wrap(repo.Err(), "initializing subscriptions")
-	}
 
 	return nil
 }

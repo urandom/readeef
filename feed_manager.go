@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/feed"
 	"github.com/urandom/readeef/parser"
 )
@@ -20,7 +20,7 @@ import (
 
 type FeedManager struct {
 	config           config.Config
-	repo             content.Repo
+	repo             repo.Feed
 	ops              chan func(context.Context, *FeedManager)
 	log              Logger
 	hubbub           *Hubbub
@@ -39,7 +39,7 @@ var (
 	httpStatusPrefix = "HTTP Status: "
 )
 
-func NewFeedManager(repo content.Repo, c config.Config, l Logger) *FeedManager {
+func NewFeedManager(repo repo.Feed, c config.Config, l Logger) *FeedManager {
 	return &FeedManager{
 		repo: repo, config: c, log: l,
 		ops:       make(chan func(context.Context, *FeedManager)),
@@ -64,9 +64,9 @@ func (fm *FeedManager) Start(ctx context.Context) error {
 
 	go fm.loop(ctx)
 
-	feeds := fm.repo.AllUnsubscribedFeeds()
-	if fm.repo.HasErr() {
-		return errors.WithMessage(fm.repo.Err(), "getting unsubscribed feeds")
+	feeds, err := fm.repo.Unsubscribed()
+	if err != nil {
+		return err
 	}
 
 	for _, f := range feeds {
@@ -78,15 +78,15 @@ func (fm *FeedManager) Start(ctx context.Context) error {
 	return nil
 }
 
-func (fm *FeedManager) AddFeed(f content.Feed) {
+func (fm *FeedManager) AddFeed(feed content.Feed) {
 	fm.ops <- func(ctx context.Context, fm *FeedManager) {
-		fm.startUpdatingFeed(ctx, f)
+		fm.startUpdatingFeed(ctx, feed)
 	}
 }
 
-func (fm *FeedManager) RemoveFeed(f content.Feed) {
+func (fm *FeedManager) RemoveFeed(feed content.Feed) {
 	fm.ops <- func(ctx context.Context, fm *FeedManager) {
-		fm.stopUpdatingFeed(f)
+		fm.stopUpdatingFeed(feed)
 	}
 }
 
@@ -102,9 +102,8 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 		return nil, err
 	}
 
-	f := fm.repo.FeedByLink(link)
-	err = f.Err()
-	if err != nil && err != content.ErrNoContent {
+	f, err := fm.repo.FindByLink(link)
+	if err != nil && !content.IsNoContent(err) {
 		return f, err
 	}
 
@@ -118,21 +117,19 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 
 		var f content.Feed
 		for link, parserFeed := range parsedFeeds {
-			f = fm.repo.Feed()
-
-			f.Data(data.Feed{Link: link})
+			f.Link = link
 			f.Refresh(fm.processParserFeed(parserFeed))
 
 			break
 		}
 
-		f.Update()
-		if f.HasErr() {
-			return f, f.Err()
+		newArticles, err = fm.repo.Update(f)
+		if err != nil {
+			return errors.WithMessage(err, "updating feed with parsed data")
 		}
 
 		// Do not halt the adding process due to slow monitors
-		go fm.processFeedUpdateMonitors(f)
+		go fm.processFeedUpdateMonitors(f, len(newArticles) > 0)
 	}
 
 	fm.log.Infoln("Adding feed " + f.String() + " to manager")
@@ -142,13 +139,9 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 }
 
 func (fm *FeedManager) RemoveFeedByLink(link string) (content.Feed, error) {
-	f := fm.repo.FeedByLink(link)
-	if f.HasErr() {
-		err := f.Err()
-		if err == content.ErrNoContent {
-			err = nil
-		}
-		return f, f.Err()
+	f, err := fm.repo.FindByLink(link)
+	if err != nil && !content.IsNoContent(err) {
+		return f, err
 	}
 
 	if f.Validate() != nil {
@@ -171,9 +164,7 @@ func (fm *FeedManager) DiscoverFeeds(link string) ([]content.Feed, error) {
 	feeds := make([]content.Feed, 0, len(parsedFeeds))
 
 	for link, parserFeed := range parsedFeeds {
-		feed := fm.repo.Feed()
-
-		feed.Data(data.Feed{Link: link})
+		feed := content.Feed{Link: link}
 		feed.Refresh(fm.processParserFeed(parserFeed))
 
 		feeds = append(feeds, feed)
@@ -193,11 +184,9 @@ func (fm *FeedManager) loop(ctx context.Context) {
 	}
 }
 
-func (fm *FeedManager) startUpdatingFeed(ctx context.Context, f content.Feed) {
-	data := f.Data()
-
-	if data.HubLink != "" && fm.hubbub != nil {
-		err := fm.hubbub.Subscribe(f)
+func (fm *FeedManager) startUpdatingFeed(ctx context.Context, feed content.Feed) {
+	if feed.HubLink != "" && fm.hubbub != nil {
+		err := fm.hubbub.Subscribe(feed)
 
 		if err != nil && err != ErrSubscribed {
 			fm.log.Printf("Error subscribing to feed hublink: %+v\n", err)
@@ -206,23 +195,20 @@ func (fm *FeedManager) startUpdatingFeed(ctx context.Context, f content.Feed) {
 
 	d := 30 * time.Minute
 	if fm.config.FeedManager.Converted.UpdateInterval != 0 {
-		if data.TTL != 0 && data.TTL > fm.config.FeedManager.Converted.UpdateInterval {
-			d = data.TTL
+		if feed.TTL != 0 && feed.TTL > fm.config.FeedManager.Converted.UpdateInterval {
+			d = feed.TTL
 		} else {
 			d = fm.config.FeedManager.Converted.UpdateInterval
 		}
 	}
 
-	go fm.scheduleFeed(ctx, f, d)
+	go fm.scheduleFeed(ctx, feed, d)
 }
 
 func (fm *FeedManager) scheduleFeed(ctx context.Context, feed content.Feed, update time.Duration) {
 	for update := range fm.scheduler.ScheduleFeed(ctx, feed, update) {
 		if update.IsErr() {
-			data := feed.Data()
-
-			data.UpdateError = update.Error()
-			feed.Data(data)
+			feed.UpdateError = update.Error()
 		} else {
 			feed.Refresh(fm.processParserFeed(update.Feed))
 		}
@@ -231,57 +217,54 @@ func (fm *FeedManager) scheduleFeed(ctx context.Context, feed content.Feed, upda
 	}
 }
 
-func (fm *FeedManager) stopUpdatingFeed(f content.Feed) {
-	data := f.Data()
-
-	if data.HubLink != "" && fm.hubbub != nil {
-		fm.hubbub.Unsubscribe(f)
+func (fm *FeedManager) stopUpdatingFeed(feed content.Feed) {
+	if feed.HubLink != "" && fm.hubbub != nil {
+		fm.hubbub.Unsubscribe(feed)
 	}
 
-	fm.log.Infoln("Stopping feed update for " + data.Link)
+	fm.log.Infoln("Stopping feed update for " + feed.Link)
 
-	users := f.Users()
-	if f.HasErr() {
-		fm.log.Printf("Error getting users for feed '%s': %v\n", f, f.Err())
+	users := feed.Users()
+	if feed.HasErr() {
+		fm.log.Printf("Error getting users for feed '%s': %v\n", feed, feed.Err())
 	} else {
 		if len(users) == 0 {
-			fm.log.Infoln("Removing orphan feed " + f.String() + " from the database")
+			fm.log.Infoln("Removing orphan feed " + feed.String() + " from the database")
 
 			for _, m := range fm.feedMonitors {
-				if err := m.FeedDeleted(f); err != nil {
+				if err := m.FeedDeleted(feed); err != nil {
 					fm.log.Printf(
 						"Error invoking monitor '%s' on deleted feed '%s': %v\n",
-						reflect.TypeOf(m), f, err)
+						reflect.TypeOf(m), feed, err)
 				}
 			}
-			f.Delete()
-			if f.HasErr() {
-				fm.log.Printf("Error deleting feed '%s' from the repository: %v\n", f, f.Err())
+			feed.Delete()
+			if feed.HasErr() {
+				fm.log.Printf("Error deleting feed '%s' from the repository: %v\n", feed, feed.Err())
 			}
 		}
 	}
 }
 
-func (fm FeedManager) updateFeed(f content.Feed) {
-	f.Update()
-
-	if f.HasErr() {
-		fm.log.Printf("Error updating feed '%s' database record: %v\n", f, f.Err())
+func (fm FeedManager) updateFeed(feed content.Feed) {
+	if newArticles, err := fm.repo.Update(feed); err != nil {
+		fm.log.Printf("Error updating feed '%s' database record: %v\n", feed, err)
 	} else {
-		fm.processFeedUpdateMonitors(f)
+		fm.processFeedUpdateMonitors(feed, len(newArticles) > 0)
 	}
+
 }
 
-func (fm FeedManager) processFeedUpdateMonitors(f content.Feed) {
-	if len(f.NewArticles()) > 0 {
+func (fm FeedManager) processFeedUpdateMonitors(feed content.Feed, newArticles bool) {
+	if newArticles {
 		for _, m := range fm.feedMonitors {
-			if err := m.FeedUpdated(f); err != nil {
+			if err := m.FeedUpdated(feed); err != nil {
 				fm.log.Printf("Error invoking monitor '%s' on updated feed '%s': %v\n",
-					reflect.TypeOf(m), f, err)
+					reflect.TypeOf(m), feed, err)
 			}
 		}
 	} else {
-		fm.log.Infoln("No new articles for " + f.String())
+		fm.log.Infoln("No new articles for " + feed.String())
 	}
 }
 

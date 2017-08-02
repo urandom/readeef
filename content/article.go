@@ -30,6 +30,13 @@ type Article struct {
 	} `json:"hits"`
 }
 
+type ArticleExtract struct {
+	ArticleID ArticleID
+	Title     string
+	Content   string
+	TopImage  string `db:"top_image"`
+	Language  string
+}
 type sortingField int
 type sortingOrder int
 
@@ -153,6 +160,10 @@ func (o *QueryOptions) Apply(opts ...QueryOpt) {
 	}
 }
 
+type ArticleProcessor interface {
+	ProcessArticles([]Article) []Article
+}
+
 /*
 type ArticleSorting interface {
 	// Resets the sorting
@@ -249,9 +260,5 @@ type ArticleExtract interface {
 	Validate() error
 
 	Update()
-}
-
-type ArticleProcessor interface {
-	ProcessArticles(ua []UserArticle) []UserArticle
 }
 */
