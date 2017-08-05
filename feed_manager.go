@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/monitor"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/feed"
 	"github.com/urandom/readeef/parser"
@@ -26,7 +27,7 @@ type FeedManager struct {
 	hubbub           *Hubbub
 	scheduler        feed.Scheduler
 	parserProcessors []parser.Processor
-	feedMonitors     []content.FeedMonitor
+	feedMonitors     []monitor.Feed
 }
 
 var (
@@ -55,7 +56,7 @@ func (fm *FeedManager) AddParserProcessor(p parser.Processor) {
 	fm.parserProcessors = append(fm.parserProcessors, p)
 }
 
-func (fm *FeedManager) AddFeedMonitor(m content.FeedMonitor) {
+func (fm *FeedManager) AddFeedMonitor(m monitor.Feed) {
 	fm.feedMonitors = append(fm.feedMonitors, m)
 }
 

@@ -19,10 +19,11 @@ import (
 	"github.com/urandom/readeef/api/ttrss"
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/base/token"
 	"github.com/urandom/readeef/content/extract"
+	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/search"
+	"github.com/urandom/readeef/content/token"
 )
 
 func Mux(
@@ -33,7 +34,7 @@ func Mux(
 	searchProvider search.Provider,
 	extractor extract.Generator,
 	fs http.FileSystem,
-	processors []content.ArticleProcessor,
+	processors []processor.Article,
 	config config.Config,
 	log readeef.Logger,
 ) (http.Handler, error) {
@@ -137,7 +138,7 @@ func emulatorRoutes(
 	service repo.Service,
 	searchProvider content.SearchProvider,
 	feedManager *readeef.FeedManager,
-	processors []content.ArticleProcessor,
+	processors []processor.Article,
 	config config.Config,
 	log readeef.Logger,
 ) []routes {
@@ -233,7 +234,7 @@ func articlesRoutes(
 	service repo.Service,
 	extractor content.Extractor,
 	searchProvider content.SearchProvider,
-	processors []content.ArticleProcessor,
+	processors []processor.Article,
 	log readeef.Logger,
 ) routes {
 	articleRepo := service.ArticleRepo()

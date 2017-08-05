@@ -20,12 +20,11 @@ import (
 	"github.com/urandom/readeef/api"
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/base/monitor"
-	contentProcessor "github.com/urandom/readeef/content/base/processor"
-	"github.com/urandom/readeef/content/base/search"
 	"github.com/urandom/readeef/content/extract"
+	"github.com/urandom/readeef/content/monitor"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/repo/sql"
+	"github.com/urandom/readeef/content/search"
 	"github.com/urandom/readeef/content/thumbnail"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/parser/processor"
@@ -205,8 +204,8 @@ func initAdminUser(repo repo.User, secret []byte) error {
 	return nil
 }
 
-func initArticleProcessors(names []string, proxyTemplate string, log readeef.Logger) ([]content.ArticleProcessor, error) {
-	var processors []content.ArticleProcessor
+func initArticleProcessors(names []string, proxyTemplate string, log readeef.Logger) ([]processor.Article, error) {
+	var processors []processor.Article
 
 	for _, p := range names {
 		switch p {
@@ -338,8 +337,8 @@ func initFeedMonitors(
 	searchProvider search.Provider,
 	thumbnailer content.Thumbnailer,
 	log readeef.Logger,
-) []content.FeedMonitor {
-	monitors := []content.FeedMonitor{monitor.NewUnread(ctx, repo, log)}
+) []monitor.Feed {
+	monitors := []monitor.Feed{monitor.NewUnread(ctx, repo, log)}
 
 	for _, m := range config.Monitors {
 		switch m {
@@ -360,7 +359,7 @@ func initFeedMonitors(
 func initHubbub(
 	config config.Config,
 	service repo.Service,
-	monitors []content.FeedMonitor,
+	monitors []monitor.Feed,
 	feedManager *readeef.FeedManager,
 	log readeef.Logger,
 ) (*readeef.Hubbub, error) {

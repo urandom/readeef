@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
 )
 
@@ -23,7 +24,7 @@ type item struct {
 	CreatedOnTime int64             `json:"created_on_time"`
 }
 
-func registerItemActions(processors []content.ArticleProcessor) {
+func registerItemActions(processors []processor.Article) {
 	actions["items"] = func(r *http.Request, resp resp, user content.User, service repo.Service, log readeef.Logger) error {
 		return items(r, resp, user, service, processors, log)
 	}
@@ -34,7 +35,7 @@ func items(
 	resp resp,
 	user content.User,
 	service repo.Service,
-	processors []content.ArticleProcessor,
+	processors []processor.Article,
 	log readeef.Logger,
 ) error {
 	log.Infoln("Fetching fever items")
@@ -93,7 +94,7 @@ func items(
 			return errors.WithMessage(err, "getting user articles")
 		}
 
-		articles = content.ArticleProcessors(processors).Process(articles)
+		articles = processor.Articles(processors).Process(articles)
 
 		for _, a := range articles {
 			item := item{

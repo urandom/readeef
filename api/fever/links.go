@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
 )
 
@@ -26,7 +27,7 @@ type link struct {
 	ItemIds     string            `json:"item_ids"`
 }
 
-func registerLinkActions(processors []content.ArticleProcessor) {
+func registerLinkActions(processors []processor.Article) {
 	actions["links"] = func(r *http.Request, resp resp, user content.User, service repo.Service, log readeef.Logger) error {
 		return links(r, resp, user, service, processors, log)
 	}
@@ -37,7 +38,7 @@ func links(
 	resp resp,
 	user content.User,
 	service repo.Service,
-	processors []content.ArticleProcessor,
+	processors []processor.Article,
 	log readeef.Logger,
 ) error {
 	log.Infoln("Fetching fever links")
@@ -80,7 +81,7 @@ func links(
 		return errors.WithMessage(err, "getting user articles")
 	}
 
-	articles = content.ArticleProcessors(processors).Process(articles)
+	articles = processor.Articles(processors).Process(articles)
 
 	links := make([]link, len(articles))
 	for i, a := range articles {

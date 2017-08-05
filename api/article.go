@@ -13,6 +13,7 @@ import (
 	"github.com/urandom/handler/method"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/search"
 	"github.com/urandom/text-summary/summarize"
@@ -41,7 +42,7 @@ func getArticles(
 	service repo.Service,
 	repoType articleRepoType,
 	subType articleRepoType,
-	processors []content.ArticleProcessor,
+	processors []processor.Article,
 	log readeef.Logger,
 ) http.HandlerFunc {
 	repo := service.ArticleRepo()
@@ -125,7 +126,7 @@ func getArticles(
 			return
 		}
 
-		articles = content.ArticleProcessors(processors).Process(articles)
+		articles = processor.Articles(processors).Process(articles)
 
 		args{"articles": articles}.WriteJSON(w)
 	}
@@ -135,7 +136,7 @@ func articleSearch(
 	service repo.Service,
 	searchProvider content.SearchProvider,
 	repoType articleRepoType,
-	processors []content.ArticleProcessor,
+	processors []processor.Article,
 	log readeef.Logger,
 ) http.HandlerFunc {
 	repo := service.FeedRepo()
@@ -192,7 +193,7 @@ func articleSearch(
 			return
 		}
 
-		articles = content.ArticleProcessors(processors).Process(articles)
+		articles = processor.Articles(processors).Process(articles)
 
 		args{"articles": articles}.WriteJSON(w)
 	}
@@ -201,7 +202,7 @@ func articleSearch(
 func formatArticle(
 	repo repo.Extract,
 	extractor content.Extractor,
-	processors []content.ArticleProcessors,
+	processors []processor.Articles,
 	log readeef.Logger,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -249,7 +250,7 @@ func formatArticle(
 				})
 			}
 
-			articles = content.ArticleProcessors(processors).Process(articles)
+			articles = processor.Articles(processors).Process(articles)
 
 			extract.Content = articles[0].Description
 
@@ -459,7 +460,7 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request) ([]content.Quer
 	return o, false
 }
 
-func articleContext(repo repo.Article, processors []content.ArticleProcessor, log readeef.Logger) func(http.Handler) http.Handler {
+func articleContext(repo repo.Article, processors []processor.Article, log readeef.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, stop := userFromRequest(w, r)
@@ -485,7 +486,7 @@ func articleContext(repo repo.Article, processors []content.ArticleProcessor, lo
 			}
 
 			if r.Method == method.GET {
-				articles = content.ArticleProcessors(processors).Process(articles)
+				articles = processor.Articles(processors).Process(articles)
 			}
 
 			ctx := context.WithValue(r.Context(), "article", articles[0])

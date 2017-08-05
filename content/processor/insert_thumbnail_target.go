@@ -19,7 +19,7 @@ func NewInsertThumbnailTarget(l readeef.Logger) InsertThumbnailTarget {
 	return InsertThumbnailTarget{log: l}
 }
 
-func (p InsertThumbnailTarget) ProcessArticles(articles []content.Article) []content.Article {
+func (p InsertThumbnailTarget) Process(articles []content.Article) []content.Article {
 	if len(articles) == 0 {
 		return articles
 	}

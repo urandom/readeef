@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/search"
 )
@@ -54,7 +55,7 @@ type article struct {
 	Labels []string `json:"labels,omitempty"`
 }
 
-func registerArticleActions(searchProvider search.Provider, processors []content.ArticleProcessor) {
+func registerArticleActions(searchProvider search.Provider, processors []processor.Article) {
 	actions["getHeadlines"] = func(req request, user content.User, service repo.Service) (interface{}, error) {
 		return getHeadlines(req, user, service, searchProvider, processors)
 	}
@@ -69,7 +70,7 @@ func getHeadlines(
 	user content.User,
 	service repo.Service,
 	searchProvider search.Provider,
-	processors []content.ArticleProcessor,
+	processors []processor.Article,
 ) (interface{}, error) {
 	if req.FeedId == 0 {
 		return nil, errors.WithStack(newErr("no feed id", "INCORRECT_USAGE"))
@@ -186,7 +187,7 @@ func getHeadlines(
 		}
 
 		if len(articles) > 0 {
-			articles = content.ArticleProcessors(processors).Process(articles)
+			articles = processor.Articles(processors).Process(articles)
 
 			firstID = articles[0].ID
 		}
@@ -299,7 +300,7 @@ func getArticle(
 	req request,
 	user content.User,
 	service repo.Service,
-	processors []content.ArticleProcessor,
+	processors []processor.Article,
 ) (interface{}, error) {
 	articles, err := service.ArticleRepo().ForUser(user, content.IDs(req.ArticleIds))
 	if err != nil {

@@ -25,7 +25,7 @@ var (
 
 func Handler(
 	service repo.Service,
-	processors []content.ArticleProcessor,
+	processors []processor.Article,
 	log readeef.Logger,
 ) http.HandlerFunc {
 
@@ -85,8 +85,8 @@ func writeJSON(w http.ResponseWriter, data interface{}) {
 	}
 }
 
-func filterProcessors(input []content.ArticleProcessor) []content.ArticleProcessor {
-	processors := make([]content.ArticleProcessor, 0, len(input))
+func filterProcessors(input []processor.Article) []processor.Article {
+	processors := make([]processor.Article, 0, len(input))
 
 	for i := range input {
 		if _, ok := input[i].(processor.ProxyHTTP); ok {

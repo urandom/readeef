@@ -1,11 +1,6 @@
 package content
 
-import "errors"
-
-type Error interface {
-	Err(err ...error) error
-	HasErr() bool
-}
+import "github.com/pkg/errors"
 
 var (
 	ErrNoContent = errors.New("No content")

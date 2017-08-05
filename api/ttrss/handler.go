@@ -94,7 +94,7 @@ func Handler(
 	service repo.Service,
 	searchProvider search.Provider,
 	feedManager *readeef.FeedManager,
-	processors []content.ArticleProcessor,
+	processors []processor.Article,
 	secret []byte,
 	update time.Duration,
 	log readeef.Logger,
@@ -206,8 +206,8 @@ func writeJson(w http.ResponseWriter, req request, resp response, data interface
 	}
 }
 
-func filterProcessors(input []content.ArticleProcessor) []content.ArticleProcessor {
-	processors := make([]content.ArticleProcessor, 0, len(input))
+func filterProcessors(input []processor.Article) []processor.Article {
+	processors := make([]processor.Article, 0, len(input))
 
 	for i := range input {
 		if _, ok := input[i].(processor.ProxyHTTP); ok {

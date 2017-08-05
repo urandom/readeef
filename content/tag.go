@@ -21,21 +21,3 @@ func (t Tag) Validate() error {
 func (t Tag) String() string {
 	return string(t.Value)
 }
-
-/*
-type Tag interface {
-	Error
-	ArticleSearch
-	ArticleRepo
-	RepoRelated
-
-	fmt.Stringer
-	json.Marshaler
-
-	Data(data ...data.Tag) data.Tag
-
-	Validate() error
-
-	AllFeeds() []TaggedFeed
-}
-*/
