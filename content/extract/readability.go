@@ -29,7 +29,7 @@ func WithReadability(key string) (content.Extractor, error) {
 	return readability{key: key}, nil
 }
 
-func (e readability) Extract(link string) (content.ArticleExtract, error) {
+func (e readability) Extract(link string) (content.Extract, error) {
 	url := fmt.Sprintf("http://readability.com/api/content/v1/parser?url=%s&token=%s",
 		url.QueryEscape(link), e.key,
 	)
@@ -54,11 +54,11 @@ func (e readability) Extract(link string) (content.ArticleExtract, error) {
 		return content.ArticleExtract{}, errors.Wrapf(err, "extracting content from %s", link)
 	}
 
-	data := content.ArticleExtract{}
-	data.Title = r.Title
-	data.Content = r.Content
-	data.TopImage = r.LeadImage
-	data.Language = "en"
+	extract := content.Extract{}
+	extract.Title = r.Title
+	extract.Content = r.Content
+	extract.TopImage = r.LeadImage
+	extract.Language = "en"
 
-	return data, nil
+	return extract, nil
 }

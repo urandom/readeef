@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content"
 )
 
 func convertRequest(in map[string]interface{}) request {
@@ -63,11 +63,11 @@ func convertRequest(in map[string]interface{}) request {
 		case "field":
 			req.Field = parseInt(v)
 		case "cat_id":
-			req.CatId = data.TagId(parseInt64(v))
+			req.CatId = content.TagID(parseInt64(v))
 		case "feed_id":
-			req.FeedId = data.FeedId(parseInt64(v))
+			req.FeedId = content.FeedID(parseInt64(v))
 		case "since_id":
-			req.SinceId = data.ArticleId(parseInt64(v))
+			req.SinceId = content.ArticleID(parseInt64(v))
 		case "article_ids":
 			req.ArticleIds = parseArticleIds(v)
 		case "article_id":
@@ -119,21 +119,21 @@ func parseInt64(vv interface{}) int64 {
 	return 0
 }
 
-func parseArticleIds(vv interface{}) (ids []data.ArticleId) {
+func parseArticleIds(vv interface{}) (ids []content.ArticleID) {
 	switch v := vv.(type) {
 	case string:
 		parts := strings.Split(v, ",")
 		for _, p := range parts {
 			if i, err := strconv.ParseInt(strings.TrimSpace(p), 10, 64); err == nil {
-				ids = append(ids, data.ArticleId(i))
+				ids = append(ids, content.ArticleID(i))
 			}
 		}
 	case []float64:
 		for _, p := range v {
-			ids = append(ids, data.ArticleId(int64(p)))
+			ids = append(ids, content.ArticleID(int64(p)))
 		}
 	case float64:
-		ids = append(ids, data.ArticleId(int64(v)))
+		ids = append(ids, content.ArticleID(int64(v)))
 	}
 	return
 }

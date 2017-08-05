@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/repo"
 )
 
 type group struct {
@@ -20,37 +21,45 @@ type feedsGroup struct {
 	FeedIds string `json:"feed_ids"`
 }
 
-func groups(r *http.Request, resp resp, user content.User, log readeef.Logger) error {
+func groups(
+	r *http.Request,
+	resp resp,
+	user content.User,
+	service repo.Service,
+	log readeef.Logger,
+) error {
 	log.Infoln("Fetching fever groups")
 
-	tags := user.Tags()
-
-	if user.HasErr() {
-		return errors.Wrap(user.Err(), "getting user tags")
+	tags, err := service.TagRepo().ForUser(user)
+	if err != nil {
+		return errors.WithMessage(err, "getting user tags")
 	}
 
 	g := make([]group, len(tags))
 	fg := make([]feedsGroup, len(tags))
 
-	for i := range tags {
-		td := tags[i].Data()
+	feedRepo := service.FeedRepo()
+	for i, tag := range tags {
+		g[i] = group{Id: int64(tag.ID), Title: string(tag.Value)}
 
-		g[i] = group{Id: int64(td.Id), Title: string(td.Value)}
-
-		feeds := tags[i].AllFeeds()
-		if tags[i].HasErr() {
-			return errors.Wrap(tags[i].Err(), "getting tag feeds")
+		feeds, err := feedRepo.ForTag(tag, user)
+		if err != nil {
+			return errors.WithMessage(err, "getting tag feeds")
 		}
 
 		ids := make([]string, len(feeds))
 		for j := range feeds {
-			ids[j] = strconv.FormatInt(int64(feeds[j].Data().Id), 10)
+			ids[j] = strconv.FormatInt(int64(feeds[j].ID), 10)
 		}
 
-		fg[i] = feedsGroup{GroupId: int64(td.Id), FeedIds: strings.Join(ids, ",")}
+		fg[i] = feedsGroup{GroupId: int64(tag.ID), FeedIds: strings.Join(ids, ",")}
 	}
 
 	resp["groups"], resp["feeds_groups"] = g, fg
 
 	return nil
+}
+
+func init() {
+	actions["groups"] = groups
 }

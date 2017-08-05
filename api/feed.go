@@ -12,35 +12,37 @@ import (
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 )
 
-func feedContext(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, stop := userFromRequest(w, r)
-		if stop {
-			return
-		}
-
-		id, err := strconv.ParseInt(chi.URLParam(r, "feedId"), 10, 64)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		feed := user.FeedById(data.FeedId(id))
-		if feed.HasErr() {
-			err := feed.Err()
-			if err == content.ErrNoContent {
-				http.Error(w, "Not found", http.StatusNotFound)
-			} else {
-				http.Error(w, "Error getting feed: "+err.Error(), http.StatusInternalServerError)
+func feedContext(repo repo.Feed, log readeef.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, stop := userFromRequest(w, r)
+			if stop {
+				return
 			}
-			return
-		}
 
-		ctx := context.WithValue(r.Context(), "feed", feed)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+			id, err := strconv.ParseInt(chi.URLParam(r, "feedID"), 10, 64)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			feed, err := repo.Get(content.FeedID(id), user)
+			if err {
+				if err == content.IsNoContent(err) {
+					http.Error(w, "Not found", http.StatusNotFound)
+				} else {
+					error(w, log, "Error getting feed: %+v", err)
+				}
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), "feed", feed)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 func feedFromRequest(w http.ResponseWriter, r *http.Request) (feed content.UserFeed, stop bool) {
@@ -53,19 +55,21 @@ func feedFromRequest(w http.ResponseWriter, r *http.Request) (feed content.UserF
 	return nil, true
 }
 
-func listFeeds(w http.ResponseWriter, r *http.Request) {
-	user, stop := userFromRequest(w, r)
-	if stop {
-		return
-	}
+func listFeeds(repo repo.Feed, log readeef.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
 
-	feeds := user.AllTaggedFeeds()
-	if user.HasErr() {
-		http.Error(w, "Error getting feeds: "+user.Err().Error(), http.StatusInternalServerError)
-		return
-	}
+		feeds, err := repo.ForUser(user)
+		if err != nil {
+			error(w, log, "Error getting feeds: %+v", log)
+			return
+		}
 
-	args{"feeds": feeds}.WriteJSON(w)
+		args{"feeds": feeds}.WriteJSON(w)
+	}
 }
 
 type addFeedData struct {
@@ -83,7 +87,7 @@ func (e addFeedError) Error() string {
 	return e.Message
 }
 
-func addFeed(feedManager *readeef.FeedManager) http.HandlerFunc {
+func addFeed(repo repo.Feed, feedManager *readeef.FeedManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
@@ -103,7 +107,7 @@ func addFeed(feedManager *readeef.FeedManager) http.HandlerFunc {
 
 		errs := make([]error, 0, len(links))
 		for _, link := range links {
-			err := addFeedByURL(link, user, feedManager)
+			err := addFeedByURL(link, user, repo, feedManager)
 			if err != nil {
 				errs = append(errs, err)
 			}
@@ -113,7 +117,12 @@ func addFeed(feedManager *readeef.FeedManager) http.HandlerFunc {
 	}
 }
 
-func addFeedByURL(link string, user content.User, feedManager *readeef.FeedManager) error {
+func addFeedByURL(
+	link string,
+	user content.User,
+	repo repo.Feed,
+	feedManager *readeef.FeedManager,
+) error {
 	u, err := url.Parse(link)
 	if err != nil {
 		return addFeedError{Link: link, Message: "Not a url"}
@@ -124,26 +133,20 @@ func addFeedByURL(link string, user content.User, feedManager *readeef.FeedManag
 	}
 
 	if f, err := feedManager.AddFeedByLink(link); err == nil {
-		uf := user.AddFeed(f)
-		if uf.HasErr() {
-			return addFeedError{Link: link, Title: f.Data().Title, Message: "Error adding feed to the database: " + uf.Err().Error()}
+		err = repo.Attach(f, user)
+		if err != nil {
+			return addFeedError{Link: link, Title: f.Data().Title, Message: "Error adding feed to the database: " + err.Error()}
 		}
 
 		tags := strings.SplitN(u.Fragment, ",", -1)
 		if u.Fragment != "" && len(tags) > 0 {
-			repo := uf.Repo()
-			tf := repo.TaggedFeed(user)
-			tf.Data(uf.Data())
-
 			t := make([]content.Tag, len(tags))
 			for i := range tags {
-				t[i] = repo.Tag(user)
-				t[i].Data(data.Tag{Value: data.TagValue(tags[i])})
+				t[i] = content.Tag{Value: content.TagValue(tags[i])}
 			}
 
-			tf.Tags(t)
-			if tf.UpdateTags(); tf.HasErr() {
-				return addFeedError{Link: link, Title: f.Data().Title, Message: "Error adding feed to the database: " + tf.Err().Error()}
+			if err = repo.SetUserTags(f, user, tags); err != nil {
+				return addFeedError{Link: link, Title: f.Title, Message: "Error adding feed to the database: " + err.Error()}
 			}
 		}
 	} else {
@@ -153,25 +156,30 @@ func addFeedByURL(link string, user content.User, feedManager *readeef.FeedManag
 	return nil
 }
 
-func deleteFeed(feedManager *readeef.FeedManager) http.HandlerFunc {
+func deleteFeed(repo repo.Feed, feedManager *readeef.FeedManager, log readeef.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if feed, stop := feedFromRequest(w, r); stop {
+		user, stop := userFromRequest(w, r)
+		if stop {
 			return
-		} else {
-			if feed.Detach(); feed.HasErr() {
-				http.Error(w, "Error deleting feed: "+feed.Err().Error(), http.StatusInternalServerError)
-
-				return
-			}
-
-			feedManager.RemoveFeed(feed)
-
-			args{"success": true}.WriteJSON(w)
 		}
+
+		feed, stop := feedFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		if err := repo.DetachFrom(feed, user); err != nil {
+			error(w, log, "Error deleting feed: %+v", err)
+			return
+		}
+
+		feedManager.RemoveFeed(feed)
+
+		args{"success": true}.WriteJSON(w)
 	}
 }
 
-func discoverFeeds(feedManager *readeef.FeedManager) http.HandlerFunc {
+func discoverFeeds(repo repo.Feed, feedManager *readeef.FeedManager, log readeef.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query().Get("q")
 		if query == "" {
@@ -184,7 +192,7 @@ func discoverFeeds(feedManager *readeef.FeedManager) http.HandlerFunc {
 			return
 		}
 
-		feeds, err := discoverFeedsByQuery(query, user, feedManager)
+		feeds, err := discoverFeedsByQuery(query, user, repo, feedManager)
 		if err == nil {
 			args{"feeds": feeds}.WriteJSON(w)
 		} else {
@@ -193,25 +201,25 @@ func discoverFeeds(feedManager *readeef.FeedManager) http.HandlerFunc {
 	}
 }
 
-func discoverFeedsByQuery(query string, user content.User, feedManager *readeef.FeedManager) ([]content.Feed, error) {
+func discoverFeedsByQuery(query string, user content.User, repo repo.Feed, feedManager *readeef.FeedManager) ([]content.Feed, error) {
 	feeds, err := feedManager.DiscoverFeeds(query)
 	if err != nil {
 		return nil, err
 	}
 
-	uf := user.AllFeeds()
-	if user.HasErr() {
-		return nil, errors.Wrap(user.Err(), "getting user feeds")
+	feeds, err := repo.ForUser(user)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting feeds for user")
 	}
 
 	userFeedIdMap := make(map[data.FeedId]bool)
 	userFeedLinkMap := make(map[string]bool)
-	for i := range uf {
-		in := uf[i].Data()
-		userFeedIdMap[in.Id] = true
-		userFeedLinkMap[in.Link] = true
+	for i := range feeds {
+		feed := feeds[i]
+		userFeedIdMap[feed.Id] = true
+		userFeedLinkMap[feed.Link] = true
 
-		u, err := url.Parse(in.Link)
+		u, err := url.Parse(feed.Link)
 		if err == nil && strings.HasPrefix(u.Host, "www.") {
 			u.Host = u.Host[4:]
 			userFeedLinkMap[u.String()] = true
@@ -220,8 +228,8 @@ func discoverFeedsByQuery(query string, user content.User, feedManager *readeef.
 
 	respFeeds := []content.Feed{}
 	for i := range feeds {
-		in := feeds[i].Data()
-		if !userFeedIdMap[in.Id] && !userFeedLinkMap[in.Link] {
+		feed := feeds[i]
+		if !userFeedIdMap[feed.Id] && !userFeedLinkMap[feed.Link] {
 			respFeeds = append(respFeeds, feeds[i])
 		}
 	}

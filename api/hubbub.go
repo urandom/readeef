@@ -8,28 +8,28 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/pool"
 )
 
 func hubbubRegistration(
 	hubbub *readeef.Hubbub,
-	repo content.Repo,
+	repo repo.Feed,
 	feedManager *readeef.FeedManager,
 	log readeef.Logger,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		params := r.URL.Query()
 
-		feedId, err := strconv.ParseInt(path.Base(r.URL.Path), 10, 64)
+		feedID, err := strconv.ParseInt(path.Base(r.URL.Path), 10, 64)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		f := repo.FeedById(data.FeedId(feedId))
+		f := repo.Get(content.FeedID(feedID), content.User{})
 		s := f.Subscription()
 
 		if s.HasErr() {

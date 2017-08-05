@@ -3,22 +3,22 @@ package fever
 import (
 	"encoding/hex"
 
+	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/repo"
 )
 
-func readeefUser(repo content.Repo, md5hex string, log readeef.Logger) content.User {
+func readeefUser(repo repo.User, md5hex string, log readeef.Logger) (content.User, error) {
 	md5, err := hex.DecodeString(md5hex)
 
 	if err != nil {
-		log.Printf("Error decoding hex api_key")
-		return nil
+		return content.User{}, errors.Wrap(err, "decoding hex api_key")
 	}
 
-	user := repo.UserByMD5Api(md5)
-	if user.HasErr() {
-		log.Printf("Error getting user by md5api field: %v\n", user.Err())
-		return nil
+	user, err := repo.FindByMD5(md5)
+	if err != nil {
+		return content.User{}, errors.WithMessage(err, "getting user by md5")
 	}
-	return user
+	return user, nil
 }

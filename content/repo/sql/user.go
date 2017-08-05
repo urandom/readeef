@@ -15,10 +15,11 @@ type userRepo struct {
 	log readeef.Logger
 }
 
-func (r userRepo) Get(login, content.Login) (content.User, error) {
-	r.log.Infof("Getting user '%s'\n", login)
+func (r userRepo) Get(login content.Login) (content.User, error) {
+	r.log.Infof("Getting user %s", login)
 
-	user := r.db.Get(&data, r.db.SQL().Repo.GetUser, login)
+	var user content.User
+	err := r.db.Get(&user, r.db.SQL().Repo.GetUser, login)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
@@ -123,4 +124,25 @@ func (r userRepo) Delete(user content.User) error {
 	}
 
 	return nil
+}
+
+func (r userRepo) FindByMD5(hash []byte) (content.User, error) {
+	if len(hash) == 0 {
+		return content.User{}, errors.New("no hash")
+	}
+
+	r.log.Infof("Getting user using md5 api field %v", hash)
+
+	var user content.User
+	if err := r.db.Get(&user, r.db.SQL().Repo.GetUserByMD5API, string(hash)); err != nil {
+		if err == sql.ErrNoRows {
+			err = content.ErrNoContent
+		}
+
+		return content.User{}, errors.Wrapf(err, "getting user by md5 %s", md5)
+	}
+
+	user.MD5API = md5
+
+	return user
 }

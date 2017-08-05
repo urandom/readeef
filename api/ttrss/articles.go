@@ -6,35 +6,35 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/base/search"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/content/search"
 )
 
 type headlinesHeaderContent []interface{}
 type headlinesContent []headline
 
 type headline struct {
-	Id        data.ArticleId `json:"id"`
-	Unread    bool           `json:"unread"`
-	Marked    bool           `json:"marked"`
-	Updated   int64          `json:"updated"`
-	IsUpdated bool           `json:"is_updated"`
-	Title     string         `json:"title"`
-	Link      string         `json:"link"`
-	FeedId    string         `json:"feed_id"`
-	Author    string         `json:"author"`
-	Excerpt   string         `json:"excerpt,omitempty"`
-	Content   string         `json:"content,omitempty"`
-	FeedTitle string         `json:"feed_title"`
+	Id        content.ArticleID `json:"id"`
+	Unread    bool              `json:"unread"`
+	Marked    bool              `json:"marked"`
+	Updated   int64             `json:"updated"`
+	IsUpdated bool              `json:"is_updated"`
+	Title     string            `json:"title"`
+	Link      string            `json:"link"`
+	FeedId    string            `json:"feed_id"`
+	Author    string            `json:"author"`
+	Excerpt   string            `json:"excerpt,omitempty"`
+	Content   string            `json:"content,omitempty"`
+	FeedTitle string            `json:"feed_title"`
 
 	Tags   []string `json:"tags,omitempty"`
 	Labels []string `json:"labels,omitempty"`
 }
 
 type headlinesHeader struct {
-	Id      data.FeedId    `json:"id"`
-	FirstId data.ArticleId `json:"first_id"`
-	IsCat   bool           `json:"is_cat"`
+	Id      content.FeedID    `json:"id"`
+	FirstId content.ArticleID `json:"first_id"`
+	IsCat   bool              `json:"is_cat"`
 }
 
 type articlesContent []article
@@ -54,15 +54,23 @@ type article struct {
 	Labels []string `json:"labels,omitempty"`
 }
 
-func registerArticleActions(searchProvider content.SearchProvider) {
-	actions["getHeadlines"] = func(req request, user content.User) (interface{}, error) {
-		return getHeadlines(req, user, searchProvider)
+func registerArticleActions(searchProvider search.Provider, processors []content.ArticleProcessor) {
+	actions["getHeadlines"] = func(req request, user content.User, service repo.Service) (interface{}, error) {
+		return getHeadlines(req, user, service, searchProvider, processors)
 	}
 	actions["updateArticle"] = updateArticle
-	actions["getArticle"] = getArticle
+	actions["getArticle"] = func(req request, user content.User, service repo.Service) (interface{}, error) {
+		return getArticle(req, user, service, processors)
+	}
 }
 
-func getHeadlines(req request, user content.User, searchProvider content.SearchProvider) (interface{}, error) {
+func getHeadlines(
+	req request,
+	user content.User,
+	service repo.Service,
+	searchProvider search.Provider,
+	processors []content.ArticleProcessor,
+) (interface{}, error) {
 	if req.FeedId == 0 {
 		return nil, errors.WithStack(newErr("no feed id", "INCORRECT_USAGE"))
 	}
@@ -72,211 +80,259 @@ func getHeadlines(req request, user content.User, searchProvider content.SearchP
 		limit = 200
 	}
 
-	var articles []content.UserArticle
-	var articleRepo content.ArticleRepo
 	var feedTitle string
-	firstId := data.ArticleId(0)
-	o := data.ArticleQueryOptions{Limit: limit, Offset: req.Skip, UnreadFirst: true, SkipSessionProcessors: true}
+	var firstID content.ArticleID
+	opts := []content.QueryOpt{content.Paging(limit, req.Skip), content.UnreadFirst}
+
+	switch req.OrderBy {
+	case "date_reverse":
+		opts = append(opts, content.Sorting(content.SortByDate, content.AscendingOrder))
+	default:
+		opts = append(opts, content.Sorting(content.SortByDate, content.DescendingOrder))
+	}
+
+	var feedGenerator func() ([]content.Feed, error)
+
+	if req.SinceId > 0 {
+		opts = append(opts, content.IDRange(0, req.SinceId))
+	}
 
 	if req.IsCat {
 		if req.FeedId == CAT_UNCATEGORIZED {
-			setupSorting(req, user)
-			articleRepo = user
-			o.UntaggedOnly = true
+			opts = append(opts, content.UntaggedOnly)
+
 			feedTitle = "Uncategorized"
 		} else if req.FeedId > 0 {
-			t := user.TagById(data.TagId(req.FeedId))
-			if t.HasErr() {
-				return nil, errors.Wrapf(t.Err(), "getting user %s tag %d", user.Data().Login, req.FeedId)
+			tag, err := service.TagRepo().Get(content.TagID(req.FeedId), user)
+			if err != nil {
+				return nil, errors.WithMessage(err, "getting tag for user")
 			}
 
-			setupSorting(req, t)
-			articleRepo = t
-			feedTitle = string(t.Data().Value)
+			feedGenerator = func() ([]content.Feed, error) {
+				return service.FeedRepo().ForTag(tag, user)
+			}
+
+			feedTitle = string(tag.Value)
 		}
 	} else {
 		if req.FeedId == FAVORITE_ID {
-			setupSorting(req, user)
-			o.FavoriteOnly = true
-			articleRepo = user
+			opts = append(opts, content.FavoriteOnly)
 			feedTitle = "Starred articles"
 		} else if req.FeedId == FRESH_ID {
-			setupSorting(req, user)
-			o.AfterDate = time.Now().Add(FRESH_DURATION)
-			articleRepo = user
+			opts = append(opts, content.TimeRange(time.Now().Add(FRESH_DURATION), time.Time{}))
 			feedTitle = "Fresh articles"
 		} else if req.FeedId == ALL_ID {
-			setupSorting(req, user)
-			articleRepo = user
 			feedTitle = "All articles"
 		} else if req.FeedId > 0 {
-			feed := user.FeedById(req.FeedId)
-
-			if feed.HasErr() {
-				return nil, errors.Wrapf(feed.Err(), "getting user %s feed %d", user.Data().Login, req.FeedId)
+			feed, err := service.FeedRepo().Get(req.FeedId, user)
+			if err != nil {
+				return nil, errors.WithMessage(err, "getting user feed")
 			}
 
-			setupSorting(req, feed)
-			articleRepo = feed
-			feedTitle = feed.Data().Title
+			feedGenerator = func() ([]content.Feed, error) {
+				return []content.Feed{feed}, nil
+			}
+
+			feedTitle = feed.Title
 		}
 	}
 
-	if req.SinceId > 0 {
-		o.AfterId = req.SinceId
+	if feedGenerator != nil {
+		feeds, err := feedGenerator()
+		if err != nil {
+			return nil, errors.WithMessage(err, "getting feeds")
+		}
+
+		ids := make([]content.FeedID, len(feeds))
+		for i := range feeds {
+			ids[i] = feeds[i].ID
+		}
+
+		opts = append(opts, content.FeedIDs(ids))
 	}
 
-	if articleRepo != nil {
-		if req.Search != "" {
-			if searchProvider != nil {
-				if as, ok := articleRepo.(content.ArticleSearch); ok {
-					articles = as.Query(req.Search, searchProvider, limit, req.Skip)
-				}
-			}
-		} else {
-			var skip bool
-
-			switch req.ViewMode {
-			case "all_articles":
-			case "adaptive":
-			case "unread":
-				o.UnreadOnly = true
-			case "marked":
-				o.FavoriteOnly = true
-			default:
-				skip = true
-			}
-
-			if !skip {
-				articles = articleRepo.Articles(o)
+	var articleGenerator func() ([]content.Article, error)
+	if req.Search != "" {
+		if searchProvider != nil {
+			articleGenerator = func() ([]content.Article, error) {
+				return searchProvider.Search(req.Search, user, opts...)
 			}
 		}
-	}
-
-	if e, ok := articleRepo.(content.Error); ok {
-		if e.HasErr() {
-			return nil, errors.Wrap(e.Err(), "getting articles")
-		}
-	}
-
-	if len(articles) > 0 {
-		firstId = articles[0].Data().Id
-	}
-
-	headlines := headlinesFromArticles(articles, feedTitle, req.ShowContent, req.ShowExcerpt)
-	if req.IncludeHeader {
-		header := headlinesHeader{Id: req.FeedId, FirstId: firstId, IsCat: req.IsCat}
-		hContent := headlinesHeaderContent{}
-
-		hContent = append(hContent, header)
-		hContent = append(hContent, headlines)
-
-		return hContent, nil
 	} else {
+		var skip bool
+
+		switch req.ViewMode {
+		case "all_articles":
+		case "adaptive":
+		case "unread":
+			opts = append(opts, content.UnreadOnly)
+		case "marked":
+			opts = append(opts, content.FavoriteOnly)
+		default:
+			skip = true
+		}
+
+		if !skip {
+			articleGenerator = func() ([]content.Article, error) {
+				return service.ArticleRepo().ForUser(user, opts...)
+			}
+		}
+	}
+
+	if articleGenerator != nil {
+		articles, err := articleGenerator()
+		if err != nil {
+			return nil, errors.WithMessage(err, "gettting articles")
+		}
+
+		if len(articles) > 0 {
+			articles = content.ArticleProcessors(processors).Process(articles)
+
+			firstID = articles[0].ID
+		}
+
+		headlines := headlinesFromArticles(articles, feedTitle, req.ShowContent, req.ShowExcerpt)
+		if req.IncludeHeader {
+			header := headlinesHeader{Id: req.FeedId, FirstId: firstID, IsCat: req.IsCat}
+			hContent := headlinesHeaderContent{}
+
+			hContent = append(hContent, header)
+			hContent = append(hContent, headlines)
+
+			return hContent, nil
+		}
+
 		return headlines, nil
 	}
+
+	return nil, nil
 }
 
-func updateArticle(req request, user content.User) (interface{}, error) {
-	articles := user.ArticlesById(req.ArticleIds, data.ArticleQueryOptions{SkipSessionProcessors: true})
-	updateCount := int64(0)
-
+func updateArticle(req request, user content.User, service repo.Service) (interface{}, error) {
 	if req.Field != 0 && req.Field != 2 {
 		return nil, errors.Errorf("Unknown field %d", req.Field)
 	}
 
-	for _, a := range articles {
-		d := a.Data()
-		updated := false
+	articles, err := service.ArticleRepo().ForUser(user, content.IDs(req.ArticleIds))
+	if err != nil {
+		return nil, errors.Wrap(err, "getting usr articles")
+	}
 
+	var read, unread, favor, unfavor []content.ArticleID
+
+	for _, a := range articles {
 		switch req.Field {
 		case 0:
 			switch req.Mode {
 			case 0:
-				if d.Favorite {
-					updated = true
-					d.Favorite = false
+				if a.Favorite {
+					unfavor = append(unfavor, a.ID)
 				}
 			case 1:
-				if !d.Favorite {
-					updated = true
-					d.Favorite = true
+				if !a.Favorite {
+					favor = append(favor, a.ID)
 				}
 			case 2:
-				updated = true
-				d.Favorite = !d.Favorite
-			}
-			if updated {
-				a.Favorite(d.Favorite)
+				if a.Favorite {
+					unfavor = append(unfavor, a.ID)
+				} else {
+					favor = append(favor, a.ID)
+				}
 			}
 		case 2:
 			switch req.Mode {
 			case 0:
-				if !d.Read {
-					updated = true
-					d.Read = true
+				if !a.Read {
+					read = append(read, a.ID)
 				}
 			case 1:
-				if d.Read {
-					updated = true
-					d.Read = false
+				if a.Read {
+					unread = append(unread, a.ID)
 				}
 			case 2:
-				updated = true
-				d.Read = !d.Read
+				if a.Read {
+					unread = append(unread, a.ID)
+				} else {
+					read = append(read, a.ID)
+				}
 			}
-			if updated {
-				a.Read(d.Read)
-			}
-		}
-
-		if updated {
-			if a.HasErr() {
-				return nil, errors.Wrapf(a.Err(), "marking article %d as %d:%d", a.Data().Id, req.Field, req.Mode)
-			}
-
-			updateCount++
 		}
 	}
 
-	return genericContent{Status: "OK", Updated: updateCount}, nil
+	var updateCount int
+	if len(read) > 0 {
+		if err = service.ArticleRepo().Read(true, user, content.IDs(read)); err != nil {
+			return nil, errors.WithMessage(err, "marking articles as read")
+		}
+
+		updateCount += len(read)
+	}
+
+	if len(unread) > 0 {
+		if err = service.ArticleRepo().Read(false, user, content.IDs(unread)); err != nil {
+			return nil, errors.WithMessage(err, "marking articles as unread")
+		}
+
+		updateCount += len(unread)
+	}
+
+	if len(favor) > 0 {
+		if err = service.ArticleRepo().Favor(true, user, content.IDs(favor)); err != nil {
+			return nil, errors.WithMessage(err, "marking articles as favorite")
+		}
+
+		updateCount += len(favor)
+	}
+
+	if len(unfavor) > 0 {
+		if err = service.ArticleRepo().Favor(false, user, content.IDs(unfavor)); err != nil {
+			return nil, errors.WithMessage(err, "marking articles as not favorite")
+		}
+
+		updateCount += len(unfavor)
+	}
+
+	return genericContent{Status: "OK", Updated: int64(updateCount)}, nil
 }
 
-func getArticle(req request, user content.User) (interface{}, error) {
-	articles := user.ArticlesById(req.ArticleId, data.ArticleQueryOptions{SkipSessionProcessors: true})
-	if user.HasErr() {
-		return nil, errors.Wrap(user.Err(), "getting user articles")
+func getArticle(
+	req request,
+	user content.User,
+	service repo.Service,
+	processors []content.ArticleProcessor,
+) (interface{}, error) {
+	articles, err := service.ArticleRepo().ForUser(user, content.IDs(req.ArticleIds))
+	if err != nil {
+		return nil, errors.Wrap(err, "getting user articles")
 	}
 
-	feedTitles := map[data.FeedId]string{}
+	feedTitles := map[content.FeedID]string{}
 
 	for _, a := range articles {
-		d := a.Data()
-		if _, ok := feedTitles[d.FeedId]; !ok {
-			f := user.Repo().FeedById(d.FeedId)
-			if f.HasErr() {
-				return nil, errors.Wrapf(f.Err(), "getting feed by id %d", d.FeedId)
+		if _, ok := feedTitles[a.FeedID]; !ok {
+			f, err := service.FeedRepo().Get(a.FeedID, content.User{})
+			if err != nil {
+				return nil, errors.Wrapf(err, "getting feed by id %d", a.FeedID)
 			}
 
-			feedTitles[d.FeedId] = f.Data().Title
+			feedTitles[a.FeedID] = f.Title
 		}
 	}
 
 	cContent := articlesContent{}
 
 	for _, a := range articles {
-		d := a.Data()
-		title := feedTitles[d.FeedId]
+		title := feedTitles[a.FeedID]
 		h := article{
-			Id:        strconv.FormatInt(int64(d.Id), 10),
-			Unread:    !d.Read,
-			Marked:    d.Favorite,
-			Updated:   d.Date.Unix(),
-			Title:     d.Title,
-			Link:      d.Link,
-			FeedId:    strconv.FormatInt(int64(d.FeedId), 10),
+			Id:        strconv.FormatInt(int64(a.ID), 10),
+			Unread:    !a.Read,
+			Marked:    a.Favorite,
+			Updated:   a.Date.Unix(),
+			Title:     a.Title,
+			Link:      a.Link,
+			FeedId:    strconv.FormatInt(int64(a.FeedID), 10),
 			FeedTitle: title,
-			Content:   d.Description,
+			Content:   a.Description,
 		}
 
 		cContent = append(cContent, h)
@@ -285,40 +341,28 @@ func getArticle(req request, user content.User) (interface{}, error) {
 	return cContent, nil
 }
 
-func setupSorting(req request, sorting content.ArticleSorting) {
-	switch req.OrderBy {
-	case "date_reverse":
-		sorting.SortingByDate()
-		sorting.Order(data.AscendingOrder)
-	default:
-		sorting.SortingByDate()
-		sorting.Order(data.DescendingOrder)
-	}
-}
-
-func headlinesFromArticles(articles []content.UserArticle, feedTitle string, content, excerpt bool) headlinesContent {
+func headlinesFromArticles(articles []content.Article, feedTitle string, content, excerpt bool) headlinesContent {
 	c := headlinesContent{}
 	for _, a := range articles {
-		d := a.Data()
 		title := feedTitle
 		h := headline{
-			Id:        d.Id,
-			Unread:    !d.Read,
-			Marked:    d.Favorite,
-			Updated:   d.Date.Unix(),
-			IsUpdated: !d.Read,
-			Title:     d.Title,
-			Link:      d.Link,
-			FeedId:    strconv.FormatInt(int64(d.FeedId), 10),
+			Id:        a.ID,
+			Unread:    !a.Read,
+			Marked:    a.Favorite,
+			Updated:   a.Date.Unix(),
+			IsUpdated: !a.Read,
+			Title:     a.Title,
+			Link:      a.Link,
+			FeedId:    strconv.FormatInt(int64(a.FeedID), 10),
 			FeedTitle: title,
 		}
 
 		if content {
-			h.Content = d.Description
+			h.Content = a.Description
 		}
 
 		if excerpt {
-			excerpt := search.StripTags(d.Description)
+			excerpt := search.StripTags(a.Description)
 			if len(excerpt) > 100 {
 				excerpt = excerpt[:100]
 			}

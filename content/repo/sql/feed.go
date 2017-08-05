@@ -17,11 +17,17 @@ type feedRepo struct {
 	log readeef.Logger
 }
 
-func (r feedRepo) Get(id content.FeedID) (content.Feed, error) {
-	r.log.Infof("Getting feed %d", id)
+func (r feedRepo) Get(id content.FeedID, user content.User) (content.Feed, error) {
+	r.log.Infof("Getting user %s feed %d", user, id)
 
 	var feed content.Feed
-	if err := r.db.Get(&feed, r.db.SQL().Repo.GetFeed, id); err != nil {
+	if user.Login == "" {
+		err = r.db.Get(&feed, r.db.SQL().Repo.GetFeed, id)
+	} else {
+		err = r.db.Get(&feed, r.db.SQL().User.GetFeed, id, user.Login)
+	}
+
+	if err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -45,6 +51,40 @@ func (r feedRepo) FindByLink(link string) (content.Feed, error) {
 	}
 
 	return feed, nil
+}
+
+func (r feedRepo) ForUser(user content.User) ([]content.Feed, error) {
+	if err := user.Validate(); err != nil {
+		return []content.Feed{}, errors.WithMessage(err, "validating user")
+	}
+
+	r.log.Infof("Getting user %s feeds", user)
+
+	var feeds []content.Feed
+	if err := r.db.Select(&feeds, r.db.SQL().User.GetFeeds, user.Login); err != nil {
+		return []content.Feed{}, errors.Wrapf(err, "getting user %s feeds", user)
+	}
+
+	return feeds, nil
+}
+
+func (r feedRepo) ForTag(tag content.Tag, user content.User) ([]content.Feed, error) {
+	if err := tag.Validate(); err != nil {
+		return []content.Feed{}, errors.WithMessage(err, "validating tag")
+	}
+
+	if err := user.Validate(); err != nil {
+		return []content.Feed{}, errors.WithMessage(err, "validating user")
+	}
+
+	r.log.Infof("Getting tag %s feeds", tag)
+
+	var feeds []content.Feed
+	if err := r.db.Select(&feeds, r.db.SQL().Tag.GetUserFeeds, user.Login, tag.Value); err != nil {
+		return []content.Feed{}, errors.Wrap(err, "getting tag feeds")
+	}
+
+	return feeds, nil
 }
 
 func (r feedRepo) IDs() ([]content.FeedID, error) {
@@ -74,7 +114,7 @@ func (r feedRepo) Unsubscribed() ([]content.Feed, error) {
 func (r feedRepo) Update(feed content.Feed) ([]content.Article, error) {
 	newArticles := []content.Article{}
 
-	if err := feed.Validate(); err != nil {
+	if err := feed.Validate(); err != nil && feed.ID != 0 {
 		return newArticles, errors.WithMessage(err, "validating feed")
 	}
 
@@ -86,19 +126,26 @@ func (r feedRepo) Update(feed content.Feed) ([]content.Article, error) {
 	}
 	defer tx.Rollback()
 
-	s := r.db.SQL()
-	stmt, err := tx.Preparex(s.Feed.Update)
-	if err != nil {
-		return newArticles, errors.Wrap(err, "preparing feed update stmt")
-	}
-	defer stmt.Close()
+	var changed = 0
+	if feed.ID != 0 {
+		s := r.db.SQL()
+		stmt, err := tx.Preparex(s.Feed.Update)
+		if err != nil {
+			return newArticles, errors.Wrap(err, "preparing feed update stmt")
+		}
+		defer stmt.Close()
 
-	res, err := stmt.Exec(i.Link, i.Title, i.Description, i.HubLink, i.SiteLink, i.UpdateError, i.SubscribeError, id)
-	if err != nil {
-		return newArticles, errors.Wrap(err, "executimg feed update stmt")
+		res, err := stmt.Exec(feed.Link, feed.Title, feed.Description, feed.HubLink, feed.SiteLink, feed.UpdateError, feed.SubscribeError, feed.ID)
+		if err != nil {
+			return newArticles, errors.Wrap(err, "executing feed update stmt")
+		}
+
+		if changed, err = res.RowsAffected(); err != nil {
+			changed = 0
+		}
 	}
 
-	if num, err := res.RowsAffected(); err != nil || num == 0 {
+	if changed == 0 {
 		id, err := r.db.CreateWithID(tx, s.Feed.Create, feed.Link, feed.Title, feed.Description, feed.HubLink, feed.SiteLink, feed.UpdateError, feed.SubscribeError)
 
 		if err != nil {
@@ -120,24 +167,186 @@ func (r feedRepo) Update(feed content.Feed) ([]content.Article, error) {
 }
 
 // Delete deleted the feed from the database.
-func (r feedRepo) Delete(content.Feed) error {
+func (r feedRepo) Delete(feed content.Feed) error {
+	newArticles := []content.Article{}
+
+	if err := feed.Validate(); err != nil {
+		return errors.WithMessage(err, "validating feed")
+	}
+
+	r.log.Infof("Deleting feed %s", feed)
+
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return errors.Wrap(err, "creating transaction")
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Preparex(r.db.SQL().Feed.Delete)
+	if err != nil {
+		return errors.Wrap(err, "preparing feed delete stmt")
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(feed.ID)
+	if err != nil {
+		return errors.Wrap(err, "executing feed delete stmt")
+	}
+
+	if err = tx.Commit(); err != nil {
+		return []content.Articl{}, errors.Wrap("committing transaction")
+	}
+
+	return nil
+}
+
+func (r feedRepo) Users(feed content.Feed) ([]content.User, error) {
 	panic("not implemented")
 }
 
-func (r feedRepo) Users(content.Feed) ([]content.User, error) {
-	panic("not implemented")
+func (r feedRepo) AttachTo(content.Feed, content.User) error {
+	if err := feed.Validate(); err != nil {
+		return errors.WithMessage(err, "validating feed")
+	}
+
+	if err := user.Validate(); err != nil {
+		return errors.WithMessage(err, "validating user")
+	}
+
+	r.log.Infof("Attaching feed %s to %s", feed, user)
+
+	tx, err := uf.db.Beginx()
+	if err != nil {
+		return errors.Wrap(err, "creating transaction")
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Preparex(uf.db.SQL().Feed.Attach)
+	if err != nil {
+		return errors.Wrap(err, "preparing feed attach stmt")
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(user.Login, feed.ID)
+	if err != nil {
+		return errors.Wrap(err, "executing feed attach stmt")
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(err, "committing transaction")
+	}
+
+	return nil
 }
 
-func (r feedRepo) DetachFrom(content.Feed, content.User) error {
-	panic("not implemented")
+func (r feedRepo) DetachFrom(feed content.Feed, user content.User) error {
+	if err := feed.Validate(); err != nil {
+		return errors.WithMessage(err, "validating feed")
+	}
+
+	if err := user.Validate(); err != nil {
+		return errors.WithMessage(err, "validating user")
+	}
+
+	r.log.Infof("Detaching feed %s from %s", feed, user)
+
+	tx, err := uf.db.Beginx()
+	if err != nil {
+		return errors.Wrap(err, "creating transaction")
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Preparex(uf.db.SQL().Feed.Detach)
+	if err != nil {
+		return errors.Wrap(err, "preparing feed detach stmt")
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(user.Login, feed.ID)
+	if err != nil {
+		return errors.Wrap(err, "executing feed detach stmt")
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(err, "committing transaction")
+	}
+
+	return nil
 }
 
-func (r feedRepo) Tags(content.Feed) ([]content.Tag, error) {
-	panic("not implemented")
-}
+func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []content.Tag) error {
+	if err := feed.Validate(); err != nil {
+		return errors.WithMessage(err, "validating feed")
+	}
 
-func (r feedRepo) UpdateTags(content.Feed, []content.Tag) error {
-	panic("not implemented")
+	if err := user.Validate(); err != nil {
+		return errors.WithMessage(err, "validating user")
+	}
+
+	r.log.Infof("Setting feed %s user %s tags", feed, user)
+
+	tx, err := uf.db.Beginx()
+	if err != nil {
+		return errors.Wrap(err, "creating transaction")
+	}
+	defer tx.Rollback()
+
+	s := r.db.SQL()
+	stmt, err := tx.Preparex(s.Feed.DeleteUserTags)
+	if err != nil {
+		tf.Err(err)
+		return
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(user.Login, feed.ID)
+	if err != nil {
+		return errors.Wrapf(err, "deleting user %s feed %s tags", user, feed)
+	}
+
+	for i := range tags {
+		if tags[i].ID == 0 {
+			tag, err := findTagByValue(tags[i].Value, s.Tag.GetByValue, tx)
+			if err != nil {
+				if content.IsNoContent(err) {
+					tag, err = createTag(tags[i].Value, tx, r.db)
+					if err != nil {
+						return errors.Wrapf(err, "creating tag %s", tags[i].Value)
+					}
+				} else {
+					return errors.Wrapf(err, "getting tag by value %s", tags[i].Value)
+				}
+			}
+
+			tags[i] = tag
+		}
+	}
+
+	if len(tags) > 0 {
+		stmt, err := tx.Preparex(s.Feed.CreateUserTag)
+		if err != nil {
+			tf.Err(err)
+			return
+		}
+		defer stmt.Close()
+
+		for i := range tags {
+			_, err = stmt.Exec(user.Login, feed.ID, tag[i].ID)
+			if err != nil {
+				return errors.Wrapf(err, "creating user %s feed %s tag %s", user, feed, tag)
+			}
+		}
+	}
+
+	if _, err = tx.Exec(s.Tag.DeleteStale); err != nil {
+		return errors.Wrap(err, "deleting orphan tags")
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(err, "committing transaction")
+	}
+
+	return nil
 }
 
 func (r feedRepo) updateFeedArticles(feed content.Feed, tx *sqlx.Tx) ([]content.Article, error) {

@@ -18,7 +18,7 @@ import (
 	"github.com/urandom/readeef/content/repo"
 )
 
-type Bleve struct {
+type bleveSearch struct {
 	index     bleve.Index
 	log       readeef.Logger
 	newIndex  bool
@@ -35,7 +35,7 @@ type indexArticle struct {
 	Date        time.Time `json:"date"`
 }
 
-func NewBleve(path string, size int64, service repo.Service, log readeef.Logger) (content.SearchProvider, error) {
+func NewBleve(path string, size int64, service repo.Service, log readeef.Logger) (bleveSearch, error) {
 	var err error
 	var exists bool
 	var index bleve.Index
@@ -71,18 +71,17 @@ func NewBleve(path string, size int64, service repo.Service, log readeef.Logger)
 		return nil, errors.Wrapf(err, "getting file '%s' stat", path)
 	}
 
-	return &Bleve{log: log, index: index, batchSize: size, service: service, newIndex: !exists}, nil
+	return &bleveSearch{log: log, index: index, batchSize: size, service: service, newIndex: !exists}, nil
 }
 
-func (b Bleve) IsNewIndex() bool {
+func (b bleveSearch) IsNewIndex() bool {
 	return b.newIndex
 }
 
-func (b Bleve) Search(
+func (b bleveSearch) Search(
 	term string,
 	u content.User,
-	feedIDs []content.FeedID,
-	opts ...content.QueryOpts,
+	opts ...content.QueryOpt,
 ) ([]content.Article, error) {
 
 	o := content.QueryOptions{}
@@ -91,6 +90,8 @@ func (b Bleve) Search(
 	var q query.Query
 
 	q = bleve.NewQueryStringQuery(term)
+
+	feedIDs := o.FeedIDs
 
 	if len(feedIDs) == 0 {
 		var err error
@@ -175,7 +176,7 @@ func (b Bleve) Search(
 	return articles, nil
 }
 
-func (b Bleve) BatchIndex(articles []content.Article, op indexOperation) error {
+func (b bleveSearch) BatchIndex(articles []content.Article, op indexOperation) error {
 	if len(articles) == 0 {
 		return nil
 	}

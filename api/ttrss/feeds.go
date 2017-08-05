@@ -7,42 +7,46 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 )
 
 type feedsContent []feed
 
 type feed struct {
-	Id          data.FeedId `json:"id"`
-	Title       string      `json:"title"`
-	Unread      int64       `json:"unread"`
-	CatId       int         `json:"cat_id"`
-	FeedUrl     string      `json:"feed_url,omitempty"`
-	LastUpdated int64       `json:"last_updated,omitempty"`
-	OrderId     int         `json:"order_id,omitempty"`
+	Id          content.FeedID `json:"id"`
+	Title       string         `json:"title"`
+	Unread      int64          `json:"unread"`
+	CatId       int            `json:"cat_id"`
+	FeedUrl     string         `json:"feed_url,omitempty"`
+	LastUpdated int64          `json:"last_updated,omitempty"`
+	OrderId     int            `json:"order_id,omitempty"`
 }
 
 type category struct {
-	Identifier string      `json:"identifier,omitempty"`
-	Label      string      `json:"label,omitempty"`
-	Items      []category  `json:"items,omitempty"`
-	Id         string      `json:"id,omitempty"`
-	Name       string      `json:"name,omitempty"`
-	Type       string      `json:"type,omitempty"`
-	Unread     int64       `json:"unread,omitempty"`
-	BareId     data.FeedId `json:"bare_id,omitempty"`
-	Param      string      `json:"param,omitempty"`
+	Identifier string         `json:"identifier,omitempty"`
+	Label      string         `json:"label,omitempty"`
+	Items      []category     `json:"items,omitempty"`
+	Id         string         `json:"id,omitempty"`
+	Name       string         `json:"name,omitempty"`
+	Type       string         `json:"type,omitempty"`
+	Unread     int64          `json:"unread,omitempty"`
+	BareId     content.FeedID `json:"bare_id,omitempty"`
+	Param      string         `json:"param,omitempty"`
 }
 
 type feedTreeContent struct {
 	Categories category `json:"categories"`
 }
 
-func getFeeds(req request, user content.User) (interface{}, error) {
+func getFeeds(req request, user content.User, service repo.Service) (interface{}, error) {
 	fContent := feedsContent{}
 
+	articleRepo := service.ArticleRepo()
 	if req.CatId == CAT_ALL || req.CatId == CAT_SPECIAL {
-		unreadFav := user.Count(data.ArticleCountOptions{UnreadOnly: true, FavoriteOnly: true})
+		unreadFav, err := articleRepo.Count(user, content.UnreadOnly, content.FavoriteOnly)
+		if err != nil {
+			return nil, errors.WithMessage(err, "getting unread favorite count")
+		}
 
 		if unreadFav > 0 || !req.UnreadOnly {
 			fContent = append(fContent, feed{
@@ -54,7 +58,10 @@ func getFeeds(req request, user content.User) (interface{}, error) {
 		}
 
 		freshTime := time.Now().Add(FRESH_DURATION)
-		unreadFresh := user.Count(data.ArticleCountOptions{UnreadOnly: true, AfterDate: freshTime})
+		unreadFresh, err := articleRepo.Count(user, content.TimeRange(freshTime, time.Time{}), content.UnreadOnly)
+		if err != nil {
+			return nil, errors.WithMessage(err, "getting unread fresh count")
+		}
 
 		if unreadFresh > 0 || !req.UnreadOnly {
 			fContent = append(fContent, feed{
@@ -65,7 +72,10 @@ func getFeeds(req request, user content.User) (interface{}, error) {
 			})
 		}
 
-		unreadAll := user.Count(data.ArticleCountOptions{UnreadOnly: true})
+		unreadAll, err := articleRepo.Count(user, content.UnreadOnly)
+		if err != nil {
+			return nil, errors.WithMessage(err, "getting unread count")
+		}
 
 		if unreadAll > 0 || !req.UnreadOnly {
 			fContent = append(fContent, feed{
@@ -77,24 +87,41 @@ func getFeeds(req request, user content.User) (interface{}, error) {
 		}
 	}
 
-	var feeds []content.UserFeed
-	var catId int
+	var feeds []content.Feed
+	var err error
+	var catID int
 	if req.CatId == CAT_ALL || req.CatId == CAT_ALL_EXCEPT_VIRTUAL {
-		feeds = user.AllFeeds()
+		feeds, err = service.FeedRepo().ForUser(user)
+		if err != nil {
+			return nil, errors.WithMessage(err, "getting user feeds")
+		}
 	} else {
 		if req.CatId == CAT_UNCATEGORIZED {
-			tagged := user.AllTaggedFeeds()
-			for _, t := range tagged {
-				if len(t.Tags()) == 0 {
-					feeds = append(feeds, t)
+			allFeeds, err := service.FeedRepo().ForUser(user)
+			if err != nil {
+				return nil, errors.WithMessage(err, "getting user feeds")
+			}
+
+			for _, feed := range allFeeds {
+				tags, err := service.TagRepo().ForFeed(feed, user)
+				if err != nil {
+					return nil, errors.WithMessage(err, "getting feed tags")
+				}
+
+				if len(tags) == 0 {
+					feeds = append(feeds, feed)
 				}
 			}
 		} else if req.CatId > 0 {
-			catId = int(req.CatId)
-			t := user.TagById(req.CatId)
-			tagged := t.AllFeeds()
-			if t.HasErr() {
-				return nil, errors.Wrapf(t.Err(), "getting tag %s feeds", t.Data().Value)
+			catID = int(req.CatId)
+			tag, err := service.TagRepo().Get(req.CatId, user)
+			if err != nil {
+				return nil, errors.WithMessage(err, "getting user tag")
+			}
+
+			tagged, err := service.FeedRepo().ForTag(tag, user)
+			if err != nil {
+				return nil, errors.WithMessage(err, "getting tag feeds")
 			}
 			for _, t := range tagged {
 				feeds = append(feeds, t)
@@ -103,23 +130,25 @@ func getFeeds(req request, user content.User) (interface{}, error) {
 	}
 
 	if len(feeds) > 0 {
-		o := data.ArticleCountOptions{UnreadOnly: true}
-		for i := range feeds {
+		for i, f := range feeds {
 			if req.Limit > 0 {
 				if i < req.Offset || i >= req.Limit+req.Offset {
 					continue
 				}
 			}
 
-			d := feeds[i].Data()
-			unread := feeds[i].Count(o)
+			unread, err := articleRepo.Count(
+				user, content.UnreadOnly, content.FeedIDs([]content.FeedID{f.ID}))
+			if err != nil {
+				return nil, errors.WithMessage(err, "getting feed unread count")
+			}
 
 			if unread > 0 || !req.UnreadOnly {
 				fContent = append(fContent, feed{
-					Id:          d.Id,
-					Title:       d.Title,
-					FeedUrl:     d.Link,
-					CatId:       catId,
+					Id:          f.ID,
+					Title:       f.Title,
+					FeedUrl:     f.Link,
+					CatId:       catID,
 					Unread:      unread,
 					LastUpdated: time.Now().Unix(),
 					OrderId:     0,
@@ -128,65 +157,85 @@ func getFeeds(req request, user content.User) (interface{}, error) {
 		}
 	}
 
-	if user.HasErr() {
-		return nil, errors.Wrap(user.Err(), "getting user feeds")
-	}
-
 	return fContent, nil
 }
 
-func updateFeed(req request, user content.User) (interface{}, error) {
+func updateFeed(req request, user content.User, service repo.Service) (interface{}, error) {
 	return genericContent{Status: "OK"}, nil
 }
 
-func catchupFeed(req request, user content.User) (interface{}, error) {
-	var ar content.ArticleRepo
-	o := data.ArticleUpdateStateOptions{BeforeDate: time.Now()}
+func catchupFeed(req request, user content.User, service repo.Service) (interface{}, error) {
+	o := []content.QueryOpt{content.TimeRange(time.Time{}, time.Now())}
+
+	var feedGenerator func() ([]content.Feed, error)
 
 	if req.IsCat {
-		tagId := data.TagId(req.FeedId)
-		ar = user.TagById(tagId)
+		tagID := content.TagID(req.FeedId)
 
-		if tagId == CAT_UNCATEGORIZED {
-			o.UntaggedOnly = true
-		}
-	} else {
-		ar = user.FeedById(req.FeedId)
-	}
+		if tagID == CAT_UNCATEGORIZED {
+			o = append(o, content.UntaggedOnly)
+		} else {
+			tag, err := service.TagRepo().Get(tagID, user)
+			if err != nil {
+				return nil, errors.WithMessage(err, "getting tag for user")
+			}
 
-	if ar != nil {
-		ar.ReadState(true, o)
-
-		if e, ok := ar.(content.Error); ok {
-			if e.HasErr() {
-				return nil, errors.Wrap(e.Err(), "setting read state")
+			feedGenerator = func() ([]content.Feed, error) {
+				return service.FeedRepo().ForTag(tag, user)
 			}
 		}
-
-		return genericContent{Status: "OK"}, nil
+	} else {
+		feedGenerator = func() ([]content.Feed, error) {
+			feed, err := service.FeedRepo().Get(req.FeedId, user)
+			return []content.Feed{feed}, err
+		}
 	}
 
-	return nil, errors.New("no article repo")
+	if feedGenerator != nil {
+		feeds, err := feedGenerator()
+		if err != nil {
+			return nil, errors.WithMessage(err, "getting feeds")
+		}
+
+		ids := make([]content.FeedID, len(feeds))
+		for i := range feeds {
+			ids[i] = feeds[i].ID
+		}
+
+		o = append(o, content.FeedIDs(ids))
+	}
+
+	if err := service.ArticleRepo().Read(true, user, o...); err != nil {
+		return nil, errors.WithMessage(err, "setting read state")
+	}
+
+	return genericContent{Status: "OK"}, nil
 }
 
-func getFeedTree(req request, user content.User) (interface{}, error) {
+func getFeedTree(req request, user content.User, service repo.Service) (interface{}, error) {
 	items := []category{}
 
-	special, err := createSpecialCategory(user)
+	special, err := createSpecialCategory(service.ArticleRepo(), user)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting special categories")
+		return nil, errors.WithMessage(err, "getting special categories")
 	}
 	items = append(items, special)
 
-	tf := user.AllTaggedFeeds()
+	feeds, err := service.FeedRepo().ForUser(user)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting user feeds")
+	}
 
 	uncat := category{Id: "CAT:0", Items: []category{}, BareId: 0, Name: "Uncategorized", Type: "category"}
 	tagCategories := map[content.Tag]category{}
 
-	for _, f := range tf {
-		tags := f.Tags()
+	for _, f := range feeds {
+		tags, err := service.TagRepo().ForFeed(f, user)
+		if err != nil {
+			return nil, errors.WithMessage(err, "getting feed tags")
+		}
 
-		item, err := feedListCategoryFeed(user, f, f.Data().Id, true)
+		item, err := feedListCategoryFeed(service.ArticleRepo(), user, f, f.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -198,9 +247,9 @@ func getFeedTree(req request, user content.User) (interface{}, error) {
 					c = cached
 				} else {
 					c = category{
-						Id:     "CAT:" + strconv.FormatInt(int64(t.Data().Id), 10),
-						BareId: data.FeedId(t.Data().Id),
-						Name:   string(t.Data().Value),
+						Id:     "CAT:" + strconv.FormatInt(int64(t.ID), 10),
+						BareId: content.FeedID(t.ID),
+						Name:   string(t.Value),
 						Type:   "category",
 						Items:  []category{},
 					}
@@ -231,14 +280,10 @@ func getFeedTree(req request, user content.User) (interface{}, error) {
 	fl := category{Identifier: "id", Label: "name"}
 	fl.Items = items
 
-	if user.HasErr() {
-		return nil, errors.Wrap(user.Err(), "getting feed tree")
-	} else {
-		return feedTreeContent{Categories: fl}, nil
-	}
+	return feedTreeContent{Categories: fl}, nil
 }
 
-func specialTitle(id data.FeedId) (t string) {
+func specialTitle(id content.FeedID) (t string) {
 	switch id {
 	case FAVORITE_ID:
 		t = "Starred articles"
@@ -257,46 +302,53 @@ func specialTitle(id data.FeedId) (t string) {
 	return
 }
 
-func feedListCategoryFeed(u content.User, f content.UserFeed, id data.FeedId, includeUnread bool) (category, error) {
+func feedListCategoryFeed(
+	repo repo.Article,
+	user content.User,
+	feed content.Feed,
+	id content.FeedID,
+) (category, error) {
 	c := category{BareId: id, Id: "FEED:" + strconv.FormatInt(int64(id), 10), Type: "feed"}
 
-	copts := data.ArticleCountOptions{UnreadOnly: true}
-	if f != nil {
-		c.Name = f.Data().Title
-		c.Unread = f.Count(copts)
+	var err error
+	if feed.ID > 0 {
+		c.Name = feed.Title
+		c.Unread, err = repo.Count(
+			user, content.UnreadOnly, content.FeedIDs([]content.FeedID{feed.ID}))
 
-		if f.HasErr() {
-			return category{}, errors.Wrap(f.Err(), "getting feed unread count")
+		if err != nil {
+			return category{}, errors.WithMessage(err, "getting feed unread count")
 		}
 	} else {
 		c.Name = specialTitle(id)
 		switch id {
 		case FAVORITE_ID:
-			copts.FavoriteOnly = true
-			c.Unread = u.Count(copts)
+			c.Unread, err = repo.Count(user, content.UnreadOnly, content.FavoriteOnly)
 		case FRESH_ID:
-			copts.AfterDate = time.Now().Add(FRESH_DURATION)
-			c.Unread = u.Count(copts)
+			c.Unread, err = repo.Count(
+				user, content.UnreadOnly,
+				content.TimeRange(time.Now().Add(FRESH_DURATION), time.Time{}),
+			)
 		case ALL_ID:
-			c.Unread = u.Count(copts)
+			c.Unread, err = repo.Count(user, content.UnreadOnly)
 		}
 
-		if u.HasErr() {
-			return category{}, errors.Wrap(u.Err(), "getting user unread count")
+		if err != nil {
+			return category{}, errors.WithMessage(err, "getting feed count")
 		}
 	}
 
 	return c, nil
 }
 
-func createSpecialCategory(user content.User) (category, error) {
-	ids := [...]data.FeedId{ALL_ID, FRESH_ID, FAVORITE_ID, PUBLISHED_ID, ARCHIVED_ID, RECENTLY_READ_ID}
+func createSpecialCategory(repo repo.Article, user content.User) (category, error) {
+	ids := [...]content.FeedID{ALL_ID, FRESH_ID, FAVORITE_ID, PUBLISHED_ID, ARCHIVED_ID, RECENTLY_READ_ID}
 
 	special := category{Id: "CAT:-1", Items: make([]category, len(ids)), Name: "Special", Type: "category", BareId: -1}
 
 	var err error
 	for i, id := range ids {
-		special.Items[i], err = feedListCategoryFeed(user, nil, id, false)
+		special.Items[i], err = feedListCategoryFeed(repo, user, content.Feed{}, id)
 
 		if err != nil {
 			return category{}, err

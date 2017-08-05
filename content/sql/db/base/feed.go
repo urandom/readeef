@@ -9,6 +9,7 @@ func init() {
 	sqlStmts.Feed.GetLatestArticles = getLatestFeedArticles
 	sqlStmts.Feed.GetHubbubSubscription = getFeedHubbubSubscription
 	sqlStmts.Feed.GetUsers = getFeedUsers
+	sqlStmts.Feed.Attach = createUserFeed
 	sqlStmts.Feed.Detach = deleteUserFeed
 	sqlStmts.Feed.GetUserTags = getUserFeedTags
 	sqlStmts.Feed.CreateUserTag = createUserFeedTag
@@ -43,6 +44,9 @@ SELECT u.login, u.first_name, u.last_name, u.email, u.admin, u.active,
 FROM users u, users_feeds uf
 WHERE u.login = uf.user_login AND uf.feed_id = $1
 `
+	createUserFeed = `
+INSERT INTO users_feeds(user_login, feed_id)
+	SELECT $1, $2 EXCEPT SELECT user_login, feed_id FROM users_feeds WHERE user_login = $1 AND feed_id = $2`
 	deleteUserFeed = `DELETE FROM users_feeds WHERE user_login = $1 AND feed_id = $2`
 
 	getUserFeedTags = `

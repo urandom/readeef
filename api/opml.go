@@ -7,7 +7,7 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/parser"
 )
 
@@ -16,7 +16,11 @@ type importOPMLData struct {
 	DryRun bool   `json:"dryRun"`
 }
 
-func importOPML(feedManager *readeef.FeedManager) http.HandlerFunc {
+func importOPML(
+	repo repo.Feed,
+	feedManager *readeef.FeedManager,
+	log readeef.Logger,
+) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var payload importOPMLData
 		if stop := readJSON(w, r.Body, &payload); stop {
@@ -34,18 +38,18 @@ func importOPML(feedManager *readeef.FeedManager) http.HandlerFunc {
 			return
 		}
 
-		uf := user.AllFeeds()
-		if user.HasErr() {
-			http.Error(w, user.Err().Error(), http.StatusInternalServerError)
+		feeds, err := repo.ForUser(user)
+		if err != nil {
+			error(w, log, "Error getting user feeds: %+v", err)
 			return
 		}
 
-		userFeedMap := make(map[data.FeedId]bool)
-		for i := range uf {
-			userFeedMap[uf[i].Data().Id] = true
+		feedSet := feedSet{}
+		for i := range feeds {
+			feedSet[feeds[i].Id] = struct{}{}
 		}
+		feeds = make([]content.Feed, 0, 10)
 
-		var feeds []content.Feed
 		var skipped []string
 		for _, opmlFeed := range opml.Feeds {
 			discovered, err := feedManager.DiscoverFeeds(opmlFeed.Url)
@@ -55,21 +59,16 @@ func importOPML(feedManager *readeef.FeedManager) http.HandlerFunc {
 			}
 
 			for _, f := range discovered {
-				in := f.Data()
-
-				if !userFeedMap[in.Id] {
+				if !feedSet[f.ID] {
 					if len(opmlFeed.Tags) > 0 {
-						in.Link += "#" + strings.Join(opmlFeed.Tags, ",")
+						f.Link += "#" + strings.Join(opmlFeed.Tags, ",")
 					}
-
-					f.Data(in)
 
 					feeds = append(feeds, f)
 
 					if !payload.DryRun {
-						if err := addFeedByURL(in.Link, user, feedManager); err != nil {
-							http.Error(w, err.Error(), http.StatusInternalServerError)
-
+						if err := addFeedByURL(f.Link, user, feedManager); err != nil {
+							errors(w, log, "Error adding feed: %+v", err)
 							return
 						}
 					}
@@ -81,7 +80,11 @@ func importOPML(feedManager *readeef.FeedManager) http.HandlerFunc {
 	}
 }
 
-func exportOPML(feedManager *readeef.FeedManager) http.HandlerFunc {
+func exportOPML(
+	service repo.Service,
+	feedManager *readeef.FeedManager,
+	log readeef.Logger,
+) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
@@ -93,31 +96,36 @@ func exportOPML(feedManager *readeef.FeedManager) http.HandlerFunc {
 			Head:    parser.OpmlHead{Title: "Feed subscriptions of " + user.String() + " from readeef"},
 		}
 
-		if feeds := user.AllTaggedFeeds(); user.HasErr() {
-			http.Error(w, user.Err().Error(), http.StatusInternalServerError)
+		feeds, err := service.FeedRepo().ForUser(user)
+		if err != nil {
+			error(w, log, "Error getting user feeds: %+v", err)
 			return
-		} else {
-			body := parser.OpmlBody{}
-			for _, f := range feeds {
-				d := f.Data()
+		}
 
-				tags := f.Tags()
-				category := make([]string, len(tags))
-				for i, t := range tags {
-					category[i] = string(t.Data().Value)
-				}
-				body.Outline = append(body.Outline, parser.OpmlOutline{
-					Text:     d.Title,
-					Title:    d.Title,
-					XmlUrl:   d.Link,
-					HtmlUrl:  d.SiteLink,
-					Category: strings.Join(category, ","),
-					Type:     "rss",
-				})
+		body := parser.OpmlBody{}
+		tagRepo := service.TagRepo()
+		for _, f := range feeds {
+			tags, err := tagRepo.ForFeed(f, user)
+			if err != nil {
+				error(w, log, "Error getting feed tags: %+v", err)
+				return
 			}
 
-			o.Body = body
+			category := make([]string, len(tags))
+			for i, t := range tags {
+				category[i] = string(t.Value)
+			}
+			body.Outline = append(body.Outline, parser.OpmlOutline{
+				Text:     f.Title,
+				Title:    f.Title,
+				XmlUrl:   f.Link,
+				HtmlUrl:  f.SiteLink,
+				Category: strings.Join(category, ","),
+				Type:     "rss",
+			})
 		}
+
+		o.Body = body
 
 		if b, err := xml.MarshalIndent(o, "", "    "); err == nil {
 			args{"opml": xml.Header + string(b)}.WriteJSON(w)

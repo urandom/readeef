@@ -15,7 +15,7 @@ type extract struct {
 	log       readeef.Logger
 }
 
-func FromExtract(e content.Extractor, l readeef.Logger) (content.Thumbnailer, error) {
+func FromExtract(e content.Extractor, l readeef.Logger) (Generator, error) {
 	if e == nil {
 		return nil, errors.New("A valid extractor is required")
 	}

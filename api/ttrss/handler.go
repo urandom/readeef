@@ -13,40 +13,42 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/base/processor"
+	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/content/search"
 )
 
 type request struct {
-	Op            string           `json:"op"`
-	Sid           string           `json:"sid"`
-	Seq           int              `json:"seq"`
-	User          string           `json:"user"`
-	Password      string           `json:"password"`
-	OutputMode    string           `json:"output_mode"`
-	UnreadOnly    bool             `json:"unread_only"`
-	IncludeEmpty  bool             `json:"include_empty"`
-	Limit         int              `json:"limit"`
-	Offset        int              `json:"offset"`
-	CatId         data.TagId       `json:"cat_id"`
-	FeedId        data.FeedId      `json:"feed_id"`
-	Skip          int              `json:"skip"`
-	IsCat         bool             `json:"is_cat"`
-	ShowContent   bool             `json:"show_content"`
-	ShowExcerpt   bool             `json:"show_excerpt"`
-	ViewMode      string           `json:"view_mode"`
-	SinceId       data.ArticleId   `json:"since_id"`
-	Sanitize      bool             `json:"sanitize"`
-	HasSandbox    bool             `json:"has_sandbox"`
-	IncludeHeader bool             `json:"include_header"`
-	OrderBy       string           `json:"order_by"`
-	Search        string           `json:"search"`
-	ArticleIds    []data.ArticleId `json:"article_ids"`
-	Mode          int              `json:"mode"`
-	Field         int              `json:"field"`
-	Data          string           `json:"data"`
-	ArticleId     []data.ArticleId `json:"article_id"`
-	PrefName      string           `json:"pref_name"`
-	FeedUrl       string           `json:"feed_url"`
+	Op            string              `json:"op"`
+	Sid           string              `json:"sid"`
+	Seq           int                 `json:"seq"`
+	User          string              `json:"user"`
+	Password      string              `json:"password"`
+	OutputMode    string              `json:"output_mode"`
+	UnreadOnly    bool                `json:"unread_only"`
+	IncludeEmpty  bool                `json:"include_empty"`
+	Limit         int                 `json:"limit"`
+	Offset        int                 `json:"offset"`
+	CatId         content.TagID       `json:"cat_id"`
+	FeedId        content.FeedID      `json:"feed_id"`
+	Skip          int                 `json:"skip"`
+	IsCat         bool                `json:"is_cat"`
+	ShowContent   bool                `json:"show_content"`
+	ShowExcerpt   bool                `json:"show_excerpt"`
+	ViewMode      string              `json:"view_mode"`
+	SinceId       content.ArticleID   `json:"since_id"`
+	Sanitize      bool                `json:"sanitize"`
+	HasSandbox    bool                `json:"has_sandbox"`
+	IncludeHeader bool                `json:"include_header"`
+	OrderBy       string              `json:"order_by"`
+	Search        string              `json:"search"`
+	ArticleIds    []content.ArticleID `json:"article_ids"`
+	Mode          int                 `json:"mode"`
+	Field         int                 `json:"field"`
+	Data          string              `json:"data"`
+	ArticleId     []content.ArticleID `json:"article_id"`
+	PrefName      string              `json:"pref_name"`
+	FeedUrl       string              `json:"feed_url"`
 }
 
 type response struct {
@@ -55,7 +57,7 @@ type response struct {
 	Content json.RawMessage `json:"content"`
 }
 
-type action func(request, content.User) (interface{}, error)
+type action func(request, content.User, repo.Service) (interface{}, error)
 
 type errorContent struct {
 	Error string `json:"error"`
@@ -89,17 +91,20 @@ var (
 
 func Handler(
 	ctx context.Context,
-	repo content.Repo,
-	searchProvider content.SearchProvider,
+	service repo.Service,
+	searchProvider search.Provider,
 	feedManager *readeef.FeedManager,
+	processors []content.ArticleProcessor,
 	secret []byte,
 	update time.Duration,
 	log readeef.Logger,
 ) http.HandlerFunc {
 	sessionManager := newSession(ctx)
 
+	processors = filterProcessors(processors)
+
 	registerAuthActions(sessionManager, secret)
-	registerArticleActions(searchProvider)
+	registerArticleActions(searchProvider, processors)
 	registerSettingActions(feedManager, update)
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -118,12 +123,13 @@ func Handler(
 
 		resp.Seq = req.Seq
 
+		userRepo := service.UserRepo()
 		if req.Op == "login" {
-			user = repo.UserByLogin(data.Login(req.User))
+			user, err = userRepo.Get(content.Login(req.User))
 		} else if req.Op != "isLoggedIn" {
 			if sess := sessionManager.get(req.Sid); sess.login != "" {
-				user = repo.UserByLogin(data.Login(sess.login))
-				if !user.HasErr() {
+				user, err = userRepo.Get(content.Login(sess.login))
+				if err == nil {
 					sess.lastVisit = time.Now()
 					sessionManager.set(req.Sid, sess)
 				}
@@ -132,8 +138,8 @@ func Handler(
 			}
 		}
 
-		if user != nil && user.HasErr() {
-			err = errors.WithStack(newErr(user.Err().Error(), "NOT_LOGGED_IN"))
+		if err != nil {
+			err = errors.WithStack(newErr(err.Error(), "NOT_LOGGED_IN"))
 		}
 
 		if err == nil {
@@ -144,7 +150,7 @@ func Handler(
 				a = unknown
 			}
 
-			con, err = a(req, user)
+			con, err = a(req, user, service)
 		}
 
 		if err == nil {
@@ -198,6 +204,20 @@ func writeJson(w http.ResponseWriter, req request, resp response, data interface
 
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+}
+
+func filterProcessors(input []content.ArticleProcessor) []content.ArticleProcessor {
+	processors := make([]content.ArticleProcessor, 0, len(input))
+
+	for i := range input {
+		if _, ok := input[i].(processor.ProxyHTTP); ok {
+			continue
+		}
+
+		processors = append(processors, input[i])
+	}
+
+	return processors
 }
 
 type err struct {

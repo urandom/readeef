@@ -5,11 +5,10 @@ func init() {
 	sqlStmts.User.Update = updateUser
 	sqlStmts.User.Delete = deleteUser
 	sqlStmts.User.GetFeed = getUserFeed
-	sqlStmts.User.CreateFeed = createUserFeed
 	sqlStmts.User.GetFeeds = getUserFeeds
 	sqlStmts.User.GetFeedIdsTags = getUserFeedIdsTags
 	sqlStmts.User.GetTags = getUserTags
-	sqlStmts.User.GetTag = getTag
+	sqlStmts.User.GetTag = getUserTag
 	sqlStmts.User.GetTagByValue = GetTagByValue
 }
 
@@ -28,9 +27,6 @@ FROM feeds f, users_feeds uf
 WHERE f.id = uf.feed_id
 	AND f.id = $1 AND uf.user_login = $2
 `
-	createUserFeed = `
-INSERT INTO users_feeds(user_login, feed_id)
-	SELECT $1, $2 EXCEPT SELECT user_login, feed_id FROM users_feeds WHERE user_login = $1 AND feed_id = $2`
 	getUserFeeds = `
 SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
 FROM feeds f, users_feeds uf
@@ -50,6 +46,11 @@ FROM tags t LEFT OUTER JOIN users_feeds_tags uft
 	ON t.id = uft.tag_id
 WHERE uft.user_login = $1
 `
-	getTag        = `SELECT value FROM tags WHERE id = $1`
+	getUserTag = `
+SELECT t.value
+FROM tags t LEFT OUTER JOIN users_feeds_tags uft
+	ON t.id = uft.tag_id
+WHERE id = $1 AND ift.user_login = $2
+`
 	GetTagByValue = `SELECT id FROM tags WHERE value = $1`
 )

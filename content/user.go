@@ -18,13 +18,14 @@ type Login string
 
 // User represents a readeef user.
 type User struct {
-	Login       Login  `json:"login"`
-	FirstName   string `db:"first_name" json:"firstName"`
-	LastName    string `db:"last_name" json:"lastName"`
-	Email       string `json:"email"`
-	HashType    string `db:"hash_type" json:"-"`
-	Admin       bool   `json:"admin"`
-	Active      bool   `json:"active"`
+	Login     Login  `json:"login"`
+	FirstName string `db:"first_name" json:"firstName"`
+	LastName  string `db:"last_name" json:"lastName"`
+	Email     string `json:"email"`
+	HashType  string `db:"hash_type" json:"-"`
+	Admin     bool   `json:"admin"`
+	Active    bool   `json:"active"`
+	// TODO: remove this, make a custom ProfileData db serializer
 	ProfileJSON []byte `db:"profile_data" json:"-"`
 	Salt        []byte `json:"-"`
 	Hash        []byte `json:"-"`
@@ -34,9 +35,9 @@ type User struct {
 }
 
 func (u *User) Password(password string, secret []byte) error {
-	h := md5.Sum([]byte(fmt.Sprintf("%s:%s", u.data.Login, password)))
+	h := md5.Sum([]byte(fmt.Sprintf("%s:%s", u.Login, password)))
 
-	u.data.MD5API = h[:]
+	u.MD5API = h[:]
 
 	c := 30
 	salt := make([]byte, c)
@@ -44,22 +45,24 @@ func (u *User) Password(password string, secret []byte) error {
 		return errors.Wrap(err, "generating salt")
 	}
 
-	u.data.Salt = salt
-	u.data.HashType = "scrypt"
+	u.Salt = salt
+	u.HashType = "scrypt"
 	hash, err := u.generateHash(password, secret)
 	if err != nil {
 		return errors.WithMessage(err, "generating password hash")
 	}
 
-	u.data.Hash = hash
+	u.Hash = hash
+
+	return nil
 }
 
 // Validate checks whether all required fields have been provided.
 func (u User) Validate() error {
-	if u.data.Login == "" {
+	if u.Login == "" {
 		return NewValidationError(errors.New("invalid user login"))
 	}
-	if u.data.Email != "" {
+	if u.Email != "" {
 		if _, err := mail.ParseAddress(u.String()); err != nil {
 			return NewValidationError(err)
 		}
@@ -69,16 +72,12 @@ func (u User) Validate() error {
 }
 
 func (u User) Authenticate(password string, secret []byte) (bool, error) {
-	if u.HasErr() {
-		return false
-	}
-
 	hash, err := u.generateHash(password, secret)
 	if err != nil {
 		return false, errors.WithMessage(err, "authenticating user")
 	}
 
-	return subtle.ConstantTimeCompare(u.data.Hash, hash) == 1, nil
+	return subtle.ConstantTimeCompare(u.Hash, hash) == 1, nil
 }
 
 func (u User) String() string {
@@ -87,7 +86,7 @@ func (u User) String() string {
 	} else if u.Email != "" {
 		return fmt.Sprintf("%s: (%s)", u.Login, u.Email)
 	} else {
-		return u.Login
+		return string(u.Login)
 	}
 }
 

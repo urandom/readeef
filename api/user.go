@@ -4,8 +4,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 )
 
 func getUserData(w http.ResponseWriter, r *http.Request) {
@@ -17,15 +18,16 @@ func getUserData(w http.ResponseWriter, r *http.Request) {
 	args{"user": user}.WriteJSON(w)
 }
 
-func listUsers(w http.ResponseWriter, r *http.Request) {
-	if user, stop := userFromRequest(w, r); stop {
-		return
-	} else {
-		repo := user.Repo()
+func listUsers(repo repo.User, log readeef.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
 
-		users := repo.AllUsers()
-		if repo.HasErr() {
-			http.Error(w, "Error getting users: "+repo.Err().Error(), http.StatusInternalServerError)
+		users, err := repo.All()
+		if err != nil {
+			errors(w, log, "Error getting users: %+v", err)
 			return
 		}
 
@@ -34,16 +36,16 @@ func listUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 type addUserData struct {
-	Login     data.Login `json:"login"`
-	FirstName string     `json:"firstName"`
-	LastName  string     `json:"lastName"`
-	Email     string     `json:"email"`
-	Admin     bool       `json:"admin"`
-	Active    bool       `json:"active"`
-	Password  string     `json:"password"`
+	Login     content.Login `json:"login"`
+	FirstName string        `json:"firstName"`
+	LastName  string        `json:"lastName"`
+	Email     string        `json:"email"`
+	Admin     bool          `json:"admin"`
+	Active    bool          `json:"active"`
+	Password  string        `json:"password"`
 }
 
-func addUser(secret []byte) http.HandlerFunc {
+func addUser(repo repo.User, secret []byte, log readeef.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
@@ -55,75 +57,78 @@ func addUser(secret []byte) http.HandlerFunc {
 			return
 		}
 
-		u := user.Repo().UserByLogin(userData.Login)
-		if u.HasErr() {
-			err := u.Err()
-			if err != content.ErrNoContent {
-				http.Error(w, "Error getting user: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			in := data.User{
-				Login:     userData.Login,
-				FirstName: userData.FirstName,
-				LastName:  userData.LastName,
-				Email:     userData.Email,
-				Admin:     userData.Admin,
-				Active:    userData.Active,
-			}
-
-			u := user.Repo().User()
-			u.Data(in)
-			u.Password(userData.Password, secret)
-
-			u.Update()
-
-			if u.HasErr() {
-				http.Error(w, "Error creating user:"+u.Err().Error(), http.StatusInternalServerError)
-			} else {
-				args{"success": true}.WriteJSON(w)
-			}
-		} else {
+		u, err := repo.Get(userData.Login)
+		if err == nil {
 			http.Error(w, "User exists", http.StatusConflict)
 			return
+		} else if !content.IsNoContent(err) {
+			error(w, log, "Error getting user: %+v", err)
+			return
 		}
+
+		u = content.User{
+			Login:     userData.Login,
+			FirstName: userData.FirstName,
+			LastName:  userData.LastName,
+			Email:     userData.Email,
+			Admin:     userData.Admin,
+			Active:    userData.Active,
+		}
+
+		if err = u.Password(userData.Password, secret); err != nil {
+			error(w, log, "Error setting user password: %+v", err)
+			return
+		}
+
+		if err = repo.Update(u); err != nil {
+			error(w, log, "Error updating user: %+v", err)
+			return
+		}
+
+		args{"success": true}.WriteJSON(w)
 	}
 }
 
-func deleteUser(w http.ResponseWriter, r *http.Request) {
-	user, stop := userFromRequest(w, r)
-	if stop {
-		return
-	}
+func deleteUser(repo repo.User, log readeef.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
 
-	name := data.Login(chi.URLParam(r, "name"))
-	if user.Data().Login == name {
-		http.Error(w, "Current user", http.StatusConflict)
-		return
-	}
+		name := content.Login(chi.URLParam(r, "name"))
+		if user.Login == name {
+			http.Error(w, "Current user", http.StatusConflict)
+			return
+		}
 
-	u := user.Repo().UserByLogin(name)
-	u.Delete()
+		u, err := repo.Get(name)
+		if err == nil {
+			err = repo.Delete(u)
+		}
 
-	if u.HasErr() {
-		http.Error(w, "Error deleting user: "+u.Err().Error(), http.StatusInternalServerError)
-	} else {
+		if err != nil {
+			error(w, log, "Error deleting user: %+v", err)
+			return
+		}
+
 		args{"success": true}.WriteJSON(w)
 	}
 }
 
 func adminValidator(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if user, stop := userFromRequest(w, r); stop {
+		user, stop := userFromRequest(w, r)
+		if stop {
 			return
-		} else {
-			if !user.Data().Admin {
-				http.Error(w, "Forbidden", http.StatusForbidden)
-				return
-			}
-
-			next.ServeHTTP(w, r)
 		}
+
+		if !user.Admin {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		next.ServeHTTP(w, r)
 
 	})
 }

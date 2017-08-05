@@ -8,97 +8,91 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 )
 
-func unreadRecent(r *http.Request, resp resp, user content.User, log readeef.Logger) error {
+func unreadRecent(
+	r *http.Request,
+	resp resp,
+	user content.User,
+	service repo.Service,
+	log readeef.Logger,
+) error {
 	log.Infoln("Marking recently read fever items as unread")
 
 	t := time.Now().Add(-24 * time.Hour)
-	user.ReadState(false, data.ArticleUpdateStateOptions{
-		BeforeDate: time.Now(),
-		AfterDate:  t,
-	})
+	err := service.ArticleRepo().Read(false, user, content.TimeRange(t, time.Now()))
 
-	if user.HasErr() {
-		return errors.Wrap(user.Err(), "marking recently read articles as unread")
+	if err != nil {
+		return errors.WithMessage(err, "marking recently read articles as unread")
 	}
 
 	return nil
 }
 
-func markItem(r *http.Request, resp resp, user content.User, log readeef.Logger) error {
+func markItem(
+	r *http.Request,
+	resp resp,
+	user content.User,
+	service repo.Service,
+	log readeef.Logger,
+) error {
 	val := r.FormValue("mark")
-	if val == "item" {
-		log.Infof("Marking fever item '%s' as '%s'\n", r.PostFormValue("id"), r.PostFormValue("as"))
+	opts := []content.QueryOpt{}
 
-		id, err := strconv.ParseInt(r.PostFormValue("id"), 10, 64)
-		if err != nil {
-			return errors.Wrapf(err, "parsing id %s", r.FormValue("id"))
-		}
+	id, err := strconv.ParseInt(r.PostFormValue("id"), 10, 64)
+	if err != nil {
+		return errors.Wrapf(err, "parsing id %s", r.FormValue("id"))
+	}
 
-		article := user.ArticleById(data.ArticleId(id), data.ArticleQueryOptions{SkipSessionProcessors: true})
-		if user.HasErr() {
-			return errors.Wrapf(user.Err(), "getting user article %d", id)
-		}
-
-		switch r.FormValue("as") {
-		case "read":
-			article.Read(true)
-		case "saved":
-			article.Favorite(true)
-		case "unsaved":
-			article.Favorite(false)
-		default:
-			err = errors.New("Unknown 'as' action")
-		}
-		if err == nil {
-			err = article.Err()
-		}
-
-		if err != nil {
-			return errors.Wrapf(err, "executing mark command %s", r.FormValue("as"))
-		}
-	} else if val == "feed" || val == "group" {
-		log.Infof("Marking fever %s '%s' as '%s'\n", val, r.FormValue("id"), r.FormValue("as"))
-		if r.FormValue("as") != "read" {
-			return errors.Errorf("unknown command %s", r.FormValue("as"))
-		}
-
-		id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
-		if err != nil {
-			return errors.Wrapf(err, "parsing id %s", r.FormValue("id"))
-		}
-
+	switch val {
+	case "item":
+		opts = append(opts, content.IDs([]content.ArticleID{content.ArticleID(id)}))
+	case "group", "feed":
 		timestamp, err := strconv.ParseInt(r.FormValue("before"), 10, 64)
 		if err != nil {
 			return errors.Wrapf(err, "parsing before value %s", r.FormValue("before"))
 		}
 
-		t := time.Unix(timestamp, 0)
+		opts = append(opts, content.TimeRange(time.Time{}, time.Unix(timestamp, 0)))
+
+		if id == 0 {
+			break
+		}
 
 		if val == "feed" {
-			feed := user.FeedById(data.FeedId(id))
-			feed.ReadState(true, data.ArticleUpdateStateOptions{
-				BeforeDate: t,
-			})
+			opts = append(opts, content.FeedIDs([]content.FeedID{content.FeedID(id)}))
+		} else {
+			tagRepo := service.TagRepo()
+			tag, err := tagRepo.Get(content.TagID(id), user)
+			if err != nil {
+				return errors.WithMessage(err, "getting user tag")
+			}
 
-			if feed.HasErr() {
-				return errors.Wrapf(feed.Err(), "operating on feed %d", id)
+			ids, err := tagRepo.FeedIDs(tag, user)
+			if err != nil {
+				return errors.WithMessage(err, "getting tag feed ids")
 			}
-		} else if val == "group" {
-			if id == 1 || id == 0 {
-				user.ReadState(true, data.ArticleUpdateStateOptions{
-					BeforeDate: t,
-				})
-				if user.HasErr() {
-					return errors.Wrap(user.Err(), "marking user articles as read")
-				}
-			} else {
-				return errors.Errorf("Unknown group %d\n", id)
-			}
+
+			opts = append(opts, content.FeedIDs(ids))
 		}
+	default:
+		return errors.Errorf("unknown mark type %s", val)
 	}
 
-	return nil
+	switch action := r.FormValue("as"); action {
+	case "read":
+		return service.ArticleRepo().Read(true, user, opts...)
+	case "saved":
+		return service.ArticleRepo().Favor(true, user, opts...)
+	case "unsaved":
+		return service.ArticleRepo().Favor(false, user, opts...)
+	default:
+		return errors.Errorf("unknown action %s", action)
+	}
+}
+
+func init() {
+	actions["unread_recently_read"] = unreadRecent
+	actions["mark"] = markItem
 }

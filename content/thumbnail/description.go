@@ -13,7 +13,7 @@ type description struct {
 	log readeef.Logger
 }
 
-func FromDescription(l readeef.Logger) content.Thumbnailer {
+func FromDescription(l readeef.Logger) Generator {
 	return description{log: l}
 }
 

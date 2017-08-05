@@ -8,4 +8,6 @@ type User interface {
 	All() ([]content.User, error)
 	Update(content.User) error
 	Delete(content.User) error
+
+	FindByMD5([]byte) (content.User, error)
 }

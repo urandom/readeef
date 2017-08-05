@@ -142,7 +142,7 @@ func (h *Hubbub) InitSubscriptions(service repo.Service) error {
 	feedRepo := service.FeedRepo()
 	go func() {
 		for _, s := range subscriptions {
-			f, err := feedRepo.Get(s.FeedID)
+			f, err := feedRepo.Get(s.FeedID, content.User{})
 			if err != nil {
 				h.log.Printf("Error getting subscription feed: %+v\n", err)
 				continue
@@ -171,8 +171,8 @@ func (h *Hubbub) InitSubscriptions(service repo.Service) error {
 				subscriptions = filtered
 			case <-after:
 				for _, s := range subscriptions {
-					if s.Data().VerificationTime.Add(time.Duration(s.Data().LeaseDuration)).Before(time.Now().Add(-30 * time.Minute)) {
-						f, err := feedRepo.Get(s.Feedid)
+					if s.VerificationTime.Add(time.Duration(s.Data().LeaseDuration)).Before(time.Now().Add(-30 * time.Minute)) {
+						f, err := feedRepo.Get(s.FeedID, content.User{})
 						if err != nil {
 							h.log.Printf("Error getting subscription feed: %+v\n", err)
 							continue

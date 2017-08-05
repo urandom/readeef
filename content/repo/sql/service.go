@@ -44,3 +44,7 @@ func (s Service) SubscriptionRepo() repo.Subscription {
 func (s Service) ArticleRepo() repo.Article {
 	return articleRepo{db, log}
 }
+
+func (s Service) ExtractRepo() repo.Article {
+	return extractRepo{db, log}
+}

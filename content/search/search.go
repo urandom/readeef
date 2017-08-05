@@ -17,7 +17,7 @@ const (
 
 type Provider interface {
 	IsNewIndex() bool
-	Search(string, content.User, []content.FeedID, ...content.QueryOpts) ([]UserArticle, error)
+	Search(string, content.User, ...content.QueryOpt) ([]content.Article, error)
 	BatchIndex(articles []content.Article, op indexOperation) error
 }
 

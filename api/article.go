@@ -11,9 +11,10 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/urandom/handler/method"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/base/search"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/content/search"
 	"github.com/urandom/text-summary/summarize"
 )
 
@@ -25,224 +26,27 @@ func getArticle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func formatArticle(extractor content.Extractor) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		user, stop := userFromRequest(w, r)
-		if stop {
-			return
-		}
-
-		article, stop := articleFromRequest(w, r)
-		if stop {
-			return
-		}
-
-		extract := article.Extract()
-
-		extractData := extract.Data()
-		if extract.HasErr() {
-			switch err := extract.Err(); err {
-			case content.ErrNoContent:
-				if extractData, err = extractor.Extract(article.Data().Link); err != nil {
-					http.Error(w, "Error getting article extract: "+err.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				extractData.ArticleId = article.Data().Id
-				extract.Data(extractData)
-				extract.Update()
-				if extract.HasErr() {
-					http.Error(w, "Error updating article extract: "+extract.Err().Error(), http.StatusInternalServerError)
-					return
-				}
-			default:
-				http.Error(w, "Error getting article extract: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-		}
-
-		processors := user.Repo().ArticleProcessors()
-		if len(processors) > 0 {
-			a := user.Repo().UserArticle(user)
-			a.Data(data.Article{Description: extractData.Content})
-
-			ua := []content.UserArticle{a}
-
-			if extractData.TopImage != "" {
-				a = user.Repo().UserArticle(user)
-				a.Data(data.Article{
-					Description: fmt.Sprintf(`<img src="%s">`, extractData.TopImage),
-				})
-
-				ua = append(ua, a)
-			}
-
-			for _, p := range processors {
-				ua = p.ProcessArticles(ua)
-			}
-
-			extractData.Content = ua[0].Data().Description
-
-			if extractData.TopImage != "" {
-				content := ua[1].Data().Description
-
-				content = strings.Replace(content, `<img src="`, "", -1)
-				i := strings.Index(content, `"`)
-				content = content[:i]
-
-				extractData.TopImage = content
-			}
-		}
-
-		s := summarize.NewFromString(extractData.Title, search.StripTags(extractData.Content))
-
-		s.Language = extractData.Language
-		keyPoints := s.KeyPoints()
-
-		for i := range keyPoints {
-			keyPoints[i] = html.UnescapeString(keyPoints[i])
-		}
-
-		args{
-			"keyPoints": keyPoints,
-			"content":   extractData.Content,
-			"topImage":  extractData.TopImage,
-		}.WriteJSON(w)
-	}
-}
-
-type articleState int
-
-const (
-	read articleState = iota
-	favorite
-)
-
-func articleStateChange(state articleState) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		article, stop := articleFromRequest(w, r)
-		if stop {
-			return
-		}
-
-		var value bool
-		if stop = readJSON(w, r.Body, &value); stop {
-			return
-		}
-
-		in := article.Data()
-		var previousState bool
-
-		if state == read {
-			previousState = in.Read
-		} else {
-			previousState = in.Favorite
-		}
-
-		if previousState != value {
-			if state == read {
-				article.Read(value)
-			} else {
-				article.Favorite(value)
-			}
-
-			if article.HasErr() {
-				http.Error(w, "Error setting article "+state.String()+" state: "+article.Err().Error(), http.StatusInternalServerError)
-				return
-			}
-		}
-
-		args{
-			"success":      previousState != value,
-			state.String(): value,
-		}.WriteJSON(w)
-	}
-}
-
 type articleRepoType int
 
 const (
-	userRepoType articleRepoType = iota
+	noRepoType articleRepoType = iota
+	userRepoType
 	favoriteRepoType
 	popularRepoType
 	tagRepoType
 	feedRepoType
 )
 
-func articlesReadStateChange(repoType articleRepoType) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		user, stop := userFromRequest(w, r)
-		if stop {
-			return
-		}
+func getArticles(
+	service repo.Service,
+	repoType articleRepoType,
+	subType articleRepoType,
+	processors []content.ArticleProcessor,
+	log readeef.Logger,
+) http.HandlerFunc {
+	repo := service.ArticleRepo()
+	tagRepo := service.TagRepo()
 
-		o, stop := articleUpdateStateOptions(w, r)
-		if stop {
-			return
-		}
-
-		var ar content.ArticleRepo
-
-		switch repoType {
-		case userRepoType:
-			ar = user
-		case favoriteRepoType:
-			ar = user
-			o.FavoriteOnly = true
-		case tagRepoType:
-			ar, stop = tagFromRequest(w, r)
-			if stop {
-				return
-			}
-		case feedRepoType:
-			ar, stop = feedFromRequest(w, r)
-			if stop {
-				return
-			}
-		default:
-			http.Error(w, "Unknown type", http.StatusBadRequest)
-			return
-		}
-
-		ar.ReadState(true, o)
-
-		if e, ok := ar.(content.Error); ok && e.HasErr() {
-			http.Error(w, "Error setting read state: "+e.Err().Error(), http.StatusInternalServerError)
-			return
-		}
-
-		args{"success": true}.WriteJSON(w)
-	}
-}
-
-func articleUpdateStateOptions(w http.ResponseWriter, r *http.Request) (data.ArticleUpdateStateOptions, bool) {
-	o := data.ArticleUpdateStateOptions{}
-
-	query := r.URL.Query()
-	if query.Get("until") != "" {
-		until, err := strconv.ParseInt(query.Get("until"), 10, 64)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return o, true
-		}
-
-		o.BeforeDate = time.Unix(until, 0)
-	}
-
-	if query.Get("beforeArticle") != "" {
-		before, err := strconv.ParseInt(query.Get("beforeArticle"), 10, 64)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return o, true
-		}
-
-		o.BeforeId = data.ArticleId(before)
-	}
-
-	return o, false
-}
-
-func getArticles(repoType articleRepoType, subTypes ...articleRepoType) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
@@ -254,40 +58,40 @@ func getArticles(repoType articleRepoType, subTypes ...articleRepoType) http.Han
 			return
 		}
 
-		var ar content.ArticleRepo
-
 		switch repoType {
 		case favoriteRepoType:
-			o.FavoriteOnly = true
-			fallthrough
+			o = append(o, content.FavoriteOnly)
 		case userRepoType:
-			ar = user
 		case popularRepoType:
-			o.IncludeScores = true
-			o.HighScoredFirst = true
-			o.BeforeDate = time.Now()
-			o.AfterDate = time.Now().AddDate(0, 0, -5)
+			o = append(o, content.IncludeScores)
+			o = append(o, content.HighScoredFirst)
+			o = append(o, content.TimeRange(time.Now().AddDate(0, 0, -5), time.Now()))
 
-			if len(subTypes) > 0 {
-				subType := subTypes[0]
-				switch subType {
-				case userRepoType:
-					ar = user
-				case tagRepoType:
-					tag, stop := tagFromRequest(w, r)
-					if stop {
-						return
-					}
-
-					ar = tag
-				case feedRepoType:
-					feed, stop := feedFromRequest(w, r)
-					if stop {
-						return
-					}
-
-					ar = feed
+			switch subType {
+			case userRepoType:
+			case tagRepoType:
+				tag, stop := tagFromRequest(w, r)
+				if stop {
+					return
 				}
+
+				ids, err := tagRepo.FeedIDs(tag, user)
+				if err != nil {
+					error(w, log, "Error getting tag feed ids: %+v", err)
+					return
+				}
+
+				o = append(o, content.FeedIDs(ids))
+			case feedRepoType:
+				feed, stop := feedFromRequest(w, r)
+				if stop {
+					return
+				}
+
+				o = append(o, content.FeedIDs([]content.FeedID{feed.ID}))
+			default:
+				http.Error(w, "Unknown article repository", http.StatusBadRequest)
+				return
 			}
 		case tagRepoType:
 			tag, stop := tagFromRequest(w, r)
@@ -295,40 +99,48 @@ func getArticles(repoType articleRepoType, subTypes ...articleRepoType) http.Han
 				return
 			}
 
-			ar = tag
+			ids, err := tagRepo.FeedIDs(tag, user)
+			if err != nil {
+				error(w, log, "Error getting tag feed ids: %+v", err)
+				return
+			}
+
+			o = append(o, content.FeedIDs(ids))
 		case feedRepoType:
 			feed, stop := feedFromRequest(w, r)
 			if stop {
 				return
 			}
 
-			ar = feed
+			o = append(o, content.FeedIDs([]content.FeedID{feed.ID}))
+		default:
+			http.Error(w, "Unknown article repository", http.StatusBadRequest)
+			return
 		}
 
-		if as, ok := ar.(content.ArticleSorting); ok {
-			as.SortingByDate()
-			if r.URL.Query().Get("olderFirst") == "true" {
-				as.Order(data.AscendingOrder)
-			} else {
-				as.Order(data.DescendingOrder)
-			}
+		articles, err := repo.ForUser(user, o...)
+
+		if err != nil {
+			error(w, log, "Error getting articles: %+v", err)
+			return
 		}
 
-		if ar != nil {
-			ua := ar.Articles(o)
+		articles = content.ArticleProcessors(processors).Process(articles)
 
-			if e, ok := ar.(content.Error); ok && e.HasErr() {
-				http.Error(w, "Error getting articles: "+e.Err().Error(), http.StatusInternalServerError)
-			}
-
-			args{"articles": ua}.WriteJSON(w)
-		}
-
-		http.Error(w, "Unknown article repository", http.StatusBadRequest)
+		args{"articles": articles}.WriteJSON(w)
 	}
 }
 
-func articleSearch(searchProvider content.SearchProvider, repoType articleRepoType) http.HandlerFunc {
+func articleSearch(
+	service repo.Service,
+	searchProvider content.SearchProvider,
+	repoType articleRepoType,
+	processors []content.ArticleProcessor,
+	log readeef.Logger,
+) http.HandlerFunc {
+	repo := service.FeedRepo()
+	tagRepo := service.TagRepo()
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := chi.URLParam(r, "*")
 		if query == "" {
@@ -346,131 +158,340 @@ func articleSearch(searchProvider content.SearchProvider, repoType articleRepoTy
 			return
 		}
 
-		searchProvider.SortingByDate()
-		if r.URL.Query().Get("olderFirst") == "true" {
-			searchProvider.Order(data.AscendingOrder)
-		} else {
-			searchProvider.Order(data.DescendingOrder)
-		}
-
-		var as content.ArticleSearch
 		switch repoType {
 		case userRepoType:
-			as = user
 		case feedRepoType:
 			feed, stop := feedFromRequest(w, r)
 			if stop {
 				return
 			}
 
-			as = feed
+			o = append(o, content.FeedIDs([]content.FeedID{feed.ID}))
 		case tagRepoType:
 			tag, stop := tagFromRequest(w, r)
 			if stop {
 				return
 			}
 
-			as = tag
+			ids, err := tagRepo.FeedIDs(tag, user)
+			if err != nil {
+				error(w, log, "Error getting tag feed ids: %+v", err)
+				return
+			}
+
+			o = append(o, content.FeedIDs(ids))
 		default:
 			http.Error(w, "Unknown repo type: "+repoType.String(), http.StatusBadRequest)
 			return
 		}
 
-		ua := as.Query(query, searchProvider, o.Limit, o.Offset)
-		if e, ok := as.(content.Error); ok && e.HasErr() {
-			http.Error(w, "Error while searching: "+e.Err().Error(), http.StatusInternalServerError)
+		articles, err := searchProvider.Search(req.Search, user, opts...)
+
+		if err != nil {
+			error(w, log, "Error searching for articles: %+v", err)
 			return
 		}
 
-		args{"articles": ua}.WriteJSON(w)
+		articles = content.ArticleProcessors(processors).Process(articles)
+
+		args{"articles": articles}.WriteJSON(w)
 	}
 }
 
-func articleQueryOptions(w http.ResponseWriter, r *http.Request) (data.ArticleQueryOptions, bool) {
-	o := data.ArticleQueryOptions{UnreadFirst: true}
-
-	query := r.URL.Query()
-	if query.Get("limit") != "" {
-		limit, err := strconv.Atoi(query.Get("limit"))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return o, true
-		}
-
-		o.Limit = limit
-	}
-
-	if query.Get("offset") != "" {
-		offset, err := strconv.Atoi(query.Get("offset"))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return o, true
-		}
-
-		o.Offset = offset
-	}
-
-	if query.Get("minID") != "" {
-		minID, err := strconv.ParseInt(query.Get("minID"), 10, 64)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return o, true
-		}
-
-		o.BeforeId = data.ArticleId(minID)
-	}
-
-	if query.Get("maxID") != "" {
-		maxID, err := strconv.ParseInt(query.Get("maxID"), 10, 64)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return o, true
-		}
-
-		o.AfterId = data.ArticleId(maxID)
-	}
-
-	if query.Get("unreadOnly") != "" {
-		unreadOnly := query.Get("unreadOnly") == "true"
-
-		o.UnreadOnly = unreadOnly
-	}
-
-	return o, false
-}
-
-func articleContext(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func formatArticle(
+	repo repo.Extract,
+	extractor content.Extractor,
+	processors []content.ArticleProcessors,
+	log readeef.Logger,
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
 			return
 		}
 
-		id, err := strconv.ParseInt(chi.URLParam(r, "articleId"), 10, 64)
+		article, stop := articleFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		extract, err := repo.Get(article.ID)
+
+		if err != nil {
+			if !content.IsNoContent(Err) {
+				error(w, log, "Error getting article extract: %+v", err)
+				return
+			}
+
+			if extract, err = extractor.Generate(article.Link); err != nil {
+				http.Error(w, "Error getting article extract: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			extract.ArticleID = article.ID
+
+			err := repo.Update(extract)
+			if err != nil {
+				error(w, log, "Error updating article extract: %+v", err)
+				return
+			}
+
+		}
+
+		if len(processors) > 0 {
+			a := content.Article{Description: extract.Content}
+
+			articles := []content.Article{a}
+
+			if extract.TopImage != "" {
+				articles = append(articles, content.Article{
+					Description: fmt.Sprintf(`<img src="%s">`, extract.TopImage),
+				})
+			}
+
+			articles = content.ArticleProcessors(processors).Process(articles)
+
+			extract.Content = articles[0].Description
+
+			if extract.TopImage != "" {
+				content := articles[1].Description
+
+				content = strings.Replace(content, `<img src="`, "", -1)
+				i := strings.Index(content, `"`)
+				content = content[:i]
+
+				extract.TopImage = content
+			}
+		}
+
+		s := summarize.NewFromString(extract.Title, search.StripTags(extract.Content))
+
+		s.Language = extract.Language
+		keyPoints := s.KeyPoints()
+
+		for i := range keyPoints {
+			keyPoints[i] = html.UnescapeString(keyPoints[i])
+		}
+
+		args{
+			"keyPoints": keyPoints,
+			"content":   extract.Content,
+			"topImage":  extract.TopImage,
+		}.WriteJSON(w)
+	}
+}
+
+type articleState int
+
+const (
+	read articleState = iota
+	favorite
+)
+
+func articleStateChange(
+	repo repo.Article,
+	state articleState,
+	log readeef.Logger,
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		article, stop := articleFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		var value bool
+		if stop = readJSON(w, r.Body, &value); stop {
+			return
+		}
+
+		var previousState bool
+
+		if state == read {
+			previousState = article.Read
+		} else {
+			previousState = article.Favorite
+		}
+
+		if previousState != value {
+			var err error
+			if state == read {
+				err = repo.Read(value, user, content.IDs([]content.ArticleID{article.ID}))
+			} else {
+				err = repo.Favor(value, user, content.IDs([]content.ArticleID{article.ID}))
+			}
+
+			if err != nil {
+				error(w, log, "Error setting article "+state.String()+"state: %+v", err)
+				return
+			}
+		}
+
+		args{
+			"success":      previousState != value,
+			state.String(): value,
+		}.WriteJSON(w)
+	}
+}
+
+func articlesReadStateChange(
+	service repo.Service,
+	repoType articleRepoType,
+	log readeef.Logger,
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		var value bool
+		if stop = readJSON(w, r.Body, &value); stop {
+			return
+		}
+
+		o, stop := articleQueryOptions(w, r)
+		if stop {
+			return
+		}
+
+		switch repoType {
+		case userRepoType:
+		case favoriteRepoType:
+			o = append(o, content.FavoriteOnly)
+		case tagRepoType:
+			tag, stop = tagFromRequest(w, r)
+			if stop {
+				return
+			}
+
+			ids, err := tagRepo.FeedIDs(tag, user)
+			if err != nil {
+				error(w, log, "Error getting tag feed ids: %+v", err)
+				return
+			}
+
+			o = append(o, content.FeedIDs(ids))
+		case feedRepoType:
+			feed, stop = feedFromRequest(w, r)
+			if stop {
+				return
+			}
+
+			o = append(o, content.FeedIDs(content.FeedID{feed.ID}))
+		default:
+			http.Error(w, "Unknown type", http.StatusBadRequest)
+			return
+		}
+
+		err = repo.Read(value, user, o...)
+
+		if err != nil {
+			error(w, log, "Error setting read state: %+v", err)
+			return
+		}
+
+		args{"success": true}.WriteJSON(w)
+	}
+}
+
+func articleQueryOptions(w http.ResponseWriter, r *http.Request) ([]content.QueryOpt, bool) {
+	o := []content.QueryOpt{}
+
+	query := r.URL.Query()
+
+	var err error
+	var limit, offset int
+	if query.Get("limit") != "" {
+		limit, err = strconv.Atoi(query.Get("limit"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+			return o, true
 		}
+	}
 
-		o := data.ArticleQueryOptions{}
-		if r.Method == method.POST {
-			o.SkipProcessors = true
+	if query.Get("offset") != "" {
+		offset, err = strconv.Atoi(query.Get("offset"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return o, true
 		}
+	}
 
-		article := user.ArticleById(data.ArticleId(id), o)
-		if article.HasErr() {
-			err := article.Err()
-			if err == content.ErrNoContent {
-				http.Error(w, "Not found", http.StatusNotFound)
-			} else {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+	if limit > 0 {
+		o = append(o, content.Paging(limit, offset))
+	}
+
+	var minID, maxID int
+	if query.Get("minID") != "" {
+		minID, err = strconv.ParseInt(query.Get("minID"), 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return o, true
+		}
+	}
+
+	if query.Get("maxID") != "" {
+		maxID, err = strconv.ParseInt(query.Get("maxID"), 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return o, true
+		}
+	}
+
+	if minID > 0 || maxID > 0 {
+		o = append(o, content.IDRange(content.ArticleID(minID), content.ArticleID(maxID)))
+	}
+
+	if query.Get("unreadOnly") == "true" {
+		o = append(o, content.UnreadOnly)
+	}
+
+	if query.Get("unreadFirst") == "true" {
+		o = append(o, content.UnreadFirst)
+	}
+
+	if query.Get("olderFirst") == "true" {
+		o = append(o, content.Sorting(content.SortByDate, content.AscendingOrder))
+	} else {
+		o = append(o, content.Sorting(content.SortByDate, content.DescendingOrder))
+	}
+
+	return o, false
+}
+
+func articleContext(repo repo.Article, processors []content.ArticleProcessor, log readeef.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, stop := userFromRequest(w, r)
+			if stop {
+				return
 			}
-			return
-		}
 
-		ctx := context.WithValue(r.Context(), "article", article)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+			id, err := strconv.ParseInt(chi.URLParam(r, "articleID"), 10, 64)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			articles, err := repo.ForUser(user, content.IDs([]content.ArticleID{id}))
+			if err != nil {
+				error(w, log, "Error getting article: %+v", err)
+				return
+			}
+
+			if len(articles) == 0 {
+				http.Error(w, "Not found", http.StatusNotFound)
+				return
+			}
+
+			if r.Method == method.GET {
+				articles = content.ArticleProcessors(processors).Process(articles)
+			}
+
+			ctx := context.WithValue(r.Context(), "article", articles[0])
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 func articleFromRequest(w http.ResponseWriter, r *http.Request) (article content.UserArticle, stop bool) {

@@ -28,12 +28,16 @@ type Feed struct {
 }
 
 func (f Feed) Validate() error {
-	if f.data.Link == "" {
-		return NewValidationError(errors.New("Feed has no link"))
+	if f.ID == 0 {
+		return NewValidationError(errors.New("no ID"))
 	}
 
-	if u, err := url.Parse(f.data.Link); err != nil || !u.IsAbs() {
-		return NewValidationError(errors.New("Feed has no link"))
+	if f.Link == "" {
+		return NewValidationError(errors.New("no link"))
+	}
+
+	if u, err := url.Parse(f.Link); err != nil || !u.IsAbs() {
+		return NewValidationError(errors.New("no link"))
 	}
 
 	return nil
@@ -54,7 +58,7 @@ func (f *Feed) Refresh(pf parser.Feed) {
 			Link:        pf.Articles[i].Link,
 			Date:        pf.Articles[i].Date,
 		}
-		a.FeedID = d.ID
+		a.FeedID = f.ID
 
 		if pf.Articles[i].Guid != "" {
 			a.Guid.Valid = true

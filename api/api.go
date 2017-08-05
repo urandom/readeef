@@ -21,17 +21,19 @@ import (
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/base/token"
 	"github.com/urandom/readeef/content/extract"
+	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/search"
 )
 
 func Mux(
 	ctx context.Context,
-	repo content.Repo,
+	service repo.Service,
 	feedManager *readeef.FeedManager,
 	hubbub *readeef.Hubbub,
 	searchProvider search.Provider,
 	extractor extract.Generator,
 	fs http.FileSystem,
+	processors []content.ArticleProcessor,
 	config config.Config,
 	log readeef.Logger,
 ) (http.Handler, error) {
@@ -54,23 +56,24 @@ func Mux(
 		return nil, errors.Wrap(err, "initializing token storage")
 	}
 
-	routes := []routes{tokenRoutes(repo, storage, []byte(config.Auth.Secret), log)}
+	routes := []routes{tokenRoutes(service.UserRepo(), storage, []byte(config.Auth.Secret), log)}
 
 	if hubbub != nil {
-		routes = append(routes, hubbubRoutes(hubbub, repo, feedManager, log))
+		routes = append(routes, hubbubRoutes(hubbub, service.FeedRepo(), feedManager, log))
 	}
 
-	emulatorRoutes := emulatorRoutes(ctx, repo, searchProvider, feedManager, config, log)
+	emulatorRoutes := emulatorRoutes(ctx, service, searchProvider, feedManager, processors, config, log)
 	routes = append(routes, emulatorRoutes...)
 
 	routes = append(routes, mainRoutes(
-		userMiddleware(repo, storage, []byte(config.Auth.Secret), log),
+		userMiddleware(service.UserRepo(), storage, []byte(config.Auth.Secret), log),
 		featureRoutes(features),
-		feedsRoutes(feedManager),
-		articlesRoutes(extractor, searchProvider),
-		opmlRoutes(feedManager),
-		eventsRoutes(ctx, storage, feedManager),
-		userRoutes([]byte(config.Auth.Secret)),
+		feedsRoutes(service, feedManager, log),
+		tagRoutes(service.TagRepo(), log),
+		articlesRoutes(service, extractor, searchProvider, processors, log),
+		opmlRoutes(service, feedManager, log),
+		eventsRoutes(ctx, service, storage, feedManager, log),
+		userRoutes(service, []byte(config.Auth.Secret), log),
 	))
 
 	r := chi.NewRouter()
@@ -113,14 +116,14 @@ type routes struct {
 	route func(r chi.Router)
 }
 
-func tokenRoutes(repo content.Repo, storage content.TokenStorage, secret []byte, log readeef.Logger) routes {
+func tokenRoutes(repo repo.User, storage content.TokenStorage, secret []byte, log readeef.Logger) routes {
 	return routes{path: "/token", route: func(r chi.Router) {
 		r.Method(method.POST, "/", tokenCreate(repo, secret, log))
 		r.Method(method.DELETE, "/", tokenDelete(storage, secret, log))
 	}}
 }
 
-func hubbubRoutes(hubbub *readeef.Hubbub, repo content.Repo, feedManager *readeef.FeedManager, log readeef.Logger) routes {
+func hubbubRoutes(hubbub *readeef.Hubbub, repo repo.Feed, feedManager *readeef.FeedManager, log readeef.Logger) routes {
 	handler := hubbubRegistration(hubbub, repo, feedManager, log)
 
 	return routes{path: "/hubbub", route: func(r chi.Router) {
@@ -131,9 +134,10 @@ func hubbubRoutes(hubbub *readeef.Hubbub, repo content.Repo, feedManager *readee
 
 func emulatorRoutes(
 	ctx context.Context,
-	repo content.Repo,
+	service repo.Service,
 	searchProvider content.SearchProvider,
 	feedManager *readeef.FeedManager,
+	processors []content.ArticleProcessor,
 	config config.Config,
 	log readeef.Logger,
 ) []routes {
@@ -148,7 +152,7 @@ func emulatorRoutes(
 					r.Get("/", ttrss.FakeWebHandler)
 
 					r.Post("/api/", ttrss.Handler(
-						ctx, repo, searchProvider, feedManager,
+						ctx, service, searchProvider, feedManager, processors,
 						[]byte(config.Auth.Secret), config.FeedManager.Converted.UpdateInterval,
 						log,
 					))
@@ -158,7 +162,7 @@ func emulatorRoutes(
 			rr = append(rr, routes{
 				path: fmt.Sprintf("/v%d/fever/", fever.API_VERSION),
 				route: func(r chi.Router) {
-					r.Post("/", fever.Handler(repo, log))
+					r.Post("/", fever.Handler(service, processors, log))
 				},
 			})
 		}
@@ -181,7 +185,7 @@ func mainRoutes(middleware []middleware, subroutes ...routes) routes {
 	}}
 }
 
-func userMiddleware(repo content.Repo, storage content.TokenStorage, secret []byte, log readeef.Logger) []middleware {
+func userMiddleware(repo repo.User, storage content.TokenStorage, secret []byte, log readeef.Logger) []middleware {
 	return []middleware{
 		func(next http.Handler) http.Handler {
 			return auth.RequireToken(next, tokenValidator(repo, storage, log), secret)
@@ -199,107 +203,133 @@ func featureRoutes(features features) routes {
 	}}
 }
 
-func feedsRoutes(feedManager *readeef.FeedManager) routes {
+func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log readeef.Logger) routes {
 	return routes{path: "/feed", route: func(r chi.Router) {
-		r.Get("/", listFeeds)
-		r.Post("/", addFeed(feedManager))
+		feedRepo := service.FeedRepo()
+		r.Get("/", listFeeds(feedRepo, log))
+		r.Post("/", addFeed(feedRepo, feedManager))
 
-		r.Get("/discover", discoverFeeds(feedManager))
+		r.Get("/discover", discoverFeeds(feedRepo, feedManager, log))
 
-		r.Route("/{feedId:[0-9]+}", func(r chi.Router) {
-			r.Use(feedContext)
+		r.Route("/{feedID:[0-9]+}", func(r chi.Router) {
+			r.Use(feedContext(feedRepo, log))
 
-			r.Delete("/", deleteFeed(feedManager))
+			r.Delete("/", deleteFeed(feedRepo, feedManager, log))
 
-			r.Get("/tags", getFeedTags)
-			r.Post("/tags", setFeedTags)
+			r.Get("/tags", getFeedTags(service.TagRepo(), log))
+			r.Post("/tags", setFeedTags(feedRepo, log))
 
 		})
 	}}
 }
 
-func articlesRoutes(extractor content.Extractor, searchProvider content.SearchProvider) routes {
+func tagRoutes(repo repo.Tag, log readeef.Logger) routes {
+	return routes{path: "/tag", route: func(r chi.Router) {
+		r.Get("/feedIDs", getTagsFeedIDs(repo, log))
+	}}
+}
+
+func articlesRoutes(
+	service repo.Service,
+	extractor content.Extractor,
+	searchProvider content.SearchProvider,
+	processors []content.ArticleProcessor,
+	log readeef.Logger,
+) routes {
+	articleRepo := service.ArticleRepo()
+	feedRepo := service.FeedRepo()
+
 	return routes{path: "/article", route: func(r chi.Router) {
-		r.Get("/", getArticles(userRepoType))
+		r.Get("/", getArticles(service, userRepoType, noRepoType, processors, log))
 
 		if searchProvider != nil {
 			r.Route("/search", func(r chi.Router) {
-				r.Get("/*", articleSearch(searchProvider, userRepoType))
-				r.With(feedContext).Get("/feed/{feedId:[0-9]+}/*", articleSearch(searchProvider, feedRepoType))
-				r.With(tagContext).Get("/tag/{tagId:[0-9]+}/*", articleSearch(searchProvider, tagRepoType))
+				r.Get("/*",
+					articleSearch(service, searchProvider, userRepoType, processors, log))
+				r.With(feedContext).Get("/feed/{feedID:[0-9]+}/*",
+					articleSearch(service, searchProvider, feedRepoType, processors, log))
+				r.With(tagContext).Get("/tag/{tagID:[0-9]+}/*",
+					articleSearch(service, searchProvider, tagRepoType, processors, log))
 			})
 		}
 
-		r.Post("/read", articlesReadStateChange(userRepoType))
+		r.Post("/read", articlesReadStateChange(service, userRepoType, log))
 
-		r.Route("/{articleId:[0-9]+}", func(r chi.Router) {
-			r.Use(articleContext)
+		r.Route("/{articleID:[0-9]+}", func(r chi.Router) {
+			r.Use(articleContext(articleRepo, processors, log))
 
 			r.Get("/", getArticle)
 			if extractor != nil {
-				r.Get("/format", formatArticle(extractor))
+				r.Get("/format", formatArticle(service.ExtractRepo(), extractor, processors, log))
 			}
-			r.Post("/read", articleStateChange(read))
-			r.Post("/favorite", articleStateChange(favorite))
+			r.Post("/read", articleStateChange(articleRepo, read, log))
+			r.Post("/favorite", articleStateChange(articleRepo, favorite, log))
 		})
 
 		r.Route("/favorite", func(r chi.Router) {
-			r.Get("/", getArticles(favoriteRepoType))
+			r.Get("/", getArticles(service, favoriteRepoType, noRepoType, processors, log))
 
-			r.Post("/read", articlesReadStateChange(favoriteRepoType))
+			r.Post("/read", articlesReadStateChange(service, favoriteRepoType, log))
 		})
 
 		r.Route("/popular", func(r chi.Router) {
-			r.With(feedContext).Get("/feed/{feedId:[0-9]+}",
-				getArticles(popularRepoType, feedRepoType))
-			r.With(tagContext).Get("/tag/{tagId:[0-9]+}",
-				getArticles(popularRepoType, tagRepoType))
-			r.Get("/", getArticles(popularRepoType, userRepoType))
+			r.With(feedContext).Get("/feed/{feedID:[0-9]+}",
+				getArticles(service, popularRepoType, feedRepoType, processors, log))
+			r.With(tagContext).Get("/tag/{tagID:[0-9]+}",
+				getArticles(service, popularRepoType, tagRepoType, processors, log))
+			r.Get("/", getArticles(service, popularRepoType, userRepoType, processors, log))
 		})
 
-		r.Route("/feed/{feedId:[0-9]+}", func(r chi.Router) {
+		r.Route("/feed/{feedID:[0-9]+}", func(r chi.Router) {
 			r.Use(feedContext)
 
-			r.Get("/", getArticles(feedRepoType))
+			r.Get("/", getArticles(service, feedRepoType, noRepoType, processors, log))
 
-			r.Post("/read", articlesReadStateChange(feedRepoType))
+			r.Post("/read", articlesReadStateChange(service, feedRepoType, log))
 		})
 
-		r.Route("/tag/{tagId:[0-9]+}", func(r chi.Router) {
+		r.Route("/tag/{tagID:[0-9]+}", func(r chi.Router) {
 			r.Use(tagContext)
 
-			r.Get("/", getArticles(tagRepoType))
+			r.Get("/", getArticles(service, tagRepoType, noRepoType, processors, log))
 
-			r.Post("/read", articlesReadStateChange(tagRepoType))
+			r.Post("/read", articlesReadStateChange(service, tagRepoType, log))
 		})
 
 	}}
 }
 
-func opmlRoutes(feedManager *readeef.FeedManager) routes {
+func opmlRoutes(service repo.Service, feedManager *readeef.FeedManager, log readeef.Logger) routes {
 	return routes{path: "/opml", route: func(r chi.Router) {
-		r.Get("/", exportOPML(feedManager))
-		r.Post("/", importOPML(feedManager))
+		r.Get("/", exportOPML(service, feedManager, log))
+		r.Post("/", importOPML(service.FeedRepo(), feedManager, log))
 	}}
 }
 
-func eventsRoutes(ctx context.Context, storage content.TokenStorage, feedManager *readeef.FeedManager) routes {
+func eventsRoutes(
+	ctx context.Context,
+	service repo.Service,
+	storage content.TokenStorage,
+	feedManager *readeef.FeedManager,
+	log readeef.Logger,
+) routes {
 	return routes{path: "/events", route: func(r chi.Router) {
-		r.Get("/", eventSocket(ctx, storage, feedManager))
+		r.Get("/", eventSocket(ctx, service.FeedRepo, storage, feedManager, log))
 	}}
 }
 
-func userRoutes(secret []byte) routes {
+func userRoutes(service repo.Service, secret []byte, log readeef.Logger) routes {
+	repo := service.UserRepo()
 	return routes{path: "/user", route: func(r chi.Router) {
 		r.Route("/", func(r chi.Router) {
 			r.Use(adminValidator)
 
-			r.Get("/", listUsers)
+			r.Get("/", listUsers(repo, log))
 
-			r.Post("/", addUser(secret))
-			r.Delete("/{name}", deleteUser)
+			r.Post("/", addUser(repo, secret, log))
+			r.Delete("/{name}", deleteUser(repo, log))
 
-			r.Post("/{name}/settings/{key}", setSettingValue(secret))
+			r.Post("/{name}/settings/{key}", setSettingValue(repo, secret, log))
 		})
 
 		r.Get("/data", getUserData)
@@ -324,4 +354,9 @@ func readJSON(w http.ResponseWriter, r io.Reader, data interface{}) (stop bool) 
 	}
 
 	return false
+}
+
+func error(w http.ResponseWriter, log readeef.Logger, format string, err error) {
+	log.Printf(format, err)
+	http.Error(w, fmt.Sprintf(format, err.Error()), http.StatusInternalServerError)
 }

@@ -3,6 +3,7 @@ package ttrss
 import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/repo"
 )
 
 type configContent struct {
@@ -24,24 +25,25 @@ type genericContent struct {
 	Method    string      `json:"method,omitempty"`
 }
 
-func getApiLevel(req request, user content.User) (interface{}, error) {
+func getApiLevel(req request, user content.User, service repo.Service) (interface{}, error) {
 	return genericContent{Level: API_LEVEL}, nil
 }
 
-func getVersion(req request, user content.User) (interface{}, error) {
+func getVersion(req request, user content.User, service repo.Service) (interface{}, error) {
 	return genericContent{Version: API_VERSION}, nil
 }
 
-func getConfig(req request, user content.User) (interface{}, error) {
-	feedCount := len(user.AllFeeds())
-	if user.HasErr() {
-		return nil, errors.Wrapf(user.Err(), "getting user %s feeds", user.Data().Login)
+func getConfig(req request, user content.User, service repo.Service) (interface{}, error) {
+	feeds, err := service.FeedRepo().ForUser(user)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting user feeds")
 	}
+	feedCount := len(feeds)
 
 	return configContent{DaemonIsRunning: true, NumFeeds: feedCount}, nil
 }
 
-func unknown(req request, user content.User) (interface{}, error) {
+func unknown(req request, user content.User, service repo.Service) (interface{}, error) {
 	return genericContent{Method: req.Op}, errors.WithStack(newErr("unknown method "+req.Op, "UNKNOWN_METHOD"))
 }
 

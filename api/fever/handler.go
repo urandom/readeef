@@ -7,34 +7,33 @@ import (
 
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/base/processor"
+	"github.com/urandom/readeef/content/repo"
 )
 
 type resp map[string]interface{}
 
-type action struct {
-	name string
-	call func(*http.Request, resp, content.User, readeef.Logger) error
-}
+type action func(*http.Request, resp, content.User, repo.Service, readeef.Logger) error
 
 const (
 	API_VERSION = 2
 )
 
 var (
-	actions = [...]action{
-		{"groups", groups},
-		{"feeds", feeds},
-		{"unread_item_ids", unreadItemIDs},
-		{"saved_item_ids", savedItemIDs},
-		{"items", items},
-		{"links", links},
-		{"unread_recently_read", unreadRecent},
-		{"mark", markItem},
-	}
+	actions = make(map[string]action)
 )
 
-// /api/v2/fever/
-func Handler(repo content.Repo, log readeef.Logger) http.HandlerFunc {
+func Handler(
+	service repo.Service,
+	processors []content.ArticleProcessor,
+	log readeef.Logger,
+) http.HandlerFunc {
+
+	processors = filterProcessors(processors)
+
+	registerItemActions(processors)
+	registerLinkActions(processors)
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		var err error
 		var user content.User
@@ -42,12 +41,12 @@ func Handler(repo content.Repo, log readeef.Logger) http.HandlerFunc {
 		err = r.ParseForm()
 
 		if err == nil {
-			user = readeefUser(repo, r.FormValue("api_key"), log)
+			user, err = readeefUser(service.UserRepo(), r.FormValue("api_key"), log)
 		}
 
 		resp := resp{"api_version": API_VERSION}
 
-		if user == nil || user.HasErr() {
+		if user.Login == "" || err != nil {
 			resp["auth"] = 0
 
 			writeJSON(w, resp)
@@ -61,10 +60,10 @@ func Handler(repo content.Repo, log readeef.Logger) http.HandlerFunc {
 
 		var lastName string
 
-		for _, action := range actions {
-			if _, ok := r.Form[action.name]; ok {
-				if err = action.call(r, resp, user, log); err != nil {
-					lastName = action.name
+		for name, action := range actions {
+			if _, ok := r.Form[name]; ok {
+				if err = action(r, resp, user, service, log); err != nil {
+					lastName = name
 					break
 				}
 			}
@@ -84,4 +83,18 @@ func writeJSON(w http.ResponseWriter, data interface{}) {
 	} else {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func filterProcessors(input []content.ArticleProcessor) []content.ArticleProcessor {
+	processors := make([]content.ArticleProcessor, 0, len(input))
+
+	for i := range input {
+		if _, ok := input[i].(processor.ProxyHTTP); ok {
+			continue
+		}
+
+		processors = append(processors, input[i])
+	}
+
+	return processors
 }

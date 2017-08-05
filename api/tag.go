@@ -4,81 +4,100 @@ import (
 	"context"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/go-chi/chi"
+	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 )
 
-func getFeedTags(w http.ResponseWriter, r *http.Request) {
-	user, stop := userFromRequest(w, r)
-	if stop {
-		return
+func getTagsFeedIDs(repo repo.Tag, log readeef.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		tags, err := repo.ForUser(user)
+		if err != nil {
+			error(w, log, "Error getting user tags: %+v", err)
+			return
+		}
+
+		tagMap := map[content.TagID][]content.FeedID{}
+		for _, tag := range tags {
+			ids, err := repo.FeedIDs(tag, user)
+			if err != nil {
+				error(w, log, "Error getting tag feed ids: %+v", err)
+				return
+			}
+
+			tagMap[tag.ID] = ids
+		}
+
+		args{"tagFeeds": tagMap}.WriteJSON(w)
 	}
-
-	feed, stop := feedFromRequest(w, r)
-	if stop {
-		return
-	}
-
-	tf := user.Repo().TaggedFeed(user)
-	tf.Data(feed.Data())
-
-	tags := tf.Tags()
-	if tf.HasErr() {
-		http.Error(w, "Error getting feed tags: "+tf.Err().Error(), http.StatusInternalServerError)
-		return
-	}
-
-	t := make([]string, len(tags))
-	for _, tag := range tags {
-		t = append(t, tag.String())
-	}
-
-	args{"tags": t}.WriteJSON(w)
 }
 
-func setFeedTags(w http.ResponseWriter, r *http.Request) {
-	user, stop := userFromRequest(w, r)
-	if stop {
-		return
-	}
-
-	feed, stop := feedFromRequest(w, r)
-	if stop {
-		return
-	}
-
-	var tagValues []data.TagValue
-	if stop := readJSON(w, r.Body, &tagValues); stop {
-		return
-	}
-
-	tf := user.Repo().TaggedFeed(user)
-	tf.Data(feed.Data())
-
-	filtered := make([]data.TagValue, 0, len(tagValues))
-	for _, v := range tagValues {
-		v = data.TagValue(strings.TrimSpace(string(v)))
-		if v != "" {
-			filtered = append(filtered, v)
+func getFeedTags(repo repo.Tag, log readeef.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
 		}
-	}
 
-	tags := make([]content.Tag, len(filtered))
-	for i := range filtered {
-		tags[i] = user.Repo().Tag(user)
-		tags[i].Data(data.Tag{Value: filtered[i]})
-	}
+		feed, stop := feedFromRequest(w, r)
+		if stop {
+			return
+		}
 
-	tf.Tags(tags)
-	if tf.UpdateTags(); tf.HasErr() {
-		http.Error(w, "Error updating feed tags: "+tf.Err().Error(), http.StatusInternalServerError)
-		return
-	}
+		tags, err := repo.ForFeed(feed, user)
+		if err != nil {
+			error(w, log, "Error getting feed tags: %+v", err)
+			return
+		}
 
-	args{"success": true}.WriteJSON(w)
+		t := make([]string, len(tags))
+		for _, tag := range tags {
+			t = append(t, tag.String())
+		}
+
+		args{"tags": t}.WriteJSON(w)
+	}
+}
+
+func setFeedTags(repo repo.Feed, log readeef.Logger) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		feed, stop := feedFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		var tagValues []content.TagValue
+		if stop := readJSON(w, r.Body, &tagValues); stop {
+			return
+		}
+
+		tags := make([]content.Tag, 0, len(tagValues))
+		for i := range tagValues {
+			if tagValues[i] != "" {
+				tags = append(tags, content.Tag{Value: tagValues[i]})
+			}
+		}
+
+		if err := repo.SetUserTags(feed, user, tags); err != nil {
+			error(w, log, "Error updating feed tags: %+v", err)
+			return
+		}
+
+		args{"success": true}.WriteJSON(w)
+	}
 }
 
 func tagContext(next http.Handler) http.Handler {
@@ -88,7 +107,7 @@ func tagContext(next http.Handler) http.Handler {
 			return
 		}
 
-		id, err := strconv.ParseInt(chi.URLParam(r, "tagId"), 10, 64)
+		id, err := strconv.ParseInt(chi.URLParam(r, "tagID"), 10, 64)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

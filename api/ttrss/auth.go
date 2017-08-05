@@ -6,16 +6,17 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/repo"
 )
 
 func registerAuthActions(sessionManager sessionManager, secret []byte) {
-	actions["login"] = func(req request, u content.User) (interface{}, error) {
+	actions["login"] = func(req request, u content.User, service repo.Service) (interface{}, error) {
 		return login(req, u, sessionManager, secret)
 	}
-	actions["logout"] = func(req request, u content.User) (interface{}, error) {
+	actions["logout"] = func(req request, u content.User, service repo.Service) (interface{}, error) {
 		return logout(req, u, sessionManager)
 	}
-	actions["isLoggedIn"] = func(req request, u content.User) (interface{}, error) {
+	actions["isLoggedIn"] = func(req request, u content.User, service repo.Service) (interface{}, error) {
 		return isLoggedIn(req, u, sessionManager)
 	}
 }
@@ -23,15 +24,17 @@ func registerAuthActions(sessionManager sessionManager, secret []byte) {
 func login(
 	req request, user content.User, sessionManager sessionManager, secret []byte,
 ) (interface{}, error) {
-	if !user.Authenticate(req.Password, []byte(secret)) {
+	if ok, err := user.Authenticate(req.Password, []byte(secret)); !ok {
 		return nil, errors.WithStack(newErr(fmt.Sprintf(
-			"authentication for TT-RSS user '%s'", user.Data().Login,
+			"authentication for TT-RSS user '%s'", user.Login,
+		), "LOGIN_ERROR"))
+	} else if err != nil {
+		return nil, errors.WithStack(newErr(fmt.Sprintf(
+			"authentication for TT-RSS user '%s': %v", user.Login, err,
 		), "LOGIN_ERROR"))
 	}
 
-	login := user.Data().Login
-
-	sessId := sessionManager.update(session{login: login, lastVisit: time.Now()})
+	sessId := sessionManager.update(session{login: user.Login, lastVisit: time.Now()})
 
 	return genericContent{
 		ApiLevel:  API_LEVEL,

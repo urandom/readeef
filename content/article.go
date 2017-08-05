@@ -72,6 +72,7 @@ type QueryOptions struct {
 	BeforeDate      time.Time
 	AfterDate       time.Time
 	IDs             []ArticleID
+	FeedIDs         []FeedID
 
 	SortField sortingField
 	SortOrder sortingOrder
@@ -100,19 +101,26 @@ func IDs(ids []ArticleID) QueryOpt {
 	}}
 }
 
-// TimeRange sets the minimum and maximum times of returned articles.
-func TimeRange(before, after time.Time) QueryOpt {
+// FeedIDS limits the query to the specified feed ids.
+func FeedIDs(ids []FeedID) QueryOpt {
 	return QueryOpt{func(o *QueryOptions) {
-		o.BeforeDate = before
+		o.FeedIDs = ids
+	}}
+}
+
+// TimeRange sets the minimum and maximum times of returned articles.
+func TimeRange(after, before time.Time) QueryOpt {
+	return QueryOpt{func(o *QueryOptions) {
 		o.AfterDate = after
+		o.BeforeDate = before
 	}}
 }
 
 // Sorting sets the query result sorting.
 func Sorting(field sortingField, order sortingOrder) QueryOpt {
 	return QueryOpt{func(o *QueryOptions) {
-		o.SortingField = field
-		o.SortingOrder = order
+		o.SortField = field
+		o.SortOrder = order
 	}}
 }
 
@@ -142,26 +150,36 @@ var (
 		o.UntaggedOnly = true
 	}}
 
+	// IncludeScores sets the query to return articles' score information.
+	IncludeScores = QueryOpt{func(o *QueryOptions) {
+		o.IncludeScores = true
+	}}
+
 	// HighScoredFirst sets the query to return articles with high scores first.
 	HighScoredFirst = QueryOpt{func(o *QueryOptions) {
 		o.HighScoredFirst = true
-	}}
-
-	// UnreadOnly sets the query for unread articles.
-	UnreadOnly = QueryOpt{func(o *QueryOptions) {
-		o.UnreadOnly = true
 	}}
 )
 
 // Apply applies the settings from the passed opts to the QueryOptions
 func (o *QueryOptions) Apply(opts ...QueryOpt) {
 	for _, opt := range opts {
-		opt(o)
+		opt.f(o)
 	}
 }
 
 type ArticleProcessor interface {
 	ProcessArticles([]Article) []Article
+}
+
+type ArticleProcessors []ArticleProcessor
+
+func (processors ArticleProcessors) Process(articles []Article) []Article {
+	for _, p := range processors {
+		articles = p.ProcessArticles(articles)
+	}
+
+	return articles
 }
 
 /*

@@ -10,23 +10,36 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 )
 
 type link struct {
-	Id          data.ArticleId `json:"id"`
-	FeedId      data.FeedId    `json:"feed_id"`
-	ItemId      data.ArticleId `json:"item_id"`
-	Temperature float64        `json:"temperature"`
-	IsItem      int            `json:"is_item"`
-	IsLocal     int            `json:"is_local"`
-	IsSaved     int            `json:"is_saved"`
-	Title       string         `json:"title"`
-	Url         string         `json:"url"`
-	ItemIds     string         `json:"item_ids"`
+	Id          content.ArticleID `json:"id"`
+	FeedId      content.FeedID    `json:"feed_id"`
+	ItemId      content.ArticleID `json:"item_id"`
+	Temperature float64           `json:"temperature"`
+	IsItem      int               `json:"is_item"`
+	IsLocal     int               `json:"is_local"`
+	IsSaved     int               `json:"is_saved"`
+	Title       string            `json:"title"`
+	Url         string            `json:"url"`
+	ItemIds     string            `json:"item_ids"`
 }
 
-func links(r *http.Request, resp resp, user content.User, log readeef.Logger) error {
+func registerLinkActions(processors []content.ArticleProcessor) {
+	actions["links"] = func(r *http.Request, resp resp, user content.User, service repo.Service, log readeef.Logger) error {
+		return links(r, resp, user, service, processors, log)
+	}
+}
+
+func links(
+	r *http.Request,
+	resp resp,
+	user content.User,
+	service repo.Service,
+	processors []content.ArticleProcessor,
+	log readeef.Logger,
+) error {
 	log.Infoln("Fetching fever links")
 	offset, _ := strconv.ParseInt(r.FormValue("offset"), 10, 64)
 
@@ -55,36 +68,34 @@ func links(r *http.Request, resp resp, user content.User, log readeef.Logger) er
 		to = time.Now().AddDate(0, 0, int(-1*offset))
 	}
 
-	user.SortingByDate()
-	user.Order(data.DescendingOrder)
+	articles, err := service.ArticleRepo().ForUser(
+		user,
+		content.TimeRange(from, to),
+		content.Paging(50, 50*int(page-1)),
+		content.IncludeScores,
+		content.Sorting(content.DefaultSort, content.DescendingOrder),
+	)
 
-	articles := user.Articles(data.ArticleQueryOptions{
-		BeforeDate:    to,
-		AfterDate:     from,
-		Limit:         50,
-		Offset:        50 * int(page-1),
-		IncludeScores: true,
-	})
-	if user.HasErr() {
-		return errors.Wrap(user.Err(), "getting user articles")
+	if err != nil {
+		return errors.WithMessage(err, "getting user articles")
 	}
 
-	links := make([]link, len(articles))
-	for i := range articles {
-		in := articles[i].Data()
+	articles = content.ArticleProcessors(processors).Process(articles)
 
+	links := make([]link, len(articles))
+	for i, a := range articles {
 		link := link{
-			Id: in.Id, FeedId: in.FeedId, ItemId: in.Id, IsItem: 1,
-			IsLocal: 1, Title: in.Title, Url: in.Link, ItemIds: fmt.Sprintf("%d", in.Id),
+			Id: a.ID, FeedId: a.FeedID, ItemId: a.ID, IsItem: 1,
+			IsLocal: 1, Title: a.Title, Url: a.Link, ItemIds: fmt.Sprintf("%d", a.ID),
 		}
 
-		if in.Score == 0 {
+		if a.Score == 0 {
 			link.Temperature = 0
 		} else {
-			link.Temperature = math.Log10(float64(in.Score)) / math.Log10(1.1)
+			link.Temperature = math.Log10(float64(a.Score)) / math.Log10(1.1)
 		}
 
-		if in.Favorite {
+		if a.Favorite {
 			link.IsSaved = 1
 		}
 

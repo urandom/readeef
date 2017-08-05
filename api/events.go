@@ -10,13 +10,15 @@ import (
 	"github.com/urandom/handler/auth"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 )
 
 func eventSocket(
 	ctx context.Context,
+	repo repo.Feed,
 	storage content.TokenStorage,
 	feedManager *readeef.FeedManager,
+	log readeef.Logger,
 ) http.HandlerFunc {
 	monitor := &feedMonitor{ops: make(chan func(connMap))}
 
@@ -35,16 +37,15 @@ func eventSocket(
 			return
 		}
 
-		feeds := user.AllFeeds()
-		if user.HasErr() {
-			http.Error(w, "Error getting user feeds: "+user.Err().Error(), http.StatusInternalServerError)
-
+		feeds, err := repo.ForUser(user)
+		if err {
+			error(w, log, "Error getting user feeds: %+v", err)
 			return
 		}
 
 		feedSet := feedSet{}
 		for i := range feeds {
-			feedSet[feeds[i].Data().Id] = struct{}{}
+			feedSet[feeds[i].ID] = struct{}{}
 		}
 		feeds = nil
 
@@ -87,7 +88,7 @@ type feedMonitor struct {
 }
 
 type connMap map[string]connData
-type feedSet map[data.FeedId]struct{}
+type feedSet map[content.FeedID]struct{}
 
 type connData struct {
 	writer    io.Writer
@@ -126,7 +127,7 @@ func (e event) WriteJSON(w io.Writer, flusher http.Flusher, data interface{}, lo
 func (fm *feedMonitor) FeedUpdated(feed content.Feed) error {
 	fm.ops <- func(conns connMap) {
 		for _, d := range conns {
-			if _, ok := d.feedSet[feed.Data().Id]; ok {
+			if _, ok := d.feedSet[feed.ID]; ok {
 				if !d.validator() {
 					close(d.done)
 					continue

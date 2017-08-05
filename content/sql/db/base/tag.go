@@ -1,9 +1,11 @@
 package base
 
 func init() {
+	sqlStmts.Tag.GetByValue = getTagByValue
 	sqlStmts.Tag.Create = createTag
 	sqlStmts.Tag.Update = updateTag
 	sqlStmts.Tag.GetUserFeeds = getUserTagFeeds
+	sqlStmts.Tag.GetUserFeedIDs = getUserTagFeedIDs
 	sqlStmts.Tag.DeleteStale = deleteStaleTags
 
 	sqlStmts.Tag.GetArticlesJoin = getArticlesTagJoin
@@ -13,11 +15,19 @@ func init() {
 }
 
 const (
+	getTagByValue = `SELECT id FROM tags WHERE value = $1`
+
 	createTag = `
 INSERT INTO tags (value)
 	SELECT $1 EXCEPT SELECT value FROM tags WHERE value = $1
 `
 	updateTag = `UPDATE tags SET value = $1 WHERE id = $2`
+
+	getUserTagFeedIDs = `
+SELECT uft.feed_id
+FROM users_feeds_tags uft
+WHERE uft.user_login = $1 AND t.tag_id = $2
+`
 
 	getUserTagFeeds = `
 SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error

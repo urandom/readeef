@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content"
 )
 
 type session struct {
-	login     data.Login
+	login     content.Login
 	lastVisit time.Time
 }
 

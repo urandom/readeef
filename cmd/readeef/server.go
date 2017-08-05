@@ -20,7 +20,6 @@ import (
 	"github.com/urandom/readeef/api"
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/base/extractor"
 	"github.com/urandom/readeef/content/base/monitor"
 	contentProcessor "github.com/urandom/readeef/content/base/processor"
 	"github.com/urandom/readeef/content/base/search"
@@ -93,7 +92,7 @@ func runServer(config config.Config, args []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	monitors := initFeedMonitors(ctx, config.FeedManager, repo, searchProvider, thumbnailer, log)
+	monitors := initFeedMonitors(ctx, config.FeedManager, service.ArticleRepo(), searchProvider, thumbnailer, log)
 	for _, m := range monitors {
 		feedManager.AddFeedMonitor(m)
 	}
@@ -112,7 +111,7 @@ func runServer(config config.Config, args []string) error {
 		return errors.WithMessage(err, "initializing article processors")
 	}
 
-	handler, err = api.Mux(ctx, repo, feedManager, hubbub, searchProvider, extractor, fs, config, log)
+	handler, err = api.Mux(ctx, service, feedManager, hubbub, searchProvider, extractor, fs, articleProcessors, config, log)
 	if err != nil {
 		return errors.WithMessage(err, "creating api mux")
 	}

@@ -33,7 +33,7 @@ func WithGoose(templateDir string, fs http.FileSystem) (content.Extractor, error
 	return goose{template: tmpl}, nil
 }
 
-func (e goose) Extract(link string) (data content.ArticleExtract, err error) {
+func (e goose) Extract(link string) (extract content.Extract, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New(fmt.Sprintf("%v", r))
@@ -59,15 +59,15 @@ func (e goose) Extract(link string) (data content.ArticleExtract, err error) {
 	if err = e.template.Execute(&e.buf, map[string]interface{}{
 		"paragraphs": html, "topImage": formatted.TopImage,
 	}); err != nil {
-		return data, errors.Wrap(err, "executing goose template")
+		return extract, errors.Wrap(err, "executing goose template")
 	}
 
-	data.Content = e.buf.String()
-	data.Title = formatted.Title
-	data.TopImage = formatted.TopImage
-	data.Language = formatted.MetaLang
+	extract.Content = e.buf.String()
+	extract.Title = formatted.Title
+	extract.TopImage = formatted.TopImage
+	extract.Language = formatted.MetaLang
 
-	return data, err
+	return extract, err
 }
 
 func prepareTemplate(t *template.Template, fs http.FileSystem, paths ...string) (*template.Template, error) {

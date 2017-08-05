@@ -18,7 +18,7 @@ const (
 	elasticArticleType = "article"
 )
 
-type Elastic struct {
+type elasticSearch struct {
 	client    *elastic.Client
 	log       readeef.Logger
 	newIndex  bool
@@ -26,7 +26,7 @@ type Elastic struct {
 	service   repo.Service
 }
 
-func NewElastic(url string, size int64, service repo.Service, log readeef.Logger) (content.SearchProvider, error) {
+func NewElastic(url string, size int64, service repo.Service, log readeef.Logger) (elasticSearch, error) {
 	var client *elastic.Client
 	var exists bool
 
@@ -43,19 +43,18 @@ func NewElastic(url string, size int64, service repo.Service, log readeef.Logger
 		}
 	}
 
-	return &Elastic{client: client, log: log, batchSize: size, service: service, newIndex: !exists}, nil
+	return &elasticSearch{client: client, log: log, batchSize: size, service: service, newIndex: !exists}, nil
 }
 
-func (e Elastic) IsNewIndex() bool {
+func (e elasticSearch) IsNewIndex() bool {
 	return e.newIndex
 }
 
-func (e Elastic) Search(
+func (e elasticSearch) Search(
 	term string,
 	u content.User,
-	feedIDs []content.FeedID,
-	opts ...content.QueryOpts,
-) (ua []content.UserArticle, err error) {
+	opts ...content.QueryOpt,
+) ([]content.Article, error) {
 
 	o := content.QueryOptions{}
 	o.Apply(opts)
@@ -68,6 +67,8 @@ func (e Elastic) Search(
 		term = t
 	}
 	query = elastic.NewCommonTermsQuery("_all", term)
+
+	feedIDs := o.FeedIDs
 
 	if len(feedIDs) == 0 {
 		var err error
@@ -101,11 +102,11 @@ func (e Elastic) Search(
 	res, err = search.Do()
 
 	if err != nil {
-		return
+		return []content.Article{}, errors.Wrap(err, "performing search")
 	}
 
 	if res.TotalHits() == 0 {
-		return
+		return []content.Article{}, nil
 	}
 
 	articleIDs := []content.ArticleID{}
@@ -144,7 +145,7 @@ func (e Elastic) Search(
 	return articles, nil
 }
 
-func (e Elastic) BatchIndex(articles []content.Article, op indexOperation) error {
+func (e elasticSearch) BatchIndex(articles []content.Article, op indexOperation) error {
 	if len(articles) == 0 {
 		return nil
 	}

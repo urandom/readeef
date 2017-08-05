@@ -8,27 +8,40 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 )
 
 type item struct {
-	Id            data.ArticleId `json:"id"`
-	FeedId        data.FeedId    `json:"feed_id"`
-	Title         string         `json:"title"`
-	Author        string         `json:"author"`
-	Html          string         `json:"html"`
-	Url           string         `json:"url"`
-	IsSaved       int            `json:"is_saved"`
-	IsRead        int            `json:"is_read"`
-	CreatedOnTime int64          `json:"created_on_time"`
+	Id            content.ArticleID `json:"id"`
+	FeedId        content.FeedID    `json:"feed_id"`
+	Title         string            `json:"title"`
+	Author        string            `json:"author"`
+	Html          string            `json:"html"`
+	Url           string            `json:"url"`
+	IsSaved       int               `json:"is_saved"`
+	IsRead        int               `json:"is_read"`
+	CreatedOnTime int64             `json:"created_on_time"`
 }
 
-func items(r *http.Request, resp resp, user content.User, log readeef.Logger) error {
+func registerItemActions(processors []content.ArticleProcessor) {
+	actions["items"] = func(r *http.Request, resp resp, user content.User, service repo.Service, log readeef.Logger) error {
+		return items(r, resp, user, service, processors, log)
+	}
+}
+
+func items(
+	r *http.Request,
+	resp resp,
+	user content.User,
+	service repo.Service,
+	processors []content.ArticleProcessor,
+	log readeef.Logger,
+) error {
 	log.Infoln("Fetching fever items")
 
-	count := user.Count()
-	if user.HasErr() {
-		return errors.Wrap(user.Err(), "getting user article count")
+	count, err := service.ArticleRepo().Count(user)
+	if err != nil {
+		return errors.WithMessage(err, "getting user article count")
 	}
 
 	items := []item{}
@@ -45,52 +58,52 @@ func items(r *http.Request, resp resp, user content.User, log readeef.Logger) er
 			max, _ = strconv.ParseInt(val, 10, 64)
 		}
 
-		var articles []content.UserArticle
+		var articles []content.Article
+
 		// Fever clients do their own paging
-		o := data.ArticleQueryOptions{Limit: 50, Offset: 0, SkipSessionProcessors: true}
+		opts := []content.QueryOpt{content.Paging(50, 0)}
 
 		if withIds, ok := r.Form["with_ids"]; ok {
 			stringIds := strings.Split(withIds[0], ",")
-			ids := make([]data.ArticleId, 0, len(stringIds))
+			ids := make([]content.ArticleID, 0, len(stringIds))
 
-			for _, stringId := range stringIds {
-				stringId = strings.TrimSpace(stringId)
+			for _, stringID := range stringIds {
+				stringID = strings.TrimSpace(stringID)
 
-				if id, err := strconv.ParseInt(stringId, 10, 64); err == nil {
-					ids = append(ids, data.ArticleId(id))
+				if id, err := strconv.ParseInt(stringID, 10, 64); err == nil {
+					ids = append(ids, content.ArticleID(id))
 				}
 			}
 
-			articles = user.ArticlesById(ids, data.ArticleQueryOptions{SkipSessionProcessors: true})
-			if user.HasErr() {
-				return errors.Wrapf(user.Err(), "getting user articles by ids [%v]", ids)
-			}
-		} else if max > 0 {
-			user.Order(data.DescendingOrder)
-			o.BeforeId = data.ArticleId(max)
-			articles = user.Articles(o)
-			if user.HasErr() {
-				return errors.Wrap(user.Err(), "getting user articles")
-			}
-		} else {
-			user.Order(data.AscendingOrder)
-			o.AfterId = data.ArticleId(since)
-			articles = user.Articles(o)
-			if user.HasErr() {
-				return errors.Wrap(user.Err(), "getting user articles")
-			}
+			opts = append(opts, content.IDs(ids))
 		}
 
-		for i := range articles {
-			in := articles[i].Data()
+		if max > 0 {
+			opts = append(opts,
+				content.IDRange(content.ArticleID(max), 0),
+				content.Sorting(content.DefaultSort, content.DescendingOrder))
+		} else {
+			opts = append(opts,
+				content.IDRange(0, content.ArticleID(since)),
+				content.Sorting(content.DefaultSort, content.AscendingOrder))
+		}
+
+		articles, err := service.ArticleRepo().ForUser(user, opts...)
+		if err != nil {
+			return errors.WithMessage(err, "getting user articles")
+		}
+
+		articles = content.ArticleProcessors(processors).Process(articles)
+
+		for _, a := range articles {
 			item := item{
-				Id: in.Id, FeedId: in.FeedId, Title: in.Title, Html: in.Description,
-				Url: in.Link, CreatedOnTime: in.Date.Unix(),
+				Id: a.ID, FeedId: a.FeedID, Title: a.Title, Html: a.Description,
+				Url: a.Link, CreatedOnTime: a.Date.Unix(),
 			}
-			if in.Read {
+			if a.Read {
 				item.IsRead = 1
 			}
-			if in.Favorite {
+			if a.Favorite {
 				item.IsSaved = 1
 			}
 			items = append(items, item)

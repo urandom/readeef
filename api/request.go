@@ -9,13 +9,13 @@ import (
 	"github.com/urandom/handler/auth"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 )
 
-func userContext(repo content.Repo, next http.Handler, log readeef.Logger) http.Handler {
+func userContext(repo repo.User, next http.Handler, log readeef.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if c, ok := auth.Claims(r).(*jwt.StandardClaims); ok {
-			user := repo.UserByLogin(data.Login(c.Subject))
+			user := repo.Get(content.Login(c.Subject))
 
 			if user.HasErr() {
 				err := user.Err()

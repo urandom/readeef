@@ -7,12 +7,12 @@ import (
 	"github.com/urandom/handler/auth"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 )
 
-func tokenCreate(repo content.Repo, secret []byte, log readeef.Logger) http.Handler {
+func tokenCreate(repo repo.User, secret []byte, log readeef.Logger) http.Handler {
 	return auth.TokenGenerator(nil, auth.AuthenticatorFunc(func(user, pass string) bool {
-		u := repo.UserByLogin(data.Login(user))
+		u := repo.Get(content.Login(user))
 		if u.HasErr() {
 			log.Infof("Error fetching user %s: %+v", user, u.Err())
 		}
@@ -25,7 +25,7 @@ func tokenDelete(storage content.TokenStorage, secret []byte, log readeef.Logger
 }
 
 func tokenValidator(
-	repo content.Repo,
+	repo repo.User,
 	storage content.TokenStorage,
 	log readeef.Logger,
 ) auth.TokenValidator {
@@ -42,7 +42,7 @@ func tokenValidator(
 		}
 
 		if c, ok := claims.(*jwt.StandardClaims); ok {
-			u := repo.UserByLogin(data.Login(c.Subject))
+			u := repo.Get(content.Login(c.Subject))
 			err := u.Err()
 
 			if err != nil {

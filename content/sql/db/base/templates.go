@@ -18,13 +18,13 @@ func init() {
 	sqlStmts.User.ArticleCountFavoriteJoin = articleCountFavoriteJoin
 	sqlStmts.User.ArticleCountUntaggedJoin = articleCountUntaggedJoin
 
-	sqlStmts.User.ReadStateInsertTemplate = readStateInsertTemplate
-	sqlStmts.User.ReadStateInsertFavoriteJoin = readStateInsertFavoriteJoin
-	sqlStmts.User.ReadStateInsertUntaggedJoin = getArticlesUntaggedJoin
+	sqlStmts.User.StateUnreadJoin = stateUnreadJoin
+	sqlStmts.User.StateFavoriteJoin = stateFavoriteJoin
 
+	sqlStmts.User.ReadStateInsertTemplate = readStateInsertTemplate
 	sqlStmts.User.ReadStateDeleteTemplate = readStateDeleteTemplate
-	sqlStmts.User.ReadStateDeleteFavoriteJoin = readStateInsertFavoriteJoin
-	sqlStmts.User.ReadStateDeleteUntaggedJoin = getArticlesUntaggedJoin
+	sqlStmts.User.FavoriteStateInsertTemplate = favoriteStateInsertTemplate
+	sqlStmts.User.FavoriteStateDeleteTemplate = favoriteStateDeleteTemplate
 }
 
 const (
@@ -114,12 +114,35 @@ EXCEPT SELECT au.user_login, au.article_id
 FROM users_articles_unread au
 WHERE au.user_login = $1
 `
-	readStateInsertFavoriteJoin = `
+	stateFavoriteJoin = `
 LEFT OUTER JOIN users_articles_favorite af
 	ON a.id = af.article_id AND af.user_login = uf.user_login
 `
+	stateUnreadJoin = `
+LEFT OUTER JOIN users_articles_unread au
+	ON a.id = au.article_id AND au.user_login = uf.user_login
+`
 	readStateDeleteTemplate = `
 DELETE FROM users_articles_unread WHERE user_login = $1 AND article_id IN (
+	SELECT a.id FROM articles a {{ .Join }}
+	{{ .Where }}
+)
+`
+	favoriteStateInsertTemplate = `
+INSERT INTO users_articles_favorite (user_login, article_id)
+SELECT uf.user_login, a.id
+FROM users_feeds uf
+INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+	{{ .JoinPredicate }}
+{{ .Join }}
+{{ .Where }}
+EXCEPT SELECT af.user_login, af.article_id
+FROM users_articles_favorite af
+WHERE af.user_login = $1
+`
+	favoriteStateDeleteTemplate = `
+DELETE FROM users_articles_favorite WHERE user_login = $1 AND article_id IN (
 	SELECT a.id FROM articles a {{ .Join }}
 	{{ .Where }}
 )

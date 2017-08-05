@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 )
 
 type categoriesContent []cat
@@ -17,30 +17,49 @@ type cat struct {
 	OrderId int64  `json:"order_id"`
 }
 
-func getCategories(req request, user content.User) (interface{}, error) {
-	cContent := categoriesContent{}
-	o := data.ArticleCountOptions{UnreadOnly: true}
+func getCategories(req request, user content.User, service repo.Service) (interface{}, error) {
+	articleRepo := service.ArticleRepo()
+	tagRepo := service.TagRepo()
 
-	for _, t := range user.Tags() {
-		td := t.Data()
-		count := t.Count(o)
+	cContent := categoriesContent{}
+
+	tags, err := tagRepo.ForUser(user)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting user tags")
+	}
+	for _, tag := range tags {
+		ids, err := tagRepo.FeedIDs(tag, user)
+		if err != nil {
+			return nil, errors.WithMessage(err, "getting tag feed ids")
+		}
+
+		count, err := articleRepo.Count(user, content.UnreadOnly, content.FeedIDs(ids))
+		if err != nil {
+			return nil, errors.WithMessage(err, "getting unread tag count")
+		}
 
 		if count > 0 || !req.UnreadOnly {
 			cContent = append(cContent,
-				cat{Id: strconv.FormatInt(int64(td.Id), 10), Title: string(td.Value), Unread: count},
+				cat{Id: strconv.FormatInt(int64(tag.ID), 10), Title: string(tag.Value), Unread: count},
 			)
 		}
 	}
 
-	count := user.Count(data.ArticleCountOptions{UnreadOnly: true, UntaggedOnly: true})
+	count, err := articleRepo.Count(user, content.UnreadOnly, content.UntaggedOnly)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting unread untagged count")
+	}
+
 	if count > 0 || !req.UnreadOnly {
 		cContent = append(cContent,
 			cat{Id: strconv.FormatInt(CAT_UNCATEGORIZED, 10), Title: "Uncategorized", Unread: count},
 		)
 	}
 
-	o.FavoriteOnly = true
-	count = user.Count(o)
+	count, err = articleRepo.Count(user, content.UnreadOnly, content.FavoriteOnly)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting unread favorite count")
+	}
 
 	if count > 0 || !req.UnreadOnly {
 		cContent = append(cContent,
@@ -48,18 +67,14 @@ func getCategories(req request, user content.User) (interface{}, error) {
 		)
 	}
 
-	if user.HasErr() {
-		return nil, errors.Wrapf(user.Err(), "getting user %s tags", user.Data().Login)
-	}
-
 	return cContent, nil
 }
 
-func getLabels(req request, user content.User) (interface{}, error) {
+func getLabels(req request, user content.User, service repo.Service) (interface{}, error) {
 	return []interface{}{}, nil
 }
 
-func setArticleLabel(req request, user content.User) (interface{}, error) {
+func setArticleLabel(req request, user content.User, service repo.Service) (interface{}, error) {
 	return genericContent{Status: "OK", Updated: 0}, nil
 }
 

@@ -24,6 +24,8 @@ var (
 	articleCountTemplate        *template.Template
 	readStateInsertTemplate     *template.Template
 	readStateDeleteTemplate     *template.Template
+	favoriteStateInsertTemplate *template.Template
+	favoriteStateDeleteTemplate *template.Template
 )
 
 type articleRepo struct {
@@ -53,7 +55,7 @@ func (r articleRepo) ForUser(user content.User, opts ...content.QueryOpt) ([]con
 
 	r.log.Infof("Getting articles for user %s", user)
 
-	articles, err := getArticles(user.Login, r.db, r.log, o, "", "", nil)
+	articles, err := getArticles(user.Login, r.db, r.log, o)
 	if err != nil {
 		err = errors.WithMessage(err, fmt.Sprintf("getting articles for user %s", user))
 	}
@@ -78,12 +80,11 @@ func (r articleRepo) All(opts ...content.QueryOpt) ([]content.Article, error) {
 
 	renderData := getArticlesData{}
 	s := dbo.SQL()
-	if opts.IncludeScores {
+	if o.IncludeScores {
 		renderData.Columns += ", asco.score"
-		renderData.Join += s.User.GetArticlesScoreJoin
 	}
 
-	renderData.Where, renderData.Order, renderData.Limit, args = constructSQLQueryOptions("", opts, args, where)
+	renderData.Join, renderData.Where, renderData.Order, renderData.Limit, args = constructSQLQueryOptions("", opts, args, where)
 
 	buf := pool.Buffer.Get()
 	defer pool.Buffer.Put(buf)
@@ -103,87 +104,130 @@ func (r articleRepo) All(opts ...content.QueryOpt) ([]content.Article, error) {
 	return articles, err
 }
 
-func (r articleRepo) Read(
-	article content.Article,
-	state bool,
-	user content.User,
-	articles ...content.Article,
-) error {
-	r.log.Infof("Setting articles read state")
-	tx, err := r.db.Beginx()
-	if err != nil {
-		return errors.Wrap(err, "creating transaction")
+func (r articleRepo) Count(content.User, ...content.QueryOpt) (int64, error) {
+	if err := user.Validate(); err != nil {
+		return 0, errors.WithMessage(err, "validating user")
 	}
-	defer tx.Rollback()
 
-	var stmt *sqlx.Stmt
-	if state {
-		stmt, err = tx.Preparex(r.db.SQL().Article.DeleteUserUnread)
-	} else {
-		stmt, err = tx.Preparex(r.db.SQL().Article.CreateUserUnread)
-	}
-	if err != nil {
-		return errors.Wrap(err, "creating article read statement")
-	}
-	defer stmt.Close()
+	o := repo.QueryOptions{}
+	o.Apply(opts)
 
-	for i := 0; i < len(articles)+1; i++ {
-		if i > 0 {
-			article = articles[i-1]
-		}
+	r.log.Infof("Getting articles count")
 
-		if _, err = stmt.Exec(user.Login, article.ID); err != nil {
-			return errors.Wrap(err, "executing article read statement")
+	if articleCountTemplate == nil {
+		articleCountTemplate, err = template.New("article-count-sql").
+			Parse(s.User.ArticleCountTemplate)
+
+		if err != nil {
+			return 0, errors.Wrap(err, "generating article-count template")
 		}
 	}
 
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(err, "committing transaction")
+	var login content.Login
+	var renderData getArticlesData
+
+	if opts.UnreadOnly || opts.FavoriteOnly || opt.ReadOnly || opt.UntaggedOnly {
+		renderData.Join += s.User.ArticleCountUserFeedsJoin
+		login = user.Login
+
+		if o.FavoriteOnly {
+			renderData.Join += s.User.ReadStateFavoriteJoin
+		}
+		if o.ReadOnly || o.UnreadOnly {
+			renderData.Join += s.User.ReadStateUnreadJoin
+		}
 	}
 
-	return nil
+	o.IncludeScores = false
+	join, renderData.Where, _, _, args = constructSQLQueryOptions(login, o)
+
+	renderData.Join += join
+	renderData.Where = where
+
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
+
+	if err := articleCountTemplate.Execute(buf, renderData); err != nil {
+		return []content.Article{}, errors.Wrap(err, "executing article-count template")
+	}
+
+	var count int64
+	if err = r.db.Get(&count, buf.String(), args...); err != nil {
+		return 0, errors.Wrap(err, "getting article count")
+	}
+
+	return count, nil
 }
 
-func (r articleRepo) Favorite(
-	article content.Article,
+func (r articleRepo) IDs(content.User, ...content.QueryOpt) ([]content.ArticleID, error) {
+	if err := user.Validate(); err != nil {
+		return []content.ArticleID{}, errors.WithMessage(err, "validating user")
+	}
+
+	o := repo.QueryOptions{}
+	o.Apply(opts)
+
+	r.log.Infof("Getting article ids")
+
+	if getArticleIdsTemplate == nil {
+		getArticleIdsTemplate, err = template.New("article-ids-sql").
+			Parse(s.User.GetArticleIdsTemplate)
+
+		if err != nil {
+			return []content.ArticleID{}, errors.Wrap(err, "generating article-ids template")
+		}
+	}
+
+	var login content.Login
+	var renderData getArticlesData
+
+	if opts.UnreadOnly || opts.FavoriteOnly || opt.ReadOnly || opt.UntaggedOnly {
+		renderData.Join += s.User.ArticleCountUserFeedsJoin
+		login = user.Login
+
+		if o.FavoriteOnly {
+			renderData.Join += s.User.ReadStateFavoriteJoin
+		}
+		if o.ReadOnly || o.UnreadOnly {
+			renderData.Join += s.User.ReadStateUnreadJoin
+		}
+	}
+
+	o.IncludeScores = false
+	join, renderData.Where, _, _, args = constructSQLQueryOptions(login, o)
+
+	renderData.Join += join
+	renderData.Where = where
+
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
+
+	if err := articleCountTemplate.Execute(buf, renderData); err != nil {
+		return []content.ArticleID{}, errors.Wrap(err, "executing article-count template")
+	}
+
+	var ids []content.ArticleID
+	if err = r.db.Select(&ids, buf.String(), args...); err != nil {
+		return []content.ArticleID{}, errors.Wrap(err, "getting article count")
+	}
+
+	return ids, nil
+}
+
+func (r articleRepo) Read(
 	state bool,
 	user content.User,
-	articles ...content.Article,
+	opts ...content.QueryOpt,
 ) error {
-	r.log.Infof("Setting articles favorite state")
+	return articleStateSet(readState, state, user, r.db, r.log, opts)
+}
 
-	tx, err := r.db.Beginx()
-	if err != nil {
-		return errors.Wrap(err, "creating transaction")
-	}
-	defer tx.Rollback()
-
-	var stmt *sqlx.Stmt
-	if state {
-		stmt, err = tx.Preparex(r.db.SQL().Article.CreateUserFavorite)
-	} else {
-		stmt, err = tx.Preparex(r.db.SQL().Article.DeleteUserFavorite)
-	}
-	if err != nil {
-		return errors.Wrap(err, "creating article favorite statement")
-	}
-	defer stmt.Close()
-
-	for i := 0; i < len(articles)+1; i++ {
-		if i > 0 {
-			article = articles[i-1]
-		}
-
-		if _, err = stmt.Exec(user.Login, article.ID); err != nil {
-			return errors.Wrap(err, "executing article favorite statement")
-		}
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(err, "committing transaction")
-	}
-
-	return nil
+func (r articleRepo) Favor(
+	state bool,
+	user content.User,
+	opts ...content.QueryOpt,
+) error {
+	return articleStateSet(favoriteState, state, user, r.db, r.log, opts)
 }
 
 func (r articleRepo) RemoveStaleUnreadRecords() error {
@@ -197,7 +241,7 @@ func (r articleRepo) RemoveStaleUnreadRecords() error {
 	return nil
 }
 
-func getArticles(login content.Login, dbo *db.DB, log readeef.Logger, opts content.QueryOptions, join, where string, args []interface{}) ([]content.Article, error) {
+func getArticles(login content.Login, dbo *db.DB, log readeef.Logger, opts content.QueryOptions) ([]content.Article, error) {
 	var err error
 	if getArticlesTemplate == nil {
 		getArticlesTemplate, err = template.New("get-articles-sql").
@@ -218,7 +262,7 @@ func getArticles(login content.Login, dbo *db.DB, log readeef.Logger, opts conte
 		opts.UnreadFirst = false
 		opts.UnreadOnly = true
 
-		ua = internalGetArticles(login, dbo, log, opts, join, where, args)
+		ua = internalGetArticles(login, dbo, log, opts)
 
 		if !originalUnreadOnly && (opts.Limit == 0 || opts.Limit > len(ua)) {
 			if opts.Limit > 0 {
@@ -227,7 +271,7 @@ func getArticles(login content.Login, dbo *db.DB, log readeef.Logger, opts conte
 			opts.UnreadOnly = false
 			opts.ReadOnly = true
 
-			readOnly := internalGetArticles(login, dbo, log, opts, join, where, args)
+			readOnly := internalGetArticles(login, dbo, log, opts)
 
 			ua = append(ua, readOnly...)
 		}
@@ -235,30 +279,18 @@ func getArticles(login content.Login, dbo *db.DB, log readeef.Logger, opts conte
 		return
 	}
 
-	return internalGetArticles(login, dbo, log, opts, join, where, args)
+	return internalGetArticles(login, dbo, log, opts)
 }
 
-func internalGetArticles(login content.Login, dbo *db.DB, log readeef.Logger, opts content.QueryOptions, join, where string, args []interface{}) ([]content.Article, error) {
+func internalGetArticles(login content.Login, dbo *db.DB, log readeef.Logger, opts content.QueryOptions) ([]content.Article, error) {
 	renderData := getArticlesData{}
 	s := dbo.SQL()
+
+	var args []interface{}
+	renderData.Join, renderData.Where, renderData.Order, renderData.Limit, args = constructSQLQueryOptions(login, opts)
+
 	if opts.IncludeScores {
 		renderData.Columns += ", asco.score"
-		renderData.Join += s.User.GetArticlesScoreJoin
-	}
-
-	if opts.UntaggedOnly {
-		renderData.Join += s.User.GetArticlesUntaggedJoin
-	}
-
-	if join != "" {
-		renderData.Join += " " + join
-	}
-
-	renderData.Where, renderData.Order, renderData.Limit, args = constructSQLQueryOptions(login, opts, args, where)
-
-	if opts.Limit > 0 {
-		renderData.Limit = fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
-		args = append(args, opts.Limit, opts.Offset)
 	}
 
 	buf := pool.Buffer.Get()
@@ -279,27 +311,114 @@ func internalGetArticles(login content.Login, dbo *db.DB, log readeef.Logger, op
 	return articles, err
 }
 
+type stateType int
+
+const (
+	readState     stateType = iota
+	favoriteState stateType = iota
+)
+
+func articleStateSet(
+	stateType stateType,
+	state bool,
+	user content.User,
+	db *db.DB,
+	log readeef.Logger,
+	opts []content.QueryOpt,
+) error {
+	if err := instantiateStateTemplates(); err != nil {
+		return errors.WithMessage(err, "instantiating article state templates")
+	}
+
+	if err := user.Validate(); err != nil {
+		return errors.WithMessage(err, "validating user")
+	}
+
+	o := repo.QueryOptions{}
+	o.Apply(opts)
+
+	var tmpl *template.Template
+
+	switch stateType {
+	case readState:
+		log.Infof("Setting articles read state")
+
+		if state {
+			tmpl = readStateDeleteTemplate
+		} else {
+			tmpl = readStateInsertTemplate
+		}
+	case favoriteState:
+		log.Infof("Setting articles favorite state")
+
+		if state {
+			tmpl = favoriteStateDeleteTemplate
+		} else {
+			tmpl = favoriteStateInsertTemplate
+		}
+	}
+
+	renderData := getArticlesData{}
+	var args []interface{}
+	renderData.Join, renderData.Where, _, _, args = constructSQLQueryOptions(user.Login, o)
+
+	if o.FavoriteOnly {
+		renderData.Join += s.User.ReadStateFavoriteJoin
+	}
+	if o.ReadOnly || o.UnreadOnly {
+		renderData.Join += s.User.ReadStateUnreadJoin
+	}
+
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
+
+	if err := tmpl.Execute(buf, renderData); err != nil {
+		return errors.Wrap(err, "executing article state template")
+	}
+
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return errors.Wrap(err, "creating transaction")
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec(buf.String(), args); err != nil {
+		return errors.Wrap(err, "executing article state statement")
+	}
+
+	if err = tx.Commit(); err != nil {
+		return errors.Wrap(err, "committing transaction")
+	}
+
+	return nil
+}
+
 func constructSQLQueryOptions(
 	login content.Login,
 	opts content.QueryOptions,
-	input []interface{},
-	inputWhere string,
-) (string, string, string, []interface{}) {
+) (string, string, string, string, []interface{}) {
 
 	hasUser := login != ""
-	len := len(input)
 	off := 0
 	if hasUser {
-		len++
 		off = 1
 	}
 
-	args := make([]interface{}, len, len*2)
+	var join string
+
+	if opts.IncludeScores {
+		join += s.User.GetArticlesScoreJoin
+	}
+
 	if hasUser {
-		args[0] = login
-		copy(args[1:], input)
-	} else {
-		copy(args, input)
+		if opts.UntaggedOnly {
+			join += s.User.GetArticlesUntaggedJoin
+		}
+	}
+
+	args := make([]interface{}, 0, 6)
+	if hasUser {
+		args = append(args, login)
 	}
 
 	whereSlice := []string{}
@@ -320,17 +439,13 @@ func constructSQLQueryOptions(
 		}
 	}
 
-	if inputWhere != "" {
-		whereSlice = append(whereSlice, inputWhere)
-	}
-
-	if opts.BeforeId > 0 {
+	if opts.BeforeID > 0 {
 		whereSlice = append(whereSlice, fmt.Sprintf("a.id < $%d", len(args)+off))
-		args = append(args, opts.BeforeId)
+		args = append(args, opts.BeforeID)
 	}
-	if opts.AfterId > 0 {
+	if opts.AfterID > 0 {
 		whereSlice = append(whereSlice, fmt.Sprintf("a.id > $%d", len(args)+off))
-		args = append(args, opts.AfterId)
+		args = append(args, opts.AfterID)
 	}
 
 	if !opts.BeforeDate.IsZero() {
@@ -341,6 +456,24 @@ func constructSQLQueryOptions(
 	if !opts.AfterDate.IsZero() {
 		whereSlice = append(whereSlice, fmt.Sprintf("a.date > $%d", len(args)+off))
 		args = append(args, opts.AfterDate)
+	}
+
+	if len(opts.IDs) > 0 {
+		orSlice = make([]string{}, len(opts.IDs))
+		for i := range opts.IDs {
+			orSlice[i] = fmt.Sprintf("a.id = $%d", len(args)+off)
+			args = append(args, id)
+		}
+		whereSlice = append(whereSlice, "("+strings.Join(orSlice, " OR ")+")")
+	}
+
+	if len(opts.FeedIDs) > 0 {
+		orSlice = make([]string{}, len(opts.FeedIDs))
+		for i := range opts.FeedIDs {
+			orSlice[i] = fmt.Sprintf("a.feed_id = $%d", len(args)+off)
+			args = append(args, id)
+		}
+		whereSlice = append(whereSlice, "("+strings.Join(orSlice, " OR ")+")")
 	}
 
 	var where string
@@ -389,7 +522,7 @@ func constructSQLQueryOptions(
 		args = append(args, opts.Limit, opts.Offset)
 	}
 
-	return where, order, limit, args
+	return join, where, order, limit, args
 }
 
 func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log readeef.Logger) (content.Article, error) {
@@ -427,4 +560,44 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log readeef.Logger
 	}
 
 	return a, nil
+}
+
+func instantiateStateTemplates() error {
+	if readStateInsertTemplate == nil {
+		readStateInsertTemplate, err = template.New("read-state-insert-sql").
+			Parse(dbo.SQL().User.ReadStateInsertTemplate)
+
+		if err != nil {
+			return errors.Wrap(err, "generating read-state-insert template")
+		}
+	}
+
+	if readStateDeleteTemplate == nil {
+		readStateDeleteTemplate, err = template.New("read-state-delete-sql").
+			Parse(dbo.SQL().User.ReadStateDeleteTemplate)
+
+		if err != nil {
+			return errors.Wrap(err, "generating read-state-delete template")
+		}
+	}
+
+	if favoriteStateInsertTemplate == nil {
+		favoriteStateInsertTemplate, err = template.New("favorite-state-insert-sql").
+			Parse(dbo.SQL().User.FavoriteStateInsertTemplate)
+
+		if err != nil {
+			return errors.Wrap(err, "generating favorite-state-insert template")
+		}
+	}
+
+	if favoriteStateDeleteTemplate == nil {
+		favoriteStateDeleteTemplate, err = template.New("favorite-state-delete-sql").
+			Parse(dbo.SQL().User.FavoriteStateDeleteTemplate)
+
+		if err != nil {
+			return errors.Wrap(err, "generating favorite-state-delete template")
+		}
+	}
+
+	return nil
 }

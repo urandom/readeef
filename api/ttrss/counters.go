@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
 )
 
 type countersContent []counter
@@ -18,117 +18,176 @@ type counter struct {
 	Kind       string      `json:"kind,omitempty"`
 }
 
-func getUnread(req request, user content.User) (interface{}, error) {
-	var ar content.ArticleRepo
-	o := data.ArticleCountOptions{UnreadOnly: true}
+func getUnread(req request, user content.User, service repo.Service) (interface{}, error) {
+	opts := []content.QueryOpt{}
+
+	var feedGenerator func() ([]content.Feed, error)
 
 	if req.IsCat {
-		tagId := data.TagId(req.FeedId)
-		if tagId > 0 {
-			ar = user.TagById(tagId)
-		} else if tagId == CAT_UNCATEGORIZED {
-			ar = user
-			o.UntaggedOnly = true
-		} else if tagId == CAT_SPECIAL {
-			ar = user
-			o.FavoriteOnly = true
+		if req.FeedId > 0 {
+			tag, err := service.TagRepo().Get(content.TagID(req.FeedId), user)
+			if err != nil {
+				return nil, errors.WithMessage(err, "getting tag for user")
+			}
+
+			feedGenerator = func() ([]content.Feed, error) {
+				return service.FeedRepo().ForTag(tag, user)
+			}
+		} else if req.FeedId == CAT_UNCATEGORIZED {
+			opts = append(opts, content.UntaggedOnly)
+		} else if req.FeedId == CAT_SPECIAL {
+			opts = append(opts, content.FavoriteOnly)
 		}
 	} else {
 		switch req.FeedId {
 		case FAVORITE_ID:
-			ar = user
-			o.FavoriteOnly = true
+			opts = append(opts, content.FavoriteOnly)
 		case FRESH_ID:
-			ar = user
-			o.AfterDate = time.Now().Add(FRESH_DURATION)
-		case ALL_ID, 0:
-			ar = user
+			opts = append(opts, content.TimeRange(time.Now().Add(FRESH_DURATION), time.Time{}))
 		default:
 			if req.FeedId > 0 {
-				feed := user.FeedById(req.FeedId)
-				if feed.HasErr() {
-					return nil, errors.Wrapf(feed.Err(), "getting feed %d", req.FeedId)
+				feed, err := service.FeedRepo().Get(req.FeedId, user)
+				if err != nil {
+					return nil, errors.WithMessage(err, "getting user feed")
 				}
 
-				ar = feed
+				feedGenerator = func() ([]content.Feed, error) {
+					return []content.Feed{feed}, nil
+				}
 			}
 
 		}
-
 	}
 
-	if ar == nil {
-		return genericContent{Unread: "0"}, nil
+	if feedGenerator != nil {
+		feeds, err := feedGenerator()
+		if err != nil {
+			return nil, errors.WithMessage(err, "getting feeds")
+		}
+
+		ids := make([]content.FeedID, len(feeds))
+		for i := range feeds {
+			ids[i] = feeds[i].ID
+		}
+
+		opts = append(opts, content.FeedIDs(ids))
 	}
 
-	return genericContent{Unread: strconv.FormatInt(ar.Count(o), 10)}, nil
+	count, err := service.ArticleRepo().Count(user, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return genericContent{Unread: strconv.FormatInt(count, 10)}, nil
 }
 
-func getCounters(req request, user content.User) (interface{}, error) {
+func getCounters(req request, user content.User, service repo.Service) (interface{}, error) {
 	if req.OutputMode == "" {
 		req.OutputMode = "flc"
 	}
 	cContent := countersContent{}
 
-	o := data.ArticleCountOptions{UnreadOnly: true}
-	unreadCount := user.Count(o)
+	articleRepo := service.ArticleRepo()
+	unreadCount, err := articleRepo.Count(user, content.UnreadOnly)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting user unread count")
+	}
 	cContent = append(cContent,
 		counter{Id: "global-unread", Counter: unreadCount})
 
-	feeds := user.AllFeeds()
+	feeds, err := service.FeedRepo().ForUser(user)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting user feeds")
+	}
 	cContent = append(cContent,
 		counter{Id: "subscribed-feeds", Counter: int64(len(feeds))})
 
 	cContent = append(cContent, counter{Id: ARCHIVED_ID})
 
+	unreadFavCount, err := articleRepo.Count(user, content.UnreadOnly, content.FavoriteOnly)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting favorite unread count")
+	}
+
+	favCount, err := articleRepo.Count(user, content.FavoriteOnly)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting favorite count")
+	}
+
 	cContent = append(cContent,
 		counter{Id: FAVORITE_ID,
-			Counter:    user.Count(data.ArticleCountOptions{UnreadOnly: true, FavoriteOnly: true}),
-			AuxCounter: user.Count(data.ArticleCountOptions{FavoriteOnly: true})})
+			Counter:    unreadFavCount,
+			AuxCounter: favCount})
 
 	cContent = append(cContent, counter{Id: PUBLISHED_ID})
 
 	freshTime := time.Now().Add(FRESH_DURATION)
+	freshCount, err := articleRepo.Count(user, content.UnreadOnly, content.TimeRange(freshTime, time.Time{}))
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting fresh unread count")
+	}
 	cContent = append(cContent,
 		counter{Id: FRESH_ID,
-			Counter:    user.Count(data.ArticleCountOptions{UnreadOnly: true, AfterDate: freshTime}),
+			Counter:    freshCount,
 			AuxCounter: 0})
 
+	userCount, err := articleRepo.Count(user)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting user count")
+	}
 	cContent = append(cContent,
 		counter{Id: ALL_ID,
-			Counter:    user.Count(),
+			Counter:    userCount,
 			AuxCounter: 0})
 
 	for _, f := range feeds {
+		feedCount, err := articleRepo.Count(user, content.FeedIDs([]content.FeedID{f.ID}))
+		if err != nil {
+			return nil, errors.WithMessage(err, "getting feed count")
+		}
 		cContent = append(cContent,
-			counter{Id: int64(f.Data().Id), Counter: f.Count(o)},
+			counter{Id: int64(f.ID), Counter: feedCount},
 		)
 
 	}
 
 	cContent = append(cContent, counter{Id: CAT_LABELS, Counter: 0, Kind: "cat"})
 
-	for _, t := range user.Tags() {
+	tagRepo := service.TagRepo()
+	tags, err := tagRepo.ForUser(user)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting user tags")
+	}
+	for _, tag := range tags {
+		ids, err := tagRepo.FeedIDs(tag, user)
+		if err != nil {
+			return nil, errors.WithMessage(err, "getting tag feed ids")
+		}
+
+		tagCount, err := articleRepo.Count(user, content.UnreadOnly, content.FeedIDs(ids))
+		if err != nil {
+			return nil, errors.WithMessage(err, "getting tag unread count")
+		}
 		cContent = append(cContent,
 			counter{
-				Id:      int64(t.Data().Id),
-				Counter: t.Count(o),
+				Id:      int64(tag.ID),
+				Counter: tagCount,
 				Kind:    "cat",
 			},
 		)
 	}
 
+	unreadUntaggedCount, err := articleRepo.Count(user, content.UnreadOnly, content.UntaggedOnly)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting unread untagged count")
+	}
 	cContent = append(cContent,
 		counter{
 			Id:      CAT_UNCATEGORIZED,
-			Counter: user.Count(data.ArticleCountOptions{UnreadOnly: true, UntaggedOnly: true}),
+			Counter: unreadUntaggedCount,
 			Kind:    "cat",
 		},
 	)
-
-	if user.HasErr() {
-		return nil, errors.Wrapf(user.Err(), "getting user %s article counters", user.Data().Login)
-	}
 
 	return cContent, nil
 }

@@ -1,25 +1,32 @@
 package fever
 
 import (
-	"bytes"
 	"net/http"
 	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/pool"
 )
 
-func unreadItemIDs(r *http.Request, resp resp, user content.User, log readeef.Logger) error {
+func unreadItemIDs(
+	r *http.Request,
+	resp resp,
+	user content.User,
+	service repo.Service,
+	log readeef.Logger,
+) error {
 	log.Infoln("Fetching unread fever item ids")
 
-	ids := user.Ids(data.ArticleIdQueryOptions{UnreadOnly: true})
-	if user.HasErr() {
-		return errors.Wrap(user.Err(), "getting unread ids")
+	ids, err := service.ArticleRepo().IDs(user, content.UnreadOnly)
+	if err != nil {
+		return errors.WithMessage(err, "getting unread ids")
 	}
 
-	var buf bytes.Buffer
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
 
 	for i := range ids {
 		if i != 0 {
@@ -34,15 +41,22 @@ func unreadItemIDs(r *http.Request, resp resp, user content.User, log readeef.Lo
 	return nil
 }
 
-func savedItemIDs(r *http.Request, resp resp, user content.User, log readeef.Logger) error {
+func savedItemIDs(
+	r *http.Request,
+	resp resp,
+	user content.User,
+	service repo.Service,
+	log readeef.Logger,
+) error {
 	log.Infoln("Fetching saved fever item ids")
 
-	ids := user.Ids(data.ArticleIdQueryOptions{FavoriteOnly: true})
-	if user.HasErr() {
-		return errors.Wrap(user.Err(), "getting favorite ids")
+	ids, err := service.ArticleRepo().IDs(user, content.UnreadOnly)
+	if err != nil {
+		return errors.WithMessage(err, "getting unread ids")
 	}
 
-	var buf bytes.Buffer
+	buf := pool.Buffer.Get()
+	defer pool.Buffer.Put(buf)
 
 	for i := range ids {
 		if i != 0 {
@@ -55,4 +69,9 @@ func savedItemIDs(r *http.Request, resp resp, user content.User, log readeef.Log
 	resp["saved_item_ids"] = buf.String()
 
 	return nil
+}
+
+func init() {
+	actions["unread_item_ids"] = unreadItemIDs
+	actions["saved_item_ids"] = savedItemIDs
 }

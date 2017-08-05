@@ -6,7 +6,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/repo"
 )
 
 const (
@@ -32,20 +34,18 @@ func getSettingValue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	in := user.Data()
-
 	var val interface{}
 	switch chi.URLParam(r, "key") {
 	case firstNameSetting:
-		val = in.FirstName
+		val = user.FirstName
 	case lastNameSetting:
-		val = in.LastName
+		val = user.LastName
 	case emailSetting:
-		val = in.Email
+		val = user.Email
 	case profileSetting:
-		val = in.ProfileData
+		val = user.ProfileData
 	case activeSetting:
-		val = in.Active
+		val = user.Active
 	default:
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
@@ -54,42 +54,41 @@ func getSettingValue(w http.ResponseWriter, r *http.Request) {
 	args{"value": val}.WriteJSON(w)
 }
 
-func setSettingValue(secret []byte) http.HandlerFunc {
+func setSettingValue(repo repo.User, secret []byte, log readeef.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
 			return
 		}
 
-		if name := data.Login(chi.URLParam(r, "name")); name != "" {
-			user = user.Repo().UserByLogin(name)
-			if user.HasErr() {
-				http.Error(w, "Error getting user: "+user.Err().Error(), http.StatusInternalServerError)
+		if name := content.Login(chi.URLParam(r, "name")); name != "" {
+			var err error
+			user, err = repo.Get(name)
+			if err != nil {
+				error(w, log, "Error getting user: %+v", err)
 				return
 			}
 		}
 
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, "Error reading request body: "+err.Error(), http.StatusInternalServerError)
+			error(w, log, "Error reading request body: %+v", err)
 			return
 		}
 
-		in := user.Data()
-
 		switch chi.URLParam(r, "key") {
 		case firstNameSetting:
-			err = json.Unmarshal(b, &in.FirstName)
+			err = json.Unmarshal(b, &user.FirstName)
 		case lastNameSetting:
-			err = json.Unmarshal(b, &in.LastName)
+			err = json.Unmarshal(b, &user.LastName)
 		case emailSetting:
-			err = json.Unmarshal(b, &in.Email)
+			err = json.Unmarshal(b, &user.Email)
 		case profileSetting:
-			if err = json.Unmarshal(b, &in.ProfileData); err == nil {
-				in.ProfileJSON = []byte{}
+			if err = json.Unmarshal(b, &user.ProfileData); err == nil {
+				user.ProfileJSON = b
 			}
 		case activeSetting:
-			in.Active = string(b) == "true"
+			user.Active = string(b) == "true"
 		case passwordSetting:
 			passwd := struct {
 				Current string
@@ -97,9 +96,9 @@ func setSettingValue(secret []byte) http.HandlerFunc {
 			}{}
 
 			if err = json.Unmarshal(b, &passwd); err == nil {
-				if user.Authenticate(passwd.Current, secret) {
-					user.Password(passwd.New, secret)
-					err = user.Err()
+				var auth bool
+				if auth, err = user.Authenticate(passwd.Current, secret); auth {
+					err = user.Password(passwd.New, secret)
 				} else {
 					http.Error(w, "Not authorized", http.StatusUnauthorized)
 					return
@@ -113,7 +112,7 @@ func setSettingValue(secret []byte) http.HandlerFunc {
 		if err == nil {
 			args{"success": true}.WriteJSON(w)
 		} else {
-			http.Error(w, "Error parsing request body: "+err.Error(), http.StatusBadRequest)
+			error(w, log, "Error setting user setting: %+v", err)
 		}
 	}
 }

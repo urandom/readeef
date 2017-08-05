@@ -45,6 +45,7 @@ type FeedStmts struct {
 
 	GetHubbubSubscription   string
 	GetUsers                string
+	Attach                  string
 	Detach                  string
 	GetUserTags             string
 	CreateUserTag           string
@@ -72,10 +73,12 @@ type SubscriptionStmts struct {
 }
 
 type TagStmts struct {
-	Create       string
-	Update       string
-	GetUserFeeds string
-	DeleteStale  string
+	GetByValue     string
+	Create         string
+	Update         string
+	GetUserFeeds   string
+	GetUserFeedIDs string
+	DeleteStale    string
 
 	GetArticlesJoin     string
 	ReadStateInsertJoin string
@@ -89,7 +92,6 @@ type UserStmts struct {
 	Delete string
 
 	GetFeed        string
-	CreateFeed     string
 	GetFeeds       string
 	GetFeedIdsTags string
 
@@ -107,13 +109,12 @@ type UserStmts struct {
 	GetArticleIdsFavoriteJoin  string
 	GetArticleIdsUntaggedJoin  string
 
+	StateUnreadJoin             string
+	StateFavoriteJoin           string
 	ReadStateInsertTemplate     string
-	ReadStateInsertFavoriteJoin string
-	ReadStateInsertUntaggedJoin string
-
 	ReadStateDeleteTemplate     string
-	ReadStateDeleteFavoriteJoin string
-	ReadStateDeleteUntaggedJoin string
+	FavoriteStateInsertTemplate string
+	FavoriteStateDeleteTemplate string
 
 	ArticleCountTemplate      string
 	ArticleCountUserFeedsJoin string
