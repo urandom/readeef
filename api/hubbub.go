@@ -18,7 +18,6 @@ import (
 func hubbubRegistration(
 	hubbub *readeef.Hubbub,
 	service repo.Service,
-	feedManager *readeef.FeedManager,
 	log log.Log,
 ) http.HandlerFunc {
 	feedRepo := service.FeedRepo()

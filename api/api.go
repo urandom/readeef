@@ -60,7 +60,7 @@ func Mux(
 	routes := []routes{tokenRoutes(service.UserRepo(), storage, []byte(config.Auth.Secret), log)}
 
 	if hubbub != nil {
-		routes = append(routes, hubbubRoutes(hubbub, service, feedManager, log))
+		routes = append(routes, hubbubRoutes(hubbub, service, log))
 	}
 
 	emulatorRoutes := emulatorRoutes(ctx, service, searchProvider, feedManager, processors, config, log)
@@ -124,8 +124,8 @@ func tokenRoutes(repo repo.User, storage token.Storage, secret []byte, log log.L
 	}}
 }
 
-func hubbubRoutes(hubbub *readeef.Hubbub, service repo.Service, feedManager *readeef.FeedManager, log log.Log) routes {
-	handler := hubbubRegistration(hubbub, service, feedManager, log)
+func hubbubRoutes(hubbub *readeef.Hubbub, service repo.Service, log log.Log) routes {
+	handler := hubbubRegistration(hubbub, service, log)
 
 	return routes{path: "/hubbub", route: func(r chi.Router) {
 		r.Get("/", handler)

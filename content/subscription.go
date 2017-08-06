@@ -2,6 +2,7 @@ package content
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 	"time"
 )
@@ -28,4 +29,8 @@ func (s Subscription) Validate() error {
 	}
 
 	return nil
+}
+
+func (s Subscription) String() string {
+	return fmt.Sprintf("%s: %d", s.Link, s.FeedID)
 }

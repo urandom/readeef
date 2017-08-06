@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/log"
@@ -87,7 +86,12 @@ func (e addFeedError) Error() string {
 	return e.Message
 }
 
-func addFeed(repo repo.Feed, feedManager *readeef.FeedManager) http.HandlerFunc {
+type feedManager interface {
+	AddFeedByLink(link string) (content.Feed, error)
+	RemoveFeed(feed content.Feed)
+}
+
+func addFeed(repo repo.Feed, feedManager feedManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
@@ -121,7 +125,7 @@ func addFeedByURL(
 	link string,
 	user content.User,
 	repo repo.Feed,
-	feedManager *readeef.FeedManager,
+	feedManager feedManager,
 ) error {
 	u, err := url.Parse(link)
 	if err != nil {
@@ -156,7 +160,7 @@ func addFeedByURL(
 	return nil
 }
 
-func deleteFeed(repo repo.Feed, feedManager *readeef.FeedManager, log log.Log) http.HandlerFunc {
+func deleteFeed(repo repo.Feed, feedManager feedManager, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
@@ -179,7 +183,11 @@ func deleteFeed(repo repo.Feed, feedManager *readeef.FeedManager, log log.Log) h
 	}
 }
 
-func discoverFeeds(repo repo.Feed, feedManager *readeef.FeedManager, log log.Log) http.HandlerFunc {
+type feedDiscoverer interface {
+	DiscoverFeeds(link string) ([]content.Feed, error)
+}
+
+func discoverFeeds(repo repo.Feed, discoverer feedDiscoverer, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query().Get("q")
 		if query == "" {
@@ -192,7 +200,7 @@ func discoverFeeds(repo repo.Feed, feedManager *readeef.FeedManager, log log.Log
 			return
 		}
 
-		feeds, err := discoverFeedsByQuery(query, user, repo, feedManager)
+		feeds, err := discoverFeedsByQuery(query, user, repo, discoverer)
 		if err == nil {
 			args{"feeds": feeds}.WriteJSON(w)
 		} else {
@@ -201,7 +209,7 @@ func discoverFeeds(repo repo.Feed, feedManager *readeef.FeedManager, log log.Log
 	}
 }
 
-func discoverFeedsByQuery(query string, user content.User, repo repo.Feed, feedManager *readeef.FeedManager) ([]content.Feed, error) {
+func discoverFeedsByQuery(query string, user content.User, repo repo.Feed, discoverer feedDiscoverer) ([]content.Feed, error) {
 	userFeeds, err := repo.ForUser(user)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getting feeds for user")
@@ -220,7 +228,7 @@ func discoverFeedsByQuery(query string, user content.User, repo repo.Feed, feedM
 		}
 	}
 
-	feeds, err := feedManager.DiscoverFeeds(query)
+	feeds, err := discoverer.DiscoverFeeds(query)
 	if err != nil {
 		return nil, err
 	}
