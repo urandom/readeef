@@ -18,10 +18,10 @@ func NewThumbnailer(g thumbnail.Generator, l log.Log) Thumbnailer {
 	return Thumbnailer{generator: t, log: l}
 }
 
-func (t Thumbnailer) FeedUpdated(feed content.Feed) error {
+func (t Thumbnailer) FeedUpdated(feed content.Feed, articles []content.Article) error {
 	t.log.Debugln("Generating thumbnailer processors")
 
-	processors := t.generateProcessors(feed.NewArticles())
+	processors := t.generateProcessors(articles)
 	numProcessors := 20
 	done := make(chan struct{})
 	errc := make(chan error)

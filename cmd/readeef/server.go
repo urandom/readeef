@@ -95,7 +95,7 @@ func runServer(config config.Config, args []string) error {
 
 	initPopularityScore(ctx, service, config.Popularity, log)
 
-	monitors := initFeedMonitors(ctx, config.FeedManager, service.ArticleRepo(), searchProvider, thumbnailer, log)
+	monitors := initFeedMonitors(ctx, config.FeedManager, service, searchProvider, thumbnailer, log)
 	for _, m := range monitors {
 		feedManager.AddFeedMonitor(m)
 	}
@@ -347,18 +347,18 @@ func initPopularityScore(ctx context.Context, service repo.Service, config confi
 func initFeedMonitors(
 	ctx context.Context,
 	config config.FeedManager,
-	repo repo.Article,
+	service repo.Service,
 	searchProvider search.Provider,
 	thumbnailer content.Thumbnailer,
 	log log.Log,
 ) []monitor.Feed {
-	monitors := []monitor.Feed{monitor.NewUnread(ctx, repo, log)}
+	monitors := []monitor.Feed{monitor.NewUnread(ctx, service, log)}
 
 	for _, m := range config.Monitors {
 		switch m {
 		case "index":
 			if searchProvider != nil {
-				monitors = append(monitors, monitor.NewIndex(searchProvider, log))
+				monitors = append(monitors, monitor.NewIndex(service.ArticleRepo(), searchProvider, log))
 			}
 		case "thumbnailer":
 			if thumbnailer != nil {

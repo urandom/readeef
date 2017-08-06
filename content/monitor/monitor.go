@@ -1,7 +1,9 @@
 package monitor
 
+import "github.com/urandom/readeef/content"
+
 // Feed imeplementations get notified for feed changes by the manager.
 type Feed interface {
-	FeedUpdated(feed Feed) error
-	FeedDeleted(feed Feed) error
+	FeedUpdated(content.Feed, []content.Article) error
+	FeedDeleted(content.Feed) error
 }

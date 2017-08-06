@@ -15,16 +15,14 @@ import (
 func userContext(repo repo.User, next http.Handler, log log.Log) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if c, ok := auth.Claims(r).(*jwt.StandardClaims); ok {
-			user := repo.Get(content.Login(c.Subject))
+			user, err := repo.Get(content.Login(c.Subject))
 
-			if user.HasErr() {
-				err := user.Err()
-				if err == content.ErrNoContent {
+			if err != nil {
+				if content.IsNoContent(err) {
 					http.Error(w, "Not found", http.StatusNotFound)
 					return
 				} else {
-					log.Printf("Error loading user %s: %+v", c.Subject, err)
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					fatal(w, log, "Error loading user: %+v", err)
 					return
 				}
 			}

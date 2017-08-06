@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/pool"
@@ -242,6 +241,6 @@ func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe b
 	}
 }
 
-func callbackURL(c config.Config, endpoint string, feedId data.FeedId) string {
-	return fmt.Sprintf("%s%s/%d", c.Hubbub.CallbackURL, endpoint, feedId)
+func callbackURL(c config.Config, endpoint string, feedID content.FeedID) string {
+	return fmt.Sprintf("%s%s/%d", c.Hubbub.CallbackURL, endpoint, feedID)
 }

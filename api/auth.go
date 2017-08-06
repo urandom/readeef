@@ -13,9 +13,10 @@ import (
 
 func tokenCreate(repo repo.User, secret []byte, log log.Log) http.Handler {
 	return auth.TokenGenerator(nil, auth.AuthenticatorFunc(func(user, pass string) bool {
-		u := repo.Get(content.Login(user))
-		if u.HasErr() {
-			log.Infof("Error fetching user %s: %+v", user, u.Err())
+		u, err := repo.Get(content.Login(user))
+		if err != nil {
+			log.Infof("Error fetching user %s: %+v", user, err)
+			return false
 		}
 		return u.Authenticate(pass, secret)
 	}), secret, auth.Logger(log))

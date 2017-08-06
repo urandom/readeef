@@ -35,8 +35,7 @@ var (
 	commentPattern = regexp.MustCompile("<!--.*?-->")
 	linkPattern    = regexp.MustCompile(`<link ([^>]+)>`)
 
-	ErrNoAbsolute = errors.New("Feed link is not absolute")
-	ErrNoFeed     = errors.New("Feed not found")
+	ErrNoFeed = errors.New("Feed not found")
 
 	httpStatusPrefix = "HTTP Status: "
 )
@@ -96,7 +95,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 	u, err := url.Parse(link)
 	if err == nil {
 		if !u.IsAbs() {
-			return nil, ErrNoAbsolute
+			return nil, errors.New("link not absolute")
 		}
 		u.Fragment = ""
 		link = u.String()
@@ -226,9 +225,9 @@ func (fm *FeedManager) stopUpdatingFeed(feed content.Feed) {
 
 	fm.log.Infoln("Stopping feed update for " + feed.Link)
 
-	users := feed.Users()
-	if feed.HasErr() {
-		fm.log.Printf("Error getting users for feed '%s': %v\n", feed, feed.Err())
+	users, err := fm.repo.Users(feed)
+	if err != nil {
+		fm.log.Printf("Error getting users for feed '%s': %v\n", feed, err)
 	} else {
 		if len(users) == 0 {
 			fm.log.Infoln("Removing orphan feed " + feed.String() + " from the database")
@@ -240,9 +239,9 @@ func (fm *FeedManager) stopUpdatingFeed(feed content.Feed) {
 						reflect.TypeOf(m), feed, err)
 				}
 			}
-			feed.Delete()
-			if feed.HasErr() {
-				fm.log.Printf("Error deleting feed '%s' from the repository: %v\n", feed, feed.Err())
+
+			if err = fm.repo.Delete(feed); err != nil {
+				fm.log.Printf("Error deleting feed '%s' from the repository: %v\n", feed, err)
 			}
 		}
 	}
@@ -252,15 +251,15 @@ func (fm FeedManager) updateFeed(feed content.Feed) {
 	if newArticles, err := fm.repo.Update(feed); err != nil {
 		fm.log.Printf("Error updating feed '%s' database record: %v\n", feed, err)
 	} else {
-		fm.processFeedUpdateMonitors(feed, len(newArticles) > 0)
+		fm.processFeedUpdateMonitors(feed, newArticles)
 	}
 
 }
 
-func (fm FeedManager) processFeedUpdateMonitors(feed content.Feed, newArticles bool) {
-	if newArticles {
+func (fm FeedManager) processFeedUpdateMonitors(feed content.Feed, newArticles []content.Article) {
+	if len(newArticles) > 0 {
 		for _, m := range fm.feedMonitors {
-			if err := m.FeedUpdated(feed); err != nil {
+			if err := m.FeedUpdated(feed, newArticles); err != nil {
 				fm.log.Printf("Error invoking monitor '%s' on updated feed '%s': %v\n",
 					reflect.TypeOf(m), feed, err)
 			}

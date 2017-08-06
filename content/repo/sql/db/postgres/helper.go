@@ -65,13 +65,10 @@ func (h Helper) WhereMultipleORs(column string, length, off int) string {
 		return h.Helper.WhereMultipleORs(column, length, off)
 	}
 
-	orSlice := make([]string{}, length)
-	for i := 0; i < length; i++ {
-		if i == 0 {
-			orSlice[i] = fmt.Sprintf("VALUES($%d)", off+i)
-		} else {
-			orSlice[i] = fmt.Sprintf("($%d)", off+i)
-		}
+	orSlice := make([]string, length)
+	orSlice[0] = fmt.Sprintf("VALUES($%d)", off)
+	for i := 1; i < length; i++ {
+		orSlice[i] = fmt.Sprintf("($%d)", off+i)
 	}
 
 	return fmt.Sprintf("%s IN (%s)", column, strings.Join(orSlice, ", "))

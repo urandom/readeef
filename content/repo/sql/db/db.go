@@ -7,12 +7,12 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/log"
 )
 
 type DB struct {
 	*sqlx.DB
-	log readeef.Logger
+	log log.Log
 }
 
 var (
@@ -21,7 +21,7 @@ var (
 	helpers = make(map[string]Helper)
 )
 
-func New(log readeef.Logger) *DB {
+func New(log log.Log) *DB {
 	return &DB{log: log}
 }
 
@@ -47,12 +47,12 @@ func (db *DB) CreateWithID(tx *sqlx.Tx, sql string, args ...interface{}) (int64,
 
 func (db *DB) WhereMultipleORs(column string, length, off int) string {
 	if length < 20 {
-		orSlice := make([]string{}, length)
+		orSlice := make([]string, length)
 		for i := 0; i < length; i++ {
 			orSlice[i] = fmt.Sprintf("%s = $%d", column, off+i)
 		}
 
-		return "(" + strings.Join(onSlice, " OR ") + ")"
+		return "(" + strings.Join(orSlice, " OR ") + ")"
 	}
 
 	driver := db.DriverName()
