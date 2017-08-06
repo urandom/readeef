@@ -36,7 +36,9 @@ func Read(path string) (Config, error) {
 			return Config{}, errors.Wrapf(err, "reading config from %s", path)
 		}
 
-		toml.Unmarshal(b, &c)
+		if err = toml.Unmarshal(b, &c); err != nil {
+			return Config{}, errors.Wrapf(err, "unmarshaling toml config from %s", path)
+		}
 	}
 
 	for _, c := range []converter{&c.API, &c.Timeout, &c.FeedManager, &c.Popularity} {
