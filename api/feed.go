@@ -46,9 +46,9 @@ func feedContext(repo repo.Feed, log log.Log) func(http.Handler) http.Handler {
 	}
 }
 
-func feedFromRequest(w http.ResponseWriter, r *http.Request) (feed content.UserFeed, stop bool) {
+func feedFromRequest(w http.ResponseWriter, r *http.Request) (feed content.Feed, stop bool) {
 	var ok bool
-	if feed, ok = r.Context().Value("feed").(content.UserFeed); ok {
+	if feed, ok = r.Context().Value("feed").(content.Feed); ok {
 		return feed, false
 	}
 

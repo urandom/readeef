@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/log"
 )
@@ -100,33 +99,34 @@ func setFeedTags(repo repo.Feed, log log.Log) http.HandlerFunc {
 	}
 }
 
-func tagContext(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, stop := userFromRequest(w, r)
-		if stop {
-			return
-		}
-
-		id, err := strconv.ParseInt(chi.URLParam(r, "tagID"), 10, 64)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		tag := user.TagById(data.TagId(id))
-		if tag.HasErr() {
-			err := tag.Err()
-			if err == content.ErrNoContent {
-				http.Error(w, "Not found", http.StatusNotFound)
-			} else {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+func tagContext(repo repo.Tag) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, stop := userFromRequest(w, r)
+			if stop {
+				return
 			}
-			return
-		}
 
-		ctx := context.WithValue(r.Context(), "tag", tag)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+			id, err := strconv.ParseInt(chi.URLParam(r, "tagID"), 10, 64)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			tag, err := repo.Get(content.TagID(id), user)
+			if err != nil {
+				if content.IsNoContent(err) {
+					http.Error(w, "Not found", http.StatusNotFound)
+				} else {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), "tag", tag)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
 
 func tagFromRequest(w http.ResponseWriter, r *http.Request) (tag content.Tag, stop bool) {

@@ -371,9 +371,9 @@ func initHubbub(
 	log log.Log,
 ) (*readeef.Hubbub, error) {
 	if config.Hubbub.CallbackURL != "" {
-		hubbub := readeef.NewHubbub(config, log, "/api/v2/hubbub", feedManager)
+		hubbub := readeef.NewHubbub(service, config, log, "/api/v2/hubbub", feedManager)
 
-		if err := hubbub.InitSubscriptions(service); err != nil {
+		if err := hubbub.InitSubscriptions(); err != nil {
 			return nil, errors.WithMessage(err, "initializing hubbub subscriptions")
 		}
 

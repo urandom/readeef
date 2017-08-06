@@ -16,6 +16,7 @@ import (
 )
 
 type Hubbub struct {
+	service       repo.Service
 	config        config.Config
 	endpoint      string
 	subscribe     chan content.Subscription
@@ -38,13 +39,21 @@ var (
 	ErrNotSubscribed = errors.New("Feed is not subscribed")
 )
 
-func NewHubbub(c config.Config, l log.Log, endpoint string, feedManager *FeedManager) *Hubbub {
+func NewHubbub(
+	service repo.Service,
+	c config.Config,
+	l log.Log,
+	endpoint string,
+	feedManager *FeedManager,
+) *Hubbub {
 
 	return &Hubbub{
-		config: c, log: l, endpoint: endpoint,
+		service: service,
+		config:  c, log: l, endpoint: endpoint,
 		subscribe: make(chan content.Subscription), unsubscribe: make(chan content.Subscription),
 		client:      NewTimeoutClient(c.Timeout.Converted.Connect, c.Timeout.Converted.ReadWrite),
-		feedManager: feedManager}
+		feedManager: feedManager,
+	}
 }
 
 func (h *Hubbub) ProcessFeedUpdate(feed content.Feed) {
@@ -60,8 +69,7 @@ func (h *Hubbub) Subscribe(f content.Feed) error {
 		}
 	}
 
-	fdata := f.Data()
-	if u, err := url.Parse(fdata.HubLink); err != nil {
+	if u, err := url.Parse(f.HubLink); err != nil {
 		return ErrNoFeedHubLink
 	} else {
 		if !u.IsAbs() {
@@ -69,26 +77,23 @@ func (h *Hubbub) Subscribe(f content.Feed) error {
 		}
 	}
 
-	s := f.Subscription()
-	if s.HasErr() {
-		return s.Err()
+	repo := service.SubscriptionRepo()
+	s, err := repo.Get(f)
+	if err != nil && !content.IsNoContent(err) {
+		return errors.WithMessag(err, "getting feed subscription during subscribe")
 	}
 
-	data := s.Data()
-	if data.FeedId == fdata.Id {
-		h.log.Infoln("Already subscribed to " + fdata.HubLink)
+	if s.FeedID == f.ID {
+		h.log.Infoln("Already subscribed to " + f.HubLink)
 		return ErrSubscribed
 	}
 
-	data.Link = fdata.HubLink
-	data.FeedId = fdata.Id
-	data.SubscriptionFailure = true
+	s.Link = f.HubLink
+	s.FeedID = f.ID
+	s.SubscriptionFailure = true
 
-	s.Data(data)
-	s.Update()
-
-	if s.HasErr() {
-		return s.Err()
+	if err = repo.Update(s); err != nil {
+		return errors.WithMessage(err, "updating subscription during subscribe")
 	}
 
 	go func() {
@@ -107,8 +112,7 @@ func (h *Hubbub) Unsubscribe(f content.Feed) error {
 		}
 	}
 
-	fdata := f.Data()
-	if u, err := url.Parse(fdata.HubLink); err != nil {
+	if u, err := url.Parse(f.HubLink); err != nil {
 		return ErrNoFeedHubLink
 	} else {
 		if !u.IsAbs() {
@@ -116,13 +120,13 @@ func (h *Hubbub) Unsubscribe(f content.Feed) error {
 		}
 	}
 
-	s := f.Subscription()
-	if s.HasErr() {
-		return s.Err()
+	s, err := h.service.SubscriptionRepo().Get(f)
+	if err != nil {
+		return errors.WithMessage(err, "getting feed subscription during unsubscribe")
 	}
 
-	if s.Data().FeedId != fdata.Id {
-		h.log.Infoln("Not subscribed to " + fdata.HubLink)
+	if s.FeedID != f.ID {
+		h.log.Infoln("Not subscribed to " + f.HubLink)
 		return ErrNotSubscribed
 	}
 
@@ -132,15 +136,15 @@ func (h *Hubbub) Unsubscribe(f content.Feed) error {
 	return nil
 }
 
-func (h *Hubbub) InitSubscriptions(service repo.Service) error {
-	subscriptions, err := service.SubscriptionRepo().All()
+func (h *Hubbub) InitSubscriptions() error {
+	subscriptions, err := h.service.SubscriptionRepo().All()
 	if err != nil {
 		return errors.WithMessage(err, "getting subscriptions")
 	}
 
 	h.log.Infof("Initializing %d hubbub subscriptions", len(subscriptions))
 
-	feedRepo := service.FeedRepo()
+	feedRepo := h.service.FeedRepo()
 	go func() {
 		for _, s := range subscriptions {
 			f, err := feedRepo.Get(s.FeedID, content.User{})
@@ -193,8 +197,7 @@ func (h *Hubbub) InitSubscriptions(service repo.Service) error {
 func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe bool) {
 	var err error
 
-	fdata := f.Data()
-	u := callbackURL(h.config, h.endpoint, fdata.Id)
+	u := callbackURL(h.config, h.endpoint, f.ID)
 
 	body := url.Values{}
 	body.Set("hub.callback", u)
@@ -205,13 +208,13 @@ func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe b
 		h.log.Infoln("Unsubscribing to hubbub for " + f.String() + " with url " + u)
 		body.Set("hub.mode", "unsubscribe")
 	}
-	body.Set("hub.topic", fdata.Link)
+	body.Set("hub.topic", f.Link)
 
 	buf := pool.Buffer.Get()
 	defer pool.Buffer.Put(buf)
 
 	buf.WriteString(body.Encode())
-	req, _ := http.NewRequest("POST", s.Data().Link, buf)
+	req, _ := http.NewRequest("POST", s.Link, buf)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("From", h.config.Hubbub.From)
 
@@ -230,13 +233,11 @@ func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe b
 			h.unsubscribe <- s
 		}
 	} else {
-		fdata.SubscribeError = err.Error()
+		f.SubscribeError = err.Error()
 		h.log.Printf("Error subscribing to hub feed '%s': %s\n", f, err)
 
-		f.Data(fdata)
-		f.Update()
-		if f.HasErr() {
-			h.log.Printf("Error updating feed database record for '%s': %s\n", f, f.Err())
+		if err = h.service.FeedRepo().Update(f); err != nil {
+			h.log.Printf("Error updating feed database record for %s: %+v", f, err)
 		}
 	}
 }

@@ -19,7 +19,6 @@ import (
 	"github.com/urandom/readeef/api/token"
 	"github.com/urandom/readeef/api/ttrss"
 	"github.com/urandom/readeef/config"
-	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/extract"
 	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
@@ -90,7 +89,7 @@ func Mux(
 }
 
 func hasProxy(config config.Config) bool {
-	for _, p := range config.Content.ArticleProcessors {
+	for _, p := range config.Content.Article.Processors {
 		if p == "proxy-http" {
 			return true
 		}
@@ -105,7 +104,7 @@ func hasProxy(config config.Config) bool {
 	return false
 }
 
-func initTokenStorage(config config.Auth) (content.TokenStorage, error) {
+func initTokenStorage(config config.Auth) (token.Storage, error) {
 	if err := os.MkdirAll(filepath.Dir(config.TokenStoragePath), 0777); err != nil {
 		return nil, errors.Wrapf(err, "creating token storage path %s", config.TokenStoragePath)
 	}
@@ -118,7 +117,7 @@ type routes struct {
 	route func(r chi.Router)
 }
 
-func tokenRoutes(repo repo.User, storage content.TokenStorage, secret []byte, log log.Log) routes {
+func tokenRoutes(repo repo.User, storage token.Storage, secret []byte, log log.Log) routes {
 	return routes{path: "/token", route: func(r chi.Router) {
 		r.Method(method.POST, "/", tokenCreate(repo, secret, log))
 		r.Method(method.DELETE, "/", tokenDelete(storage, secret, log))
@@ -137,7 +136,7 @@ func hubbubRoutes(hubbub *readeef.Hubbub, service repo.Service, feedManager *rea
 func emulatorRoutes(
 	ctx context.Context,
 	service repo.Service,
-	searchProvider content.SearchProvider,
+	searchProvider search.Provider,
 	feedManager *readeef.FeedManager,
 	processors []processor.Article,
 	config config.Config,
@@ -187,7 +186,7 @@ func mainRoutes(middleware []middleware, subroutes ...routes) routes {
 	}}
 }
 
-func userMiddleware(repo repo.User, storage content.TokenStorage, secret []byte, log log.Log) []middleware {
+func userMiddleware(repo repo.User, storage token.Storage, secret []byte, log log.Log) []middleware {
 	return []middleware{
 		func(next http.Handler) http.Handler {
 			return auth.RequireToken(next, tokenValidator(repo, storage, log), secret)
@@ -214,7 +213,7 @@ func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log
 		r.Get("/discover", discoverFeeds(feedRepo, feedManager, log))
 
 		r.Route("/{feedID:[0-9]+}", func(r chi.Router) {
-			r.Use(feedContext(feedRepo, log))
+			r.Use(feedContext(service.FeedRepo(), log))
 
 			r.Delete("/", deleteFeed(feedRepo, feedManager, log))
 
@@ -233,13 +232,14 @@ func tagRoutes(repo repo.Tag, log log.Log) routes {
 
 func articlesRoutes(
 	service repo.Service,
-	extractor content.Extractor,
-	searchProvider content.SearchProvider,
+	extractor extract.Generator,
+	searchProvider search.Provider,
 	processors []processor.Article,
 	log log.Log,
 ) routes {
 	articleRepo := service.ArticleRepo()
 	feedRepo := service.FeedRepo()
+	tagRepo := service.TagRepo()
 
 	return routes{path: "/article", route: func(r chi.Router) {
 		r.Get("/", getArticles(service, userRepoType, noRepoType, processors, log))
@@ -247,11 +247,11 @@ func articlesRoutes(
 		if searchProvider != nil {
 			r.Route("/search", func(r chi.Router) {
 				r.Get("/*",
-					articleSearch(service, searchProvider, userRepoType, processors, log))
-				r.With(feedContext).Get("/feed/{feedID:[0-9]+}/*",
-					articleSearch(service, searchProvider, feedRepoType, processors, log))
-				r.With(tagContext).Get("/tag/{tagID:[0-9]+}/*",
-					articleSearch(service, searchProvider, tagRepoType, processors, log))
+					articleSearch(tagRepo, searchProvider, userRepoType, processors, log))
+				r.With(feedContext(feedRepo, log)).Get("/feed/{feedID:[0-9]+}/*",
+					articleSearch(tagRepo, searchProvider, feedRepoType, processors, log))
+				r.With(tagContext(tagRepo)).Get("/tag/{tagID:[0-9]+}/*",
+					articleSearch(tagRepo, searchProvider, tagRepoType, processors, log))
 			})
 		}
 
@@ -275,15 +275,15 @@ func articlesRoutes(
 		})
 
 		r.Route("/popular", func(r chi.Router) {
-			r.With(feedContext).Get("/feed/{feedID:[0-9]+}",
+			r.With(feedContext(feedRepo, log)).Get("/feed/{feedID:[0-9]+}",
 				getArticles(service, popularRepoType, feedRepoType, processors, log))
-			r.With(tagContext).Get("/tag/{tagID:[0-9]+}",
+			r.With(tagContext(tagRepo)).Get("/tag/{tagID:[0-9]+}",
 				getArticles(service, popularRepoType, tagRepoType, processors, log))
 			r.Get("/", getArticles(service, popularRepoType, userRepoType, processors, log))
 		})
 
 		r.Route("/feed/{feedID:[0-9]+}", func(r chi.Router) {
-			r.Use(feedContext)
+			r.Use(feedContext(feedRepo, log))
 
 			r.Get("/", getArticles(service, feedRepoType, noRepoType, processors, log))
 
@@ -291,7 +291,7 @@ func articlesRoutes(
 		})
 
 		r.Route("/tag/{tagID:[0-9]+}", func(r chi.Router) {
-			r.Use(tagContext)
+			r.Use(tagContext(tagRepo))
 
 			r.Get("/", getArticles(service, tagRepoType, noRepoType, processors, log))
 
@@ -311,12 +311,12 @@ func opmlRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.
 func eventsRoutes(
 	ctx context.Context,
 	service repo.Service,
-	storage content.TokenStorage,
+	storage token.Storage,
 	feedManager *readeef.FeedManager,
 	log log.Log,
 ) routes {
 	return routes{path: "/events", route: func(r chi.Router) {
-		r.Get("/", eventSocket(ctx, service.FeedRepo, storage, feedManager, log))
+		r.Get("/", eventSocket(ctx, service.FeedRepo(), storage, feedManager, log))
 	}}
 }
 
@@ -339,7 +339,7 @@ func userRoutes(service repo.Service, secret []byte, log log.Log) routes {
 		r.Route("/settings", func(r chi.Router) {
 			r.Get("/", getSettingKeys)
 			r.Get("/{key}", getSettingValue)
-			r.Post("/{key}", setSettingValue(secret))
+			r.Post("/{key}", setSettingValue(repo, secret, log))
 		})
 	}}
 }

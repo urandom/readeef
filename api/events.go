@@ -9,6 +9,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/urandom/handler/auth"
 	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/api/token"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/log"
@@ -17,7 +18,7 @@ import (
 func eventSocket(
 	ctx context.Context,
 	repo repo.Feed,
-	storage content.TokenStorage,
+	storage token.Storage,
 	feedManager *readeef.FeedManager,
 	log log.Log,
 ) http.HandlerFunc {
@@ -68,7 +69,7 @@ func eventSocket(
 	}
 }
 
-func connectionValidator(storage content.TokenStorage, r *http.Request) func() bool {
+func connectionValidator(storage token.Storage, r *http.Request) func() bool {
 	return func() bool {
 		if token := auth.Token(r); token != "" {
 			if exists, err := storage.Exists(token); err == nil && exists {

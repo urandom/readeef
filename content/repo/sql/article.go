@@ -9,10 +9,10 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
-	"github.com/prometheus/common/log"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/sql/db"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/pool"
 )
 

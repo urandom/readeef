@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
-	"github.com/urandom/handler/method"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/extract"
 	"github.com/urandom/readeef/content/processor"
@@ -132,15 +131,12 @@ func getArticles(
 }
 
 func articleSearch(
-	service repo.Service,
-	searchProvider content.SearchProvider,
+	repo repo.Tag,
+	searchProvider search.Provider,
 	repoType articleRepoType,
 	processors []processor.Article,
 	log log.Log,
 ) http.HandlerFunc {
-	repo := service.FeedRepo()
-	tagRepo := service.TagRepo()
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := chi.URLParam(r, "*")
 		if query == "" {
@@ -173,7 +169,7 @@ func articleSearch(
 				return
 			}
 
-			ids, err := tagRepo.FeedIDs(tag, user)
+			ids, err := repo.FeedIDs(tag, user)
 			if err != nil {
 				fatal(w, log, "Error getting tag feed ids: %+v", err)
 				return
@@ -185,7 +181,7 @@ func articleSearch(
 			return
 		}
 
-		articles, err := searchProvider.Search(req.Search, user, opts...)
+		articles, err := searchProvider.Search(query, user, o...)
 
 		if err != nil {
 			fatal(w, log, "Error searching for articles: %+v", err)
@@ -201,11 +197,11 @@ func articleSearch(
 func formatArticle(
 	repo repo.Extract,
 	extractor extract.Generator,
-	processors []processor.Articles,
+	processors []processor.Article,
 	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, stop := userFromRequest(w, r)
+		_, stop := userFromRequest(w, r)
 		if stop {
 			return
 		}
@@ -215,7 +211,7 @@ func formatArticle(
 			return
 		}
 
-		extract, err = extract.Get(article, repo, extractor, processors)
+		extract, err := extract.Get(article, repo, extractor, processors)
 		if err != nil {
 			fatal(w, log, "Error getting article extract: %+v", err)
 			return
@@ -251,6 +247,11 @@ func articleStateChange(
 	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
+
 		article, stop := articleFromRequest(w, r)
 		if stop {
 			return
@@ -295,6 +296,9 @@ func articlesReadStateChange(
 	repoType articleRepoType,
 	log log.Log,
 ) http.HandlerFunc {
+	articleRepo := service.ArticleRepo()
+	tagRepo := service.TagRepo()
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
@@ -316,7 +320,7 @@ func articlesReadStateChange(
 		case favoriteRepoType:
 			o = append(o, content.FavoriteOnly)
 		case tagRepoType:
-			tag, stop = tagFromRequest(w, r)
+			tag, stop := tagFromRequest(w, r)
 			if stop {
 				return
 			}
@@ -329,20 +333,18 @@ func articlesReadStateChange(
 
 			o = append(o, content.FeedIDs(ids))
 		case feedRepoType:
-			feed, stop = feedFromRequest(w, r)
+			feed, stop := feedFromRequest(w, r)
 			if stop {
 				return
 			}
 
-			o = append(o, content.FeedIDs(content.FeedID{feed.ID}))
+			o = append(o, content.FeedIDs([]content.FeedID{feed.ID}))
 		default:
 			http.Error(w, "Unknown type", http.StatusBadRequest)
 			return
 		}
 
-		err = repo.Read(value, user, o...)
-
-		if err != nil {
+		if err := articleRepo.Read(value, user, o...); err != nil {
 			fatal(w, log, "Error setting read state: %+v", err)
 			return
 		}
@@ -378,7 +380,7 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request) ([]content.Quer
 		o = append(o, content.Paging(limit, offset))
 	}
 
-	var minID, maxID int
+	var minID, maxID int64
 	if query.Get("minID") != "" {
 		minID, err = strconv.ParseInt(query.Get("minID"), 10, 64)
 		if err != nil {
@@ -430,7 +432,7 @@ func articleContext(repo repo.Article, processors []processor.Article, log log.L
 				return
 			}
 
-			articles, err := repo.ForUser(user, content.IDs([]content.ArticleID{id}))
+			articles, err := repo.ForUser(user, content.IDs([]content.ArticleID{content.ArticleID(id)}))
 			if err != nil {
 				fatal(w, log, "Error getting article: %+v", err)
 				return
@@ -441,7 +443,7 @@ func articleContext(repo repo.Article, processors []processor.Article, log log.L
 				return
 			}
 
-			if r.Method == method.GET {
+			if r.Method == "GET" {
 				articles = processor.Articles(processors).Process(articles)
 			}
 
@@ -451,12 +453,12 @@ func articleContext(repo repo.Article, processors []processor.Article, log log.L
 	}
 }
 
-func articleFromRequest(w http.ResponseWriter, r *http.Request) (article content.UserArticle, stop bool) {
+func articleFromRequest(w http.ResponseWriter, r *http.Request) (article content.Article, stop bool) {
 	var ok bool
-	if article, ok = r.Context().Value("article").(content.UserArticle); ok {
+	if article, ok = r.Context().Value("article").(content.Article); ok {
 		return article, false
 	}
 
 	http.Error(w, "Bad Request", http.StatusBadRequest)
-	return nil, true
+	return content.Article{}, true
 }
