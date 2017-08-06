@@ -5,16 +5,17 @@ import (
 	"sync"
 
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/thumbnail"
 	"github.com/urandom/readeef/log"
 )
 
 type Thumbnailer struct {
-	thumbnailer content.Thumbnailer
-	log         log.Log
+	generator thumbnail.Generator
+	log       log.Log
 }
 
-func NewThumbnailer(t content.Thumbnailer, l log.Log) Thumbnailer {
-	return Thumbnailer{thumbnailer: t, log: l}
+func NewThumbnailer(g thumbnail.Generator, l log.Log) Thumbnailer {
+	return Thumbnailer{generator: t, log: l}
 }
 
 func (t Thumbnailer) FeedUpdated(feed content.Feed) error {
@@ -76,7 +77,7 @@ func (t Thumbnailer) process(done <-chan struct{}, processors <-chan content.Art
 		case <-done:
 			return nil
 		default:
-			if err := t.thumbnailer.Generate(a); err != nil {
+			if err := t.generator.Generate(a); err != nil {
 				return fmt.Errorf("Error generating thumbnail: %v\n", err)
 			}
 		}

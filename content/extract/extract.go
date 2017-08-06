@@ -22,7 +22,7 @@ func Get(
 	generator Generator,
 	processors []processor.Article,
 ) (content.Extract, error) {
-	extract, err := repo.Get(article.ID)
+	extract, err := repo.Get(article)
 
 	if err != nil {
 		if !content.IsNoContent(err) {

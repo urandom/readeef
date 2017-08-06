@@ -16,10 +16,13 @@ import (
 
 func hubbubRegistration(
 	hubbub *readeef.Hubbub,
-	repo repo.Feed,
+	service repo.Service,
 	feedManager *readeef.FeedManager,
 	log log.Log,
 ) http.HandlerFunc {
+	feedRepo := service.FeedRepo()
+	subRepo := service.SubscriptionRepo()
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		params := r.URL.Query()
 
@@ -30,28 +33,27 @@ func hubbubRegistration(
 			return
 		}
 
-		f := repo.Get(content.FeedID(feedID), content.User{})
-		s := f.Subscription()
+		f := feedRepo.Get(content.FeedID(feedID), content.User{})
+		s, err := subRepo.Get(f)
 
-		if s.HasErr() {
-			http.Error(w, s.Err().Error(), http.StatusInternalServerError)
+		if err != nil {
+			fatal(w, log, "Error getting feed subscription: %+v", err)
 			return
 		}
 
 		log.Infoln("Receiving hubbub event " + params.Get("hub.mode") + " for " + f.String())
 
-		data := s.Data()
 		switch params.Get("hub.mode") {
 		case "subscribe":
 			if lease, err := strconv.Atoi(params.Get("hub.lease_seconds")); err == nil {
-				data.LeaseDuration = int64(lease) * int64(time.Second)
+				s.LeaseDuration = int64(lease) * int64(time.Second)
 			}
-			data.VerificationTime = time.Now()
-			data.SubscriptionFailure = false
+			s.VerificationTime = time.Now()
+			s.SubscriptionFailure = false
 
 			w.Write([]byte(params.Get("hub.challenge")))
 		case "unsubscribe":
-			data.SubscriptionFailure = true
+			s.SubscriptionFailure = true
 
 			w.Write([]byte(params.Get("hub.challenge")))
 		case "denied":
@@ -70,14 +72,13 @@ func hubbubRegistration(
 
 			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
 				f.Refresh(pf)
-				f.Update()
 
-				if f.HasErr() {
-					log.Print(f.Err())
+				if err = feedRepo.Update(f); err != nil {
+					log.Printf("Error updating feed %s: %+v", f, err)
 					return
 				}
 			} else {
-				log.Print(err)
+				log.Printf("Error parsing feed from subscription %s: %+v", s, err)
 				return
 			}
 
@@ -86,10 +87,8 @@ func hubbubRegistration(
 			return
 		}
 
-		s.Data(data)
-		s.Update()
-		if s.HasErr() {
-			log.Printf("Error updating subscription %s: %+v\n", s, s.Err())
+		if err = subRepo.Update(s); err != nil {
+			log.Printf("Error updating subscription %s: %+v\n", s, err)
 			return
 		}
 	}

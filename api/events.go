@@ -40,7 +40,7 @@ func eventSocket(
 
 		feeds, err := repo.ForUser(user)
 		if err {
-			error(w, log, "Error getting user feeds: %+v", err)
+			fatal(w, log, "Error getting user feeds: %+v", err)
 			return
 		}
 

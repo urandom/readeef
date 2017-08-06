@@ -77,7 +77,7 @@ func getArticles(
 
 				ids, err := tagRepo.FeedIDs(tag, user)
 				if err != nil {
-					error(w, log, "Error getting tag feed ids: %+v", err)
+					fatal(w, log, "Error getting tag feed ids: %+v", err)
 					return
 				}
 
@@ -101,7 +101,7 @@ func getArticles(
 
 			ids, err := tagRepo.FeedIDs(tag, user)
 			if err != nil {
-				error(w, log, "Error getting tag feed ids: %+v", err)
+				fatal(w, log, "Error getting tag feed ids: %+v", err)
 				return
 			}
 
@@ -121,7 +121,7 @@ func getArticles(
 		articles, err := repo.ForUser(user, o...)
 
 		if err != nil {
-			error(w, log, "Error getting articles: %+v", err)
+			fatal(w, log, "Error getting articles: %+v", err)
 			return
 		}
 
@@ -175,7 +175,7 @@ func articleSearch(
 
 			ids, err := tagRepo.FeedIDs(tag, user)
 			if err != nil {
-				error(w, log, "Error getting tag feed ids: %+v", err)
+				fatal(w, log, "Error getting tag feed ids: %+v", err)
 				return
 			}
 
@@ -188,7 +188,7 @@ func articleSearch(
 		articles, err := searchProvider.Search(req.Search, user, opts...)
 
 		if err != nil {
-			error(w, log, "Error searching for articles: %+v", err)
+			fatal(w, log, "Error searching for articles: %+v", err)
 			return
 		}
 
@@ -217,7 +217,7 @@ func formatArticle(
 
 		extract, err = extract.Get(article, repo, extractor, processors)
 		if err != nil {
-			error(w, log, "Error getting article extract: %+v", err)
+			fatal(w, log, "Error getting article extract: %+v", err)
 			return
 		}
 
@@ -278,7 +278,7 @@ func articleStateChange(
 			}
 
 			if err != nil {
-				error(w, log, "Error setting article "+state.String()+"state: %+v", err)
+				fatal(w, log, "Error setting article "+state.String()+"state: %+v", err)
 				return
 			}
 		}
@@ -323,7 +323,7 @@ func articlesReadStateChange(
 
 			ids, err := tagRepo.FeedIDs(tag, user)
 			if err != nil {
-				error(w, log, "Error getting tag feed ids: %+v", err)
+				fatal(w, log, "Error getting tag feed ids: %+v", err)
 				return
 			}
 
@@ -343,7 +343,7 @@ func articlesReadStateChange(
 		err = repo.Read(value, user, o...)
 
 		if err != nil {
-			error(w, log, "Error setting read state: %+v", err)
+			fatal(w, log, "Error setting read state: %+v", err)
 			return
 		}
 
@@ -432,7 +432,7 @@ func articleContext(repo repo.Article, processors []processor.Article, log log.L
 
 			articles, err := repo.ForUser(user, content.IDs([]content.ArticleID{id}))
 			if err != nil {
-				error(w, log, "Error getting article: %+v", err)
+				fatal(w, log, "Error getting article: %+v", err)
 				return
 			}
 

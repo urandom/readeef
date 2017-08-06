@@ -15,17 +15,20 @@ type extractRepo struct {
 	log log.Log
 }
 
-func (r extractRepo) Get(id content.ArticleID) (content.Extract, error) {
-	r.log.Infof("Getting extract for article id %d", id)
+func (r extractRepo) Get(article content.Article) (content.Extract, error) {
+	if err := article.Validate(); err != nil {
+		return content.Extract{}, errors.WithMessage(err, "validating article")
+	}
+
+	r.log.Infof("Getting extract for article %s", article)
 
 	var extract content.Extract
-	err := r.db.Get(&extract, r.db.SQL().Article.GetExtract, id)
-	if err != nil {
+	if err = r.db.Get(&extract, r.db.SQL().Article.GetExtract, article.ID); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
 
-		return content.User{}, errors.Wrapf(err, "getting extract for article id %d", id)
+		return content.User{}, errors.Wrapf(err, "getting extract for article %s", article)
 	}
 
 	return extract, nil

@@ -35,7 +35,7 @@ func feedContext(repo repo.Feed, log log.Log) func(http.Handler) http.Handler {
 				if err == content.IsNoContent(err) {
 					http.Error(w, "Not found", http.StatusNotFound)
 				} else {
-					error(w, log, "Error getting feed: %+v", err)
+					fatal(w, log, "Error getting feed: %+v", err)
 				}
 				return
 			}
@@ -65,7 +65,7 @@ func listFeeds(repo repo.Feed, log log.Log) http.HandlerFunc {
 
 		feeds, err := repo.ForUser(user)
 		if err != nil {
-			error(w, log, "Error getting feeds: %+v", log)
+			fatal(w, log, "Error getting feeds: %+v", log)
 			return
 		}
 
@@ -170,7 +170,7 @@ func deleteFeed(repo repo.Feed, feedManager *readeef.FeedManager, log log.Log) h
 		}
 
 		if err := repo.DetachFrom(feed, user); err != nil {
-			error(w, log, "Error deleting feed: %+v", err)
+			fatal(w, log, "Error deleting feed: %+v", err)
 			return
 		}
 

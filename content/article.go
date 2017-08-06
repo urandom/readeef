@@ -2,7 +2,9 @@ package content
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"net/url"
 	"time"
 )
 
@@ -171,4 +173,24 @@ func (o *QueryOptions) Apply(opts ...QueryOpt) {
 
 func (a Article) String() string {
 	return fmt.Sprintf("%d: %s", a.ID, a.Title)
+}
+
+func (a Article) Validate() error {
+	if a.ID == 0 {
+		return NewValidationError(errors.New("no ID"))
+	}
+
+	if a.FeedID == 0 {
+		return NewValidationError(errors.New("no feed ID"))
+	}
+
+	if a.Link == "" {
+		return NewValidationError(errors.New("no link"))
+	}
+
+	if u, err := url.Parse(a.Link); err != nil || !u.IsAbs() {
+		return NewValidationError(errors.New("no link"))
+	}
+
+	return nil
 }

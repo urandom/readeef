@@ -61,7 +61,7 @@ func Mux(
 	routes := []routes{tokenRoutes(service.UserRepo(), storage, []byte(config.Auth.Secret), log)}
 
 	if hubbub != nil {
-		routes = append(routes, hubbubRoutes(hubbub, service.FeedRepo(), feedManager, log))
+		routes = append(routes, hubbubRoutes(hubbub, service, feedManager, log))
 	}
 
 	emulatorRoutes := emulatorRoutes(ctx, service, searchProvider, feedManager, processors, config, log)
@@ -125,8 +125,8 @@ func tokenRoutes(repo repo.User, storage content.TokenStorage, secret []byte, lo
 	}}
 }
 
-func hubbubRoutes(hubbub *readeef.Hubbub, repo repo.Feed, feedManager *readeef.FeedManager, log log.Log) routes {
-	handler := hubbubRegistration(hubbub, repo, feedManager, log)
+func hubbubRoutes(hubbub *readeef.Hubbub, service repo.Service, feedManager *readeef.FeedManager, log log.Log) routes {
+	handler := hubbubRegistration(hubbub, service, feedManager, log)
 
 	return routes{path: "/hubbub", route: func(r chi.Router) {
 		r.Get("/", handler)
@@ -358,7 +358,7 @@ func readJSON(w http.ResponseWriter, r io.Reader, data interface{}) (stop bool) 
 	return false
 }
 
-func error(w http.ResponseWriter, log log.Log, format string, err error) {
+func fatal(w http.ResponseWriter, log log.Log, format string, err error) {
 	log.Printf(format, err)
 	http.Error(w, fmt.Sprintf(format, err.Error()), http.StatusInternalServerError)
 }

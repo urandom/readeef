@@ -15,17 +15,20 @@ type thumbnailRepo struct {
 	log log.Log
 }
 
-func (r thumbnailRepo) Get(id content.ArticleID) (content.Thumbnail, error) {
-	r.log.Infof("Getting thumbnail for article id %d", id)
+func (r thumbnailRepo) Get(article content.Article) (content.Thumbnail, error) {
+	if err := article.Validate(); err != nil {
+		return content.Extract{}, errors.WithMessage(err, "validating article")
+	}
+
+	r.log.Infof("Getting thumbnail for article %s", article)
 
 	var thumbnail content.Thumbnail
-	err := r.db.Get(&thumbnail, r.db.SQL().Article.GetThumbnail, id)
-	if err != nil {
+	if err = r.db.Get(&thumbnail, r.db.SQL().Article.GetThumbnail, article.ID); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
 
-		return content.User{}, errors.Wrapf(err, "getting thumbnail for article id %d", id)
+		return content.User{}, errors.Wrapf(err, "getting thumbnail for article %s", article)
 	}
 
 	return thumbnail, nil

@@ -22,7 +22,7 @@ func FromDescription(repo repo.Thumbnail, log log.Log) Generator {
 func (t description) Generate(a content.Article) error {
 	thumbnail := content.Thumbnail{ArticleID: a.ID, Processed: true}
 
-	t.log.Debugf("Generating thumbnail for article %s\n", a)
+	t.log.Debugf("Generating thumbnail for article %s from description", a)
 
 	thumbnail.Thumbnail, thumbnail.Link =
 		generateThumbnailFromDescription(strings.NewReader(a.Description))
