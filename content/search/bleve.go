@@ -46,7 +46,7 @@ func NewBleve(path string, size int64, service repo.Service, log log.Log) (bleve
 		index, err = bleve.Open(path)
 
 		if err != nil {
-			return nil, errors.Wrap(err, "opening bleve search index")
+			return bleveSearch{}, errors.Wrap(err, "opening bleve search index")
 		}
 
 		exists = true
@@ -65,13 +65,13 @@ func NewBleve(path string, size int64, service repo.Service, log log.Log) (bleve
 		index, err = bleve.NewUsing(path, mapping, upsidedown.Name, goleveldb.Name, nil)
 
 		if err != nil {
-			return nil, errors.Wrap(err, "creating search index")
+			return bleveSearch{}, errors.Wrap(err, "creating search index")
 		}
 	} else {
-		return nil, errors.Wrapf(err, "getting file '%s' stat", path)
+		return bleveSearch{}, errors.Wrapf(err, "getting file '%s' stat", path)
 	}
 
-	return &bleveSearch{log: log, index: index, batchSize: size, service: service, newIndex: !exists}, nil
+	return bleveSearch{log: log, index: index, batchSize: size, service: service, newIndex: !exists}, nil
 }
 
 func (b bleveSearch) IsNewIndex() bool {
@@ -166,7 +166,7 @@ func (b bleveSearch) Search(
 	}
 
 	for i := range articles {
-		hit := hitMap[article.ID]
+		hit := hitMap[articles[i].ID]
 
 		if len(hit.Fragments) > 0 {
 			articles[i].Hit.Fragments = hit.Fragments
@@ -224,7 +224,7 @@ func prepareArticle(article content.Article) (string, indexArticle) {
 	id := strconv.FormatInt(int64(article.ID), 10)
 	ia := indexArticle{
 		FeedID:      strconv.FormatInt(int64(article.FeedID), 10),
-		ArticleID:   article.ID,
+		ArticleID:   strconv.FormatInt(int64(article.ID), 10),
 		Title:       html.UnescapeString(StripTags(article.Title)),
 		Description: html.UnescapeString(StripTags(article.Description)),
 		Link:        article.Link, Date: article.Date,

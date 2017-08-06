@@ -15,9 +15,9 @@ type subscriptionRepo struct {
 	log log.Log
 }
 
-func (r subscriptionRepo) Get(feed content.FeedID) (content.Subscription, error) {
+func (r subscriptionRepo) Get(feed content.Feed) (content.Subscription, error) {
 	if err := feed.Validate(); err != nil {
-		return content.Subscription{}, errors.WithMessage("validating feed")
+		return content.Subscription{}, errors.WithMessage(err, "validating feed")
 	}
 	r.log.Infoln("Getting feed subscription")
 
@@ -59,8 +59,7 @@ func (r subscriptionRepo) Update(s content.Subscription) error {
 	}
 	defer tx.Rollback()
 
-	s := r.db.SQL()
-	stmt, err := tx.Preparex(s.Subscription.Update)
+	stmt, err := tx.Preparex(r.db.SQL().Subscription.Update)
 	if err != nil {
 		return errors.Wrap(err, "preparing subscription update stmt")
 	}
@@ -79,7 +78,7 @@ func (r subscriptionRepo) Update(s content.Subscription) error {
 		return nil
 	}
 
-	stmt, err = tx.Preparex(s.Subscription.Create)
+	stmt, err = tx.Preparex(r.db.SQL().Subscription.Create)
 	if err != nil {
 		return errors.Wrap(err, "preparing subscription create stmt")
 	}

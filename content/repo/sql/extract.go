@@ -23,7 +23,7 @@ func (r extractRepo) Get(article content.Article) (content.Extract, error) {
 	r.log.Infof("Getting extract for article %s", article)
 
 	var extract content.Extract
-	if err = r.db.Get(&extract, r.db.SQL().Article.GetExtract, article.ID); err != nil {
+	if err := r.db.Get(&extract, r.db.SQL().Article.GetExtract, article.ID); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -54,7 +54,7 @@ func (r extractRepo) Update(extract content.Extract) error {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(extract.Title, extract.Content, extract.TopImage, extract.Language, extract.ArticleId)
+	res, err := stmt.Exec(extract.Title, extract.Content, extract.TopImage, extract.Language, extract.ArticleID)
 	if err != nil {
 		return errors.Wrap(err, "executimg extract update stmt")
 	}

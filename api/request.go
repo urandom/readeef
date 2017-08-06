@@ -54,7 +54,7 @@ func userFromRequest(w http.ResponseWriter, r *http.Request) (user content.User,
 	}
 
 	http.Error(w, "Bad Request", http.StatusBadRequest)
-	return nil, true
+	return content.User{}, true
 }
 
 type args map[string]interface{}

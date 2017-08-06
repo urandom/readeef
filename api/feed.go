@@ -30,8 +30,8 @@ func feedContext(repo repo.Feed, log log.Log) func(http.Handler) http.Handler {
 			}
 
 			feed, err := repo.Get(content.FeedID(id), user)
-			if err {
-				if err == content.IsNoContent(err) {
+			if err != nil {
+				if content.IsNoContent(err) {
 					http.Error(w, "Not found", http.StatusNotFound)
 				} else {
 					fatal(w, log, "Error getting feed: %+v", err)
@@ -52,7 +52,7 @@ func feedFromRequest(w http.ResponseWriter, r *http.Request) (feed content.Feed,
 	}
 
 	http.Error(w, "Bad Request", http.StatusBadRequest)
-	return nil, true
+	return content.Feed{}, true
 }
 
 func listFeeds(repo repo.Feed, log log.Log) http.HandlerFunc {
@@ -64,7 +64,7 @@ func listFeeds(repo repo.Feed, log log.Log) http.HandlerFunc {
 
 		feeds, err := repo.ForUser(user)
 		if err != nil {
-			fatal(w, log, "Error getting feeds: %+v", log)
+			fatal(w, log, "Error getting feeds: %+v", err)
 			return
 		}
 
@@ -133,7 +133,7 @@ func addFeedByURL(
 	}
 
 	if f, err := feedManager.AddFeedByLink(link); err == nil {
-		err = repo.Attach(f, user)
+		err = repo.AttachTo(f, user)
 		if err != nil {
 			return addFeedError{Link: link, Title: f.Title, Message: "Error adding feed to the database: " + err.Error()}
 		}
@@ -145,7 +145,7 @@ func addFeedByURL(
 				t[i] = content.Tag{Value: content.TagValue(tags[i])}
 			}
 
-			if err = repo.SetUserTags(f, user, tags); err != nil {
+			if err = repo.SetUserTags(f, user, t); err != nil {
 				return addFeedError{Link: link, Title: f.Title, Message: "Error adding feed to the database: " + err.Error()}
 			}
 		}
@@ -202,21 +202,15 @@ func discoverFeeds(repo repo.Feed, feedManager *readeef.FeedManager, log log.Log
 }
 
 func discoverFeedsByQuery(query string, user content.User, repo repo.Feed, feedManager *readeef.FeedManager) ([]content.Feed, error) {
-	feeds, err := feedManager.DiscoverFeeds(query)
-	if err != nil {
-		return nil, err
-	}
-
-	feeds, err := repo.ForUser(user)
+	userFeeds, err := repo.ForUser(user)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getting feeds for user")
 	}
 
 	userFeedIdMap := make(map[content.FeedID]bool)
 	userFeedLinkMap := make(map[string]bool)
-	for i := range feeds {
-		feed := feeds[i]
-		userFeedIdMap[feed.Id] = true
+	for _, feed := range userFeeds {
+		userFeedIdMap[feed.ID] = true
 		userFeedLinkMap[feed.Link] = true
 
 		u, err := url.Parse(feed.Link)
@@ -226,10 +220,15 @@ func discoverFeedsByQuery(query string, user content.User, repo repo.Feed, feedM
 		}
 	}
 
+	feeds, err := feedManager.DiscoverFeeds(query)
+	if err != nil {
+		return nil, err
+	}
+
 	respFeeds := []content.Feed{}
 	for i := range feeds {
 		feed := feeds[i]
-		if !userFeedIdMap[feed.Id] && !userFeedLinkMap[feed.Link] {
+		if !userFeedIdMap[feed.ID] && !userFeedLinkMap[feed.Link] {
 			respFeeds = append(respFeeds, feeds[i])
 		}
 	}

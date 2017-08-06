@@ -18,7 +18,7 @@ func NewAbsolutizeURLs(l log.Log) AbsolutizeURLs {
 	return AbsolutizeURLs{log: l}
 }
 
-func (p AbsolutizeURLs) Process(f parser.Feed) parser.Feed {
+func (p AbsolutizeURLs) ProcessFeed(f parser.Feed) parser.Feed {
 	p.log.Infof("Converting relative urls of feed '%s' to absolute\n", f.Title)
 
 	for i := range f.Articles {
@@ -28,7 +28,7 @@ func (p AbsolutizeURLs) Process(f parser.Feed) parser.Feed {
 				continue
 			}
 
-			if ConvertRelativeLinksToAbsolute(d, articleLink) {
+			if convertRelativeLinksToAbsolute(d, articleLink) {
 				if content, err := d.Html(); err == nil {
 					// net/http tries to provide valid html, adding html, head and body tags
 					content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
@@ -42,7 +42,7 @@ func (p AbsolutizeURLs) Process(f parser.Feed) parser.Feed {
 	return f
 }
 
-func ConvertRelativeLinksToAbsolute(d *goquery.Document, articleLink *url.URL) bool {
+func convertRelativeLinksToAbsolute(d *goquery.Document, articleLink *url.URL) bool {
 	changed := false
 	d.Find("[src]").Each(func(i int, s *goquery.Selection) {
 		val, ok := s.Attr("src")

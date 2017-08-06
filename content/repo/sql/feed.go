@@ -20,6 +20,7 @@ func (r feedRepo) Get(id content.FeedID, user content.User) (content.Feed, error
 	r.log.Infof("Getting user %s feed %d", user, id)
 
 	var feed content.Feed
+	var err error
 	if user.Login == "" {
 		err = r.db.Get(&feed, r.db.SQL().Repo.GetFeed, id)
 	} else {
@@ -135,7 +136,7 @@ func (r feedRepo) Update(feed content.Feed) ([]content.Article, error) {
 	}
 	defer tx.Rollback()
 
-	var changed = 0
+	changed := int64(0)
 	if feed.ID != 0 {
 		s := r.db.SQL()
 		stmt, err := tx.Preparex(s.Feed.Update)
@@ -155,7 +156,7 @@ func (r feedRepo) Update(feed content.Feed) ([]content.Article, error) {
 	}
 
 	if changed == 0 {
-		id, err := r.db.CreateWithID(tx, s.Feed.Create, feed.Link, feed.Title, feed.Description, feed.HubLink, feed.SiteLink, feed.UpdateError, feed.SubscribeError)
+		id, err := r.db.CreateWithID(tx, r.db.SQL().Feed.Create, feed.Link, feed.Title, feed.Description, feed.HubLink, feed.SiteLink, feed.UpdateError, feed.SubscribeError)
 
 		if err != nil {
 			return newArticles, errors.Wrap(err, "creating feed")
@@ -169,7 +170,7 @@ func (r feedRepo) Update(feed content.Feed) ([]content.Article, error) {
 	}
 
 	if err = tx.Commit(); err != nil {
-		return []content.Articl{}, errors.Wrap("committing transaction")
+		return []content.Article{}, errors.Wrap(err, "committing transaction")
 	}
 
 	return newArticles, nil
@@ -177,8 +178,6 @@ func (r feedRepo) Update(feed content.Feed) ([]content.Article, error) {
 
 // Delete deleted the feed from the database.
 func (r feedRepo) Delete(feed content.Feed) error {
-	newArticles := []content.Article{}
-
 	if err := feed.Validate(); err != nil {
 		return errors.WithMessage(err, "validating feed")
 	}
@@ -203,7 +202,7 @@ func (r feedRepo) Delete(feed content.Feed) error {
 	}
 
 	if err = tx.Commit(); err != nil {
-		return []content.Articl{}, errors.Wrap("committing transaction")
+		return errors.Wrap(err, "committing transaction")
 	}
 
 	return nil
@@ -213,7 +212,7 @@ func (r feedRepo) Users(feed content.Feed) ([]content.User, error) {
 	panic("not implemented")
 }
 
-func (r feedRepo) AttachTo(content.Feed, content.User) error {
+func (r feedRepo) AttachTo(feed content.Feed, user content.User) error {
 	if err := feed.Validate(); err != nil {
 		return errors.WithMessage(err, "validating feed")
 	}
@@ -224,13 +223,13 @@ func (r feedRepo) AttachTo(content.Feed, content.User) error {
 
 	r.log.Infof("Attaching feed %s to %s", feed, user)
 
-	tx, err := uf.db.Beginx()
+	tx, err := r.db.Beginx()
 	if err != nil {
 		return errors.Wrap(err, "creating transaction")
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(uf.db.SQL().Feed.Attach)
+	stmt, err := tx.Preparex(r.db.SQL().Feed.Attach)
 	if err != nil {
 		return errors.Wrap(err, "preparing feed attach stmt")
 	}
@@ -259,13 +258,13 @@ func (r feedRepo) DetachFrom(feed content.Feed, user content.User) error {
 
 	r.log.Infof("Detaching feed %s from %s", feed, user)
 
-	tx, err := uf.db.Beginx()
+	tx, err := r.db.Beginx()
 	if err != nil {
 		return errors.Wrap(err, "creating transaction")
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(uf.db.SQL().Feed.Detach)
+	stmt, err := tx.Preparex(r.db.SQL().Feed.Detach)
 	if err != nil {
 		return errors.Wrap(err, "preparing feed detach stmt")
 	}
@@ -294,7 +293,7 @@ func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []conte
 
 	r.log.Infof("Setting feed %s user %s tags", feed, user)
 
-	tx, err := uf.db.Beginx()
+	tx, err := r.db.Beginx()
 	if err != nil {
 		return errors.Wrap(err, "creating transaction")
 	}
@@ -303,8 +302,7 @@ func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []conte
 	s := r.db.SQL()
 	stmt, err := tx.Preparex(s.Feed.DeleteUserTags)
 	if err != nil {
-		tf.Err(err)
-		return
+		return errors.Wrap(err, "preparing delete user tags stmt")
 	}
 	defer stmt.Close()
 
@@ -334,15 +332,14 @@ func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []conte
 	if len(tags) > 0 {
 		stmt, err := tx.Preparex(s.Feed.CreateUserTag)
 		if err != nil {
-			tf.Err(err)
-			return
+			return errors.Wrap(err, "preparing create user tags stmt")
 		}
 		defer stmt.Close()
 
 		for i := range tags {
-			_, err = stmt.Exec(user.Login, feed.ID, tag[i].ID)
+			_, err = stmt.Exec(user.Login, feed.ID, tags[i].ID)
 			if err != nil {
-				return errors.Wrapf(err, "creating user %s feed %s tag %s", user, feed, tag)
+				return errors.Wrapf(err, "creating user %s feed %s tag %s", user, feed, tags[i])
 			}
 		}
 	}
@@ -359,14 +356,14 @@ func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []conte
 }
 
 func (r feedRepo) updateFeedArticles(feed content.Feed, tx *sqlx.Tx) ([]content.Article, error) {
-	articles := []content.ARticle{}
+	articles := []content.Article{}
 
 	for _, a := range feed.ParsedArticles() {
-		a.FeedID = id
+		a.FeedID = feed.ID
 
 		var err error
 		if a, err = updateArticle(a, tx, r.db, r.log); err != nil {
-			return errors.WithMessage(err, "updating feed articles")
+			return []content.Article{}, errors.WithMessage(err, "updating feed articles")
 		}
 
 		if a.IsNew {
@@ -374,5 +371,5 @@ func (r feedRepo) updateFeedArticles(feed content.Feed, tx *sqlx.Tx) ([]content.
 		}
 	}
 
-	return articles
+	return articles, nil
 }

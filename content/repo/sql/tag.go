@@ -3,6 +3,7 @@ package sql
 import (
 	"database/sql"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo/sql/db"
@@ -17,7 +18,7 @@ type tagRepo struct {
 
 func (r tagRepo) Get(id content.TagID, user content.User) (content.Tag, error) {
 	if err := user.Validate(); err != nil {
-		return content.Feed{}, errors.WithMessage(err, "validating user")
+		return content.Tag{}, errors.WithMessage(err, "validating user")
 	}
 
 	r.log.Infof("Getting tag %d for %s", id, user)
@@ -43,7 +44,7 @@ func (r tagRepo) ForUser(user content.User) ([]content.Tag, error) {
 
 	var tags []content.Tag
 
-	if err := r.db.Select(&tags, r.db.SQL().User.GetTags, id, user.Login); err != nil {
+	if err := r.db.Select(&tags, r.db.SQL().User.GetTags, user.Login); err != nil {
 		return []content.Tag{}, errors.Wrapf(err, "getting user %s tags", user)
 	}
 
@@ -62,7 +63,7 @@ func (r tagRepo) ForFeed(feed content.Feed, user content.User) ([]content.Tag, e
 	r.log.Infof("Getting tags for user %s feed %s", user, feed)
 
 	var tags []content.Tag
-	if err := r.db.Select(&tags, r.db.SQL().User.GetUserTags, user.Login, feed.ID); err != nil {
+	if err := r.db.Select(&tags, r.db.SQL().Feed.GetUserTags, user.Login, feed.ID); err != nil {
 		return []content.Tag{}, errors.Wrapf(err, "getting user %s feed %s tags", user, feed)
 	}
 
@@ -78,7 +79,7 @@ func (r tagRepo) FeedIDs(tag content.Tag, user content.User) ([]content.FeedID, 
 		return []content.FeedID{}, errors.WithMessage(err, "validating user")
 	}
 
-	r.log.Infof("Getting tag %d feed ids", id)
+	r.log.Infof("Getting tag %s feed ids", tag)
 
 	var ids []content.FeedID
 	if err := r.db.Select(&ids, r.db.SQL().Tag.GetUserFeedIDs, user.Login, tag.Value); err != nil {
@@ -88,9 +89,9 @@ func (r tagRepo) FeedIDs(tag content.Tag, user content.User) ([]content.FeedID, 
 	return ids, nil
 }
 
-func findTagByValue(value content.TagValue, sql string, tx *sql.Tx) (content.Tag, error) {
+func findTagByValue(value content.TagValue, stmt string, tx *sqlx.Tx) (content.Tag, error) {
 	var tag content.Tag
-	if err := tx.Get(&tag, sql, value); err != nil {
+	if err := tx.Get(&tag, stmt, value); err != nil {
 		if err == sql.ErrNoRows {
 			return content.Tag{}, content.ErrNoContent
 		}
@@ -101,10 +102,10 @@ func findTagByValue(value content.TagValue, sql string, tx *sql.Tx) (content.Tag
 	return tag, nil
 }
 
-func createTag(value content.TagValue, tx *sql.Tx, db *db.DB) (content.Tag, error) {
+func createTag(value content.TagValue, tx *sqlx.Tx, db *db.DB) (content.Tag, error) {
 	id, err := db.CreateWithID(tx, db.SQL().Tag.Create, value)
 	if err != nil {
-		return content.Tag{}, errors.Wrapf("creating tag %s", value)
+		return content.Tag{}, errors.Wrapf(err, "creating tag %s", value)
 	}
 
 	return content.Tag{ID: content.TagID(id), Value: value}, nil

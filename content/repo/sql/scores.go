@@ -23,7 +23,7 @@ func (r scoresRepo) Get(article content.Article) (content.Scores, error) {
 	r.log.Infof("Getting scores for article %s", article)
 
 	var scores content.Scores
-	if err = r.db.Get(&scores, r.db.SQL().Article.GetScores, article.ID); err != nil {
+	if err := r.db.Get(&scores, r.db.SQL().Article.GetScores, article.ID); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}

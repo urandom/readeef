@@ -92,7 +92,7 @@ func hasProxy(config config.Config) bool {
 	}
 
 	if !hasProxy {
-		for _, p := range config.Content.ArticleProcessors {
+		for _, p := range config.Content.Article.Processors {
 			if p == "proxy-http" {
 				hasProxy = true
 				break

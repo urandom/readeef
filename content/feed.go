@@ -1,6 +1,7 @@
 package content
 
 import (
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"net/url"
@@ -75,4 +76,19 @@ func (f Feed) ParsedArticles() (a []Article) {
 
 func (f Feed) String() string {
 	return fmt.Sprintf("%d: %s", f.ID, f.Title)
+}
+
+func (id *FeedID) Scan(src interface{}) error {
+	asInt, ok := src.(int64)
+	if !ok {
+		return fmt.Errorf("Scan source '%#v' (%T) was not of type int64 (FeedId)", src, src)
+	}
+
+	(*id) = FeedID(asInt)
+
+	return nil
+}
+
+func (id FeedID) Value() (driver.Value, error) {
+	return int64(id), nil
 }

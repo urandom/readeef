@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"path"
 	"strconv"
@@ -33,9 +34,13 @@ func hubbubRegistration(
 			return
 		}
 
-		f := feedRepo.Get(content.FeedID(feedID), content.User{})
-		s, err := subRepo.Get(f)
+		f, err := feedRepo.Get(content.FeedID(feedID), content.User{})
+		if err != nil {
+			fatal(w, log, fmt.Sprintf("Error getting feed %d", feedID), err)
+			return
+		}
 
+		s, err := subRepo.Get(f)
 		if err != nil {
 			fatal(w, log, "Error getting feed subscription: %+v", err)
 			return
@@ -70,10 +75,11 @@ func hubbubRegistration(
 				return
 			}
 
+			var articles []content.Article
 			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
 				f.Refresh(pf)
 
-				if err = feedRepo.Update(f); err != nil {
+				if articles, err = feedRepo.Update(f); err != nil {
 					log.Printf("Error updating feed %s: %+v", f, err)
 					return
 				}
@@ -82,7 +88,7 @@ func hubbubRegistration(
 				return
 			}
 
-			hubbub.ProcessFeedUpdate(f)
+			hubbub.ProcessFeedUpdate(f, articles)
 
 			return
 		}

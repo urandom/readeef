@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/urandom/readeef/content/sql/db"
-	"github.com/urandom/readeef/content/sql/db/base"
+	"github.com/urandom/readeef/content/repo/sql/db"
+	"github.com/urandom/readeef/content/repo/sql/db/base"
 )
 
 type Helper struct {

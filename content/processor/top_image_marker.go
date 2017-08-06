@@ -17,7 +17,7 @@ func NewTopImageMarker(l log.Log) TopImageMarker {
 	return TopImageMarker{log: l}
 }
 
-func (p TopImageMarker) Process(f parser.Feed) parser.Feed {
+func (p TopImageMarker) ProcessFeed(f parser.Feed) parser.Feed {
 	p.log.Infof("Locating suitable top images in articles of '%s'\n", f.Title)
 
 	for i := range f.Articles {

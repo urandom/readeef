@@ -19,18 +19,18 @@ type Unread struct {
 func NewUnread(ctx context.Context, service repo.Service, log log.Log) Unread {
 	repo := service.ArticleRepo()
 	go func() {
-		repo.DeleteStaleUnreadRecords()
+		repo.RemoveStaleUnreadRecords()
 
 		ticker := time.NewTicker(24 * time.Hour)
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			repo.DeleteStaleUnreadRecords()
+			repo.RemoveStaleUnreadRecords()
 		}
 	}()
 
-	return Unread{repo: repo, userRepo: services.UserRepo(), log: log}
+	return Unread{articleRepo: repo, userRepo: service.UserRepo(), log: log}
 }
 
 func (i Unread) FeedUpdated(feed content.Feed, articles []content.Article) error {

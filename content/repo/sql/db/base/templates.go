@@ -2,6 +2,7 @@ package base
 
 func init() {
 	sqlStmts.Article.GetArticlesTemplate = getArticlesUserlessTemplate
+	sqlStmts.User.GetArticlesUserlessTemplate = getArticlesUserlessTemplate
 	sqlStmts.User.GetArticlesTemplate = getArticlesTemplate
 	sqlStmts.User.GetArticlesScoreJoin = getArticlesScoreJoin
 	sqlStmts.User.GetArticlesUntaggedJoin = getArticlesUntaggedJoin

@@ -65,14 +65,14 @@ func setSettingValue(repo repo.User, secret []byte, log log.Log) http.HandlerFun
 			var err error
 			user, err = repo.Get(name)
 			if err != nil {
-				error(w, log, "Error getting user: %+v", err)
+				fatal(w, log, "Error getting user: %+v", err)
 				return
 			}
 		}
 
 		b, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			error(w, log, "Error reading request body: %+v", err)
+			fatal(w, log, "Error reading request body: %+v", err)
 			return
 		}
 
@@ -112,7 +112,7 @@ func setSettingValue(repo repo.User, secret []byte, log log.Log) http.HandlerFun
 		if err == nil {
 			args{"success": true}.WriteJSON(w)
 		} else {
-			error(w, log, "Error setting user setting: %+v", err)
+			fatal(w, log, "Error setting user setting: %+v", err)
 		}
 	}
 }

@@ -18,7 +18,7 @@ func NewCleanup(l log.Log) Cleanup {
 	return Cleanup{log: l}
 }
 
-func (p Cleanup) Process(f parser.Feed) parser.Feed {
+func (p Cleanup) ProcessFeed(f parser.Feed) parser.Feed {
 	p.log.Infof("Cleaning up feed '%s'\n", f.Title)
 
 	for i := range f.Articles {

@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha1"
 	"crypto/subtle"
+	"database/sql/driver"
 	"fmt"
 	"net/mail"
 
@@ -106,4 +107,21 @@ func (u User) generateHash(password string, secret []byte) ([]byte, error) {
 	default:
 		panic("Unknown hash type " + u.HashType)
 	}
+}
+
+func (val *Login) Scan(src interface{}) error {
+	switch t := src.(type) {
+	case string:
+		*val = Login(t)
+	case []byte:
+		*val = Login(t)
+	default:
+		return fmt.Errorf("Scan source '%#v' (%T) was not of type string (Login)", src, src)
+	}
+
+	return nil
+}
+
+func (val Login) Value() (driver.Value, error) {
+	return string(val), nil
 }

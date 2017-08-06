@@ -41,13 +41,13 @@ func importOPML(
 
 		feeds, err := repo.ForUser(user)
 		if err != nil {
-			error(w, log, "Error getting user feeds: %+v", err)
+			fatal(w, log, "Error getting user feeds: %+v", err)
 			return
 		}
 
 		feedSet := feedSet{}
 		for i := range feeds {
-			feedSet[feeds[i].Id] = struct{}{}
+			feedSet[feeds[i].ID] = struct{}{}
 		}
 		feeds = make([]content.Feed, 0, 10)
 
@@ -60,7 +60,7 @@ func importOPML(
 			}
 
 			for _, f := range discovered {
-				if !feedSet[f.ID] {
+				if _, ok := feedSet[f.ID]; !ok {
 					if len(opmlFeed.Tags) > 0 {
 						f.Link += "#" + strings.Join(opmlFeed.Tags, ",")
 					}
@@ -68,8 +68,8 @@ func importOPML(
 					feeds = append(feeds, f)
 
 					if !payload.DryRun {
-						if err := addFeedByURL(f.Link, user, feedManager); err != nil {
-							errors(w, log, "Error adding feed: %+v", err)
+						if err := addFeedByURL(f.Link, user, repo, feedManager); err != nil {
+							fatal(w, log, "Error adding feed: %+v", err)
 							return
 						}
 					}
@@ -99,7 +99,7 @@ func exportOPML(
 
 		feeds, err := service.FeedRepo().ForUser(user)
 		if err != nil {
-			error(w, log, "Error getting user feeds: %+v", err)
+			fatal(w, log, "Error getting user feeds: %+v", err)
 			return
 		}
 
@@ -108,7 +108,7 @@ func exportOPML(
 		for _, f := range feeds {
 			tags, err := tagRepo.ForFeed(f, user)
 			if err != nil {
-				error(w, log, "Error getting feed tags: %+v", err)
+				fatal(w, log, "Error getting feed tags: %+v", err)
 				return
 			}
 

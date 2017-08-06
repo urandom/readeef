@@ -10,7 +10,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/repo/sql/db"
 	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/pool"
@@ -49,7 +48,7 @@ func (r articleRepo) ForUser(user content.User, opts ...content.QueryOpt) ([]con
 		return articles, errors.WithMessage(err, "validating user")
 	}
 
-	o := repo.QueryOptions{}
+	o := content.QueryOptions{}
 	o.Apply(opts)
 
 	r.log.Infof("Getting articles for user %s", user)
@@ -63,14 +62,15 @@ func (r articleRepo) ForUser(user content.User, opts ...content.QueryOpt) ([]con
 }
 
 func (r articleRepo) All(opts ...content.QueryOpt) ([]content.Article, error) {
-	o := repo.QueryOptions{}
+	o := content.QueryOptions{}
 	o.Apply(opts)
 
 	r.log.Infof("Getting all articles")
 
+	var err error
 	if getArticlesUserlessTemplate == nil {
 		getArticlesUserlessTemplate, err = template.New("userless-articles").
-			Parse(dbo.SQL().User.GetArticlesUserlessTemplate)
+			Parse(r.db.SQL().User.GetArticlesUserlessTemplate)
 
 		if err != nil {
 			return []content.Article{}, errors.Wrap(err, "generating get-articles-userless template")
@@ -78,41 +78,44 @@ func (r articleRepo) All(opts ...content.QueryOpt) ([]content.Article, error) {
 	}
 
 	renderData := getArticlesData{}
-	s := dbo.SQL()
 	if o.IncludeScores {
 		renderData.Columns += ", asco.score"
 	}
 
-	renderData.Join, renderData.Where, renderData.Order, renderData.Limit, args = constructSQLQueryOptions("", opts, r.db)
+	var args []interface{}
+	renderData.Join, renderData.Where, renderData.Order, renderData.Limit, args = constructSQLQueryOptions("", o, r.db)
 
 	buf := pool.Buffer.Get()
 	defer pool.Buffer.Put(buf)
 
-	if err := getArticlesUserlessTemplate.Execute(buf, renderData); err != nil {
+	if err = getArticlesUserlessTemplate.Execute(buf, renderData); err != nil {
 		return []content.Article{}, errors.Wrap(err, "executing get-articles-userless template")
 	}
 
 	sql := buf.String()
 	var articles []content.Article
 
-	log.Debugf("Articles SQL:\n%s\nArgs:%v\n", sql, args)
-	if err = dbo.Select(&articles, sql, args...); err != nil {
+	r.log.Debugf("Articles SQL:\n%s\nArgs:%v\n", sql, args)
+	if err = r.db.Select(&articles, sql, args...); err != nil {
 		err = errors.Wrap(err, "getting articles")
 	}
 
 	return articles, err
 }
 
-func (r articleRepo) Count(content.User, ...content.QueryOpt) (int64, error) {
+func (r articleRepo) Count(user content.User, opts ...content.QueryOpt) (int64, error) {
 	if err := user.Validate(); err != nil {
 		return 0, errors.WithMessage(err, "validating user")
 	}
 
-	o := repo.QueryOptions{}
+	o := content.QueryOptions{}
 	o.Apply(opts)
 
 	r.log.Infof("Getting articles count")
 
+	s := r.db.SQL()
+
+	var err error
 	if articleCountTemplate == nil {
 		articleCountTemplate, err = template.New("article-count-sql").
 			Parse(s.User.ArticleCountTemplate)
@@ -125,20 +128,21 @@ func (r articleRepo) Count(content.User, ...content.QueryOpt) (int64, error) {
 	var login content.Login
 	var renderData getArticlesData
 
-	if opts.UnreadOnly || opts.FavoriteOnly || opt.ReadOnly || opt.UntaggedOnly {
+	if o.UnreadOnly || o.FavoriteOnly || o.ReadOnly || o.UntaggedOnly {
 		renderData.Join += s.User.ArticleCountUserFeedsJoin
 		login = user.Login
 
 		if o.FavoriteOnly {
-			renderData.Join += s.User.ReadStateFavoriteJoin
+			renderData.Join += s.User.StateFavoriteJoin
 		}
 		if o.ReadOnly || o.UnreadOnly {
-			renderData.Join += s.User.ReadStateUnreadJoin
+			renderData.Join += s.User.StateUnreadJoin
 		}
 	}
 
 	o.IncludeScores = false
-	join, renderData.Where, _, _, args = constructSQLQueryOptions(login, o, r.db)
+
+	join, where, _, _, args := constructSQLQueryOptions(login, o, r.db)
 
 	renderData.Join += join
 	renderData.Where = where
@@ -147,7 +151,7 @@ func (r articleRepo) Count(content.User, ...content.QueryOpt) (int64, error) {
 	defer pool.Buffer.Put(buf)
 
 	if err := articleCountTemplate.Execute(buf, renderData); err != nil {
-		return []content.Article{}, errors.Wrap(err, "executing article-count template")
+		return 0, errors.Wrap(err, "executing article-count template")
 	}
 
 	var count int64
@@ -158,16 +162,19 @@ func (r articleRepo) Count(content.User, ...content.QueryOpt) (int64, error) {
 	return count, nil
 }
 
-func (r articleRepo) IDs(content.User, ...content.QueryOpt) ([]content.ArticleID, error) {
+func (r articleRepo) IDs(user content.User, opts ...content.QueryOpt) ([]content.ArticleID, error) {
 	if err := user.Validate(); err != nil {
 		return []content.ArticleID{}, errors.WithMessage(err, "validating user")
 	}
 
-	o := repo.QueryOptions{}
+	o := content.QueryOptions{}
 	o.Apply(opts)
 
 	r.log.Infof("Getting article ids")
 
+	s := r.db.SQL()
+
+	var err error
 	if getArticleIdsTemplate == nil {
 		getArticleIdsTemplate, err = template.New("article-ids-sql").
 			Parse(s.User.GetArticleIdsTemplate)
@@ -180,20 +187,20 @@ func (r articleRepo) IDs(content.User, ...content.QueryOpt) ([]content.ArticleID
 	var login content.Login
 	var renderData getArticlesData
 
-	if opts.UnreadOnly || opts.FavoriteOnly || opt.ReadOnly || opt.UntaggedOnly {
+	if o.UnreadOnly || o.FavoriteOnly || o.ReadOnly || o.UntaggedOnly {
 		renderData.Join += s.User.ArticleCountUserFeedsJoin
 		login = user.Login
 
 		if o.FavoriteOnly {
-			renderData.Join += s.User.ReadStateFavoriteJoin
+			renderData.Join += s.User.StateFavoriteJoin
 		}
 		if o.ReadOnly || o.UnreadOnly {
-			renderData.Join += s.User.ReadStateUnreadJoin
+			renderData.Join += s.User.StateUnreadJoin
 		}
 	}
 
 	o.IncludeScores = false
-	join, renderData.Where, _, _, args = constructSQLQueryOptions(login, o, r.db)
+	join, where, _, _, args := constructSQLQueryOptions(login, o, r.db)
 
 	renderData.Join += join
 	renderData.Where = where
@@ -261,21 +268,27 @@ func getArticles(login content.Login, dbo *db.DB, log log.Log, opts content.Quer
 		opts.UnreadFirst = false
 		opts.UnreadOnly = true
 
-		ua = internalGetArticles(login, dbo, log, opts)
+		articles, err := internalGetArticles(login, dbo, log, opts)
+		if err != nil {
+			return []content.Article{}, errors.WithMessage(err, "getting unread articles first")
+		}
 
-		if !originalUnreadOnly && (opts.Limit == 0 || opts.Limit > len(ua)) {
+		if !originalUnreadOnly && (opts.Limit == 0 || opts.Limit > len(articles)) {
 			if opts.Limit > 0 {
-				opts.Limit -= len(ua)
+				opts.Limit -= len(articles)
 			}
 			opts.UnreadOnly = false
 			opts.ReadOnly = true
 
-			readOnly := internalGetArticles(login, dbo, log, opts)
+			readOnly, err := internalGetArticles(login, dbo, log, opts)
+			if err != nil {
+				return []content.Article{}, errors.WithMessage(err, "getting read articles only")
+			}
 
-			ua = append(ua, readOnly...)
+			articles = append(articles, readOnly...)
 		}
 
-		return
+		return articles, nil
 	}
 
 	return internalGetArticles(login, dbo, log, opts)
@@ -283,7 +296,6 @@ func getArticles(login content.Login, dbo *db.DB, log log.Log, opts content.Quer
 
 func internalGetArticles(login content.Login, dbo *db.DB, log log.Log, opts content.QueryOptions) ([]content.Article, error) {
 	renderData := getArticlesData{}
-	s := dbo.SQL()
 
 	var args []interface{}
 	renderData.Join, renderData.Where, renderData.Order, renderData.Limit, args = constructSQLQueryOptions(login, opts, dbo)
@@ -303,11 +315,11 @@ func internalGetArticles(login content.Login, dbo *db.DB, log log.Log, opts cont
 	var articles []content.Article
 
 	log.Debugf("Articles SQL:\n%s\nArgs:%v\n", sql, args)
-	if err = dbo.Select(&articles, sql, args...); err != nil {
-		err = errors.Wrap(err, "getting articles")
+	if err := dbo.Select(&articles, sql, args...); err != nil {
+		return []content.Article{}, errors.Wrap(err, "getting articles")
 	}
 
-	return articles, err
+	return articles, nil
 }
 
 type stateType int
@@ -325,7 +337,7 @@ func articleStateSet(
 	log log.Log,
 	opts []content.QueryOpt,
 ) error {
-	if err := instantiateStateTemplates(); err != nil {
+	if err := instantiateStateTemplates(db.SQL()); err != nil {
 		return errors.WithMessage(err, "instantiating article state templates")
 	}
 
@@ -333,7 +345,7 @@ func articleStateSet(
 		return errors.WithMessage(err, "validating user")
 	}
 
-	o := repo.QueryOptions{}
+	o := content.QueryOptions{}
 	o.Apply(opts)
 
 	var tmpl *template.Template
@@ -357,15 +369,16 @@ func articleStateSet(
 		}
 	}
 
+	s := db.SQL()
 	renderData := getArticlesData{}
 	var args []interface{}
 	renderData.Join, renderData.Where, _, _, args = constructSQLQueryOptions(user.Login, o, db)
 
 	if o.FavoriteOnly {
-		renderData.Join += s.User.ReadStateFavoriteJoin
+		renderData.Join += s.User.StateFavoriteJoin
 	}
 	if o.ReadOnly || o.UnreadOnly {
-		renderData.Join += s.User.ReadStateUnreadJoin
+		renderData.Join += s.User.StateUnreadJoin
 	}
 
 	buf := pool.Buffer.Get()
@@ -375,7 +388,7 @@ func articleStateSet(
 		return errors.Wrap(err, "executing article state template")
 	}
 
-	tx, err := r.db.Beginx()
+	tx, err := db.Beginx()
 	if err != nil {
 		return errors.Wrap(err, "creating transaction")
 	}
@@ -406,6 +419,7 @@ func constructSQLQueryOptions(
 
 	var join string
 
+	s := db.SQL()
 	if opts.IncludeScores {
 		join += s.User.GetArticlesScoreJoin
 	}
@@ -460,12 +474,16 @@ func constructSQLQueryOptions(
 
 	if len(opts.IDs) > 0 {
 		whereSlice = append(whereSlice, db.WhereMultipleORs("a.id", len(opts.IDs), len(args)+off))
-		args = append(args, opts.IDs[i]...)
+		for i := range opts.IDs {
+			args = append(args, opts.IDs[i])
+		}
 	}
 
 	if len(opts.FeedIDs) > 0 {
 		whereSlice = append(whereSlice, db.WhereMultipleORs("a.feed_id", len(opts.FeedIDs), len(args)+off))
-		args = append(args, opts.FeedIDs[i]...)
+		for i := range opts.FeedIDs {
+			args = append(args, opts.FeedIDs[i])
+		}
 	}
 
 	var where string
@@ -532,7 +550,7 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log log.Log) (cont
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(a.Title, a.Description, a.Date, a.Guid, a.Link, a.FeedId)
+	res, err := stmt.Exec(a.Title, a.Description, a.Date, a.Guid, a.Link, a.FeedID)
 	if err != nil {
 		return content.Article{}, errors.Wrap(err, "executing article update statement")
 	}
@@ -540,24 +558,25 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log log.Log) (cont
 	if num, err := res.RowsAffected(); err != nil && err == sql.ErrNoRows || num == 0 {
 		log.Infof("Creating article %s\n", a)
 
-		id, err := db.CreateWithID(tx, s.Article.Create, a.FeedId, a.Link, a.Guid,
+		id, err := db.CreateWithID(tx, s.Article.Create, a.FeedID, a.Link, a.Guid,
 			a.Title, a.Description, a.Date)
 
 		if err != nil {
 			return content.Article{}, errors.WithMessage(err, "updating article")
 		}
 
-		a.Id = content.ArticleID(id)
+		a.ID = content.ArticleID(id)
 		a.IsNew = true
 	}
 
 	return a, nil
 }
 
-func instantiateStateTemplates() error {
+func instantiateStateTemplates(s db.SqlStmts) error {
+	var err error
 	if readStateInsertTemplate == nil {
 		readStateInsertTemplate, err = template.New("read-state-insert-sql").
-			Parse(dbo.SQL().User.ReadStateInsertTemplate)
+			Parse(s.User.ReadStateInsertTemplate)
 
 		if err != nil {
 			return errors.Wrap(err, "generating read-state-insert template")
@@ -566,7 +585,7 @@ func instantiateStateTemplates() error {
 
 	if readStateDeleteTemplate == nil {
 		readStateDeleteTemplate, err = template.New("read-state-delete-sql").
-			Parse(dbo.SQL().User.ReadStateDeleteTemplate)
+			Parse(s.User.ReadStateDeleteTemplate)
 
 		if err != nil {
 			return errors.Wrap(err, "generating read-state-delete template")
@@ -575,7 +594,7 @@ func instantiateStateTemplates() error {
 
 	if favoriteStateInsertTemplate == nil {
 		favoriteStateInsertTemplate, err = template.New("favorite-state-insert-sql").
-			Parse(dbo.SQL().User.FavoriteStateInsertTemplate)
+			Parse(s.User.FavoriteStateInsertTemplate)
 
 		if err != nil {
 			return errors.Wrap(err, "generating favorite-state-insert template")
@@ -584,7 +603,7 @@ func instantiateStateTemplates() error {
 
 	if favoriteStateDeleteTemplate == nil {
 		favoriteStateDeleteTemplate, err = template.New("favorite-state-delete-sql").
-			Parse(dbo.SQL().User.FavoriteStateDeleteTemplate)
+			Parse(s.User.FavoriteStateDeleteTemplate)
 
 		if err != nil {
 			return errors.Wrap(err, "generating favorite-state-delete template")

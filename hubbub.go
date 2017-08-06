@@ -55,8 +55,8 @@ func NewHubbub(
 	}
 }
 
-func (h *Hubbub) ProcessFeedUpdate(feed content.Feed) {
-	h.feedManager.processFeedUpdateMonitors(feed)
+func (h *Hubbub) ProcessFeedUpdate(feed content.Feed, articles []content.Article) {
+	h.feedManager.processFeedUpdateMonitors(feed, articles)
 }
 
 func (h *Hubbub) Subscribe(f content.Feed) error {
@@ -76,10 +76,10 @@ func (h *Hubbub) Subscribe(f content.Feed) error {
 		}
 	}
 
-	repo := service.SubscriptionRepo()
+	repo := h.service.SubscriptionRepo()
 	s, err := repo.Get(f)
 	if err != nil && !content.IsNoContent(err) {
-		return errors.WithMessag(err, "getting feed subscription during subscribe")
+		return errors.WithMessage(err, "getting feed subscription during subscribe")
 	}
 
 	if s.FeedID == f.ID {
@@ -175,7 +175,7 @@ func (h *Hubbub) InitSubscriptions() error {
 				subscriptions = filtered
 			case <-after:
 				for _, s := range subscriptions {
-					if s.VerificationTime.Add(time.Duration(s.Data().LeaseDuration)).Before(time.Now().Add(-30 * time.Minute)) {
+					if s.VerificationTime.Add(time.Duration(s.LeaseDuration)).Before(time.Now().Add(-30 * time.Minute)) {
 						f, err := feedRepo.Get(s.FeedID, content.User{})
 						if err != nil {
 							h.log.Printf("Error getting subscription feed: %+v\n", err)
@@ -235,7 +235,7 @@ func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe b
 		f.SubscribeError = err.Error()
 		h.log.Printf("Error subscribing to hub feed '%s': %s\n", f, err)
 
-		if err = h.service.FeedRepo().Update(f); err != nil {
+		if _, err = h.service.FeedRepo().Update(f); err != nil {
 			h.log.Printf("Error updating feed database record for %s: %+v", f, err)
 		}
 	}

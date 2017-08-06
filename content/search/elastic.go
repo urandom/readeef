@@ -57,7 +57,7 @@ func (e elasticSearch) Search(
 ) ([]content.Article, error) {
 
 	o := content.QueryOptions{}
-	o.Apply(opts...)
+	o.Apply(opts)
 
 	search := e.client.Search().Index(elasticIndexName)
 

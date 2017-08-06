@@ -20,7 +20,7 @@ func getTagsFeedIDs(repo repo.Tag, log log.Log) http.HandlerFunc {
 
 		tags, err := repo.ForUser(user)
 		if err != nil {
-			error(w, log, "Error getting user tags: %+v", err)
+			fatal(w, log, "Error getting user tags: %+v", err)
 			return
 		}
 
@@ -28,7 +28,7 @@ func getTagsFeedIDs(repo repo.Tag, log log.Log) http.HandlerFunc {
 		for _, tag := range tags {
 			ids, err := repo.FeedIDs(tag, user)
 			if err != nil {
-				error(w, log, "Error getting tag feed ids: %+v", err)
+				fatal(w, log, "Error getting tag feed ids: %+v", err)
 				return
 			}
 
@@ -53,7 +53,7 @@ func getFeedTags(repo repo.Tag, log log.Log) http.HandlerFunc {
 
 		tags, err := repo.ForFeed(feed, user)
 		if err != nil {
-			error(w, log, "Error getting feed tags: %+v", err)
+			fatal(w, log, "Error getting feed tags: %+v", err)
 			return
 		}
 
@@ -91,7 +91,7 @@ func setFeedTags(repo repo.Feed, log log.Log) http.HandlerFunc {
 		}
 
 		if err := repo.SetUserTags(feed, user, tags); err != nil {
-			error(w, log, "Error updating feed tags: %+v", err)
+			fatal(w, log, "Error updating feed tags: %+v", err)
 			return
 		}
 
@@ -136,5 +136,5 @@ func tagFromRequest(w http.ResponseWriter, r *http.Request) (tag content.Tag, st
 	}
 
 	http.Error(w, "Bad Request", http.StatusBadRequest)
-	return nil, true
+	return content.Tag{}, true
 }

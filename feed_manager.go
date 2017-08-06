@@ -12,6 +12,7 @@ import (
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/monitor"
+	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/feed"
 	"github.com/urandom/readeef/log"
@@ -27,7 +28,7 @@ type FeedManager struct {
 	log              log.Log
 	hubbub           *Hubbub
 	scheduler        feed.Scheduler
-	parserProcessors []parser.Processor
+	parserProcessors []processor.Feed
 	feedMonitors     []monitor.Feed
 }
 
@@ -52,7 +53,7 @@ func (fm *FeedManager) SetHubbub(hubbub *Hubbub) {
 	fm.hubbub = hubbub
 }
 
-func (fm *FeedManager) AddParserProcessor(p parser.Processor) {
+func (fm *FeedManager) AddFeedProcessor(p processor.Feed) {
 	fm.parserProcessors = append(fm.parserProcessors, p)
 }
 
@@ -95,12 +96,12 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 	u, err := url.Parse(link)
 	if err == nil {
 		if !u.IsAbs() {
-			return nil, errors.New("link not absolute")
+			return content.Feed{}, errors.New("link not absolute")
 		}
 		u.Fragment = ""
 		link = u.String()
 	} else {
-		return nil, err
+		return content.Feed{}, err
 	}
 
 	f, err := fm.repo.FindByLink(link)
@@ -113,7 +114,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 
 		parsedFeeds, err := feed.Search(link)
 		if err != nil {
-			return nil, errors.WithMessage(err, "searching for feeds")
+			return content.Feed{}, errors.WithMessage(err, "searching for feeds")
 		}
 
 		var f content.Feed
@@ -124,13 +125,13 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 			break
 		}
 
-		newArticles, err = fm.repo.Update(f)
+		newArticles, err := fm.repo.Update(f)
 		if err != nil {
-			return errors.WithMessage(err, "updating feed with parsed data")
+			return content.Feed{}, errors.WithMessage(err, "updating feed with parsed data")
 		}
 
 		// Do not halt the adding process due to slow monitors
-		go fm.processFeedUpdateMonitors(f, len(newArticles) > 0)
+		go fm.processFeedUpdateMonitors(f, newArticles)
 	}
 
 	fm.log.Infoln("Adding feed " + f.String() + " to manager")
@@ -271,7 +272,7 @@ func (fm FeedManager) processFeedUpdateMonitors(feed content.Feed, newArticles [
 
 func (fm FeedManager) processParserFeed(pf parser.Feed) parser.Feed {
 	for _, p := range fm.parserProcessors {
-		pf = p.Process(pf)
+		pf = p.ProcessFeed(pf)
 	}
 
 	return pf

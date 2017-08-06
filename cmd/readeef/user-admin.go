@@ -7,17 +7,15 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/repo/sql"
 	"github.com/urandom/readeef/log"
 )
 
 var (
-	userAdminCommands = map[string]func([]string, content.Repo, config.Config, log.Log) error{}
+	userAdminCommands = map[string]func([]string, repo.Service, config.Config, log.Log) error{}
 )
 
 func runUserAdmin(config config.Config, args []string) error {
@@ -25,7 +23,7 @@ func runUserAdmin(config config.Config, args []string) error {
 		return errors.New("no command")
 	}
 
-	log := readeef.NewLogger(config.Log)
+	log := initLog(config.Log)
 	service, err := sql.NewService(config.DB.Driver, config.DB.Connect, log)
 	if err != nil {
 		return errors.WithMessage(err, "creating content service")
@@ -45,12 +43,12 @@ func userAdminAdd(args []string, service repo.Service, config config.Config, log
 
 	u := content.User{}
 
-	u.Login = data.Login(args[0])
+	u.Login = content.Login(args[0])
 	u.Active = true
 
 	err := u.Password(args[1], []byte(config.Auth.Secret))
 	if err == nil {
-		err == service.UserRepo().Update(u)
+		err = service.UserRepo().Update(u)
 	}
 
 	if err != nil {
@@ -67,13 +65,13 @@ func userAdminRemove(args []string, service repo.Service, config config.Config, 
 
 	repo := service.UserRepo()
 
-	u, err := repo.Get(data.Login(args[0]))
+	u, err := repo.Get(content.Login(args[0]))
 	if err == nil {
 		err = repo.Delete(u)
 	}
 
 	if err != nil {
-		return errors.WithMessage(u.Err(), "deleting user")
+		return errors.WithMessage(err, "deleting user")
 	}
 
 	return nil
@@ -122,7 +120,7 @@ func userAdminSet(args []string, service repo.Service, config config.Config, log
 	}
 
 	repo := service.UserRepo()
-	u, err := repo.Get(data.Login(args[0]))
+	u, err := repo.Get(content.Login(args[0]))
 	if err != nil {
 		return errors.WithMessage(err, "getting user")
 	}
@@ -152,7 +150,7 @@ func userAdminSet(args []string, service repo.Service, config config.Config, log
 	}
 
 	if err = repo.Update(u); err != nil {
-		return errors.WithMessage(u.Err(), "updating user")
+		return errors.WithMessage(err, "updating user")
 	}
 
 	return nil

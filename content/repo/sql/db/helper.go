@@ -101,9 +101,10 @@ type UserStmts struct {
 	GetTag        string
 	GetTagByValue string
 
-	GetArticlesTemplate     string
-	GetArticlesScoreJoin    string
-	GetArticlesUntaggedJoin string
+	GetArticlesUserlessTemplate string
+	GetArticlesTemplate         string
+	GetArticlesScoreJoin        string
+	GetArticlesUntaggedJoin     string
 
 	GetArticleIdsTemplate      string
 	GetArticleIdsUserFeedsJoin string

@@ -2,6 +2,7 @@ package content
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"net/url"
@@ -165,7 +166,7 @@ var (
 )
 
 // Apply applies the settings from the passed opts to the QueryOptions
-func (o *QueryOptions) Apply(opts ...QueryOpt) {
+func (o *QueryOptions) Apply(opts []QueryOpt) {
 	for _, opt := range opts {
 		opt.f(o)
 	}
@@ -193,4 +194,19 @@ func (a Article) Validate() error {
 	}
 
 	return nil
+}
+
+func (id *ArticleID) Scan(src interface{}) error {
+	asInt, ok := src.(int64)
+	if !ok {
+		return fmt.Errorf("Scan source '%#v' (%T) was not of type int64 (ArticleId)", src, src)
+	}
+
+	*id = ArticleID(asInt)
+
+	return nil
+}
+
+func (id ArticleID) Value() (driver.Value, error) {
+	return int64(id), nil
 }

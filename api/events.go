@@ -40,7 +40,7 @@ func eventSocket(
 		}
 
 		feeds, err := repo.ForUser(user)
-		if err {
+		if err != nil {
 			fatal(w, log, "Error getting user feeds: %+v", err)
 			return
 		}
@@ -126,7 +126,7 @@ func (e event) WriteJSON(w io.Writer, flusher http.Flusher, data interface{}, lo
 	return nil
 }
 
-func (fm *feedMonitor) FeedUpdated(feed content.Feed) error {
+func (fm *feedMonitor) FeedUpdated(feed content.Feed, articles []content.Article) error {
 	fm.ops <- func(conns connMap) {
 		for _, d := range conns {
 			if _, ok := d.feedSet[feed.ID]; ok {

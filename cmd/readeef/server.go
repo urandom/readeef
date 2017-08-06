@@ -22,13 +22,12 @@ import (
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/extract"
 	"github.com/urandom/readeef/content/monitor"
+	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/repo/sql"
 	"github.com/urandom/readeef/content/search"
 	"github.com/urandom/readeef/content/thumbnail"
 	"github.com/urandom/readeef/log"
-	"github.com/urandom/readeef/parser"
-	"github.com/urandom/readeef/parser/processor"
 	"github.com/urandom/readeef/popularity"
 	"github.com/urandom/readeef/web"
 )
@@ -70,19 +69,24 @@ func runServer(config config.Config, args []string) error {
 
 	feedManager := readeef.NewFeedManager(service.FeedRepo(), config, log)
 
-	if processors, err := initParserProcessors(config.FeedParser.Processors, config.FeedParser.ProxyHTTPURLTemplate, log); err == nil {
+	if processors, err := initFeedProcessors(config.FeedParser.Processors, config.FeedParser.ProxyHTTPURLTemplate, log); err == nil {
 		for _, p := range processors {
-			feedManager.AddParserProcessor(p)
+			feedManager.AddFeedProcessor(p)
 		}
 	} else {
 		return errors.WithMessage(err, "initializing parser processors")
 	}
 
-	searchProvider := initSearchProvider(config.Content, service.ArticleRepo(), log)
+	searchProvider := initSearchProvider(config.Content, service, log)
 
 	extractor, err := initArticleExtractor(config.Content, fs)
 	if err != nil {
 		return errors.WithMessage(err, "initializing content extract generator")
+	}
+
+	articleProcessors, err := initArticleProcessors(config.Content.Article.Processors, config.Content.Article.ProxyHTTPURLTemplate, log)
+	if err != nil {
+		return errors.WithMessage(err, "initializing article processors")
 	}
 
 	thumbnailer, err := initThumbnailGenerator(service, config.Content, extractor, articleProcessors, log)
@@ -107,11 +111,6 @@ func runServer(config config.Config, args []string) error {
 
 	if hubbub != nil {
 		feedManager.SetHubbub(hubbub)
-	}
-
-	articleProcessors, err := initArticleProcessors(config.Content.Article.Processors, config.Content.ProxyHTTPURLTemplate, log)
-	if err != nil {
-		return errors.WithMessage(err, "initializing article processors")
 	}
 
 	handler, err = api.Mux(ctx, service, feedManager, hubbub, searchProvider, extractor, fs, articleProcessors, config, log)
@@ -178,7 +177,7 @@ func initSessionEngine(config config.Auth) (*bolt.DB, session.Engine, error) {
 
 	db, err := bolt.Open(config.SessionStoragePath, 0600, nil)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "opening bolt db", config.SessionStoragePath)
+		return nil, nil, errors.Wrapf(err, "opening bolt db with path: %s", config.SessionStoragePath)
 	}
 
 	return db, boltstore.New(db, 30), nil
@@ -214,27 +213,27 @@ func initArticleProcessors(names []string, proxyTemplate string, log log.Log) ([
 	for _, p := range names {
 		switch p {
 		case "relative-url":
-			processors = append(processors, contentProcessor.NewRelativeURL(log))
+			processors = append(processors, processor.NewRelativeURL(log))
 		case "proxy-http":
 			template := proxyTemplate
 
 			if template != "" {
-				p, err := contentProcessor.NewProxyHTTP(template, log)
+				p, err := processor.NewProxyHTTP(template, log)
 				if err != nil {
 					return nil, errors.Wrap(err, "initializing proxy http processor")
 				}
 				processors = append(processors, p)
 			}
 		case "insert-thumbnail-target":
-			processors = append(processors, contentProcessor.NewInsertThumbnailTarget(log))
+			processors = append(processors, processor.NewInsertThumbnailTarget(log))
 		}
 	}
 
 	return processors, nil
 }
 
-func initParserProcessors(names []string, proxyTemplate string, log log.Log) ([]parser.Processor, error) {
-	var processors []parser.Processor
+func initFeedProcessors(names []string, proxyTemplate string, log log.Log) ([]processor.Feed, error) {
+	var processors []processor.Feed
 
 	for _, p := range names {
 		switch p {
@@ -262,7 +261,7 @@ func initParserProcessors(names []string, proxyTemplate string, log log.Log) ([]
 	return processors, nil
 }
 
-func initSearchProvider(config config.Content, repo repo.Article, log log.Log) search.Provider {
+func initSearchProvider(config config.Content, service repo.Service, log log.Log) search.Provider {
 	var searchProvider search.Provider
 	var err error
 
@@ -271,6 +270,7 @@ func initSearchProvider(config config.Content, repo repo.Article, log log.Log) s
 		if searchProvider, err = search.NewElastic(
 			config.Search.ElasticURL,
 			config.Search.BatchSize,
+			service,
 			log,
 		); err != nil {
 			log.Printf("Error initializing Elastic search: %+v\n", err)
@@ -281,6 +281,7 @@ func initSearchProvider(config config.Content, repo repo.Article, log log.Log) s
 		if searchProvider, err = search.NewBleve(
 			config.Search.BlevePath,
 			config.Search.BatchSize,
+			service,
 			log,
 		); err != nil {
 			log.Printf("Error initializing Bleve search: %+v\n", err)
@@ -290,7 +291,7 @@ func initSearchProvider(config config.Content, repo repo.Article, log log.Log) s
 	if searchProvider != nil {
 		if searchProvider.IsNewIndex() {
 			go func() {
-				if err := search.Reindex(searchProvider, repo); err != nil {
+				if err := search.Reindex(searchProvider, service.ArticleRepo()); err != nil {
 					log.Printf("Error reindexing all articles: %+v", err)
 				}
 			}()
@@ -336,7 +337,7 @@ func initThumbnailGenerator(
 	case "description":
 		fallthrough
 	default:
-		return thumbnail.FromDescription(log), nil
+		return thumbnail.FromDescription(service.ThumbnailRepo(), log), nil
 	}
 }
 
@@ -349,7 +350,7 @@ func initFeedMonitors(
 	config config.FeedManager,
 	service repo.Service,
 	searchProvider search.Provider,
-	thumbnailer content.Thumbnailer,
+	thumbnailer thumbnail.Generator,
 	log log.Log,
 ) []monitor.Feed {
 	monitors := []monitor.Feed{monitor.NewUnread(ctx, service, log)}

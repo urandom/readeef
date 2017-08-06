@@ -20,14 +20,14 @@ func getUserData(w http.ResponseWriter, r *http.Request) {
 
 func listUsers(repo repo.User, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, stop := userFromRequest(w, r)
+		_, stop := userFromRequest(w, r)
 		if stop {
 			return
 		}
 
 		users, err := repo.All()
 		if err != nil {
-			errors(w, log, "Error getting users: %+v", err)
+			fatal(w, log, "Error getting users: %+v", err)
 			return
 		}
 
@@ -47,7 +47,7 @@ type addUserData struct {
 
 func addUser(repo repo.User, secret []byte, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		user, stop := userFromRequest(w, r)
+		_, stop := userFromRequest(w, r)
 		if stop {
 			return
 		}
@@ -62,7 +62,7 @@ func addUser(repo repo.User, secret []byte, log log.Log) http.HandlerFunc {
 			http.Error(w, "User exists", http.StatusConflict)
 			return
 		} else if !content.IsNoContent(err) {
-			error(w, log, "Error getting user: %+v", err)
+			fatal(w, log, "Error getting user: %+v", err)
 			return
 		}
 
@@ -76,12 +76,12 @@ func addUser(repo repo.User, secret []byte, log log.Log) http.HandlerFunc {
 		}
 
 		if err = u.Password(userData.Password, secret); err != nil {
-			error(w, log, "Error setting user password: %+v", err)
+			fatal(w, log, "Error setting user password: %+v", err)
 			return
 		}
 
 		if err = repo.Update(u); err != nil {
-			error(w, log, "Error updating user: %+v", err)
+			fatal(w, log, "Error updating user: %+v", err)
 			return
 		}
 
@@ -108,7 +108,7 @@ func deleteUser(repo repo.User, log log.Log) http.HandlerFunc {
 		}
 
 		if err != nil {
-			error(w, log, "Error deleting user: %+v", err)
+			fatal(w, log, "Error deleting user: %+v", err)
 			return
 		}
 

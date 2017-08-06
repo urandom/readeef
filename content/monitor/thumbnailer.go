@@ -15,7 +15,7 @@ type Thumbnailer struct {
 }
 
 func NewThumbnailer(g thumbnail.Generator, l log.Log) Thumbnailer {
-	return Thumbnailer{generator: t, log: l}
+	return Thumbnailer{generator: g, log: l}
 }
 
 func (t Thumbnailer) FeedUpdated(feed content.Feed, articles []content.Article) error {

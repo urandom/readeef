@@ -18,7 +18,13 @@ func tokenCreate(repo repo.User, secret []byte, log log.Log) http.Handler {
 			log.Infof("Error fetching user %s: %+v", user, err)
 			return false
 		}
-		return u.Authenticate(pass, secret)
+
+		ok, err := u.Authenticate(pass, secret)
+		if err != nil {
+			log.Infof("Error authenticating user %s: %+v", user, err)
+			return false
+		}
+		return ok
 	}), secret, auth.Logger(log))
 }
 
@@ -44,11 +50,10 @@ func tokenValidator(
 		}
 
 		if c, ok := claims.(*jwt.StandardClaims); ok {
-			u := repo.Get(content.Login(c.Subject))
-			err := u.Err()
+			_, err := repo.Get(content.Login(c.Subject))
 
 			if err != nil {
-				if err != content.ErrNoContent {
+				if content.IsNoContent(err) {
 					log.Printf("Error getting user %s from repo: %+v\n", c.Subject, err)
 				}
 

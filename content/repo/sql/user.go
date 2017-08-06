@@ -39,7 +39,7 @@ func (r userRepo) All() ([]content.User, error) {
 		return users, errors.Wrap(err, "getting all users")
 	}
 
-	return users
+	return users, nil
 }
 
 // Update updates or creates the user data in the database.
@@ -114,7 +114,7 @@ func (r userRepo) Delete(user content.User) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(i.Login)
+	_, err = stmt.Exec(user.Login)
 	if err != nil {
 		return errors.Wrap(err, "executimg user delete stmt")
 	}
@@ -139,10 +139,10 @@ func (r userRepo) FindByMD5(hash []byte) (content.User, error) {
 			err = content.ErrNoContent
 		}
 
-		return content.User{}, errors.Wrapf(err, "getting user by md5 %s", md5)
+		return content.User{}, errors.Wrapf(err, "getting user by md5 %s", hash)
 	}
 
-	user.MD5API = md5
+	user.MD5API = hash
 
-	return user
+	return user, nil
 }
