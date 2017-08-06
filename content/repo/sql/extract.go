@@ -28,7 +28,7 @@ func (r extractRepo) Get(article content.Article) (content.Extract, error) {
 			err = content.ErrNoContent
 		}
 
-		return content.User{}, errors.Wrapf(err, "getting extract for article %s", article)
+		return content.Extract{}, errors.Wrapf(err, "getting extract for article %s", article)
 	}
 
 	return extract, nil

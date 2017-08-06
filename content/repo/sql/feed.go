@@ -6,7 +6,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/db"
 	"github.com/urandom/readeef/log"
 )
@@ -87,6 +86,16 @@ func (r feedRepo) ForTag(tag content.Tag, user content.User) ([]content.Feed, er
 	return feeds, nil
 }
 
+func (r feedRepo) All() ([]content.Feed, error) {
+	r.log.Infoln("Getting all feeds")
+
+	var feeds []content.Feed
+	if err := r.db.Select(&feeds, r.db.SQL().Repo.GetFeeds); err != nil {
+		return []content.Feed{}, errors.Wrap(err, "getting all feeds")
+	}
+
+	return feeds, nil
+}
 func (r feedRepo) IDs() ([]content.FeedID, error) {
 	r.log.Info("Getting feed IDs")
 
@@ -152,7 +161,7 @@ func (r feedRepo) Update(feed content.Feed) ([]content.Article, error) {
 			return newArticles, errors.Wrap(err, "creating feed")
 		}
 
-		feed.ID = data.FeedID(id)
+		feed.ID = content.FeedID(id)
 	}
 
 	if newArticles, err = r.updateFeedArticles(feed, tx); err != nil {

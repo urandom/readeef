@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/log"
 )
@@ -136,7 +135,7 @@ func addFeedByURL(
 	if f, err := feedManager.AddFeedByLink(link); err == nil {
 		err = repo.Attach(f, user)
 		if err != nil {
-			return addFeedError{Link: link, Title: f.Data().Title, Message: "Error adding feed to the database: " + err.Error()}
+			return addFeedError{Link: link, Title: f.Title, Message: "Error adding feed to the database: " + err.Error()}
 		}
 
 		tags := strings.SplitN(u.Fragment, ",", -1)
@@ -213,7 +212,7 @@ func discoverFeedsByQuery(query string, user content.User, repo repo.Feed, feedM
 		return nil, errors.WithMessage(err, "getting feeds for user")
 	}
 
-	userFeedIdMap := make(map[data.FeedId]bool)
+	userFeedIdMap := make(map[content.FeedID]bool)
 	userFeedLinkMap := make(map[string]bool)
 	for i := range feeds {
 		feed := feeds[i]

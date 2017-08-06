@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/search"
 	"github.com/urandom/readeef/log"
 )
@@ -21,7 +20,7 @@ func NewIndex(sp search.Provider, l log.Log) Index {
 func (i Index) FeedUpdated(feed content.Feed) error {
 	i.log.Infof("Updating article search index for feed %s", feed)
 
-	return i.provider.BatchIndex(feed.NewArticles(), data.BatchAdd)
+	return i.provider.BatchIndex(feed.NewArticles(), search.BatchAdd)
 }
 
 func (i Index) FeedDeleted(feed content.Feed) error {
@@ -34,6 +33,6 @@ func (i Index) FeedDeleted(feed content.Feed) error {
 	}
 	i.log.Infof("Deleting article search index for feed %s", feed)
 
-	return i.provider.BatchIndex(articles, data.BatchDelete)
+	return i.provider.BatchIndex(articles, search.BatchDelete)
 
 }

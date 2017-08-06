@@ -9,4 +9,5 @@ type Service interface {
 	ArticleRepo() Article
 	ExtractRepo() Extract
 	ThumbnailRepo() Thumbnail
+	ScoresRepo() Scores
 }

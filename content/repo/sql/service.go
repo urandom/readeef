@@ -52,3 +52,7 @@ func (s Service) ExtractRepo() repo.Article {
 func (s Service) ThumbnailRepo() repo.Thumbnail {
 	return thumbnailRepo{db, log}
 }
+
+func (s Service) ScoresRepo() repo.Scores {
+	return scoresRepo{db, log}
+}

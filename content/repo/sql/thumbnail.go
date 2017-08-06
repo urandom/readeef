@@ -17,7 +17,7 @@ type thumbnailRepo struct {
 
 func (r thumbnailRepo) Get(article content.Article) (content.Thumbnail, error) {
 	if err := article.Validate(); err != nil {
-		return content.Extract{}, errors.WithMessage(err, "validating article")
+		return content.Thumbnail{}, errors.WithMessage(err, "validating article")
 	}
 
 	r.log.Infof("Getting thumbnail for article %s", article)
@@ -28,7 +28,7 @@ func (r thumbnailRepo) Get(article content.Article) (content.Thumbnail, error) {
 			err = content.ErrNoContent
 		}
 
-		return content.User{}, errors.Wrapf(err, "getting thumbnail for article %s", article)
+		return content.Thumbnail{}, errors.Wrapf(err, "getting thumbnail for article %s", article)
 	}
 
 	return thumbnail, nil

@@ -29,6 +29,7 @@ import (
 	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/parser/processor"
+	"github.com/urandom/readeef/popularity"
 	"github.com/urandom/readeef/web"
 )
 
@@ -91,6 +92,8 @@ func runServer(config config.Config, args []string) error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	initPopularityScore(ctx, service, config.Popularity, log)
 
 	monitors := initFeedMonitors(ctx, config.FeedManager, service.ArticleRepo(), searchProvider, thumbnailer, log)
 	for _, m := range monitors {
@@ -335,6 +338,10 @@ func initThumbnailGenerator(
 	default:
 		return thumbnail.FromDescription(log), nil
 	}
+}
+
+func initPopularityScore(ctx context.Context, service repo.Service, config config.Popularity, log log.Log) {
+	popularity.New(config, log).ScoreContent(ctx, service)
 }
 
 func initFeedMonitors(

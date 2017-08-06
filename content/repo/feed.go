@@ -9,6 +9,7 @@ type Feed interface {
 
 	ForUser(content.User) ([]content.Feed, error)
 	ForTag(content.Tag, content.User) ([]content.Feed, error)
+	All() ([]content.Feed, error)
 
 	IDs() ([]content.FeedID, error)
 	Unsubscribed() ([]content.Feed, error)
