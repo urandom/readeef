@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
-	"github.com/urandom/readeef/content/sql/db"
+	"github.com/urandom/readeef/content/repo/sql/db"
 	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/pool"
 )
@@ -83,7 +83,7 @@ func (r articleRepo) All(opts ...content.QueryOpt) ([]content.Article, error) {
 		renderData.Columns += ", asco.score"
 	}
 
-	renderData.Join, renderData.Where, renderData.Order, renderData.Limit, args = constructSQLQueryOptions("", opts, args, where)
+	renderData.Join, renderData.Where, renderData.Order, renderData.Limit, args = constructSQLQueryOptions("", opts, r.db)
 
 	buf := pool.Buffer.Get()
 	defer pool.Buffer.Put(buf)
@@ -138,7 +138,7 @@ func (r articleRepo) Count(content.User, ...content.QueryOpt) (int64, error) {
 	}
 
 	o.IncludeScores = false
-	join, renderData.Where, _, _, args = constructSQLQueryOptions(login, o)
+	join, renderData.Where, _, _, args = constructSQLQueryOptions(login, o, r.db)
 
 	renderData.Join += join
 	renderData.Where = where
@@ -193,7 +193,7 @@ func (r articleRepo) IDs(content.User, ...content.QueryOpt) ([]content.ArticleID
 	}
 
 	o.IncludeScores = false
-	join, renderData.Where, _, _, args = constructSQLQueryOptions(login, o)
+	join, renderData.Where, _, _, args = constructSQLQueryOptions(login, o, r.db)
 
 	renderData.Join += join
 	renderData.Where = where
@@ -286,7 +286,7 @@ func internalGetArticles(login content.Login, dbo *db.DB, log log.Log, opts cont
 	s := dbo.SQL()
 
 	var args []interface{}
-	renderData.Join, renderData.Where, renderData.Order, renderData.Limit, args = constructSQLQueryOptions(login, opts)
+	renderData.Join, renderData.Where, renderData.Order, renderData.Limit, args = constructSQLQueryOptions(login, opts, dbo)
 
 	if opts.IncludeScores {
 		renderData.Columns += ", asco.score"
@@ -359,7 +359,7 @@ func articleStateSet(
 
 	renderData := getArticlesData{}
 	var args []interface{}
-	renderData.Join, renderData.Where, _, _, args = constructSQLQueryOptions(user.Login, o)
+	renderData.Join, renderData.Where, _, _, args = constructSQLQueryOptions(user.Login, o, db)
 
 	if o.FavoriteOnly {
 		renderData.Join += s.User.ReadStateFavoriteJoin
@@ -395,6 +395,7 @@ func articleStateSet(
 func constructSQLQueryOptions(
 	login content.Login,
 	opts content.QueryOptions,
+	db *db.DB,
 ) (string, string, string, string, []interface{}) {
 
 	hasUser := login != ""
@@ -458,21 +459,13 @@ func constructSQLQueryOptions(
 	}
 
 	if len(opts.IDs) > 0 {
-		orSlice = make([]string{}, len(opts.IDs))
-		for i := range opts.IDs {
-			orSlice[i] = fmt.Sprintf("a.id = $%d", len(args)+off)
-			args = append(args, id)
-		}
-		whereSlice = append(whereSlice, "("+strings.Join(orSlice, " OR ")+")")
+		whereSlice = append(whereSlice, db.WhereMultipleORs("a.id", len(opts.IDs), len(args)+off))
+		args = append(args, opts.IDs[i]...)
 	}
 
 	if len(opts.FeedIDs) > 0 {
-		orSlice = make([]string{}, len(opts.FeedIDs))
-		for i := range opts.FeedIDs {
-			orSlice[i] = fmt.Sprintf("a.feed_id = $%d", len(args)+off)
-			args = append(args, id)
-		}
-		whereSlice = append(whereSlice, "("+strings.Join(orSlice, " OR ")+")")
+		whereSlice = append(whereSlice, db.WhereMultipleORs("a.feed_id", len(opts.FeedIDs), len(args)+off))
+		args = append(args, opts.FeedIDs[i]...)
 	}
 
 	var where string

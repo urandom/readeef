@@ -8,8 +8,8 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/urandom/readeef/content/sql/db"
-	"github.com/urandom/readeef/content/sql/db/base"
+	"github.com/urandom/readeef/content/repo/sql/db"
+	"github.com/urandom/readeef/content/repo/sql/db/base"
 )
 
 type Helper struct {
@@ -60,6 +60,22 @@ func (h Helper) Upgrade(db *db.DB, old, new int) error {
 	return nil
 }
 
+func (h Helper) WhereMultipleORs(column string, length, off int) string {
+	if length < 70 {
+		return h.Helper.WhereMultipleORs(column, length, off)
+	}
+
+	orSlice := make([]string{}, length)
+	for i := 0; i < length; i++ {
+		if i == 0 {
+			orSlice[i] = fmt.Sprintf("VALUES($%d)", off+i)
+		} else {
+			orSlice[i] = fmt.Sprintf("($%d)", off+i)
+		}
+	}
+
+	return fmt.Sprintf("%s IN (%s)", column, strings.Join(orSlice, ", "))
+}
 func upgrade1to2(db *db.DB) error {
 	tx, err := db.Beginx()
 	if err != nil {

@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -39,6 +40,24 @@ func (db *DB) CreateWithID(tx *sqlx.Tx, sql string, args ...interface{}) (int64,
 
 	if h, ok := helpers[driver]; ok {
 		return h.CreateWithID(tx, sql, args...)
+	} else {
+		panic("No helper registered for " + driver)
+	}
+}
+
+func (db *DB) WhereMultipleORs(column string, length, off int) string {
+	if length < 20 {
+		orSlice := make([]string{}, length)
+		for i := 0; i < length; i++ {
+			orSlice[i] = fmt.Sprintf("%s = $%d", column, off+i)
+		}
+
+		return "(" + strings.Join(onSlice, " OR ") + ")"
+	}
+
+	driver := db.DriverName()
+	if h, ok := helpers[driver]; ok {
+		return h.WhereMultipleORs(column, length, off)
 	} else {
 		panic("No helper registered for " + driver)
 	}

@@ -1,10 +1,12 @@
 package base
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/urandom/readeef/content/sql/db"
+	"github.com/urandom/readeef/content/repo/sql/db"
 )
 
 type Helper struct {
@@ -68,6 +70,15 @@ func (h Helper) CreateWithID(tx *sqlx.Tx, sql string, args ...interface{}) (int6
 	}
 
 	return id, nil
+}
+
+func (h Helper) WhereMultipleORs(column string, length, off int) string {
+	orSlice := make([]string{}, length)
+	for i := 0; i < length; i++ {
+		orSlice[i] = fmt.Sprintf("$%d", off+i)
+	}
+
+	return fmt.Sprintf("%s IN (%s)", column, strings.Join(orSlice, ", "))
 }
 
 var (

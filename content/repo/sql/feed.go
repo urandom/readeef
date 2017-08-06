@@ -6,7 +6,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/sql/db"
+	"github.com/urandom/readeef/content/repo/sql/db"
 	"github.com/urandom/readeef/log"
 )
 
