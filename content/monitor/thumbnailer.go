@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/log"
 )
 
 type Thumbnailer struct {
 	thumbnailer content.Thumbnailer
-	log         readeef.Logger
+	log         log.Log
 }
 
-func NewThumbnailer(t content.Thumbnailer, l readeef.Logger) Thumbnailer {
+func NewThumbnailer(t content.Thumbnailer, l log.Log) Thumbnailer {
 	return Thumbnailer{thumbnailer: t, log: l}
 }
 

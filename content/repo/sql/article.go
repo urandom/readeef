@@ -10,7 +10,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/prometheus/common/log"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/sql/db"
@@ -31,7 +30,7 @@ var (
 type articleRepo struct {
 	db *db.DB
 
-	log readeef.Logger
+	log log.Log
 }
 
 type getArticlesData struct {
@@ -241,7 +240,7 @@ func (r articleRepo) RemoveStaleUnreadRecords() error {
 	return nil
 }
 
-func getArticles(login content.Login, dbo *db.DB, log readeef.Logger, opts content.QueryOptions) ([]content.Article, error) {
+func getArticles(login content.Login, dbo *db.DB, log log.Log, opts content.QueryOptions) ([]content.Article, error) {
 	var err error
 	if getArticlesTemplate == nil {
 		getArticlesTemplate, err = template.New("get-articles-sql").
@@ -282,7 +281,7 @@ func getArticles(login content.Login, dbo *db.DB, log readeef.Logger, opts conte
 	return internalGetArticles(login, dbo, log, opts)
 }
 
-func internalGetArticles(login content.Login, dbo *db.DB, log readeef.Logger, opts content.QueryOptions) ([]content.Article, error) {
+func internalGetArticles(login content.Login, dbo *db.DB, log log.Log, opts content.QueryOptions) ([]content.Article, error) {
 	renderData := getArticlesData{}
 	s := dbo.SQL()
 
@@ -323,7 +322,7 @@ func articleStateSet(
 	state bool,
 	user content.User,
 	db *db.DB,
-	log readeef.Logger,
+	log log.Log,
 	opts []content.QueryOpt,
 ) error {
 	if err := instantiateStateTemplates(); err != nil {
@@ -525,7 +524,7 @@ func constructSQLQueryOptions(
 	return join, where, order, limit, args
 }
 
-func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log readeef.Logger) (content.Article, error) {
+func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log log.Log) (content.Article, error) {
 	if err := a.Validate(); err != nil {
 		return content.Article{}, errors.WithMessage(err, "validating article")
 	}

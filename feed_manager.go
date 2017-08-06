@@ -14,6 +14,7 @@ import (
 	"github.com/urandom/readeef/content/monitor"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/feed"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/parser"
 )
 
@@ -23,7 +24,7 @@ type FeedManager struct {
 	config           config.Config
 	repo             repo.Feed
 	ops              chan func(context.Context, *FeedManager)
-	log              Logger
+	log              log.Log
 	hubbub           *Hubbub
 	scheduler        feed.Scheduler
 	parserProcessors []parser.Processor
@@ -40,7 +41,7 @@ var (
 	httpStatusPrefix = "HTTP Status: "
 )
 
-func NewFeedManager(repo repo.Feed, c config.Config, l Logger) *FeedManager {
+func NewFeedManager(repo repo.Feed, c config.Config, l log.Log) *FeedManager {
 	return &FeedManager{
 		repo: repo, config: c, log: l,
 		ops:       make(chan func(context.Context, *FeedManager)),

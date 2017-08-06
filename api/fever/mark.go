@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
 func unreadRecent(
@@ -16,7 +16,7 @@ func unreadRecent(
 	resp resp,
 	user content.User,
 	service repo.Service,
-	log readeef.Logger,
+	log log.Log,
 ) error {
 	log.Infoln("Marking recently read fever items as unread")
 
@@ -35,7 +35,7 @@ func markItem(
 	resp resp,
 	user content.User,
 	service repo.Service,
-	log readeef.Logger,
+	log log.Log,
 ) error {
 	val := r.FormValue("mark")
 	opts := []content.QueryOpt{}

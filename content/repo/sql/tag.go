@@ -4,15 +4,15 @@ import (
 	"database/sql"
 
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/sql/db"
+	"github.com/urandom/readeef/log"
 )
 
 type tagRepo struct {
 	db *db.DB
 
-	log readeef.Logger
+	log log.Log
 }
 
 func (r tagRepo) Get(id content.TagID, user content.User) (content.Tag, error) {

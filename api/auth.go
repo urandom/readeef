@@ -5,12 +5,12 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/urandom/handler/auth"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
-func tokenCreate(repo repo.User, secret []byte, log readeef.Logger) http.Handler {
+func tokenCreate(repo repo.User, secret []byte, log log.Log) http.Handler {
 	return auth.TokenGenerator(nil, auth.AuthenticatorFunc(func(user, pass string) bool {
 		u := repo.Get(content.Login(user))
 		if u.HasErr() {
@@ -20,14 +20,14 @@ func tokenCreate(repo repo.User, secret []byte, log readeef.Logger) http.Handler
 	}), secret, auth.Logger(log))
 }
 
-func tokenDelete(storage content.TokenStorage, secret []byte, log readeef.Logger) http.Handler {
+func tokenDelete(storage content.TokenStorage, secret []byte, log log.Log) http.Handler {
 	return auth.TokenBlacklister(nil, storage, secret, auth.Logger(log))
 }
 
 func tokenValidator(
 	repo repo.User,
 	storage content.TokenStorage,
-	log readeef.Logger,
+	log log.Log,
 ) auth.TokenValidator {
 	return auth.TokenValidatorFunc(func(token string, claims jwt.Claims) bool {
 		exists, err := storage.Exists(token)

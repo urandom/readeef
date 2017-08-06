@@ -6,15 +6,15 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/parser"
 )
 
 type AbsolutizeURLs struct {
-	log readeef.Logger
+	log log.Log
 }
 
-func NewAbsolutizeURLs(l readeef.Logger) AbsolutizeURLs {
+func NewAbsolutizeURLs(l log.Log) AbsolutizeURLs {
 	return AbsolutizeURLs{log: l}
 }
 

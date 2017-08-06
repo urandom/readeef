@@ -6,13 +6,13 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
-func getTagsFeedIDs(repo repo.Tag, log readeef.Logger) http.HandlerFunc {
+func getTagsFeedIDs(repo repo.Tag, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
@@ -40,7 +40,7 @@ func getTagsFeedIDs(repo repo.Tag, log readeef.Logger) http.HandlerFunc {
 	}
 }
 
-func getFeedTags(repo repo.Tag, log readeef.Logger) http.HandlerFunc {
+func getFeedTags(repo repo.Tag, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
@@ -67,7 +67,7 @@ func getFeedTags(repo repo.Tag, log readeef.Logger) http.HandlerFunc {
 	}
 }
 
-func setFeedTags(repo repo.Feed, log readeef.Logger) http.HandlerFunc {
+func setFeedTags(repo repo.Feed, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {

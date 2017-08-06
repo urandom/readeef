@@ -13,9 +13,10 @@ import (
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
-func feedContext(repo repo.Feed, log readeef.Logger) func(http.Handler) http.Handler {
+func feedContext(repo repo.Feed, log log.Log) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, stop := userFromRequest(w, r)
@@ -55,7 +56,7 @@ func feedFromRequest(w http.ResponseWriter, r *http.Request) (feed content.UserF
 	return nil, true
 }
 
-func listFeeds(repo repo.Feed, log readeef.Logger) http.HandlerFunc {
+func listFeeds(repo repo.Feed, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
@@ -156,7 +157,7 @@ func addFeedByURL(
 	return nil
 }
 
-func deleteFeed(repo repo.Feed, feedManager *readeef.FeedManager, log readeef.Logger) http.HandlerFunc {
+func deleteFeed(repo repo.Feed, feedManager *readeef.FeedManager, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
@@ -179,7 +180,7 @@ func deleteFeed(repo repo.Feed, feedManager *readeef.FeedManager, log readeef.Lo
 	}
 }
 
-func discoverFeeds(repo repo.Feed, feedManager *readeef.FeedManager, log readeef.Logger) http.HandlerFunc {
+func discoverFeeds(repo repo.Feed, feedManager *readeef.FeedManager, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query().Get("q")
 		if query == "" {

@@ -5,15 +5,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/base/processor"
+	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
 type resp map[string]interface{}
 
-type action func(*http.Request, resp, content.User, repo.Service, readeef.Logger) error
+type action func(*http.Request, resp, content.User, repo.Service, log.Log) error
 
 const (
 	API_VERSION = 2
@@ -26,7 +26,7 @@ var (
 func Handler(
 	service repo.Service,
 	processors []processor.Article,
-	log readeef.Logger,
+	log log.Log,
 ) http.HandlerFunc {
 
 	processors = filterProcessors(processors)

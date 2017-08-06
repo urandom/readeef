@@ -16,6 +16,7 @@ import (
 	"github.com/urandom/handler/method"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api/fever"
+	"github.com/urandom/readeef/api/token"
 	"github.com/urandom/readeef/api/ttrss"
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
@@ -23,7 +24,7 @@ import (
 	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/search"
-	"github.com/urandom/readeef/content/token"
+	"github.com/urandom/readeef/log"
 )
 
 func Mux(
@@ -36,7 +37,7 @@ func Mux(
 	fs http.FileSystem,
 	processors []processor.Article,
 	config config.Config,
-	log readeef.Logger,
+	log log.Log,
 ) (http.Handler, error) {
 
 	languageSupport := false
@@ -117,14 +118,14 @@ type routes struct {
 	route func(r chi.Router)
 }
 
-func tokenRoutes(repo repo.User, storage content.TokenStorage, secret []byte, log readeef.Logger) routes {
+func tokenRoutes(repo repo.User, storage content.TokenStorage, secret []byte, log log.Log) routes {
 	return routes{path: "/token", route: func(r chi.Router) {
 		r.Method(method.POST, "/", tokenCreate(repo, secret, log))
 		r.Method(method.DELETE, "/", tokenDelete(storage, secret, log))
 	}}
 }
 
-func hubbubRoutes(hubbub *readeef.Hubbub, repo repo.Feed, feedManager *readeef.FeedManager, log readeef.Logger) routes {
+func hubbubRoutes(hubbub *readeef.Hubbub, repo repo.Feed, feedManager *readeef.FeedManager, log log.Log) routes {
 	handler := hubbubRegistration(hubbub, repo, feedManager, log)
 
 	return routes{path: "/hubbub", route: func(r chi.Router) {
@@ -140,7 +141,7 @@ func emulatorRoutes(
 	feedManager *readeef.FeedManager,
 	processors []processor.Article,
 	config config.Config,
-	log readeef.Logger,
+	log log.Log,
 ) []routes {
 	rr := make([]routes, 0, len(config.API.Emulators))
 
@@ -186,7 +187,7 @@ func mainRoutes(middleware []middleware, subroutes ...routes) routes {
 	}}
 }
 
-func userMiddleware(repo repo.User, storage content.TokenStorage, secret []byte, log readeef.Logger) []middleware {
+func userMiddleware(repo repo.User, storage content.TokenStorage, secret []byte, log log.Log) []middleware {
 	return []middleware{
 		func(next http.Handler) http.Handler {
 			return auth.RequireToken(next, tokenValidator(repo, storage, log), secret)
@@ -204,7 +205,7 @@ func featureRoutes(features features) routes {
 	}}
 }
 
-func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log readeef.Logger) routes {
+func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log) routes {
 	return routes{path: "/feed", route: func(r chi.Router) {
 		feedRepo := service.FeedRepo()
 		r.Get("/", listFeeds(feedRepo, log))
@@ -224,7 +225,7 @@ func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log rea
 	}}
 }
 
-func tagRoutes(repo repo.Tag, log readeef.Logger) routes {
+func tagRoutes(repo repo.Tag, log log.Log) routes {
 	return routes{path: "/tag", route: func(r chi.Router) {
 		r.Get("/feedIDs", getTagsFeedIDs(repo, log))
 	}}
@@ -235,7 +236,7 @@ func articlesRoutes(
 	extractor content.Extractor,
 	searchProvider content.SearchProvider,
 	processors []processor.Article,
-	log readeef.Logger,
+	log log.Log,
 ) routes {
 	articleRepo := service.ArticleRepo()
 	feedRepo := service.FeedRepo()
@@ -300,7 +301,7 @@ func articlesRoutes(
 	}}
 }
 
-func opmlRoutes(service repo.Service, feedManager *readeef.FeedManager, log readeef.Logger) routes {
+func opmlRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log) routes {
 	return routes{path: "/opml", route: func(r chi.Router) {
 		r.Get("/", exportOPML(service, feedManager, log))
 		r.Post("/", importOPML(service.FeedRepo(), feedManager, log))
@@ -312,14 +313,14 @@ func eventsRoutes(
 	service repo.Service,
 	storage content.TokenStorage,
 	feedManager *readeef.FeedManager,
-	log readeef.Logger,
+	log log.Log,
 ) routes {
 	return routes{path: "/events", route: func(r chi.Router) {
 		r.Get("/", eventSocket(ctx, service.FeedRepo, storage, feedManager, log))
 	}}
 }
 
-func userRoutes(service repo.Service, secret []byte, log readeef.Logger) routes {
+func userRoutes(service repo.Service, secret []byte, log log.Log) routes {
 	repo := service.UserRepo()
 	return routes{path: "/user", route: func(r chi.Router) {
 		r.Route("/", func(r chi.Router) {
@@ -357,7 +358,7 @@ func readJSON(w http.ResponseWriter, r io.Reader, data interface{}) (stop bool) 
 	return false
 }
 
-func error(w http.ResponseWriter, log readeef.Logger, format string, err error) {
+func error(w http.ResponseWriter, log log.Log, format string, err error) {
 	log.Printf(format, err)
 	http.Error(w, fmt.Sprintf(format, err.Error()), http.StatusInternalServerError)
 }

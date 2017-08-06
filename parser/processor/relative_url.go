@@ -5,16 +5,16 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/parser"
 	"golang.org/x/net/html"
 )
 
 type RelativeURL struct {
-	log readeef.Logger
+	log log.Log
 }
 
-func NewRelativeURL(l readeef.Logger) RelativeURL {
+func NewRelativeURL(l log.Log) RelativeURL {
 	return RelativeURL{log: l}
 }
 

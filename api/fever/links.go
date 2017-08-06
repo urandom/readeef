@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
 type link struct {
@@ -28,7 +28,7 @@ type link struct {
 }
 
 func registerLinkActions(processors []processor.Article) {
-	actions["links"] = func(r *http.Request, resp resp, user content.User, service repo.Service, log readeef.Logger) error {
+	actions["links"] = func(r *http.Request, resp resp, user content.User, service repo.Service, log log.Log) error {
 		return links(r, resp, user, service, processors, log)
 	}
 }
@@ -39,7 +39,7 @@ func links(
 	user content.User,
 	service repo.Service,
 	processors []processor.Article,
-	log readeef.Logger,
+	log log.Log,
 ) error {
 	log.Infoln("Fetching fever links")
 	offset, _ := strconv.ParseInt(r.FormValue("offset"), 10, 64)

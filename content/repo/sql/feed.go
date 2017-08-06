@@ -5,16 +5,16 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/sql/db"
+	"github.com/urandom/readeef/log"
 )
 
 type feedRepo struct {
 	db *db.DB
 
-	log readeef.Logger
+	log log.Log
 }
 
 func (r feedRepo) Get(id content.FeedID, user content.User) (content.Feed, error) {

@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
 type feed struct {
@@ -24,7 +24,7 @@ func feeds(
 	resp resp,
 	user content.User,
 	service repo.Service,
-	log readeef.Logger,
+	log log.Log,
 ) error {
 	log.Infoln("Fetching fever feeds")
 

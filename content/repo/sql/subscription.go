@@ -2,15 +2,15 @@ package sql
 
 import (
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/sql/db"
+	"github.com/urandom/readeef/log"
 )
 
 type subscriptionRepo struct {
 	db *db.DB
 
-	log readeef.Logger
+	log log.Log
 }
 
 func (r subscriptionRepo) All() ([]content.Subscription, error) {

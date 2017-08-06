@@ -2,20 +2,19 @@ package api
 
 import (
 	"context"
-	"fmt"
 	"html"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/urandom/handler/method"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/extract"
 	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/search"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/text-summary/summarize"
 )
 
@@ -43,7 +42,7 @@ func getArticles(
 	repoType articleRepoType,
 	subType articleRepoType,
 	processors []processor.Article,
-	log readeef.Logger,
+	log log.Log,
 ) http.HandlerFunc {
 	repo := service.ArticleRepo()
 	tagRepo := service.TagRepo()
@@ -137,7 +136,7 @@ func articleSearch(
 	searchProvider content.SearchProvider,
 	repoType articleRepoType,
 	processors []processor.Article,
-	log readeef.Logger,
+	log log.Log,
 ) http.HandlerFunc {
 	repo := service.FeedRepo()
 	tagRepo := service.TagRepo()
@@ -201,9 +200,9 @@ func articleSearch(
 
 func formatArticle(
 	repo repo.Extract,
-	extractor content.Extractor,
+	extractor extract.Generator,
 	processors []processor.Articles,
-	log readeef.Logger,
+	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
@@ -216,53 +215,10 @@ func formatArticle(
 			return
 		}
 
-		extract, err := repo.Get(article.ID)
-
+		extract, err = extract.Get(article, repo, extractor, processors)
 		if err != nil {
-			if !content.IsNoContent(Err) {
-				error(w, log, "Error getting article extract: %+v", err)
-				return
-			}
-
-			if extract, err = extractor.Generate(article.Link); err != nil {
-				http.Error(w, "Error getting article extract: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			extract.ArticleID = article.ID
-
-			err := repo.Update(extract)
-			if err != nil {
-				error(w, log, "Error updating article extract: %+v", err)
-				return
-			}
-
-		}
-
-		if len(processors) > 0 {
-			a := content.Article{Description: extract.Content}
-
-			articles := []content.Article{a}
-
-			if extract.TopImage != "" {
-				articles = append(articles, content.Article{
-					Description: fmt.Sprintf(`<img src="%s">`, extract.TopImage),
-				})
-			}
-
-			articles = processor.Articles(processors).Process(articles)
-
-			extract.Content = articles[0].Description
-
-			if extract.TopImage != "" {
-				content := articles[1].Description
-
-				content = strings.Replace(content, `<img src="`, "", -1)
-				i := strings.Index(content, `"`)
-				content = content[:i]
-
-				extract.TopImage = content
-			}
+			error(w, log, "Error getting article extract: %+v", err)
+			return
 		}
 
 		s := summarize.NewFromString(extract.Title, search.StripTags(extract.Content))
@@ -292,7 +248,7 @@ const (
 func articleStateChange(
 	repo repo.Article,
 	state articleState,
-	log readeef.Logger,
+	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		article, stop := articleFromRequest(w, r)
@@ -337,7 +293,7 @@ func articleStateChange(
 func articlesReadStateChange(
 	service repo.Service,
 	repoType articleRepoType,
-	log readeef.Logger,
+	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
@@ -460,7 +416,7 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request) ([]content.Quer
 	return o, false
 }
 
-func articleContext(repo repo.Article, processors []processor.Article, log readeef.Logger) func(http.Handler) http.Handler {
+func articleContext(repo repo.Article, processors []processor.Article, log log.Log) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, stop := userFromRequest(w, r)

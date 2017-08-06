@@ -8,16 +8,16 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/log"
 )
 
 type Popularity struct {
 	scoreProviders []scoreProvider
 	delay          time.Duration
-	log            readeef.Logger
+	log            log.Log
 }
 
 type scoreProvider interface {
@@ -34,7 +34,7 @@ type scoreResponse struct {
 	err   error
 }
 
-func New(config config.Popularity, log readeef.Logger) Popularity {
+func New(config config.Popularity, log log.Log) Popularity {
 	p := Popularity{delay: config.Converted.Delay, log: log}
 
 	scoreProviders := []scoreProvider{}

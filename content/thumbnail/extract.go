@@ -1,84 +1,67 @@
 package thumbnail
 
 import (
+	"fmt"
 	_ "image/png"
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
+	"github.com/urandom/readeef/content/extract"
+	"github.com/urandom/readeef/content/processor"
+	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
-type extract struct {
-	extractor content.Extractor
-	log       readeef.Logger
+type ext struct {
+	repo        repo.Thumbnail
+	extractRepo repo.Extract
+	generator   extract.Generator
+	processors  []processor.Article
+	log         log.Log
 }
 
-func FromExtract(e content.Extractor, l readeef.Logger) (Generator, error) {
-	if e == nil {
-		return nil, errors.New("A valid extractor is required")
+func FromExtract(
+	repo repo.Thumbnail,
+	extractRepo repo.Extract,
+	g extract.Generator,
+	processors []processor.Article,
+	log log.Log,
+) (Generator, error) {
+	if g == nil {
+		return nil, errors.New("no extract.Generator")
 	}
 
-	return extract{extractor: e, log: l}, nil
+	return ext{repo: repo, extractRepo: extractRepo, generator: g, processors: processors, log: log}, nil
 }
 
-func (t extract) Generate(a content.Article) error {
-	ad := a.Data()
+func (t ext) Generate(a content.Article) error {
+	thumbnail := content.Thumbnail{ArticleID: a.ID, Processed: true}
 
-	thumbnail := a.Repo().ArticleThumbnail()
-	td := data.ArticleThumbnail{
-		ArticleId: ad.Id,
-		Processed: true,
-	}
+	t.log.Debugf("Generating thumbnail for article %s from extract", a)
 
-	t.log.Debugf("Generating thumbnail for article %s\n", a)
+	thumbnail.Thumbnail, thumbnail.Link =
+		generateThumbnailFromDescription(strings.NewReader(a.Description))
 
-	td.Thumbnail, td.Link =
-		generateThumbnailFromDescription(strings.NewReader(ad.Description))
-
-	if td.Link == "" {
+	if thumbnail.Link == "" {
 		t.log.Debugf("%s description doesn't contain suitable link, getting extract\n", a)
 
-		extract := a.Extract()
-		if a.HasErr() {
-			return a.Err()
+		extract, err := extract.Get(a, t.extractRepo, t.generator, t.processors)
+		if err != nil {
+			return errors.WithMessage(err, fmt.Sprintf("getting article extract for %s", a))
 		}
 
-		extractData := extract.Data()
-
-		if extract.HasErr() {
-			switch err := extract.Err(); err {
-			case content.ErrNoContent:
-				t.log.Debugf("Generating article extract for %s\n", a)
-				extractData, err = t.extractor.Extract(a.Data().Link)
-				if err != nil {
-					return err
-				}
-
-				extractData.ArticleId = a.Data().Id
-				extract.Data(extractData)
-				extract.Update()
-				if extract.HasErr() {
-					return extract.Err()
-				}
-			default:
-				return err
-			}
-		}
-
-		if extractData.TopImage == "" {
-			t.log.Debugf("Extract for %s doesn't contain a top image\n", a)
+		if extract.TopImage == "" {
+			t.log.Debugf("Extract for %s doesn't contain a top image", a)
 		} else {
-			t.log.Debugf("Generating thumbnail from top image %s of %s\n", extractData.TopImage, a)
-			td.Thumbnail = generateThumbnailFromImageLink(extractData.TopImage)
-			td.Link = extractData.TopImage
+			t.log.Debugf("Generating thumbnail from top image %s of %s\n", extract.TopImage, a)
+			thumbnail.Thumbnail = generateThumbnailFromImageLink(extract.TopImage)
+			thumbnail.Link = extract.TopImage
 		}
 	}
 
-	thumbnail.Data(td)
-	if thumbnail.Update(); thumbnail.HasErr() {
-		return errors.Wrapf(thumbnail.Err(), "saving thumbnail of %s to database", a)
+	if err := t.repo.Update(thumbnail); err != nil {
+		return errors.WithMessage(err, "saving thumbnail to repo")
 	}
 
 	return nil

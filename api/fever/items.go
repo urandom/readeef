@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
 type item struct {
@@ -25,7 +25,7 @@ type item struct {
 }
 
 func registerItemActions(processors []processor.Article) {
-	actions["items"] = func(r *http.Request, resp resp, user content.User, service repo.Service, log readeef.Logger) error {
+	actions["items"] = func(r *http.Request, resp resp, user content.User, service repo.Service, log log.Log) error {
 		return items(r, resp, user, service, processors, log)
 	}
 }
@@ -36,7 +36,7 @@ func items(
 	user content.User,
 	service repo.Service,
 	processors []processor.Article,
-	log readeef.Logger,
+	log log.Log,
 ) error {
 	log.Infoln("Fetching fever items")
 

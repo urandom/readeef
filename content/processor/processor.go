@@ -8,7 +8,7 @@ type Article interface {
 
 type Articles []Article
 
-func (processors Articles) Process(articles []Article) []Article {
+func (processors Articles) Process(articles []content.Article) []content.Article {
 	for _, p := range processors {
 		articles = p.Process(articles)
 	}

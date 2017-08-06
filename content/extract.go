@@ -6,7 +6,7 @@ import (
 )
 
 type Extract struct {
-	ArticleID ArticleID
+	ArticleID ArticleID `db:"article_id"`
 	Title     string
 	Content   string
 	TopImage  string `db:"top_image"`

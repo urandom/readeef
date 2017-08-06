@@ -13,14 +13,14 @@ import (
 	"github.com/blevesearch/bleve/search"
 	"github.com/blevesearch/bleve/search/query"
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
 type bleveSearch struct {
 	index     bleve.Index
-	log       readeef.Logger
+	log       log.Log
 	newIndex  bool
 	batchSize int64
 	service   repo.Service
@@ -35,7 +35,7 @@ type indexArticle struct {
 	Date        time.Time `json:"date"`
 }
 
-func NewBleve(path string, size int64, service repo.Service, log readeef.Logger) (bleveSearch, error) {
+func NewBleve(path string, size int64, service repo.Service, log log.Log) (bleveSearch, error) {
 	var err error
 	var exists bool
 	var index bleve.Index

@@ -13,10 +13,11 @@ import (
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/repo/sql"
+	"github.com/urandom/readeef/log"
 )
 
 var (
-	userAdminCommands = map[string]func([]string, content.Repo, config.Config, readeef.Logger) error{}
+	userAdminCommands = map[string]func([]string, content.Repo, config.Config, log.Log) error{}
 )
 
 func runUserAdmin(config config.Config, args []string) error {
@@ -37,7 +38,7 @@ func runUserAdmin(config config.Config, args []string) error {
 	return errors.Errorf("unknown command %s", args[0])
 }
 
-func userAdminAdd(args []string, service repo.Service, config config.Config, log readeef.Logger) error {
+func userAdminAdd(args []string, service repo.Service, config config.Config, log log.Log) error {
 	if len(args) != 2 {
 		return errors.New("invalid number of arguments")
 	}
@@ -59,7 +60,7 @@ func userAdminAdd(args []string, service repo.Service, config config.Config, log
 	return nil
 }
 
-func userAdminRemove(args []string, service repo.Service, config config.Config, log readeef.Logger) error {
+func userAdminRemove(args []string, service repo.Service, config config.Config, log log.Log) error {
 	if len(args) != 1 {
 		return errors.New("invalid number of arguments")
 	}
@@ -78,7 +79,7 @@ func userAdminRemove(args []string, service repo.Service, config config.Config, 
 	return nil
 }
 
-func userAdminGet(args []string, service repo.Service, config config.Config, log readeef.Logger) error {
+func userAdminGet(args []string, service repo.Service, config config.Config, log log.Log) error {
 	if len(args) != 2 {
 		return errors.New("invalid number of arguments")
 	}
@@ -115,7 +116,7 @@ func userAdminGet(args []string, service repo.Service, config config.Config, log
 	return nil
 }
 
-func userAdminSet(args []string, service repo.Service, config config.Config, log readeef.Logger) error {
+func userAdminSet(args []string, service repo.Service, config config.Config, log log.Log) error {
 	if len(args) != 3 {
 		return errors.New("invalid number of arguments")
 	}
@@ -157,7 +158,7 @@ func userAdminSet(args []string, service repo.Service, config config.Config, log
 	return nil
 }
 
-func userAdminList(args []string, service repo.Service, config config.Config, log readeef.Logger) error {
+func userAdminList(args []string, service repo.Service, config config.Config, log log.Log) error {
 	users, err := service.UserRepo().All()
 	if err != nil {
 		return errors.WithMessage(err, "getting all users")
@@ -170,7 +171,7 @@ func userAdminList(args []string, service repo.Service, config config.Config, lo
 	return nil
 }
 
-func userAdminListDetailed(args []string, service repo.Service, config config.Config, log readeef.Logger) error {
+func userAdminListDetailed(args []string, service repo.Service, config config.Config, log log.Log) error {
 	users, err := service.UserRepo().All()
 	if err != nil {
 		return errors.WithMessage(err, "getting all users")

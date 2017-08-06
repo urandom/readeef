@@ -11,6 +11,7 @@ import (
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
 func eventSocket(
@@ -18,7 +19,7 @@ func eventSocket(
 	repo repo.Feed,
 	storage content.TokenStorage,
 	feedManager *readeef.FeedManager,
-	log readeef.Logger,
+	log log.Log,
 ) http.HandlerFunc {
 	monitor := &feedMonitor{ops: make(chan func(connMap))}
 
@@ -84,7 +85,7 @@ func connectionValidator(storage content.TokenStorage, r *http.Request) func() b
 
 type feedMonitor struct {
 	ops chan func(connMap)
-	log readeef.Logger
+	log log.Log
 }
 
 type connMap map[string]connData
@@ -103,7 +104,7 @@ type event struct {
 	Data json.RawMessage `json:"data"`
 }
 
-func (e event) WriteJSON(w io.Writer, flusher http.Flusher, data interface{}, log readeef.Logger) error {
+func (e event) WriteJSON(w io.Writer, flusher http.Flusher, data interface{}, log log.Log) error {
 	if b, err := json.Marshal(data); err == nil {
 		e.Data = json.RawMessage(b)
 

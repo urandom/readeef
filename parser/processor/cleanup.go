@@ -4,17 +4,17 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/pool"
 	"golang.org/x/net/html"
 )
 
 type Cleanup struct {
-	log readeef.Logger
+	log log.Log
 }
 
-func NewCleanup(l readeef.Logger) Cleanup {
+func NewCleanup(l log.Log) Cleanup {
 	return Cleanup{log: l}
 }
 

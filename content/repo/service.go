@@ -8,4 +8,5 @@ type Service interface {
 	SubscriptionRepo() Subscription
 	ArticleRepo() Article
 	ExtractRepo() Extract
+	ThumbnailRepo() Thumbnail
 }

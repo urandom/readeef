@@ -4,16 +4,16 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/parser/processor"
 )
 
 type RelativeURL struct {
-	log readeef.Logger
+	log log.Log
 }
 
-func NewRelativeURL(log readeef.Logger) RelativeURL {
+func NewRelativeURL(log log.Log) RelativeURL {
 	return RelativeURL{log: log}
 }
 
@@ -22,19 +22,16 @@ func (p RelativeURL) Process(articles []content.Article) []content.Article {
 		return articles
 	}
 
-	p.log.Infof("Proxying urls of feed '%d'\n", articles[0].Data().FeedId)
+	p.log.Infof("Proxying urls of feed '%d'\n", articles[0].FeedID)
 
 	for i := range articles {
-		data := articles[i].Data()
-
-		if d, err := goquery.NewDocumentFromReader(strings.NewReader(data.Description)); err == nil {
+		if d, err := goquery.NewDocumentFromReader(strings.NewReader(articles[i].Description)); err == nil {
 			if processor.RelativizeArticleLinks(d) {
 				if content, err := d.Html(); err == nil {
 					// net/http tries to provide valid html, adding html, head and body tags
 					content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
 
-					data.Description = content
-					articles[i].Data(data)
+					articles[i].Description = content
 				}
 			}
 		}

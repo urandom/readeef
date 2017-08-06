@@ -4,22 +4,22 @@ import (
 	"database/sql"
 
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/sql/db"
+	"github.com/urandom/readeef/log"
 )
 
 type extractRepo struct {
 	db *db.DB
 
-	log readeef.Logger
+	log log.Log
 }
 
 func (r extractRepo) Get(id content.ArticleID) (content.Extract, error) {
 	r.log.Infof("Getting extract for article id %d", id)
 
 	var extract content.Extract
-	err := r.db.Get(&extract, r.db.SQL().Article.GetExtract, login)
+	err := r.db.Get(&extract, r.db.SQL().Article.GetExtract, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
@@ -70,7 +70,7 @@ func (r extractRepo) Update(extract content.Extract) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(data.ArticleId, data.Title, data.Content, data.TopImage, data.Language)
+	_, err = stmt.Exec(extract.ArticleID, extract.Title, extract.Content, extract.TopImage, extract.Language)
 	if err != nil {
 		return errors.Wrap(err, "executimg extract create stmt")
 	}

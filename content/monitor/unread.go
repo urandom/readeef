@@ -4,16 +4,16 @@ import (
 	"context"
 	"time"
 
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
 type Unread struct {
-	log readeef.Logger
+	log log.Log
 }
 
-func NewUnread(ctx context.Context, repo repo.Article, log readeef.Logger) Unread {
+func NewUnread(ctx context.Context, repo repo.Article, log log.Log) Unread {
 	go func() {
 		repo.DeleteStaleUnreadRecords()
 

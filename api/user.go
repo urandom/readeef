@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
 func getUserData(w http.ResponseWriter, r *http.Request) {
@@ -18,7 +18,7 @@ func getUserData(w http.ResponseWriter, r *http.Request) {
 	args{"user": user}.WriteJSON(w)
 }
 
-func listUsers(repo repo.User, log readeef.Logger) http.HandlerFunc {
+func listUsers(repo repo.User, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
@@ -45,7 +45,7 @@ type addUserData struct {
 	Password  string        `json:"password"`
 }
 
-func addUser(repo repo.User, secret []byte, log readeef.Logger) http.HandlerFunc {
+func addUser(repo repo.User, secret []byte, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {
@@ -89,7 +89,7 @@ func addUser(repo repo.User, secret []byte, log readeef.Logger) http.HandlerFunc
 	}
 }
 
-func deleteUser(repo repo.User, log readeef.Logger) http.HandlerFunc {
+func deleteUser(repo repo.User, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {

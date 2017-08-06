@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/pool"
 )
@@ -34,7 +33,7 @@ func NewScheduler() Scheduler {
 }
 
 type feedOp func(feedMap)
-type feedMap map[data.FeedId]schedulePayload
+type feedMap map[content.FeedID]schedulePayload
 
 type schedulePayload struct {
 	feed       content.Feed
@@ -46,7 +45,7 @@ func (s Scheduler) ScheduleFeed(ctx context.Context, feed content.Feed, update t
 	ret := make(chan UpdateData)
 
 	s.ops <- func(feedMap feedMap) {
-		if _, ok := feedMap[feed.Data().Id]; ok {
+		if _, ok := feedMap[feed.ID]; ok {
 			return
 		}
 
@@ -55,7 +54,7 @@ func (s Scheduler) ScheduleFeed(ctx context.Context, feed content.Feed, update t
 			update:     update,
 			updateData: ret,
 		}
-		feedMap[feed.Data().Id] = payload
+		feedMap[feed.ID] = payload
 
 		go s.updateFeed(ctx, payload, []byte{})
 	}
@@ -65,10 +64,10 @@ func (s Scheduler) ScheduleFeed(ctx context.Context, feed content.Feed, update t
 
 func (s Scheduler) unscheduleFeed(ctx context.Context, feed content.Feed) {
 	s.ops <- func(feedMap feedMap) {
-		payload := feedMap[feed.Data().Id]
+		payload := feedMap[feed.ID]
 		close(payload.updateData)
 
-		delete(feedMap, feed.Data().Id)
+		delete(feedMap, feed.ID)
 	}
 }
 
@@ -79,10 +78,10 @@ func (s Scheduler) updateFeed(ctx context.Context, payload schedulePayload, cont
 		return
 	default:
 		var data UpdateData
-		in := payload.feed.Data()
+		feed := payload.feed
 		now := time.Now()
 
-		if len(contentHash) == 0 || (!in.SkipHours[now.Hour()] && !in.SkipDays[now.Weekday().String()]) {
+		if len(contentHash) == 0 || (!feed.SkipHours[now.Hour()] && !feed.SkipDays[now.Weekday().String()]) {
 			data, contentHash = s.downloadFeed(payload, contentHash)
 		}
 
@@ -103,9 +102,8 @@ func (s Scheduler) updateFeed(ctx context.Context, payload schedulePayload, cont
 
 func (s Scheduler) downloadFeed(payload schedulePayload, contentHash []byte) (UpdateData, []byte) {
 	feed := payload.feed
-	data := feed.Data()
 
-	resp, err := s.client.Get(data.Link)
+	resp, err := s.client.Get(feed.Link)
 
 	if err != nil {
 		return UpdateData{message: err.Error()}, contentHash

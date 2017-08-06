@@ -9,6 +9,7 @@ import (
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/pool"
 )
@@ -17,7 +18,7 @@ func hubbubRegistration(
 	hubbub *readeef.Hubbub,
 	repo repo.Feed,
 	feedManager *readeef.FeedManager,
-	log readeef.Logger,
+	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		params := r.URL.Query()

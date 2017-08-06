@@ -6,16 +6,16 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/log"
 )
 
 type InsertThumbnailTarget struct {
-	log         readeef.Logger
+	log         log.Log
 	urlTemplate *template.Template
 }
 
-func NewInsertThumbnailTarget(l readeef.Logger) InsertThumbnailTarget {
+func NewInsertThumbnailTarget(l log.Log) InsertThumbnailTarget {
 	return InsertThumbnailTarget{log: l}
 }
 
@@ -24,23 +24,20 @@ func (p InsertThumbnailTarget) Process(articles []content.Article) []content.Art
 		return articles
 	}
 
-	p.log.Infof("Proxying urls of feed '%d'\n", articles[0].Data().FeedId)
+	p.log.Infof("Proxying urls of feed '%d'\n", articles[0].FeedID)
 
 	for i := range articles {
-		data := articles[i].Data()
-
-		if data.ThumbnailLink == "" {
+		if articles[i].ThumbnailLink == "" {
 			continue
 		}
 
-		if d, err := goquery.NewDocumentFromReader(strings.NewReader(data.Description)); err == nil {
-			if insertThumbnailTarget(d, data.ThumbnailLink, p.log) {
+		if d, err := goquery.NewDocumentFromReader(strings.NewReader(articles[i].Description)); err == nil {
+			if insertThumbnailTarget(d, articles[i].ThumbnailLink, p.log) {
 				if content, err := d.Html(); err == nil {
 					// net/http tries to provide valid html, adding html, head and body tags
 					content = content[strings.Index(content, "<body>")+6 : strings.LastIndex(content, "</body>")]
 
-					data.Description = content
-					articles[i].Data(data)
+					articles[i].Description = content
 				}
 			}
 		}
@@ -49,7 +46,7 @@ func (p InsertThumbnailTarget) Process(articles []content.Article) []content.Art
 	return articles
 }
 
-func insertThumbnailTarget(d *goquery.Document, thumbnailLink string, log readeef.Logger) bool {
+func insertThumbnailTarget(d *goquery.Document, thumbnailLink string, log log.Log) bool {
 	changed := false
 
 	if d.Find(".top-image").Length() > 0 {

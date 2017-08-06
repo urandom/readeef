@@ -11,6 +11,7 @@ import (
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/data"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/pool"
 )
 
@@ -20,7 +21,7 @@ type Hubbub struct {
 	subscribe     chan content.Subscription
 	unsubscribe   chan content.Subscription
 	client        *http.Client
-	log           Logger
+	log           log.Log
 	subscriptions []content.Subscription
 	feedManager   *FeedManager
 }
@@ -37,7 +38,7 @@ var (
 	ErrNotSubscribed = errors.New("Feed is not subscribed")
 )
 
-func NewHubbub(c config.Config, l Logger, endpoint string, feedManager *FeedManager) *Hubbub {
+func NewHubbub(c config.Config, l log.Log, endpoint string, feedManager *FeedManager) *Hubbub {
 
 	return &Hubbub{
 		config: c, log: l, endpoint: endpoint,

@@ -13,9 +13,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/base/processor"
+	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/search"
+	"github.com/urandom/readeef/log"
 )
 
 type request struct {
@@ -97,7 +98,7 @@ func Handler(
 	processors []processor.Article,
 	secret []byte,
 	update time.Duration,
-	log readeef.Logger,
+	log log.Log,
 ) http.HandlerFunc {
 	sessionManager := newSession(ctx)
 
@@ -185,7 +186,7 @@ func readJSON(w http.ResponseWriter, r io.Reader) (req request, stop bool) {
 	return convertRequest(in), false
 }
 
-func writeJson(w http.ResponseWriter, req request, resp response, data interface{}, log readeef.Logger) {
+func writeJson(w http.ResponseWriter, req request, resp response, data interface{}, log log.Log) {
 	b, err := json.Marshal(data)
 	if err == nil {
 		resp.Content = json.RawMessage(b)

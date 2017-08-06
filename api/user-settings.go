@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
 const (
@@ -54,7 +54,7 @@ func getSettingValue(w http.ResponseWriter, r *http.Request) {
 	args{"value": val}.WriteJSON(w)
 }
 
-func setSettingValue(repo repo.User, secret []byte, log readeef.Logger) http.HandlerFunc {
+func setSettingValue(repo repo.User, secret []byte, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
 		if stop {

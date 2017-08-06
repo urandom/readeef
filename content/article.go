@@ -2,6 +2,7 @@ package content
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -166,4 +167,8 @@ func (o *QueryOptions) Apply(opts ...QueryOpt) {
 	for _, opt := range opts {
 		opt.f(o)
 	}
+}
+
+func (a Article) String() string {
+	return fmt.Sprintf("%d: %s", a.ID, a.Title)
 }

@@ -5,9 +5,9 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/pool"
 )
 
@@ -16,7 +16,7 @@ func unreadItemIDs(
 	resp resp,
 	user content.User,
 	service repo.Service,
-	log readeef.Logger,
+	log log.Log,
 ) error {
 	log.Infoln("Fetching unread fever item ids")
 
@@ -46,7 +46,7 @@ func savedItemIDs(
 	resp resp,
 	user content.User,
 	service repo.Service,
-	log readeef.Logger,
+	log log.Log,
 ) error {
 	log.Infoln("Fetching saved fever item ids")
 

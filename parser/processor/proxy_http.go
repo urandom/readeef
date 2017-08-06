@@ -10,17 +10,17 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/pkg/errors"
-	"github.com/urandom/readeef"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/pool"
 )
 
 type ProxyHTTP struct {
 	urlTemplate *template.Template
-	log         readeef.Logger
+	log         log.Log
 }
 
-func NewProxyHTTP(urlTemplate string, log readeef.Logger) (ProxyHTTP, error) {
+func NewProxyHTTP(urlTemplate string, log log.Log) (ProxyHTTP, error) {
 	log.Infof("URL Template: %s\n", urlTemplate)
 	t, err := template.New("proxy-http-url-template").Parse(urlTemplate)
 	if err != nil {

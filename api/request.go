@@ -7,12 +7,12 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/urandom/handler/auth"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 )
 
-func userContext(repo repo.User, next http.Handler, log readeef.Logger) http.Handler {
+func userContext(repo repo.User, next http.Handler, log log.Log) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if c, ok := auth.Claims(r).(*jwt.StandardClaims); ok {
 			user := repo.Get(content.Login(c.Subject))

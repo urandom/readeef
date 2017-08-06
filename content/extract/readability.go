@@ -22,14 +22,14 @@ type readabilityData struct {
 	LeadImage string `json:"lead_image_url"`
 }
 
-func WithReadability(key string) (content.Extractor, error) {
+func WithReadability(key string) (Generator, error) {
 	if key == "" {
 		return nil, errors.New("Readability API key cannot be empty")
 	}
 	return readability{key: key}, nil
 }
 
-func (e readability) Extract(link string) (content.Extract, error) {
+func (e readability) Generate(link string) (content.Extract, error) {
 	url := fmt.Sprintf("http://readability.com/api/content/v1/parser?url=%s&token=%s",
 		url.QueryEscape(link), e.key,
 	)
@@ -39,7 +39,7 @@ func (e readability) Extract(link string) (content.Extract, error) {
 	resp, err := http.Get(url)
 
 	if err != nil {
-		return content.ArticleExtract{}, errors.Wrap(err, "getting url response")
+		return content.Extract{}, errors.Wrap(err, "getting url response")
 	}
 
 	defer func() {
@@ -51,7 +51,7 @@ func (e readability) Extract(link string) (content.Extract, error) {
 
 	err = dec.Decode(&r)
 	if err != nil {
-		return content.ArticleExtract{}, errors.Wrapf(err, "extracting content from %s", link)
+		return content.Extract{}, errors.Wrapf(err, "extracting content from %s", link)
 	}
 
 	extract := content.Extract{}

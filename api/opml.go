@@ -8,6 +8,7 @@ import (
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/parser"
 )
 
@@ -19,7 +20,7 @@ type importOPMLData struct {
 func importOPML(
 	repo repo.Feed,
 	feedManager *readeef.FeedManager,
-	log readeef.Logger,
+	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var payload importOPMLData
@@ -83,7 +84,7 @@ func importOPML(
 func exportOPML(
 	service repo.Service,
 	feedManager *readeef.FeedManager,
-	log readeef.Logger,
+	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)

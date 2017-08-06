@@ -24,7 +24,7 @@ type goose struct {
 	buf      bytes.Buffer
 }
 
-func WithGoose(templateDir string, fs http.FileSystem) (content.Extractor, error) {
+func WithGoose(templateDir string, fs http.FileSystem) (Generator, error) {
 	tmpl, err := prepareTemplate(template.New("goose"), fs, rawTmpl, gooseTmpl)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing goose template")
@@ -33,7 +33,7 @@ func WithGoose(templateDir string, fs http.FileSystem) (content.Extractor, error
 	return goose{template: tmpl}, nil
 }
 
-func (e goose) Extract(link string) (extract content.Extract, err error) {
+func (e goose) Generate(link string) (extract content.Extract, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New(fmt.Sprintf("%v", r))
