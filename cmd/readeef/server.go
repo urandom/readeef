@@ -15,6 +15,7 @@ import (
 	"github.com/alexedwards/scs/engine/boltstore"
 	"github.com/alexedwards/scs/session"
 	"github.com/boltdb/bolt"
+	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api"
@@ -53,8 +54,8 @@ func runServer(config config.Config, args []string) error {
 		return errors.WithMessage(err, "creating web mux")
 	}
 
-	mux := http.NewServeMux()
-	mux.Handle("/", handler)
+	mux := chi.NewRouter()
+	mux.Mount("/", handler)
 
 	log := initLog(config.Log)
 
@@ -118,7 +119,7 @@ func runServer(config config.Config, args []string) error {
 		return errors.WithMessage(err, "creating api mux")
 	}
 
-	mux.Handle("/api", handler)
+	mux.Mount("/api", handler)
 
 	feedManager.Start(ctx)
 
@@ -127,12 +128,14 @@ func runServer(config config.Config, args []string) error {
 	if serverDevelPort > 0 {
 		server.Addr = fmt.Sprintf(":%d", serverDevelPort)
 
+		log.Infof("Starting server on address %s", server.Addr)
 		if err = server.ListenAndServe(); err != nil {
 			return errors.Wrap(err, "starting devel server")
 		}
 	}
 
 	server.Addr = fmt.Sprintf("%s:%d", config.Server.Address, config.Server.Port)
+	log.Infof("Starting server on address %s", server.Addr)
 
 	if config.Server.AutoCert.Host != "" {
 		if err := os.MkdirAll(config.Server.AutoCert.StorageDir, 0777); err != nil {
