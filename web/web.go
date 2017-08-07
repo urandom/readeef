@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"path"
 	"time"
 
 	"golang.org/x/text/language"
@@ -28,24 +29,23 @@ const (
 type sessionWrapper struct{}
 
 func Mux(fs http.FileSystem, engine session.Engine, config config.Config) (http.Handler, error) {
-	var err error
-
 	r := chi.NewRouter()
 
-	r.Route("/web", func(r chi.Router) {
-		if languages, err := readeef.GetLanguages(fs); err == nil {
-			if len(languages) > 0 {
-				r.Use(func(next http.Handler) http.Handler {
-					return lang.I18N(
-						next,
-						lang.Languages(languages),
-						lang.Session(sessionWrapper{}),
-					)
-				})
-			}
-		} else {
-			err = errors.WithMessage(err, "getting supported languages")
-			return
+	languages, err := readeef.GetLanguages(fs)
+	if err != nil {
+		return nil, errors.WithMessage(err, "getting supported languages")
+	}
+
+	r.Route("/web/", func(r chi.Router) {
+		if len(languages) > 0 {
+			r.Use(func(next http.Handler) http.Handler {
+				return lang.I18N(
+					next,
+					lang.Languages(languages),
+					lang.Session(sessionWrapper{}),
+					lang.URLPrefix("/web/"),
+				)
+			})
 		}
 
 		if hasProxy(config) {
@@ -71,8 +71,15 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config) (http.
 	})
 
 	fileServer := http.FileServer(fs)
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		r.URL.Path = path.Join("/static", r.URL.Path)
 		fileServer.ServeHTTP(w, r)
+	})
+	r.Get("/web", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/web/", http.StatusFound)
+	})
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/web/", http.StatusFound)
 	})
 
 	if err != nil {

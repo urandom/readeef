@@ -1,6 +1,6 @@
-{% define "title" %} {% __ "Readeef: Your feed reader" %} {% end %}
+{{ define "title" }} {{ __ "Readeef: Your feed reader" }} {{ end }}
 
-{% define "meta" %}
+{{ define "meta" }}
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
 
@@ -11,9 +11,9 @@
     <link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/readeef-72.png">
     <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/readeef-114.png">
     <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/readeef-144.png">
-{% end %}
+{{ end }}
 
-{% define "imports" %}
+{{ define "imports" }}
     <script src="/dist/webcomponentsjs/webcomponents-lite.min.js"></script>
     <script>
     window.Polymer = window.Polymer || {};
@@ -29,10 +29,10 @@
     <link rel="import" href="/dist/font-roboto/roboto.html">
     <link rel="import" href="/dist/paper-styles/color.html">
     <link rel="import" href="/dist/paper-styles/shadow.html">
-    <link rel="import" href="{% url "/component/rf-router" %}">
-{% end %}
+    <link rel="import" href="{{ url "/component/rf-router" }}">
+{{ end }}
 
-{% define "styles" %}
+{{ define "styles" }}
 <style is="custom-style">
 body {
     margin: 0;
@@ -77,14 +77,14 @@ body {
 }
 
 </style>
-{% end %}
-{% define "body-attrs" %} unresolved {% end %}
+{{ end }}
+{{ define "body-attrs" }} unresolved {{ end }}
 
-{% define "content" %}
-    <rf-router data-language="{% .Language %}" data-uri-prefix="{% url "/" %}"></rf-router>
-{% end %}
+{{ define "content" }}
+    <rf-router data-language="{{ .Language }}" data-uri-prefix="{{ url "/" }}"></rf-router>
+{{ end }}
 
-{% define "scripts" %}
+{{ define "scripts" }}
     <script src="//www.google.com/jsapi"></script>
     <script> google.load("feeds", "1"); </script>
-{% end %}
+{{ end }}
