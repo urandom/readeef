@@ -32,6 +32,8 @@ func (r tagRepo) Get(id content.TagID, user content.User) (content.Tag, error) {
 		return content.Tag{}, errors.Wrapf(err, "getting tag %d", id)
 	}
 
+	tag.ID = id
+
 	return tag, nil
 }
 

@@ -31,6 +31,8 @@ func (r thumbnailRepo) Get(article content.Article) (content.Thumbnail, error) {
 		return content.Thumbnail{}, errors.Wrapf(err, "getting thumbnail for article %s", article)
 	}
 
+	thumbnail.ArticleID = article.ID
+
 	return thumbnail, nil
 }
 

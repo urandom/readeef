@@ -35,6 +35,8 @@ func (r feedRepo) Get(id content.FeedID, user content.User) (content.Feed, error
 		return content.Feed{}, errors.Wrapf(err, "getting feed %d", id)
 	}
 
+	feed.ID = id
+
 	return feed, nil
 }
 

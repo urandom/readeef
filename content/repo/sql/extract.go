@@ -31,6 +31,8 @@ func (r extractRepo) Get(article content.Article) (content.Extract, error) {
 		return content.Extract{}, errors.Wrapf(err, "getting extract for article %s", article)
 	}
 
+	extract.ArticleID = article.ID
+
 	return extract, nil
 }
 

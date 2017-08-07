@@ -22,7 +22,7 @@ func (r subscriptionRepo) Get(feed content.Feed) (content.Subscription, error) {
 	r.log.Infoln("Getting feed subscription")
 
 	var subscription content.Subscription
-	err := r.db.Get(subscription, r.db.SQL().Feed.GetHubbubSubscription, feed.ID)
+	err := r.db.Get(&subscription, r.db.SQL().Feed.GetHubbubSubscription, feed.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
@@ -30,6 +30,8 @@ func (r subscriptionRepo) Get(feed content.Feed) (content.Subscription, error) {
 
 		return content.Subscription{}, errors.Wrapf(err, "getting subscription for feed %s", feed)
 	}
+
+	subscription.FeedID = feed.ID
 
 	return subscription, nil
 }

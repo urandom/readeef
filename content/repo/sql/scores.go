@@ -31,6 +31,8 @@ func (r scoresRepo) Get(article content.Article) (content.Scores, error) {
 		return content.Scores{}, errors.Wrapf(err, "getting scores for article %s", article)
 	}
 
+	scores.ArticleID = article.ID
+
 	return scores, nil
 }
 

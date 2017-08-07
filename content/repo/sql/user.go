@@ -28,6 +28,8 @@ func (r userRepo) Get(login content.Login) (content.User, error) {
 		return content.User{}, errors.Wrapf(err, "getting user %s", login)
 	}
 
+	user.Login = login
+
 	return user, nil
 }
 
