@@ -401,7 +401,7 @@ func initHubbub(
 func makeHTTPServer(mux http.Handler) *http.Server {
 	return &http.Server{
 		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
+		WriteTimeout: 40 * time.Second,
 		IdleTimeout:  120 * time.Second,
 		Handler:      mux,
 	}
