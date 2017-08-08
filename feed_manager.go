@@ -112,7 +112,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 	if err != nil {
 		fm.log.Infoln("Discovering feeds in " + link)
 
-		parsedFeeds, err := feed.Search(link)
+		parsedFeeds, err := feed.Search(link, fm.log)
 		if err != nil {
 			return content.Feed{}, errors.WithMessage(err, "searching for feeds")
 		}
@@ -159,7 +159,7 @@ func (fm *FeedManager) RemoveFeedByLink(link string) (content.Feed, error) {
 
 func (fm *FeedManager) DiscoverFeeds(link string) ([]content.Feed, error) {
 
-	parsedFeeds, err := feed.Search(link)
+	parsedFeeds, err := feed.Search(link, fm.log)
 	if err != nil {
 		return []content.Feed{}, errors.WithMessage(err, "discovering feeds")
 	}
@@ -167,7 +167,7 @@ func (fm *FeedManager) DiscoverFeeds(link string) ([]content.Feed, error) {
 
 	for link, parserFeed := range parsedFeeds {
 		feed := content.Feed{Link: link}
-		feed.Refresh(fm.processParserFeed(parserFeed))
+		feed.Refresh(parserFeed)
 
 		feeds = append(feeds, feed)
 	}

@@ -5,9 +5,11 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/pkg/errors"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/pool"
 )
@@ -18,39 +20,43 @@ var (
 	linkPattern    = regexp.MustCompile(`<link ([^>]+)>`)
 )
 
-func Search(query string) (map[string]parser.Feed, error) {
+func Search(query string, log log.Log) (map[string]parser.Feed, error) {
 	if u, err := url.Parse(query); err == nil && (u.IsAbs() || domainPattern.MatchString(u.String())) {
 		if u.Scheme == "" {
 			u.Scheme = "http"
 		}
 
-		return searchByURL(u)
+		return searchByURL(u, log)
 	}
 
 	// Assume the query is not a url
-	return searchByQuery(query)
+	return searchByQuery(query, log)
 }
 
-func searchByURL(u *url.URL) (map[string]parser.Feed, error) {
+func searchByURL(u *url.URL, log log.Log) (map[string]parser.Feed, error) {
+	log.Infof("Searching for feeds from url %s", u)
 	if u.Scheme == "http" {
 		u.Scheme = "https"
 
-		if feeds, err := downloadLinkContent(u); err == nil {
+		if feeds, err := downloadLinkContent(u, log); err == nil {
 			return feeds, nil
 		}
 
 		u.Scheme = "http"
 	}
 
-	feeds, err := downloadLinkContent(u)
+	feeds, err := downloadLinkContent(u, log)
 	if err != nil {
 		return nil, errors.WithMessage(err, "searching by url "+u.String())
 	}
 
+	log.Debugf("Found %d feeds", len(feeds))
+
 	return feeds, nil
 }
 
-func searchByQuery(query string) (map[string]parser.Feed, error) {
+func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
+	log.Infof("Searching for feeds via %s", query)
 	doc, err := goquery.NewDocument("https://www.google.com/search?q=" + url.QueryEscape(query))
 	if err != nil {
 		return nil, errors.Wrapf(err, "querying google with %s", query)
@@ -71,35 +77,82 @@ func searchByQuery(query string) (map[string]parser.Feed, error) {
 		return u.Query().Get("q")
 	})
 
+	log.Debugf("Found links %#v for query %s", links, query)
+
+	type out struct {
+		data map[string]parser.Feed
+		err  error
+	}
+
 	parsed := map[string]parser.Feed{}
-	var mainErr error
+	input := make(chan *url.URL, 5)
+	output := make(chan out)
+	parseErr := make(chan error)
 
-	for _, link := range links {
-		u, err := url.Parse(link)
-		if err != nil {
-			mainErr = errors.Wrapf(err, "parsing link %s", link)
+	var wg sync.WaitGroup
+
+	go func() {
+		var mainErr error
+
+		for _, link := range links {
+			u, err := url.Parse(link)
+			if err != nil {
+				mainErr = errors.Wrapf(err, "parsing link %s", link)
+				continue
+			}
+
+			input <- u
+		}
+
+		close(input)
+
+		parseErr <- mainErr
+	}()
+
+	numProviders := 10
+	wg.Add(numProviders)
+	for i := 0; i < numProviders; i++ {
+		go func() {
+			for u := range input {
+				res, err := downloadLinkContent(u, log)
+				output <- out{res, err}
+			}
+			wg.Done()
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(output)
+	}()
+
+	if perr := <-parseErr; perr != nil {
+		log.Print(perr.Error())
+	}
+
+	var outErr error
+	for out := range output {
+		if out.err != nil {
+			outErr = out.err
 			continue
 		}
 
-		res, err := downloadLinkContent(u)
-		if err != nil {
-			mainErr = err
-			continue
-		}
-
-		for k, v := range res {
+		for k, v := range out.data {
 			parsed[k] = v
 		}
 	}
 
-	if len(parsed) == 0 && mainErr != nil {
-		return nil, mainErr
+	if len(parsed) == 0 && outErr != nil {
+		return nil, outErr
 	}
+
+	log.Debugf("Found %d feeds", len(parsed))
 
 	return parsed, nil
 }
 
-func downloadLinkContent(u *url.URL) (map[string]parser.Feed, error) {
+func downloadLinkContent(u *url.URL, log log.Log) (map[string]parser.Feed, error) {
+	log.Debugf("Downloading content from %s", u)
 	resp, err := http.Get(u.String())
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting link %s", u)
@@ -139,7 +192,7 @@ func downloadLinkContent(u *url.URL) (map[string]parser.Feed, error) {
 
 				}
 
-				feedMap, err := downloadLinkContent(docURL)
+				feedMap, err := downloadLinkContent(docURL, log)
 				if err != nil {
 					return nil, err
 				}

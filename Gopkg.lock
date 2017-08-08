@@ -39,7 +39,7 @@
 
 [[projects]]
   name = "github.com/alexedwards/scs"
-  packages = ["engine/boltstore","session"]
+  packages = ["engine/boltstore","engine/memstore","session"]
   revision = "f36d272d74ecae3d61058d91dc7401715b044ca1"
   version = "v0.1.0"
 
@@ -59,7 +59,7 @@
   branch = "master"
   name = "github.com/blevesearch/bleve"
   packages = [".","analysis","analysis/analyzer/standard","analysis/datetime/flexible","analysis/datetime/optional","analysis/lang/en","analysis/token/lowercase","analysis/token/porter","analysis/token/stop","analysis/tokenizer/unicode","document","geo","index","index/store","index/store/boltdb","index/store/goleveldb","index/store/gtreap","index/upsidedown","mapping","numeric","registry","search","search/collector","search/facet","search/highlight","search/highlight/format/html","search/highlight/fragmenter/simple","search/highlight/highlighter/html","search/highlight/highlighter/simple","search/query","search/scorer","search/searcher"]
-  revision = "174f8ed44a0bf65e7c8fb228b60b58de62654cd2"
+  revision = "82a101aedd682bba004e28c54c460b25dd271d04"
 
 [[projects]]
   name = "github.com/blevesearch/go-porterstemmer"
@@ -113,7 +113,7 @@
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "748d386b5c1ea99658fd69fe9f03991ce86a90c1"
+  revision = "1909bc2f63dc92bb931deace8b8312c4db72d12f"
 
 [[projects]]
   branch = "master"
@@ -152,6 +152,12 @@
   version = "v1.8.1"
 
 [[projects]]
+  name = "github.com/patrickmn/go-cache"
+  packages = ["."]
+  revision = "1881a9bccb818787f68c52bfba648c6cf34c34fa"
+  version = "v2.0.0"
+
+[[projects]]
   name = "github.com/pelletier/go-buffruneio"
   packages = ["."]
   revision = "c37440a7cf42ac63b919c752ca73a85067e05992"
@@ -185,13 +191,13 @@
   branch = "master"
   name = "github.com/urandom/embed"
   packages = ["filesystem"]
-  revision = "3d63015bbd4993be9a726085a953a6e18bf205ec"
+  revision = "edcd0ba12cd1fa5a1603a2e396a2403eb639537f"
 
 [[projects]]
   name = "github.com/urandom/handler"
   packages = [".","auth","lang","method"]
-  revision = "c74ca26c0b5f7aa86715def64a6a77429ac8737c"
-  version = "v0.8.0"
+  revision = "bd5972f0de2ac38cd48512b9a828de6085e9cab6"
+  version = "0.8.1"
 
 [[projects]]
   branch = "master"
@@ -203,19 +209,19 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["acme","acme/autocert","pbkdf2","scrypt"]
-  revision = "42ff06aea7c329876e5a0fe94acc96902accf0ad"
+  revision = "b176d7def5d71bdd214203491f89843ed217f420"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp","html","html/atom","html/charset"]
-  revision = "f5079bd7f6f74e23c4d65efa0f4ce14cbd6a3c0f"
+  revision = "167db312be3be3d239e24dbe0ab099ab5b9aa783"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "d8f5ea21b9295e315e612b4bcf4bedea93454d4d"
+  revision = "47bdb838cce8879fca08207206a5dfde2f2538bc"
 
 [[projects]]
   branch = "master"
@@ -262,6 +268,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1dfae085c830b6d9bc1dda4b206e54983d0b0735d331b99045d3472c19e56748"
+  inputs-digest = "08a36d70c687ee670983bc5692887ba4a1037d3033ce8122e771289080fb437f"
   solver-name = "gps-cdcl"
   solver-version = 1
