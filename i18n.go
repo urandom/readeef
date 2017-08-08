@@ -1,13 +1,20 @@
 package readeef
 
 import (
+	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 
+	"github.com/nicksnyder/go-i18n/i18n"
 	"github.com/pkg/errors"
 
 	"golang.org/x/text/language"
+)
+
+var (
+	languagesLoaded = false
 )
 
 // GetLanguages returns a slice of supported languages
@@ -24,6 +31,21 @@ func GetLanguages(fs http.FileSystem) ([]language.Tag, error) {
 				name := f.Name()
 				suffix := ".all.json"
 				if strings.HasSuffix(name, suffix) {
+					if !languagesLoaded {
+						var b []byte
+						f, err := fs.Open(path.Join("locale", name))
+						if err == nil {
+							b, err = ioutil.ReadAll(f)
+						}
+						if err != nil {
+							return nil, errors.Wrapf(err, "reading /locale/%s", name)
+						}
+
+						if err = i18n.ParseTranslationFileBytes(name, b); err != nil {
+							return nil, errors.Wrapf(err, "parsing language file %s", name)
+						}
+					}
+
 					tag := language.Make(name[:len(name)-len(suffix)])
 					if !tag.IsRoot() {
 						languages = append(languages, tag)
@@ -31,6 +53,7 @@ func GetLanguages(fs http.FileSystem) ([]language.Tag, error) {
 				}
 			}
 
+			languagesLoaded = true
 			return languages, nil
 		}
 

@@ -159,13 +159,25 @@ func requestFuncMaps(r *http.Request) template.FuncMap {
 			}
 			return t(message, langData.Current.String(), "en-US", data...)
 		},
-		"url": func(url, prefix string) string {
-			return lang.URL(url, prefix, langData)
+		"url": func(url string, prefix ...string) string {
+			var p string
+			if len(prefix) > 0 {
+				p = prefix[0]
+			}
+			return lang.URL(url, p, langData)
 		},
 	}
 }
 
 func prepareTemplate(t *template.Template, fs http.FileSystem, paths ...string) (*template.Template, error) {
+	t = t.Funcs(template.FuncMap{
+		"__": func(message string, data ...interface{}) (template.HTML, error) {
+			return template.HTML(message), nil
+		},
+		"url": func(url string, prefix ...string) string {
+			return url
+		},
+	})
 	for _, path := range paths {
 		f, err := fs.Open(path)
 		if err != nil {
@@ -196,14 +208,7 @@ func parseTemplate(t *template.Template, r io.Reader) (*template.Template, error
 		return nil, errors.Wrap(err, "parsing template data")
 	}
 
-	return t.Funcs(template.FuncMap{
-		"__": func(message string, data ...interface{}) (template.HTML, error) {
-			return template.HTML(message), nil
-		},
-		"url": func(url, prefix string) string {
-			return url
-		},
-	}), nil
+	return t, nil
 }
 
 func t(message, lang, fallback string, data ...interface{}) (template.HTML, error) {
