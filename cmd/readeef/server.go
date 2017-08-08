@@ -13,6 +13,7 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/alexedwards/scs/engine/boltstore"
+	"github.com/alexedwards/scs/engine/memstore"
 	"github.com/alexedwards/scs/session"
 	"github.com/boltdb/bolt"
 	"github.com/go-chi/chi"
@@ -43,21 +44,24 @@ func runServer(config config.Config, args []string) error {
 		return errors.WithMessage(err, "creating readeef filesystem")
 	}
 
-	sessDb, engine, err := initSessionEngine(config.Auth)
-	if err != nil {
-		return errors.WithMessage(err, "creating session engine")
-	}
-	defer sessDb.Close()
+	/*
+		sessDb, engine, err := initSessionEngine(config.Auth)
+		if err != nil {
+			return errors.WithMessage(err, "creating session engine")
+		}
+		defer sessDb.Close()
+	*/
+	engine := memstore.New(5 * time.Minute)
 
-	handler, err := web.Mux(fs, engine, config)
+	log := initLog(config.Log)
+
+	handler, err := web.Mux(fs, engine, config, log)
 	if err != nil {
 		return errors.WithMessage(err, "creating web mux")
 	}
 
 	mux := chi.NewRouter()
 	mux.Mount("/", handler)
-
-	log := initLog(config.Log)
 
 	service, err := sql.NewService(config.DB.Driver, config.DB.Connect, log)
 	if err != nil {

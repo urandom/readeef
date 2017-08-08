@@ -2,11 +2,13 @@ package web
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"path"
+	"strings"
 	"time"
 
 	"golang.org/x/text/language"
@@ -14,12 +16,12 @@ import (
 	ttemplate "text/template"
 
 	"github.com/alexedwards/scs/session"
-	"github.com/go-chi/chi"
 	"github.com/nicksnyder/go-i18n/i18n"
 	"github.com/pkg/errors"
 	"github.com/urandom/handler/lang"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/config"
+	"github.com/urandom/readeef/log"
 )
 
 const (
@@ -28,65 +30,95 @@ const (
 
 type sessionWrapper struct{}
 
-func Mux(fs http.FileSystem, engine session.Engine, config config.Config) (http.Handler, error) {
-	r := chi.NewRouter()
-
+func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log log.Log) (http.Handler, error) {
 	languages, err := readeef.GetLanguages(fs)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getting supported languages")
 	}
 
-	r.Route("/web/", func(r chi.Router) {
-		if len(languages) > 0 {
-			r.Use(func(next http.Handler) http.Handler {
-				return lang.I18N(
-					next,
-					lang.Languages(languages),
-					lang.Session(sessionWrapper{}),
-					lang.URLPrefix("/web/"),
-				)
-			})
-		}
-
-		if hasProxy(config) {
-			r.Use(session.Manage(engine, session.Lifetime(10*24*time.Hour)))
-			r.Get("/proxy", ProxyHandler)
-		}
-
-		main, err := MainHandler(fs)
-		if err != nil {
-			err = errors.WithMessage(err, "creating main handler")
-			return
-		}
-
-		r.Get("/", main)
-
-		componentHandler, err := ComponentHandler(fs)
-		if err != nil {
-			err = errors.Wrap(err, "creating component handler")
-			return
-		}
-
-		r.Get("/component", componentHandler)
-	})
-
-	fileServer := http.FileServer(fs)
-	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
-		r.URL.Path = path.Join("/static", r.URL.Path)
-		fileServer.ServeHTTP(w, r)
-	})
-	r.Get("/web", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/web/", http.StatusFound)
-	})
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/web/", http.StatusFound)
-	})
-
+	mux := http.NewServeMux()
+	mainHandlers, err := mainRoutes(fs, engine, languages, log)
 	if err != nil {
 		return nil, err
 	}
 
-	return r, nil
+	if hasProxy(config) {
+		mux.HandleFunc("/proxy", ProxyHandler)
+	}
+
+	fileServer := http.FileServer(fs)
+	dir, err := fs.Open("/static")
+	if err != nil {
+		return nil, errors.Wrap(err, "opening /static dir")
+	}
+	files, err := dir.Readdir(-1)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading /static dir")
+	}
+
+	rootNameSet := map[string]struct{}{}
+	for _, f := range files {
+		rootNameSet[f.Name()] = struct{}{}
+	}
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			http.Redirect(w, r, "/web/", http.StatusFound)
+			return
+		}
+
+		cleaned := path.Clean(r.URL.Path)
+		if cleaned[0] == '/' {
+			cleaned = cleaned[1:]
+		}
+		base := cleaned
+		idx := strings.Index(base, "/")
+		if idx != -1 {
+			base = base[:idx]
+		}
+		if _, ok := rootNameSet[base]; ok {
+			r.URL.Path = path.Join("/static", r.URL.Path)
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+
+		mainHandlers.ServeHTTP(w, r)
+	})
+
+	session := session.Manage(engine, session.Lifetime(240*time.Hour))
+	return session(mux), nil
+}
+
+func mainRoutes(fs http.FileSystem, engine session.Engine, languages []language.Tag, log log.Log) (http.Handler, error) {
+	mux := http.NewServeMux()
+
+	componentHandler, err := ComponentHandler(fs)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating component handler")
+	}
+
+	mux.Handle("/component/", componentHandler)
+
+	main, err := MainHandler(fs)
+	if err != nil {
+		return nil, errors.WithMessage(err, "creating main handler")
+	}
+
+	mux.Handle("/web/", main)
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/web/", http.StatusFound)
+	})
+
+	return wrapInI18N(mux, sessionWrapper{}, languages, log), nil
+}
+
+func wrapInI18N(next http.Handler, s sessionWrapper, languages []language.Tag, log log.Log) http.Handler {
+	if len(languages) > 0 {
+		return lang.I18N(next, lang.Languages(languages), lang.Session(s), lang.Logger(log))
+	}
+
+	return next
 }
 
 func hasProxy(config config.Config) bool {
@@ -143,7 +175,7 @@ func prepareTemplate(t *template.Template, fs http.FileSystem, paths ...string) 
 		t, err = parseTemplate(t, f)
 		if err != nil {
 			f.Close()
-			return nil, errors.Wrapf(err, "parsing template %s", path)
+			return nil, errors.WithMessage(err, fmt.Sprintf("parsing template %s", path))
 		}
 
 		if err = f.Close(); err != nil {
@@ -151,14 +183,7 @@ func prepareTemplate(t *template.Template, fs http.FileSystem, paths ...string) 
 		}
 	}
 
-	return t.Delims("{%", "%}").Funcs(template.FuncMap{
-		"__": func(message string, data ...interface{}) (template.HTML, error) {
-			return template.HTML(message), nil
-		},
-		"url": func(url, prefix string) string {
-			return url
-		},
-	}), nil
+	return t, nil
 }
 
 func parseTemplate(t *template.Template, r io.Reader) (*template.Template, error) {
@@ -171,7 +196,14 @@ func parseTemplate(t *template.Template, r io.Reader) (*template.Template, error
 		return nil, errors.Wrap(err, "parsing template data")
 	}
 
-	return t, nil
+	return t.Funcs(template.FuncMap{
+		"__": func(message string, data ...interface{}) (template.HTML, error) {
+			return template.HTML(message), nil
+		},
+		"url": func(url, prefix string) string {
+			return url
+		},
+	}), nil
 }
 
 func t(message, lang, fallback string, data ...interface{}) (template.HTML, error) {
