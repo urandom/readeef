@@ -177,7 +177,7 @@ func prepareTemplate(t *template.Template, fs http.FileSystem, paths ...string) 
 		"url": func(url string, prefix ...string) string {
 			return url
 		},
-	})
+	}).Delims("{%", "%}")
 	for _, path := range paths {
 		f, err := fs.Open(path)
 		if err != nil {

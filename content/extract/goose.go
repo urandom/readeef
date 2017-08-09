@@ -25,7 +25,7 @@ type goose struct {
 }
 
 func WithGoose(templateDir string, fs http.FileSystem) (Generator, error) {
-	tmpl, err := prepareTemplate(template.New("goose"), fs, rawTmpl, gooseTmpl)
+	tmpl, err := prepareTemplate(template.New("goose").Delims("{%", "%}"), fs, rawTmpl, gooseTmpl)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing goose template")
 	}

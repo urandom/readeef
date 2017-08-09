@@ -7,12 +7,12 @@ import (
 
 	"golang.org/x/text/language"
 
-	"github.com/pkg/errors"
 	"github.com/urandom/handler/lang"
 )
 
 const (
 	componentsPrefix = "/templates/components/"
+	rawTmpl          = "templates/raw.tmpl"
 )
 
 type componentPayload struct {
@@ -23,11 +23,6 @@ type componentPayload struct {
 }
 
 func ComponentHandler(fs http.FileSystem) (http.HandlerFunc, error) {
-	baseTmpl, err := prepareTemplate(template.New("components"), fs)
-	if err != nil {
-		return nil, errors.Wrap(err, "preparing components template")
-	}
-
 	cache := map[string]*template.Template{}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +32,7 @@ func ComponentHandler(fs http.FileSystem) (http.HandlerFunc, error) {
 
 		tmpl := cache[name]
 		if tmpl == nil {
-			tmpl, err = prepareTemplate(baseTmpl, fs, componentsPrefix+name+".tmpl")
+			tmpl, err = prepareTemplate(template.New("components"), fs, rawTmpl, componentsPrefix+name+".tmpl")
 			cache[name] = tmpl
 		}
 

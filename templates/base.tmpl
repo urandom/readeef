@@ -1,26 +1,26 @@
 <!doctype html>
-<html lang="{{ .Language }}">
+<html lang="{% .Language %}">
     <head>
-        <title>{{ template "title" . }}</title>
+        <title>{% template "title" . %}</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, user-scalable=no">
 
-        {{ template "meta" . }}
+        {% template "meta" . %}
 
-        {{ template "imports" . }}
+        {% template "imports" . %}
 
-        {{ template "styles" . }}
+        {% template "styles" . %}
     </head>
-    <body {{ template "body-attrs" . }}>
-        {{ template "content" . }}
-        {{ template "scripts" . }}
+    <body {% template "body-attrs" . %}>
+        {% template "content" . %}
+        {% template "scripts" . %}
     </body>
 </html>
 
-{{ define "title" }}{{ end }}
-{{ define "meta" }}{{ end }}
-{{ define "styles" }}{{ end }}
-{{ define "imports" }}{{ end }}
-{{ define "body-attrs" }}{{ end }}
-{{ define "content" }}{{ end }}
-{{ define "scripts" }}{{ end }}
+{% define "title" %}{% end %}
+{% define "meta" %}{% end %}
+{% define "styles" %}{% end %}
+{% define "imports" %}{% end %}
+{% define "body-attrs" %}{% end %}
+{% define "content" %}{% end %}
+{% define "scripts" %}{% end %}
