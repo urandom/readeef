@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"path"
 
-	"golang.org/x/text/language"
-
 	"github.com/urandom/handler/lang"
 )
 
@@ -18,33 +16,64 @@ const (
 type componentPayload struct {
 	APIPattern   string
 	Language     string
-	Languages    []language.Tag
+	Languages    []string
 	HasLanguages bool
 }
 
+type cacheMap map[string]*template.Template
+type cacheResult struct {
+	tmpl *template.Template
+	err  error
+}
+
 func ComponentHandler(fs http.FileSystem) (http.HandlerFunc, error) {
-	cache := map[string]*template.Template{}
+	ops := make(chan func(cacheMap))
+	go func() {
+		cache := cacheMap{}
+
+		for op := range ops {
+			op(cache)
+		}
+	}()
+
+	getTmpl := func(name string) cacheResult {
+		res := make(chan cacheResult, 1)
+
+		ops <- func(cache cacheMap) {
+			tmpl := cache[name]
+			if tmpl == nil {
+				tmpl, err := prepareTemplate(template.New("components"), fs, rawTmpl, componentsPrefix+name+".tmpl")
+				cache[name] = tmpl
+
+				res <- cacheResult{tmpl, err}
+				return
+			}
+
+			res <- cacheResult{tmpl, nil}
+		}
+
+		return <-res
+	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		var err error
-
 		name := path.Base(r.URL.Path)
-
-		tmpl := cache[name]
-		if tmpl == nil {
-			tmpl, err = prepareTemplate(template.New("components"), fs, rawTmpl, componentsPrefix+name+".tmpl")
-			cache[name] = tmpl
+		res := getTmpl(name)
+		if res.err != nil {
+			http.Error(w, res.err.Error(), http.StatusInternalServerError)
+			return
 		}
 
-		if err == nil {
-			data := lang.Data(r)
-			err = tmpl.Funcs(requestFuncMaps(r)).Execute(w, componentPayload{
-				APIPattern:   "/api/v2",
-				Language:     data.Current.String(),
-				Languages:    data.Languages,
-				HasLanguages: len(data.Languages) > 0,
-			})
+		data := lang.Data(r)
+		languages := make([]string, len(data.Languages))
+		for i := range data.Languages {
+			languages[i] = data.Languages[i].String()
 		}
+		err := res.tmpl.Funcs(requestFuncMaps(r)).Execute(w, componentPayload{
+			APIPattern:   "/api/v2",
+			Language:     data.Current.String(),
+			Languages:    languages,
+			HasLanguages: len(data.Languages) > 0,
+		})
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

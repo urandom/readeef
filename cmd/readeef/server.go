@@ -44,6 +44,8 @@ func runServer(config config.Config, args []string) error {
 		return errors.WithMessage(err, "creating readeef filesystem")
 	}
 
+	fs = http.Dir(".")
+
 	/*
 		sessDb, engine, err := initSessionEngine(config.Auth)
 		if err != nil {

@@ -10,6 +10,9 @@
             route: {
                 type: String
             },
+			token: {
+				type: String
+			},
             user: {
                 type: Object,
                 readOnly: true,
@@ -35,33 +38,18 @@
 			Excess.RouteManager.start();
 			this._routingStarted = true;
 
-            this.async(function() {
-                if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING) {
-                    if (this.topLevelNavigation == "splash" || !location.pathname) {
-						Excess.RouteManager.transitionTo('@login');
-                    } else if (this.topLevelNavigation != "login") {
-						Excess.RouteManager.transitionTo('@login-from', {url: this.encodeURI(location.pathname)});
-                    }
-                }
-            });
-
             document.addEventListener('rf-lazy-insert', function(event) {
                 Polymer.updateStyles();
             }.bind(this));
         },
 
-        onUserLoad: function(event, detail) {
+        onTokenLoad: function(event, detail) {
             var storage = event.target;
 
             if (storage.value) {
-                if (!storage.value.authTime || new Date().getTime() - storage.value.authTime > this.userTTL) {
-                    storage.value = null;
-                }
-            }
-
-            if (!detail.externalChange) {
-                this.validateUser(storage.value);
-            }
+				this.$['user-profile'].send();
+            } else {
+			}
         },
 
         validateUser: function(user) {
@@ -124,7 +112,7 @@
 			switch (this.topLevelNavigation) {
 			case "feed":
 			case "settings":
-				Excess.RouteManager.transitionTo('@login-from', {url: this.encodeURI(location.pathname)});
+				Excess.RouteManager.transitionTo('@login');
 				break;
 			case "login":
                 var login = Polymer.dom(this.root).querySelector('rf-login');
@@ -150,6 +138,10 @@
         decodeURI: function(encodedURI) {
             return decodeURIComponent(encodedURI.replace(/\$/g, '%'));
         },
+
+		onUserProfileResponse: function(event, detail) {
+			console.log(detail);
+		},
 
 		onAuthCheckMessage: function(event) {
 			if (!event.detail.arguments.Auth) {
@@ -193,11 +185,7 @@
 			}
 
             if (!this.user && (this._state & state.VALIDATING) != state.VALIDATING && value != "login") {
-				if (this.topLevelNavigation == "splash" || !location.pathname) {
-					Excess.RouteManager.transitionTo('@login');
-				} else if (this.topLevelNavigation != "login") {
-					Excess.RouteManager.transitionTo('@login-from', {url: this.encodeURI(location.pathname)});
-				}
+				Excess.RouteManager.transitionTo('@login');
 			}
 		},
     });

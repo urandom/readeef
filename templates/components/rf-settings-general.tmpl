@@ -125,7 +125,7 @@ a[data-language] {
                 <paper-dropdown-menu label="{% __ "Language" %}">
                     <paper-menu class="dropdown-content">
                         {% range .Languages %}
-						<a href="{% . %}/web/settings/general" on-tap="onLanguageSelect" data-language="{% . %}">
+						<a href="/{% . %}/web/settings/general" on-tap="onLanguageSelect" data-language="{% . %}">
                                 {% if eq . "en" %}
                                     English
                                 {% else %}

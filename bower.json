@@ -22,7 +22,7 @@
     "iron-list": "PolymerElements/iron-list",
     "iron-localstorage": "PolymerElements/iron-localstorage",
     "iron-pages": "PolymerElements/iron-pages",
-    "iron-scroll-threshold": "~1.0.1",
+    "iron-scroll-threshold": "PolymerElements/iron-scroll-threshold",
     "iron-signals": "PolymerElements/iron-signals",
     "moment": "~2.8.2",
     "neon-animation": "PolymerElements/neon-animated-pages",
@@ -46,10 +46,6 @@
     "paper-toggle-button": "PolymerElements/paper-toggle-button",
     "paper-toolbar": "PolymerElements/paper-toolbar",
     "polymer": "Polymer/polymer",
-    "excess-router": "~0.9.10",
-    "lazy-pages": "~0.8.5"
-  },
-  "resolutions": {
-    "polymer": "^1.2.0"
+    "app-route": "PolymerElements/app-route#^2.0.2"
   }
 }

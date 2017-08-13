@@ -1,26 +1,53 @@
 {% define "content" %}
 <link rel="import" href="/dist/polymer/polymer.html">
+<link rel="import" href="/dist/iron-ajax/iron-ajax.html">
 
 <dom-module id="rf-api">
+	<template>
+		<iron-ajax id="ajax" url="[[ url ]]" method="[[ method ]]" content-type="[[ contentType ]]" on-response="onResponse" on-error="onError">
+	</template>
     <script>
 Polymer({
 	is: 'rf-api',
 	properties: {
+		url: String,
 		method: String,
-		args: Object,
-		receiver: Boolean,
-		tag: {
+		contentType: {
 			type: String,
-			value: ""
+			value: "application/json",
 		},
-		handlesErrors: Boolean,
 	},
-	behaviors: [
-		ConnectionAPIBehavior,
-	],
 
 	send: function(data) {
-		this.connection.send(this, data);
+		token = localStorage.getItem("token");
+		if (!token) {
+			Excess.RouteManager.transitionTo('@login');
+			return;
+		}
+
+		this.$.ajax.headers["Authorization"] = token;
+
+		this.$.ajax.body = null;
+		this.$.ajax.params = {};
+
+		if (data) {
+			if (method == "GET") {
+				Polymer.Base.extend(this.$.ajax.params, data);
+			} else {
+				this.$.ajax.body = data;
+			}
+		}
+
+		this.$.ajax.generateRequest();
+	},
+
+	onResponse: function(event, request) {
+		this.fire("rf-api-response", {xhr: request.xhr});
+	},
+
+	onError: function(event, payload) {
+		console.log(payload);
+		this.fire("rf-api-response", {xhr: payload.request.xhr, error: payload.error});
 	},
 
 });

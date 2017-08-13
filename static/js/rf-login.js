@@ -49,15 +49,14 @@
         },
 
         onLogin: function() {
-            var user = {
-                Login: this.$.login.value,
-                MD5API: CryptoJS.MD5(this.$.login.value + ":" + this.$.password.value).toString(CryptoJS.enc.Base64)
-            };
+			var req = this.$['create-token'];
+			req.body = "user=" + encodeURIComponent(this.$.login.value) + "&password=" + encodeURIComponent(this.$.password.value);
+			req.generateRequest();
+        },
 
-            this.$.login.value = "";
-            this.$.password.value = "";
-
-            this.validateUser(user);
-        }
+		handleCreateToken(event, request) {
+			localStorage.setItem("token", request.xhr.getResponseHeader("Authorization"));
+			Excess.RouteManager.transitionTo('@feed-all');
+		}
     });
 })();
