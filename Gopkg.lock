@@ -131,7 +131,7 @@
   branch = "master"
   name = "github.com/lib/pq"
   packages = [".","oid"]
-  revision = "dd1fe2071026ce53f36a39112e645b4d4f5793a4"
+  revision = "e42267488fe361b9dc034be7a6bffef5b195bceb"
 
 [[projects]]
   name = "github.com/mattn/go-sqlite3"
@@ -176,6 +176,12 @@
   version = "v0.8.0"
 
 [[projects]]
+  name = "github.com/rs/cors"
+  packages = ["."]
+  revision = "7af7a1e09ba336d2ea14b1ce73bf693c6837dbf6"
+  version = "v1.2"
+
+[[projects]]
   branch = "master"
   name = "github.com/steveyen/gtreap"
   packages = ["."]
@@ -196,8 +202,8 @@
 [[projects]]
   name = "github.com/urandom/handler"
   packages = [".","auth","lang","method"]
-  revision = "bd5972f0de2ac38cd48512b9a828de6085e9cab6"
-  version = "0.8.1"
+  revision = "4d85b3a1dddf499b7277066e9bac9d7206429ac5"
+  version = "v0.8.2"
 
 [[projects]]
   branch = "master"
@@ -215,19 +221,19 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp","html","html/atom","html/charset"]
-  revision = "167db312be3be3d239e24dbe0ab099ab5b9aa783"
+  revision = "1c05540f6879653db88113bc4a2b70aec4bd491f"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "47bdb838cce8879fca08207206a5dfde2f2538bc"
+  revision = "c84c1ab9fd18cdd4c23dd021c10f5f46dea95e46"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["encoding","encoding/charmap","encoding/htmlindex","encoding/internal","encoding/internal/identifier","encoding/japanese","encoding/korean","encoding/simplifiedchinese","encoding/traditionalchinese","encoding/unicode","internal/gen","internal/tag","internal/utf8internal","language","runes","transform","unicode/cldr"]
-  revision = "3bd178b88a8180be2df394a1fbb81313916f0e7b"
+  revision = "e56139fd9c5bc7244c76116c68e500765bb6db6b"
 
 [[projects]]
   name = "gopkg.in/fatih/set.v0"
@@ -263,11 +269,11 @@
   branch = "v2"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "25c4ec802a7d637f88d584ab26798e94ad14c13b"
+  revision = "eb3733d160e74a9c7e442f435eb3bea458e1d19f"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "08a36d70c687ee670983bc5692887ba4a1037d3033ce8122e771289080fb437f"
+  inputs-digest = "18f1dc66429dcd4cdb024c166125138903c1252689d1ed3d4a2c013fbea1ad3c"
   solver-name = "gps-cdcl"
   solver-version = 1

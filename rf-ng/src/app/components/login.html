@@ -1,10 +1,10 @@
-<form class="login-form" (ngSubmit)="f.form.valid && login()" #f="ngForm" novalidate> 
+<form class="login-form" (ngSubmit)="login()" #f="ngForm" novalidate> 
     <md-input-container>
-        <input mdInput [(ngModel)]="user" name="user" i18n-placeholder placeholder="User name">
+        <input mdInput [(ngModel)]="user" name="user" i18n-placeholder placeholder="User name" required>
     </md-input-container>
     <md-input-container>
-        <input mdInput [(ngModel)]="password" name="password" i18n-placeholder placeholder="Password">
+        <input mdInput type="password" [(ngModel)]="password" name="password" i18n-placeholder placeholder="Password" required>
     </md-input-container>
     <br>
-    <a md-mini-fab routerLink="." [disabled]="loading"><md-icon>check</md-icon></a>
+    <button md-raised-button type="submit" [disabled]="loading || !f.form.valid" i18n>Submit</button>
 </form>

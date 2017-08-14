@@ -2,27 +2,36 @@ import { Injectable } from '@angular/core'
 import { Http, Headers, Response } from '@angular/http'
 import { environment } from "../../environments/environment"
 import { Observable } from "rxjs";
+import 'rxjs/add/operator/map'
 
 @Injectable()
 export class TokenService {
     constructor(private http: Http) { }
 
     create(user: string, password: string): Observable<string> {
-        return this.http.post(
-            environment.apiEndpoint + "token",
-             "user=${user}&password=${password}"
-        ).map(
-            response => response.headers.get("Authorization")
-        ).map(
-            auth => {
-                localStorage.setItem("token", auth);
+        var body = new FormData();
+        body.append("user", user);
+        body.append("password", password);
 
-                return auth;
-            }
-        );
+        return this.http.post(environment.apiEndpoint + "token", body)
+            .map(response => {
+                return response.headers.get("Authorization");
+            })
+            .map(auth => {
+                if (auth) {
+                    localStorage.setItem("token", auth);
+
+                    return auth;
+                }
+
+                throw new AuthenticationError("test");
+            });
     }
 
     delete() {
         localStorage.removeItem("token");
     }
+}
+
+export class AuthenticationError extends Error {
 }

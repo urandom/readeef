@@ -10,15 +10,12 @@ export class AuthGuard implements CanActivate {
         var token = localStorage.getItem("token")
         if (token) {
             var res = jwt(token)
-            if (res["exp"] && res["exp"] < new Date().getTime())  {
-                return false;
+            if (
+                (!res["exp"] || res["exp"] >= new Date().getTime() / 1000) &&
+                (!res["nbf"] || res["nbf"] < new Date().getTime() / 1000)
+            )  {
+                return true;
             }
-
-            if (res["nbf"] && res["nbf"] > new Date().getTime()) {
-                return false;
-            }
-
-            return true;
         }
 
         this.router.navigate(['/login'], { queryParams: { returnUrl: state.url }});

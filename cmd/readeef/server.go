@@ -18,6 +18,7 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
+	"github.com/rs/cors"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api"
 	"github.com/urandom/readeef/config"
@@ -125,6 +126,10 @@ func runServer(config config.Config, args []string) error {
 		return errors.WithMessage(err, "creating api mux")
 	}
 
+	if serverDevelPort > 0 {
+		handler = cors.New(cors.Options{ExposedHeaders: []string{"Authorization"}}).Handler(handler)
+	}
+
 	mux.Mount("/api", handler)
 
 	feedManager.Start(ctx)
@@ -138,6 +143,8 @@ func runServer(config config.Config, args []string) error {
 		if err = server.ListenAndServe(); err != nil {
 			return errors.Wrap(err, "starting devel server")
 		}
+
+		return nil
 	}
 
 	server.Addr = fmt.Sprintf("%s:%d", config.Server.Address, config.Server.Port)
