@@ -84,7 +84,7 @@ func (r tagRepo) FeedIDs(tag content.Tag, user content.User) ([]content.FeedID, 
 	r.log.Infof("Getting tag %s feed ids", tag)
 
 	var ids []content.FeedID
-	if err := r.db.Select(&ids, r.db.SQL().Tag.GetUserFeedIDs, user.Login, tag.Value); err != nil {
+	if err := r.db.Select(&ids, r.db.SQL().Tag.GetUserFeedIDs, user.Login, tag.ID); err != nil {
 		return []content.FeedID{}, errors.Wrap(err, "getting tag feed ids")
 	}
 

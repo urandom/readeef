@@ -40,7 +40,7 @@ var (
 )
 
 func runServer(config config.Config, args []string) error {
-	fs, err := readeef.NewFileSystem()
+	fs, err := readeef.NewFileSystem(serverDevelPort > 0)
 	if err != nil {
 		return errors.WithMessage(err, "creating readeef filesystem")
 	}
@@ -127,7 +127,11 @@ func runServer(config config.Config, args []string) error {
 	}
 
 	if serverDevelPort > 0 {
-		handler = cors.New(cors.Options{ExposedHeaders: []string{"Authorization"}}).Handler(handler)
+		handler = cors.New(cors.Options{
+			ExposedHeaders: []string{"Authorization"},
+			AllowedHeaders: []string{"Authorization"},
+			AllowedOrigins: []string{"*"},
+		}).Handler(handler)
 	}
 
 	mux.Mount("/api", handler)

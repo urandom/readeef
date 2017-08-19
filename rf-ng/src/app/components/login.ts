@@ -1,6 +1,5 @@
 import { Component, OnInit } from "@angular/core";
 import { Router, ActivatedRoute } from "@angular/router";
-import { AlertService } from "../services/alert"
 import { TokenService } from "../services/auth"
 
 @Component({
@@ -18,7 +17,6 @@ export class LoginComponent implements OnInit {
         private router: Router,
         private route: ActivatedRoute,
         private tokenService: TokenService,
-        private alertService: AlertService,
     ) { }
 
     ngOnInit(): void {
@@ -32,7 +30,6 @@ export class LoginComponent implements OnInit {
         this.tokenService.create(this.user, this.password).subscribe(
             data => this.router.navigate([this.returnURL]),
             error => {
-                this.alertService.message(String(error), false);
                 this.loading = false;
             }
         )

@@ -1,0 +1,42 @@
+<md-toolbar color="primary">
+    Feeds
+</md-toolbar>
+<div class="content">
+    <a md-button routerLink="/favorite" i18n>Favorite</a>
+    <div class="group" *ngIf="popularity">
+        <div class="category">
+            <button md-button class="expander" (click)="collapses.__popularity = !collapses.__popularity">
+                <md-icon>{{ collapses.__popularity ? "expand_less" : "expand_more" }}</md-icon>
+            </button>
+            <a md-button routerLink="/popular" i18n>Popular</a>
+        </div>
+
+        <div class="items" [ngbCollapse]="!collapses.__popularity">Hello World</div>
+    </div>
+
+    <div class="group">
+        <div class="category">
+            <button md-button class="expander" (click)="collapses.__all = !collapses.__all">
+                <md-icon>{{ collapses.__all ? "expand_less" : "expand_more" }}</md-icon>
+            </button>
+            <a md-button routerLink="/" i18n>All</a>
+        </div>
+
+        <div class="items" [ngbCollapse]="!collapses.__all">
+            <a md-button *ngFor="let item of allItems" [routerLink]="item.link">{{ item.title }}</a>
+        </div>
+    </div>
+
+    <div class="group" *ngFor="let tag of tags">
+        <div class="category">
+            <button md-button class="expander" (click)="collapses[tag.id] = !collapses[tag.id]">
+                <md-icon>{{ collapses[tag.id] ? "expand_less" : "expand_more" }}</md-icon>
+            </button>
+            <a md-button routerLink="/" i18n>{{ tag.title }}</a>
+        </div>
+
+        <div class="items" [ngbCollapse]="!collapses[tag.id]">
+            <a md-button *ngFor="let item of tag.items" [routerLink]="item.link">{{ item.title }}</a>
+        </div>
+    </div>
+</div>

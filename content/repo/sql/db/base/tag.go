@@ -26,7 +26,7 @@ INSERT INTO tags (value)
 	getUserTagFeedIDs = `
 SELECT uft.feed_id
 FROM users_feeds_tags uft
-WHERE uft.user_login = $1 AND t.tag_id = $2
+WHERE uft.user_login = $1 AND uft.tag_id = $2
 `
 
 	getUserTagFeeds = `

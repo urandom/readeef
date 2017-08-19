@@ -3,11 +3,11 @@ package api
 import "net/http"
 
 type features struct {
-	I18N       bool
-	Search     bool
-	Extractor  bool
-	ProxyHTTP  bool
-	Popularity bool
+	I18N       bool `json:"i18n,omitempty"`
+	Search     bool `json:"search,omitempty"`
+	Extractor  bool `json:"extractor,omitempty"`
+	ProxyHTTP  bool `json:"proxyHTTP,omitempty"`
+	Popularity bool `json:"popularity,omitempty"`
 }
 
 func featuresHandler(features features) http.HandlerFunc {

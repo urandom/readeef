@@ -11,8 +11,9 @@ import (
 )
 
 // NewFileSystem creates a new empty filesystem.
-func NewFileSystem() (http.FileSystem, error) {
+func NewFileSystem(fallback bool) (http.FileSystem, error) {
 	fs := filesystem.New()
+	fs.Fallback = fallback
 
 	return fs, nil
 }

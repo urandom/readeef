@@ -1,9 +1,15 @@
 <md-sidenav-container>
-    <md-sidenav>
+    <md-sidenav #sidenav>
         <!-- sidenav content -->
-        <h2>Side nav</h2>
+        <nav-menu></nav-menu>
     </md-sidenav>
 
-    <!-- primary content -->
-    <h1>Content</h1>
+    <div class="content">
+        <md-toolbar color="primary">
+            <button md-icon-button (click)="sidenav.toggle()"><md-icon>menu</md-icon></button>
+            Title
+        </md-toolbar>
+
+        <h1>Content</h1>
+    </div>
 </md-sidenav-container>

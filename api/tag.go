@@ -11,6 +11,28 @@ import (
 	"github.com/urandom/readeef/log"
 )
 
+func listTags(repo repo.Tag, log log.Log) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		tags, err := repo.ForUser(user)
+		if err != nil {
+			fatal(w, log, "Error getting tags: %+v", err)
+			return
+		}
+
+		args{"tags": tags}.WriteJSON(w)
+	}
+}
+
+type tagsFeedIDs struct {
+	Tag content.Tag      `json:"tag"`
+	IDs []content.FeedID `json:"ids"`
+}
+
 func getTagsFeedIDs(repo repo.Tag, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
@@ -24,7 +46,8 @@ func getTagsFeedIDs(repo repo.Tag, log log.Log) http.HandlerFunc {
 			return
 		}
 
-		tagMap := map[content.TagID][]content.FeedID{}
+		resp := []tagsFeedIDs{}
+
 		for _, tag := range tags {
 			ids, err := repo.FeedIDs(tag, user)
 			if err != nil {
@@ -32,10 +55,10 @@ func getTagsFeedIDs(repo repo.Tag, log log.Log) http.HandlerFunc {
 				return
 			}
 
-			tagMap[tag.ID] = ids
+			resp = append(resp, tagsFeedIDs{tag, ids})
 		}
 
-		args{"tagFeeds": tagMap}.WriteJSON(w)
+		args{"tagFeeds": resp}.WriteJSON(w)
 	}
 }
 

@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
-	"strings"
 	"time"
 
 	"golang.org/x/text/language"
@@ -19,7 +18,6 @@ import (
 	"github.com/nicksnyder/go-i18n/i18n"
 	"github.com/pkg/errors"
 	"github.com/urandom/handler/lang"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/log"
 )
@@ -31,94 +29,25 @@ const (
 type sessionWrapper struct{}
 
 func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log log.Log) (http.Handler, error) {
-	languages, err := readeef.GetLanguages(fs)
-	if err != nil {
-		return nil, errors.WithMessage(err, "getting supported languages")
-	}
-
 	mux := http.NewServeMux()
-	mainHandlers, err := mainRoutes(fs, engine, languages, log)
-	if err != nil {
-		return nil, err
-	}
 
 	if hasProxy(config) {
 		mux.HandleFunc("/proxy", ProxyHandler)
 	}
 
 	fileServer := http.FileServer(fs)
-	dir, err := fs.Open("/static")
-	if err != nil {
-		return nil, errors.Wrap(err, "opening /static dir")
-	}
-	files, err := dir.Readdir(-1)
-	if err != nil {
-		return nil, errors.Wrap(err, "reading /static dir")
-	}
-
-	rootNameSet := map[string]struct{}{}
-	for _, f := range files {
-		rootNameSet[f.Name()] = struct{}{}
-	}
-
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			http.Redirect(w, r, "/web/", http.StatusFound)
-			return
+			r.URL.Path = "/rf-ng/dist/"
+		} else {
+			r.URL.Path = path.Join("/rf-ng/dist", r.URL.Path)
 		}
-
-		cleaned := path.Clean(r.URL.Path)
-		if cleaned[0] == '/' {
-			cleaned = cleaned[1:]
-		}
-		base := cleaned
-		idx := strings.Index(base, "/")
-		if idx != -1 {
-			base = base[:idx]
-		}
-		if _, ok := rootNameSet[base]; ok {
-			r.URL.Path = path.Join("/static", r.URL.Path)
-			fileServer.ServeHTTP(w, r)
-			return
-		}
-
-		mainHandlers.ServeHTTP(w, r)
+		log.Infof("URL: %s", r.URL.Path)
+		fileServer.ServeHTTP(w, r)
 	})
 
 	session := session.Manage(engine, session.Lifetime(240*time.Hour))
 	return session(mux), nil
-}
-
-func mainRoutes(fs http.FileSystem, engine session.Engine, languages []language.Tag, log log.Log) (http.Handler, error) {
-	mux := http.NewServeMux()
-
-	componentHandler, err := ComponentHandler(fs)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating component handler")
-	}
-
-	mux.Handle("/component/", componentHandler)
-
-	main, err := MainHandler(fs)
-	if err != nil {
-		return nil, errors.WithMessage(err, "creating main handler")
-	}
-
-	mux.Handle("/web/", main)
-
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/web/", http.StatusFound)
-	})
-
-	return wrapInI18N(mux, sessionWrapper{}, languages, log), nil
-}
-
-func wrapInI18N(next http.Handler, s sessionWrapper, languages []language.Tag, log log.Log) http.Handler {
-	if len(languages) > 0 {
-		return lang.I18N(next, lang.Languages(languages), lang.Session(s), lang.Logger(log))
-	}
-
-	return next
 }
 
 func hasProxy(config config.Config) bool {

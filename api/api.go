@@ -226,6 +226,7 @@ func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log
 
 func tagRoutes(repo repo.Tag, log log.Log) routes {
 	return routes{path: "/tag", route: func(r chi.Router) {
+		r.Get("/", listTags(repo, log))
 		r.Get("/feedIDs", getTagsFeedIDs(repo, log))
 	}}
 }
