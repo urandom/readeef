@@ -6,11 +6,11 @@ import 'rxjs/add/operator/mergeMap'
 import 'rxjs/add/operator/combineLatest'
 
 @Component({
-  selector: 'nav-menu',
-  templateUrl: './nav-menu.html',
-  styleUrls: ['./nav-menu.css']
+  selector: 'side-bar',
+  templateUrl: './side-bar.html',
+  styleUrls: ['./side-bar.css']
 })
-export class NavMenuComponent implements OnInit {
+export class SideBarComponent implements OnInit {
     popularity: boolean
     collapses: Map<any, boolean> = new Map()
     popularityItems : Array<Item> = new Array();

@@ -25,6 +25,7 @@
     "@angular/router": "^4.3.4",
     "@ng-bootstrap/ng-bootstrap": "^1.0.0-beta.1",
     "@types/jwt-decode": "^2.2.1",
+    "angular2-virtual-scroll": "^0.2.1",
     "bootstrap": "^4.0.0-beta",
     "core-js": "^2.5.0",
     "jwt-decode": "^2.2.0",

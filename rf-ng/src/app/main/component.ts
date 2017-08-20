@@ -2,10 +2,10 @@ import { Component, OnInit } from "@angular/core";
 
 @Component({
     moduleId: module.id,
-    templateUrl: "./home.html",
-    styleUrls: ["./home.css"],
+    templateUrl: "./main.html",
+    styleUrls: ["./main.css"],
 })
-export class HomeComponent implements OnInit {
+export class MainComponent implements OnInit {
     constructor() {}
 
     ngOnInit() {
