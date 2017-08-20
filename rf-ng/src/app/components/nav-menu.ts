@@ -56,7 +56,7 @@ export class NavMenuComponent implements OnInit {
                     });
 
                     this.tags = tags.map(d =>
-                         new Category(d.tag.id, d.tag.value, d.ids.map(id =>
+                         new Category(d.tag.id, "/tag/" + d.tag.id, d.tag.value, d.ids.map(id =>
                              new Item(id, "/tag/" + d.tag.id + "/feed/" + id, feedMap.get(id).title))));
 
                     this.tags.forEach(tag => this.collapses.set(tag.id, false));
@@ -68,7 +68,7 @@ export class NavMenuComponent implements OnInit {
 }
 
 class Category {
-    constructor(public id: number, public title: string, public items: Item[]) {
+    constructor(public id: number, public link: string, public title: string, public items: Item[]) {
     }
 }
 

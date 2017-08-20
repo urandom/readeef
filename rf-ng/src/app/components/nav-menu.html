@@ -32,11 +32,16 @@
             <button md-button class="expander" (click)="collapses[tag.id] = !collapses[tag.id]">
                 <md-icon>{{ collapses[tag.id] ? "expand_less" : "expand_more" }}</md-icon>
             </button>
-            <a md-button routerLink="/" i18n>{{ tag.title }}</a>
+            <a md-button [routerLink]="tag.link">{{ tag.title }}</a>
         </div>
 
         <div class="items" [ngbCollapse]="!collapses[tag.id]">
             <a md-button *ngFor="let item of tag.items" [routerLink]="item.link">{{ item.title }}</a>
         </div>
     </div>
+
+    <hr>
+
+    <a md-button routerLink="/settings/user" i18n>Settings</a>
+    <a md-button routerLink="/login" i18n>Logout</a>
 </div>

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
+	"strings"
 	"time"
 
 	"golang.org/x/text/language"
@@ -36,13 +37,39 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log lo
 	}
 
 	fileServer := http.FileServer(fs)
+	dir, err := fs.Open("/rf-ng/dist")
+	if err != nil {
+		return nil, errors.Wrap(err, "opening /static dir")
+	}
+	files, err := dir.Readdir(-1)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading /static dir")
+	}
+
+	rootNameSet := map[string]struct{}{}
+	for _, f := range files {
+		rootNameSet[f.Name()] = struct{}{}
+	}
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			r.URL.Path = "/rf-ng/dist/"
-		} else {
-			r.URL.Path = path.Join("/rf-ng/dist", r.URL.Path)
+		cleaned := path.Clean(r.URL.Path)
+		if cleaned[0] == '/' {
+			cleaned = cleaned[1:]
 		}
-		log.Infof("URL: %s", r.URL.Path)
+		base := cleaned
+		idx := strings.Index(base, "/")
+		if idx != -1 {
+			base = base[:idx]
+		}
+
+		log.Println(base, rootNameSet, r.URL.Path)
+		if _, ok := rootNameSet[base]; ok {
+			r.URL.Path = path.Join("/rf-ng/dist", r.URL.Path)
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+
+		r.URL.Path = "/rf-ng/dist/"
 		fileServer.ServeHTTP(w, r)
 	})
 

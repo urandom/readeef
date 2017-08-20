@@ -5,6 +5,7 @@ import { TokenService } from "../services/auth"
 @Component({
     moduleId: module.id,
     templateUrl: "./login.html",
+    styleUrls: ["./login.css"],
 })
 export class LoginComponent implements OnInit {
     user: string
