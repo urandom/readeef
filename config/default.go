@@ -30,6 +30,8 @@ var defaultCfg = `
 	access-file = "-"  # stdout or a filename
 [api]
 	emulators = []     # ["tt-rss", "fever"]
+[api.limits]
+	articles-per-query = 200
 [db]
 	driver = "sqlite3"
 	connect = "file:./storage/content.sqlite3?cache=shared&mode=rwc"

@@ -26,6 +26,9 @@ type Log struct {
 type API struct {
 	Version   int      `toml:"version"`
 	Emulators []string `toml:"emulators"`
+	Limits    struct {
+		ArticlesPerQuery int `toml:"articles-per-query"`
+	} `toml:"limits"`
 }
 
 type Timeout struct {

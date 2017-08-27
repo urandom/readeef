@@ -71,7 +71,7 @@ func Mux(
 		featureRoutes(features),
 		feedsRoutes(service, feedManager, log),
 		tagRoutes(service.TagRepo(), log),
-		articlesRoutes(service, extractor, searchProvider, processors, log),
+		articlesRoutes(service, extractor, searchProvider, processors, config, log),
 		opmlRoutes(service, feedManager, log),
 		eventsRoutes(ctx, service, storage, feedManager, log),
 		userRoutes(service, []byte(config.Auth.Secret), log),
@@ -236,6 +236,7 @@ func articlesRoutes(
 	extractor extract.Generator,
 	searchProvider search.Provider,
 	processors []processor.Article,
+	config config.Config,
 	log log.Log,
 ) routes {
 	articleRepo := service.ArticleRepo()
@@ -243,20 +244,20 @@ func articlesRoutes(
 	tagRepo := service.TagRepo()
 
 	return routes{path: "/article", route: func(r chi.Router) {
-		r.Get("/", getArticles(service, userRepoType, noRepoType, processors, log))
+		r.Get("/", getArticles(service, userRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
 		if searchProvider != nil {
 			r.Route("/search", func(r chi.Router) {
 				r.Get("/*",
-					articleSearch(tagRepo, searchProvider, userRepoType, processors, log))
+					articleSearch(tagRepo, searchProvider, userRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 				r.With(feedContext(feedRepo, log)).Get("/feed/{feedID:[0-9]+}/*",
-					articleSearch(tagRepo, searchProvider, feedRepoType, processors, log))
+					articleSearch(tagRepo, searchProvider, feedRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 				r.With(tagContext(tagRepo)).Get("/tag/{tagID:[0-9]+}/*",
-					articleSearch(tagRepo, searchProvider, tagRepoType, processors, log))
+					articleSearch(tagRepo, searchProvider, tagRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 			})
 		}
 
-		r.Post("/read", articlesReadStateChange(service, userRepoType, log))
+		r.Post("/read", articlesReadStateChange(service, userRepoType, config.API.Limits.ArticlesPerQuery, log))
 
 		r.Route("/{articleID:[0-9]+}", func(r chi.Router) {
 			r.Use(articleContext(articleRepo, processors, log))
@@ -270,33 +271,33 @@ func articlesRoutes(
 		})
 
 		r.Route("/favorite", func(r chi.Router) {
-			r.Get("/", getArticles(service, favoriteRepoType, noRepoType, processors, log))
+			r.Get("/", getArticles(service, favoriteRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
-			r.Post("/read", articlesReadStateChange(service, favoriteRepoType, log))
+			r.Post("/read", articlesReadStateChange(service, favoriteRepoType, config.API.Limits.ArticlesPerQuery, log))
 		})
 
 		r.Route("/popular", func(r chi.Router) {
 			r.With(feedContext(feedRepo, log)).Get("/feed/{feedID:[0-9]+}",
-				getArticles(service, popularRepoType, feedRepoType, processors, log))
+				getArticles(service, popularRepoType, feedRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 			r.With(tagContext(tagRepo)).Get("/tag/{tagID:[0-9]+}",
-				getArticles(service, popularRepoType, tagRepoType, processors, log))
-			r.Get("/", getArticles(service, popularRepoType, userRepoType, processors, log))
+				getArticles(service, popularRepoType, tagRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
+			r.Get("/", getArticles(service, popularRepoType, userRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 		})
 
 		r.Route("/feed/{feedID:[0-9]+}", func(r chi.Router) {
 			r.Use(feedContext(feedRepo, log))
 
-			r.Get("/", getArticles(service, feedRepoType, noRepoType, processors, log))
+			r.Get("/", getArticles(service, feedRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
-			r.Post("/read", articlesReadStateChange(service, feedRepoType, log))
+			r.Post("/read", articlesReadStateChange(service, feedRepoType, config.API.Limits.ArticlesPerQuery, log))
 		})
 
 		r.Route("/tag/{tagID:[0-9]+}", func(r chi.Router) {
 			r.Use(tagContext(tagRepo))
 
-			r.Get("/", getArticles(service, tagRepoType, noRepoType, processors, log))
+			r.Get("/", getArticles(service, tagRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
-			r.Post("/read", articlesReadStateChange(service, tagRepoType, log))
+			r.Post("/read", articlesReadStateChange(service, tagRepoType, config.API.Limits.ArticlesPerQuery, log))
 		})
 
 	}}

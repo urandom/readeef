@@ -41,6 +41,7 @@ func getArticles(
 	repoType articleRepoType,
 	subType articleRepoType,
 	processors []processor.Article,
+	articlesLimit int,
 	log log.Log,
 ) http.HandlerFunc {
 	repo := service.ArticleRepo()
@@ -52,7 +53,7 @@ func getArticles(
 			return
 		}
 
-		o, stop := articleQueryOptions(w, r)
+		o, stop := articleQueryOptions(w, r, articlesLimit)
 		if stop {
 			return
 		}
@@ -135,6 +136,7 @@ func articleSearch(
 	searchProvider search.Provider,
 	repoType articleRepoType,
 	processors []processor.Article,
+	articlesLimit int,
 	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -149,7 +151,7 @@ func articleSearch(
 			return
 		}
 
-		o, stop := articleQueryOptions(w, r)
+		o, stop := articleQueryOptions(w, r, articlesLimit)
 		if stop {
 			return
 		}
@@ -294,6 +296,7 @@ func articleStateChange(
 func articlesReadStateChange(
 	service repo.Service,
 	repoType articleRepoType,
+	articlesLimit int,
 	log log.Log,
 ) http.HandlerFunc {
 	articleRepo := service.ArticleRepo()
@@ -310,7 +313,7 @@ func articlesReadStateChange(
 			return
 		}
 
-		o, stop := articleQueryOptions(w, r)
+		o, stop := articleQueryOptions(w, r, articlesLimit)
 		if stop {
 			return
 		}
@@ -353,7 +356,7 @@ func articlesReadStateChange(
 	}
 }
 
-func articleQueryOptions(w http.ResponseWriter, r *http.Request) ([]content.QueryOpt, bool) {
+func articleQueryOptions(w http.ResponseWriter, r *http.Request, articlesLimit int) ([]content.QueryOpt, bool) {
 	o := []content.QueryOpt{}
 
 	query := r.URL.Query()
@@ -376,8 +379,8 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request) ([]content.Quer
 		}
 	}
 
-	if limit == 0 {
-		limit = 200
+	if limit == 0 || limit > articlesLimit {
+		limit = articlesLimit
 	}
 
 	o = append(o, content.Paging(limit, offset))

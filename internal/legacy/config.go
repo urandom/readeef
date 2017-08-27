@@ -213,7 +213,7 @@ func (c Config) convertToV2() (config.Config, error) {
 	cfg.Server.KeyFile = c.Server.KeyFile
 
 	cfg.Log = config.Log(c.Logger)
-	cfg.API = config.API(c.API)
+	cfg.API.Emulators = c.API.Emulators
 	cfg.Timeout = config.Timeout(c.Timeout)
 	cfg.DB = config.DB(c.DB)
 	cfg.FeedParser = config.FeedParser(c.FeedParser)
