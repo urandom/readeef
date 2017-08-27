@@ -1,6 +1,6 @@
 <md-sidenav-container>
     <md-sidenav #sidenav>
-        <side-bar></side-bar>
+        <router-outlet name="sidebar"></router-outlet>
     </md-sidenav>
 
     <div class="content">
@@ -9,6 +9,6 @@
             Title
         </md-toolbar>
 
-        <h1>Content</h1>
+        <router-outlet></router-outlet>
     </div>
 </md-sidenav-container>

@@ -14,6 +14,7 @@ import { AuthGuard } from './guards/auth';
 import { TokenService } from './services/auth';
 import { APIService } from './services/api';
 import { FeaturesService } from './services/features';
+import { ArticleService } from './services/article';
 import { FeedService } from './services/feed';
 import { TagService } from './services/tag';
 
@@ -33,6 +34,7 @@ import { TagService } from './services/tag';
     TokenService,
     APIService,
     FeaturesService,
+    ArticleService,
     FeedService,
     TagService,
     AuthGuard,

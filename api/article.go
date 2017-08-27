@@ -376,9 +376,11 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request) ([]content.Quer
 		}
 	}
 
-	if limit > 0 {
-		o = append(o, content.Paging(limit, offset))
+	if limit == 0 {
+		limit = 200
 	}
+
+	o = append(o, content.Paging(limit, offset))
 
 	var minID, maxID int64
 	if query.Get("minID") != "" {

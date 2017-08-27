@@ -62,7 +62,6 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log lo
 			base = base[:idx]
 		}
 
-		log.Println(base, rootNameSet, r.URL.Path)
 		if _, ok := rootNameSet[base]; ok {
 			r.URL.Path = path.Join("/rf-ng/dist", r.URL.Path)
 			fileServer.ServeHTTP(w, r)

@@ -3,11 +3,13 @@ import { CommonModule }   from '@angular/common';
 import { RouterModule } from '@angular/router'
 import { MdInputModule, MdButtonModule, MdIconModule, MdToolbarModule } from "@angular/material";
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
-import { SideBarComponent } from './component'
+import { SideBarFeedComponent } from './feed-component'
+import { SideBarSettingsComponent } from './settings-component'
 
 @NgModule({
     declarations: [
-        SideBarComponent,
+        SideBarFeedComponent,
+        SideBarSettingsComponent,
     ],
     imports: [
         CommonModule,
@@ -19,7 +21,8 @@ import { SideBarComponent } from './component'
         NgbModule,
     ],
     exports: [
-        SideBarComponent,
+        SideBarFeedComponent,
+        SideBarSettingsComponent,
     ]
 })
 export class SideBarModule { }

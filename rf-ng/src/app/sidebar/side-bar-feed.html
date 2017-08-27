@@ -1,4 +1,4 @@
-<md-toolbar color="primary">
+<md-toolbar color="primary" i18n>
     Feeds
 </md-toolbar>
 <div class="content">
@@ -13,6 +13,8 @@
 
         <div class="items" [ngbCollapse]="!collapses.__popularity">Hello World</div>
     </div>
+
+    <hr>
 
     <div class="group">
         <div class="category">
@@ -42,6 +44,6 @@
 
     <hr>
 
-    <a md-button routerLink="/settings/user" i18n>Settings</a>
+    <a md-button routerLink="/settings" i18n>Settings</a>
     <a md-button routerLink="/login" i18n>Logout</a>
 </div>

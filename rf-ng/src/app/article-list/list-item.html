@@ -1,0 +1,26 @@
+<div class="row" [class.read]="item.read">
+    <div class="col-md-auto">
+        <button md-image-button><md-icon>
+            {{ item.favorite ? "bookmark" : "bookmark_border" }}
+        </md-icon></button>
+    </div>
+    <div class="col">
+        {{ item.title }}
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-auto">
+        <img src="{{ item.thumbnail }}">
+    </div>
+    <div class="col">
+        <span [innerHTML]="item.description"></span>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-auto" *ngIf="item.feed">
+        <img src="{{ item.feed }}">
+    </div>
+    <div class="col">
+        {{ item.time }}
+    </div>
+</div>

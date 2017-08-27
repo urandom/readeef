@@ -7,10 +7,10 @@ import 'rxjs/add/operator/combineLatest'
 
 @Component({
   selector: 'side-bar',
-  templateUrl: './side-bar.html',
+  templateUrl: './side-bar-feed.html',
   styleUrls: ['./side-bar.css']
 })
-export class SideBarComponent implements OnInit {
+export class SideBarFeedComponent implements OnInit {
     popularity: boolean
     collapses: Map<any, boolean> = new Map()
     popularityItems : Array<Item> = new Array();
