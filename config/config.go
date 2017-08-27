@@ -20,6 +20,7 @@ type Config struct {
 	FeedParser  FeedParser  `toml:"feed-parser"`
 	FeedManager FeedManager `toml:"feed-manager"`
 	Content     Content     `toml:"content"`
+	UI          UI          `toml:"ui"`
 }
 
 // Read loads the config data from the given path

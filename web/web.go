@@ -37,7 +37,7 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log lo
 	}
 
 	fileServer := http.FileServer(fs)
-	dir, err := fs.Open("/rf-ng/dist")
+	dir, err := fs.Open(config.UI.Path)
 	if err != nil {
 		return nil, errors.Wrap(err, "opening /static dir")
 	}
@@ -63,12 +63,12 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log lo
 		}
 
 		if _, ok := rootNameSet[base]; ok {
-			r.URL.Path = path.Join("/rf-ng/dist", r.URL.Path)
+			r.URL.Path = path.Join("/", config.UI.Path, r.URL.Path)
 			fileServer.ServeHTTP(w, r)
 			return
 		}
 
-		r.URL.Path = "/rf-ng/dist/"
+		r.URL.Path = path.Join("/", config.UI.Path) + "/"
 		fileServer.ServeHTTP(w, r)
 	})
 

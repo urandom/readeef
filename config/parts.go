@@ -11,8 +11,8 @@ type Server struct {
 	KeyFile  string `toml:"key-file"`
 
 	AutoCert struct {
-		Host       string `toml:"host"`
-		StorageDir string `toml:"storage-dir"`
+		Host        string `toml:"host"`
+		StoragePath string `toml:"storage-path"`
 	} `toml:"auto-cert"`
 }
 
@@ -105,6 +105,10 @@ type Content struct {
 		Processors           []string `toml:"processors"`
 		ProxyHTTPURLTemplate string   `toml:"proxy-http-url-template"`
 	} `toml:"article"`
+}
+
+type UI struct {
+	Path string `toml:"path"`
 }
 
 type converter interface {

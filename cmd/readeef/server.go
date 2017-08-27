@@ -155,8 +155,8 @@ func runServer(config config.Config, args []string) error {
 	log.Infof("Starting server on address %s", server.Addr)
 
 	if config.Server.AutoCert.Host != "" {
-		if err := os.MkdirAll(config.Server.AutoCert.StorageDir, 0777); err != nil {
-			return errors.Wrapf(err, "creating autocert storage dir %s", config.Server.AutoCert.StorageDir)
+		if err := os.MkdirAll(config.Server.AutoCert.StoragePath, 0777); err != nil {
+			return errors.Wrapf(err, "creating autocert storage dir %s", config.Server.AutoCert.StoragePath)
 		}
 
 		hostPolicy := func(ctx context.Context, host string) error {
@@ -169,7 +169,7 @@ func runServer(config config.Config, args []string) error {
 		m := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: hostPolicy,
-			Cache:      autocert.DirCache(config.Server.AutoCert.StorageDir),
+			Cache:      autocert.DirCache(config.Server.AutoCert.StoragePath),
 		}
 
 		server.TLSConfig = &tls.Config{GetCertificate: m.GetCertificate}

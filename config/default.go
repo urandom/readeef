@@ -22,7 +22,7 @@ var defaultCfg = `
 [server]
 	port = 80
 [server.auto-cert]
-	storage-dir = "./storage/certs"
+	storage-path = "./storage/certs"
 [log]
 	level = "error"    # error, info, debug
 	file = "-"         # stderr, or a filename
@@ -62,4 +62,6 @@ var defaultCfg = `
 	bleve-path = "./storage/search.bleve"
 	elastic-url = "http://localhost:9200"
 	proxy-http-url-template = "/proxy?url={{ . }}"
+[ui]
+	path = "./rf-ng/dist"
 `
