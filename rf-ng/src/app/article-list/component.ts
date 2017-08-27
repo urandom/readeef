@@ -22,7 +22,6 @@ export class ArticleListComponent implements OnChanges {
     ) {}
 
     ngOnChanges(changes: SimpleChanges): void {
-        throw new Error("Method not implemented.");
     }
 
     fetchMore(event: ChangeEvent) {

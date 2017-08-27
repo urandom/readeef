@@ -57,7 +57,7 @@ export class SideBarFeedComponent implements OnInit {
 
                     this.tags = tags.map(d =>
                          new Category(d.tag.id, "/tag/" + d.tag.id, d.tag.value, d.ids.map(id =>
-                             new Item(id, "/tag/" + d.tag.id + "/feed/" + id, feedMap.get(id).title))));
+                             new Item(id, `${id}`, feedMap.get(id).title))));
 
                     this.tags.forEach(tag => this.collapses.set(tag.id, false));
                 }
