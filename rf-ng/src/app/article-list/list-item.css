@@ -1,0 +1,27 @@
+.read {
+    font-weight: 100;
+    color: #666;
+}
+
+.read .title {
+    font-weight: 300;
+}
+
+.title {
+    font-weight: bold;
+}
+
+.description {
+    height: 6em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.thumbnail {
+    height: 6em;
+}
+
+.feed {
+    font-weight: 200;
+    font-size: 10px;
+}

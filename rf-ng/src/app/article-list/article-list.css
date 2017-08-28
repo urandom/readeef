@@ -1,0 +1,45 @@
+:host {
+    flex-grow: 1;
+    display: flex;
+}
+
+virtual-scroll {
+    overflow: hidden;
+    overflow-y: auto;
+    display: block;
+    flex-grow: 1;
+}
+
+list-item {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    border: 0;
+    margin: 0;
+    width: 100%;
+}
+.loader {
+    height: 4em;
+    display: block;
+    line-height: 4em;
+    text-align: center;
+    position: relative;
+}
+.loader:before {
+    content: ' ';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 20%;
+    height: 2px;
+    background: red;
+    animation: loader-animation 2s ease-out infinite;
+}
+@keyframes loader-animation {
+    0% {
+        transform: translate(0%);
+    }
+    100% {
+        transform: translate(500%);
+    }
+}

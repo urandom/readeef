@@ -1,26 +1,26 @@
-<div class="row" [class.read]="item.read">
+<div class="row align-items-center" [class.read]="item.read">
     <div class="col-md-auto">
-        <button md-image-button><md-icon>
+        <button md-icon-button><md-icon>
             {{ item.favorite ? "bookmark" : "bookmark_border" }}
         </md-icon></button>
     </div>
-    <div class="col">
+    <div class="col title">
         {{ item.title }}
     </div>
 </div>
-<div class="row">
+<div class="row" [class.read]="item.read">
     <div class="col-md-auto">
-        <img src="{{ item.thumbnail }}">
+        <img class="thumbnail" src="{{ item.thumbnail }}">
     </div>
-    <div class="col">
-        <span [innerHTML]="item.description"></span>
+    <div class="col description">
+        {{ item.description }}
     </div>
 </div>
-<div class="row">
-    <div class="col-md-auto" *ngIf="item.feed">
-        <img src="{{ item.feed }}">
+<div class="row align-items-center" [class.read]="item.read">
+    <div class="col-md-auto feed" *ngIf="item.feed">
+        {{ item.feed }}
     </div>
-    <div class="col">
+    <div class="col time">
         {{ item.time }}
     </div>
 </div>
