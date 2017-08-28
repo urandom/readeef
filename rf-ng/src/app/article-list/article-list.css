@@ -15,9 +15,28 @@ list-item {
     overflow: hidden;
     vertical-align: top;
     border: 0;
-    margin: 0;
-    width: 100%;
+    width: calc(25% - 16px);
+    margin: 8px;
 }
+
+@media (max-width: 1350px) {
+    list-item {
+        width: calc(33% - 16px);
+    }
+}
+
+@media (max-width: 900px) {
+    list-item {
+        width: calc(50% - 16px);
+    }
+}
+
+@media (max-width: 600px) {
+    list-item {
+        width: calc(100% - 16px);
+    }
+}
+
 .loader {
     height: 4em;
     display: block;

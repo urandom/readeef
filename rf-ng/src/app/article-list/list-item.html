@@ -1,26 +1,30 @@
-<div class="row align-items-center" [class.read]="item.read">
-    <div class="col-md-auto">
-        <button md-icon-button><md-icon>
-            {{ item.favorite ? "bookmark" : "bookmark_border" }}
-        </md-icon></button>
-    </div>
-    <div class="col title">
-        {{ item.title }}
-    </div>
-</div>
-<div class="row" [class.read]="item.read">
-    <div class="col-md-auto">
-        <img class="thumbnail" src="{{ item.thumbnail }}">
-    </div>
-    <div class="col description">
-        {{ item.description }}
-    </div>
-</div>
-<div class="row align-items-center" [class.read]="item.read">
-    <div class="col-md-auto feed" *ngIf="item.feed">
-        {{ item.feed }}
-    </div>
-    <div class="col time">
-        {{ item.time }}
-    </div>
-</div>
+<md-card [class.read]="item.read">
+    <md-card-header class="row align-items-center">
+        <md-card-title class="col title">
+            <button md-card-avatar md-icon-button>
+                <md-icon>
+                    {{ item.favorite ? "bookmark" : "bookmark_border" }}
+                </md-icon>
+            </button>
+            {{ item.title }}
+        </md-card-title>
+    </md-card-header>
+    <md-card-content>
+        <div class="row align-items-center">
+            <img class="thumbnail col-md-auto" src="{{ item.thumbnail }}">
+            <div class="description col">
+                {{ item.description }}
+            </div>
+        </div>
+    </md-card-content>
+    <md-card-actions>
+        <div class="row align-items-center" [class.read]="item.read">
+            <div class="col-md-auto feed" *ngIf="item.feed">
+                {{ item.feed }}
+            </div>
+            <div class="col time">
+                {{ item.time }}
+            </div>
+        </div>
+    </md-card-actions>
+</md-card>
