@@ -15,23 +15,32 @@ md-card-header {
     font-weight: bold;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1;
+    height: 4em;
 }
 
 .thumbnail {
-    height: 6em;
+    max-height: 4.4em;
     width: auto;
+    float: left;
 }
 
 
 .description {
     height: 6em;
     overflow: hidden;
+    clear: both;
 }
 
 .feed {
     font-weight: 200;
     font-size: 10px;
+    text-align: start;
+}
+
+.time {
+    font-size: 12px;
+    text-align: end;
 }
 
 button:hover, button:focus {

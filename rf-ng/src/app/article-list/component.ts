@@ -10,7 +10,13 @@ import * as moment from 'moment';
 import 'rxjs/add/observable/interval'
 import 'rxjs/add/operator/scan'
 import 'rxjs/add/operator/mergeMap'
+import 'rxjs/add/operator/startWith'
 import 'rxjs/add/operator/switchMap'
+
+class ScanData {
+    indexMap: Map<number, number> = new Map()
+    articles: Array<ListItem> = []
+}
 
 @Component({
     selector: "article-list",
@@ -42,23 +48,44 @@ export class ArticleListComponent implements OnInit {
                 return map;
             }, new Map<number, Feed>())
         ).switchMap(feedMap =>
-            this.route.data.switchMap(data => this.paging.map(page =>
-                page * this.limit
-            ).switchMap(offset =>
-                this.getArticles(this.limit, offset)
-            )).map(articles => 
-                articles.map(article => {
-                    div.innerHTML = article.description;
-                    return <ListItem>{
-                        title: article.title,
-                        description: div.innerText,
-                        thumbnail: article.thumbnail,
-                        feed: feedMap[article.feedID].title,
-                        date: article.date,
-                        time: moment(article.date).fromNow(),
-                        read: article.read,
-                        favorite: article.favorite,
+            this.route.data.switchMap(data =>
+                this.paging.map(page =>
+                    page * this.limit
+                ).switchMap(offset =>
+                    this.getArticles(this.limit, offset)
+                ).map(articles =>
+                    articles.map(article => {
+                        div.innerHTML = article.description;
+                        return <ListItem>{
+                            id: article.id,
+                            title: article.title,
+                            description: div.innerText,
+                            thumbnail: article.thumbnail,
+                            feed: feedMap[article.feedID].title,
+                            date: article.date,
+                            time: moment(article.date).fromNow(),
+                            read: article.read,
+                            favorite: article.favorite,
+                        }
+                    })
+                ).scan((acc, articles) => {
+                    for (let article of articles) {
+                        if (acc.indexMap.has(article.id)) {
+                            let idx = acc.indexMap[article.id];
+                            acc.articles[idx] = article;
+                        } else {
+                            acc.indexMap[article.id] = acc.articles.push(article) - 1;
+                        }
                     }
+
+                    return acc;
+                }, new ScanData()).map(data => data.articles)
+            )
+        ).switchMap(articles =>
+            Observable.interval(60000).startWith(0).map(v =>
+                articles.map(article => {
+                    article.time = moment(article.date).fromNow();
+                    return article;
                 })
             )
         ).subscribe(

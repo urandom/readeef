@@ -463,12 +463,12 @@ func constructSQLQueryOptions(
 	}
 
 	if !opts.BeforeDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+off))
+		whereSlice = append(whereSlice, fmt.Sprintf("(a.date IS NULL OR a.date <= $%d)", len(args)+off))
 		args = append(args, opts.BeforeDate)
 	}
 
 	if !opts.AfterDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf("a.date > $%d", len(args)+off))
+		whereSlice = append(whereSlice, fmt.Sprintf("a.date >= $%d", len(args)+off))
 		args = append(args, opts.AfterDate)
 	}
 

@@ -1,6 +1,7 @@
 import { Component, Input } from '@angular/core';
 
 export interface ListItem {
+    id: number,
     title: string,
     description: string,
     thumbnail: string,
