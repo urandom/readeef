@@ -166,6 +166,10 @@ func processUrl(link string, urlTemplate *template.Template, articleLink string)
 				u.Host = ar.Host
 			}
 
+			if u.Path == "" {
+				return "", nil
+			}
+
 			if u.Path[0] != '/' {
 				u.Path = path.Join(path.Dir(ar.Path), u.Path)
 			}

@@ -536,7 +536,7 @@ func constructSQLQueryOptions(
 }
 
 func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log log.Log) (content.Article, error) {
-	if err := a.Validate(); err != nil {
+	if err := a.Validate(); err != nil && a.ID != 0 {
 		return content.Article{}, errors.WithMessage(err, "validating article")
 	}
 

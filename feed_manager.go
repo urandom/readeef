@@ -65,6 +65,7 @@ func (fm *FeedManager) Start(ctx context.Context) error {
 	fm.log.Infoln("Starting the feed manager")
 
 	go fm.loop(ctx)
+	go fm.scheduler.Start(ctx)
 
 	feeds, err := fm.repo.Unsubscribed()
 	if err != nil {
@@ -208,7 +209,9 @@ func (fm *FeedManager) startUpdatingFeed(ctx context.Context, feed content.Feed)
 }
 
 func (fm *FeedManager) scheduleFeed(ctx context.Context, feed content.Feed, update time.Duration) {
+	fm.log.Infof("Scheduling update of feed %s", feed)
 	for update := range fm.scheduler.ScheduleFeed(ctx, feed, update) {
+		fm.log.Debugf("Update for feed %s", feed)
 		if update.IsErr() {
 			feed.UpdateError = update.Error()
 		} else {
@@ -250,7 +253,7 @@ func (fm *FeedManager) stopUpdatingFeed(feed content.Feed) {
 
 func (fm FeedManager) updateFeed(feed content.Feed) {
 	if newArticles, err := fm.repo.Update(feed); err != nil {
-		fm.log.Printf("Error updating feed '%s' database record: %v\n", feed, err)
+		fm.log.Printf("Error updating feed '%s' database record: %+v", feed, err)
 	} else {
 		fm.processFeedUpdateMonitors(feed, newArticles)
 	}

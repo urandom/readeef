@@ -148,7 +148,7 @@ func (u UpdateData) Error() string {
 	return u.message
 }
 
-func (s Scheduler) loop(ctx context.Context) {
+func (s Scheduler) Start(ctx context.Context) {
 	feedMap := feedMap{}
 
 	for {

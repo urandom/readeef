@@ -6,6 +6,6 @@ type ValidationError struct {
 	error
 }
 
-func NewValidationError(err error) ValidationError {
-	return ValidationError{errors.WithStack(err)}
+func NewValidationError(err error) error {
+	return errors.WithStack(ValidationError{err})
 }
