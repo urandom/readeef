@@ -1,1 +1,19 @@
 <span i18n>Feeds</span>
+<span class="spacer"></span>
+<button md-icon-button [mdMenuTriggerFor]="menu">
+    <md-icon>more_vert</md-icon>
+</button>
+<md-menu #menu="mdMenu">
+    <button md-menu-item *ngIf="!olderFirst" (click)="toggleOlderFirst()">
+        <span>Older first</span>
+    </button>
+    <button md-menu-item *ngIf="olderFirst" (click)="toggleOlderFirst()">
+        <span>Newer first</span>
+    </button>
+    <button md-menu-item (click)="toggleUnreadOnly()">
+        <span>Unread only</span>
+    </button>
+    <button md-menu-item>
+        <span>Mark all as read</span>
+    </button>
+</md-menu>

@@ -32,6 +32,26 @@ md-card-header {
     clear: both;
 }
 
+@media (min-width: 768px) {
+    .description {
+        height: 9em;
+    }
+
+    .thumbnail {
+        max-height: 6em;
+    }
+}
+
+@media (min-width: 960px) {
+    .description {
+        height: 12.2em;
+    }
+
+    .thumbnail {
+        max-height: 9em;
+    }
+}
+
 .feed {
     font-weight: 200;
     font-size: 10px;

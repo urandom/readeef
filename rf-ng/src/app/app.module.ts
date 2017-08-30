@@ -17,6 +17,7 @@ import { FeaturesService } from './services/features';
 import { ArticleService } from './services/article';
 import { FeedService } from './services/feed';
 import { TagService } from './services/tag';
+import { PreferencesService } from './services/preferences';
 
 @NgModule({
   declarations: [
@@ -37,6 +38,7 @@ import { TagService } from './services/tag';
     ArticleService,
     FeedService,
     TagService,
+    PreferencesService,
     AuthGuard,
     BaseRequestOptions
   ],
