@@ -6,7 +6,7 @@
     <div class="content">
         <md-toolbar color="primary">
             <button md-icon-button (click)="sidenav.toggle()"><md-icon>menu</md-icon></button>
-            Title
+            <router-outlet name="toolbar"></router-outlet>
         </md-toolbar>
 
         <router-outlet></router-outlet>

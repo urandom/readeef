@@ -5,6 +5,7 @@ import { MdSidenavModule, MdButtonModule, MdIconModule, MdToolbarModule } from "
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { MainComponent } from './component'
 import { SideBarModule } from '../sidebar/module';
+import { ToolbarModule } from '../toolbar/module';
 import { ArticleListModule } from '../article-list/module';
 import { routesModule } from "./routing";
 
@@ -21,6 +22,7 @@ import { routesModule } from "./routing";
         MdToolbarModule,
         NgbModule,
         SideBarModule,
+        ToolbarModule,
         ArticleListModule,
         routesModule,
     ],

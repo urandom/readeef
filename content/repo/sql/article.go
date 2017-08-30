@@ -394,7 +394,7 @@ func articleStateSet(
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(buf.String(), args); err != nil {
+	if _, err := tx.Exec(buf.String(), args...); err != nil {
 		return errors.Wrap(err, "executing article state statement")
 	}
 

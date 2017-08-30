@@ -108,7 +108,6 @@ SELECT uf.user_login, a.id
 FROM users_feeds uf
 INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-	{{ .JoinPredicate }}
 {{ .Join }}
 {{ .Where }}
 EXCEPT SELECT au.user_login, au.article_id
@@ -135,7 +134,6 @@ SELECT uf.user_login, a.id
 FROM users_feeds uf
 INNER JOIN articles a
 	ON uf.feed_id = a.feed_id AND uf.user_login = $1
-	{{ .JoinPredicate }}
 {{ .Join }}
 {{ .Where }}
 EXCEPT SELECT af.user_login, af.article_id

@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+const (
+	RFC1123NoSecond = "Mon, 02 Jan 2006 15:04 MST"
+)
+
 var (
 	unknownTime = time.Unix(0, 0)
 )
@@ -39,6 +43,7 @@ func parseDate(date string) (time.Time, error) {
 		time.RFC850,
 		time.RFC1123,
 		time.RFC1123Z,
+		RFC1123NoSecond,
 		time.RFC3339,
 		time.RFC3339Nano,
 		http.TimeFormat,
