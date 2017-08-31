@@ -1,7 +1,15 @@
 import { Injectable } from '@angular/core'
 import { Serializable } from "./api"
+import { Observable } from "rxjs";
+import { BehaviorSubject } from "rxjs/BehaviorSubject";
+import 'rxjs/add/operator/distinctUntilChanged'
 
 class Prefs extends Serializable {
+    olderFirst: boolean
+    unreadOnly: boolean
+}
+
+export interface QueryPreferences {
     olderFirst: boolean
     unreadOnly: boolean
 }
@@ -9,13 +17,15 @@ class Prefs extends Serializable {
 @Injectable()
 export class PreferencesService {
     private prefs = new Prefs()
-
+    private queryPreferencesSubject : BehaviorSubject<QueryPreferences>
     private static key = "preferences"
 
     constructor() {
         this.prefs.fromJSON(
-            JSON.parse(localStorage.getItemt(PreferencesService.key))
+            JSON.parse(localStorage.getItem(PreferencesService.key))
         )
+
+        this.queryPreferencesSubject = new BehaviorSubject(this.prefs);
     }
 
     get olderFirst() : boolean {
@@ -24,6 +34,7 @@ export class PreferencesService {
 
     set olderFirst(val: boolean) {
         this.prefs.olderFirst = val;
+        this.queryPreferencesSubject.next(this.prefs);
 
         this.saveToStorage();
     }
@@ -34,8 +45,15 @@ export class PreferencesService {
 
     set unreadOnly(val: boolean) {
         this.prefs.unreadOnly = val;
+        this.queryPreferencesSubject.next(this.prefs);
 
         this.saveToStorage();
+    }
+
+    queryPreferences() : Observable<QueryPreferences> {
+        return this.queryPreferencesSubject
+            .asObservable()
+            .distinctUntilChanged();
     }
 
     private saveToStorage() {

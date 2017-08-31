@@ -35,20 +35,61 @@ export interface QueryOptions {
     limit?: number,
     offset?: number,
     unreadFirst?: boolean,
+    unreadOnly?: boolean,
     olderFirst?: boolean,
+}
+
+export interface Source {
+    URL() : string
+}
+
+export class UserSource {
+    URL() : string {
+        return "";
+    }
+}
+
+export class FavoriteSource {
+    URL() : string {
+        return "/favorite";
+    }
+}
+
+export class PopularSource {
+    constructor(private secondary: UserSource | FeedSource | TagSource) {}
+
+    URL() : string {
+        return "/popular" + this.secondary.URL();
+    }
+}
+
+export class FeedSource {
+    constructor(public readonly id : number) {}
+
+    URL() : string {
+        return `/feed/${this.id}`;
+    }
+}
+
+export class TagSource {
+    constructor(public readonly id : number) {}
+
+    URL() : string {
+        return `/tag/${this.id}`;
+    }
 }
 
 @Injectable()
 export class ArticleService {
     constructor(private api: APIService) { }
 
-    public getArticles(options?: QueryOptions) : Observable<Article[]> {
-        return this.api.get(this.buildURL("article", options))
+    public getArticles(source: UserSource | FavoriteSource | FeedSource | TagSource, options?: QueryOptions) : Observable<Article[]> {
+        return this.api.get(this.buildURL("article" + source.URL(), options))
             .map(response => new ArticlesResponse().fromJSON(response.json()).articles);
     }
 
-    public getFavoriteArticles(options?: QueryOptions) : Observable<Article[]> {
-        return this.api.get(this.buildURL("article/favorite", options))
+    public getPopularArticles(source: UserSource | FeedSource | TagSource, options?: QueryOptions) : Observable<Article[]> {
+        return this.api.get(this.buildURL("article/popular" + source.URL(), options))
             .map(response => new ArticlesResponse().fromJSON(response.json()).articles);
     }
 
@@ -65,12 +106,16 @@ export class ArticleService {
 
         for (var i in options) {
             if (options.hasOwnProperty(i)) {
-                if (typeof options[i] === "boolean") {
-                    if (options[i]) {
+                let option = options[i];
+                if (option === undefined) {
+                    continue;
+                }
+                if (typeof option === "boolean") {
+                    if (option) {
                         query.push(`${i}`);
                     }
                 } else {
-                    query.push(`${i}=${options[i]}`);
+                    query.push(`${i}=${option}`);
                 }
             }
         }
