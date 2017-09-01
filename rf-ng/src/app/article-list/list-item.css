@@ -16,6 +16,12 @@ md-card-header {
 md-card-content {
     flex: 0 1 auto;
     overflow: hidden;
+    text-overflow: ellipsis-lastline;
+    /*
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    */
 }
 
 md-card-actions {

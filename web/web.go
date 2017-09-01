@@ -68,6 +68,17 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log lo
 			return
 		}
 
+		var err error
+		if err = session.PutBool(r, visitorKey, true); err == nil {
+			err = session.Save(w, r)
+		}
+
+		if err != nil {
+			log.Printf("Error saving session: %+v", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		r.URL.Path = path.Join("/", config.UI.Path) + "/"
 		fileServer.ServeHTTP(w, r)
 	})
