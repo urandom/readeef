@@ -13,6 +13,13 @@ md-card-header {
     flex: 0 0 auto;
 }
 
+[md-card-image] {
+    height: 240px;
+    flex: 1 0 auto;
+    background-position: center center;
+    background-repeat: no-repeat;
+}
+
 md-card-content {
     flex: 0 1 auto;
     overflow: hidden;

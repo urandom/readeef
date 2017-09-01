@@ -9,7 +9,7 @@
             {{ item.title }}
         </md-card-title>
     </md-card-header>
-    <img md-card-image src="{{ item.thumbnail }}">
+    <div md-card-image [style.backgroundImage]="'url(' + item.thumbnail + ')'"></div>
     <md-card-content>
         {{ item.description }}
     </md-card-content>
