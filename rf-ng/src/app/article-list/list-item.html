@@ -1,7 +1,7 @@
 <md-card [class.read]="item.read">
     <md-card-header class="row align-items-center">
         <md-card-title class="col title">
-            <button md-card-avatar md-icon-button>
+            <button md-card-avatar md-icon-button (click)="favor(item.id, !item.favorite)">
                 <md-icon>
                     {{ item.favorite ? "bookmark" : "bookmark_border" }}
                 </md-icon>

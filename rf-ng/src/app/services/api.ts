@@ -30,10 +30,19 @@ export class APIService {
             .catch(unathorizeHandler(this.router));
     }
 
-    post(endpoint: string, body: any, headers?: Headers) {
+    post(endpoint: string, body?: any, headers?: Headers) {
         return this.http.post(
             absEndpoint(endpoint),
             body,
+            { headers: authHeaders(headers) }
+        )
+            .map(checkRequestForToken)
+            .catch(unathorizeHandler(this.router));
+    }
+
+    delete(endpoint: string, headers?: Headers) {
+        return this.http.delete(
+            absEndpoint(endpoint),
             { headers: authHeaders(headers) }
         )
             .map(checkRequestForToken)

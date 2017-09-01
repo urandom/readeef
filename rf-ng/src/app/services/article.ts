@@ -93,6 +93,22 @@ export class ArticleService {
             .map(response => new ArticlesResponse().fromJSON(response.json()).articles);
     }
 
+    public favor(id: number, favor: boolean) {
+        let url = `article/${id}/favorite`
+        if (favor) {
+            return this.api.post(url);
+        }
+        return this.api.delete(url);
+    }
+
+    public read(id: number, read: boolean) {
+        let url = `article/${id}/read`
+        if (read) {
+            return this.api.post(url);
+        }
+        return this.api.delete(url);
+    }
+
     private buildURL(base: string, options?: QueryOptions) : string {
         if (!options) {
             options = {unreadFirst: true};

@@ -1,4 +1,5 @@
 import { Component, Input } from '@angular/core';
+import { ArticleService } from "../services/article";
 
 export interface ListItem {
     id: number,
@@ -20,4 +21,15 @@ export interface ListItem {
 export class ListItemComponent {
     @Input()
     item: ListItem
+
+    constructor(private articleService: ArticleService) { }
+
+    favor(id: number, favor: boolean) {
+        this.articleService.favor(id, favor).subscribe(
+            data => {
+                this.item.favorite = favor;
+            },
+            error => console.log(error)
+        )
+    }
 }

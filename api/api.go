@@ -267,7 +267,9 @@ func articlesRoutes(
 				r.Get("/format", formatArticle(service.ExtractRepo(), extractor, processors, log))
 			}
 			r.Post("/read", articleStateChange(articleRepo, read, log))
+			r.Delete("/read", articleStateChange(articleRepo, read, log))
 			r.Post("/favorite", articleStateChange(articleRepo, favorite, log))
+			r.Delete("/favorite", articleStateChange(articleRepo, favorite, log))
 		})
 
 		r.Route("/favorite", func(r chi.Router) {

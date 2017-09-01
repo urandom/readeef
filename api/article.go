@@ -259,10 +259,7 @@ func articleStateChange(
 			return
 		}
 
-		var value bool
-		if stop = readJSON(w, r.Body, &value); stop {
-			return
-		}
+		value := r.Method == http.MethodPost
 
 		var previousState bool
 
