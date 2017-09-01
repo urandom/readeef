@@ -122,7 +122,7 @@ func setFeedTags(repo repo.Feed, log log.Log) http.HandlerFunc {
 	}
 }
 
-func tagContext(repo repo.Tag) func(http.Handler) http.Handler {
+func tagContext(repo repo.Tag, log log.Log) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			user, stop := userFromRequest(w, r)
@@ -141,7 +141,7 @@ func tagContext(repo repo.Tag) func(http.Handler) http.Handler {
 				if content.IsNoContent(err) {
 					http.Error(w, "Not found", http.StatusNotFound)
 				} else {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					fatal(w, log, "Error getting tag: %+v", err)
 				}
 				return
 			}

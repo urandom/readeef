@@ -50,7 +50,7 @@ WHERE uft.user_login = $1
 SELECT t.value
 FROM tags t LEFT OUTER JOIN users_feeds_tags uft
 	ON t.id = uft.tag_id
-WHERE id = $1 AND ift.user_login = $2
+WHERE id = $1 AND uft.user_login = $2
 `
 	GetTagByValue = `SELECT id FROM tags WHERE value = $1`
 )
