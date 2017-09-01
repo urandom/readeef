@@ -363,9 +363,9 @@ func articleStateSet(
 		log.Infof("Setting articles favorite state")
 
 		if state {
-			tmpl = favoriteStateDeleteTemplate
-		} else {
 			tmpl = favoriteStateInsertTemplate
+		} else {
+			tmpl = favoriteStateDeleteTemplate
 		}
 	}
 
