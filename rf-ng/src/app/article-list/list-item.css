@@ -1,5 +1,25 @@
+:host {
+    height: 500px;
+}
+
+md-card {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100% - 12px);
+}
+
 md-card-header {
     overflow: hidden;
+    flex: 0 0 auto;
+}
+
+md-card-content {
+    flex: 0 1 auto;
+    overflow: hidden;
+}
+
+md-card-actions {
+    flex: 0 0 auto;
 }
 
 .read {
@@ -16,40 +36,7 @@ md-card-header {
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1;
-    height: 4em;
-}
-
-.thumbnail {
-    max-height: 4.4em;
-    width: auto;
-    float: left;
-}
-
-
-.description {
-    height: 6em;
-    overflow: hidden;
-    clear: both;
-}
-
-@media (min-width: 768px) {
-    .description {
-        height: 9em;
-    }
-
-    .thumbnail {
-        max-height: 6em;
-    }
-}
-
-@media (min-width: 960px) {
-    .description {
-        height: 12.2em;
-    }
-
-    .thumbnail {
-        max-height: 9em;
-    }
+    height: 3.85em;
 }
 
 .feed {

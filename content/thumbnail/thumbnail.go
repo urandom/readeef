@@ -31,7 +31,7 @@ func generateThumbnail(r io.Reader) (b []byte, mimeType string, err error) {
 		return
 	}
 
-	thumb := resize.Thumbnail(256, 192, img, resize.Lanczos3)
+	thumb := resize.Thumbnail(380, 285, img, resize.Lanczos3)
 	buf := pool.Buffer.Get()
 	defer pool.Buffer.Put(buf)
 

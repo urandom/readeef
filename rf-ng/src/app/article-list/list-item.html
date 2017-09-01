@@ -9,11 +9,9 @@
             {{ item.title }}
         </md-card-title>
     </md-card-header>
+    <img md-card-image src="{{ item.thumbnail }}">
     <md-card-content>
-        <div class="description">
-            <img class="thumbnail col-md-auto" src="{{ item.thumbnail }}">
-            {{ item.description }}
-        </div>
+        {{ item.description }}
     </md-card-content>
     <md-card-actions>
         <div class="row align-items-center" [class.read]="item.read">

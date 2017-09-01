@@ -51,9 +51,7 @@ export class PreferencesService {
     }
 
     queryPreferences() : Observable<QueryPreferences> {
-        return this.queryPreferencesSubject
-            .asObservable()
-            .distinctUntilChanged();
+        return this.queryPreferencesSubject.asObservable();
     }
 
     private saveToStorage() {
