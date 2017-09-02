@@ -5,8 +5,6 @@ import { Feed, FeedService } from "../services/feed"
 import { QueryPreferences, PreferencesService } from "../services/preferences"
 import { Observable } from "rxjs";
 import { BehaviorSubject } from "rxjs/BehaviorSubject";
-import * as moment from 'moment';
-import 'rxjs/add/observable/interval'
 import 'rxjs/add/operator/combineLatest'
 import 'rxjs/add/operator/filter'
 import 'rxjs/add/operator/scan'
@@ -17,6 +15,7 @@ import 'rxjs/add/operator/switchMap'
 
 export class Article extends Serializable {
     id: number
+    feed: string
     feedID: number
     title: string
     description: string
@@ -117,19 +116,19 @@ export class ArticleService {
         let source = this.router.events.filter(event =>
             event instanceof NavigationEnd
         ).map(e =>
-            this.getLeafRouteData([this.router.routerState.snapshot.root])
+            this.getListRoute([this.router.routerState.snapshot.root])
         ).startWith(
-            this.getLeafRouteData([this.router.routerState.snapshot.root])
+            this.getListRoute([this.router.routerState.snapshot.root])
         ).map(route => {
             return this.nameToSource(route.data, route.params)
         }).filter(source => source != null);
 
         this.articles = this.feedService.getFeeds().map(feeds =>
             feeds.reduce((map, feed) => {
-                map[feed.id] = feed;
+                map[feed.id] = feed.title;
 
                 return map;
-            }, new Map<number, Feed>())
+            }, new Map<number, string>())
         ).switchMap(feedMap =>
             source.switchMap(source => {
                 return queryPreferences.switchMap(prefs =>
@@ -140,8 +139,8 @@ export class ArticleService {
                         ).map(articles =>
                             articles.map(article => {
                                 div.innerHTML = article.description;
-                                article.time = moment(article.date).fromNow();
                                 article.stripped = div.innerText;
+                                article.feed = feedMap[article.feedID];
 
                                 return article;
                             })
@@ -159,13 +158,6 @@ export class ArticleService {
                         }, new ScanData()).map(data => data.articles)
                 )
             })
-        ).switchMap(articles =>
-            Observable.interval(60000).startWith(0).map(v =>
-                articles.map(article => {
-                    article.time = moment(article.date).fromNow();
-                    return article;
-                })
-            )
         ).shareReplay(1);
     }
 
@@ -273,13 +265,13 @@ export class ArticleService {
         }
     }
 
-    private getLeafRouteData(routes: ActivatedRouteSnapshot[]) : ActivatedRouteSnapshot {
+    private getListRoute(routes: ActivatedRouteSnapshot[]) : ActivatedRouteSnapshot {
         for (let route of routes) {
             if ("primary" in route.data) {
                 return route;
             }
 
-            let r = this.getLeafRouteData(route.children);
+            let r = this.getListRoute(route.children);
             if (r != null) {
                 return r;
             }

@@ -67,3 +67,12 @@ button:hover, button:focus {
     outline: none;
     text-decoration: none;
 }
+
+md-card a {
+    color: black;
+}
+
+a:hover, a:focus {
+    outline: none;
+    text-decoration: none;
+}

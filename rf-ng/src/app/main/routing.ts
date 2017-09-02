@@ -1,4 +1,4 @@
-import { RouterModule, Routes } from '@angular/router';
+import { RouterModule, Routes, Route, Data } from '@angular/router';
 import { SideBarFeedComponent } from "../sidebar/feed-component";
 import { SideBarSettingsComponent } from "../sidebar/settings-component";
 import { ToolbarFeedComponent } from "../toolbar/feed-component";
@@ -6,6 +6,7 @@ import { ToolbarSettingsComponent } from "../toolbar/settings-component";
 import { ModuleWithProviders } from "@angular/core";
 import { MainComponent } from "./component"
 import { ArticleListComponent } from "../article-list/component"
+import { ArticleDisplayComponent } from "../article-display/component"
 
 const routes: Routes = [
     {
@@ -16,16 +17,16 @@ const routes: Routes = [
                 path: 'feed',
                 children: [
                     {
-                         path: "",
-                         children: [
-                              {path: "", component: ArticleListComponent, data: {"primary": "user"}},
-                              {path: "favorite", component: ArticleListComponent, data: {"primary": "favorite"}},
-                              {path: "popular", component: ArticleListComponent, data: {"primary": "popular", "secondary": "user"}},
-                              {path: "popular/:id", component: ArticleListComponent, data: {"primary": "popular", "secondary": "feed"}},
-                              {path: "popular/tag/:id", component: ArticleListComponent, data: {"primary": "popular", "secondary": "tag"}},
-                              {path: ":id", component: ArticleListComponent, data: {"primary": "feed"}},
-                              {path: "tag/:id", component: ArticleListComponent, data: {"primary": "tag"}},
-                         ],
+                        path: "",
+                        children: createArtcleRoutes([
+                            ["", { "primary": "user" }],
+                            ["favorite", { "primary": "favorite" }],
+                            ["popular", { "primary": "popular", "secondary": "user" }],
+                            ["popular/:id", { "primary": "popular", "secondary": "feed" }],
+                            ["popular/tag/:id", { "primary": "popular", "secondary": "tag" }],
+                            [":id", { "primary": "feed" }],
+                            ["tag/:id", { "primary": "tag" }],
+                        ])
                     },
                     {
                          path: "",
@@ -64,3 +65,22 @@ const routes: Routes = [
 ];
 
 export const routesModule : ModuleWithProviders = RouterModule.forChild(routes);
+
+function createArtcleRoutes(paths: [string, Data][]) : Routes {
+    let routes = []
+
+    for (let path of paths) {
+        routes.push({
+            path: path[0],
+            component: ArticleListComponent,
+            data: path[1],
+        });
+
+        routes.push({
+            path: path[0] + "article/:articleID",
+            component: ArticleDisplayComponent,
+        });
+    }
+
+    return routes;
+}

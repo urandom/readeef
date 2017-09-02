@@ -6,9 +6,6 @@ import { Observable } from "rxjs";
 import { BehaviorSubject } from "rxjs/BehaviorSubject";
 import * as moment from 'moment';
 import 'rxjs/add/observable/interval'
-import 'rxjs/add/operator/combineLatest'
-import 'rxjs/add/operator/scan'
-import 'rxjs/add/operator/mergeMap'
 import 'rxjs/add/operator/startWith'
 import 'rxjs/add/operator/switchMap'
 
@@ -32,7 +29,14 @@ export class ArticleListComponent implements OnInit {
     ngOnInit(): void {
         this.loading = true;
 
-        this.articleService.articleObservable().subscribe(
+        this.articleService.articleObservable().switchMap(articles =>
+            Observable.interval(60000).startWith(0).map(v =>
+                articles.map(article => {
+                    article.time = moment(article.date).fromNow();
+                    return article;
+                })
+            )
+        ).subscribe(
             articles => {
                 this.loading = false;
                 this.items = articles;

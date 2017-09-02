@@ -7,6 +7,7 @@ import { MainComponent } from './component'
 import { SideBarModule } from '../sidebar/module';
 import { ToolbarModule } from '../toolbar/module';
 import { ArticleListModule } from '../article-list/module';
+import { ArticleDisplayModule } from '../article-display/module';
 import { routesModule } from "./routing";
 
 @NgModule({
@@ -24,6 +25,7 @@ import { routesModule } from "./routing";
         SideBarModule,
         ToolbarModule,
         ArticleListModule,
+        ArticleDisplayModule,
         routesModule,
     ],
     exports: [
