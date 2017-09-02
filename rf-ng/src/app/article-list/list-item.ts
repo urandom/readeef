@@ -1,17 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { ArticleService } from "../services/article";
-
-export interface ListItem {
-    id: number,
-    title: string,
-    description: string,
-    thumbnail: string,
-    feed: string,
-    date: Date,
-    time: string,
-    read: boolean,
-    favorite: boolean,
-}
+import { ArticleService, Article } from "../services/article";
 
 @Component({
     selector: "list-item",
@@ -20,7 +8,7 @@ export interface ListItem {
 })
 export class ListItemComponent {
     @Input()
-    item: ListItem
+    item: Article
 
     constructor(private articleService: ArticleService) { }
 

@@ -9,9 +9,9 @@
             {{ item.title }}
         </md-card-title>
     </md-card-header>
-    <div md-card-image [style.backgroundImage]="'url(' + item.thumbnail + ')'"></div>
+    <div md-card-image [style.backgroundImage]="'url(' + item.thumbnail + ')'" *ngIf="item.thumbnail"></div>
     <md-card-content>
-        {{ item.description }}
+        {{ item.stripped }}
     </md-card-content>
     <md-card-actions>
         <div class="row align-items-center" [class.read]="item.read">
