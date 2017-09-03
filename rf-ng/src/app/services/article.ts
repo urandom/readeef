@@ -4,8 +4,8 @@ import { APIService, Serializable } from "./api";
 import { Router, ActivatedRouteSnapshot, NavigationEnd, ParamMap, Data, Params } from '@angular/router';
 import { Feed, FeedService } from "../services/feed"
 import { QueryPreferences, PreferencesService } from "../services/preferences"
-import { Observable, ConnectableObservable, Subject } from "rxjs";
-import { BehaviorSubject } from "rxjs/BehaviorSubject";
+import { Observable, BehaviorSubject, ConnectableObservable, Subject } from "rxjs";
+import 'rxjs/add/operator/distinctUntilKeyChanged'
 import 'rxjs/add/operator/combineLatest'
 import 'rxjs/add/operator/filter'
 import 'rxjs/add/operator/scan'
@@ -58,17 +58,17 @@ export interface QueryOptions {
 }
 
 export interface Source {
-    URL() : string
+    url : string
 }
 
 export class UserSource {
-    URL() : string {
+    get url() : string {
         return "";
     }
 }
 
 export class FavoriteSource {
-    URL() : string {
+    get url() : string {
         return "/favorite";
     }
 }
@@ -76,15 +76,15 @@ export class FavoriteSource {
 export class PopularSource {
     constructor(private secondary: UserSource | FeedSource | TagSource) {}
 
-    URL() : string {
-        return "/popular" + this.secondary.URL();
+    get url() : string {
+        return "/popular" + this.secondary.url;
     }
 }
 
 export class FeedSource {
     constructor(public readonly id : number) {}
 
-    URL() : string {
+    get url() : string {
         return `/feed/${this.id}`;
     }
 }
@@ -92,7 +92,7 @@ export class FeedSource {
 export class TagSource {
     constructor(public readonly id : number) {}
 
-    URL() : string {
+    get url() : string {
         return `/tag/${this.id}`;
     }
 }
@@ -132,7 +132,9 @@ export class ArticleService {
             this.getListRoute([this.router.routerState.snapshot.root])
         ).map(route => {
             return this.nameToSource(route.data, route.params)
-        }).filter(source => source != null);
+        }).filter(source =>
+            source != null
+        ).distinctUntilKeyChanged("url");
 
         this.articles = this.feedService.getFeeds().map(feeds =>
             feeds.reduce((map, feed) => {
@@ -143,41 +145,41 @@ export class ArticleService {
         ).switchMap(feedMap =>
             source.switchMap(source => {
                 return queryPreferences.switchMap(prefs =>
-                    this.paging.map(page =>
-                        page * this.limit
-                    ).switchMap(offset =>
-                        this.getArticlesFor(source, prefs, this.limit, offset)
-                        ).map(articles =>
-                            articles.map(article => {
-                                div.innerHTML = article.description;
-                                article.stripped = div.innerText;
-                                article.feed = feedMap[article.feedID];
+                    this.paging.map(page => {
+                        return page * this.limit;
+                    }).switchMap(offset => {
+                        return this.getArticlesFor(source, prefs, this.limit, offset);
+                    }).map(articles =>
+                        articles.map(article => {
+                            div.innerHTML = article.description;
+                            article.stripped = div.innerText;
+                            article.feed = feedMap[article.feedID];
 
-                                return article;
-                            })
-                        ).scan((acc, articles) => {
-                            for (let article of articles) {
-                                if (acc.indexMap.has(article.id)) {
-                                    let idx = acc.indexMap[article.id];
-                                    acc.articles[idx] = article;
-                                } else {
-                                    acc.indexMap[article.id] = acc.articles.push(article) - 1;
+                            return article;
+                        })
+                    ).scan((acc, articles) => {
+                        for (let article of articles) {
+                            if (acc.indexMap.has(article.id)) {
+                                let idx = acc.indexMap[article.id];
+                                acc.articles[idx] = article;
+                            } else {
+                                acc.indexMap[article.id] = acc.articles.push(article) - 1;
+                            }
+                        }
+
+                        return acc;
+                    }, new ScanData()).combineLatest(
+                        this.stateChange.startWith(null),
+                        (data, propChange) => {
+                            if (propChange != null) {
+                                let idx = data.indexMap[propChange.id]
+                                if (idx != -1) {
+                                    data.articles[idx][propChange.name] = propChange.value;
                                 }
                             }
-
-                            return acc;
-                        }, new ScanData()).combineLatest(
-                            this.stateChange.startWith(null),
-                            (data, propChange) => {
-                                if (propChange != null) {
-                                    let idx = data.indexMap[propChange.id]
-                                    if (idx != -1) {
-                                        data.articles[idx][propChange.name] = propChange.value;
-                                    }
-                                }
-                                return data;
-                            }
-                        ).map(data => data.articles)
+                            return data;
+                        }
+                    ).map(data => data.articles)
                 )
             })
         ).publishReplay(1);
@@ -238,10 +240,10 @@ export class ArticleService {
         }
 
         if (source instanceof PopularSource) {
-            return this.api.get(this.buildURL("article/popular" + source.URL(), options))
+            return this.api.get(this.buildURL("article/popular" + source.url, options))
                 .map(response => new ArticlesResponse().fromJSON(response.json()).articles);
         } else {
-            return this.api.get(this.buildURL("article" + source.URL(), options))
+            return this.api.get(this.buildURL("article" + source.url, options))
                 .map(response => new ArticlesResponse().fromJSON(response.json()).articles);
         }
     }

@@ -7,7 +7,7 @@
                         {{ item.favorite ? "bookmark" : "bookmark_border" }}
                     </md-icon>
                 </button>
-                <a [routerLink]="['article', item.id]">
+                <a href="{{ item.link }}" target="_blank">
                     {{ item.title }}
                 </a>
             </h3>

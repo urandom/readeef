@@ -4,7 +4,9 @@ import { Location } from '@angular/common';
 import { Article, ArticleService } from "../services/article"
 import { Observable, Subscription } from "rxjs";
 import { Subject } from "rxjs/Subject";
+import 'rxjs/add/observable/of'
 import 'rxjs/add/operator/map'
+import 'rxjs/add/operator/mergeMap'
 import 'rxjs/add/operator/switchMap'
 import { NgbCarouselConfig, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
 
@@ -40,7 +42,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.subscription = this.articleService.articleObservable(
         ).switchMap(articles =>
-            this.offset.startWith(0).map((offset) : [Article[], number] => {
+            this.offset.startWith(0).map((offset) : [Article[], number, boolean] => {
                 let id = this.route.snapshot.params["articleID"];
                 let index = -1
                 let slides : Article[] = [];
@@ -73,7 +75,12 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                     }
                 }
 
-                return [slides, articles[index].id];
+                return [slides, articles[index].id, articles[index].read];
+            }).flatMap(data => {
+                if (data[2]) {
+                    return Observable.of(data);
+                }
+                return this.articleService.read(data[1], true).map(s => data);
             })
         ).subscribe(
             data => {
