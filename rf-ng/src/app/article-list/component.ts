@@ -1,8 +1,8 @@
-import { Component, OnInit } from "@angular/core";
+import { Component, OnInit, OnDestroy } from "@angular/core";
 import { ActivatedRoute, ParamMap, Data, Params } from '@angular/router';
 import { Article, Source, UserSource, FavoriteSource, PopularSource, FeedSource, TagSource, ArticleService, QueryOptions } from "../services/article"
 import { ChangeEvent } from 'angular2-virtual-scroll';
-import { Observable } from "rxjs";
+import { Observable, Subscription } from "rxjs";
 import { BehaviorSubject } from "rxjs/BehaviorSubject";
 import * as moment from 'moment';
 import 'rxjs/add/observable/interval'
@@ -14,11 +14,12 @@ import 'rxjs/add/operator/switchMap'
     templateUrl: "./article-list.html",
     styleUrls: ["./article-list.css"],
 })
-export class ArticleListComponent implements OnInit {
+export class ArticleListComponent implements OnInit, OnDestroy {
     items: Article[] = []
     loading: boolean
 
-    private limit: number = 200
+    private limit: number = 200;
+    private subscription: Subscription;
 
     constructor(
         private articleService: ArticleService,
@@ -29,7 +30,8 @@ export class ArticleListComponent implements OnInit {
     ngOnInit(): void {
         this.loading = true;
 
-        this.articleService.articleObservable().switchMap(articles =>
+        this.subscription = this.articleService.articleObservable(
+        ).switchMap(articles =>
             Observable.interval(60000).startWith(0).map(v =>
                 articles.map(article => {
                     article.time = moment(article.date).fromNow();
@@ -46,6 +48,10 @@ export class ArticleListComponent implements OnInit {
                 console.log(error);
             }
         )
+    }
+
+    ngOnDestroy(): void {
+        this.subscription.unsubscribe();
     }
 
     fetchMore(event: ChangeEvent) {

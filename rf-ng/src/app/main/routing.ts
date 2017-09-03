@@ -79,6 +79,7 @@ function createArtcleRoutes(paths: [string, Data][]) : Routes {
         routes.push({
             path: path[0] + "article/:articleID",
             component: ArticleDisplayComponent,
+            data: path[1],
         });
     }
 

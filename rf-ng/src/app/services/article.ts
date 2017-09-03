@@ -1,15 +1,16 @@
 import { Injectable } from '@angular/core'
+import { Response } from '@angular/http'
 import { APIService, Serializable } from "./api";
 import { Router, ActivatedRouteSnapshot, NavigationEnd, ParamMap, Data, Params } from '@angular/router';
 import { Feed, FeedService } from "../services/feed"
 import { QueryPreferences, PreferencesService } from "../services/preferences"
-import { Observable } from "rxjs";
+import { Observable, ConnectableObservable, Subject } from "rxjs";
 import { BehaviorSubject } from "rxjs/BehaviorSubject";
 import 'rxjs/add/operator/combineLatest'
 import 'rxjs/add/operator/filter'
 import 'rxjs/add/operator/scan'
 import 'rxjs/add/operator/mergeMap'
-import 'rxjs/add/operator/shareReplay'
+import 'rxjs/add/operator/publishReplay'
 import 'rxjs/add/operator/startWith'
 import 'rxjs/add/operator/switchMap'
 
@@ -42,6 +43,10 @@ export class Article extends Serializable {
 
 class ArticlesResponse extends Serializable {
     articles: Article[]
+}
+
+class ArticleStateResponse extends Serializable {
+    success: boolean
 }
 
 export interface QueryOptions {
@@ -97,10 +102,17 @@ class ScanData {
     articles: Array<Article> = []
 }
 
+interface ArticleProperty {
+    id: number
+    name: string
+    value: any
+}
+
 @Injectable()
 export class ArticleService {
-    private articles : Observable<Article[]>
-    private paging: BehaviorSubject<number>
+    private articles : ConnectableObservable<Article[]>
+    private paging = new BehaviorSubject<number>(0)
+    private stateChange = new Subject<ArticleProperty>()
     private limit: number = 200
 
     constructor(
@@ -111,7 +123,6 @@ export class ArticleService {
     ) {
         let div = document.createElement('div');
         let queryPreferences = this.preferences.queryPreferences();
-        this.paging = new BehaviorSubject(0);
 
         let source = this.router.events.filter(event =>
             event instanceof NavigationEnd
@@ -155,10 +166,23 @@ export class ArticleService {
                             }
 
                             return acc;
-                        }, new ScanData()).map(data => data.articles)
+                        }, new ScanData()).combineLatest(
+                            this.stateChange.startWith(null),
+                            (data, propChange) => {
+                                if (propChange != null) {
+                                    let idx = data.indexMap[propChange.id]
+                                    if (idx != -1) {
+                                        data.articles[idx][propChange.name] = propChange.value;
+                                    }
+                                }
+                                return data;
+                            }
+                        ).map(data => data.articles)
                 )
             })
-        ).shareReplay(1);
+        ).publishReplay(1);
+
+        this.articles.connect();
     }
 
     articleObservable() : Observable<Article[]> {
@@ -169,20 +193,35 @@ export class ArticleService {
         this.paging.next(this.paging.value + 1);
     }
 
-    public favor(id: number, favor: boolean) {
-        let url = `article/${id}/favorite`
-        if (favor) {
-            return this.api.post(url);
-        }
-        return this.api.delete(url);
+    public favor(id: number, favor: boolean) : Observable<Boolean> {
+        return this.articleStateChange(id, "favorite", favor);
     }
 
     public read(id: number, read: boolean) {
-        let url = `article/${id}/read`
-        if (read) {
-            return this.api.post(url);
+        return this.articleStateChange(id, "read", read);
+    }
+
+    private articleStateChange(id: number, name: string, state: boolean) : Observable<Boolean> {
+        let url = `article/${id}/${name}`
+        let o : Observable<Response>
+        if (state) {
+            o = this.api.post(url);
+        } else {
+            o = this.api.delete(url);
         }
-        return this.api.delete(url);
+
+        return o.map(response =>
+             new ArticleStateResponse().fromJSON(response.json()).success
+        ).map(success => {
+            if (success) {
+                this.stateChange.next({
+                    id: id,
+                    name: name,
+                    value: state,
+                })
+            }
+            return success;
+        });
     }
 
     private getArticlesFor(

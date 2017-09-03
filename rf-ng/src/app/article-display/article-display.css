@@ -1,0 +1,17 @@
+:host {
+    flex-grow: 1;
+    display: flex;
+}
+
+ngb-carousel {
+    flex-grow: 1;
+}
+
+a {
+    color: black;
+}
+
+a:hover, a:focus {
+    outline: none;
+    text-decoration: none;
+}

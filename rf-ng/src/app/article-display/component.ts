@@ -1,8 +1,12 @@
-import { Component, OnInit, Input } from "@angular/core";
-import { ActivatedRoute } from "@angular/router";
+import { Component, OnInit, OnDestroy, Input, ViewChild } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { Location } from '@angular/common';
 import { Article, ArticleService } from "../services/article"
-import { Observable } from "rxjs";
-import { NgbCarouselConfig } from '@ng-bootstrap/ng-bootstrap';
+import { Observable, Subscription } from "rxjs";
+import { Subject } from "rxjs/Subject";
+import 'rxjs/add/operator/map'
+import 'rxjs/add/operator/switchMap'
+import { NgbCarouselConfig, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
 
 @Component({
     selector: "article-display",
@@ -10,23 +14,94 @@ import { NgbCarouselConfig } from '@ng-bootstrap/ng-bootstrap';
     styleUrls: ["./article-display.css"],
     providers: [ NgbCarouselConfig ],
 })
-export class ArticleDisplayComponent implements OnInit {
+export class ArticleDisplayComponent implements OnInit, OnDestroy {
     @Input()
     items: Article[] = []
 
     slides: Article[] = []
 
+    @ViewChild("carousel")
+    private carousel : NgbCarousel;
+    private offset = new Subject<number>();
+    private subscription: Subscription;
+
     constructor(
         config: NgbCarouselConfig,
         private route: ActivatedRoute,
+        private router: Router,
+        private location: Location,
         private articleService: ArticleService,
     ) {
         config.interval = 0
-        config.wrap = true
+        config.wrap = false
         config.keyboard = true
     }
 
     ngOnInit(): void {
+        this.subscription = this.articleService.articleObservable(
+        ).switchMap(articles =>
+            this.offset.startWith(0).map((offset) : [Article[], number] => {
+                let id = this.route.snapshot.params["articleID"];
+                let index = -1
+                let slides : Article[] = [];
+
+                articles.some((article, idx) => {
+                    if (article.id == id) {
+                        index = idx;
+                        return true;
+                    }
+                    return false;
+                });
+
+                if (index + offset != -1 && index + offset < articles.length) {
+                    index += offset;
+                }
+
+                if (offset != 0) {
+                    let path = this.location.path();
+                    path = path.substring(0, path.lastIndexOf("/") + 1) + articles[index].id;
+                    this.router.navigateByUrl(path)
+                }
+
+                if (index != -1) {
+                    if (index > 0) {
+                        slides.push(articles[index-1]);
+                    }
+                    slides.push(articles[index]);
+                    if (index + 1 < articles.length) {
+                        slides.push(articles[index + 1]);
+                    }
+                }
+
+                return [slides, articles[index].id];
+            })
+        ).subscribe(
+            data => {
+                this.carousel.activeId = data[1].toString();
+                this.slides = data[0];
+            },
+            error => console.log(error)
+        );
+
+        // this.carousel.nativeElement.focus();
     }
 
+    ngOnDestroy(): void {
+        this.subscription.unsubscribe();
+    }
+
+    slideEvent(next: boolean) {
+        if (next) {
+            this.offset.next(1);
+        } else {
+            this.offset.next(-1);
+        }
+    }
+
+    favor(id: number, favor: boolean) {
+        this.articleService.favor(id, favor).subscribe(
+            success => { },
+            error => console.log(error)
+        )
+    }
 }

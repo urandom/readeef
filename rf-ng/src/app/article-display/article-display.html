@@ -1,6 +1,17 @@
-<ngb-carousel>;
-    <ng-template ngbSlide *ngFor="let item of slides">
-        <h2>{{ item.title }}</h2>
-        <p>{{ item.description }}</p>
+<ngb-carousel (slide)="slideEvent($event.direction == 'left')" #carousel>;
+    <ng-template ngbSlide *ngFor="let item of slides" [id]="item.id.toString()">
+        <div class="container">
+            <h3>
+                <button md-card-avatar md-icon-button (click)="favor(item.id, !item.favorite)">
+                    <md-icon>
+                        {{ item.favorite ? "bookmark" : "bookmark_border" }}
+                    </md-icon>
+                </button>
+                <a [routerLink]="['article', item.id]">
+                    {{ item.title }}
+                </a>
+            </h3>
+            <p [innerHTML]="item.description"></p>
+        </div>
     </ng-template>
 </ngb-carousel>

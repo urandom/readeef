@@ -14,9 +14,7 @@ export class ListItemComponent {
 
     favor(id: number, favor: boolean) {
         this.articleService.favor(id, favor).subscribe(
-            data => {
-                this.item.favorite = favor;
-            },
+            success => { },
             error => console.log(error)
         )
     }
