@@ -31,7 +31,7 @@ export class ArticleListComponent implements OnInit, OnDestroy {
         this.loading = true;
 
         this.subscription = this.articleService.articleObservable(
-        ).switchMap(articles =>
+        ).startWith([]).switchMap(articles =>
             Observable.interval(60000).startWith(0).map(v =>
                 articles.map(article => {
                     article.time = moment(article.date).fromNow();

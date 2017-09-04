@@ -21,11 +21,11 @@ const routes: Routes = [
                         children: createArtcleRoutes([
                             ["", { "primary": "user" }],
                             ["favorite", { "primary": "favorite" }],
-                            ["popular", { "primary": "popular", "secondary": "user" }],
-                            ["popular/:id", { "primary": "popular", "secondary": "feed" }],
                             ["popular/tag/:id", { "primary": "popular", "secondary": "tag" }],
-                            [":id", { "primary": "feed" }],
+                            ["popular/:id", { "primary": "popular", "secondary": "feed" }],
+                            ["popular", { "primary": "popular", "secondary": "user" }],
                             ["tag/:id", { "primary": "tag" }],
+                            [":id", { "primary": "feed" }],
                         ])
                     },
                     {
@@ -71,14 +71,14 @@ function createArtcleRoutes(paths: [string, Data][]) : Routes {
 
     for (let path of paths) {
         routes.push({
-            path: path[0],
-            component: ArticleListComponent,
+            path: path[0] + (path[0] == "" ? "" : "/") + "article/:articleID",
+            component: ArticleDisplayComponent,
             data: path[1],
         });
 
         routes.push({
-            path: path[0] + "article/:articleID",
-            component: ArticleDisplayComponent,
+            path: path[0],
+            component: ArticleListComponent,
             data: path[1],
         });
     }

@@ -5,6 +5,7 @@ import { Router, ActivatedRouteSnapshot, NavigationEnd, ParamMap, Data, Params }
 import { Feed, FeedService } from "../services/feed"
 import { QueryPreferences, PreferencesService } from "../services/preferences"
 import { Observable, BehaviorSubject, ConnectableObservable, Subject } from "rxjs";
+import { getListRoute } from "../main/routing-util"
 import 'rxjs/add/operator/distinctUntilKeyChanged'
 import 'rxjs/add/operator/combineLatest'
 import 'rxjs/add/operator/filter'
@@ -127,9 +128,9 @@ export class ArticleService {
         let source = this.router.events.filter(event =>
             event instanceof NavigationEnd
         ).map(e =>
-            this.getListRoute([this.router.routerState.snapshot.root])
+            getListRoute([this.router.routerState.snapshot.root])
         ).startWith(
-            this.getListRoute([this.router.routerState.snapshot.root])
+            getListRoute([this.router.routerState.snapshot.root])
         ).map(route => {
             return this.nameToSource(route.data, route.params)
         }).filter(source =>
@@ -304,20 +305,5 @@ export class ArticleService {
             case "tag":
                 return new TagSource(params["id"]);
         }
-    }
-
-    private getListRoute(routes: ActivatedRouteSnapshot[]) : ActivatedRouteSnapshot {
-        for (let route of routes) {
-            if ("primary" in route.data) {
-                return route;
-            }
-
-            let r = this.getListRoute(route.children);
-            if (r != null) {
-                return r;
-            }
-        }
-
-        return null;
     }
 }

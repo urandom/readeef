@@ -1,6 +1,11 @@
-<span i18n>Feeds</span>
+<button md-icon-button (click)="up()" *ngIf="showsArticle">
+    <md-icon>keyboard_backspace</md-icon>
+</button>
+<span i18n>Articles</span>
 <span class="spacer"></span>
-<button md-icon-button [mdMenuTriggerFor]="menu">
+<md-checkbox [(ngModel)]="articleRead" *ngIf="showsArticle" (click)="toggleRead()" i18n>Read</md-checkbox>
+
+<button md-icon-button [mdMenuTriggerFor]="menu" *ngIf="!showsArticle">
     <md-icon>more_vert</md-icon>
 </button>
 <md-menu #menu="mdMenu">

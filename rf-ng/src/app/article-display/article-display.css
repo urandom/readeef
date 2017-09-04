@@ -5,6 +5,7 @@
 
 ngb-carousel {
     flex-grow: 1;
+    overflow-y: auto;
 }
 
 a {
