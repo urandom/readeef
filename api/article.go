@@ -403,15 +403,15 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request, articlesLimit i
 		o = append(o, content.IDRange(content.ArticleID(minID), content.ArticleID(maxID)))
 	}
 
-	if query.Get("unreadOnly") == "true" {
+	if _, ok := query["unreadOnly"]; ok {
 		o = append(o, content.UnreadOnly)
 	}
 
-	if query.Get("unreadFirst") == "true" {
+	if _, ok := query["unreadFirst"]; ok {
 		o = append(o, content.UnreadFirst)
 	}
 
-	if query.Get("olderFirst") == "true" {
+	if _, ok := query["olderFirst"]; ok {
 		o = append(o, content.Sorting(content.SortByDate, content.AscendingOrder))
 	} else {
 		o = append(o, content.Sorting(content.SortByDate, content.DescendingOrder))
