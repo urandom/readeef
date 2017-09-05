@@ -1,4 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Location } from '@angular/common';
 import { Article, ArticleService } from "../services/article";
 import { PreferencesService } from "../services/preferences";
 import { Router, NavigationStart } from '@angular/router';
@@ -33,6 +34,7 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
         private articleService: ArticleService,
         private preferences : PreferencesService,
         private router: Router,
+        private location: Location,
     ) { }
 
     ngOnInit(): void {
@@ -90,8 +92,10 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
     }
 
     up() {
-        let route = getListRoute([this.router.routerState.snapshot.root]);
-        this.router.navigate([route]);
+        let idx = this.location.path().indexOf("/article/");
+        if (idx != -1) {
+            this.router.navigateByUrl(this.location.path().substring(0, idx));
+        }
     }
 
     toggleRead() {

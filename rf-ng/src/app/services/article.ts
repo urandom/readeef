@@ -6,6 +6,7 @@ import { Feed, FeedService } from "../services/feed"
 import { QueryPreferences, PreferencesService } from "../services/preferences"
 import { Observable, BehaviorSubject, ConnectableObservable, Subject } from "rxjs";
 import { getListRoute, getArticleRoute } from "../main/routing-util"
+import 'rxjs/add/observable/of'
 import 'rxjs/add/operator/distinctUntilKeyChanged'
 import 'rxjs/add/operator/combineLatest'
 import 'rxjs/add/operator/filter'
@@ -56,6 +57,7 @@ export interface QueryOptions {
     unreadFirst?: boolean,
     unreadOnly?: boolean,
     olderFirst?: boolean,
+    ids?: number[],
 }
 
 export interface Source {
@@ -115,6 +117,7 @@ export class ArticleService {
     private paging = new BehaviorSubject<number>(0)
     private stateChange = new Subject<ArticleProperty>()
     private limit: number = 200
+    private initialFetched = false
 
     constructor(
         private api: APIService,
@@ -240,13 +243,62 @@ export class ArticleService {
             unreadOnly: prefs.unreadOnly,
         }
 
+        let res : Observable<Article[]>
+
         if (source instanceof PopularSource) {
-            return this.api.get(this.buildURL("article/popular" + source.url, options))
+            res = this.api.get(this.buildURL("article/popular" + source.url, options))
                 .map(response => new ArticlesResponse().fromJSON(response.json()).articles);
         } else {
-            return this.api.get(this.buildURL("article" + source.url, options))
+            res = this.api.get(this.buildURL("article" + source.url, options))
                 .map(response => new ArticlesResponse().fromJSON(response.json()).articles);
         }
+
+        if (!this.initialFetched) {
+            this.initialFetched = true;
+
+            let route = getArticleRoute([this.router.routerState.snapshot.root])
+
+            if (route != null && +route.params["articleID"] > -1) {
+                let id = +route.params["articleID"];
+
+                return this.api.get(this.buildURL(
+                    "article" + new UserSource().url, {ids: [id]}
+                )).map(response => new ArticlesResponse()
+                        .fromJSON(response.json()).articles[0]
+                ).take(1).flatMap(initial => res.map(articles => {
+                    if (!options.unreadOnly || !initial.read) {
+                        for (let i = 0; i < articles.length; i++) {
+                            let article = articles[i];
+                            if (options.unreadFirst && initial.read != article.read) {
+                                if (initial.read) {
+                                    continue;
+                                } else {
+                                    articles.splice(i, 0, initial);
+                                    return articles;
+                                }
+                            }
+
+                            if (options.olderFirst) {
+                                if (initial.date < article.date) {
+                                    articles.splice(i, 0, initial);
+                                    return articles;
+                                }
+                            } else {
+                                if (initial.date > article.date) {
+                                    articles.splice(i, 0, initial);
+                                    return articles;
+                                }
+                            }
+                        }
+                    }
+
+                    articles.push(initial);
+                    return articles;
+                }));
+            }
+        }
+
+        return res;
     }
 
     private buildURL(base: string, options?: QueryOptions) : string {
@@ -259,6 +311,14 @@ export class ArticleService {
         }
 
         var query = new Array<string>();
+
+        if (options.ids) {
+            for (let id of options.ids) {
+                query.push(`id=${id}`)
+            }
+
+            options.ids = undefined;
+        }
 
         for (var i in options) {
             if (options.hasOwnProperty(i)) {
