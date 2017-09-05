@@ -8,7 +8,27 @@ import { MainComponent } from "./component"
 import { ArticleListComponent } from "../article-list/component"
 import { ArticleDisplayComponent } from "../article-display/component"
 
-const routes: Routes = [
+function createArtcleRoutes(paths: [string, Data][]) : Routes {
+    let routes = []
+
+    for (let path of paths) {
+        routes.push({
+            path: path[0] + (path[0] == "" ? "" : "/") + "article/:articleID",
+            component: ArticleDisplayComponent,
+            data: path[1],
+        });
+
+        routes.push({
+            path: path[0],
+            component: ArticleListComponent,
+            data: path[1],
+        });
+    }
+
+    return routes;
+}
+
+export const routes: Routes = [
     {
         path: '',
         component: MainComponent,
@@ -65,23 +85,3 @@ const routes: Routes = [
 ];
 
 export const routesModule : ModuleWithProviders = RouterModule.forChild(routes);
-
-function createArtcleRoutes(paths: [string, Data][]) : Routes {
-    let routes = []
-
-    for (let path of paths) {
-        routes.push({
-            path: path[0] + (path[0] == "" ? "" : "/") + "article/:articleID",
-            component: ArticleDisplayComponent,
-            data: path[1],
-        });
-
-        routes.push({
-            path: path[0],
-            component: ArticleListComponent,
-            data: path[1],
-        });
-    }
-
-    return routes;
-}
