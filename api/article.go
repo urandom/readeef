@@ -403,6 +403,20 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request, articlesLimit i
 		o = append(o, content.IDRange(content.ArticleID(minID), content.ArticleID(maxID)))
 	}
 
+	if queryIDs, ok := query["id"]; ok {
+		ids := make([]content.ArticleID, len(queryIDs))
+		for i := range queryIDs {
+			id, err := strconv.ParseInt(queryIDs[i], 10, 64)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return o, true
+			}
+			ids[i] = content.ArticleID(id)
+		}
+
+		o = append(o, content.IDs(ids))
+	}
+
 	if _, ok := query["unreadOnly"]; ok {
 		o = append(o, content.UnreadOnly)
 	}
