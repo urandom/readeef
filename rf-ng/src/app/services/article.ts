@@ -5,7 +5,7 @@ import { Router, ActivatedRouteSnapshot, NavigationEnd, ParamMap, Data, Params }
 import { Feed, FeedService } from "../services/feed"
 import { QueryPreferences, PreferencesService } from "../services/preferences"
 import { Observable, BehaviorSubject, ConnectableObservable, Subject } from "rxjs";
-import { getListRoute } from "../main/routing-util"
+import { getListRoute, getArticleRoute } from "../main/routing-util"
 import 'rxjs/add/operator/distinctUntilKeyChanged'
 import 'rxjs/add/operator/combineLatest'
 import 'rxjs/add/operator/filter'

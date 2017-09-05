@@ -1,10 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { Location } from '@angular/common';
 import { Article, ArticleService } from "../services/article";
 import { PreferencesService } from "../services/preferences";
 import { Router, NavigationStart } from '@angular/router';
 import { Observable, Subscription } from "rxjs";
-import { articleDisplayRoute, articlePattern } from "../main/routing-util"
+import { articleRoute, getListRoute } from "../main/routing-util"
 import 'rxjs/add/observable/empty'
 import 'rxjs/add/observable/of'
 import 'rxjs/add/observable/timer'
@@ -34,37 +33,21 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
         private articleService: ArticleService,
         private preferences : PreferencesService,
         private router: Router,
-        private location: Location,
     ) { }
 
     ngOnInit(): void {
-        this.subscriptions.push(articleDisplayRoute(
-            this.router, this.location
+        this.subscriptions.push(articleRoute(this.router).map(
+            route => route != null
         ).subscribe(
             showsArticle => this.showsArticle = showsArticle
         ));
 
-        this.articleID = this.router.events.map(event => {
-            if (event instanceof NavigationStart) {
-                return event.url;
-            }
-
-            return "";
-        }).filter(path => path != "").startWith(
-            this.location.path()
-        ).map(path => {
-            let idx = path.indexOf(articlePattern)
-            if (idx == -1) {
+        this.articleID = articleRoute(this.router).map(route => {
+            if (route == null) {
                 return -1;
             }
 
-            path = path.substring(idx + articlePattern.length);
-            idx = path.indexOf("/");
-            if (idx != -1) {
-                path = path.substring(0, idx);
-            }
-
-            return +path;
+            return +route.params["articleID"];
         }).distinctUntilChanged().shareReplay(1)
 
         this.subscriptions.push(this.articleID.switchMap(id => {
@@ -107,10 +90,8 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
     }
 
     up() {
-        let idx = this.location.path().indexOf("/article/");
-        if (idx != -1) {
-            this.router.navigateByUrl(this.location.path().substring(0, idx));
-        }
+        let route = getListRoute([this.router.routerState.snapshot.root]);
+        this.router.navigate([route]);
     }
 
     toggleRead() {

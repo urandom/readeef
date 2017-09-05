@@ -1,8 +1,7 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
-import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subscription } from "rxjs";
-import { articleDisplayRoute } from "./routing-util"
+import { articleRoute } from "./routing-util"
 
 @Component({
     moduleId: module.id,
@@ -16,13 +15,12 @@ export class MainComponent implements OnInit, OnDestroy {
 
     constructor(
         private router: Router,
-        private location: Location,
     ) {}
 
     ngOnInit() {
-        this.subscription = articleDisplayRoute(
-            this.router, this.location
-        ).subscribe(
+        this.subscription = articleRoute(
+            this.router
+        ).map(route => route != null).subscribe(
             showsArticle => this.showsArticle = showsArticle
         );
     }

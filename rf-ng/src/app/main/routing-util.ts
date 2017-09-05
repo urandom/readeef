@@ -7,16 +7,6 @@ import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/startWith'
 import 'rxjs/add/operator/shareReplay'
 
-export const articlePattern = "/article/";
-
-export function articleDisplayRoute(router: Router, location: Location): Observable<boolean> {
-    return router.events.filter(event =>
-        event instanceof NavigationEnd
-    ).startWith(null).map(v => {
-        return location.path().indexOf(articlePattern) != -1
-    }).distinctUntilChanged().shareReplay(1);
-}
-
 export function getListRoute(routes: ActivatedRouteSnapshot[]): ActivatedRouteSnapshot {
     for (let route of routes) {
         if ("primary" in route.data) {
@@ -30,5 +20,27 @@ export function getListRoute(routes: ActivatedRouteSnapshot[]): ActivatedRouteSn
     }
 
     return null;
+}
 
+export function articleRoute(router: Router): Observable<ActivatedRouteSnapshot> {
+    return router.events.filter(event =>
+        event instanceof NavigationEnd
+    ).startWith(null).map(v => {
+        return getArticleRoute([router.routerState.snapshot.root])
+    }).distinctUntilChanged().shareReplay(1);
+}
+
+export function getArticleRoute(routes: ActivatedRouteSnapshot[]): ActivatedRouteSnapshot {
+    for (let route of routes) {
+        if ("articleID" in route.params) {
+            return route;
+        }
+
+        let r = getArticleRoute(route.children);
+        if (r != null) {
+            return r;
+        }
+    }
+
+    return null;
 }
