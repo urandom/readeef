@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/pkg/errors"
 	"github.com/urandom/handler/auth"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api/token"
@@ -15,6 +17,11 @@ import (
 	"github.com/urandom/readeef/log"
 )
 
+type event struct {
+	Type string      `json:"type"`
+	Data interface{} `json:"data,omitempty"`
+}
+
 func eventSocket(
 	ctx context.Context,
 	repo repo.Feed,
@@ -22,7 +29,7 @@ func eventSocket(
 	feedManager *readeef.FeedManager,
 	log log.Log,
 ) http.HandlerFunc {
-	monitor := &feedMonitor{ops: make(chan func(connMap))}
+	monitor := &feedMonitor{ops: make(chan func(connMap)), log: log}
 
 	go monitor.loop(ctx)
 	feedManager.AddFeedMonitor(monitor)
@@ -60,11 +67,25 @@ func eventSocket(
 
 		done := monitor.addConn(w, flusher, connectionValidator(storage, r), r.RemoteAddr, feedSet)
 
-		select {
-		case <-done:
+		err = event{Type: "connection-established"}.Write(w, flusher, log)
+		if err != nil {
+			log.Printf("Error sending initial data: %+v", err)
 			return
-		case <-ctx.Done():
-			return
+		}
+
+		for {
+			select {
+			case <-time.After(10 * time.Second):
+				err = event{}.Write(w, flusher, log)
+				if err != nil {
+					log.Printf("Error sending ping event: %+v", err)
+					return
+				}
+			case <-done:
+				return
+			case <-ctx.Done():
+				return
+			}
 		}
 	}
 }
@@ -100,28 +121,36 @@ type connData struct {
 	done      chan struct{}
 }
 
-type event struct {
-	Type string          `json:"type"`
-	Data json.RawMessage `json:"data"`
-}
-
-func (e event) WriteJSON(w io.Writer, flusher http.Flusher, data interface{}, log log.Log) error {
-	if b, err := json.Marshal(data); err == nil {
-		e.Data = json.RawMessage(b)
-
-		if b, err = json.Marshal(e); err == nil {
-			_, err := w.Write(b)
-			if err != nil {
-				return err
-			}
-
-			flusher.Flush()
-		} else {
-			log.Printf("Error converting event to json: %+v", err)
+func (e event) Write(w io.Writer, flusher http.Flusher, log log.Log) error {
+	if e.Type == "" {
+		// Comment event to keep the connection alive
+		if _, err := w.Write([]byte(": ping\n\n")); err != nil {
+			return errors.Wrap(err, "sending ping")
 		}
-	} else {
-		log.Printf("Error converting %#v to json: %+v", data, err)
+		flusher.Flush()
+
+		return nil
 	}
+
+	data := []byte("event: " + e.Type + "\n")
+	if e.Data != nil {
+		b, err := json.Marshal(e.Data)
+		if err != nil {
+			log.Printf("Error converting data %#v to json: %+v", e.Data, err)
+			return nil
+		}
+
+		data = append(data, []byte("data: ")...)
+		data = append(data, b...)
+		data = append(data, '\n')
+	}
+
+	data = append(data, '\n')
+
+	if _, err := w.Write(data); err != nil {
+		return errors.Wrapf(err, "sending event %s", string(data))
+	}
+	flusher.Flush()
 
 	return nil
 }
@@ -135,8 +164,9 @@ func (fm *feedMonitor) FeedUpdated(feed content.Feed, articles []content.Article
 					continue
 				}
 
-				err := event{Type: "feed-update"}.WriteJSON(d.writer, d.flusher, args{"feed": feed}, fm.log)
+				err := event{"feed-update", feed.ID}.Write(d.writer, d.flusher, fm.log)
 				if err != nil {
+					fm.log.Printf("Error sending feed update event: %+v", err)
 					close(d.done)
 				}
 			}

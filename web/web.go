@@ -33,7 +33,10 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log lo
 	mux := http.NewServeMux()
 
 	if hasProxy(config) {
-		mux.HandleFunc("/proxy", ProxyHandler)
+		mux.Handle(
+			"/proxy",
+			http.TimeoutHandler(http.HandlerFunc(ProxyHandler), 10*time.Second, ""),
+		)
 	}
 
 	fileServer := http.FileServer(fs)
@@ -51,7 +54,7 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log lo
 		rootNameSet[f.Name()] = struct{}{}
 	}
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/", http.TimeoutHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cleaned := path.Clean(r.URL.Path)
 		if cleaned[0] == '/' {
 			cleaned = cleaned[1:]
@@ -81,7 +84,7 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log lo
 
 		r.URL.Path = path.Join("/", config.UI.Path) + "/"
 		fileServer.ServeHTTP(w, r)
-	})
+	}), time.Second, ""))
 
 	session := session.Manage(engine, session.Lifetime(240*time.Hour))
 	return session(mux), nil

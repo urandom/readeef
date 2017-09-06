@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
@@ -117,8 +118,15 @@ type routes struct {
 	route func(r chi.Router)
 }
 
+func timeout(d time.Duration) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.TimeoutHandler(next, d, "")
+	}
+}
+
 func tokenRoutes(repo repo.User, storage token.Storage, secret []byte, log log.Log) routes {
 	return routes{path: "/token", route: func(r chi.Router) {
+		r.Use(timeout(time.Second))
 		r.Method(method.POST, "/", tokenCreate(repo, secret, log))
 		r.Method(method.DELETE, "/", tokenDelete(storage, secret, log))
 	}}
@@ -128,6 +136,7 @@ func hubbubRoutes(hubbub *readeef.Hubbub, service repo.Service, log log.Log) rou
 	handler := hubbubRegistration(hubbub, service, log)
 
 	return routes{path: "/hubbub", route: func(r chi.Router) {
+		r.Use(timeout(5 * time.Second))
 		r.Get("/", handler)
 		r.Post("/", handler)
 	}}
@@ -150,6 +159,7 @@ func emulatorRoutes(
 			rr = append(rr, routes{
 				path: fmt.Sprintf("/v%d/tt-rss/", ttrss.API_LEVEL),
 				route: func(r chi.Router) {
+					r.Use(timeout(5 * time.Second))
 					r.Get("/", ttrss.FakeWebHandler)
 
 					r.Post("/api/", ttrss.Handler(
@@ -163,6 +173,7 @@ func emulatorRoutes(
 			rr = append(rr, routes{
 				path: fmt.Sprintf("/v%d/fever/", fever.API_VERSION),
 				route: func(r chi.Router) {
+					r.Use(timeout(5 * time.Second))
 					r.Post("/", fever.Handler(service, processors, log))
 				},
 			})
@@ -200,6 +211,7 @@ func userMiddleware(repo repo.User, storage token.Storage, secret []byte, log lo
 
 func featureRoutes(features features) routes {
 	return routes{path: "/features", route: func(r chi.Router) {
+		r.Use(timeout(time.Second))
 		r.Get("/", featuresHandler(features))
 	}}
 }
@@ -207,6 +219,7 @@ func featureRoutes(features features) routes {
 func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log) routes {
 	return routes{path: "/feed", route: func(r chi.Router) {
 		feedRepo := service.FeedRepo()
+		r.Use(timeout(5 * time.Second))
 		r.Get("/", listFeeds(feedRepo, log))
 		r.Post("/", addFeed(feedRepo, feedManager))
 
@@ -226,6 +239,7 @@ func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log
 
 func tagRoutes(repo repo.Tag, log log.Log) routes {
 	return routes{path: "/tag", route: func(r chi.Router) {
+		r.Use(timeout(5 * time.Second))
 		r.Get("/", listTags(repo, log))
 		r.Get("/feedIDs", getTagsFeedIDs(repo, log))
 	}}
@@ -244,6 +258,7 @@ func articlesRoutes(
 	tagRepo := service.TagRepo()
 
 	return routes{path: "/article", route: func(r chi.Router) {
+		r.Use(timeout(10 * time.Second))
 		r.Get("/", getArticles(service, userRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
 		if searchProvider != nil {
@@ -307,6 +322,7 @@ func articlesRoutes(
 
 func opmlRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log) routes {
 	return routes{path: "/opml", route: func(r chi.Router) {
+		r.Use(timeout(10 * time.Second))
 		r.Get("/", exportOPML(service, feedManager, log))
 		r.Post("/", importOPML(service.FeedRepo(), feedManager, log))
 	}}
@@ -327,6 +343,7 @@ func eventsRoutes(
 func userRoutes(service repo.Service, secret []byte, log log.Log) routes {
 	repo := service.UserRepo()
 	return routes{path: "/user", route: func(r chi.Router) {
+		r.Use(timeout(5 * time.Second))
 		r.Route("/", func(r chi.Router) {
 			r.Use(adminValidator)
 
