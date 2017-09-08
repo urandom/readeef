@@ -13,6 +13,7 @@ import { AuthGuard } from './guards/auth';
 
 import { TokenService } from './services/auth';
 import { APIService } from './services/api';
+import { EventService } from './services/events';
 import { FeaturesService } from './services/features';
 import { ArticleService } from './services/article';
 import { FeedService } from './services/feed';
@@ -34,6 +35,7 @@ import { PreferencesService } from './services/preferences';
   providers: [
     TokenService,
     APIService,
+    EventService,
     FeaturesService,
     ArticleService,
     FeedService,

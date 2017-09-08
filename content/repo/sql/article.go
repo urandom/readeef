@@ -3,8 +3,8 @@ package sql
 import (
 	"database/sql"
 	"fmt"
-	"html/template"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/jmoiron/sqlx"

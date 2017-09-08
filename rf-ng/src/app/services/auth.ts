@@ -1,12 +1,25 @@
 import { Injectable } from '@angular/core'
 import { Http, Headers, Response } from '@angular/http'
 import { environment } from "../../environments/environment"
-import { Observable } from "rxjs";
+import { Observable, BehaviorSubject } from "rxjs";
 import 'rxjs/add/operator/map'
+import 'rxjs/add/operator/skip'
 
 @Injectable()
 export class TokenService {
-    constructor(private http: Http) { }
+    private tokenSubject : BehaviorSubject<string>
+
+    constructor(private http: Http) {
+        this.tokenSubject = new BehaviorSubject(localStorage.getItem("token"));
+
+        this.tokenSubject.skip(1).subscribe(token => {
+            if (token == "") {
+                localStorage.removeItem("token");
+            } else {
+                localStorage.setItem("token", token);
+            }
+        })
+    }
 
     create(user: string, password: string): Observable<string> {
         var body = new FormData();
@@ -19,7 +32,7 @@ export class TokenService {
             })
             .map(auth => {
                 if (auth) {
-                    localStorage.setItem("token", auth);
+                    this.tokenSubject.next(auth);
 
                     return auth;
                 }
@@ -29,7 +42,13 @@ export class TokenService {
     }
 
     delete() {
-        localStorage.removeItem("token");
+        this.tokenSubject.next("");
+    }
+
+    tokenObservable() : Observable<string> {
+        return this.tokenSubject.map(auth =>
+             auth.replace("Bearer ", "")
+        )
     }
 }
 

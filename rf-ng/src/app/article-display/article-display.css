@@ -32,4 +32,5 @@ a:hover, a:focus {
 
 .description ::ng-deep img {
     max-width: 100%;
+    height: auto;
 }

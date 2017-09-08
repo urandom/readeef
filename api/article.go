@@ -382,25 +382,25 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request, articlesLimit i
 
 	o = append(o, content.Paging(limit, offset))
 
-	var minID, maxID int64
-	if query.Get("minID") != "" {
-		minID, err = strconv.ParseInt(query.Get("minID"), 10, 64)
+	var afterID, beforeID int64
+	if query.Get("afterID") != "" {
+		afterID, err = strconv.ParseInt(query.Get("afterID"), 10, 64)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return o, true
 		}
 	}
 
-	if query.Get("maxID") != "" {
-		maxID, err = strconv.ParseInt(query.Get("maxID"), 10, 64)
+	if query.Get("beforeID") != "" {
+		beforeID, err = strconv.ParseInt(query.Get("beforeID"), 10, 64)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return o, true
 		}
 	}
 
-	if minID > 0 || maxID > 0 {
-		o = append(o, content.IDRange(content.ArticleID(minID), content.ArticleID(maxID)))
+	if afterID > 0 || beforeID > 0 {
+		o = append(o, content.IDRange(content.ArticleID(afterID), content.ArticleID(beforeID)))
 	}
 
 	if queryIDs, ok := query["id"]; ok {

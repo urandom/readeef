@@ -3,6 +3,7 @@ import { Response } from '@angular/http'
 import { APIService, Serializable } from "./api";
 import { Router, ActivatedRouteSnapshot, NavigationEnd, ParamMap, Data, Params } from '@angular/router';
 import { Feed, FeedService } from "../services/feed"
+import { EventService } from "../services/events"
 import { QueryPreferences, PreferencesService } from "../services/preferences"
 import { Observable, BehaviorSubject, ConnectableObservable, Subject } from "rxjs";
 import { getListRoute, getArticleRoute } from "../main/routing-util"
@@ -57,6 +58,7 @@ export interface QueryOptions {
     unreadFirst?: boolean,
     unreadOnly?: boolean,
     olderFirst?: boolean,
+    afterID?: number,
     ids?: number[],
 }
 
@@ -111,6 +113,11 @@ interface ArticleProperty {
     value: any
 }
 
+interface ArticlesPayload {
+    articles: Article[]
+    fromEvent: boolean
+}
+
 @Injectable()
 export class ArticleService {
     private articles : ConnectableObservable<Article[]>
@@ -122,11 +129,13 @@ export class ArticleService {
     constructor(
         private api: APIService,
         private feedService: FeedService,
+        private eventService: EventService,
         private router: Router,
         private preferences: PreferencesService,
     ) {
         let div = document.createElement('div');
         let queryPreferences = this.preferences.queryPreferences();
+        let afterID = 0;
 
         let source = this.router.events.filter(event =>
             event instanceof NavigationEnd
@@ -149,25 +158,81 @@ export class ArticleService {
         ).switchMap(feedMap =>
             source.switchMap(source => {
                 return queryPreferences.switchMap(prefs =>
-                    this.paging.map(page => {
-                        return page * this.limit;
-                    }).switchMap(offset => {
-                        return this.getArticlesFor(source, prefs, this.limit, offset);
-                    }).map(articles =>
-                        articles.map(article => {
+                    Observable.merge(
+                        this.paging.map(page => {
+                            return page * this.limit;
+                        }).switchMap(offset => {
+                            return this.getArticlesFor(source, prefs, this.limit, offset);
+                        }).map(articles => <ArticlesPayload>{
+                            articles: articles,
+                            fromEvent: false,
+                        }),
+                        this.eventService.feedUpdate.flatMap(id => 
+                            this.getArticlesFor(new FeedSource(id), {
+                                afterID: afterID,
+                                olderFirst: prefs.olderFirst,
+                                unreadOnly: prefs.unreadOnly,
+                            }, this.limit, 0)
+                        ).map(articles => <ArticlesPayload>{
+                            articles: articles,
+                            fromEvent: true,
+                        })
+                    ).map(payload => {
+                        payload.articles = payload.articles.map(article => {
                             div.innerHTML = article.description;
                             article.stripped = div.innerText;
                             article.feed = feedMap[article.feedID];
 
                             return article;
                         })
-                    ).scan((acc, articles) => {
-                        for (let article of articles) {
-                            if (acc.indexMap.has(article.id)) {
-                                let idx = acc.indexMap[article.id];
-                                acc.articles[idx] = article;
-                            } else {
-                                acc.indexMap[article.id] = acc.articles.push(article) - 1;
+
+                        return payload;
+                    }).scan((acc, payload) => {
+                        if (payload.fromEvent) {
+                            for (let incoming of payload.articles) {
+                                if (prefs.olderFirst) {
+                                    for (let i = acc.articles.length - 1; i >= 0; i--) {
+                                        if (this.shouldInsert(
+                                            incoming, acc.articles[i], prefs
+                                        )) {
+                                            acc.articles.splice(i, 0, incoming)
+                                            break
+                                        }
+
+                                    }
+                                } else {
+                                    for (let i = 0; i < acc.articles.length; i++) {
+
+                                        if (this.shouldInsert(
+                                            incoming, acc.articles[i], prefs
+                                        )) {
+                                            acc.articles.splice(i, 0, incoming)
+                                            break
+                                        }
+                                    }
+                                }
+                            }
+
+                            acc.indexMap = new Map()
+                            for (let i = 0; i < acc.articles.length; i++) {
+                                let article = acc.articles[i];
+                                acc.indexMap[article.id] = i;
+                                if (afterID < article.id) {
+                                    afterID = article.id;
+                                }
+                            }
+                        } else {
+                            for (let article of payload.articles) {
+                                if (acc.indexMap.has(article.id)) {
+                                    let idx = acc.indexMap[article.id];
+                                    acc.articles[idx] = article;
+                                } else {
+                                    acc.indexMap[article.id] = acc.articles.push(article) - 1;
+                                }
+
+                                if (afterID < article.id) {
+                                    afterID = article.id;
+                                }
                             }
                         }
 
@@ -232,7 +297,7 @@ export class ArticleService {
 
     private getArticlesFor(
         source: Source,
-        prefs: QueryPreferences,
+        prefs: QueryOptions,
         limit: number,
         offset: number,
     ): Observable<Article[]> {
@@ -241,6 +306,7 @@ export class ArticleService {
             unreadFirst: true,
             olderFirst: prefs.olderFirst,
             unreadOnly: prefs.unreadOnly,
+            afterID: prefs.afterID,
         }
 
         let res : Observable<Article[]>
@@ -269,25 +335,8 @@ export class ArticleService {
                     if (!options.unreadOnly || !initial.read) {
                         for (let i = 0; i < articles.length; i++) {
                             let article = articles[i];
-                            if (options.unreadFirst && initial.read != article.read) {
-                                if (initial.read) {
-                                    continue;
-                                } else {
-                                    articles.splice(i, 0, initial);
-                                    return articles;
-                                }
-                            }
-
-                            if (options.olderFirst) {
-                                if (initial.date < article.date) {
-                                    articles.splice(i, 0, initial);
-                                    return articles;
-                                }
-                            } else {
-                                if (initial.date > article.date) {
-                                    articles.splice(i, 0, initial);
-                                    return articles;
-                                }
+                            if (this.shouldInsert(initial, article, options)) {
+                                articles.splice(i, 0, initial);
                             }
                         }
                     }
@@ -365,5 +414,23 @@ export class ArticleService {
             case "tag":
                 return new TagSource(params["id"]);
         }
+    }
+
+    private shouldInsert(incoming: Article, current: Article, options: QueryOptions) : boolean {
+        if (options.unreadFirst && incoming.read != current.read) {
+            return !incoming.read;
+        }
+
+        if (options.olderFirst) {
+            if (incoming.date < current.date) {
+                return true
+            }
+        } else {
+            if (incoming.date > current.date) {
+                return true
+            }
+        }
+
+        return false
     }
 }

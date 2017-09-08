@@ -8,7 +8,7 @@ import { MainComponent } from "./component"
 import { ArticleListComponent } from "../article-list/component"
 import { ArticleDisplayComponent } from "../article-display/component"
 
-function createArtcleRoutes(paths: [string, Data][]) : Routes {
+let createArtcleRoutes = (paths: [string, Data][]) : Routes => {
     let routes = []
 
     for (let path of paths) {
