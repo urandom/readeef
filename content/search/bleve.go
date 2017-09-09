@@ -131,19 +131,25 @@ func (b bleveSearch) Search(
 	searchRequest.Size = o.Limit
 	searchRequest.From = o.Offset
 
-	order := ""
-	if o.SortOrder == content.DescendingOrder {
-		order = "-"
-	}
+	var sort search.SearchSort
 	switch o.SortField {
 	case content.SortByDate:
-		searchRequest.SortBy([]string{order + "date"})
+		sort = &search.SortField{
+			Field: "date",
+			Desc:  o.SortOrder == content.DescendingOrder,
+			Type:  search.SortFieldAsDate,
+		}
 	case content.SortByID:
-		searchRequest.SortBy([]string{order + "article_id"})
+		sort = &search.SortField{
+			Field: "article_id",
+			Desc:  o.SortOrder == content.DescendingOrder,
+			Type:  search.SortFieldAsNumber,
+		}
 	case content.DefaultSort:
-		searchRequest.SortBy([]string{order + "_score"})
+		sort = &search.SortScore{Desc: o.SortOrder == content.DescendingOrder}
 	}
 
+	searchRequest.SortByCustom(search.SortOrder{sort})
 	searchResult, err := b.index.Search(searchRequest)
 
 	if err != nil {
