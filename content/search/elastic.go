@@ -115,11 +115,9 @@ func (e elasticSearch) Search(
 		for _, hit := range res.Hits.Hits {
 			a := indexArticle{}
 			if err := json.Unmarshal(*hit.Source, &a); err == nil {
-				if id, err := strconv.ParseInt(a.ArticleID, 10, 64); err == nil {
-					articleID := content.ArticleID(id)
-					articleIDs = append(articleIDs, articleID)
-					highlightMap[articleID] = hit.Highlight
-				}
+				articleID := content.ArticleID(a.ArticleID)
+				articleIDs = append(articleIDs, articleID)
+				highlightMap[articleID] = hit.Highlight
 			}
 		}
 	}
@@ -160,6 +158,7 @@ func (e elasticSearch) BatchIndex(articles []content.Article, op indexOperation)
 		case BatchAdd:
 			e.log.Debugf("Indexing article %d of feed id %d", a.ID, a.FeedID)
 
+			e.log.Debugf("Indexing article %s", a)
 			id, doc := prepareArticle(a)
 			req = elastic.NewBulkIndexRequest().Index(elasticIndexName).Type(elasticArticleType).Id(id).Doc(doc)
 		case BatchDelete:

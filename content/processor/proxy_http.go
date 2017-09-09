@@ -36,7 +36,7 @@ func (p ProxyHTTP) ProcessArticles(articles []content.Article) []content.Article
 		return articles
 	}
 
-	p.logger.Infof("Proxying urls of feed '%d'\n", articles[0].FeedID)
+	p.logger.Infof("Proxying urls of feed '%d'", articles[0].FeedID)
 
 	for i := range articles {
 		articles[i].Description = p.processArticle(

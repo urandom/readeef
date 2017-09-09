@@ -66,9 +66,9 @@ func (h Helper) WhereMultipleORs(column string, length, off int) string {
 	}
 
 	orSlice := make([]string, length)
-	orSlice[0] = fmt.Sprintf("VALUES($%d)", off)
+	orSlice[0] = fmt.Sprintf("VALUES($%d::bigint)", off)
 	for i := 1; i < length; i++ {
-		orSlice[i] = fmt.Sprintf("($%d)", off+i)
+		orSlice[i] = fmt.Sprintf("($%d::bigint)", off+i)
 	}
 
 	return fmt.Sprintf("%s IN (%s)", column, strings.Join(orSlice, ", "))

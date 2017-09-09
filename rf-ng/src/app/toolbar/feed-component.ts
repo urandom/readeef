@@ -31,8 +31,8 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
     showsArticle = false
     articleRead = false
     searchButton = false
-    searchQuery = ""
 
+    private _searchQuery = ""
     private _searchEntry = false
 
     private articleID : Observable<number>
@@ -54,13 +54,26 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
         }
     }
 
+    get searchQuery() : string {
+        return this._searchQuery
+    }
+
+    set searchQuery(val: string) {
+        this._searchQuery = val
+        localStorage.setItem(ToolbarFeedComponent.key, val)
+    }
+
+    private static key = "searchQuery"
+
     constructor(
         private articleService: ArticleService,
         private featuresServices: FeaturesService,
         private preferences : PreferencesService,
         private router: Router,
         private location: Location,
-    ) { }
+    ) { 
+        this.searchQuery = localStorage.getItem(ToolbarFeedComponent.key) || ""
+    }
 
     ngOnInit(): void {
         let articleRouteObservable = articleRoute(this.router)
@@ -190,6 +203,12 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
     }
 
     performSearch(query: string) {
-        this.router.navigateByUrl(this.location.path() + "/search/" + encodeURIComponent(query));
+        let route = getListRoute([this.router.routerState.snapshot.root])
+        if (route.data["primary"] == "search") {
+            let idx = this.location.path().indexOf("/search/") + 8
+            this.router.navigateByUrl(this.location.path().substring(0, idx) + encodeURIComponent(query));
+        } else {
+            this.router.navigateByUrl(this.location.path() + "/search/" + encodeURIComponent(query));
+        }
     }
 }

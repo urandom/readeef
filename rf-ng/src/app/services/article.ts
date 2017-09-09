@@ -30,6 +30,7 @@ export class Article extends Serializable {
     favorite: boolean
     thumbnail: string
     time: string
+    hits: Hits
 
     fromJSON(json) {
         if ("date" in json) {
@@ -42,6 +43,15 @@ export class Article extends Serializable {
 
         return super.fromJSON(json);
     }
+}
+
+interface Hits {
+    fragments?: Fragments
+}
+
+interface Fragments {
+    title?: Array<string>
+    description?: Array<string>
 }
 
 class ArticlesResponse extends Serializable {
@@ -398,7 +408,7 @@ export class ArticleService {
         }
 
         if (query.length > 0) {
-            return base + "?" + query.join("&"); 
+            return base + (base.indexOf("?") == -1 ? "?" : "&") + query.join("&"); 
         }
 
         return base;

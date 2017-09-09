@@ -6,15 +6,13 @@
                     {{ item.favorite ? "bookmark" : "bookmark_border" }}
                 </md-icon>
             </button>
-            <a [routerLink]="['article', item.id]">
-                {{ item.title }}
+            <a [routerLink]="['article', item.id]" [innerHTML]="item.title">
             </a>
         </md-card-title>
     </md-card-header>
     <div md-card-image [style.backgroundImage]="'url(' + item.thumbnail + ')'" *ngIf="item.thumbnail"></div>
     <md-card-content>
-        <a [routerLink]="['article', item.id]">
-            {{ item.stripped }}
+        <a [routerLink]="['article', item.id]" [innerHTML]="item.stripped">
         </a>
     </md-card-content>
     <md-card-actions>

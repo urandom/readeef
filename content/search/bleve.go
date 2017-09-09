@@ -10,6 +10,7 @@ import (
 	"github.com/blevesearch/bleve"
 	"github.com/blevesearch/bleve/index/store/goleveldb"
 	"github.com/blevesearch/bleve/index/upsidedown"
+	"github.com/blevesearch/bleve/mapping"
 	"github.com/blevesearch/bleve/search"
 	"github.com/blevesearch/bleve/search/query"
 	"github.com/pkg/errors"
@@ -27,8 +28,8 @@ type bleveSearch struct {
 }
 
 type indexArticle struct {
-	FeedID      string    `json:"feed_id"`
-	ArticleID   string    `json:"article_id"`
+	FeedID      int64     `json:"feed_id"`
+	ArticleID   int64     `json:"article_id"`
 	Title       string    `json:"title"`
 	Description string    `json:"description"`
 	Link        string    `json:"link"`
@@ -51,18 +52,18 @@ func NewBleve(path string, size int64, service repo.Service, log log.Log) (bleve
 
 		exists = true
 	} else if os.IsNotExist(err) {
-		mapping := bleve.NewIndexMapping()
+		m := bleve.NewIndexMapping()
 		docMapping := bleve.NewDocumentMapping()
 
-		idfieldmapping := bleve.NewTextFieldMapping()
+		idfieldmapping := mapping.NewNumericFieldMapping()
 		idfieldmapping.IncludeInAll = false
-		docMapping.AddFieldMappingsAt("FeedID", idfieldmapping)
-		docMapping.AddFieldMappingsAt("ArticleID", idfieldmapping)
+		docMapping.AddFieldMappingsAt("feed_id", idfieldmapping)
+		docMapping.AddFieldMappingsAt("article_id", idfieldmapping)
 
-		mapping.AddDocumentMapping(mapping.DefaultType, docMapping)
+		m.AddDocumentMapping(m.DefaultType, docMapping)
 
 		log.Infoln("Creating search index " + path)
-		index, err = bleve.NewUsing(path, mapping, upsidedown.Name, goleveldb.Name, nil)
+		index, err = bleve.NewUsing(path, m, upsidedown.Name, goleveldb.Name, nil)
 
 		if err != nil {
 			return bleveSearch{}, errors.Wrap(err, "creating search index")
@@ -89,7 +90,7 @@ func (b bleveSearch) Search(
 
 	var q query.Query
 
-	q = bleve.NewQueryStringQuery(term)
+	q = query.NewQueryStringQuery(term)
 
 	feedIDs := o.FeedIDs
 
@@ -105,23 +106,27 @@ func (b bleveSearch) Search(
 	queries := make([]query.Query, len(feedIDs))
 	conjunct := make([]query.Query, 2)
 
+	inclusive := true
 	for i, id := range feedIDs {
-		q := bleve.NewTermQuery(strconv.FormatInt(int64(id), 10))
-		q.SetField("FeedID")
+		val := float64(id)
+		q := query.NewNumericRangeInclusiveQuery(&val, &val, &inclusive, &inclusive)
+		q.SetField("feed_id")
 
 		queries[i] = q
 	}
 
-	disjunct := bleve.NewDisjunctionQuery(queries...)
+	disjunct := query.NewDisjunctionQuery(queries)
 
 	conjunct[0] = q
 	conjunct[1] = disjunct
 
-	q = bleve.NewConjunctionQuery(conjunct...)
+	q = query.NewConjunctionQuery(conjunct)
 
 	searchRequest := bleve.NewSearchRequest(q)
 
 	searchRequest.Highlight = bleve.NewHighlightWithStyle("html")
+	searchRequest.Highlight.AddField("title")
+	searchRequest.Highlight.AddField("description")
 
 	searchRequest.Size = o.Limit
 	searchRequest.From = o.Offset
@@ -132,9 +137,9 @@ func (b bleveSearch) Search(
 	}
 	switch o.SortField {
 	case content.SortByDate:
-		searchRequest.SortBy([]string{order + "Date"})
+		searchRequest.SortBy([]string{order + "date"})
 	case content.SortByID:
-		searchRequest.SortBy([]string{order + "ArticleID"})
+		searchRequest.SortBy([]string{order + "article_id"})
 	case content.DefaultSort:
 		searchRequest.SortBy([]string{order + "_score"})
 	}
@@ -191,6 +196,7 @@ func (b bleveSearch) BatchIndex(articles []content.Article, op indexOperation) e
 		case BatchAdd:
 			b.log.Debugf("Indexing article '%d' of feed id '%d'\n", a.ID, a.FeedID)
 
+			b.log.Debugf("Indexing article %s", a)
 			batch.Index(prepareArticle(a))
 		case BatchDelete:
 			b.log.Debugf("Removing article '%d' of feed id '%d' from index\n", a.ID, a.FeedID)
@@ -223,8 +229,8 @@ func (b bleveSearch) BatchIndex(articles []content.Article, op indexOperation) e
 func prepareArticle(article content.Article) (string, indexArticle) {
 	id := strconv.FormatInt(int64(article.ID), 10)
 	ia := indexArticle{
-		FeedID:      strconv.FormatInt(int64(article.FeedID), 10),
-		ArticleID:   strconv.FormatInt(int64(article.ID), 10),
+		FeedID:      int64(article.FeedID),
+		ArticleID:   int64(article.ID),
 		Title:       html.UnescapeString(StripTags(article.Title)),
 		Description: html.UnescapeString(StripTags(article.Description)),
 		Link:        article.Link, Date: article.Date,
