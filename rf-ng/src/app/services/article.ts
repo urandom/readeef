@@ -141,7 +141,6 @@ export class ArticleService {
         private router: Router,
         private preferences: PreferencesService,
     ) {
-        let div = document.createElement('div');
         let queryPreferences = this.preferences.queryPreferences();
         let afterID = 0;
 
@@ -181,8 +180,7 @@ export class ArticleService {
                         })
                     ).map(payload => {
                         payload.articles = payload.articles.map(article => {
-                            div.innerHTML = article.description;
-                            article.stripped = div.innerText;
+                            article.stripped = article.description.replace(/<[^>]+>/g, '');
                             article.feed = feedMap[article.feedID];
 
                             return article;

@@ -50,7 +50,7 @@ var defaultCfg = `
 	delay = "5s"
 	providers = ["Facebook", "Reddit"]
 [feed-parser]
-	processors = ["cleanup", "top-image-marker", "absolutize-urls"]
+	processors = ["cleanup", "top-image-marker", "absolutize-urls", "unescape"]
 	proxy-http-url-template = "/proxy?url={{ . }}"
 [content]
 	extractor = "goose" # readability

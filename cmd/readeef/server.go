@@ -246,6 +246,8 @@ func initArticleProcessors(names []string, proxyTemplate string, log log.Log) ([
 			}
 		case "insert-thumbnail-target":
 			processors = append(processors, processor.NewInsertThumbnailTarget(log))
+		case "unescape":
+			processors = append(processors, processor.NewUnescape(log))
 		}
 	}
 
@@ -275,6 +277,8 @@ func initFeedProcessors(names []string, proxyTemplate string, log log.Log) ([]pr
 			processors = append(processors, processor.NewCleanup(log))
 		case "top-image-marker":
 			processors = append(processors, processor.NewTopImageMarker(log))
+		case "unescape":
+			processors = append(processors, processor.NewUnescape(log))
 		}
 	}
 
