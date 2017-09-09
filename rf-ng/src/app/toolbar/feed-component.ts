@@ -1,10 +1,11 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { Location } from '@angular/common';
 import { Article, ArticleService } from "../services/article";
+import { FeaturesService } from "../services/features";
 import { PreferencesService } from "../services/preferences";
 import { Router, NavigationStart } from '@angular/router';
 import { Observable, Subscription } from "rxjs";
-import { articleRoute, getListRoute } from "../main/routing-util"
+import { articleRoute, listRoute, getListRoute } from "../main/routing-util"
 import 'rxjs/add/observable/empty'
 import 'rxjs/add/observable/of'
 import 'rxjs/add/observable/timer'
@@ -20,31 +21,57 @@ import 'rxjs/add/operator/take'
 
 @Component({
   templateUrl: './toolbar-feed.html',
-  styleUrls: ['./toolbar.css']
+  styleUrls: ['./toolbar.css'],
+  host: {
+      '(keydown.enter)': 'keyEnter()',
+  }
 })
 export class ToolbarFeedComponent implements OnInit, OnDestroy {
     olderFirst = false
     showsArticle = false
     articleRead = false
+    searchButton = false
+    searchQuery = ""
+
+    private _searchEntry = false
 
     private articleID : Observable<number>
     private subscriptions = new Array<Subscription>()
 
+    @ViewChild("search")
+    private searchInput
+
+    get searchEntry() : boolean {
+        return this._searchEntry
+    }
+
+    set searchEntry(val: boolean) {
+        this._searchEntry = val
+        if (val) {
+            setTimeout(() => {
+                this.searchInput.nativeElement.focus()
+            }, 10)
+        }
+    }
+
     constructor(
         private articleService: ArticleService,
+        private featuresServices: FeaturesService,
         private preferences : PreferencesService,
         private router: Router,
         private location: Location,
     ) { }
 
     ngOnInit(): void {
-        this.subscriptions.push(articleRoute(this.router).map(
+        let articleRouteObservable = articleRoute(this.router)
+
+        this.subscriptions.push(articleRouteObservable.map(
             route => route != null
         ).subscribe(
             showsArticle => this.showsArticle = showsArticle
         ));
 
-        this.articleID = articleRoute(this.router).map(route => {
+        this.articleID = articleRouteObservable.map(route => {
             if (route == null) {
                 return -1;
             }
@@ -76,6 +103,41 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
             read => this.articleRead = read,
             error => console.log(error),
         ))
+
+        this.featuresServices.getFeatures().filter(
+            features => features.search
+        ).switchMap(features =>
+            articleRouteObservable.map(
+                route => route == null
+            ).distinctUntilChanged().combineLatest(
+                listRoute(this.router),
+                (inList, route) : [boolean, boolean] => {
+                    let showButton = false
+                    let showEntry = false
+                    if (inList) {
+                        let route = getListRoute([this.router.routerState.snapshot.root])
+
+                        switch (route.data["primary"]) {
+                        case "favorite":
+                        case "popular":
+                            break
+                        case "search":
+                            showEntry = true
+                        default:
+                            showButton = true
+                        }
+                    }
+
+                    return[showButton, showEntry] 
+                }
+            )
+        ).subscribe(
+            res => {
+                this.searchButton = res[0]
+                this.searchEntry = res[1]
+            },
+            error => console.log(error),
+        )
     }
 
     ngOnDestroy(): void {
@@ -119,5 +181,15 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
             success => {},
             error => console.log(error),
         )
+    }
+
+    keyEnter() {
+        if (this.searchEntry && this.searchQuery) {
+            this.performSearch(this.searchQuery);
+        }
+    }
+
+    performSearch(query: string) {
+        this.router.navigateByUrl(this.location.path() + "/search/" + encodeURIComponent(query));
     }
 }

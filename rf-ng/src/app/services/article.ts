@@ -6,7 +6,7 @@ import { Feed, FeedService } from "../services/feed"
 import { EventService } from "../services/events"
 import { QueryPreferences, PreferencesService } from "../services/preferences"
 import { Observable, BehaviorSubject, ConnectableObservable, Subject } from "rxjs";
-import { getListRoute, getArticleRoute } from "../main/routing-util"
+import { listRoute, getArticleRoute } from "../main/routing-util"
 import 'rxjs/add/observable/of'
 import 'rxjs/add/operator/distinctUntilKeyChanged'
 import 'rxjs/add/operator/combineLatest'
@@ -102,6 +102,14 @@ export class TagSource {
     }
 }
 
+export class SearchSource {
+    constructor(private query: string, private secondary: UserSource | FeedSource | TagSource) {}
+
+    get url() : string {
+        return `/search${this.secondary.url}?query=${encodeURIComponent(this.query)}`;
+    }
+}
+
 class ScanData {
     indexMap: Map<number, number> = new Map()
     articles: Array<Article> = []
@@ -137,17 +145,11 @@ export class ArticleService {
         let queryPreferences = this.preferences.queryPreferences();
         let afterID = 0;
 
-        let source = this.router.events.filter(event =>
-            event instanceof NavigationEnd
-        ).map(e =>
-            getListRoute([this.router.routerState.snapshot.root])
-        ).startWith(
-            getListRoute([this.router.routerState.snapshot.root])
-        ).map(route => {
-            return this.nameToSource(route.data, route.params)
-        }).filter(source =>
+        let source = listRoute(this.router).map(
+            route => this.nameToSource(route.data, route.params),
+        ).filter(source =>
             source != null
-        ).distinctUntilKeyChanged("url");
+        ).distinctUntilKeyChanged("url")
 
         this.articles = this.feedService.getFeeds().map(feeds =>
             feeds.reduce((map, feed) => {
@@ -189,7 +191,14 @@ export class ArticleService {
                         return payload;
                     }).scan((acc, payload) => {
                         if (payload.fromEvent) {
+                            let updates = new Array<Article>();
+
                             for (let incoming of payload.articles) {
+                                if (acc.indexMap.has(incoming.id)) {
+                                    updates.push(incoming);
+                                    break;
+                                }
+
                                 if (prefs.olderFirst) {
                                     for (let i = acc.articles.length - 1; i >= 0; i--) {
                                         if (this.shouldInsert(
@@ -220,6 +229,11 @@ export class ArticleService {
                                 if (afterID < article.id) {
                                     afterID = article.id;
                                 }
+                            }
+
+                            for (let update of updates) {
+                                let idx = acc.indexMap[update.id];
+                                acc.articles[idx] = update;
                             }
                         } else {
                             for (let article of payload.articles) {
@@ -409,6 +423,8 @@ export class ArticleService {
                 return new FavoriteSource();
             case "popular":
                 return new PopularSource(this.nameToSource(secondary, params));
+            case "search":
+                return new SearchSource(decodeURIComponent(params["query"]), this.nameToSource(secondary, params));
             case "feed":
                 return new FeedSource(params["id"]);
             case "tag":

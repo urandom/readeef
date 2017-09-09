@@ -40,12 +40,15 @@ export const routes: Routes = [
                         path: "",
                         children: createArtcleRoutes([
                             ["", { "primary": "user" }],
+                            ["search/:query", { "primary": "search", "secondary": "user" }],
                             ["favorite", { "primary": "favorite" }],
                             ["popular/tag/:id", { "primary": "popular", "secondary": "tag" }],
                             ["popular/:id", { "primary": "popular", "secondary": "feed" }],
                             ["popular", { "primary": "popular", "secondary": "user" }],
                             ["tag/:id", { "primary": "tag" }],
+                            ["tag/:id/search/:query", { "primary": "search", "secondary": "tag" }],
                             [":id", { "primary": "feed" }],
+                            [":id/search/:query", { "primary": "search", "secondary": "feed" }],
                         ])
                     },
                     {
