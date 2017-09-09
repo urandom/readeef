@@ -412,10 +412,6 @@ func constructSQLQueryOptions(
 ) (string, string, string, string, []interface{}) {
 
 	hasUser := login != ""
-	off := 0
-	if hasUser {
-		off = 1
-	}
 
 	var join string
 
@@ -454,33 +450,33 @@ func constructSQLQueryOptions(
 	}
 
 	if opts.BeforeID > 0 {
-		whereSlice = append(whereSlice, fmt.Sprintf("a.id < $%d", len(args)+off))
+		whereSlice = append(whereSlice, fmt.Sprintf("a.id < $%d", len(args)+1))
 		args = append(args, opts.BeforeID)
 	}
 	if opts.AfterID > 0 {
-		whereSlice = append(whereSlice, fmt.Sprintf("a.id > $%d", len(args)+off))
+		whereSlice = append(whereSlice, fmt.Sprintf("a.id > $%d", len(args)+1))
 		args = append(args, opts.AfterID)
 	}
 
 	if !opts.BeforeDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf("(a.date IS NULL OR a.date <= $%d)", len(args)+off))
+		whereSlice = append(whereSlice, fmt.Sprintf("(a.date IS NULL OR a.date <= $%d)", len(args)+1))
 		args = append(args, opts.BeforeDate)
 	}
 
 	if !opts.AfterDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf("a.date >= $%d", len(args)+off))
+		whereSlice = append(whereSlice, fmt.Sprintf("a.date >= $%d", len(args)+1))
 		args = append(args, opts.AfterDate)
 	}
 
 	if len(opts.IDs) > 0 {
-		whereSlice = append(whereSlice, db.WhereMultipleORs("a.id", len(opts.IDs), len(args)+off))
+		whereSlice = append(whereSlice, db.WhereMultipleORs("a.id", len(opts.IDs), len(args)+1))
 		for i := range opts.IDs {
 			args = append(args, opts.IDs[i])
 		}
 	}
 
 	if len(opts.FeedIDs) > 0 {
-		whereSlice = append(whereSlice, db.WhereMultipleORs("a.feed_id", len(opts.FeedIDs), len(args)+off))
+		whereSlice = append(whereSlice, db.WhereMultipleORs("a.feed_id", len(opts.FeedIDs), len(args)+1))
 		for i := range opts.FeedIDs {
 			args = append(args, opts.FeedIDs[i])
 		}
@@ -528,7 +524,7 @@ func constructSQLQueryOptions(
 
 	var limit string
 	if opts.Limit > 0 {
-		limit = fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)+off, len(args)+off+1)
+		limit = fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
 		args = append(args, opts.Limit, opts.Offset)
 	}
 
