@@ -1,4 +1,4 @@
-<button md-icon-button (click)="up()" *ngIf="showsArticle">
+<button md-icon-button (click)="up()" *ngIf="showsArticle || inSearch">
     <md-icon>keyboard_backspace</md-icon>
 </button>
 <span i18n *ngIf="!searchEntry">Articles</span>

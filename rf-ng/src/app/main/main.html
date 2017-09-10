@@ -5,7 +5,7 @@
 
     <div class="content">
         <md-toolbar color="primary">
-            <button md-icon-button (click)="sidenav.toggle()" *ngIf="!showsArticle">
+            <button md-icon-button (click)="sidenav.toggle()" *ngIf="!showsArticle && !inSearch">
                 <md-icon>menu</md-icon>
             </button>
             <router-outlet name="toolbar"></router-outlet>
