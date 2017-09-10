@@ -11,18 +11,15 @@ import { ArticleDisplayComponent } from "../article-display/component"
 let createArtcleRoutes = (paths: [string, Data][]) : Routes => {
     let routes = []
 
-    for (let path of paths) {
+    for (let [path, data] of paths) {
         routes.push({
-            path: path[0] + (path[0] == "" ? "" : "/") + "article/:articleID",
-            component: ArticleDisplayComponent,
-            data: path[1],
-        });
-
-        routes.push({
-            path: path[0],
-            component: ArticleListComponent,
-            data: path[1],
-        });
+            path: path,
+            data: data,
+            children: [
+                {path: "", component: ArticleListComponent},
+                {path: "article/:articleID", component: ArticleDisplayComponent},
+            ],
+        })
     }
 
     return routes;

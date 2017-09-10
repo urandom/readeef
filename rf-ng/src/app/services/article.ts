@@ -379,6 +379,7 @@ export class ArticleService {
                             let article = articles[i];
                             if (this.shouldInsert(initial, article, options)) {
                                 articles.splice(i, 0, initial);
+                                break;
                             }
                         }
                     }

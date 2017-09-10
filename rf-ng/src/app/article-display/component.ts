@@ -16,6 +16,9 @@ import { NgbCarouselConfig, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
     templateUrl: "./article-display.html",
     styleUrls: ["./article-display.css"],
     providers: [ NgbCarouselConfig ],
+    host: {
+        '(keydown.arrowUp)': 'keyUp()',
+    }
 })
 export class ArticleDisplayComponent implements OnInit, OnDestroy {
     @Input()
@@ -114,5 +117,10 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
             success => { },
             error => console.log(error)
         )
+    }
+
+    keyUp() {
+        let path = this.location.path();
+        this.router.navigateByUrl(path.substring( 0, path.indexOf("/article/")))
     }
 }
