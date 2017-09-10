@@ -120,7 +120,3 @@
 [[constraint]]
   name = "gopkg.in/natefinch/lumberjack.v2"
   version = "2.1.0"
-
-[[constraint]]
-  name = "gopkg.in/olivere/elastic.v3"
-  version = "3.0.69"

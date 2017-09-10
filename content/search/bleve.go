@@ -171,7 +171,10 @@ func (b bleveSearch) Search(
 		}
 	}
 
-	queryOpts := []content.QueryOpt{content.IDs(articleIDs)}
+	queryOpts := []content.QueryOpt{
+		content.IDs(articleIDs),
+		content.Sorting(o.SortField, o.SortOrder),
+	}
 	if o.UnreadFirst {
 		queryOpts = append(queryOpts, content.UnreadFirst)
 	}

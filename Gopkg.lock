@@ -11,7 +11,7 @@
   branch = "master"
   name = "github.com/ChimeraCoder/anaconda"
   packages = ["."]
-  revision = "0530dae79525a856cc778e15c4c2b03c3f6934b9"
+  revision = "b2574bf45ceab73b763dc5e411b25d4ee046f1ac"
 
 [[projects]]
   branch = "master"
@@ -28,8 +28,8 @@
 [[projects]]
   name = "github.com/Sirupsen/logrus"
   packages = ["."]
-  revision = "a3f95b5c423586578a4e099b11a46c2479628cac"
-  version = "1.0.2"
+  revision = "f006c2ac4710855cf0f916dd6b77acf6b048dc6e"
+  version = "v1.0.3"
 
 [[projects]]
   branch = "master"
@@ -40,8 +40,8 @@
 [[projects]]
   name = "github.com/alexedwards/scs"
   packages = ["engine/boltstore","engine/memstore","session"]
-  revision = "f36d272d74ecae3d61058d91dc7401715b044ca1"
-  version = "v0.1.0"
+  revision = "0fdd3ef0cedf798548a2a904932bc0b4e13ee91b"
+  version = "v0.1.1"
 
 [[projects]]
   branch = "master"
@@ -59,7 +59,7 @@
   branch = "master"
   name = "github.com/blevesearch/bleve"
   packages = [".","analysis","analysis/analyzer/standard","analysis/datetime/flexible","analysis/datetime/optional","analysis/lang/en","analysis/token/lowercase","analysis/token/porter","analysis/token/stop","analysis/tokenizer/unicode","document","geo","index","index/store","index/store/boltdb","index/store/goleveldb","index/store/gtreap","index/upsidedown","mapping","numeric","registry","search","search/collector","search/facet","search/highlight","search/highlight/format/html","search/highlight/fragmenter/simple","search/highlight/highlighter/html","search/highlight/highlighter/simple","search/query","search/scorer","search/searcher"]
-  revision = "82a101aedd682bba004e28c54c460b25dd271d04"
+  revision = "c048833fcdcf5b86fe09d9c1077147abf8c30416"
 
 [[projects]]
   name = "github.com/blevesearch/go-porterstemmer"
@@ -106,14 +106,14 @@
 [[projects]]
   name = "github.com/go-chi/chi"
   packages = ["."]
-  revision = "25354a53cca531cb2efd3f1d3c565d90ff04d802"
-  version = "v3.1.5"
+  revision = "04ec7fc4179604b2390947258f9143eaae23b596"
+  version = "v3.2.1"
 
 [[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "1909bc2f63dc92bb931deace8b8312c4db72d12f"
+  revision = "17ce1425424ab154092bbb43af630bd647f3bb0d"
 
 [[projects]]
   branch = "master"
@@ -214,26 +214,26 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["acme","acme/autocert","pbkdf2","scrypt"]
-  revision = "b176d7def5d71bdd214203491f89843ed217f420"
+  packages = ["acme","acme/autocert","pbkdf2","scrypt","ssh/terminal"]
+  revision = "9ba3862cf6a5452ae579de98f9364dd2e544844c"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp","html","html/atom","html/charset"]
-  revision = "1c05540f6879653db88113bc4a2b70aec4bd491f"
+  packages = ["context","html","html/atom","html/charset"]
+  revision = "66aacef3dd8a676686c7ae3716979581e8b03c47"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix"]
-  revision = "c84c1ab9fd18cdd4c23dd021c10f5f46dea95e46"
+  packages = ["unix","windows"]
+  revision = "a5054c7c1385fd50d9394475365355a87a7873ec"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["encoding","encoding/charmap","encoding/htmlindex","encoding/internal","encoding/internal/identifier","encoding/japanese","encoding/korean","encoding/simplifiedchinese","encoding/traditionalchinese","encoding/unicode","internal/gen","internal/tag","internal/utf8internal","language","runes","transform","unicode/cldr"]
-  revision = "e56139fd9c5bc7244c76116c68e500765bb6db6b"
+  revision = "bd91bbf73e9a4a801adbfb97133c992678533126"
 
 [[projects]]
   name = "gopkg.in/fatih/set.v0"
@@ -254,10 +254,10 @@
   version = "v2.1"
 
 [[projects]]
-  name = "gopkg.in/olivere/elastic.v3"
-  packages = [".","backoff","uritemplates"]
-  revision = "5a75b7d18bca7420e68338600e8c9f611435f911"
-  version = "v3.0.69"
+  name = "gopkg.in/olivere/elastic.v5"
+  packages = [".","config","uritemplates"]
+  revision = "edbef41beaacc2ee95e61af8faff04e67c01e268"
+  version = "v5.0.45"
 
 [[projects]]
   name = "gopkg.in/warnings.v0"
@@ -274,6 +274,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "18f1dc66429dcd4cdb024c166125138903c1252689d1ed3d4a2c013fbea1ad3c"
+  inputs-digest = "6d557e987a1904a19671d7e137e1de9f5d787c4175a99ab8f5debf57f217dcae"
   solver-name = "gps-cdcl"
   solver-version = 1

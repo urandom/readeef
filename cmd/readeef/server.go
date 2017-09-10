@@ -298,6 +298,7 @@ func initSearchProvider(config config.Content, service repo.Service, log log.Log
 			log,
 		); err != nil {
 			log.Printf("Error initializing Elastic search: %+v\n", err)
+			searchProvider = nil
 		}
 	case "bleve":
 		fallthrough
@@ -309,6 +310,7 @@ func initSearchProvider(config config.Content, service repo.Service, log log.Log
 			log,
 		); err != nil {
 			log.Printf("Error initializing Bleve search: %+v\n", err)
+			searchProvider = nil
 		}
 	}
 

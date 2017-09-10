@@ -1,11 +1,13 @@
 package search
 
 import (
+	"context"
 	"encoding/json"
 	"net/url"
 	"strconv"
+	"time"
 
-	"gopkg.in/olivere/elastic.v3"
+	elastic "gopkg.in/olivere/elastic.v5"
 
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
@@ -26,6 +28,10 @@ type elasticSearch struct {
 	service   repo.Service
 }
 
+func timeout(d time.Duration) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), d)
+}
+
 func NewElastic(url string, size int64, service repo.Service, log log.Log) (elasticSearch, error) {
 	var client *elastic.Client
 	var exists bool
@@ -35,10 +41,12 @@ func NewElastic(url string, size int64, service repo.Service, log log.Log) (elas
 		return elasticSearch{}, errors.Wrapf(err, "connecting to elastic server '%s'", url)
 	}
 
-	if exists, err = client.IndexExists(elasticIndexName).Do(); err != nil {
+	ctx, cancel := timeout(2 * time.Second)
+	defer cancel()
+	if exists, err = client.IndexExists(elasticIndexName).Do(ctx); err != nil {
 		return elasticSearch{}, err
 	} else if !exists {
-		if _, err = client.CreateIndex(elasticIndexName).Do(); err != nil {
+		if _, err = client.CreateIndex(elasticIndexName).Do(ctx); err != nil {
 			return elasticSearch{}, errors.Wrap(err, "creating index")
 		}
 	}
@@ -98,7 +106,9 @@ func (e elasticSearch) Search(
 		search.Sort("article_id", o.SortOrder == content.AscendingOrder)
 	}
 
-	res, err := search.Do()
+	ctx, cancel := timeout(2 * time.Second)
+	defer cancel()
+	res, err := search.Do(ctx)
 
 	if err != nil {
 		return []content.Article{}, errors.Wrap(err, "performing search")
@@ -122,7 +132,10 @@ func (e elasticSearch) Search(
 		}
 	}
 
-	queryOpts := []content.QueryOpt{content.IDs(articleIDs)}
+	queryOpts := []content.QueryOpt{
+		content.IDs(articleIDs),
+		content.Sorting(o.SortField, o.SortOrder),
+	}
 	if o.UnreadFirst {
 		queryOpts = append(queryOpts, content.UnreadFirst)
 	}
@@ -164,8 +177,6 @@ func (e elasticSearch) BatchIndex(articles []content.Article, op indexOperation)
 		var req elastic.BulkableRequest
 		switch op {
 		case BatchAdd:
-			e.log.Debugf("Indexing article %d of feed id %d", a.ID, a.FeedID)
-
 			e.log.Debugf("Indexing article %s", a)
 			id, doc := prepareArticle(a)
 			req = elastic.NewBulkIndexRequest().Index(elasticIndexName).Type(elasticArticleType).Id(id).Doc(doc)
@@ -180,8 +191,10 @@ func (e elasticSearch) BatchIndex(articles []content.Article, op indexOperation)
 		bulk.Add(req)
 		count++
 
+		ctx, cancel := timeout(time.Duration(count) * time.Second)
+		defer cancel()
 		if count >= e.batchSize {
-			if _, err := bulk.Do(); err != nil {
+			if _, err := bulk.Do(ctx); err != nil {
 				return errors.Wrap(err, "indexing article batch")
 			}
 			bulk = e.client.Bulk()
@@ -190,7 +203,9 @@ func (e elasticSearch) BatchIndex(articles []content.Article, op indexOperation)
 	}
 
 	if count > 0 {
-		if _, err := bulk.Do(); err != nil {
+		ctx, cancel := timeout(time.Duration(count) * time.Second)
+		defer cancel()
+		if _, err := bulk.Do(ctx); err != nil {
 			return errors.Wrap(err, "indexing article batch")
 		}
 	}
