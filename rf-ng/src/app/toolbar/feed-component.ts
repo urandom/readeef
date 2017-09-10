@@ -31,6 +31,7 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
     showsArticle = false
     articleRead = false
     searchButton = false
+    inSearch = false
 
     private _searchQuery = ""
     private _searchEntry = false
@@ -117,7 +118,14 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
             error => console.log(error),
         ))
 
-        this.featuresServices.getFeatures().filter(
+        this.subscriptions.push(listRoute(this.router).map(
+            route => route != null && route.data["primary"] == "search"
+        ).subscribe(
+            inSearch => this.inSearch = inSearch,
+            error => console.log(error),
+        ))
+
+        this.subscriptions.push(this.featuresServices.getFeatures().filter(
             features => features.search
         ).switchMap(features =>
             articleRouteObservable.map(
@@ -150,7 +158,7 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
                 this.searchEntry = res[1]
             },
             error => console.log(error),
-        )
+        ))
     }
 
     ngOnDestroy(): void {

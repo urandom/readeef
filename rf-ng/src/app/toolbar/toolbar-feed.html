@@ -33,7 +33,7 @@
     <button md-menu-item (click)="toggleUnreadOnly()">
         <span>Unread only</span>
     </button>
-    <button md-menu-item>
+    <button md-menu-item *ngIf="!inSearch">
         <span>Mark all as read</span>
     </button>
 </md-menu>
