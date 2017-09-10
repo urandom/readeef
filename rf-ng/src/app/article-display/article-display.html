@@ -7,8 +7,7 @@
                         {{ item.favorite ? "bookmark" : "bookmark_border" }}
                     </md-icon>
                 </button>
-                <a href="{{ item.link }}" target="_blank">
-                    {{ item.title }}
+                <a href="{{ item.link }}" target="_blank" [innerHTML]="item.title">
                 </a>
             </h3>
             <p class="description" [innerHTML]="item.description"></p>
