@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, ViewChild } from "@angular/core";
+import { Component, OnInit, OnDestroy, Input, ViewChild, ElementRef } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { Location } from '@angular/common';
 import { Article, ArticleService } from "../services/article"
@@ -25,6 +25,9 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
     @ViewChild("carousel")
     private carousel : NgbCarousel;
+    @ViewChild("carousel", {read: ElementRef})
+    private carouselElement: ElementRef;
+
     private offset = new Subject<number>();
     private subscription: Subscription;
 
@@ -91,7 +94,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
             error => console.log(error)
         );
 
-        // this.carousel.nativeElement.focus();
+        this.carouselElement.nativeElement.focus()
     }
 
     ngOnDestroy(): void {
