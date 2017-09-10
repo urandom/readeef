@@ -122,7 +122,15 @@ func (e elasticSearch) Search(
 		}
 	}
 
-	articles, err := e.service.ArticleRepo().All(content.IDs(articleIDs))
+	queryOpts := []content.QueryOpt{content.IDs(articleIDs)}
+	if o.UnreadFirst {
+		queryOpts = append(queryOpts, content.UnreadFirst)
+	}
+	if o.UnreadOnly {
+		queryOpts = append(queryOpts, content.UnreadOnly)
+	}
+
+	articles, err := e.service.ArticleRepo().ForUser(u, queryOpts...)
 	if err != nil {
 		return []content.Article{}, errors.WithMessage(err, "getting articles by ids")
 	}

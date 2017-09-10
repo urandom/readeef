@@ -122,7 +122,7 @@ func (b bleveSearch) Search(
 
 	q = query.NewConjunctionQuery(conjunct)
 
-	searchRequest := bleve.NewSearchRequest(q)
+	searchRequest := bleve.NewSearchRequest(query.NewQueryStringQuery(term))
 
 	searchRequest.Highlight = bleve.NewHighlightWithStyle("html")
 	searchRequest.Highlight.AddField("title")
@@ -171,7 +171,15 @@ func (b bleveSearch) Search(
 		}
 	}
 
-	articles, err := b.service.ArticleRepo().All(content.IDs(articleIDs))
+	queryOpts := []content.QueryOpt{content.IDs(articleIDs)}
+	if o.UnreadFirst {
+		queryOpts = append(queryOpts, content.UnreadFirst)
+	}
+	if o.UnreadOnly {
+		queryOpts = append(queryOpts, content.UnreadOnly)
+	}
+
+	articles, err := b.service.ArticleRepo().ForUser(u, queryOpts...)
 	if err != nil {
 		return []content.Article{}, errors.WithMessage(err, "getting articles by ids")
 	}
