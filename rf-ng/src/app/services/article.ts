@@ -199,7 +199,18 @@ export class ArticleService {
                         })
                     ).map(payload => {
                         payload.articles = payload.articles.map(article => {
-                            article.stripped = article.description.replace(/<[^>]+>/g, '');
+                            if (article.hits && article.hits.fragments) {
+                                if (article.hits.fragments.title.length > 0) {
+                                    article.title = article.hits.fragments.title.join(" ")
+                                }
+
+                                if (article.hits.fragments.description.length > 0) {
+                                    article.stripped = article.hits.fragments.description.join(" ")
+                                }
+                            }
+                            if (!article.stripped) {
+                                article.stripped = article.description.replace(/<[^>]+>/g, '');
+                            }
                             article.feed = feedMap[article.feedID];
 
                             return article;
