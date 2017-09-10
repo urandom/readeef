@@ -74,21 +74,25 @@ export interface QueryOptions {
 
 export interface Source {
     url : string
+    updatable: boolean
 }
 
 export class UserSource {
+    updatable = true
     get url() : string {
         return "";
     }
 }
 
 export class FavoriteSource {
+    updatable = false
     get url() : string {
         return "/favorite";
     }
 }
 
 export class PopularSource {
+    updatable = false
     constructor(private secondary: UserSource | FeedSource | TagSource) {}
 
     get url() : string {
@@ -97,6 +101,7 @@ export class PopularSource {
 }
 
 export class FeedSource {
+    updatable = true
     constructor(public readonly id : number) {}
 
     get url() : string {
@@ -105,6 +110,7 @@ export class FeedSource {
 }
 
 export class TagSource {
+    updatable = true
     constructor(public readonly id : number) {}
 
     get url() : string {
@@ -113,6 +119,7 @@ export class TagSource {
 }
 
 export class SearchSource {
+    updatable = false
     constructor(private query: string, private secondary: UserSource | FeedSource | TagSource) {}
 
     get url() : string {
@@ -178,7 +185,9 @@ export class ArticleService {
                             articles: articles,
                             fromEvent: false,
                         }),
-                        this.eventService.feedUpdate.flatMap(id => 
+                        this.eventService.feedUpdate.filter(id =>
+                            source.updatable
+                        ).flatMap(id => 
                             this.getArticlesFor(new FeedSource(id), {
                                 afterID: afterID,
                                 olderFirst: prefs.olderFirst,
