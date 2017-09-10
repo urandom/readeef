@@ -127,6 +127,9 @@ func getArticles(
 
 		articles = processor.Articles(processors).Process(articles)
 
+		if articles == nil {
+			articles = []content.Article{}
+		}
 		args{"articles": articles}.WriteJSON(w)
 	}
 }
@@ -192,6 +195,9 @@ func articleSearch(
 
 		articles = processor.Articles(processors).Process(articles)
 
+		if articles == nil {
+			articles = []content.Article{}
+		}
 		args{"articles": articles}.WriteJSON(w)
 	}
 }

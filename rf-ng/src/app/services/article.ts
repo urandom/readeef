@@ -5,7 +5,7 @@ import { Router, ActivatedRouteSnapshot, NavigationEnd, ParamMap, Data, Params }
 import { Feed, FeedService } from "../services/feed"
 import { EventService } from "../services/events"
 import { QueryPreferences, PreferencesService } from "../services/preferences"
-import { Observable, BehaviorSubject, ConnectableObservable, Subject } from "rxjs";
+import { Observable, ConnectableObservable, Subject } from "rxjs";
 import { listRoute, getArticleRoute } from "../main/routing-util"
 import 'rxjs/add/observable/of'
 import 'rxjs/add/operator/distinctUntilKeyChanged'
@@ -146,9 +146,10 @@ interface ArticlesPayload {
 @Injectable()
 export class ArticleService {
     private articles : ConnectableObservable<Article[]>
-    private paging = new BehaviorSubject<number>(0)
+    private paging = new Subject<number>()
     private stateChange = new Subject<ArticleProperty>()
-    private limit: number = 200
+    private page = 0
+    private limit = 200
     private initialFetched = false
 
     constructor(
@@ -177,8 +178,9 @@ export class ArticleService {
             source.switchMap(source => {
                 return queryPreferences.switchMap(prefs =>
                     Observable.merge(
-                        this.paging.map(page => {
-                            return page * this.limit;
+                        this.paging.startWith(0).map(page => {
+                            this.page = page
+                            return page * this.limit
                         }).switchMap(offset => {
                             return this.getArticlesFor(source, prefs, this.limit, offset);
                         }).map(articles => <ArticlesPayload>{
@@ -193,6 +195,8 @@ export class ArticleService {
                                 olderFirst: prefs.olderFirst,
                                 unreadOnly: prefs.unreadOnly,
                             }, this.limit, 0)
+                        ).filter(
+                            articles => articles.length > 0
                         ).map(articles => <ArticlesPayload>{
                             articles: articles,
                             fromEvent: true,
@@ -290,7 +294,7 @@ export class ArticleService {
                             }
                             return data;
                         }
-                    ).map(data => data.articles)
+                    ).map(data => data.articles).startWith([])
                 )
             })
         ).publishReplay(1);
@@ -303,7 +307,7 @@ export class ArticleService {
     }
 
     requestNextPage() {
-        this.paging.next(this.paging.value + 1);
+        this.paging.next(this.page + 1);
     }
 
     public favor(id: number, favor: boolean) : Observable<Boolean> {
@@ -349,6 +353,10 @@ export class ArticleService {
             olderFirst: prefs.olderFirst,
             unreadOnly: prefs.unreadOnly,
             afterID: prefs.afterID,
+        }
+
+        if (source instanceof FavoriteSource) {
+            options.unreadOnly = false
         }
 
         let res : Observable<Article[]>

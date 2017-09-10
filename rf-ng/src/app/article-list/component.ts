@@ -6,8 +6,16 @@ import { Observable, Subscription } from "rxjs";
 import { BehaviorSubject } from "rxjs/BehaviorSubject";
 import * as moment from 'moment';
 import 'rxjs/add/observable/interval'
+import 'rxjs/add/operator/scan'
 import 'rxjs/add/operator/startWith'
 import 'rxjs/add/operator/switchMap'
+
+class ArticleCounter {
+    constructor(
+        public iteration: number,
+        public articles: Array<Article>,
+    ) { }
+}
 
 @Component({
     selector: "article-list",
@@ -18,6 +26,7 @@ export class ArticleListComponent implements OnInit, OnDestroy {
     items: Article[] = []
     loading: boolean
 
+    private finished = false
     private limit: number = 200;
     private subscription: Subscription;
 
@@ -31,7 +40,17 @@ export class ArticleListComponent implements OnInit, OnDestroy {
         this.loading = true;
 
         this.subscription = this.articleService.articleObservable(
-        ).startWith([]).switchMap(articles =>
+        ).scan((acc, articles) => {
+            if (acc.iteration > 0 && acc.articles.length == articles.length) {
+                this.finished = true
+            }
+
+            acc.articles = [].concat(articles)
+            acc.iteration++
+            return acc
+        }, new ArticleCounter(0, [])).map(
+            acc => acc.articles
+        ).switchMap(articles =>
             Observable.interval(60000).startWith(0).map(v =>
                 articles.map(article => {
                     article.time = moment(article.date).fromNow();
@@ -55,7 +74,7 @@ export class ArticleListComponent implements OnInit, OnDestroy {
     }
 
     fetchMore(event: ChangeEvent) {
-        if (event.end == this.items.length && !this.loading) {
+        if (event.end == this.items.length && !this.loading && !this.finished) {
             this.loading = true;
             this.articleService.requestNextPage();
         }
