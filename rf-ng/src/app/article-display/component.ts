@@ -5,7 +5,7 @@ import { Article, ArticleService } from "../services/article"
 import { Observable, Subscription } from "rxjs";
 import { Subject } from "rxjs/Subject";
 import 'rxjs/add/observable/of'
-import 'rxjs/add/operator/distinctUntilKeyChanged'
+import 'rxjs/add/operator/distinctUntilChanged'
 import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/mergeMap'
 import 'rxjs/add/operator/switchMap'
@@ -87,15 +87,22 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
             })
         ).filter(
             data => data != null
-        ).distinctUntilKeyChanged("1").flatMap(data => {
+        ).distinctUntilChanged((a, b) =>
+            a[1] == b[1] && a[0].length == b[0].length
+        ).flatMap(data => {
             if (data[2]) {
                 return Observable.of(data);
             }
             return this.articleService.read(data[1], true).map(s => data);
         }).subscribe(
             data => {
-                this.carousel.activeId = data[1].toString();
-                this.slides = data[0];
+                let [slides, id] = data
+                this.carousel.activeId = id.toString();
+                this.slides = slides;
+
+                if (slides.length == 2 && slides[1].id == id) {
+                    this.articleService.requestNextPage()
+                }
             },
             error => console.log(error)
         );
