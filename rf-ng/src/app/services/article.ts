@@ -31,6 +31,7 @@ export class Article extends Serializable {
     thumbnail: string
     time: string
     hits: Hits
+    format: ArticleFormat
 
     fromJSON(json) {
         if ("date" in json) {
@@ -43,6 +44,12 @@ export class Article extends Serializable {
 
         return super.fromJSON(json);
     }
+}
+
+export class ArticleFormat extends Serializable {
+    keyPoints: string[]
+    content: string
+    topImage: string
 }
 
 interface Hits {
@@ -304,6 +311,12 @@ export class ArticleService {
 
     requestNextPage() {
         this.paging.next(this.paging.value + 1);
+    }
+
+    formatArticle(id: number): Observable<ArticleFormat> {
+        return this.api.get(`article/${id}/format`).map(
+            response => new ArticleFormat().fromJSON(response.json())
+        )
     }
 
     public favor(id: number, favor: boolean) : Observable<Boolean> {

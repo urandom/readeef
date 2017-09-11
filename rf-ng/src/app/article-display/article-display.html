@@ -19,12 +19,12 @@
                     </a>
                 </div>
                 <div class="col-md-auto" *ngIf="canExtract">
-                    <button md-button i18n>
+                    <button md-button i18n (click)="formatArticle()">
                         Format
                     </button>
                 </div>
                 <div class="col-md-auto" *ngIf="canExtract">
-                    <button md-button i18n>
+                    <button md-button i18n (click)="summarizeArticle()">
                         Summary
                     </button>
                 </div>

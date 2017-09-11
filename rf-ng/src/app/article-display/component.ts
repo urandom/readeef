@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, Input, ViewChild, ElementRef, OnChanges } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { Location } from '@angular/common';
-import { Article, ArticleService } from "../services/article"
+import { Article, ArticleFormat, ArticleService } from "../services/article"
 import { FeaturesService } from "../services/features"
 import { Observable, Subscription } from "rxjs";
 import { Subject } from "rxjs/Subject";
@@ -150,6 +150,32 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         if (this.active != null) {
             window.open(this.active.link, "_blank");
         }
+    }
+
+    formatArticle() {
+        this.getFormat(this.active).subscribe(
+            format => console.log(format),
+            error => console.log(error)
+        )
+    }
+
+    summarizeArticle() {
+        this.getFormat(this.active).subscribe(
+            format => console.log(format),
+            error => console.log(error)
+        )
+    }
+
+    private getFormat(article: Article) : Observable<ArticleFormat> {
+        if (article.format) {
+            return Observable.of(article.format)
+        }
+
+        let active = this.active
+        return this.articleService.formatArticle(active.id).map(format => {
+            active.format = format
+            return format
+        })
     }
 
     private stylizeContent(container) {
