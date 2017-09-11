@@ -11,6 +11,24 @@
                 </a>
             </h3>
             <p class="description" [innerHTML]="item.formatted || item.description"></p>
+
+            <div class="row">
+                <div class="col">
+                    <a md-button href="{{ item.link }}" target="_blank" i18n>
+                        View
+                    </a>
+                </div>
+                <div class="col-md-auto" *ngIf="canExtract">
+                    <button md-button i18n>
+                        Format
+                    </button>
+                </div>
+                <div class="col-md-auto" *ngIf="canExtract">
+                    <button md-button i18n>
+                        Summary
+                    </button>
+                </div>
+            </div>
         </div>
     </ng-template>
 </ngb-carousel>

@@ -25,7 +25,8 @@ a {
     color: black;
 }
 
-a:hover, a:focus {
+a:hover, a:focus,
+button:focus {
     outline: none;
     text-decoration: none;
 }

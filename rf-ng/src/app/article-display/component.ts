@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, Input, ViewChild, ElementRef, OnChanges }
 import { ActivatedRoute, Router } from "@angular/router";
 import { Location } from '@angular/common';
 import { Article, ArticleService } from "../services/article"
+import { FeaturesService } from "../services/features"
 import { Observable, Subscription } from "rxjs";
 import { Subject } from "rxjs/Subject";
 import 'rxjs/add/observable/of'
@@ -22,6 +23,7 @@ import { NgbCarouselConfig, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
     }
 })
 export class ArticleDisplayComponent implements OnInit, OnDestroy {
+    canExtract: boolean;
     @Input()
     items: Article[] = []
 
@@ -34,7 +36,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
     private active: Article
     private offset = new Subject<number>();
-    private subscription: Subscription;
+    private subscriptions = new Array<Subscription>()
 
     constructor(
         config: NgbCarouselConfig,
@@ -42,6 +44,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         private router: Router,
         private location: Location,
         private articleService: ArticleService,
+        private featuresService: FeaturesService,
     ) {
         config.interval = 0
         config.wrap = false
@@ -49,7 +52,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
-        this.subscription = this.articleService.articleObservable(
+        this.subscriptions.push(this.articleService.articleObservable(
         ).switchMap(articles =>
             this.offset.startWith(0).map((offset) : [Article[], number, boolean] => {
                 let id = this.route.snapshot.params["articleID"];
@@ -105,13 +108,22 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 }, 5)
             },
             error => console.log(error)
-        );
+        ));
+
+        this.subscriptions.push(this.featuresService.getFeatures().map(
+            features => features.extractor
+        ).subscribe(
+            canExtract => this.canExtract = canExtract,
+            error => console.log(error),
+        ))
 
         this.carouselElement.nativeElement.focus()
     }
 
     ngOnDestroy(): void {
-        this.subscription.unsubscribe();
+        for (let subscription of this.subscriptions) {
+            subscription.unsubscribe()
+        }
     }
 
     slideEvent(next: boolean) {
