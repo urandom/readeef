@@ -30,7 +30,22 @@ a:hover, a:focus {
     text-decoration: none;
 }
 
+.description {
+    width: 100%;
+}
+
 .description ::ng-deep img {
     max-width: 100%;
     height: auto;
+}
+
+.description ::ng-deep img.float {
+    float: left;
+    padding-right: 16px;
+    padding-bottom: 16px;
+}
+
+.description ::ng-deep img.center {
+    display: block;
+    margin: 0 auto;
 }

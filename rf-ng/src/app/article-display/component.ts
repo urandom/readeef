@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, ViewChild, ElementRef } from "@angular/core";
+import { Component, OnInit, OnDestroy, Input, ViewChild, ElementRef, OnChanges } from "@angular/core";
 import { ActivatedRoute, Router } from "@angular/router";
 import { Location } from '@angular/common';
 import { Article, ArticleService } from "../services/article"
@@ -99,6 +99,10 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 if (slides.length == 2 && slides[1].id == id) {
                     this.articleService.requestNextPage()
                 }
+
+                setTimeout(() => {
+                    this.stylizeContent(this.carouselElement.nativeElement)
+                }, 5)
             },
             error => console.log(error)
         );
@@ -133,6 +137,35 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     keyView() {
         if (this.active != null) {
             window.open(this.active.link, "_blank");
+        }
+    }
+
+    private stylizeContent(container) {
+        let styler = (img) => {
+            if (img.naturalWidth < img.parentNode.offsetWidth * 0.666) {
+                if (img.parentNode.textContent.length < 100) {
+                    img.classList.add("center")
+                } else {
+                    img.classList.add("float")
+
+                    if (!img.parentNode.__clearAdded) {
+                        let clear = document.createElement('br')
+                        clear.style.clear = 'both'
+                        img.parentNode.appendChild(clear)
+                        img.parentNode.__clearAdded = true
+                    }
+                }
+            }
+        }
+
+        for (let descr of container.querySelectorAll(".description")) {
+            for (let img of descr.querySelectorAll("img")) {
+                if (img.complete) {
+                    styler(img)
+                } else {
+                    img.addEventListener('load', () => styler(img))
+                }
+            }
         }
     }
 }

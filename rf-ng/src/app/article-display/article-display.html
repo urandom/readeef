@@ -10,7 +10,7 @@
                 <a href="{{ item.link }}" target="_blank" [innerHTML]="item.title">
                 </a>
             </h3>
-            <p class="description" [innerHTML]="item.description"></p>
+            <p class="description" [innerHTML]="item.formatted || item.description"></p>
         </div>
     </ng-template>
 </ngb-carousel>
