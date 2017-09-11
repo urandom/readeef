@@ -98,6 +98,7 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
                 return Observable.of(false);
             }
 
+            let initial = true
             return this.articleService.articleObservable().map(articles => {
                 for (let article of articles) {
                     if (article.id == id) {
@@ -107,9 +108,11 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
 
                 return false;
             }).delayWhen(read => {
-                if (read) {
+                if (read && !initial) {
                     return Observable.timer(1000);
                 }
+
+                initial = false
 
                 return Observable.timer(0);
             })
