@@ -5,7 +5,7 @@ import { Router, ActivatedRouteSnapshot, NavigationEnd, ParamMap, Data, Params }
 import { Feed, FeedService } from "../services/feed"
 import { EventService } from "../services/events"
 import { QueryPreferences, PreferencesService } from "../services/preferences"
-import { Observable, ConnectableObservable, Subject } from "rxjs";
+import { Observable, BehaviorSubject, ConnectableObservable, Subject } from "rxjs";
 import { listRoute, getArticleRoute } from "../main/routing-util"
 import 'rxjs/add/observable/of'
 import 'rxjs/add/operator/distinctUntilKeyChanged'
@@ -146,10 +146,9 @@ interface ArticlesPayload {
 @Injectable()
 export class ArticleService {
     private articles : ConnectableObservable<Article[]>
-    private paging = new Subject<number>()
+    private paging = new BehaviorSubject<number>(0)
     private stateChange = new Subject<ArticleProperty>()
-    private page = 0
-    private limit = 200
+    private limit: number = 200
     private initialFetched = false
 
     constructor(
@@ -178,9 +177,8 @@ export class ArticleService {
             source.switchMap(source => {
                 return queryPreferences.switchMap(prefs =>
                     Observable.merge(
-                        this.paging.startWith(0).map(page => {
-                            this.page = page
-                            return page * this.limit
+                        this.paging.map(page => {
+                            return page * this.limit;
                         }).switchMap(offset => {
                             return this.getArticlesFor(source, prefs, this.limit, offset);
                         }).map(articles => <ArticlesPayload>{
@@ -195,8 +193,6 @@ export class ArticleService {
                                 olderFirst: prefs.olderFirst,
                                 unreadOnly: prefs.unreadOnly,
                             }, this.limit, 0)
-                        ).filter(
-                            articles => articles.length > 0
                         ).map(articles => <ArticlesPayload>{
                             articles: articles,
                             fromEvent: true,
@@ -294,7 +290,7 @@ export class ArticleService {
                             }
                             return data;
                         }
-                    ).map(data => data.articles).startWith([])
+                    ).map(data => data.articles)
                 )
             })
         ).publishReplay(1);
@@ -307,7 +303,7 @@ export class ArticleService {
     }
 
     requestNextPage() {
-        this.paging.next(this.page + 1);
+        this.paging.next(this.paging.value + 1);
     }
 
     public favor(id: number, favor: boolean) : Observable<Boolean> {
@@ -355,19 +351,8 @@ export class ArticleService {
             afterID: prefs.afterID,
         }
 
-        if (source instanceof FavoriteSource) {
-            options.unreadOnly = false
-        }
-
-        let res : Observable<Article[]>
-
-        if (source instanceof PopularSource) {
-            res = this.api.get(this.buildURL("article/popular" + source.url, options))
-                .map(response => new ArticlesResponse().fromJSON(response.json()).articles);
-        } else {
-            res = this.api.get(this.buildURL("article" + source.url, options))
-                .map(response => new ArticlesResponse().fromJSON(response.json()).articles);
-        }
+        let res = this.api.get(this.buildURL("article" + source.url, options))
+            .map(response => new ArticlesResponse().fromJSON(response.json()).articles);
 
         if (!this.initialFetched) {
             this.initialFetched = true;
@@ -382,18 +367,19 @@ export class ArticleService {
                 )).map(response => new ArticlesResponse()
                         .fromJSON(response.json()).articles[0]
                 ).take(1).flatMap(initial => res.map(articles => {
-                    if (!options.unreadOnly || !initial.read) {
-                        for (let i = 0; i < articles.length; i++) {
-                            let article = articles[i];
-                            if (this.shouldInsert(initial, article, options)) {
-                                articles.splice(i, 0, initial);
-                                break;
-                            }
+                    for (let i = 0; i < articles.length; i++) {
+                        let article = articles[i];
+                        if (article.id == initial.id) {
+                            return articles
+                        }
+                        if (this.shouldInsert(initial, article, options)) {
+                            articles.splice(i, 0, initial)
+                            return articles
                         }
                     }
 
-                    articles.push(initial);
-                    return articles;
+                    articles.push(initial)
+                    return articles
                 }));
             }
         }

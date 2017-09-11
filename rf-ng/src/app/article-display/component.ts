@@ -54,36 +54,39 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 let index = -1
                 let slides : Article[] = [];
 
-                articles.some((article, idx) => {
-                    if (article.id == id) {
-                        index = idx;
-                        return true;
+                for (let i = 0; i < articles.length; i++) {
+                    if (articles[i].id == id) {
+                        index = i
+                        break
                     }
-                    return false;
-                });
+                }
 
-                if (index + offset != -1 && index + offset < articles.length) {
-                    index += offset;
+                if (index == -1) {
+                    return null
                 }
 
                 if (offset != 0) {
+                    if (index + offset != -1 && index + offset < articles.length) {
+                        index += offset;
+                    }
+
                     let path = this.location.path();
                     path = path.substring(0, path.lastIndexOf("/") + 1) + articles[index].id;
                     this.router.navigateByUrl(path)
                 }
 
-                if (index != -1) {
-                    if (index > 0) {
-                        slides.push(articles[index-1]);
-                    }
-                    slides.push(articles[index]);
-                    if (index + 1 < articles.length) {
-                        slides.push(articles[index + 1]);
-                    }
+                if (index > 0) {
+                    slides.push(articles[index-1]);
+                }
+                slides.push(articles[index]);
+                if (index + 1 < articles.length) {
+                    slides.push(articles[index + 1]);
                 }
 
                 return [slides, articles[index].id, articles[index].read];
             })
+        ).filter(
+            data => data != null
         ).distinctUntilKeyChanged("1").flatMap(data => {
             if (data[2]) {
                 return Observable.of(data);
