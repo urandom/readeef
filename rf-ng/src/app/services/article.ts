@@ -224,7 +224,7 @@ export class ArticleService {
                             for (let incoming of payload.articles) {
                                 if (acc.indexMap.has(incoming.id)) {
                                     updates.push(incoming);
-                                    break;
+                                    continue
                                 }
 
                                 if (prefs.olderFirst) {
