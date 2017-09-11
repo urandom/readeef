@@ -18,6 +18,7 @@ import { NgbCarouselConfig, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
     providers: [ NgbCarouselConfig ],
     host: {
         '(keydown.arrowUp)': 'keyUp()',
+        '(keydown.v)': 'keyView()',
     }
 })
 export class ArticleDisplayComponent implements OnInit, OnDestroy {
@@ -31,6 +32,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     @ViewChild("carousel", {read: ElementRef})
     private carouselElement: ElementRef;
 
+    private active: Article
     private offset = new Subject<number>();
     private subscription: Subscription;
 
@@ -51,15 +53,8 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         ).switchMap(articles =>
             this.offset.startWith(0).map((offset) : [Article[], number, boolean] => {
                 let id = this.route.snapshot.params["articleID"];
-                let index = -1
                 let slides : Article[] = [];
-
-                for (let i = 0; i < articles.length; i++) {
-                    if (articles[i].id == id) {
-                        index = i
-                        break
-                    }
-                }
+                let index = articles.findIndex(article => article.id == id)
 
                 if (index == -1) {
                     return null
@@ -99,6 +94,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 let [slides, id] = data
                 this.carousel.activeId = id.toString();
                 this.slides = slides;
+                this.active = slides.find(article => article.id == id);
 
                 if (slides.length == 2 && slides[1].id == id) {
                     this.articleService.requestNextPage()
@@ -132,5 +128,11 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     keyUp() {
         let path = this.location.path();
         this.router.navigateByUrl(path.substring( 0, path.indexOf("/article/")))
+    }
+
+    keyView() {
+        if (this.active != null) {
+            window.open(this.active.link, "_blank");
+        }
     }
 }
