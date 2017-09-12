@@ -40,12 +40,14 @@ var (
 )
 
 func runServer(config config.Config, args []string) error {
-	fs, err := readeef.NewFileSystem(serverDevelPort > 0)
+	fs, err := readeef.NewFileSystem()
 	if err != nil {
 		return errors.WithMessage(err, "creating readeef filesystem")
 	}
 
-	fs = http.Dir(".")
+	if serverDevelPort > 0 {
+		fs = http.Dir(".")
+	}
 
 	/*
 		sessDb, engine, err := initSessionEngine(config.Auth)
