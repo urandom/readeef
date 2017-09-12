@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, ViewChild, ElementRef, OnChanges } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, OnChanges } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { NgbCarouselConfig, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
@@ -33,8 +33,6 @@ enum State {
 })
 export class ArticleDisplayComponent implements OnInit, OnDestroy {
     canExtract: boolean;
-    @Input()
-    items: Article[] = []
 
     slides: Article[] = []
 
