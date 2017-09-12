@@ -3,14 +3,18 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { Location } from '@angular/common';
 import { Article, ArticleFormat, ArticleService } from "../services/article"
 import { FeaturesService } from "../services/features"
-import { Observable, Subscription } from "rxjs";
-import { Subject } from "rxjs/Subject";
+import { Observable, Subscription, Subject, BehaviorSubject } from "rxjs";
 import 'rxjs/add/observable/of'
+import 'rxjs/add/operator/combineLatest'
 import 'rxjs/add/operator/distinctUntilChanged'
 import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/mergeMap'
 import 'rxjs/add/operator/switchMap'
 import { NgbCarouselConfig, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
+
+enum State {
+    DESCRIPTION, FORMAT, SUMMARY,
+}
 
 @Component({
     selector: "article-display",
@@ -35,7 +39,9 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     private carouselElement: ElementRef;
 
     private active: Article
-    private offset = new Subject<number>();
+    private offset = new Subject<number>()
+    private stateChange = new BehaviorSubject<[number, State]>([-1, State.DESCRIPTION])
+    private states = new Map<number, State>();
     private subscriptions = new Array<Subscription>()
 
     constructor(
@@ -54,35 +60,63 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.subscriptions.push(this.articleService.articleObservable(
         ).switchMap(articles =>
-            this.offset.startWith(0).map((offset) : [Article[], number, boolean] => {
-                let id = this.route.snapshot.params["articleID"];
-                let slides : Article[] = [];
-                let index = articles.findIndex(article => article.id == id)
+            this.stateChange.flatMap(stateChange => 
+                this.offset.startWith(0).map(
+                    (offset) : [number, [number | State]] => {
+                        return [offset, stateChange]
+                    }
+                )
+            ).map(
+                (offsetState): [Article[], number, boolean] => {
+                    let [offset, stateChange] = offsetState
+                    let id = this.route.snapshot.params["articleID"];
+                    let slides: Article[] = [];
+                    let index = articles.findIndex(article => article.id == id)
 
-                if (index == -1) {
-                    return null
-                }
-
-                if (offset != 0) {
-                    if (index + offset != -1 && index + offset < articles.length) {
-                        index += offset;
+                    if (index == -1) {
+                        return null
                     }
 
-                    let path = this.location.path();
-                    path = path.substring(0, path.lastIndexOf("/") + 1) + articles[index].id;
-                    this.router.navigateByUrl(path)
-                }
+                    if (offset != 0) {
+                        if (index + offset != -1 && index + offset < articles.length) {
+                            index += offset;
+                        }
 
-                if (index > 0) {
-                    slides.push(articles[index-1]);
-                }
-                slides.push(articles[index]);
-                if (index + 1 < articles.length) {
-                    slides.push(articles[index + 1]);
-                }
+                        let path = this.location.path();
+                        path = path.substring(0, path.lastIndexOf("/") + 1) + articles[index].id;
+                        this.router.navigateByUrl(path)
+                    }
 
-                return [slides, articles[index].id, articles[index].read];
-            })
+                    if (index > 0) {
+                        slides.push(articles[index - 1]);
+                    }
+                    slides.push(articles[index]);
+                    if (index + 1 < articles.length) {
+                        slides.push(articles[index + 1]);
+                    }
+
+                    slides = slides.map(slide => {
+                        if (slide.id == stateChange[0]) {
+                            switch (stateChange[1]) {
+                                case State.DESCRIPTION:
+                                    slide["formatted"] = slide.description
+                                    break
+                                case State.FORMAT:
+                                    slide["formatted"] = slide.format.content
+                                    break
+                                case State.SUMMARY:
+                                    slide["formatted"] = this.keypointsToHTML(slide.format)
+                                    break
+                            }
+                        } else {
+                            slide["formatted"] = slide.description
+                        }
+                        return slide
+                    })
+
+                    return [slides, articles[index].id, articles[index].read];
+                }
+            )
         ).filter(
             data => data != null
         ).distinctUntilChanged((a, b) =>
@@ -115,6 +149,10 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         ).subscribe(
             canExtract => this.canExtract = canExtract,
             error => console.log(error),
+        ))
+
+        this.subscriptions.push(this.stateChange.subscribe(
+            stateChange => this.states.set(stateChange[0], stateChange[1])
         ))
 
         this.carouselElement.nativeElement.focus()
@@ -153,29 +191,62 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     }
 
     formatArticle() {
-        this.getFormat(this.active).subscribe(
-            format => console.log(format),
-            error => console.log(error)
-        )
+        let state = this.getState(this.active.id)
+        if (state == State.FORMAT) {
+            state = State.DESCRIPTION
+        } else {
+            state = State.FORMAT
+        }
+
+        this.setFormat(this.active, state)
     }
 
     summarizeArticle() {
-        this.getFormat(this.active).subscribe(
-            format => console.log(format),
-            error => console.log(error)
-        )
-    }
-
-    private getFormat(article: Article) : Observable<ArticleFormat> {
-        if (article.format) {
-            return Observable.of(article.format)
+        let state = this.getState(this.active.id)
+        if (state == State.SUMMARY) {
+            state = State.DESCRIPTION
+        } else {
+            state = State.SUMMARY
         }
 
+        this.setFormat(this.active, state)
+    }
+
+    private keypointsToHTML(format: ArticleFormat) : string {
+        return `<img src="${format.topImage}" class="top-image"><br><ul><li>`
+            + format.keyPoints.join("<li>")
+            + "</ul>"
+    }
+
+    private getState(id: number) : State {
+        if (this.states.has(id)) {
+            return this.states.get(id)
+        }
+
+        return State.DESCRIPTION
+    }
+
+    private setFormat(article: Article, state: State) {
         let active = this.active
-        return this.articleService.formatArticle(active.id).map(format => {
-            active.format = format
-            return format
-        })
+        if (state == State.DESCRIPTION) {
+            this.stateChange.next([active.id, state])
+            return
+        }
+
+        let o : Observable<ArticleFormat>
+        if (article.format) {
+            o = Observable.of(article.format)
+        } else {
+            o = this.articleService.formatArticle(active.id)
+        }
+
+        o.subscribe(
+            format => {
+                active.format = format
+                this.stateChange.next([active.id, state])
+            },
+            error => console.log(error)
+        )
     }
 
     private stylizeContent(container) {
