@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy, Input, ViewChild, ElementRef, OnChanges } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
+import { Component, OnInit, OnDestroy, Input, ViewChild, ElementRef, OnChanges } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
-import { Article, ArticleFormat, ArticleService } from "../services/article"
-import { FeaturesService } from "../services/features"
-import { Observable, Subscription, Subject, BehaviorSubject } from "rxjs";
+import { Article, ArticleFormat, ArticleService } from '../services/article'
+import { FeaturesService } from '../services/features'
+import { Observable, Subscription, Subject, BehaviorSubject } from 'rxjs';
 import 'rxjs/add/observable/of'
 import 'rxjs/add/operator/combineLatest'
 import 'rxjs/add/operator/distinctUntilChanged'
@@ -22,8 +22,11 @@ enum State {
     styleUrls: ["./article-display.css"],
     providers: [ NgbCarouselConfig ],
     host: {
-        '(keydown.arrowUp)': 'keyUp()',
-        '(keydown.v)': 'keyView()',
+        '(keydown.arrowUp)': 'goUp()',
+        '(keydown.v)': 'viewActive()',
+        '(keydown.c)': 'formatActive()',
+        '(keydown.s)': 'summarizeActive()',
+        '(keydown.f)': 'favorActive()',
     }
 })
 export class ArticleDisplayComponent implements OnInit, OnDestroy {
@@ -179,37 +182,64 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         )
     }
 
-    keyUp() {
+    goUp() {
         let path = this.location.path();
         this.router.navigateByUrl(path.substring( 0, path.indexOf("/article/")))
     }
 
-    keyView() {
+    viewActive() {
         if (this.active != null) {
             window.open(this.active.link, "_blank");
         }
     }
 
-    formatArticle() {
-        let state = this.getState(this.active.id)
+    formatActive() {
+        if (this.active != null) {
+            this.formatArticle(this.active)
+        }
+    }
+
+    formatArticle(article: Article) {
+        let state = this.getState(article.id)
         if (state == State.FORMAT) {
             state = State.DESCRIPTION
         } else {
             state = State.FORMAT
         }
 
-        this.setFormat(this.active, state)
+        this.setFormat(article, state)
     }
 
-    summarizeArticle() {
-        let state = this.getState(this.active.id)
+    summarizeActive() {
+        if (this.active != null) {
+            this.summarizeArticle(this.active)
+        }
+    }
+
+    summarizeArticle(article: Article) {
+        let state = this.getState(article.id)
         if (state == State.SUMMARY) {
             state = State.DESCRIPTION
         } else {
             state = State.SUMMARY
         }
 
-        this.setFormat(this.active, state)
+        this.setFormat(article, state)
+    }
+
+    favorActive() {
+        if (this.active != null) {
+            this.favorArticle(this.active)
+        }
+    }
+
+    favorArticle(article: Article) {
+        this.articleService.favor(
+            article.id, !article.favorite
+        ).subscribe(
+            success => { },
+            error => console.log(error)
+        )
     }
 
     private keypointsToHTML(format: ArticleFormat) : string {

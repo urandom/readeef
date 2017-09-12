@@ -2,7 +2,7 @@
     <ng-template ngbSlide *ngFor="let item of slides" [id]="item.id.toString()">
         <div class="container">
             <h3>
-                <button md-card-avatar md-icon-button (click)="favor(item.id, !item.favorite)">
+                <button md-card-avatar md-icon-button (click)="favorArticle(item)">
                     <md-icon>
                         {{ item.favorite ? "bookmark" : "bookmark_border" }}
                     </md-icon>
@@ -19,12 +19,12 @@
                     </a>
                 </div>
                 <div class="col-md-auto" *ngIf="canExtract">
-                    <button md-button i18n (click)="formatArticle()">
+                    <button md-button i18n (click)="formatArticle(item)">
                         Format
                     </button>
                 </div>
                 <div class="col-md-auto" *ngIf="canExtract">
-                    <button md-button i18n (click)="summarizeArticle()">
+                    <button md-button i18n (click)="summarizeArticle(item)">
                         Summary
                     </button>
                 </div>
