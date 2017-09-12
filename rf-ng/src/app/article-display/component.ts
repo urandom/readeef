@@ -184,7 +184,8 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         )
     }
 
-    @HostListener('window:keydown.arrowUp')
+    @HostListener('window:keydown.Escape')
+    @HostListener('window:keydown.shift.arrowUp')
     goUp() {
         this.router.navigate(['../../'], { relativeTo: this.route })
     }
