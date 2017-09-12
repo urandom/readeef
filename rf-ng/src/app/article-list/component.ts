@@ -104,5 +104,6 @@ export class ArticleListComponent implements OnInit, OnDestroy {
 
     @HostListener('window:keydown.r')
     refresh() {
+        this.articleService.refreshArticles()
     }
 }

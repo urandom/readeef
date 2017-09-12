@@ -155,6 +155,7 @@ export class ArticleService {
     private articles : ConnectableObservable<Article[]>
     private paging = new BehaviorSubject<number>(0)
     private stateChange = new Subject<ArticleProperty>()
+    private refresh = new BehaviorSubject<any>(null)
     private limit: number = 200
     private initialFetched = false
 
@@ -181,7 +182,9 @@ export class ArticleService {
                 return map;
             }, new Map<number, string>())
         ).switchMap(feedMap =>
-            source.switchMap(source => {
+            source.combineLatest(
+                this.refresh, (source, v) => source
+            ).switchMap(source => {
                 return queryPreferences.switchMap(prefs =>
                     Observable.merge(
                         this.paging.map(page => {
@@ -317,6 +320,10 @@ export class ArticleService {
         return this.api.get(`article/${id}/format`).map(
             response => new ArticleFormat().fromJSON(response.json())
         )
+    }
+
+    refreshArticles() {
+        this.refresh.next(null)
     }
 
     public favor(id: number, favor: boolean) : Observable<Boolean> {
