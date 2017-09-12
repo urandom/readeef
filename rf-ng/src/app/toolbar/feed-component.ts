@@ -225,4 +225,8 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
             this.router.navigateByUrl(this.location.path() + "/search/" + encodeURIComponent(query));
         }
     }
+
+    refresh() {
+        this.articleService.refreshArticles()
+    }
 }

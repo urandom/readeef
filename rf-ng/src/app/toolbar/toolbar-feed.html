@@ -18,6 +18,10 @@
     <md-icon>search</md-icon>
 </button>
 
+<button md-icon-button *ngIf="!showsArticle" (click)="refresh()">
+    <md-icon>refresh</md-icon>
+</button>
+
 <md-checkbox [(ngModel)]="articleRead" *ngIf="showsArticle" (click)="toggleRead()" i18n>Read</md-checkbox>
 
 <button md-icon-button [mdMenuTriggerFor]="menu" *ngIf="!showsArticle">
