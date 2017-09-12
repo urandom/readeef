@@ -159,8 +159,6 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         this.subscriptions.push(this.stateChange.subscribe(
             stateChange => this.states.set(stateChange[0], stateChange[1])
         ))
-
-        this.carouselElement.nativeElement.focus()
     }
 
     ngOnDestroy(): void {
@@ -186,8 +184,21 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
     @HostListener('window:keydown.Escape')
     @HostListener('window:keydown.shift.arrowUp')
+    @HostListener('window:keydown.h')
     goUp() {
         this.router.navigate(['../../'], { relativeTo: this.route })
+    }
+
+    @HostListener('window:keydown.arrowRight')
+    @HostListener('window:keydown.j')
+    goNext() {
+        this.carousel.next()
+    }
+
+    @HostListener('window:keydown.arrowLeft')
+    @HostListener('window:keydown.k')
+    goPrevious() {
+        this.carousel.prev()
     }
 
     @HostListener('window:keydown.v')

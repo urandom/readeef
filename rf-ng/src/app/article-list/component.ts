@@ -82,6 +82,7 @@ export class ArticleListComponent implements OnInit, OnDestroy {
     }
 
     @HostListener('window:keydown.arrowLeft')
+    @HostListener('window:keydown.shift.j')
     firstUnread() {
         let article = this.items.find(article => !article.read)
         if (article) {
@@ -90,6 +91,7 @@ export class ArticleListComponent implements OnInit, OnDestroy {
     }
 
     @HostListener('window:keydown.arrowRight')
+    @HostListener('window:keydown.shift.k')
     lastUnread() {
         for (let i = this.items.length - 1; i > -1; i--) {
             let article = this.items[i]
@@ -98,5 +100,9 @@ export class ArticleListComponent implements OnInit, OnDestroy {
                 return
             }
         }
+    }
+
+    @HostListener('window:keydown.r')
+    refresh() {
     }
 }
