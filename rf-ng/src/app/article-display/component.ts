@@ -1,6 +1,9 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, OnChanges } from '@angular/core';
+import {
+     Component, OnInit, OnDestroy,
+     ViewChild, ElementRef, OnChanges,
+     HostListener,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Location } from '@angular/common';
 import { NgbCarouselConfig, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
 import { Article, ArticleFormat, ArticleService } from '../services/article'
 import { FeaturesService } from '../services/features'
@@ -23,13 +26,6 @@ enum State {
     templateUrl: "./article-display.html",
     styleUrls: ["./article-display.css"],
     providers: [ NgbCarouselConfig ],
-    host: {
-        '(keydown.arrowUp)': 'goUp()',
-        '(keydown.v)': 'viewActive()',
-        '(keydown.c)': 'formatActive()',
-        '(keydown.s)': 'summarizeActive()',
-        '(keydown.f)': 'favorActive()',
-    }
 })
 export class ArticleDisplayComponent implements OnInit, OnDestroy {
     canExtract: boolean;
@@ -51,7 +47,6 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         config: NgbCarouselConfig,
         private route: ActivatedRoute,
         private router: Router,
-        private location: Location,
         private articleService: ArticleService,
         private featuresService: FeaturesService,
     ) {
@@ -85,9 +80,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                             index += offset;
                         }
 
-                        let path = this.location.path();
-                        path = path.substring(0, path.lastIndexOf("/") + 1) + articles[index].id;
-                        this.router.navigateByUrl(path)
+                        this.router.navigate(['../', articles[index].id], { relativeTo: this.route })
                     }
 
                     if (index > 0) {
@@ -191,17 +184,19 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         )
     }
 
+    @HostListener('window:keydown.arrowUp')
     goUp() {
-        let path = this.location.path();
-        this.router.navigateByUrl(path.substring( 0, path.indexOf("/article/")))
+        this.router.navigate(['../../'], { relativeTo: this.route })
     }
 
+    @HostListener('window:keydown.v')
     viewActive() {
         if (this.active != null) {
             window.open(this.active.link, "_blank");
         }
     }
 
+    @HostListener('window:keydown.c')
     formatActive() {
         if (this.active != null) {
             this.formatArticle(this.active)
@@ -219,6 +214,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         this.setFormat(article, state)
     }
 
+    @HostListener('window:keydown.s')
     summarizeActive() {
         if (this.active != null) {
             this.summarizeArticle(this.active)
@@ -236,6 +232,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         this.setFormat(article, state)
     }
 
+    @HostListener('window:keydown.f')
     favorActive() {
         if (this.active != null) {
             this.favorArticle(this.active)

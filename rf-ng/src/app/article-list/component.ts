@@ -1,5 +1,5 @@
-import { Component, OnInit, OnDestroy } from "@angular/core";
-import { ActivatedRoute, ParamMap, Data, Params } from '@angular/router';
+import { Component, OnInit, OnDestroy, HostListener } from "@angular/core";
+import { Router, ActivatedRoute, ParamMap, Data, Params } from '@angular/router';
 import { Article, Source, UserSource, FavoriteSource, PopularSource, FeedSource, TagSource, ArticleService, QueryOptions } from "../services/article"
 import { ChangeEvent } from 'angular2-virtual-scroll';
 import { Observable, Subscription } from "rxjs";
@@ -32,6 +32,7 @@ export class ArticleListComponent implements OnInit, OnDestroy {
 
     constructor(
         private articleService: ArticleService,
+        private router: Router,
         private route: ActivatedRoute,
     ) {
     }
@@ -77,6 +78,25 @@ export class ArticleListComponent implements OnInit, OnDestroy {
         if (event.end == this.items.length && !this.loading && !this.finished) {
             this.loading = true;
             this.articleService.requestNextPage();
+        }
+    }
+
+    @HostListener('window:keydown.arrowLeft')
+    firstUnread() {
+        let article = this.items.find(article => !article.read)
+        if (article) {
+            this.router.navigate(['article', article.id], {relativeTo: this.route})
+        }
+    }
+
+    @HostListener('window:keydown.arrowRight')
+    lastUnread() {
+        for (let i = this.items.length - 1; i > -1; i--) {
+            let article = this.items[i]
+            if (!article.read) {
+                this.router.navigate(['article', article.id], {relativeTo: this.route})
+                return
+            }
         }
     }
 }
