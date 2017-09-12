@@ -70,7 +70,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                     }
                 )
             ).map(
-                (offsetState): [Article[], number, boolean] => {
+                (offsetState): [Article[], number, boolean, State] => {
                     let [offset, stateChange] = offsetState
                     let id = this.route.snapshot.params["articleID"];
                     let slides: Article[] = [];
@@ -117,13 +117,13 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                         return slide
                     })
 
-                    return [slides, articles[index].id, articles[index].read];
+                    return [slides, articles[index].id, articles[index].read, stateChange[1]];
                 }
             )
         ).filter(
             data => data != null
         ).distinctUntilChanged((a, b) =>
-            a[1] == b[1] && a[0].length == b[0].length
+            a[1] == b[1] && a[0].length == b[0].length && a[3] == b[3]
         ).flatMap(data => {
             if (data[2]) {
                 return Observable.of(data);
@@ -243,7 +243,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     }
 
     private keypointsToHTML(format: ArticleFormat) : string {
-        return `<img src="${format.topImage}" class="top-image"><br><ul><li>`
+        return `<img src="${format.topImage}" class="top-image center"><br><ul><li>`
             + format.keyPoints.join("<li>")
             + "</ul>"
     }
@@ -281,10 +281,10 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
     private stylizeContent(container) {
         let styler = (img) => {
-            if (img.naturalWidth < img.parentNode.offsetWidth * 0.666) {
+            if (img.naturalWidth < img.parentNode.offsetWidth * 0.667) {
                 if (img.parentNode.textContent.length < 100) {
                     img.classList.add("center")
-                } else {
+                } else if (!img.classList.contains("center")) {
                     img.classList.add("float")
 
                     if (!img.parentNode.__clearAdded) {
@@ -294,6 +294,8 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                         img.parentNode.__clearAdded = true
                     }
                 }
+            } else {
+                img.classList.add("center")
             }
         }
 
