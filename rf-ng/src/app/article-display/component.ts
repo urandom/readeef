@@ -1,16 +1,18 @@
 import { Component, OnInit, OnDestroy, Input, ViewChild, ElementRef, OnChanges } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Location } from '@angular/common';
+import { NgbCarouselConfig, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
 import { Article, ArticleFormat, ArticleService } from '../services/article'
 import { FeaturesService } from '../services/features'
 import { Observable, Subscription, Subject, BehaviorSubject } from 'rxjs';
+import 'rxjs/add/observable/interval'
 import 'rxjs/add/observable/of'
 import 'rxjs/add/operator/combineLatest'
 import 'rxjs/add/operator/distinctUntilChanged'
 import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/mergeMap'
 import 'rxjs/add/operator/switchMap'
-import { NgbCarouselConfig, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
+import * as moment from 'moment';
 
 enum State {
     DESCRIPTION, FORMAT, SUMMARY,
@@ -129,7 +131,16 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 return Observable.of(data);
             }
             return this.articleService.read(data[1], true).map(s => data);
-        }).subscribe(
+        }).switchMap(data =>
+            Observable.interval(60000).startWith(0).map(v => {
+                data[0] = data[0].map(article => {
+                    article.time = moment(article.date).fromNow();
+                    return article;
+                })
+
+                return data;
+            })
+        ).subscribe(
             data => {
                 let [slides, id] = data
                 this.carousel.activeId = id.toString();

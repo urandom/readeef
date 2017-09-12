@@ -10,6 +10,14 @@
                 <a href="{{ item.link }}" target="_blank" [innerHTML]="item.title">
                 </a>
             </h3>
+            <div class="row align-items-center info" [class.read]="item.read">
+                <div class="col-md-auto feed" *ngIf="item.feed">
+                    {{ item.feed }}
+                </div>
+                <div class="col time">
+                    {{ item.time }}
+                </div>
+            </div>
             <p class="description" [innerHTML]="item.formatted"></p>
 
             <div class="row">

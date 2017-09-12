@@ -31,6 +31,21 @@ button:focus {
     text-decoration: none;
 }
 
+.info {
+    padding-bottom: 8px;
+}
+
+.feed {
+    font-weight: 200;
+    font-size: 10px;
+    text-align: start;
+}
+
+.time {
+    font-size: 12px;
+    text-align: end;
+}
+
 .description {
     width: 100%;
 }
