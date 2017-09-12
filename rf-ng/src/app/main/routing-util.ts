@@ -1,5 +1,4 @@
 import { Router, NavigationEnd, ActivatedRouteSnapshot } from '@angular/router';
-import { Location } from '@angular/common';
 import { Observable } from "rxjs";
 import 'rxjs/add/operator/distinctUntilChanged'
 import 'rxjs/add/operator/filter'
