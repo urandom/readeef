@@ -298,7 +298,7 @@ export class ArticleService {
                             return data;
                         }
                     ).map(data => data.articles)
-                )
+                ).startWith([])
             })
         ).publishReplay(1);
 
