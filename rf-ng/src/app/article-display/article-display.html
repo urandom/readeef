@@ -1,7 +1,7 @@
 <ngb-carousel (slide)="slideEvent($event.direction == 'left')" #carousel>;
     <ng-template ngbSlide *ngFor="let item of slides" [id]="item.id.toString()">
         <div class="container">
-            <h3>
+            <h3 class="title">
                 <button md-card-avatar md-icon-button (click)="favorArticle(item)">
                     <md-icon>
                         {{ item.favorite ? "bookmark" : "bookmark_border" }}
@@ -13,6 +13,9 @@
             <div class="row align-items-center info" [class.read]="item.read">
                 <div class="col-md-auto feed" *ngIf="item.feed">
                     {{ item.feed }}
+                </div>
+                <div class="col index">
+                    {{ index }}
                 </div>
                 <div class="col time">
                     {{ item.time }}

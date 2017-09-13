@@ -21,6 +21,17 @@ enum State {
     DESCRIPTION, FORMAT, SUMMARY,
 }
 
+interface NavigationPayload {
+    slides: Article[],
+    active: {
+        id: number,
+        read: boolean,
+        state: State,
+    },
+    index: number,
+    total: number,
+}
+
 @Component({
     selector: "article-display",
     templateUrl: "./article-display.html",
@@ -31,6 +42,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     canExtract: boolean;
 
     slides: Article[] = []
+    index: string
 
     @ViewChild("carousel")
     private carousel : NgbCarousel;
@@ -65,7 +77,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                     }
                 )
             ).map(
-                (offsetState): [Article[], number, boolean, State] => {
+                (offsetState): NavigationPayload => {
                     let [offset, stateChange] = offsetState
                     let id = this.route.snapshot.params["articleID"];
                     let slides: Article[] = [];
@@ -110,21 +122,30 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                         return slide
                     })
 
-                    return [slides, articles[index].id, articles[index].read, stateChange[1]];
+                    return {
+                        slides: slides,
+                        active: {
+                            id: articles[index].id,
+                            read: articles[index].read,
+                            state: stateChange[1],
+                        },
+                        index: index,
+                        total: articles.length,
+                    }
                 }
             )
         ).filter(
             data => data != null
         ).distinctUntilChanged((a, b) =>
-            a[1] == b[1] && a[0].length == b[0].length && a[3] == b[3]
+            a.active.id == b.active.id && a.slides.length == b.slides.length && a.active.state == b.active.state
         ).flatMap(data => {
-            if (data[2]) {
+            if (data.active.read) {
                 return Observable.of(data);
             }
-            return this.articleService.read(data[1], true).map(s => data);
+            return this.articleService.read(data.active.id, true).map(s => data);
         }).switchMap(data =>
             Observable.interval(60000).startWith(0).map(v => {
-                data[0] = data[0].map(article => {
+                data.slides = data.slides.map(article => {
                     article.time = moment(article.date).fromNow();
                     return article;
                 })
@@ -133,14 +154,15 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
             })
         ).subscribe(
             data => {
-                let [slides, id] = data
-                this.carousel.activeId = id.toString();
-                this.slides = slides;
-                this.active = slides.find(article => article.id == id);
+                this.carousel.activeId = data.active.id.toString();
+                this.slides = data.slides;
+                this.active = data.slides.find(article => article.id == data.active.id);
 
-                if (slides.length == 2 && slides[1].id == id) {
+                if (data.slides.length == 2 && data.slides[1].id == data.active.id) {
                     this.articleService.requestNextPage()
                 }
+
+                this.index = `${data.index + 1}/${data.total}`
 
                 setTimeout(() => {
                     this.stylizeContent(this.carouselElement.nativeElement)
@@ -298,32 +320,10 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     }
 
     private stylizeContent(container) {
-        let styler = (img) => {
-            if (img.naturalWidth < img.parentNode.offsetWidth * 0.667) {
-                if (img.parentNode.textContent.length < 100) {
-                    img.classList.add("center")
-                } else if (!img.classList.contains("center")) {
-                    img.classList.add("float")
-
-                    if (!img.parentNode.__clearAdded) {
-                        let clear = document.createElement('br')
-                        clear.style.clear = 'both'
-                        img.parentNode.appendChild(clear)
-                        img.parentNode.__clearAdded = true
-                    }
-                }
-            } else {
-                img.classList.add("center")
-            }
-        }
-
         for (let descr of container.querySelectorAll(".description")) {
-            for (let img of descr.querySelectorAll("img")) {
-                if (img.complete) {
-                    styler(img)
-                } else {
-                    img.addEventListener('load', () => styler(img))
-                }
+            let img = descr.querySelector("img")
+            if (img) {
+                img.classList.add("center")
             }
         }
     }
