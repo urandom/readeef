@@ -64,7 +64,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     ) {
         config.interval = 0
         config.wrap = false
-        config.keyboard = true
+        config.keyboard = false
     }
 
     ngOnInit(): void {
