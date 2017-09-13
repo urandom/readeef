@@ -28,7 +28,7 @@
         </div>
 
         <div class="items" [ngbCollapse]="!collapses.__all">
-            <a md-button *ngFor="let item of allItems" [routerLink]="'/feed/' + item.link">{{ item.title }}</a>
+            <a md-button *ngFor="let item of allItems" [routerLink]="'/' + item.link">{{ item.title }}</a>
         </div>
     </div>
 

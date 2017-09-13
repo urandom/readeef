@@ -84,6 +84,9 @@ export class ArticleListComponent implements OnInit, OnDestroy {
     @HostListener('window:keydown.arrowLeft')
     @HostListener('window:keydown.shift.j')
     firstUnread() {
+        if (document.activeElement.matches("input")) {
+            return
+        }
         let article = this.items.find(article => !article.read)
         if (article) {
             this.router.navigate(['article', article.id], {relativeTo: this.route})
@@ -93,6 +96,9 @@ export class ArticleListComponent implements OnInit, OnDestroy {
     @HostListener('window:keydown.arrowRight')
     @HostListener('window:keydown.shift.k')
     lastUnread() {
+        if (document.activeElement.matches("input")) {
+            return
+        }
         for (let i = this.items.length - 1; i > -1; i--) {
             let article = this.items[i]
             if (!article.read) {
@@ -104,6 +110,9 @@ export class ArticleListComponent implements OnInit, OnDestroy {
 
     @HostListener('window:keydown.r')
     refresh() {
+        if (document.activeElement.matches("input")) {
+            return
+        }
         this.articleService.refreshArticles()
     }
 }
