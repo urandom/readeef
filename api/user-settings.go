@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/mail"
 
 	"github.com/go-chi/chi"
 	"github.com/urandom/readeef/content"
@@ -82,7 +83,17 @@ func setSettingValue(repo repo.User, secret []byte, log log.Log) http.HandlerFun
 		case lastNameSetting:
 			err = json.Unmarshal(b, &user.LastName)
 		case emailSetting:
-			err = json.Unmarshal(b, &user.Email)
+			var email string
+			err = json.Unmarshal(b, &email)
+			if err == nil {
+				if _, err = mail.ParseAddress(email); err != nil {
+					log.Printf("Error parsing address %s: %v", email, err)
+					http.Error(w, "Invalid email format", http.StatusBadRequest)
+					return
+				}
+
+				user.Email = email
+			}
 		case profileSetting:
 			if err = json.Unmarshal(b, &user.ProfileData); err == nil {
 				user.ProfileJSON = b
@@ -107,6 +118,10 @@ func setSettingValue(repo repo.User, secret []byte, log log.Log) http.HandlerFun
 		default:
 			http.Error(w, "Not found", http.StatusNotFound)
 			return
+		}
+
+		if err == nil {
+			err = repo.Update(user)
 		}
 
 		if err == nil {

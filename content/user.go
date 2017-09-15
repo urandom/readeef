@@ -64,7 +64,7 @@ func (u User) Validate() error {
 		return NewValidationError(errors.New("invalid user login"))
 	}
 	if u.Email != "" {
-		if _, err := mail.ParseAddress(u.String()); err != nil {
+		if _, err := mail.ParseAddress(u.Email); err != nil {
 			return NewValidationError(err)
 		}
 	}

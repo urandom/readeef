@@ -344,6 +344,15 @@ func userRoutes(service repo.Service, secret []byte, log log.Log) routes {
 	repo := service.UserRepo()
 	return routes{path: "/user", route: func(r chi.Router) {
 		r.Use(timeout(5 * time.Second))
+
+		r.Get("/current", getUserData)
+
+		r.Route("/settings", func(r chi.Router) {
+			r.Get("/", getSettingKeys)
+			r.Get("/{key}", getSettingValue)
+			r.Put("/{key}", setSettingValue(repo, secret, log))
+		})
+
 		r.Route("/", func(r chi.Router) {
 			r.Use(adminValidator)
 
@@ -353,14 +362,6 @@ func userRoutes(service repo.Service, secret []byte, log log.Log) routes {
 			r.Delete("/{name}", deleteUser(repo, log))
 
 			r.Post("/{name}/settings/{key}", setSettingValue(repo, secret, log))
-		})
-
-		r.Get("/data", getUserData)
-
-		r.Route("/settings", func(r chi.Router) {
-			r.Get("/", getSettingKeys)
-			r.Get("/{key}", getSettingValue)
-			r.Post("/{key}", setSettingValue(repo, secret, log))
 		})
 	}}
 }
