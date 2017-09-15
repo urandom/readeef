@@ -7,8 +7,10 @@ import { ModuleWithProviders } from "@angular/core";
 import { MainComponent } from "./component"
 import { ArticleListComponent } from "../article-list/component"
 import { ArticleDisplayComponent } from "../article-display/component"
+import { SettingsComponent } from "../settings/component";
+import { GeneralSettingsComponent } from "../settings/general/component";
 
-let createArtcleRoutes = (paths: [string, Data][]) : Routes => {
+function createArtcleRoutes(paths: [string, Data][]) : Routes {
     let routes = []
 
     for (let [path, data] of paths) {
@@ -63,6 +65,21 @@ export const routes: Routes = [
             {
                 path: 'settings',
                 children: [
+                    {
+                        path: "",
+                        component: SettingsComponent,
+                        children: [
+                            {
+                                path: "general",
+                                component: GeneralSettingsComponent,
+                            },
+                            {
+                                path: '',
+                                redirectTo: 'general',
+                                pathMatch: 'full',
+                            },
+                        ]
+                    },
                     {
                          path: "",
                          component: SideBarSettingsComponent,

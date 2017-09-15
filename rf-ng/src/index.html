@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>RfNg</title>
+  <title>readeef: feed aggregator</title>
   <base href="/">
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,6 +16,9 @@ html, body{
     padding:0;
 }
   </style>
+  <script>
+    document.locale = localStorage.getItem("locale") || "en";
+  </script>
 </head>
 <body>
   <app-root></app-root>

@@ -1,0 +1,14 @@
+<h5 class="title" i18n>Personalize your feed reader</h5>
+<md-input-container>
+    <input mdInput [(ngModel)]="firstName" i18n-placeholder placeholder="First name" (change)="firstNameChange()">
+</md-input-container>
+<br>
+<md-input-container>
+    <input mdInput [(ngModel)]="lastName" (change)="lastNameChange()" i18n-placeholder placeholder="Last name">
+</md-input-container>
+<br>
+<md-input-container>
+    <input mdInput [(ngModel)]="email" type="email" (change)="emailChange()" i18n-placeholder placeholder="Email">
+</md-input-container>
+<br>
+<button md-raised-button i18n>Change password</button>

@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core'
 import { Observable } from "rxjs";
 import { APIService, Serializable } from "./api";
 import 'rxjs/add/operator/map'
-import 'rxjs/add/operator/combineLatest'
 
 export class Feed {
     id: number

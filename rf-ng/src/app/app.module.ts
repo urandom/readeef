@@ -18,6 +18,7 @@ import { FeaturesService } from './services/features';
 import { ArticleService } from './services/article';
 import { FeedService } from './services/feed';
 import { TagService } from './services/tag';
+import { UserService } from './services/user';
 import { PreferencesService } from './services/preferences';
 
 @NgModule({
@@ -40,6 +41,7 @@ import { PreferencesService } from './services/preferences';
     ArticleService,
     FeedService,
     TagService,
+    UserService,
     PreferencesService,
     AuthGuard,
     BaseRequestOptions

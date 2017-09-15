@@ -1,0 +1,9 @@
+.title {
+    padding-top: 16px;
+}
+
+a:hover, a:focus,
+button:focus {
+    outline: none;
+    text-decoration: none;
+}

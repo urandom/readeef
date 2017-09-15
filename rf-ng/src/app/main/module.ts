@@ -8,6 +8,8 @@ import { SideBarModule } from '../sidebar/module';
 import { ToolbarModule } from '../toolbar/module';
 import { ArticleListModule } from '../article-list/module';
 import { ArticleDisplayModule } from '../article-display/module';
+import { SettingsModule } from "../settings/module";
+import { GeneralSettingsModule } from "../settings/general/module";
 import { routesModule } from "./routing";
 
 @NgModule({
@@ -26,6 +28,8 @@ import { routesModule } from "./routing";
         ToolbarModule,
         ArticleListModule,
         ArticleDisplayModule,
+        SettingsModule,
+        GeneralSettingsModule,
         routesModule,
     ],
     exports: [
