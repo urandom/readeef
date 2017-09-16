@@ -102,8 +102,8 @@ func setSettingValue(repo repo.User, secret []byte, log log.Log) http.HandlerFun
 			user.Active = string(b) == "true"
 		case passwordSetting:
 			passwd := struct {
-				Current string
-				New     string
+				Current string `json:"current"`
+				New     string `json:"new"`
 			}{}
 
 			if err = json.Unmarshal(b, &passwd); err == nil {
@@ -111,7 +111,7 @@ func setSettingValue(repo repo.User, secret []byte, log log.Log) http.HandlerFun
 				if auth, err = user.Authenticate(passwd.Current, secret); auth {
 					err = user.Password(passwd.New, secret)
 				} else {
-					http.Error(w, "Not authorized", http.StatusUnauthorized)
+					http.Error(w, "Not authorized", http.StatusBadRequest)
 					return
 				}
 			}

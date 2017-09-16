@@ -1,29 +1,38 @@
 import { NgModule } from '@angular/core';
 import { CommonModule }   from '@angular/common';
-import { FormsModule }   from '@angular/forms';
+import { FormsModule, ReactiveFormsModule }   from '@angular/forms';
 import { RouterModule } from '@angular/router'
-import { MdInputModule, MdButtonModule, MdSnackBarModule } from "@angular/material";
-import { GeneralSettingsComponent, InvalidEmailSnack } from "./component"
+import {
+    MdInputModule,
+    MdButtonModule,
+    MdDialogModule,
+} from "@angular/material";
+import {
+    GeneralSettingsComponent,
+    PasswordDialog,
+} from "./component"
 
 @NgModule({
     declarations: [
         GeneralSettingsComponent,
-        InvalidEmailSnack,
+        PasswordDialog,
+
     ],
     entryComponents: [
-        InvalidEmailSnack,
+        PasswordDialog,
     ],
     imports: [
         CommonModule,
         FormsModule,
+        ReactiveFormsModule,
         RouterModule,
         MdInputModule,
         MdButtonModule,
-        MdSnackBarModule,
+        MdDialogModule,
     ],
     exports: [
         GeneralSettingsComponent,
-        InvalidEmailSnack,
+        PasswordDialog,
     ]
 })
 export class GeneralSettingsModule { }

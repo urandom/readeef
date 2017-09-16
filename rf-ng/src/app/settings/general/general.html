@@ -8,7 +8,10 @@
 </md-input-container>
 <br>
 <md-input-container>
-    <input mdInput [(ngModel)]="email" type="email" (change)="emailChange()" i18n-placeholder placeholder="Email">
+    <input mdInput [(ngModel)]="email" type="email" (change)="emailChange()" i18n-placeholder placeholder="Email" [formControl]="emailFormControl">
+    <md-error *ngIf="emailFormControl.hasError('email')" i18n>
+        Please enter a valid email address
+    </md-error>
 </md-input-container>
 <br>
-<button md-raised-button i18n>Change password</button>
+<button md-raised-button (click)="changePassword()" i18n>Change password</button>

@@ -13,6 +13,11 @@ export class User {
     active: boolean
 }
 
+export interface PasswordChange {
+    current: string
+    new: string
+}
+
 class UserResponse extends Serializable {
     user: User
 }
@@ -33,6 +38,10 @@ export class UserService {
 
     getCurrentUser() : Observable<User> {
         return this.user
+    }
+
+    changeUserPassword(value: PasswordChange) : Observable<boolean> {
+        return this.setUserSetting("password", value)
     }
 
     setUserSetting(key: string, value: any) : Observable<boolean> {
