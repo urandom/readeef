@@ -52,6 +52,8 @@ func (r feedRepo) FindByLink(link string) (content.Feed, error) {
 		return content.Feed{}, errors.Wrapf(err, "getting feed by link %s", link)
 	}
 
+	feed.Link = link
+
 	return feed, nil
 }
 

@@ -118,7 +118,6 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 			return content.Feed{}, errors.WithMessage(err, "searching for feeds")
 		}
 
-		var f content.Feed
 		for link, parserFeed := range parsedFeeds {
 			f.Link = link
 			f.Refresh(fm.processParserFeed(parserFeed))

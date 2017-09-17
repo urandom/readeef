@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -72,7 +73,6 @@ func listFeeds(repo repo.Feed, log log.Log) http.HandlerFunc {
 }
 
 type addFeedData struct {
-	Link  string   `json:"link"`
 	Links []string `json:"links"`
 }
 
@@ -103,21 +103,15 @@ func addFeed(repo repo.Feed, feedManager feedManager) http.HandlerFunc {
 			return
 		}
 
-		links := make([]string, len(data.Links), len(data.Links)+1)
-		copy(links, data.Links)
-		if data.Link != "" {
-			links = append([]string{data.Link}, links...)
-		}
-
-		errs := make([]error, 0, len(links))
-		for _, link := range links {
+		errs := make([]error, 0, len(data.Links))
+		for _, link := range data.Links {
 			err := addFeedByURL(link, user, repo, feedManager)
 			if err != nil {
 				errs = append(errs, err)
 			}
 		}
 
-		args{"errors": errs, "success": len(errs) < len(links)}.WriteJSON(w)
+		args{"errors": errs, "success": len(errs) < len(data.Links)}.WriteJSON(w)
 	}
 }
 
@@ -139,7 +133,7 @@ func addFeedByURL(
 	if f, err := feedManager.AddFeedByLink(link); err == nil {
 		err = repo.AttachTo(f, user)
 		if err != nil {
-			return addFeedError{Link: link, Title: f.Title, Message: "Error adding feed to the database: " + err.Error()}
+			return addFeedError{Link: link, Title: f.Title, Message: fmt.Sprintf("adding feed to user %s: %s", user, err.Error())}
 		}
 
 		tags := strings.SplitN(u.Fragment, ",", -1)
@@ -189,7 +183,7 @@ type feedDiscoverer interface {
 
 func discoverFeeds(repo repo.Feed, discoverer feedDiscoverer, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		query := r.URL.Query().Get("q")
+		query := r.URL.Query().Get("query")
 		if query == "" {
 			http.Error(w, "No query", http.StatusBadRequest)
 			return

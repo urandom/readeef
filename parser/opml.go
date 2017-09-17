@@ -8,7 +8,7 @@ type Opml struct {
 
 type OpmlFeed struct {
 	Title string
-	Url   string
+	URL   string
 	Tags  []string
 }
 
@@ -33,7 +33,7 @@ type OpmlOutline struct {
 	Title    string        `xml:"title,attr,omitempty"`
 	XmlUrl   string        `xml:"xmlUrl,attr,omitempty"`
 	HtmlUrl  string        `xml:"htmlUrl,attr,omitempty"`
-	Url      string        `xml:"url,attr,omitempty"`
+	URL      string        `xml:"url,attr,omitempty"`
 	Category string        `xml:"category,attr,omitempty"`
 	Outline  []OpmlOutline `xml:"outline"`
 }
@@ -55,10 +55,10 @@ func processOutline(opml *Opml, outlines []OpmlOutline, tag string) {
 	for _, outline := range outlines {
 		if len(outline.Outline) == 0 {
 			feed := OpmlFeed{Title: outline.Text}
-			if outline.Url == "" {
-				feed.Url = outline.XmlUrl
+			if outline.URL == "" {
+				feed.URL = outline.XmlUrl
 			} else {
-				feed.Url = outline.Url
+				feed.URL = outline.URL
 			}
 			if tag != "" {
 				feed.Tags = append(feed.Tags, tag)

@@ -53,9 +53,14 @@ func importOPML(
 
 		var skipped []string
 		for _, opmlFeed := range opml.Feeds {
-			discovered, err := feedManager.DiscoverFeeds(opmlFeed.Url)
+			if _, err := repo.FindByLink(opmlFeed.URL); err == nil {
+				skipped = append(skipped, opmlFeed.URL)
+				continue
+			}
+
+			discovered, err := feedManager.DiscoverFeeds(opmlFeed.URL)
 			if err != nil {
-				skipped = append(skipped, opmlFeed.Url)
+				skipped = append(skipped, opmlFeed.URL)
 				continue
 			}
 

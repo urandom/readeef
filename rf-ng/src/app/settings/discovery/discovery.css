@@ -1,0 +1,14 @@
+md-input-container {
+    width: 100%;
+}
+
+input[type="file"] {
+    width: 100%;
+    border-bottom: 1px solid grey;
+    padding-bottom: 4px;
+    margin-bottom: 1em;
+}
+
+md-progress-bar {
+    margin-top: 1em;
+}

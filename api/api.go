@@ -219,14 +219,14 @@ func featureRoutes(features features) routes {
 func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log) routes {
 	return routes{path: "/feed", route: func(r chi.Router) {
 		feedRepo := service.FeedRepo()
-		r.Use(timeout(5 * time.Second))
-		r.Get("/", listFeeds(feedRepo, log))
-		r.Post("/", addFeed(feedRepo, feedManager))
+		r.With(timeout(5*time.Second)).Get("/", listFeeds(feedRepo, log))
+		r.With(timeout(15*time.Second)).Post("/", addFeed(feedRepo, feedManager))
 
-		r.Get("/discover", discoverFeeds(feedRepo, feedManager, log))
+		r.With(timeout(30*time.Second)).Get("/discover", discoverFeeds(feedRepo, feedManager, log))
 
 		r.Route("/{feedID:[0-9]+}", func(r chi.Router) {
 			r.Use(feedContext(service.FeedRepo(), log))
+			r.Use(timeout(5 * time.Second))
 
 			r.Delete("/", deleteFeed(feedRepo, feedManager, log))
 
@@ -322,9 +322,8 @@ func articlesRoutes(
 
 func opmlRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log) routes {
 	return routes{path: "/opml", route: func(r chi.Router) {
-		r.Use(timeout(10 * time.Second))
-		r.Get("/", exportOPML(service, feedManager, log))
-		r.Post("/", importOPML(service.FeedRepo(), feedManager, log))
+		r.With(timeout(10*time.Second)).Get("/", exportOPML(service, feedManager, log))
+		r.With(timeout(30*time.Second)).Post("/", importOPML(service.FeedRepo(), feedManager, log))
 	}}
 }
 

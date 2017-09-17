@@ -10,6 +10,7 @@ import { ArticleListModule } from '../article-list/module';
 import { ArticleDisplayModule } from '../article-display/module';
 import { SettingsModule } from "../settings/module";
 import { GeneralSettingsModule } from "../settings/general/module";
+import { DiscoverySettingsModule } from "../settings/discovery/module";
 import { routesModule } from "./routing";
 
 @NgModule({
@@ -30,6 +31,7 @@ import { routesModule } from "./routing";
         ArticleDisplayModule,
         SettingsModule,
         GeneralSettingsModule,
+        DiscoverySettingsModule,
         routesModule,
     ],
     exports: [

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Inject } from "@angular/core" ;
+import { Component, OnInit } from "@angular/core" ;
 import { FormControl, Validators } from '@angular/forms';
 import { MdDialog, MdDialogRef, MD_DIALOG_DATA } from "@angular/material";
 import { UserService, PasswordChange } from "../../services/user";
@@ -90,7 +90,6 @@ export class PasswordDialog {
     constructor(
         private dialogRef: MdDialogRef<PasswordDialog>,
         private userService: UserService,
-        // @Inject(MD_DIALOG_DATA) private data: any,
     ) {}
 
     save() {

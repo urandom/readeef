@@ -9,6 +9,7 @@ import { ArticleListComponent } from "../article-list/component"
 import { ArticleDisplayComponent } from "../article-display/component"
 import { SettingsComponent } from "../settings/component";
 import { GeneralSettingsComponent } from "../settings/general/component";
+import { DiscoverySettingsComponent } from "../settings/discovery/component";
 
 function createArtcleRoutes(paths: [string, Data][]) : Routes {
     let routes = []
@@ -72,6 +73,10 @@ export const routes: Routes = [
                             {
                                 path: "general",
                                 component: GeneralSettingsComponent,
+                            },
+                            {
+                                path: "discovery",
+                                component: DiscoverySettingsComponent,
                             },
                             {
                                 path: '',
