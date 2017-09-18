@@ -1,0 +1,18 @@
+<h6 class="title" i18n>Add a new user</h6>
+<form [formGroup]="form" (ngSubmit)="save()" novalidate autocomplete="off">
+    <md-input-container>
+        <input mdInput placeholder="User name" formControlName="login" required>
+        <md-error *ngIf="form.hasError('required', 'login')" i18n>
+            Empty user name
+        </md-error>
+    </md-input-container>
+    <br>
+    <md-input-container>
+        <input mdInput type="password" i18n-placeholder placeholder="Password" formControlName="password" required>
+        <md-error *ngIf="form.hasError('required', 'password')" i18n>
+            Empty password
+        </md-error>
+    </md-input-container>
+    <br>
+    <button md-raised-button type="submit" [disabled]="form.pristine" i18n>Save</button>
+</form>

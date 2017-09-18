@@ -360,7 +360,7 @@ func userRoutes(service repo.Service, secret []byte, log log.Log) routes {
 			r.Post("/", addUser(repo, secret, log))
 			r.Delete("/{name}", deleteUser(repo, log))
 
-			r.Post("/{name}/settings/{key}", setSettingValue(repo, secret, log))
+			r.Put("/{name}/settings/{key}", setSettingValue(repo, secret, log))
 		})
 	}}
 }

@@ -1,0 +1,16 @@
+<h5 class="title" i18n>Manage users</h5>
+<p *ngIf="current" i18n>
+    Current user: {{ current.login }}
+</p>
+<div *ngIf="users.length">
+    <h6 i18n>List of users:</h6>
+    <div *ngFor="let user of users" class="user">
+        <md-checkbox (change)="toggleActive(user.login, check.checked)" [(ngModel)]="user.active" #check>{{ user.login }}</md-checkbox>
+        <button md-icon-button (click)="deleteUser($event, user.login)" class="delete"> 
+            <md-icon>delete</md-icon>
+        </button>
+    </div>
+</div>
+<div class="footer">
+    <button md-button i18n (click)="newUser()">Add user</button>
+</div>

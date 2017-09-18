@@ -22,8 +22,17 @@ class UserResponse extends Serializable {
     user: User
 }
 
+class UsersResponse extends Serializable {
+    users: User[]
+}
+
 class SettingsResponse extends Serializable {
     success: boolean
+}
+
+export interface AddUser {
+    login: string
+    password: string
 }
 
 @Injectable()
@@ -56,5 +65,29 @@ export class UserService {
                 return false
             }
         )
+    }
+
+    list() : Observable<User[]> {
+        return this.api.get("user").map(response =>
+            new UsersResponse().fromJSON(response.json()).users
+        );
+    }
+
+    addUser(data: AddUser) : Observable<boolean> {
+        return this.api.post("user", JSON.stringify(data)).map(
+            response => !!response.json()["success"]
+        );
+    }
+
+    deleteUser(user: string) : Observable<boolean> {
+        return this.api.delete(`user/${user}`).map(response =>
+            !!response.json()["success"]
+        );
+    }
+
+    toggleActive(user: string, active: boolean) : Observable<boolean> {
+        return this.api.put(
+            `user/${user}/settings/is-active`, JSON.stringify(active)
+        ).map(response => !!response.json()["success"]);
     }
 }

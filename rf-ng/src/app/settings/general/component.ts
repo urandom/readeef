@@ -1,6 +1,6 @@
 import { Component, OnInit } from "@angular/core" ;
 import { FormControl, Validators } from '@angular/forms';
-import { MdDialog, MdDialogRef, MD_DIALOG_DATA } from "@angular/material";
+import { MdDialog, MdDialogRef } from "@angular/material";
 import { UserService, PasswordChange } from "../../services/user";
 
 @Component({

@@ -1,0 +1,15 @@
+.user {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+}
+
+.user md-checkbox {
+    flex: 1 0 0;
+}
+
+.footer {
+    text-align: end;
+}
