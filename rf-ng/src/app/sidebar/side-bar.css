@@ -39,3 +39,7 @@ a:hover, a:focus {
 .content hr {
     margin: 0;
 }
+
+.favicon {
+    padding-right: 4px;
+}

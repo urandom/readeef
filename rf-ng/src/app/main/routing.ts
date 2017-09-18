@@ -10,6 +10,7 @@ import { ArticleDisplayComponent } from "../article-display/component"
 import { SettingsComponent } from "../settings/component";
 import { GeneralSettingsComponent } from "../settings/general/component";
 import { DiscoverySettingsComponent } from "../settings/discovery/component";
+import { ManagementSettingsComponent } from "../settings/management/component";
 
 function createArtcleRoutes(paths: [string, Data][]) : Routes {
     let routes = []
@@ -77,6 +78,10 @@ export const routes: Routes = [
                             {
                                 path: "discovery",
                                 component: DiscoverySettingsComponent,
+                            },
+                            {
+                                path: "management",
+                                component: ManagementSettingsComponent,
                             },
                             {
                                 path: '',

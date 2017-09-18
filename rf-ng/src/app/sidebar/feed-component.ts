@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Tag, TagFeedIDs, TagService } from '../services/tag';
 import { Feed, FeedService } from '../services/feed';
 import { Features, FeaturesService } from "../services/features"
+import { FaviconService } from "../services/favicon"
 import 'rxjs/add/operator/mergeMap'
 import 'rxjs/add/operator/combineLatest'
 
@@ -21,6 +22,7 @@ export class SideBarFeedComponent implements OnInit {
         private tagService: TagService,
         private feedService: FeedService,
         private featuresService: FeaturesService,
+        private faviconService: FaviconService,
     ) {
         this.collapses.set("__popularity", true);
         this.collapses.set("__all", true);
@@ -44,10 +46,10 @@ export class SideBarFeedComponent implements OnInit {
 
                 if (this.popularity) {
                     this.popularityItems = tags.map(d => new Item(d.tag.id * -1, "/popular/tag/" + d.tag.id, d.tag.value));
-                    this.popularityItems.concat(feeds.map(d => new Item(d.id, "/popular/feed/" + d.id, d.title)));
+                    this.popularityItems.concat(feeds.map(d => new Item(d.id, "/popular/feed/" + d.id, d.title, d.link)));
                 }
 
-                this.allItems = feeds.map(d => new Item(d.id, "/feed/" + d.id, d.title));
+                this.allItems = feeds.map(d => new Item(d.id, "/feed/" + d.id, d.title, d.link));
 
                 if (tags.length > 0) {
                     let feedMap: Map<number, Feed> = new Map()
@@ -57,13 +59,17 @@ export class SideBarFeedComponent implements OnInit {
 
                     this.tags = tags.map(d =>
                          new Category(d.tag.id, "/tag/" + d.tag.id, d.tag.value, d.ids.map(id =>
-                             new Item(id, `${id}`, feedMap.get(id).title))));
+                             new Item(id, `${id}`, feedMap.get(id).title, feedMap.get(id).link))));
 
                     this.tags.forEach(tag => this.collapses.set(tag.id, false));
                 }
             },
             err => console.log(err),
         );
+    }
+
+    favicon(url: string) : string {
+        return this.faviconService.iconURL(url);
     }
 }
 
@@ -73,6 +79,6 @@ class Category {
 }
 
 class Item {
-    constructor(public id: number, public link: string, public title: string) {
+    constructor(public id: number, public link: string, public title: string, public url?: string) {
     }
 }

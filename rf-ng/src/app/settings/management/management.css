@@ -1,0 +1,27 @@
+.feed {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.favicon {
+    width: 16px;
+    height: 16px;
+    margin-right: 5px;
+    flex-shrink: 1;
+}
+.name {
+    flex: 1 0 0;
+    min-width: 250px;
+}
+.tags {
+    flex: 1 0 0;
+    min-width: 250px;
+    width: auto;
+    margin-left: 8px;
+}
+
+.delete {
+    margin-left: 8px;
+}

@@ -20,6 +20,7 @@ import { FeedService } from './services/feed';
 import { TagService } from './services/tag';
 import { UserService } from './services/user';
 import { PreferencesService } from './services/preferences';
+import { FaviconService } from './services/favicon';
 
 @NgModule({
   declarations: [
@@ -43,6 +44,7 @@ import { PreferencesService } from './services/preferences';
     TagService,
     UserService,
     PreferencesService,
+    FaviconService,
     AuthGuard,
     BaseRequestOptions
   ],

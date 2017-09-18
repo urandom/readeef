@@ -64,4 +64,16 @@ export class FeedService {
             new AddFeedResponse().fromJSON(response.json())
         )
     }
+
+    deleteFeed(id: number) : Observable<boolean> {
+        return this.api.delete(`feed/${id}`).map(response =>
+            !!response.json()["success"]
+        )
+    }
+
+    updateTags(id: number, tags: string[]) : Observable<boolean> {
+        return this.api.put(`feed/${id}/tags`, JSON.stringify(tags)).map(response =>
+            !!response.json()["success"]
+        )
+    }
 }

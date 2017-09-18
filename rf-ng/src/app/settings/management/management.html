@@ -1,0 +1,14 @@
+<h5 class="title" i18n>Manage feeds</h5>
+<p *ngIf="feeds.length == 0" u18n>
+    No feeds have been added
+</p>
+<div *ngFor="let feed of feeds" class="feed">
+    <img src="{{ favicon(feed[0].link) }}" class="favicon">
+    <span class="name">{{ feed[0].title }}</span>
+    <md-input-container class="tags">
+        <input mdInput value="{{ feed[1].join(', ') }}" (change)="tagsChange($event, feed[0].id)" i18n-placeholder placeholder="tags">
+    </md-input-container>
+    <button md-icon-button (click)="deleteFeed($event, feed[0].id)" class="delete"> 
+        <md-icon>delete</md-icon>
+    </button>
+</div>

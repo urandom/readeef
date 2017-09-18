@@ -13,7 +13,7 @@
 
         <div class="items" [ngbCollapse]="!collapses.__popularity">
             <a md-button *ngFor="let item of tags" [routerLink]="'/feed/popular/' + item.link">{{ item.title }}</a>
-            <a md-button *ngFor="let item of allItems" [routerLink]="'/feed/popular/' + item.link">{{ item.title }}</a>
+            <a md-button *ngFor="let item of allItems" [routerLink]="'/feed/popular/' + item.link"><img src="{{ favicon(item.url) }}" class="favicon">{{ item.title }}</a>
         </div>
     </div>
 
@@ -28,7 +28,7 @@
         </div>
 
         <div class="items" [ngbCollapse]="!collapses.__all">
-            <a md-button *ngFor="let item of allItems" [routerLink]="'/' + item.link">{{ item.title }}</a>
+            <a md-button *ngFor="let item of allItems" [routerLink]="'/' + item.link"><img src="{{ favicon(item.url) }}" class="favicon">{{ item.title }}</a>
         </div>
     </div>
 
@@ -41,7 +41,7 @@
         </div>
 
         <div class="items" [ngbCollapse]="!collapses[tag.id]">
-            <a md-button *ngFor="let item of tag.items" [routerLink]="'/feed/' + item.link">{{ item.title }}</a>
+            <a md-button *ngFor="let item of tag.items" [routerLink]="'/feed/' + item.link"><img src="{{ favicon(item.url) }}" class="favicon">{{ item.title }}</a>
         </div>
     </div>
 

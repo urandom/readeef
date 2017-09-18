@@ -231,7 +231,7 @@ func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log
 			r.Delete("/", deleteFeed(feedRepo, feedManager, log))
 
 			r.Get("/tags", getFeedTags(service.TagRepo(), log))
-			r.Post("/tags", setFeedTags(feedRepo, log))
+			r.Put("/tags", setFeedTags(feedRepo, log))
 
 		})
 	}}

@@ -213,7 +213,18 @@ func (r feedRepo) Delete(feed content.Feed) error {
 }
 
 func (r feedRepo) Users(feed content.Feed) ([]content.User, error) {
-	panic("not implemented")
+	if err := feed.Validate(); err != nil {
+		return []content.User{}, errors.WithMessage(err, "validating feed")
+	}
+
+	r.log.Infof("Getting users for feed %s", feed)
+
+	var users []content.User
+	if err := r.db.Select(&users, r.db.SQL().Feed.GetUsers, feed.ID); err != nil {
+		return []content.User{}, errors.Wrap(err, "getting feed users")
+	}
+
+	return users, nil
 }
 
 func (r feedRepo) AttachTo(feed content.Feed, user content.User) error {

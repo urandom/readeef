@@ -11,6 +11,7 @@ import { ArticleDisplayModule } from '../article-display/module';
 import { SettingsModule } from "../settings/module";
 import { GeneralSettingsModule } from "../settings/general/module";
 import { DiscoverySettingsModule } from "../settings/discovery/module";
+import { ManagementSettingsModule } from "../settings/management/module";
 import { routesModule } from "./routing";
 
 @NgModule({
@@ -32,6 +33,7 @@ import { routesModule } from "./routing";
         SettingsModule,
         GeneralSettingsModule,
         DiscoverySettingsModule,
+        ManagementSettingsModule,
         routesModule,
     ],
     exports: [

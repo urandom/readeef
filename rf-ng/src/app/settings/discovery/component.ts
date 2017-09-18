@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ViewChildren, QueryList } from "@angular/core" ;
+import { Component, ViewChild, ViewChildren, QueryList } from "@angular/core" ;
 import { FormControl } from '@angular/forms';
 import { MdCheckbox } from "@angular/material";
 import { FeedService, Feed, OPMLimport, AddFeedResponse } from "../../services/feed";
@@ -10,7 +10,7 @@ import 'rxjs/add/operator/mergeMap'
     templateUrl: "./discovery.html",
     styleUrls: ["../common.css", "./discovery.css"]
 })
-export class DiscoverySettingsComponent implements OnInit {
+export class DiscoverySettingsComponent {
     query = ""
     phase = "query"
     loading = false
@@ -29,9 +29,6 @@ export class DiscoverySettingsComponent implements OnInit {
     constructor(
         private feedService: FeedService,
     ) {}
-
-    ngOnInit(): void {
-    }
 
     search() {
         if (this.loading) {
