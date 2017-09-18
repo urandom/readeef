@@ -1,5 +1,5 @@
 import { Component, OnInit } from "@angular/core" ;
-import { FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UserService, User } from "../../services/user";
 import { MdDialog, MdDialogRef } from "@angular/material";
 import { Observable, Subject } from "rxjs";
@@ -79,7 +79,7 @@ export class AdminSettingsComponent implements OnInit {
 
 @Component({
     templateUrl: "./new-user.html",
-    styleUrls: ["../common.css"]
+    styleUrls: ["../common.css", "./admin.css"]
 })
 export class NewUserDialog {
     form: FormGroup
