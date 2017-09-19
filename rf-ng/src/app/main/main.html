@@ -14,3 +14,86 @@
         <router-outlet></router-outlet>
     </div>
 </md-sidenav-container>
+
+<share-service id="evernode"
+ i18n-description description="Evernote"
+ i18n-category category="Read-it-later"
+ link="https://www.evernote.com"
+ share="https://www.evernote.com/clip.action?url={% link %}&title={% title %}">
+</share-service>
+
+<share-service id="instapaper"
+ i18n-description description="Instapaper"
+ i18n-category category="Read-it-later"
+ link="http://www.instapaper.com"
+ share="http://www.instapaper.com/hello2?url={% link %}&title={% title %}">
+</share-service>
+
+<share-service id="readability"
+ i18n-description description="Readability"
+ i18n-category category="Read-it-later"
+ link="https://www.readability.com"
+ share="https://www.readability.com/save?url={% link %}">
+</share-service>
+
+<share-service id="pocket"
+ i18n-description description="Pocket"
+ i18n-category category="Read-it-later"
+ link="https://getpocket.com"
+ share="https://getpocket.com/save?url={% link %}&title={% title %}">
+</share-service>
+
+<share-service id="googlep"
+ i18n-description description="Google+"
+ i18n-category category="Social network"
+ link="https://plus.google.com"
+ share="https://plus.google.com/share?url={% link %}">
+</share-service>
+
+<share-service id="facebook"
+ i18n-description description="Facebook"
+ i18n-category category="Social network"
+ link="https://www.facebook.com"
+ share="http://www.facebook.com/sharer.php?u={% link %}&t={% title %}">
+</share-service>
+
+<share-service id="twitter"
+ i18n-description description="Twitter"
+ i18n-category category="Social network"
+ link="https://www.twitter.com"
+ share="https://twitter.com/intent/tweet?url={% link %}&text={% title %}">
+</share-service>
+
+<share-service id="pinterest"
+ i18n-description description="Pinterest"
+ i18n-category category="Social network"
+ link="https://www.pinterest.com"
+ share="http://pinterest.com/pin/find/?url={% link %}">
+</share-service>
+
+<share-service id="tumblr"
+ i18n-description description="Tumblr"
+ i18n-category category="Blogging"
+ link="https://www.tumblr.com"
+ share="http://www.tumblr.com/share?v=3&u={% link %}&t={% title %}">
+</share-service>
+
+<share-service id="flipboard"
+ i18n-description description="Flipboard"
+ i18n-category category="Blogging"
+ link="https://www.flipboard.com"
+ share="https://share.flipboard.com/bookmarklet/popout?v=2&url={% link %}&title={% title %}">
+</share-service>
+
+<share-service id="email"
+ i18n-description description="Email"
+ i18n-category category="Email"
+ share="mailto:?subject={% title %}&body={% link %}">
+</share-service>
+
+<share-service id="gmail"
+ i18n-description description="Gmail"
+ i18n-category category="Email"
+ link="https://mail.google.com"
+ share="https://mail.google.com/mail/?view=cm&su={% title %}&body={% link %}">
+</share-service>

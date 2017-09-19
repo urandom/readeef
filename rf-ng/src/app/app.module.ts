@@ -21,6 +21,7 @@ import { TagService } from './services/tag';
 import { UserService } from './services/user';
 import { PreferencesService } from './services/preferences';
 import { FaviconService } from './services/favicon';
+import { SharingService } from './services/sharing';
 
 @NgModule({
   declarations: [
@@ -45,6 +46,7 @@ import { FaviconService } from './services/favicon';
     UserService,
     PreferencesService,
     FaviconService,
+    SharingService,
     AuthGuard,
     BaseRequestOptions
   ],

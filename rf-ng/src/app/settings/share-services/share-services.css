@@ -1,0 +1,15 @@
+.cards-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+md-card {
+    flex: 1 0 0;
+    margin: 8px;
+    min-width: 250px;
+}
+
+.service {
+    margin-bottom: 16px;
+}

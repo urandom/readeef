@@ -1,0 +1,17 @@
+<h5 class="title" i18n>Share services</h5>
+<div class="cards-container">
+    <md-card *ngFor="let group of services">
+        <md-card-header>
+            <md-card-title class="col title">
+                <h6>
+                 {{ group[0][0].category }}
+                </h6>
+            </md-card-title>
+        </md-card-header>
+        <md-card-content>
+            <div *ngFor="let service of group" class="service">
+                <md-slide-toggle [checked]="service[1]" (change)="toggleService(service[0].id, toggle.checked)" #toggle>{{ service[0].description }}</md-slide-toggle>
+            </div>
+        </md-card-content>
+    </md-card>
+</div>
