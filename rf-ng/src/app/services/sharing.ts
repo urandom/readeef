@@ -1,5 +1,6 @@
 import { Injectable } from "@angular/core"
 import { Article } from "./article"
+import { Observable, BehaviorSubject } from "rxjs";
 
 export interface ShareService {
     id: string
@@ -13,6 +14,7 @@ export interface ShareService {
 export class SharingService {
     private services = new Map<string, ShareService>()
     private enabled : Set<string>
+    private enabledSubject = new BehaviorSubject<ShareService[]>([])
 
     private static key = "enabled-services"
 
@@ -24,6 +26,12 @@ export class SharingService {
 
     register(service: ShareService) {
         this.services.set(service.id, service);
+
+        this.enabledSubject.next(this.getEnabled());
+    }
+
+    enabledServices() : Observable<ShareService[]> {
+        return this.enabledSubject.asObservable();
     }
 
     list() : [ShareService, boolean][] {
@@ -69,6 +77,8 @@ export class SharingService {
                 SharingService.key,
                 JSON.stringify(Array.from(this.enabled)),
             );
+
+            this.enabledSubject.next(this.getEnabled());
         }
     }
 
@@ -85,5 +95,9 @@ export class SharingService {
         )
 
         window.open(url, "_blank");
+    }
+
+    private getEnabled() : ShareService[] {
+        return this.list().filter(s => s[1]).map(s => s[0]);
     }
 }

@@ -3,6 +3,7 @@ import { Location } from '@angular/common';
 import { Article, ArticleService } from "../services/article";
 import { FeaturesService } from "../services/features";
 import { PreferencesService } from "../services/preferences";
+import { SharingService, ShareService } from "../services/sharing";
 import { Router, NavigationStart } from '@angular/router';
 import { Observable, Subscription } from "rxjs";
 import { articleRoute, listRoute, getListRoute } from "../main/routing-util"
@@ -32,6 +33,9 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
     articleRead = false
     searchButton = false
     inSearch = false
+    enabledShares = false
+
+    shareServices = new Array<ShareService>()
 
     private _searchQuery = ""
     private _searchEntry = false
@@ -72,6 +76,7 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
         private preferences : PreferencesService,
         private router: Router,
         private location: Location,
+        private sharingService: SharingService,
     ) { 
         this.searchQuery = localStorage.getItem(ToolbarFeedComponent.key) || ""
     }
@@ -161,6 +166,14 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
                 this.searchEntry = res[1]
             },
             error => console.log(error),
+        ));
+
+        this.subscriptions.push(this.sharingService.enabledServices().subscribe(
+            services => {
+                this.enabledShares = services.length > 0;
+                this.shareServices = services;
+            },
+            error => console.log(error),
         ))
     }
 
@@ -228,5 +241,19 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
 
     refresh() {
         this.articleService.refreshArticles()
+    }
+
+    shareArticleTo(share: ShareService) {
+        this.articleID.take(1).filter(
+            id => id != -1
+        ).switchMap(id =>
+             this.articleService.articleObservable().map(articles =>
+                articles.filter(a => a.id == id)
+            ).filter(
+                articles => articles.length > 0
+            ).map(articles => articles[0])
+        ).take(1).subscribe(
+            article => this.sharingService.submit(share.id, article)
+        )
     }
 }

@@ -24,10 +24,19 @@
 
 <md-checkbox [(ngModel)]="articleRead" *ngIf="showsArticle" (click)="toggleRead()" i18n>Read</md-checkbox>
 
-<button md-icon-button [mdMenuTriggerFor]="menu" *ngIf="!showsArticle">
+<button md-icon-button *ngIf="showsArticle && enabledShares" [mdMenuTriggerFor]="shares">
+    <md-icon>share</md-icon>
+</button>
+<md-menu #shares="mdMenu">
+    <button md-menu-item *ngFor="let share of shareServices" (click)="shareArticleTo(share)">
+        {{ share.description }}
+    </button>
+</md-menu>
+
+<button md-icon-button [mdMenuTriggerFor]="other" *ngIf="!showsArticle">
     <md-icon>more_vert</md-icon>
 </button>
-<md-menu #menu="mdMenu">
+<md-menu #other="mdMenu">
     <button md-menu-item *ngIf="!olderFirst" (click)="toggleOlderFirst()">
         <span>Older first</span>
     </button>

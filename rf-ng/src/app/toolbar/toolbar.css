@@ -13,3 +13,7 @@
     border: none;
     background: transparent;
 }
+
+::ng-deep label {
+    margin-bottom: 0;
+}
