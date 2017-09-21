@@ -14,6 +14,7 @@ import 'rxjs/add/operator/filter'
 import 'rxjs/add/operator/scan'
 import 'rxjs/add/operator/mergeMap'
 import 'rxjs/add/operator/publishReplay'
+import 'rxjs/add/operator/shareReplay'
 import 'rxjs/add/operator/startWith'
 import 'rxjs/add/operator/switchMap'
 
@@ -173,7 +174,7 @@ export class ArticleService {
             route => this.nameToSource(route.data, route.params),
         ).filter(source =>
             source != null
-        ).distinctUntilKeyChanged("url")
+        ).distinctUntilKeyChanged("url");
 
         this.articles = this.feedService.getFeeds().map(feeds =>
             feeds.reduce((map, feed) => {
@@ -185,6 +186,8 @@ export class ArticleService {
             source.combineLatest(
                 this.refresh, (source, v) => source
             ).switchMap(source => {
+                this.paging = new BehaviorSubject<number>(0);
+
                 return queryPreferences.switchMap(prefs =>
                     Observable.merge(
                         this.paging.map(page => {
