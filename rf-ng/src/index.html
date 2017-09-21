@@ -16,6 +16,10 @@ html, body{
     padding:0;
 }
   </style>
+  <script>
+    var locale = document.querySelector("base").getAttribute("href").replace(/\//g, "");
+    localStorage.setItem("locale", locale);
+  </script>
 </head>
 <body>
   <app-root></app-root>

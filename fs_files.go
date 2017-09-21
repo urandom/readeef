@@ -20,7 +20,7 @@ func NewFileSystem() (http.FileSystem, error) {
 
 	fs.Fallback = true
 
-	if err := fs.Add("rf-ng/ui/index.html", 272, os.FileMode(420), time.Unix(1506022500, 0), "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <title>readeef: feed aggregator</title>\n  <script>\n    document.locale = localStorage.getItem(\"locale\") || \"en\";\n\n    location.href = \"/\" + document.locale + \"/\"\n  </script>\n</head>\n<body>\n</body>\n</html>\n"); err != nil {
+	if err := fs.Add("rf-ng/ui/index.html", 231, os.FileMode(420), time.Unix(1506035621, 0), "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <title>readeef: feed aggregator</title>\n  <script>\n    location.href = \"/\" + localStorage.getItem(\"locale\") || \"en\"+ \"/\"\n  </script>\n</head>\n<body>\n</body>\n</html>\n"); err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("packing file rf-ng/ui/index.html"))
 	}
 
