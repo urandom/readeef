@@ -65,5 +65,5 @@ var defaultCfg = `
 	elastic-url = "http://localhost:9200"
 	proxy-http-url-template = "/proxy?url={{ . }}"
 [ui]
-	path = "./rf-ng/dist"
+	path = "./rf-ng/ui"
 `

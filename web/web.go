@@ -28,6 +28,7 @@ const (
 )
 
 type sessionWrapper struct{}
+type e struct{}
 
 func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log log.Log) (http.Handler, error) {
 	mux := http.NewServeMux()
@@ -40,37 +41,10 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log lo
 	}
 
 	fileServer := http.FileServer(fs)
-	dir, err := fs.Open(config.UI.Path)
-	if err != nil {
-		return nil, errors.Wrap(err, "opening /static dir")
-	}
-	files, err := dir.Readdir(-1)
-	if err != nil {
-		return nil, errors.Wrap(err, "reading /static dir")
-	}
-
-	rootNameSet := map[string]struct{}{}
-	for _, f := range files {
-		rootNameSet[f.Name()] = struct{}{}
-	}
+	pathCache := make(map[string]e, 50)
+	buildPathCache(path.Join("/", config.UI.Path), pathCache, fs)
 
 	mux.Handle("/", http.TimeoutHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cleaned := path.Clean(r.URL.Path)
-		if cleaned[0] == '/' {
-			cleaned = cleaned[1:]
-		}
-		base := cleaned
-		idx := strings.Index(base, "/")
-		if idx != -1 {
-			base = base[:idx]
-		}
-
-		if _, ok := rootNameSet[base]; ok {
-			r.URL.Path = path.Join("/", config.UI.Path, r.URL.Path)
-			fileServer.ServeHTTP(w, r)
-			return
-		}
-
 		var err error
 		if err = session.PutBool(r, visitorKey, true); err == nil {
 			err = session.Save(w, r)
@@ -82,12 +56,51 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log lo
 			return
 		}
 
-		r.URL.Path = path.Join("/", config.UI.Path) + "/"
-		fileServer.ServeHTTP(w, r)
+		current := path.Join("/", config.UI.Path, r.URL.Path)
+		if _, ok := pathCache[current]; ok {
+			if strings.HasSuffix(r.URL.Path, "/") {
+				r.URL.Path = current + "/"
+			} else {
+				r.URL.Path = current
+			}
+			fileServer.ServeHTTP(w, r)
+		} else {
+			r.URL.Path = closestParent(current, fs)
+			fileServer.ServeHTTP(w, r)
+		}
+
 	}), time.Second, ""))
 
 	session := session.Manage(engine, session.Lifetime(240*time.Hour))
 	return session(mux), nil
+}
+
+func buildPathCache(p string, cache map[string]e, fs http.FileSystem) {
+	f, err := fs.Open(p)
+	if err == nil {
+		defer f.Close()
+		cache[p] = e{}
+
+		stat, err := f.Stat()
+		if err == nil && stat.IsDir() {
+			files, err := f.Readdir(-1)
+			if err == nil {
+				for _, file := range files {
+					buildPathCache(path.Join(p, file.Name()), cache, fs)
+				}
+			}
+		}
+	}
+}
+
+func closestParent(p string, fs http.FileSystem) string {
+	f, err := fs.Open(p)
+	if err == nil {
+		f.Close()
+		return p + "/"
+	}
+
+	return closestParent(path.Dir(p), fs)
 }
 
 func hasProxy(config config.Config) bool {
