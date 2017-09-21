@@ -6,6 +6,7 @@ md-card {
     display: flex;
     flex-direction: column;
     max-height: calc(100% - 12px);
+    cursor: pointer;
 }
 
 md-card-header {
@@ -64,15 +65,6 @@ md-card-actions {
 }
 
 button:hover, button:focus {
-    outline: none;
-    text-decoration: none;
-}
-
-md-card a {
-    color: black;
-}
-
-a:hover, a:focus {
     outline: none;
     text-decoration: none;
 }

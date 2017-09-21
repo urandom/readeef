@@ -24,6 +24,7 @@ class ArticleCounter {
 })
 export class ArticleListComponent implements OnInit, OnDestroy {
     items: Article[] = []
+    scrollItems: Article[]
     loading: boolean
 
     private finished = false

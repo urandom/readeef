@@ -15,24 +15,7 @@ import { ShareServicesSettingsComponent } from "../settings/share-services/compo
 import { AdminSettingsComponent } from "../settings/admin/component";
 
 
-function createArtcleRoutes(paths: [string, Data][]) : Routes {
-    let routes = []
-
-    for (let [path, data] of paths) {
-        routes.push({
-            path: path,
-            data: data,
-            children: [
-                {path: "", component: ArticleListComponent},
-                {path: "article/:articleID", component: ArticleDisplayComponent},
-            ],
-        })
-    }
-
-    return routes;
-}
-
-export const routes: Routes = [
+const routes: Routes = [
     {
         path: '',
         component: MainComponent,
@@ -42,18 +25,48 @@ export const routes: Routes = [
                 children: [
                     {
                         path: "",
-                        children: createArtcleRoutes([
-                            ["", { "primary": "user" }],
-                            ["search/:query", { "primary": "search", "secondary": "user" }],
-                            ["favorite", { "primary": "favorite" }],
-                            ["popular/tag/:id", { "primary": "popular", "secondary": "tag" }],
-                            ["popular/:id", { "primary": "popular", "secondary": "feed" }],
-                            ["popular", { "primary": "popular", "secondary": "user" }],
-                            ["tag/:id", { "primary": "tag" }],
-                            ["tag/:id/search/:query", { "primary": "search", "secondary": "tag" }],
-                            [":id", { "primary": "feed" }],
-                            [":id/search/:query", { "primary": "search", "secondary": "feed" }],
-                        ])
+                        children: [
+                            { path: "", data: { "primary": "user" }, children: [
+                                { path: "", component: ArticleListComponent },
+                                { path: "article/:articleID", component: ArticleDisplayComponent },
+                            ] },
+                            { path: "search/:query", data: { "primary": "search", "secondary": "user" }, children: [
+                                { path: "", component: ArticleListComponent },
+                                { path: "article/:articleID", component: ArticleDisplayComponent },
+                            ] },
+                            { path: "favorite", data: { "primary": "favorite" }, children: [
+                                { path: "", component: ArticleListComponent },
+                                { path: "article/:articleID", component: ArticleDisplayComponent },
+                            ] },
+                            { path: "popular/tag/:id", data: { "primary": "popular", "secondary": "tag" }, children: [
+                                { path: "", component: ArticleListComponent },
+                                { path: "article/:articleID", component: ArticleDisplayComponent },
+                            ] },
+                            { path: "popular/:id", data: { "primary": "popular", "secondary": "feed" }, children: [
+                                { path: "", component: ArticleListComponent },
+                                { path: "article/:articleID", component: ArticleDisplayComponent },
+                            ] },
+                            { path: "popular", data: { "primary": "popular", "secondary": "user" }, children: [
+                                { path: "", component: ArticleListComponent },
+                                { path: "article/:articleID", component: ArticleDisplayComponent },
+                            ] },
+                            { path: "tag/:id", data: { "primary": "tag" }, children: [
+                                { path: "", component: ArticleListComponent },
+                                { path: "article/:articleID", component: ArticleDisplayComponent },
+                            ] },
+                            { path: "tag/:id/search/:query", data: { "primary": "search", "secondary": "tag" }, children: [
+                                { path: "", component: ArticleListComponent },
+                                { path: "article/:articleID", component: ArticleDisplayComponent },
+                            ] },
+                            { path: ":id", data: { "primary": "feed" }, children: [
+                                { path: "", component: ArticleListComponent },
+                                { path: "article/:articleID", component: ArticleDisplayComponent },
+                            ] },
+                            { path: ":id/search/:query", data: { "primary": "search", "secondary": "feed" }, children: [
+                                { path: "", component: ArticleListComponent },
+                                { path: "article/:articleID", component: ArticleDisplayComponent },
+                            ] },
+                        ],
                     },
                     {
                          path: "",
