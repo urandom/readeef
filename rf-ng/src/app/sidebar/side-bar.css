@@ -31,11 +31,6 @@
     flex: 0 1 100%;
 }
 
-a:hover, a:focus {
-    outline: none;
-    text-decoration: none;
-}
-
 .content hr {
     margin: 0;
 }
