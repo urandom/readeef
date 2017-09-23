@@ -9,3 +9,8 @@ type ValidationError struct {
 func NewValidationError(err error) error {
 	return errors.WithStack(ValidationError{err})
 }
+
+func IsValidationError(err error) bool {
+	_, ok := errors.Cause(err).(ValidationError)
+	return ok
+}
