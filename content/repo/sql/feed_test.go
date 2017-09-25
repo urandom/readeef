@@ -291,6 +291,145 @@ func Test_feedRepo_UpdateDelete(t *testing.T) {
 	}
 }
 
+func Test_feedRepo_Users(t *testing.T) {
+	skipTest(t)
+	setupFeed()
+
+	tests := []struct {
+		name   string
+		feed   content.Feed
+		attach []content.User
+		detach int
+	}{
+		{"attach to user 1", content.Feed{Link: "http://sugr.org/10"}, []content.User{
+			{Login: user1},
+		}, 0},
+		{"attach to user 1, and 2", content.Feed{Link: "http://sugr.org/11"}, []content.User{
+			{Login: user1},
+			{Login: user2},
+		}, 0},
+		{"attach to user 1, and 2 and detach from 1", content.Feed{Link: "http://sugr.org/11"}, []content.User{
+			{Login: user1},
+			{Login: user2},
+		}, 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := service.FeedRepo()
+			_, err := r.Update(&tt.feed)
+			if err != nil {
+				t.Errorf("feedRepo.Users() update feed error = %v", err)
+				return
+			}
+
+			users, err := r.Users(tt.feed)
+			if err != nil {
+				t.Errorf("feedRepo.Users() error = %v", err)
+				return
+			}
+
+			if len(users) > 0 {
+				t.Errorf("feedRepo.Users() users len(%#v) != 0", users)
+				return
+			}
+
+			if len(tt.attach) > 0 {
+				for i, u := range tt.attach {
+					if err := r.AttachTo(tt.feed, u); err != nil {
+						t.Errorf("feedRepo.AttachTo() error = %v", err)
+						return
+					}
+
+					if users, err := r.Users(tt.feed); err != nil {
+						t.Errorf("feedRepo.Users() error = %v", err)
+						return
+					} else if len(users) != i+1 {
+						t.Errorf("feedRepo.Users() count = %d, want %d", len(users), i+1)
+						return
+					}
+				}
+
+				for i := 0; i < tt.detach; i++ {
+					if err := r.DetachFrom(tt.feed, tt.attach[i]); err != nil {
+						t.Errorf("feedRepo.DetachFrom() error = %v", err)
+						return
+					}
+
+					if users, err := r.Users(tt.feed); err != nil {
+						t.Errorf("feedRepo.Users() error = %v", err)
+						return
+					} else if len(users) != len(tt.attach)-i-1 {
+						t.Errorf("feedRepo.Users() count = %d, want %d", len(users), len(tt.attach)-i-1)
+						return
+					}
+				}
+			}
+
+			if err := r.Delete(tt.feed); err != nil {
+				t.Errorf("feedRepo.Delete() error %v", err)
+			}
+		})
+	}
+}
+
+func Test_feedRepo_SetUserTags(t *testing.T) {
+	tests := []struct {
+		name string
+		feed content.Feed
+		user content.Login
+		tags []*content.Tag
+	}{
+		{"no tags", content.Feed{Link: "http://sugr.org/10"}, user1, []*content.Tag{}},
+		{"simple", content.Feed{Link: "http://sugr.org/10"}, user1, []*content.Tag{
+			{Value: "tag 10"},
+			{Value: "tag 20"},
+		}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := service.FeedRepo()
+			_, err := r.Update(&tt.feed)
+			if err != nil {
+				t.Errorf("feedRepo.SetUserTags() update feed error = %v", err)
+				return
+			}
+
+			if err := r.SetUserTags(tt.feed, content.User{Login: tt.user}, tt.tags); err != nil {
+				t.Errorf("feedRepo.SetUserTags() error = %v", err)
+				return
+			}
+
+			tags, err := service.TagRepo().ForFeed(tt.feed, content.User{Login: tt.user})
+			if err != nil {
+				t.Errorf("tagRepo.ForFeed() error = %v", err)
+				return
+			}
+
+			wanted := map[content.TagValue]struct{}{}
+			for _, t := range tt.tags {
+				wanted[t.Value] = struct{}{}
+			}
+
+			if len(tags) != len(tt.tags) {
+				t.Errorf("tagRepo.ForFeed() len(tags) = %d, wanted %d", len(tags), len(tt.tags))
+				return
+			}
+
+			for _, tag := range tags {
+				if _, ok := wanted[tag.Value]; !ok {
+					t.Errorf("tagRepo.ForFeed() tag %#v not found", tag)
+					return
+				}
+			}
+
+			if err := r.Delete(tt.feed); err != nil {
+				t.Errorf("feedRepo.Delete() error %v", err)
+			}
+		})
+	}
+}
 func createFeed(feed *content.Feed, users ...content.User) {
 	r := service.FeedRepo()
 
