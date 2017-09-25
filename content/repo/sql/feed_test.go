@@ -374,6 +374,9 @@ func Test_feedRepo_Users(t *testing.T) {
 }
 
 func Test_feedRepo_SetUserTags(t *testing.T) {
+	skipTest(t)
+	setupFeed()
+
 	tests := []struct {
 		name string
 		feed content.Feed
@@ -487,6 +490,5 @@ func setupFeed() {
 		if err := service.FeedRepo().SetUserTags(f1, u2, []*content.Tag{&tag1}); err != nil {
 			panic(err)
 		}
-
 	})
 }
