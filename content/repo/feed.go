@@ -14,12 +14,12 @@ type Feed interface {
 	IDs() ([]content.FeedID, error)
 	Unsubscribed() ([]content.Feed, error)
 
-	Update(content.Feed) ([]content.Article, error)
+	Update(*content.Feed) ([]content.Article, error)
 	Delete(content.Feed) error
 
 	Users(content.Feed) ([]content.User, error)
 	AttachTo(content.Feed, content.User) error
 	DetachFrom(content.Feed, content.User) error
 
-	SetUserTags(content.Feed, content.User, []content.Tag) error
+	SetUserTags(content.Feed, content.User, []*content.Tag) error
 }

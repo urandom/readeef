@@ -106,10 +106,10 @@ func setFeedTags(repo repo.Feed, log log.Log) http.HandlerFunc {
 			return
 		}
 
-		tags := make([]content.Tag, 0, len(tagValues))
+		tags := make([]*content.Tag, 0, len(tagValues))
 		for i := range tagValues {
 			if tagValues[i] != "" {
-				tags = append(tags, content.Tag{Value: tagValues[i]})
+				tags = append(tags, &content.Tag{Value: tagValues[i]})
 			}
 		}
 

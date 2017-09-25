@@ -125,7 +125,7 @@ func (r feedRepo) Unsubscribed() ([]content.Feed, error) {
 
 // Update updates or creates the feed data in the database.
 // It returns a list of all new articles, or an error.
-func (r feedRepo) Update(feed content.Feed) ([]content.Article, error) {
+func (r feedRepo) Update(feed *content.Feed) ([]content.Article, error) {
 	newArticles := []content.Article{}
 
 	if err := feed.Validate(); err != nil && feed.ID != 0 {
@@ -169,7 +169,7 @@ func (r feedRepo) Update(feed content.Feed) ([]content.Article, error) {
 		feed.ID = content.FeedID(id)
 	}
 
-	if newArticles, err = r.updateFeedArticles(feed, tx); err != nil {
+	if newArticles, err = r.updateFeedArticles(*feed, tx); err != nil {
 		return newArticles, errors.WithMessage(err, "updating feed articles")
 	}
 
@@ -297,7 +297,7 @@ func (r feedRepo) DetachFrom(feed content.Feed, user content.User) error {
 	return nil
 }
 
-func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []content.Tag) error {
+func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []*content.Tag) error {
 	if err := feed.Validate(); err != nil {
 		return errors.WithMessage(err, "validating feed")
 	}
@@ -340,7 +340,7 @@ func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []conte
 				}
 			}
 
-			tags[i] = tag
+			tags[i].ID = tag.ID
 		}
 	}
 

@@ -56,6 +56,7 @@ func Test_userRepo_All(t *testing.T) {
 
 	if len(got) != 2 {
 		t.Errorf("userRepo.All() expected 2, got %v", len(got))
+		return
 	}
 
 	expected := 2
@@ -85,20 +86,24 @@ func Test_userRepo_Delete(t *testing.T) {
 
 	if len(got) != 3 {
 		t.Errorf("userRepo.Delete() expected 2, got %v", len(got))
+		return
 	}
 
 	err = r.Delete(content.User{Login: "user3"})
 	if err != nil {
 		t.Errorf("userRepo.Delete() error %v", err)
+		return
 	}
 
 	_, err = r.Get("user3")
 	if err == nil {
 		t.Errorf("userRepo.Delete() expected validation error, got nil")
+		return
 	}
 
 	if !content.IsNoContent(err) {
 		t.Errorf("userRepo.Delete() expected validation error, got %v", err)
+		return
 	}
 }
 

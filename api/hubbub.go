@@ -78,7 +78,7 @@ func hubbubRegistration(
 			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
 				f.Refresh(pf)
 
-				if articles, err = feedRepo.Update(f); err != nil {
+				if articles, err = feedRepo.Update(&f); err != nil {
 					log.Printf("Error updating feed %s: %+v", f, err)
 					return
 				}

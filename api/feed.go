@@ -138,9 +138,9 @@ func addFeedByURL(
 
 		tags := strings.SplitN(u.Fragment, ",", -1)
 		if u.Fragment != "" && len(tags) > 0 {
-			t := make([]content.Tag, len(tags))
+			t := make([]*content.Tag, len(tags))
 			for i := range tags {
-				t[i] = content.Tag{Value: content.TagValue(tags[i])}
+				t[i] = &content.Tag{Value: content.TagValue(tags[i])}
 			}
 
 			if err = repo.SetUserTags(f, user, t); err != nil {

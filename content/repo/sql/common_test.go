@@ -10,7 +10,7 @@ import (
 
 var (
 	skip    = true
-	logger  = log.WithStd(os.Stderr, "testing", 0)
+	logger  = log.WithStd(os.Stderr, "[testing] ", 0)
 	dbo     = db.New(logger)
 	service = Service{dbo, logger}
 )

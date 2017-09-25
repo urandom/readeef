@@ -125,7 +125,7 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 			break
 		}
 
-		newArticles, err := fm.repo.Update(f)
+		newArticles, err := fm.repo.Update(&f)
 		if err != nil {
 			return content.Feed{}, errors.WithMessage(err, "updating feed with parsed data")
 		}
@@ -251,7 +251,7 @@ func (fm *FeedManager) stopUpdatingFeed(feed content.Feed) {
 }
 
 func (fm FeedManager) updateFeed(feed content.Feed) {
-	if newArticles, err := fm.repo.Update(feed); err != nil {
+	if newArticles, err := fm.repo.Update(&feed); err != nil {
 		fm.log.Printf("Error updating feed '%s' database record: %+v", feed, err)
 	} else {
 		fm.processFeedUpdateMonitors(feed, newArticles)
