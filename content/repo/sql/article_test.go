@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/urandom/readeef/content"
 )
@@ -107,6 +108,18 @@ func Test_articleRepo_ForUser(t *testing.T) {
 		}, false},
 		{"read user1 articles from feed 2", args{user1, []content.QueryOpt{content.ReadOnly, content.FeedIDs([]content.FeedID{feed2.ID})}}, []content.ArticleID{
 			articles[6].ID, articles[8].ID,
+		}, false},
+		{"specific ids for user 2", args{user2, []content.QueryOpt{content.IDs([]content.ArticleID{articles[4].ID, articles[7].ID})}}, []content.ArticleID{
+			articles[4].ID, articles[7].ID,
+		}, false},
+		{"id range with paging", args{user1, []content.QueryOpt{content.IDRange(articles[2].ID, articles[7].ID), content.Paging(2, 1)}}, []content.ArticleID{
+			articles[4].ID, articles[5].ID,
+		}, false},
+		{"specific feed id for user 1", args{user1, []content.QueryOpt{content.FeedIDs([]content.FeedID{feed1.ID})}}, []content.ArticleID{
+			articles[0].ID, articles[1].ID, articles[2].ID, articles[3].ID,
+		}, false},
+		{"time range for user 2", args{user2, []content.QueryOpt{content.TimeRange(time.Now().Add(-5*time.Hour), time.Now().Add(-2*time.Hour))}}, []content.ArticleID{
+			articles[5].ID, articles[6].ID, articles[7].ID,
 		}, false},
 	}
 	for _, tt := range tests {

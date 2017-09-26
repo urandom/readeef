@@ -90,7 +90,7 @@ func Paging(limit, offset int) QueryOpt {
 	}}
 }
 
-// IDRange sets the minimum and maximum ids of returned articles.
+// IDRange sets the valid article ids between the two provided.
 func IDRange(after, before ArticleID) QueryOpt {
 	return QueryOpt{func(o *QueryOptions) {
 		o.AfterID = after
