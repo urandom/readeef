@@ -5,6 +5,7 @@ import (
 	"sort"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/parser"
@@ -458,36 +459,43 @@ func setupFeed() {
 		u1 := content.User{Login: user1}
 		u2 := content.User{Login: user2}
 
-		f1 := feed1
-		f2 := feed2
-
-		f1.Refresh(parser.Feed{Title: "feed 1", Articles: []parser.Article{
-			{Title: "Article 1", Description: "Description 1", Link: "http://sugr.org/1/a/1"},
-			{Title: "Article 2", Description: "Description 2", Link: "http://sugr.org/1/a/2"},
-			{Title: "Article 3", Description: "Description 3", Link: "http://sugr.org/1/a/3"},
-			{Title: "Article 4", Description: "Description 4", Link: "http://sugr.org/1/a/4"},
+		feed1.Refresh(parser.Feed{Title: "feed 1", Articles: []parser.Article{
+			{Title: "Article 1", Description: "Description 1", Link: "http://sugr.org/1/a/1", Date: time.Now()},
+			{Title: "Article 2", Description: "Description 2", Link: "http://sugr.org/1/a/2", Date: time.Now().Add(-1 * time.Hour)},
+			{Title: "Article 3", Description: "Description 3", Link: "http://sugr.org/1/a/3", Date: time.Now().Add(-2 * time.Hour)},
+			{Title: "Article 4", Description: "Description 4", Link: "http://sugr.org/1/a/4", Date: time.Now().Add(-3 * time.Hour)},
 		}})
 
-		f2.Refresh(parser.Feed{Title: "feed 2", Articles: []parser.Article{
-			{Title: "Article 5", Description: "Description 5", Link: "http://sugr.org/2/a/5"},
-			{Title: "Article 6", Description: "Description 6", Link: "http://sugr.org/2/a/6"},
-			{Title: "Article 7", Description: "Description 7", Link: "http://sugr.org/2/a/7"},
-			{Title: "Article 8", Description: "Description 8", Link: "http://sugr.org/2/a/8"},
-			{Title: "Article 9", Description: "Description 9", Link: "http://sugr.org/2/a/9"},
+		feed2.Refresh(parser.Feed{Title: "feed 2", Articles: []parser.Article{
+			{Title: "Article 5", Description: "Description 5", Link: "http://sugr.org/2/a/5", Date: time.Now().Add(-1 * time.Hour)},
+			{Title: "Article 6", Description: "Description 6", Link: "http://sugr.org/2/a/6", Date: time.Now().Add(-2 * time.Hour)},
+			{Title: "Article 7", Description: "Description 7", Link: "http://sugr.org/2/a/7", Date: time.Now().Add(-3 * time.Hour)},
+			{Title: "Article 8", Description: "Description 8", Link: "http://sugr.org/2/a/8", Date: time.Now().Add(-4 * time.Hour)},
+			{Title: "Article 9", Description: "Description 9", Link: "http://sugr.org/2/a/9", Date: time.Now().Add(-5 * time.Hour)},
 		}})
 
-		createFeed(&f1, u1)
-		createFeed(&f2, u1, u2)
+		createFeed(&feed1, u1)
+		createFeed(&feed2, u1, u2)
 
-		if err := service.FeedRepo().SetUserTags(f1, u1, []*content.Tag{&tag1, &tag2}); err != nil {
+		if err := service.FeedRepo().SetUserTags(feed1, u1, []*content.Tag{&tag1, &tag2}); err != nil {
 			panic(err)
 		}
 
-		if err := service.FeedRepo().SetUserTags(f2, u1, []*content.Tag{&tag2}); err != nil {
+		if err := service.FeedRepo().SetUserTags(feed2, u1, []*content.Tag{&tag2}); err != nil {
 			panic(err)
 		}
 
-		if err := service.FeedRepo().SetUserTags(f1, u2, []*content.Tag{&tag1}); err != nil {
+		if err := service.FeedRepo().SetUserTags(feed1, u2, []*content.Tag{&tag1}); err != nil {
+			panic(err)
+		}
+
+		var err error
+		feed1, err = service.FeedRepo().Get(feed1.ID, content.User{})
+		if err != nil {
+			panic(err)
+		}
+		feed2, err = service.FeedRepo().Get(feed2.ID, content.User{})
+		if err != nil {
 			panic(err)
 		}
 	})
