@@ -140,7 +140,7 @@ func Test_feedRepo_ForTag(t *testing.T) {
 	}{
 		{"for user 1 tag 1", args{tag1, "user1"}, []content.Feed{feed1}, false},
 		{"for user 1 tag 2", args{tag2, "user1"}, []content.Feed{feed1, feed2}, false},
-		{"for user 2 tag 1", args{tag1, "user2"}, []content.Feed{feed1}, false},
+		{"for user 2 tag 1", args{tag1, "user2"}, nil, false},
 		{"for user 2 tag 2", args{tag2, "user2"}, nil, false},
 		{"for user 3 tag 1", args{tag2, "user3"}, nil, false},
 	}
@@ -379,16 +379,19 @@ func Test_feedRepo_SetUserTags(t *testing.T) {
 	setupFeed()
 
 	tests := []struct {
-		name string
-		feed content.Feed
-		user content.Login
-		tags []*content.Tag
+		name    string
+		feed    content.Feed
+		user    content.Login
+		attach  bool
+		tags    []*content.Tag
+		wantErr bool
 	}{
-		{"no tags", content.Feed{Link: "http://sugr.org/10"}, user1, []*content.Tag{}},
-		{"simple", content.Feed{Link: "http://sugr.org/10"}, user1, []*content.Tag{
+		{"no tags", content.Feed{Link: "http://sugr.org/10"}, user1, true, []*content.Tag{}, false},
+		{"simple", content.Feed{Link: "http://sugr.org/10"}, user1, true, []*content.Tag{
 			{Value: "tag 10"},
 			{Value: "tag 20"},
-		}},
+		}, false},
+		{"not attached", content.Feed{Link: "http://sugr.org/10"}, user1, false, []*content.Tag{}, true},
 	}
 
 	for _, tt := range tests {
@@ -400,9 +403,18 @@ func Test_feedRepo_SetUserTags(t *testing.T) {
 				return
 			}
 
+			if tt.attach {
+				if err := r.AttachTo(tt.feed, content.User{Login: tt.user}); err != nil {
+					t.Errorf("feedRepo.SetUserTags() attaching error = %v", err)
+					return
+				}
+			}
+
 			if err := r.SetUserTags(tt.feed, content.User{Login: tt.user}, tt.tags); err != nil {
-				t.Errorf("feedRepo.SetUserTags() error = %v", err)
-				return
+				if !tt.wantErr {
+					t.Errorf("feedRepo.SetUserTags() error = %v", err)
+					return
+				}
 			}
 
 			tags, err := service.TagRepo().ForFeed(tt.feed, content.User{Login: tt.user})
@@ -482,10 +494,6 @@ func setupFeed() {
 		}
 
 		if err := service.FeedRepo().SetUserTags(feed2, u1, []*content.Tag{&tag2}); err != nil {
-			panic(err)
-		}
-
-		if err := service.FeedRepo().SetUserTags(feed1, u2, []*content.Tag{&tag1}); err != nil {
 			panic(err)
 		}
 

@@ -29,7 +29,7 @@ func Test_tagRepo_Get(t *testing.T) {
 	}{
 		{"get tag 1 for user 1", args{tag1.ID, user1}, tag1, false},
 		{"get tag 2 for user 1", args{tag2.ID, user1}, tag2, false},
-		{"get tag 1 for user 2", args{tag1.ID, user2}, tag1, false},
+		{"get tag 1 for user 2", args{tag1.ID, user2}, content.Tag{}, true},
 		{"get tag 2 for user 2", args{tag2.ID, user2}, content.Tag{}, true},
 	}
 	for _, tt := range tests {
@@ -58,7 +58,7 @@ func Test_tagRepo_ForUser(t *testing.T) {
 		wantErr bool
 	}{
 		{"get tags for user 1", user1, []content.Tag{tag1, tag2}, false},
-		{"get tags for user 2", user2, []content.Tag{tag1}, false},
+		{"get tags for user 2", user2, []content.Tag{}, false},
 		{"get tags for user 3", "user3", []content.Tag{}, false},
 	}
 	for _, tt := range tests {
@@ -97,7 +97,7 @@ func Test_tagRepo_ForFeed(t *testing.T) {
 		wantErr bool
 	}{
 		{"get tags for feed 1 user 1", feed1, user1, []content.Tag{tag1, tag2}, false},
-		{"get tags for feed 1 user 2", feed1, user2, []content.Tag{tag1}, false},
+		{"get tags for feed 1 user 2", feed1, user2, []content.Tag{}, false},
 		{"get tags for feed 1 user 3", feed1, "user3", []content.Tag{}, false},
 		{"get tags for feed 2 user 1", feed2, user1, []content.Tag{tag2}, false},
 		{"get tags for feed 2 user 2", feed2, user2, []content.Tag{}, false},

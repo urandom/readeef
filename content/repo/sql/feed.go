@@ -306,6 +306,22 @@ func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []*cont
 		return errors.WithMessage(err, "validating user")
 	}
 
+	if users, err := r.Users(feed); err == nil {
+		found := false
+		for _, u := range users {
+			if u.Login == user.Login {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return errors.Errorf("feed %s does not belong to user %s", feed, user)
+		}
+	} else {
+		return errors.WithMessage(err, "getting feed users")
+	}
+
 	r.log.Infof("Setting feed %s user %s tags", feed, user)
 
 	tx, err := r.db.Beginx()

@@ -121,6 +121,16 @@ func Test_articleRepo_ForUser(t *testing.T) {
 		{"time range for user 2", args{user2, []content.QueryOpt{content.TimeRange(time.Now().Add(-5*time.Hour), time.Now().Add(-2*time.Hour))}}, []content.ArticleID{
 			articles[5].ID, articles[6].ID, articles[7].ID,
 		}, false},
+		{"older and unread first for user 2", args{user2, []content.QueryOpt{content.UnreadFirst, content.Sorting(content.SortByDate, content.DescendingOrder)}}, []content.ArticleID{
+			articles[8].ID, articles[6].ID, articles[5].ID, articles[4].ID, articles[7].ID,
+		}, false},
+		{"favorite for user 1", args{user1, []content.QueryOpt{content.FavoriteOnly}}, []content.ArticleID{
+			articles[0].ID, articles[1].ID, articles[7].ID,
+		}, false},
+		{"untagged for user 1", args{user1, []content.QueryOpt{content.UntaggedOnly}}, []content.ArticleID{}, false},
+		{"untagged for user 2", args{user2, []content.QueryOpt{content.UntaggedOnly}}, []content.ArticleID{
+			articles[4].ID, articles[5].ID, articles[6].ID, articles[7].ID, articles[8].ID,
+		}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
