@@ -112,6 +112,7 @@ type UserStmts struct {
 	GetArticleIdsFavoriteJoin  string
 	GetArticleIdsUntaggedJoin  string
 
+	StateReadColumn             string
 	StateUnreadJoin             string
 	StateFavoriteJoin           string
 	ReadStateInsertTemplate     string

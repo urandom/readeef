@@ -19,6 +19,7 @@ func init() {
 	sqlStmts.User.ArticleCountFavoriteJoin = articleCountFavoriteJoin
 	sqlStmts.User.ArticleCountUntaggedJoin = articleCountUntaggedJoin
 
+	sqlStmts.User.StateReadColumn = articleReadColumn
 	sqlStmts.User.StateUnreadJoin = stateUnreadJoin
 	sqlStmts.User.StateFavoriteJoin = stateFavoriteJoin
 
@@ -73,11 +74,18 @@ LEFT OUTER JOIN users_feeds_tags uft
 `
 
 	getArticleIdsTemplate = `
-SELECT a.id
-FROM articles a
-{{ .Join }}
-{{ .Where }}
+SELECT a.id FROM (
+    SELECT a.id
+	{{ .Columns }}
+	FROM articles a
+	{{ .Join }}
+	{{ .Where }}
+	{{ .Order }}
+	{{ .Limit }}
+) a
 `
+
+	articleReadColumn = ` CASE WHEN au.article_id IS NULL THEN 1 ELSE 0 END AS read `
 
 	articleCountTemplate = `
 SELECT count(a.id)
@@ -124,7 +132,11 @@ LEFT OUTER JOIN users_articles_unread au
 `
 	readStateDeleteTemplate = `
 DELETE FROM users_articles_unread WHERE user_login = $1 AND article_id IN (
-	SELECT a.id FROM articles a {{ .Join }}
+	SELECT a.id
+	FROM users_feeds uf INNER JOIN articles a
+		ON uf.feed_id = a.feed_id
+		AND uf.user_login = $1
+	{{ .Join }}
 	{{ .Where }}
 )
 `
@@ -142,7 +154,11 @@ WHERE af.user_login = $1
 `
 	favoriteStateDeleteTemplate = `
 DELETE FROM users_articles_favorite WHERE user_login = $1 AND article_id IN (
-	SELECT a.id FROM articles a {{ .Join }}
+	SELECT a.id
+	FROM users_feeds uf INNER JOIN articles a
+		ON uf.feed_id = a.feed_id
+		AND uf.user_login = $1
+	{{ .Join }}
 	{{ .Where }}
 )
 `

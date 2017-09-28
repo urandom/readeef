@@ -128,19 +128,20 @@ func (r articleRepo) Count(user content.User, opts ...content.QueryOpt) (int64, 
 	var login content.Login
 	var renderData getArticlesData
 
-	if o.UnreadOnly || o.FavoriteOnly || o.ReadOnly || o.UntaggedOnly {
+	if user.Login != "" {
 		renderData.Join += s.User.ArticleCountUserFeedsJoin
 		login = user.Login
+	}
 
-		if o.FavoriteOnly {
-			renderData.Join += s.User.StateFavoriteJoin
-		}
-		if o.ReadOnly || o.UnreadOnly {
-			renderData.Join += s.User.StateUnreadJoin
-		}
+	if o.FavoriteOnly {
+		renderData.Join += s.User.StateFavoriteJoin
+	}
+	if o.ReadOnly || o.UnreadOnly {
+		renderData.Join += s.User.StateUnreadJoin
 	}
 
 	o.IncludeScores = false
+	o.UnreadFirst = false
 
 	join, where, _, _, args := constructSQLQueryOptions(login, o, r.db)
 
@@ -155,6 +156,7 @@ func (r articleRepo) Count(user content.User, opts ...content.QueryOpt) (int64, 
 	}
 
 	var count int64
+	r.log.Debugf("Article count SQL:\n%s\nArgs:%v\n", buf.String(), args)
 	if err = r.db.Get(&count, buf.String(), args...); err != nil {
 		return 0, errors.Wrap(err, "getting article count")
 	}
@@ -187,32 +189,40 @@ func (r articleRepo) IDs(user content.User, opts ...content.QueryOpt) ([]content
 	var login content.Login
 	var renderData getArticlesData
 
-	if o.UnreadOnly || o.FavoriteOnly || o.ReadOnly || o.UntaggedOnly {
+	if user.Login != "" {
 		renderData.Join += s.User.ArticleCountUserFeedsJoin
 		login = user.Login
+	}
 
-		if o.FavoriteOnly {
-			renderData.Join += s.User.StateFavoriteJoin
-		}
-		if o.ReadOnly || o.UnreadOnly {
-			renderData.Join += s.User.StateUnreadJoin
-		}
+	if o.FavoriteOnly {
+		renderData.Join += s.User.StateFavoriteJoin
+	}
+	if o.ReadOnly || o.UnreadOnly || o.UnreadFirst {
+		renderData.Join += s.User.StateUnreadJoin
+	}
+
+	if o.UnreadFirst {
+		renderData.Columns += ", " + s.User.StateReadColumn
 	}
 
 	o.IncludeScores = false
-	join, where, _, _, args := constructSQLQueryOptions(login, o, r.db)
+
+	join, where, order, limit, args := constructSQLQueryOptions(login, o, r.db)
 
 	renderData.Join += join
 	renderData.Where = where
+	renderData.Order = order
+	renderData.Limit = limit
 
 	buf := pool.Buffer.Get()
 	defer pool.Buffer.Put(buf)
 
-	if err := articleCountTemplate.Execute(buf, renderData); err != nil {
+	if err := getArticleIdsTemplate.Execute(buf, renderData); err != nil {
 		return []content.ArticleID{}, errors.Wrap(err, "executing article-count template")
 	}
 
 	var ids []content.ArticleID
+	r.log.Debugf("Article ids SQL:\n%s\nArgs:%v\n", buf.String(), args)
 	if err = r.db.Select(&ids, buf.String(), args...); err != nil {
 		return []content.ArticleID{}, errors.Wrap(err, "getting article count")
 	}
@@ -394,6 +404,7 @@ func articleStateSet(
 	}
 	defer tx.Rollback()
 
+	log.Debugf("Articles state SQL:\n%s\nArgs:%v\n", buf.String(), args)
 	if _, err := tx.Exec(buf.String(), args...); err != nil {
 		return errors.Wrap(err, "executing article state statement")
 	}
@@ -459,12 +470,12 @@ func constructSQLQueryOptions(
 	}
 
 	if !opts.BeforeDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf("(a.date IS NULL OR a.date <= $%d)", len(args)+1))
+		whereSlice = append(whereSlice, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+1))
 		args = append(args, opts.BeforeDate)
 	}
 
 	if !opts.AfterDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf("a.date >= $%d", len(args)+1))
+		whereSlice = append(whereSlice, fmt.Sprintf("a.date > $%d", len(args)+1))
 		args = append(args, opts.AfterDate)
 	}
 
