@@ -58,7 +58,7 @@ func (r thumbnailRepo) Update(thumbnail content.Thumbnail) error {
 
 	res, err := stmt.Exec(thumbnail.Thumbnail, thumbnail.Link, thumbnail.Processed, thumbnail.ArticleID)
 	if err != nil {
-		return errors.Wrap(err, "executimg thumbnail update stmt")
+		return errors.Wrap(err, "executing thumbnail update stmt")
 	}
 
 	if num, err := res.RowsAffected(); err == nil && num > 0 {
@@ -77,7 +77,7 @@ func (r thumbnailRepo) Update(thumbnail content.Thumbnail) error {
 
 	_, err = stmt.Exec(thumbnail.ArticleID, thumbnail.Thumbnail, thumbnail.Link, thumbnail.Processed)
 	if err != nil {
-		return errors.Wrap(err, "executimg thumbnail create stmt")
+		return errors.Wrap(err, "executing thumbnail create stmt")
 	}
 
 	if err := tx.Commit(); err != nil {

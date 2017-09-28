@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	feed1 = content.Feed{ID: 1, Link: "http://sugr.org/1", Title: "feed 1"}
-	feed2 = content.Feed{ID: 2, Link: "http://sugr.org/2", Title: "feed 2"}
+	feed1 = content.Feed{Link: "http://sugr.org/1", Title: "feed 1"}
+	feed2 = content.Feed{Link: "http://sugr.org/2", Title: "feed 2"}
 
 	feedSync sync.Once
 )

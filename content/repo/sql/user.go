@@ -67,7 +67,7 @@ func (r userRepo) Update(user content.User) error {
 
 	res, err := stmt.Exec(user.FirstName, user.LastName, user.Email, user.Admin, user.Active, user.ProfileJSON, user.HashType, user.Salt, user.Hash, user.MD5API, user.Login)
 	if err != nil {
-		return errors.Wrap(err, "executimg user update stmt")
+		return errors.Wrap(err, "executing user update stmt")
 	}
 
 	if num, err := res.RowsAffected(); err == nil && num > 0 {
@@ -86,7 +86,7 @@ func (r userRepo) Update(user content.User) error {
 
 	_, err = stmt.Exec(user.Login, user.FirstName, user.LastName, user.Email, user.Admin, user.Active, user.ProfileJSON, user.HashType, user.Salt, user.Hash, user.MD5API)
 	if err != nil {
-		return errors.Wrap(err, "executimg user create stmt")
+		return errors.Wrap(err, "executing user create stmt")
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -118,7 +118,7 @@ func (r userRepo) Delete(user content.User) error {
 
 	_, err = stmt.Exec(user.Login)
 	if err != nil {
-		return errors.Wrap(err, "executimg user delete stmt")
+		return errors.Wrap(err, "executing user delete stmt")
 	}
 
 	if err := tx.Commit(); err != nil {

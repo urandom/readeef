@@ -48,12 +48,12 @@ func (r subscriptionRepo) All() ([]content.Subscription, error) {
 	return subscriptions, nil
 }
 
-func (r subscriptionRepo) Update(s content.Subscription) error {
-	if err := s.Validate(); err != nil {
+func (r subscriptionRepo) Update(subscription content.Subscription) error {
+	if err := subscription.Validate(); err != nil {
 		return errors.WithMessage(err, "validating subscription")
 	}
 
-	r.log.Infof("Updating subscription %s", s)
+	r.log.Infof("Updating subscription %s", subscription)
 
 	tx, err := r.db.Beginx()
 	if err != nil {
@@ -67,9 +67,9 @@ func (r subscriptionRepo) Update(s content.Subscription) error {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(s.FeedID, s.LeaseDuration, s.VerificationTime, s.SubscriptionFailure, s.Link)
+	res, err := stmt.Exec(subscription.Link, subscription.LeaseDuration, subscription.VerificationTime, subscription.SubscriptionFailure, subscription.FeedID)
 	if err != nil {
-		return errors.Wrap(err, "executimg subscription update stmt")
+		return errors.Wrap(err, "executing subscription update stmt")
 	}
 
 	if num, err := res.RowsAffected(); err == nil && num > 0 {
@@ -86,9 +86,9 @@ func (r subscriptionRepo) Update(s content.Subscription) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(s.Link, s.FeedID, s.LeaseDuration, s.VerificationTime, s.SubscriptionFailure)
+	_, err = stmt.Exec(subscription.FeedID, subscription.Link, subscription.LeaseDuration, subscription.VerificationTime, subscription.SubscriptionFailure)
 	if err != nil {
-		return errors.Wrap(err, "executimg subscription create stmt")
+		return errors.Wrap(err, "executing subscription create stmt")
 	}
 
 	if err := tx.Commit(); err != nil {

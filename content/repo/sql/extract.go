@@ -58,7 +58,7 @@ func (r extractRepo) Update(extract content.Extract) error {
 
 	res, err := stmt.Exec(extract.Title, extract.Content, extract.TopImage, extract.Language, extract.ArticleID)
 	if err != nil {
-		return errors.Wrap(err, "executimg extract update stmt")
+		return errors.Wrap(err, "executing extract update stmt")
 	}
 
 	if num, err := res.RowsAffected(); err == nil && num > 0 {
@@ -77,7 +77,7 @@ func (r extractRepo) Update(extract content.Extract) error {
 
 	_, err = stmt.Exec(extract.ArticleID, extract.Title, extract.Content, extract.TopImage, extract.Language)
 	if err != nil {
-		return errors.Wrap(err, "executimg extract create stmt")
+		return errors.Wrap(err, "executing extract create stmt")
 	}
 
 	if err := tx.Commit(); err != nil {

@@ -58,7 +58,7 @@ func (r scoresRepo) Update(scores content.Scores) error {
 
 	res, err := stmt.Exec(scores.Score, scores.Score1, scores.Score2, scores.Score3, scores.Score4, scores.Score5, scores.ArticleID)
 	if err != nil {
-		return errors.Wrap(err, "executimg scores update stmt")
+		return errors.Wrap(err, "executing scores update stmt")
 	}
 
 	if num, err := res.RowsAffected(); err == nil && num > 0 {
@@ -77,7 +77,7 @@ func (r scoresRepo) Update(scores content.Scores) error {
 
 	_, err = stmt.Exec(scores.ArticleID, scores.Score, scores.Score1, scores.Score2, scores.Score3, scores.Score4, scores.Score5)
 	if err != nil {
-		return errors.Wrap(err, "executimg scores create stmt")
+		return errors.Wrap(err, "executing scores create stmt")
 	}
 
 	if err := tx.Commit(); err != nil {
