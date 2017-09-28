@@ -53,6 +53,9 @@ func Test_extractRepo_Get(t *testing.T) {
 }
 
 func Test_extractRepo_Update(t *testing.T) {
+	skipTest(t)
+	setupArticle()
+
 	tests := []struct {
 		name    string
 		article content.Article
