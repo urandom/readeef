@@ -157,7 +157,7 @@ func emulatorRoutes(
 		switch e {
 		case "tt-rss":
 			rr = append(rr, routes{
-				path: fmt.Sprintf("/v%d/tt-rss/", ttrss.API_LEVEL),
+				path: "/tt-rss/",
 				route: func(r chi.Router) {
 					r.Use(timeout(5 * time.Second))
 					r.Get("/", ttrss.FakeWebHandler)
@@ -171,7 +171,7 @@ func emulatorRoutes(
 			})
 		case "fever":
 			rr = append(rr, routes{
-				path: fmt.Sprintf("/v%d/fever/", fever.API_VERSION),
+				path: "/fever/",
 				route: func(r chi.Router) {
 					r.Use(timeout(5 * time.Second))
 					r.Post("/", fever.Handler(service, processors, log))

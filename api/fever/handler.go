@@ -47,6 +47,9 @@ func Handler(
 		resp := resp{"api_version": API_VERSION}
 
 		if user.Login == "" || err != nil {
+			if err != nil {
+				log.Printf("Error getting readeef user: %+v\n", err)
+			}
 			resp["auth"] = 0
 
 			writeJSON(w, resp)
