@@ -9,7 +9,11 @@
       "outDir": "dist",
       "assets": [
         "assets",
-        "favicon.ico"
+		"readeef-72.png",
+		"readeef-114.png",
+		"readeef-144.png",
+		"readeef-small.png",
+		"readeef.png"
       ],
       "index": "index.html",
       "main": "main.ts",
