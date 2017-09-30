@@ -85,7 +85,7 @@ func (s Scheduler) updateFeed(ctx context.Context, payload schedulePayload, cont
 			data, contentHash = s.downloadFeed(payload, contentHash)
 		}
 
-		if data.isUpdated() {
+		if data.isUpdated() || data.IsErr() {
 			select {
 			case <-ctx.Done():
 				s.unscheduleFeed(ctx, payload.feed)
