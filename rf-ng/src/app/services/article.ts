@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core'
 import { Response } from '@angular/http'
 import { APIService, Serializable } from "./api";
+import { TokenService } from "./auth";
 import { Router, ActivatedRouteSnapshot, NavigationEnd, ParamMap, Data, Params } from '@angular/router';
 import { Feed, FeedService } from "../services/feed"
 import { EventService } from "../services/events"
@@ -162,6 +163,7 @@ export class ArticleService {
 
     constructor(
         private api: APIService,
+        private tokenService: TokenService,
         private feedService: FeedService,
         private eventService: EventService,
         private router: Router,
@@ -176,136 +178,139 @@ export class ArticleService {
             source != null
         ).distinctUntilKeyChanged("url");
 
-        this.articles = this.feedService.getFeeds().map(feeds =>
-            feeds.reduce((map, feed) => {
-                map[feed.id] = feed.title;
+        this.articles = this.tokenService.tokenObservable(
+        ).switchMap(token =>
+                this.feedService.getFeeds().map(feeds =>
+                feeds.reduce((map, feed) => {
+                    map[feed.id] = feed.title;
 
-                return map;
-            }, new Map<number, string>())
-        ).switchMap(feedMap =>
-            source.combineLatest(
-                this.refresh, (source, v) => source
-            ).switchMap(source => {
-                this.paging = new BehaviorSubject<number>(0);
+                    return map;
+                }, new Map<number, string>())
+            ).switchMap(feedMap =>
+                source.combineLatest(
+                    this.refresh, (source, v) => source
+                ).switchMap(source => {
+                    this.paging = new BehaviorSubject<number>(0);
 
-                return queryPreferences.switchMap(prefs =>
-                    Observable.merge(
-                        this.paging.map(page => {
-                            return page * this.limit;
-                        }).switchMap(offset => {
-                            return this.getArticlesFor(source, prefs, this.limit, offset);
-                        }).map(articles => <ArticlesPayload>{
-                            articles: articles,
-                            fromEvent: false,
-                        }),
-                        this.eventService.feedUpdate.filter(id =>
-                            source.updatable
-                        ).flatMap(id => 
-                            this.getArticlesFor(new FeedSource(id), {
-                                afterID: afterID,
-                                olderFirst: prefs.olderFirst,
-                                unreadOnly: prefs.unreadOnly,
-                            }, this.limit, 0)
-                        ).map(articles => <ArticlesPayload>{
-                            articles: articles,
-                            fromEvent: true,
-                        })
-                    ).map(payload => {
-                        payload.articles = payload.articles.map(article => {
-                            if (article.hits && article.hits.fragments) {
-                                if (article.hits.fragments.title.length > 0) {
-                                    article.title = article.hits.fragments.title.join(" ")
-                                }
-
-                                if (article.hits.fragments.description.length > 0) {
-                                    article.stripped = article.hits.fragments.description.join(" ")
-                                }
-                            }
-                            if (!article.stripped) {
-                                article.stripped = article.description.replace(/<[^>]+>/g, '');
-                            }
-                            article.feed = feedMap[article.feedID];
-
-                            return article;
-                        })
-
-                        return payload;
-                    }).scan((acc, payload) => {
-                        if (payload.fromEvent) {
-                            let updates = new Array<Article>();
-
-                            for (let incoming of payload.articles) {
-                                if (acc.indexMap.has(incoming.id)) {
-                                    updates.push(incoming);
-                                    continue
-                                }
-
-                                if (prefs.olderFirst) {
-                                    for (let i = acc.articles.length - 1; i >= 0; i--) {
-                                        if (this.shouldInsert(
-                                            incoming, acc.articles[i], prefs
-                                        )) {
-                                            acc.articles.splice(i, 0, incoming)
-                                            break
-                                        }
-
+                    return queryPreferences.switchMap(prefs =>
+                        Observable.merge(
+                            this.paging.map(page => {
+                                return page * this.limit;
+                            }).switchMap(offset => {
+                                return this.getArticlesFor(source, prefs, this.limit, offset);
+                            }).map(articles => <ArticlesPayload>{
+                                articles: articles,
+                                fromEvent: false,
+                            }),
+                            this.eventService.feedUpdate.filter(id =>
+                                source.updatable
+                            ).flatMap(id => 
+                                this.getArticlesFor(new FeedSource(id), {
+                                    afterID: afterID,
+                                    olderFirst: prefs.olderFirst,
+                                    unreadOnly: prefs.unreadOnly,
+                                }, this.limit, 0)
+                            ).map(articles => <ArticlesPayload>{
+                                articles: articles,
+                                fromEvent: true,
+                            })
+                        ).map(payload => {
+                            payload.articles = payload.articles.map(article => {
+                                if (article.hits && article.hits.fragments) {
+                                    if (article.hits.fragments.title.length > 0) {
+                                        article.title = article.hits.fragments.title.join(" ")
                                     }
-                                } else {
-                                    for (let i = 0; i < acc.articles.length; i++) {
 
-                                        if (this.shouldInsert(
-                                            incoming, acc.articles[i], prefs
-                                        )) {
-                                            acc.articles.splice(i, 0, incoming)
-                                            break
-                                        }
+                                    if (article.hits.fragments.description.length > 0) {
+                                        article.stripped = article.hits.fragments.description.join(" ")
                                     }
                                 }
-                            }
+                                if (!article.stripped) {
+                                    article.stripped = article.description.replace(/<[^>]+>/g, '');
+                                }
+                                article.feed = feedMap[article.feedID];
 
-                            acc.indexMap = new Map()
-                            for (let i = 0; i < acc.articles.length; i++) {
-                                let article = acc.articles[i];
-                                acc.indexMap[article.id] = i;
-                                if (afterID < article.id) {
-                                    afterID = article.id;
+                                return article;
+                            })
+
+                            return payload;
+                        }).scan((acc, payload) => {
+                            if (payload.fromEvent) {
+                                let updates = new Array<Article>();
+
+                                for (let incoming of payload.articles) {
+                                    if (acc.indexMap.has(incoming.id)) {
+                                        updates.push(incoming);
+                                        continue
+                                    }
+
+                                    if (prefs.olderFirst) {
+                                        for (let i = acc.articles.length - 1; i >= 0; i--) {
+                                            if (this.shouldInsert(
+                                                incoming, acc.articles[i], prefs
+                                            )) {
+                                                acc.articles.splice(i, 0, incoming)
+                                                break
+                                            }
+
+                                        }
+                                    } else {
+                                        for (let i = 0; i < acc.articles.length; i++) {
+
+                                            if (this.shouldInsert(
+                                                incoming, acc.articles[i], prefs
+                                            )) {
+                                                acc.articles.splice(i, 0, incoming)
+                                                break
+                                            }
+                                        }
+                                    }
+                                }
+
+                                acc.indexMap = new Map()
+                                for (let i = 0; i < acc.articles.length; i++) {
+                                    let article = acc.articles[i];
+                                    acc.indexMap[article.id] = i;
+                                    if (afterID < article.id) {
+                                        afterID = article.id;
+                                    }
+                                }
+
+                                for (let update of updates) {
+                                    let idx = acc.indexMap[update.id];
+                                    acc.articles[idx] = update;
+                                }
+                            } else {
+                                for (let article of payload.articles) {
+                                    if (acc.indexMap.has(article.id)) {
+                                        let idx = acc.indexMap[article.id];
+                                        acc.articles[idx] = article;
+                                    } else {
+                                        acc.indexMap[article.id] = acc.articles.push(article) - 1;
+                                    }
+
+                                    if (afterID < article.id) {
+                                        afterID = article.id;
+                                    }
                                 }
                             }
 
-                            for (let update of updates) {
-                                let idx = acc.indexMap[update.id];
-                                acc.articles[idx] = update;
-                            }
-                        } else {
-                            for (let article of payload.articles) {
-                                if (acc.indexMap.has(article.id)) {
-                                    let idx = acc.indexMap[article.id];
-                                    acc.articles[idx] = article;
-                                } else {
-                                    acc.indexMap[article.id] = acc.articles.push(article) - 1;
+                            return acc;
+                        }, new ScanData()).combineLatest(
+                            this.stateChange.startWith(null),
+                            (data, propChange) => {
+                                if (propChange != null) {
+                                    let idx = data.indexMap[propChange.id]
+                                    if (idx != -1) {
+                                        data.articles[idx][propChange.name] = propChange.value;
+                                    }
                                 }
-
-                                if (afterID < article.id) {
-                                    afterID = article.id;
-                                }
+                                return data;
                             }
-                        }
-
-                        return acc;
-                    }, new ScanData()).combineLatest(
-                        this.stateChange.startWith(null),
-                        (data, propChange) => {
-                            if (propChange != null) {
-                                let idx = data.indexMap[propChange.id]
-                                if (idx != -1) {
-                                    data.articles[idx][propChange.name] = propChange.value;
-                                }
-                            }
-                            return data;
-                        }
-                    ).map(data => data.articles)
-                ).startWith([])
-            })
+                        ).map(data => data.articles)
+                    ).startWith([])
+                })
+            )
         ).publishReplay(1);
 
         this.articles.connect();

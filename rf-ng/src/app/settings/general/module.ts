@@ -5,6 +5,7 @@ import {
     MdInputModule,
     MdButtonModule,
     MdDialogModule,
+    MdSelectModule,
 } from "@angular/material";
 import {
     GeneralSettingsComponent,
@@ -27,6 +28,7 @@ import {
         MdInputModule,
         MdButtonModule,
         MdDialogModule,
+        MdSelectModule,
     ],
     exports: [
         GeneralSettingsComponent,

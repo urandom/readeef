@@ -14,6 +14,11 @@
     </md-error>
 </md-input-container>
 <br>
+<md-select i18n-placeholder placeholder="Language" (change)="languageChange($event.value)" [(ngModel)]="language">
+    <md-option [value]="'en'">English</md-option>
+    <md-option [value]="'bg'">Български</md-option>
+ </md-select>
+<br>
 <div class="footer">
     <button md-raised-button (click)="changePassword()" i18n>Change password</button>
 </div>

@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core'
+import { Location } from '@angular/common'
 import { Http, Headers, Response } from '@angular/http'
 import { Router } from '@angular/router';
 import { environment } from "../../environments/environment"
@@ -19,7 +20,10 @@ export class Serializable {
 
 @Injectable()
 export class APIService {
-    constructor(private http: Http, private router: Router) { }
+    constructor(
+        private http: Http,
+        private router: Router,
+    ) { }
 
     get(endpoint: string, headers?: Headers) {
         return this.http.get(
@@ -64,7 +68,9 @@ export function unathorizeHandler(router: Router) : (response: Response) => Obse
     return (response: Response) => {
         return Observable.of(response).flatMap(response => {
             if (response.status == 401) {
-                router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
+                if (!router.routerState.snapshot.url.startsWith("/login")) {
+                    router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
+                }
                 return Observable.empty<Response>();
             }
 

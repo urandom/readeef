@@ -12,13 +12,16 @@ export class GeneralSettingsComponent implements OnInit {
     firstName: string
     lastName: string
     email: string
+    language: string
 
     emailFormControl = new FormControl('', [Validators.email]);
 
     constructor(
         private userService: UserService,
         private dialog: MdDialog,
-    ) {}
+    ) {
+        this.language = localStorage.getItem("locale") || "en";
+    }
 
     ngOnInit(): void {
         this.userService.getCurrentUser().subscribe(
@@ -66,6 +69,10 @@ export class GeneralSettingsComponent implements OnInit {
             },
             error => console.log(error),
         )
+    }
+
+    languageChange(value: string) {
+        location.href = "/" + value + "/";
     }
 
     changePassword() {

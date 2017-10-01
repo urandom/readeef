@@ -394,12 +394,20 @@
           <context context-type="linenumber">12</context>
         </context-group>
       </trans-unit>
+	  <trans-unit id="fe46ccaae902ce974e2441abe752399288298619" datatype="html">
+		  <source>Language</source>
+		  <target>Език</target>
+		  <context-group purpose="location">
+			  <context context-type="sourcefile">app/settings/general/component.ts</context>
+			  <context context-type="linenumber">17</context>
+		  </context-group>
+	  </trans-unit>
       <trans-unit id="739516c2ca75843d5aec9cf0e6b3e4335c4227b9" datatype="html">
         <source>Change password</source>
         <target>Промяна на парола</target>
         <context-group purpose="location">
           <context context-type="sourcefile">app/settings/general/component.ts</context>
-          <context context-type="linenumber">18</context>
+          <context context-type="linenumber">23</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6d6539a26b432fb1906f9fda102cf3ac332c8b8a" datatype="html">
