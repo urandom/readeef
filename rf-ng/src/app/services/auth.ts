@@ -47,7 +47,7 @@ export class TokenService {
 
     tokenObservable() : Observable<string> {
         return this.tokenSubject.map(auth =>
-             auth.replace("Bearer ", "")
+             (auth || "").replace("Bearer ", "")
         )
     }
 }
