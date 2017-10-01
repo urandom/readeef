@@ -81,11 +81,11 @@ func items(
 
 		if max > 0 {
 			opts = append(opts,
-				content.IDRange(content.ArticleID(max), 0),
+				content.IDRange(0, content.ArticleID(max)),
 				content.Sorting(content.DefaultSort, content.DescendingOrder))
 		} else {
 			opts = append(opts,
-				content.IDRange(0, content.ArticleID(since)),
+				content.IDRange(content.ArticleID(since), 0),
 				content.Sorting(content.DefaultSort, content.AscendingOrder))
 		}
 

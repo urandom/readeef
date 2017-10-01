@@ -19,6 +19,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
 	"github.com/rs/cors"
+	handlerLog "github.com/urandom/handler/log"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api"
 	"github.com/urandom/readeef/config"
@@ -39,7 +40,7 @@ var (
 	serverDevelPort int
 )
 
-func runServer(config config.Config, args []string) error {
+func runServer(cfg config.Config, args []string) error {
 	fs, err := readeef.NewFileSystem()
 	if err != nil {
 		return errors.WithMessage(err, "creating readeef filesystem")
@@ -58,9 +59,9 @@ func runServer(config config.Config, args []string) error {
 	*/
 	engine := memstore.New(5 * time.Minute)
 
-	log := initLog(config.Log)
+	logger := initLog(cfg.Log)
 
-	handler, err := web.Mux(fs, engine, config, log)
+	handler, err := web.Mux(fs, engine, cfg, logger)
 	if err != nil {
 		return errors.WithMessage(err, "creating web mux")
 	}
@@ -68,18 +69,18 @@ func runServer(config config.Config, args []string) error {
 	mux := chi.NewRouter()
 	mux.Mount("/", handler)
 
-	service, err := sql.NewService(config.DB.Driver, config.DB.Connect, log)
+	service, err := sql.NewService(cfg.DB.Driver, cfg.DB.Connect, logger)
 	if err != nil {
 		return errors.WithMessage(err, "creating content service")
 	}
 
-	if err = initAdminUser(service.UserRepo(), []byte(config.Auth.Secret)); err != nil {
+	if err = initAdminUser(service.UserRepo(), []byte(cfg.Auth.Secret)); err != nil {
 		return errors.WithMessage(err, "initializing admin user")
 	}
 
-	feedManager := readeef.NewFeedManager(service.FeedRepo(), config, log)
+	feedManager := readeef.NewFeedManager(service.FeedRepo(), cfg, logger)
 
-	if processors, err := initFeedProcessors(config.FeedParser.Processors, config.FeedParser.ProxyHTTPURLTemplate, log); err == nil {
+	if processors, err := initFeedProcessors(cfg.FeedParser.Processors, cfg.FeedParser.ProxyHTTPURLTemplate, logger); err == nil {
 		for _, p := range processors {
 			feedManager.AddFeedProcessor(p)
 		}
@@ -87,19 +88,19 @@ func runServer(config config.Config, args []string) error {
 		return errors.WithMessage(err, "initializing parser processors")
 	}
 
-	searchProvider := initSearchProvider(config.Content, service, log)
+	searchProvider := initSearchProvider(cfg.Content, service, logger)
 
-	extractor, err := initArticleExtractor(config.Content, fs)
+	extractor, err := initArticleExtractor(cfg.Content, fs)
 	if err != nil {
 		return errors.WithMessage(err, "initializing content extract generator")
 	}
 
-	articleProcessors, err := initArticleProcessors(config.Content.Article.Processors, config.Content.Article.ProxyHTTPURLTemplate, log)
+	articleProcessors, err := initArticleProcessors(cfg.Content.Article.Processors, cfg.Content.Article.ProxyHTTPURLTemplate, logger)
 	if err != nil {
 		return errors.WithMessage(err, "initializing article processors")
 	}
 
-	thumbnailer, err := initThumbnailGenerator(service, config.Content, extractor, articleProcessors, log)
+	thumbnailer, err := initThumbnailGenerator(service, cfg.Content, extractor, articleProcessors, logger)
 	if err != nil {
 		return errors.Wrap(err, "initializing thumbnail generator")
 	}
@@ -107,14 +108,14 @@ func runServer(config config.Config, args []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	initPopularityScore(ctx, service, config.Popularity, log)
+	initPopularityScore(ctx, service, cfg.Popularity, logger)
 
-	monitors := initFeedMonitors(ctx, config.FeedManager, service, searchProvider, thumbnailer, log)
+	monitors := initFeedMonitors(ctx, cfg.FeedManager, service, searchProvider, thumbnailer, logger)
 	for _, m := range monitors {
 		feedManager.AddFeedMonitor(m)
 	}
 
-	hubbub, err := initHubbub(config, service, monitors, feedManager, log)
+	hubbub, err := initHubbub(cfg, service, monitors, feedManager, logger)
 	if err != nil {
 		return errors.WithMessage(err, "initializing hubbub")
 	}
@@ -123,7 +124,7 @@ func runServer(config config.Config, args []string) error {
 		feedManager.SetHubbub(hubbub)
 	}
 
-	handler, err = api.Mux(ctx, service, feedManager, hubbub, searchProvider, extractor, fs, articleProcessors, config, log)
+	handler, err = api.Mux(ctx, service, feedManager, hubbub, searchProvider, extractor, fs, articleProcessors, cfg, logger)
 	if err != nil {
 		return errors.WithMessage(err, "creating api mux")
 	}
@@ -140,12 +141,24 @@ func runServer(config config.Config, args []string) error {
 
 	feedManager.Start(ctx)
 
-	server := makeHTTPServer(mux)
+	var serverHandler http.Handler = mux
+	if cfg.Log.AccessFile != "" {
+		var accessLog log.Log
+
+		if cfg.Log.AccessFile == cfg.Log.File {
+			accessLog = logger
+		} else {
+			accessLog = initLog(config.Log{File: cfg.Log.AccessFile})
+		}
+		serverHandler = handlerLog.Access(serverHandler, handlerLog.Logger(accessLog))
+	}
+
+	server := makeHTTPServer(serverHandler)
 
 	if serverDevelPort > 0 {
 		server.Addr = fmt.Sprintf(":%d", serverDevelPort)
 
-		log.Infof("Starting server on address %s", server.Addr)
+		logger.Infof("Starting server on address %s", server.Addr)
 		if err = server.ListenAndServe(); err != nil {
 			return errors.Wrap(err, "starting devel server")
 		}
@@ -153,25 +166,25 @@ func runServer(config config.Config, args []string) error {
 		return nil
 	}
 
-	server.Addr = fmt.Sprintf("%s:%d", config.Server.Address, config.Server.Port)
-	log.Infof("Starting server on address %s", server.Addr)
+	server.Addr = fmt.Sprintf("%s:%d", cfg.Server.Address, cfg.Server.Port)
+	logger.Infof("Starting server on address %s", server.Addr)
 
-	if config.Server.AutoCert.Host != "" {
-		if err := os.MkdirAll(config.Server.AutoCert.StoragePath, 0777); err != nil {
-			return errors.Wrapf(err, "creating autocert storage dir %s", config.Server.AutoCert.StoragePath)
+	if cfg.Server.AutoCert.Host != "" {
+		if err := os.MkdirAll(cfg.Server.AutoCert.StoragePath, 0777); err != nil {
+			return errors.Wrapf(err, "creating autocert storage dir %s", cfg.Server.AutoCert.StoragePath)
 		}
 
 		hostPolicy := func(ctx context.Context, host string) error {
-			if host == config.Server.AutoCert.Host {
+			if host == cfg.Server.AutoCert.Host {
 				return nil
 			}
-			return errors.Errorf("acme/autocert: only %s host is allowed", config.Server.AutoCert.Host)
+			return errors.Errorf("acme/autocert: only %s host is allowed", cfg.Server.AutoCert.Host)
 		}
 
 		m := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
 			HostPolicy: hostPolicy,
-			Cache:      autocert.DirCache(config.Server.AutoCert.StoragePath),
+			Cache:      autocert.DirCache(cfg.Server.AutoCert.StoragePath),
 		}
 
 		server.TLSConfig = &tls.Config{GetCertificate: m.GetCertificate}
@@ -179,8 +192,8 @@ func runServer(config config.Config, args []string) error {
 		if err := server.ListenAndServeTLS("", ""); err != nil {
 			return errors.Wrap(err, "starting auto-cert server")
 		}
-	} else if config.Server.CertFile != "" && config.Server.KeyFile != "" {
-		if err := server.ListenAndServeTLS(config.Server.CertFile, config.Server.KeyFile); err != nil {
+	} else if cfg.Server.CertFile != "" && cfg.Server.KeyFile != "" {
+		if err := server.ListenAndServeTLS(cfg.Server.CertFile, cfg.Server.KeyFile); err != nil {
 			return errors.Wrap(err, "starting tls server")
 		}
 	} else {

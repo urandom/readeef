@@ -31,7 +31,7 @@ func WithLogrus(cfg config.Log) Log {
 	logger.Out = writer
 
 	switch cfg.Formatter {
-	case "text":
+	case "text", "":
 		logger.Formatter = &lg.TextFormatter{}
 	case "json":
 		logger.Formatter = &lg.JSONFormatter{}
@@ -42,7 +42,7 @@ func WithLogrus(cfg config.Log) Log {
 		logger.Level = lg.InfoLevel
 	case "debug":
 		logger.Level = lg.DebugLevel
-	case "error":
+	case "error", "":
 		logger.Level = lg.ErrorLevel
 	}
 
