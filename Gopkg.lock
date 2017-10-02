@@ -59,7 +59,7 @@
   branch = "master"
   name = "github.com/blevesearch/bleve"
   packages = [".","analysis","analysis/analyzer/standard","analysis/datetime/flexible","analysis/datetime/optional","analysis/lang/en","analysis/token/lowercase","analysis/token/porter","analysis/token/stop","analysis/tokenizer/unicode","document","geo","index","index/store","index/store/boltdb","index/store/goleveldb","index/store/gtreap","index/upsidedown","mapping","numeric","registry","search","search/collector","search/facet","search/highlight","search/highlight/format/html","search/highlight/fragmenter/simple","search/highlight/highlighter/html","search/highlight/highlighter/simple","search/query","search/scorer","search/searcher"]
-  revision = "c048833fcdcf5b86fe09d9c1077147abf8c30416"
+  revision = "6eea5b78da004393b1d06b8c88d1bed9ca0a94b2"
 
 [[projects]]
   name = "github.com/blevesearch/go-porterstemmer"
@@ -113,7 +113,7 @@
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "17ce1425424ab154092bbb43af630bd647f3bb0d"
+  revision = "130e6b02ab059e7b717a096f397c5b60111cae74"
 
 [[projects]]
   branch = "master"
@@ -131,7 +131,7 @@
   branch = "master"
   name = "github.com/lib/pq"
   packages = [".","oid"]
-  revision = "e42267488fe361b9dc034be7a6bffef5b195bceb"
+  revision = "b77235e3890a962fe8a6f8c4c7198679ca7814e7"
 
 [[projects]]
   name = "github.com/mattn/go-sqlite3"
@@ -148,8 +148,8 @@
 [[projects]]
   name = "github.com/nicksnyder/go-i18n"
   packages = ["i18n","i18n/bundle","i18n/language","i18n/translation"]
-  revision = "3e70a1a463008cea6726380c908b1a6a8bdf7b24"
-  version = "v1.8.1"
+  revision = "ca33e78c8a430e2df435b02f63a3944fa8e9ea11"
+  version = "v1.9.0"
 
 [[projects]]
   name = "github.com/patrickmn/go-cache"
@@ -158,16 +158,10 @@
   version = "v2.0.0"
 
 [[projects]]
-  name = "github.com/pelletier/go-buffruneio"
-  packages = ["."]
-  revision = "c37440a7cf42ac63b919c752ca73a85067e05992"
-  version = "v0.2.0"
-
-[[projects]]
   name = "github.com/pelletier/go-toml"
   packages = ["."]
-  revision = "5ccdfb18c776b740aecaf085c4d9a2779199c279"
-  version = "v1.0.0"
+  revision = "16398bac157da96aa88f98a2df640c7f32af1da2"
+  version = "v1.0.1"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -201,9 +195,9 @@
 
 [[projects]]
   name = "github.com/urandom/handler"
-  packages = [".","auth","lang","method"]
-  revision = "4d85b3a1dddf499b7277066e9bac9d7206429ac5"
-  version = "v0.8.2"
+  packages = [".","auth","lang","log","method"]
+  revision = "2fbdf329000684f4953b7a0d869dccfe9903d545"
+  version = "v0.8.3"
 
 [[projects]]
   branch = "master"
@@ -215,25 +209,25 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["acme","acme/autocert","pbkdf2","scrypt","ssh/terminal"]
-  revision = "9ba3862cf6a5452ae579de98f9364dd2e544844c"
+  revision = "9419663f5a44be8b34ca85f08abc5fe1be11f8a3"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","html","html/atom","html/charset"]
-  revision = "66aacef3dd8a676686c7ae3716979581e8b03c47"
+  revision = "0a9397675ba34b2845f758fe3cd68828369c6517"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "a5054c7c1385fd50d9394475365355a87a7873ec"
+  revision = "314a259e304ff91bd6985da2a7149bbf91237993"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["encoding","encoding/charmap","encoding/htmlindex","encoding/internal","encoding/internal/identifier","encoding/japanese","encoding/korean","encoding/simplifiedchinese","encoding/traditionalchinese","encoding/unicode","internal/gen","internal/tag","internal/utf8internal","language","runes","transform","unicode/cldr"]
-  revision = "bd91bbf73e9a4a801adbfb97133c992678533126"
+  revision = "1cbadb444a806fd9430d14ad08967ed91da4fa0a"
 
 [[projects]]
   name = "gopkg.in/fatih/set.v0"
@@ -256,8 +250,8 @@
 [[projects]]
   name = "gopkg.in/olivere/elastic.v5"
   packages = [".","config","uritemplates"]
-  revision = "edbef41beaacc2ee95e61af8faff04e67c01e268"
-  version = "v5.0.45"
+  revision = "2a08d39723b7f4df92b96e2dff891a60952714d6"
+  version = "v5.0.48"
 
 [[projects]]
   name = "gopkg.in/warnings.v0"
@@ -274,6 +268,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6d557e987a1904a19671d7e137e1de9f5d787c4175a99ab8f5debf57f217dcae"
+  inputs-digest = "a42c3b7fdb00a6a43efdb44d8b30833e7018d1563a03ed69476c8310a00694aa"
   solver-name = "gps-cdcl"
   solver-version = 1

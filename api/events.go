@@ -67,6 +67,7 @@ func eventSocket(
 
 		done := monitor.addConn(w, flusher, connectionValidator(storage, r), r.RemoteAddr, feedSet)
 
+		log.Debugln("Initializing event stream")
 		err = event{Type: "connection-established"}.Write(w, flusher, log)
 		if err != nil {
 			log.Printf("Error sending initial data: %+v", err)
@@ -82,6 +83,8 @@ func eventSocket(
 					return
 				}
 			case <-done:
+				return
+			case <-w.(http.CloseNotifier).CloseNotify():
 				return
 			case <-ctx.Done():
 				return
@@ -128,6 +131,7 @@ func (e event) Write(w io.Writer, flusher http.Flusher, log log.Log) error {
 			return errors.Wrap(err, "sending ping")
 		}
 		flusher.Flush()
+		log.Debug("Wrote ping message")
 
 		return nil
 	}
@@ -151,6 +155,7 @@ func (e event) Write(w io.Writer, flusher http.Flusher, log log.Log) error {
 		return errors.Wrapf(err, "sending event %s", string(data))
 	}
 	flusher.Flush()
+	log.Debugf("Wrote and flushed SSE: %s", string(data))
 
 	return nil
 }

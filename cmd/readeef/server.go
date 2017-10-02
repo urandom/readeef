@@ -19,7 +19,6 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
 	"github.com/rs/cors"
-	handlerLog "github.com/urandom/handler/log"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api"
 	"github.com/urandom/readeef/config"
@@ -141,19 +140,7 @@ func runServer(cfg config.Config, args []string) error {
 
 	feedManager.Start(ctx)
 
-	var serverHandler http.Handler = mux
-	if cfg.Log.AccessFile != "" {
-		var accessLog log.Log
-
-		if cfg.Log.AccessFile == cfg.Log.File {
-			accessLog = logger
-		} else {
-			accessLog = initLog(config.Log{File: cfg.Log.AccessFile})
-		}
-		serverHandler = handlerLog.Access(serverHandler, handlerLog.Logger(accessLog))
-	}
-
-	server := makeHTTPServer(serverHandler)
+	server := makeHTTPServer(mux)
 
 	if serverDevelPort > 0 {
 		server.Addr = fmt.Sprintf(":%d", serverDevelPort)
