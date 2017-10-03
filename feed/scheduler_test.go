@@ -27,6 +27,7 @@ func TestScheduler_ScheduleFeed(t *testing.T) {
 		{"feed update", time.Second, args{2 * time.Second, content.Feed{ID: 100, Link: "/feed"}, time.Second}, []int{2, 1}},
 		{"not-feed-content", time.Second, args{2 * time.Second, content.Feed{ID: 100, Link: "/not-feed"}, time.Second}, []int{-1}},
 		{"404", time.Second, args{2 * time.Second, content.Feed{ID: 100, Link: "/404"}, time.Second}, []int{-1}},
+		{"http error then update", time.Second, args{2 * time.Second, content.Feed{ID: 100, Link: "/error-update"}, time.Second}, []int{-1, 2}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -39,12 +40,18 @@ func TestScheduler_ScheduleFeed(t *testing.T) {
 					} else {
 						w.Write([]byte(rss2Xmlv2))
 					}
-					iter++
 				case "/not-feed":
 					w.Write([]byte("Hello world"))
 				case "/404":
 					w.WriteHeader(http.StatusNotFound)
+				case "/error-update":
+					if iter == 0 {
+						w.WriteHeader(http.StatusServiceUnavailable)
+					} else {
+						w.Write([]byte(rss2Xml))
+					}
 				}
+				iter++
 			}))
 			defer ts.Close()
 

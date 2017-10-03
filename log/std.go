@@ -1,8 +1,9 @@
 package log
 
 import (
-	"io"
 	"log"
+
+	"github.com/urandom/readeef/config"
 )
 
 type stdLogger struct {
@@ -10,8 +11,8 @@ type stdLogger struct {
 }
 
 // WithStd creates a logger that uses the stdlib log facilities.
-func WithStd(out io.Writer, prefix string, flag int) Log {
-	return stdLogger{Logger: log.New(out, prefix, flag)}
+func WithStd(cfg config.Log) Log {
+	return stdLogger{Logger: log.New(cfg.Converted.Writer, cfg.Converted.Prefix, 0)}
 }
 
 func (st stdLogger) Info(v ...interface{}) {

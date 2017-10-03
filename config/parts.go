@@ -1,6 +1,12 @@
 package config
 
-import "time"
+import (
+	"io"
+	"os"
+	"time"
+
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
+)
 
 const apiversion = 2
 
@@ -21,6 +27,11 @@ type Log struct {
 	File       string `toml:"file"`
 	AccessFile string `toml:"access-file"`
 	Formatter  string `toml:"formatter"`
+
+	Converted struct {
+		Writer io.Writer
+		Prefix string
+	}
 }
 
 type API struct {
@@ -115,14 +126,27 @@ type UI struct {
 }
 
 type converter interface {
-	convert()
+	Convert()
 }
 
-func (c *API) convert() {
+func (c *API) Convert() {
 	c.Version = apiversion
 }
 
-func (c *Timeout) convert() {
+func (c *Log) Convert() {
+	if c.File == "-" {
+		c.Converted.Writer = os.Stderr
+	} else {
+		c.Converted.Writer = &lumberjack.Logger{
+			Filename:   c.File,
+			MaxSize:    20,
+			MaxBackups: 5,
+			MaxAge:     28,
+		}
+	}
+}
+
+func (c *Timeout) Convert() {
 	if d, err := time.ParseDuration(c.Connect); err == nil {
 		c.Converted.Connect = d
 	} else {
@@ -136,7 +160,7 @@ func (c *Timeout) convert() {
 	}
 }
 
-func (c *Popularity) convert() {
+func (c *Popularity) Convert() {
 	if d, err := time.ParseDuration(c.Delay); err == nil {
 		c.Converted.Delay = d
 	} else {
@@ -144,7 +168,7 @@ func (c *Popularity) convert() {
 	}
 }
 
-func (c *FeedManager) convert() {
+func (c *FeedManager) Convert() {
 	if d, err := time.ParseDuration(c.UpdateInterval); err == nil {
 		c.Converted.UpdateInterval = d
 	} else {

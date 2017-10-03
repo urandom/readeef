@@ -27,6 +27,8 @@ import (
 	"github.com/urandom/readeef/log"
 )
 
+type mw func(http.Handler) http.Handler
+
 func Mux(
 	ctx context.Context,
 	service repo.Service,
@@ -38,6 +40,7 @@ func Mux(
 	processors []processor.Article,
 	config config.Config,
 	log log.Log,
+	access mw,
 ) (http.Handler, error) {
 
 	languageSupport := false
@@ -58,24 +61,24 @@ func Mux(
 		return nil, errors.Wrap(err, "initializing token storage")
 	}
 
-	routes := []routes{tokenRoutes(service.UserRepo(), storage, []byte(config.Auth.Secret), log)}
+	routes := []routes{tokenRoutes(service.UserRepo(), storage, []byte(config.Auth.Secret), log, access)}
 
 	if hubbub != nil {
-		routes = append(routes, hubbubRoutes(hubbub, service, log))
+		routes = append(routes, hubbubRoutes(hubbub, service, log, access))
 	}
 
-	emulatorRoutes := emulatorRoutes(ctx, service, searchProvider, feedManager, processors, config, log)
+	emulatorRoutes := emulatorRoutes(ctx, service, searchProvider, feedManager, processors, config, log, access)
 	routes = append(routes, emulatorRoutes...)
 
 	routes = append(routes, mainRoutes(
 		userMiddleware(service.UserRepo(), storage, []byte(config.Auth.Secret), log),
-		featureRoutes(features),
-		feedsRoutes(service, feedManager, log),
-		tagRoutes(service.TagRepo(), log),
-		articlesRoutes(service, extractor, searchProvider, processors, config, log),
-		opmlRoutes(service, feedManager, log),
+		featureRoutes(features, access),
+		feedsRoutes(service, feedManager, log, access),
+		tagRoutes(service.TagRepo(), log, access),
+		articlesRoutes(service, extractor, searchProvider, processors, config, log, access),
+		opmlRoutes(service, feedManager, log, access),
 		eventsRoutes(ctx, service, storage, feedManager, log),
-		userRoutes(service, []byte(config.Auth.Secret), log),
+		userRoutes(service, []byte(config.Auth.Secret), log, access),
 	))
 
 	r := chi.NewRouter()
@@ -124,19 +127,19 @@ func timeout(d time.Duration) func(http.Handler) http.Handler {
 	}
 }
 
-func tokenRoutes(repo repo.User, storage token.Storage, secret []byte, log log.Log) routes {
+func tokenRoutes(repo repo.User, storage token.Storage, secret []byte, log log.Log, access mw) routes {
 	return routes{path: "/token", route: func(r chi.Router) {
-		r.Use(timeout(time.Second))
+		r.Use(timeout(time.Second), access)
 		r.Method(method.POST, "/", tokenCreate(repo, secret, log))
 		r.Method(method.DELETE, "/", tokenDelete(storage, secret, log))
 	}}
 }
 
-func hubbubRoutes(hubbub *readeef.Hubbub, service repo.Service, log log.Log) routes {
+func hubbubRoutes(hubbub *readeef.Hubbub, service repo.Service, log log.Log, access mw) routes {
 	handler := hubbubRegistration(hubbub, service, log)
 
 	return routes{path: "/hubbub", route: func(r chi.Router) {
-		r.Use(timeout(5 * time.Second))
+		r.Use(timeout(5*time.Second), access)
 		r.Get("/", handler)
 		r.Post("/", handler)
 	}}
@@ -150,6 +153,7 @@ func emulatorRoutes(
 	processors []processor.Article,
 	config config.Config,
 	log log.Log,
+	access mw,
 ) []routes {
 	rr := make([]routes, 0, len(config.API.Emulators))
 
@@ -159,7 +163,7 @@ func emulatorRoutes(
 			rr = append(rr, routes{
 				path: "/tt-rss/",
 				route: func(r chi.Router) {
-					r.Use(timeout(5 * time.Second))
+					r.Use(timeout(5*time.Second), access)
 					r.Get("/", ttrss.FakeWebHandler)
 
 					r.Post("/api/", ttrss.Handler(
@@ -173,7 +177,7 @@ func emulatorRoutes(
 			rr = append(rr, routes{
 				path: "/fever/",
 				route: func(r chi.Router) {
-					r.Use(timeout(5 * time.Second))
+					r.Use(timeout(5*time.Second), access)
 					r.Post("/", fever.Handler(service, processors, log))
 				},
 			})
@@ -209,16 +213,17 @@ func userMiddleware(repo repo.User, storage token.Storage, secret []byte, log lo
 	}
 }
 
-func featureRoutes(features features) routes {
+func featureRoutes(features features, access mw) routes {
 	return routes{path: "/features", route: func(r chi.Router) {
-		r.Use(timeout(time.Second))
+		r.Use(timeout(time.Second), access)
 		r.Get("/", featuresHandler(features))
 	}}
 }
 
-func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log) routes {
+func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log, access mw) routes {
 	return routes{path: "/feed", route: func(r chi.Router) {
 		feedRepo := service.FeedRepo()
+		r.Use(access)
 		r.With(timeout(5*time.Second)).Get("/", listFeeds(feedRepo, log))
 		r.With(timeout(15*time.Second)).Post("/", addFeed(feedRepo, feedManager))
 
@@ -237,9 +242,9 @@ func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log
 	}}
 }
 
-func tagRoutes(repo repo.Tag, log log.Log) routes {
+func tagRoutes(repo repo.Tag, log log.Log, access mw) routes {
 	return routes{path: "/tag", route: func(r chi.Router) {
-		r.Use(timeout(5 * time.Second))
+		r.Use(timeout(5*time.Second), access)
 		r.Get("/", listTags(repo, log))
 		r.Get("/feedIDs", getTagsFeedIDs(repo, log))
 	}}
@@ -252,13 +257,14 @@ func articlesRoutes(
 	processors []processor.Article,
 	config config.Config,
 	log log.Log,
+	access mw,
 ) routes {
 	articleRepo := service.ArticleRepo()
 	feedRepo := service.FeedRepo()
 	tagRepo := service.TagRepo()
 
 	return routes{path: "/article", route: func(r chi.Router) {
-		r.Use(timeout(10 * time.Second))
+		r.Use(timeout(10*time.Second), access)
 		r.Get("/", getArticles(service, userRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
 		if searchProvider != nil {
@@ -320,8 +326,9 @@ func articlesRoutes(
 	}}
 }
 
-func opmlRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log) routes {
+func opmlRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log, access mw) routes {
 	return routes{path: "/opml", route: func(r chi.Router) {
+		r.Use(access)
 		r.With(timeout(10*time.Second)).Get("/", exportOPML(service, feedManager, log))
 		r.With(timeout(30*time.Second)).Post("/", importOPML(service.FeedRepo(), feedManager, log))
 	}}
@@ -339,10 +346,10 @@ func eventsRoutes(
 	}}
 }
 
-func userRoutes(service repo.Service, secret []byte, log log.Log) routes {
+func userRoutes(service repo.Service, secret []byte, log log.Log, access mw) routes {
 	repo := service.UserRepo()
 	return routes{path: "/user", route: func(r chi.Router) {
-		r.Use(timeout(5 * time.Second))
+		r.Use(timeout(5*time.Second), access)
 
 		r.Get("/current", getUserData)
 

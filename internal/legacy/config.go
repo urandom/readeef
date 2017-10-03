@@ -212,7 +212,11 @@ func (c Config) convertToV2() (config.Config, error) {
 	cfg.Server.CertFile = c.Server.CertFile
 	cfg.Server.KeyFile = c.Server.KeyFile
 
-	cfg.Log = config.Log(c.Logger)
+	cfg.Log.AccessFile = c.Logger.AccessFile
+	cfg.Log.File = c.Logger.File
+	cfg.Log.Formatter = c.Logger.Formatter
+	cfg.Log.Level = c.Logger.Level
+
 	cfg.API.Emulators = c.API.Emulators
 	cfg.Timeout = config.Timeout(c.Timeout)
 	cfg.DB = config.DB(c.DB)

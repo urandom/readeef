@@ -19,6 +19,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
 	"github.com/rs/cors"
+	handlerLog "github.com/urandom/handler/log"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api"
 	"github.com/urandom/readeef/config"
@@ -65,8 +66,26 @@ func runServer(cfg config.Config, args []string) error {
 		return errors.WithMessage(err, "creating web mux")
 	}
 
+	var accessLog log.Log
+	if cfg.Log.AccessFile != "" {
+		if cfg.Log.AccessFile == cfg.Log.File {
+			accessLog = logger
+		} else {
+			cfg := config.Log{File: cfg.Log.AccessFile}
+			cfg.Convert()
+			accessLog = log.WithStd(cfg)
+		}
+	}
+
+	accessMiddleware := func(next http.Handler) http.Handler {
+		if accessLog == nil {
+			return next
+		}
+		return handlerLog.Access(next, handlerLog.Logger(accessLog))
+	}
+
 	mux := chi.NewRouter()
-	mux.Mount("/", handler)
+	mux.Mount("/", accessMiddleware(handler))
 
 	service, err := sql.NewService(cfg.DB.Driver, cfg.DB.Connect, logger)
 	if err != nil {
@@ -123,7 +142,7 @@ func runServer(cfg config.Config, args []string) error {
 		feedManager.SetHubbub(hubbub)
 	}
 
-	handler, err = api.Mux(ctx, service, feedManager, hubbub, searchProvider, extractor, fs, articleProcessors, cfg, logger)
+	handler, err = api.Mux(ctx, service, feedManager, hubbub, searchProvider, extractor, fs, articleProcessors, cfg, logger, accessMiddleware)
 	if err != nil {
 		return errors.WithMessage(err, "creating api mux")
 	}
