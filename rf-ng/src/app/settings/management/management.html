@@ -4,7 +4,7 @@
 </p>
 <div *ngFor="let feed of feeds" class="feed">
     <img src="{{ favicon(feed[0].link) }}" class="favicon">
-    <span class="name">{{ feed[0].title }}</span>
+    <a class="name" href="{{ feed[0].link}}">{{ feed[0].title }}</a>
     <button md-icon-button (click)="showError(feed[0].updateError)" class="error" [class.visible]="feed[0].updateError"> 
         <md-icon>warning</md-icon>
     </button>
