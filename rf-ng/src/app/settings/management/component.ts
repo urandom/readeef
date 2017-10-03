@@ -1,5 +1,5 @@
-import { Component, OnInit, Inject } from "@angular/core" ;
-import { MdDialog, MD_DIALOG_DATA } from '@angular/material';
+import { Component, OnInit, Inject, ViewChild, ElementRef } from "@angular/core" ;
+import { MdDialog, MdDialogRef, MD_DIALOG_DATA } from '@angular/material';
 import { FeedService, Feed } from "../../services/feed";
 import { TagService } from "../../services/tag";
 import { FaviconService } from "../../services/favicon";
@@ -13,6 +13,9 @@ import 'rxjs/add/operator/combineLatest'
 })
 export class ManagementSettingsComponent implements OnInit {
     feeds = new Array<[Feed, string[]]>()
+
+    @ViewChild("downloader", {read: ElementRef})
+    private downloader : ElementRef;
 
     constructor(
         private feedService: FeedService,
@@ -82,12 +85,30 @@ export class ManagementSettingsComponent implements OnInit {
             error => console.log(error),
         );
     }
+
+    exportOPML() {
+        this.feedService.exportOPML().subscribe(
+            data => {
+                this.downloader.nativeElement.href = "data:text/x-opml+xml," + encodeURIComponent(data);
+                this.downloader.nativeElement.click();
+            },
+            error => console.log(error),
+        )
+    }
 }
 
 @Component({
     selector: 'error-dialog',
     templateUrl: 'error-dialog.html',
+    styleUrls: ["../common.css", "./management.css"]
 })
 export class ErrorDialog {
-    constructor(@Inject(MD_DIALOG_DATA) public errors: string[]) {}
+    constructor(
+        private dialogRef: MdDialogRef<ErrorDialog>,
+        @Inject(MD_DIALOG_DATA) public errors: string[],
+    ) {}
+
+    close() {
+        this.dialogRef.close();
+    }
 }

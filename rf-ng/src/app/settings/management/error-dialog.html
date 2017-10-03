@@ -1,3 +1,6 @@
-<ul style="max-width: 100%; overflow: auto;">
+<ul style="max-height: 85vh; overflow: auto;">
     <li *ngFor="let error of errors">{{ error }}</li>
 </ul>
+<div class="footer">
+    <button md-raised-button (click)="close()" i18n>Close</button>
+</div>

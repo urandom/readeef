@@ -34,3 +34,8 @@
 .error.visible {
     visibility: visible;
 }
+
+.footer {
+    text-align: end;
+    padding-bottom: 8px;
+}

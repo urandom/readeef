@@ -32,6 +32,10 @@ class FeedsResponse extends Serializable {
     feeds: Feed[]
 }
 
+class OPMLResponse extends Serializable {
+    opml: string
+}
+
 interface AddFeedData {
     links: string[]
 }
@@ -55,6 +59,12 @@ export class FeedService {
     importOPML(data: OPMLimport): Observable<Feed[]> {
         return this.api.post("opml", JSON.stringify(data)).map(response =>
              new FeedsResponse().fromJSON(response.json()).feeds
+        );
+    }
+
+    exportOPML(): Observable<string> {
+        return this.api.get("opml").map(response =>
+             new OPMLResponse().fromJSON(response.json()).opml
         );
     }
 
