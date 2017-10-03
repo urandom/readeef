@@ -70,7 +70,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.subscriptions.push(this.articleService.articleObservable(
         ).switchMap(articles =>
-            this.stateChange.flatMap(stateChange => 
+            this.stateChange.switchMap(stateChange => 
                 this.offset.startWith(0).map(
                     (offset) : [number, [number | State]] => {
                         return [offset, stateChange]
@@ -221,6 +221,45 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     @HostListener('window:keydown.k')
     goPrevious() {
         this.carousel.prev()
+    }
+
+    @HostListener('window:keydown.shift.arrowLeft')
+    @HostListener('window:keydown.shift.j')
+    firstUnread() {
+        this.articleService.articleObservable().map(articles =>
+            articles.find(article => !article.read)
+        ).flatMap(article =>
+            Observable.fromPromise(this.router.navigate(
+                ['../', article.id], { relativeTo: this.route }
+            )).map(r => article.id)
+        ).take(1).subscribe(
+            id => {
+                this.stateChange.next([id, State.DESCRIPTION])
+            }
+        )
+    }
+
+    @HostListener('window:keydown.shift.arrowRight')
+    @HostListener('window:keydown.shift.k')
+    lastUnread() {
+        this.articleService.articleObservable().map(articles => {
+            for (let i = articles.length - 1; i > -1; i--) {
+                let article = articles[i];
+                if (!article.read) {
+                    return article;
+                }
+            }
+
+            return articles[0];
+        }).flatMap(article =>
+            Observable.fromPromise(this.router.navigate(
+                ['../', article.id], { relativeTo: this.route }
+            )).map(r => article.id)
+        ).take(1).subscribe(
+            id => {
+                this.stateChange.next([id, State.DESCRIPTION])
+            }
+        )
     }
 
     @HostListener('window:keydown.v')

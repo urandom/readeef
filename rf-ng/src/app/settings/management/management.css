@@ -25,3 +25,12 @@
 .delete {
     margin-left: 8px;
 }
+
+.error {
+    margin-left: 8px;
+    visibility: hidden;
+}
+
+.error.visible {
+    visibility: visible;
+}

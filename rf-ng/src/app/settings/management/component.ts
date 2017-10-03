@@ -1,4 +1,5 @@
-import { Component, OnInit } from "@angular/core" ;
+import { Component, OnInit, Inject } from "@angular/core" ;
+import { MdDialog, MD_DIALOG_DATA } from '@angular/material';
 import { FeedService, Feed } from "../../services/feed";
 import { TagService } from "../../services/tag";
 import { FaviconService } from "../../services/favicon";
@@ -17,6 +18,7 @@ export class ManagementSettingsComponent implements OnInit {
         private feedService: FeedService,
         private tagService: TagService,
         private faviconService: FaviconService,
+        private errorDialog: MdDialog,
     ) {}
 
     ngOnInit(): void {
@@ -59,6 +61,13 @@ export class ManagementSettingsComponent implements OnInit {
         );
     }
 
+    showError(error: string) {
+        this.errorDialog.open(ErrorDialog, {
+            width: "300px",
+             data: error.split("\n").filter(err => err),
+        });
+    }
+
     deleteFeed(event: Event, feedID: number) {
         this.feedService.deleteFeed(
             feedID
@@ -73,4 +82,12 @@ export class ManagementSettingsComponent implements OnInit {
             error => console.log(error),
         );
     }
+}
+
+@Component({
+    selector: 'error-dialog',
+    templateUrl: 'error-dialog.html',
+})
+export class ErrorDialog {
+    constructor(@Inject(MD_DIALOG_DATA) public errors: string[]) {}
 }

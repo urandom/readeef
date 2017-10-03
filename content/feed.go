@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/urandom/readeef/parser"
@@ -49,6 +50,7 @@ func (f *Feed) Refresh(pf parser.Feed) {
 	f.Description = pf.Description
 	f.SiteLink = pf.SiteLink
 	f.HubLink = pf.HubLink
+	f.UpdateError = ""
 
 	f.parsedArticles = make([]Article, len(pf.Articles))
 
@@ -76,6 +78,17 @@ func (f Feed) ParsedArticles() (a []Article) {
 
 func (f Feed) String() string {
 	return fmt.Sprintf("%d: %s", f.ID, f.Title)
+}
+
+func (f *Feed) AddUpdateError(err string) {
+	errors := strings.Split(f.UpdateError, "\n")
+	if len(errors) > 10 {
+		errors = errors[1:]
+	}
+
+	errors = append(errors, err)
+
+	f.UpdateError = strings.Join(errors, "\n")
 }
 
 func (id *FeedID) Scan(src interface{}) error {

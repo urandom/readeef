@@ -193,7 +193,7 @@ func (h *Hubbub) InitSubscriptions() error {
 	return nil
 }
 
-func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe bool) {
+func (h *Hubbub) subscription(s content.Subscription, f content.Feed, subscribe bool) {
 	var err error
 
 	u := callbackURL(h.config, h.endpoint, f.ID)
@@ -232,7 +232,7 @@ func (h Hubbub) subscription(s content.Subscription, f content.Feed, subscribe b
 			h.unsubscribe <- s
 		}
 	} else {
-		f.SubscribeError = err.Error()
+		f.SubscribeError = fmt.Sprintf("%s: %s", time.Now().Format(time.UnixDate), err.Error())
 		h.log.Printf("Error subscribing to hub feed '%s': %s\n", f, err)
 
 		if _, err = h.service.FeedRepo().Update(&f); err != nil {

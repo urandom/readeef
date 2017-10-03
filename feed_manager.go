@@ -2,6 +2,7 @@ package readeef
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"regexp"
 	"time"
@@ -210,9 +211,9 @@ func (fm *FeedManager) startUpdatingFeed(ctx context.Context, feed content.Feed)
 func (fm *FeedManager) scheduleFeed(ctx context.Context, feed content.Feed, update time.Duration) {
 	fm.log.Infof("Scheduling update of feed %s", feed)
 	for update := range fm.scheduler.ScheduleFeed(ctx, feed, update) {
-		fm.log.Debugf("Update for feed %s", feed)
+		fm.log.Info("Update for feed %s", feed)
 		if update.IsErr() {
-			feed.UpdateError = update.Error()
+			feed.AddUpdateError(fmt.Sprintf("%s: %s", time.Now().Format(time.UnixDate), update.Error()))
 		} else {
 			feed.Refresh(fm.processParserFeed(update.Feed))
 		}

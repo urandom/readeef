@@ -5,6 +5,9 @@
 <div *ngFor="let feed of feeds" class="feed">
     <img src="{{ favicon(feed[0].link) }}" class="favicon">
     <span class="name">{{ feed[0].title }}</span>
+    <button md-icon-button (click)="showError(feed[0].updateError)" class="error" [class.visible]="feed[0].updateError"> 
+        <md-icon>warning</md-icon>
+    </button>
     <md-input-container class="tags">
         <input mdInput value="{{ feed[1].join(', ') }}" (change)="tagsChange($event, feed[0].id)" i18n-placeholder placeholder="tags">
     </md-input-container>
