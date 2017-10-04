@@ -225,14 +225,21 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
     @HostListener('window:keydown.shift.arrowLeft')
     @HostListener('window:keydown.shift.j')
-    firstUnread() {
-        this.articleService.articleObservable().map(articles =>
-            articles.find(article => !article.read)
-        ).flatMap(article =>
+    previousUnread() {
+        let id = this.route.snapshot.params["articleID"];
+        this.articleService.articleObservable().map(articles => {
+            let idx = articles.findIndex(article => article.id == id);
+            
+            if (idx > 0) {
+                idx--;
+            }
+
+            return articles[idx].id;
+        }).take(1).filter(a => a != id).flatMap(id =>
             Observable.fromPromise(this.router.navigate(
-                ['../', article.id], { relativeTo: this.route }
-            )).map(r => article.id)
-        ).take(1).subscribe(
+                ['../', id], { relativeTo: this.route }
+            )).map(r => id)
+        ).subscribe(
             id => {
                 this.stateChange.next([id, State.DESCRIPTION])
             }
@@ -241,21 +248,21 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
     @HostListener('window:keydown.shift.arrowRight')
     @HostListener('window:keydown.shift.k')
-    lastUnread() {
+    nextUnread() {
+        let id = this.route.snapshot.params["articleID"];
         this.articleService.articleObservable().map(articles => {
-            for (let i = articles.length - 1; i > -1; i--) {
-                let article = articles[i];
-                if (!article.read) {
-                    return article;
-                }
+            let idx = articles.findIndex(article => article.id == id);
+            
+            if (idx < articles.length - 1) {
+                idx++;
             }
 
-            return articles[0];
-        }).flatMap(article =>
+            return articles[idx].id;
+        }).take(1).filter(a => a != id).flatMap(id =>
             Observable.fromPromise(this.router.navigate(
-                ['../', article.id], { relativeTo: this.route }
-            )).map(r => article.id)
-        ).take(1).subscribe(
+                ['../', id], { relativeTo: this.route }
+            )).map(r => id)
+        ).subscribe(
             id => {
                 this.stateChange.next([id, State.DESCRIPTION])
             }
