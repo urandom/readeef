@@ -230,8 +230,11 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         this.articleService.articleObservable().map(articles => {
             let idx = articles.findIndex(article => article.id == id);
             
-            if (idx > 0) {
+            while (idx > 0) {
                 idx--;
+                if (!articles[idx].read) {
+                    break;
+                }
             }
 
             return articles[idx].id;
@@ -253,8 +256,11 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         this.articleService.articleObservable().map(articles => {
             let idx = articles.findIndex(article => article.id == id);
             
-            if (idx < articles.length - 1) {
+            while (idx < articles.length - 1) {
                 idx++;
+                if (!articles[idx].read) {
+                    break;
+                }
             }
 
             return articles[idx].id;
