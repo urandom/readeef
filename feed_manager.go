@@ -46,7 +46,7 @@ func NewFeedManager(repo repo.Feed, c config.Config, l log.Log) *FeedManager {
 	return &FeedManager{
 		repo: repo, config: c, log: l,
 		ops:       make(chan func(context.Context, *FeedManager)),
-		scheduler: feed.NewScheduler(),
+		scheduler: feed.NewScheduler(l),
 	}
 }
 
@@ -211,7 +211,7 @@ func (fm *FeedManager) startUpdatingFeed(ctx context.Context, feed content.Feed)
 func (fm *FeedManager) scheduleFeed(ctx context.Context, feed content.Feed, update time.Duration) {
 	fm.log.Infof("Scheduling update of feed %s", feed)
 	for update := range fm.scheduler.ScheduleFeed(ctx, feed, update) {
-		fm.log.Info("Update for feed %s", feed)
+		fm.log.Infof("Update for feed %s", feed)
 		if update.IsErr() {
 			feed.AddUpdateError(fmt.Sprintf("%s: %s", time.Now().Format(time.UnixDate), update.Error()))
 		} else {

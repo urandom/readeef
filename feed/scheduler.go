@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/log"
 	"github.com/urandom/readeef/parser"
 	"github.com/urandom/readeef/pool"
 )
@@ -18,6 +19,7 @@ import (
 type Scheduler struct {
 	ops    chan feedOp
 	client *http.Client
+	log    log.Log
 }
 
 type UpdateData struct {
@@ -25,10 +27,11 @@ type UpdateData struct {
 	message string
 }
 
-func NewScheduler() Scheduler {
+func NewScheduler(log log.Log) Scheduler {
 	return Scheduler{
 		ops:    make(chan feedOp),
 		client: &http.Client{Timeout: 30 * time.Second},
+		log:    log,
 	}
 }
 
@@ -64,6 +67,7 @@ func (s Scheduler) ScheduleFeed(ctx context.Context, feed content.Feed, update t
 
 func (s Scheduler) unscheduleFeed(ctx context.Context, feed content.Feed) {
 	s.ops <- func(feedMap feedMap) {
+		s.log.Infof("Unscheduling updates for feed %s", feed)
 		payload := feedMap[feed.ID]
 		close(payload.updateData)
 
@@ -85,17 +89,17 @@ func (s Scheduler) updateFeed(ctx context.Context, payload schedulePayload, cont
 			data, contentHash = s.downloadFeed(payload, contentHash)
 		}
 
-		if data.isUpdated() || data.IsErr() {
-			select {
-			case <-ctx.Done():
-				s.unscheduleFeed(ctx, payload.feed)
-				return
-			default:
+		select {
+		case <-ctx.Done():
+			s.unscheduleFeed(ctx, payload.feed)
+			return
+		default:
+			if data.isUpdated() || data.IsErr() {
 				payload.updateData <- data
-
-				<-time.After(payload.update)
-				s.updateFeed(ctx, payload, contentHash)
 			}
+
+			<-time.After(payload.update)
+			s.updateFeed(ctx, payload, contentHash)
 		}
 	}
 }
@@ -103,6 +107,7 @@ func (s Scheduler) updateFeed(ctx context.Context, payload schedulePayload, cont
 func (s Scheduler) downloadFeed(payload schedulePayload, contentHash []byte) (UpdateData, []byte) {
 	feed := payload.feed
 
+	s.log.Infof("Downloading content for feed %s", feed)
 	resp, err := s.client.Get(feed.Link)
 
 	if err != nil {

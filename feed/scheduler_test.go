@@ -4,10 +4,13 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/log"
 )
 
 func TestScheduler_ScheduleFeed(t *testing.T) {
@@ -28,6 +31,7 @@ func TestScheduler_ScheduleFeed(t *testing.T) {
 		{"not-feed-content", time.Second, args{2 * time.Second, content.Feed{ID: 100, Link: "/not-feed"}, time.Second}, []int{-1}},
 		{"404", time.Second, args{2 * time.Second, content.Feed{ID: 100, Link: "/404"}, time.Second}, []int{-1}},
 		{"http error then update", time.Second, args{2 * time.Second, content.Feed{ID: 100, Link: "/error-update"}, time.Second}, []int{-1, 2}},
+		{"same content", time.Second, args{2 * time.Second, content.Feed{ID: 100, Link: "/same-content"}, 100 * time.Millisecond}, []int{2, 1}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -50,6 +54,12 @@ func TestScheduler_ScheduleFeed(t *testing.T) {
 					} else {
 						w.Write([]byte(rss2Xml))
 					}
+				case "/same-content":
+					if iter == 0 || iter == 1 {
+						w.Write([]byte(rss2Xml))
+					} else {
+						w.Write([]byte(rss2Xmlv2))
+					}
 				}
 				iter++
 			}))
@@ -58,9 +68,12 @@ func TestScheduler_ScheduleFeed(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
+			cfg := config.Log{}
+			cfg.Converted.Writer = os.Stderr
 			s := Scheduler{
 				ops:    make(chan feedOp),
 				client: &http.Client{Timeout: tt.connectTimeout},
+				log:    log.WithStd(cfg),
 			}
 
 			go s.Start(ctx)
@@ -104,7 +117,7 @@ func TestScheduler_ScheduleFeed(t *testing.T) {
 							return
 						}
 					}
-				case <-time.After(tt.args.update + 50*time.Millisecond):
+				case <-time.After(tt.args.update + 250*time.Millisecond):
 					t.Errorf("Scheduler.ScheduleFeed() timeout waiting for data")
 					return
 				}
