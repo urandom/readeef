@@ -59,13 +59,13 @@ func (r userRepo) Update(user content.User) error {
 	defer tx.Rollback()
 
 	s := r.db.SQL()
-	stmt, err := tx.Preparex(s.User.Update)
+	stmt, err := tx.PrepareNamed(s.User.Update)
 	if err != nil {
 		return errors.Wrap(err, "preparing user update stmt")
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(user.FirstName, user.LastName, user.Email, user.Admin, user.Active, user.ProfileData, user.HashType, user.Salt, user.Hash, user.MD5API, user.Login)
+	res, err := stmt.Exec(user)
 	if err != nil {
 		return errors.Wrap(err, "executing user update stmt")
 	}
@@ -78,13 +78,13 @@ func (r userRepo) Update(user content.User) error {
 		return nil
 	}
 
-	stmt, err = tx.Preparex(s.User.Create)
+	stmt, err = tx.PrepareNamed(s.User.Create)
 	if err != nil {
 		return errors.Wrap(err, "preparing user create stmt")
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(user.Login, user.FirstName, user.LastName, user.Email, user.Admin, user.Active, user.ProfileData, user.HashType, user.Salt, user.Hash, user.MD5API)
+	_, err = stmt.Exec(user)
 	if err != nil {
 		return errors.Wrap(err, "executing user create stmt")
 	}
@@ -110,13 +110,13 @@ func (r userRepo) Delete(user content.User) error {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(r.db.SQL().User.Delete)
+	stmt, err := tx.PrepareNamed(r.db.SQL().User.Delete)
 	if err != nil {
 		return errors.Wrap(err, "preparing user delete stmt")
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(user.Login)
+	_, err = stmt.Exec(user)
 	if err != nil {
 		return errors.Wrap(err, "executing user delete stmt")
 	}

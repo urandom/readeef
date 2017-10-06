@@ -104,11 +104,13 @@ func findTagByValue(value content.TagValue, stmt string, tx *sqlx.Tx) (content.T
 	return tag, nil
 }
 
-func createTag(value content.TagValue, tx *sqlx.Tx, db *db.DB) (content.Tag, error) {
-	id, err := db.CreateWithID(tx, db.SQL().Tag.Create, value)
+func createTag(tag content.Tag, tx *sqlx.Tx, db *db.DB) (content.Tag, error) {
+	id, err := db.CreateWithID(tx, db.SQL().Tag.Create, tag)
 	if err != nil {
-		return content.Tag{}, errors.Wrapf(err, "creating tag %s", value)
+		return content.Tag{}, errors.Wrapf(err, "creating tag %s", tag)
 	}
 
-	return content.Tag{ID: content.TagID(id), Value: value}, nil
+	tag.ID = content.TagID(id)
+
+	return tag, nil
 }

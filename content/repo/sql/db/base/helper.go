@@ -50,16 +50,16 @@ func (h Helper) Upgrade(db *db.DB, old, new int) error {
 	return nil
 }
 
-func (h Helper) CreateWithID(tx *sqlx.Tx, sql string, args ...interface{}) (int64, error) {
+func (h Helper) CreateWithID(tx *sqlx.Tx, sql string, arg interface{}) (int64, error) {
 	var id int64
 
-	stmt, err := tx.Preparex(sql)
+	stmt, err := tx.PrepareNamed(sql)
 	if err != nil {
 		return 0, err
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(args...)
+	res, err := stmt.Exec(arg)
 	if err != nil {
 		return 0, err
 	}

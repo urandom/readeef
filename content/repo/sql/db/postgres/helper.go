@@ -20,18 +20,18 @@ func (h Helper) InitSQL() []string {
 	return initSQL
 }
 
-func (h Helper) CreateWithID(tx *sqlx.Tx, sql string, args ...interface{}) (int64, error) {
+func (h Helper) CreateWithID(tx *sqlx.Tx, sql string, arg interface{}) (int64, error) {
 	var id int64
 
 	sql += " RETURNING id"
 
-	stmt, err := tx.Preparex(sql)
+	stmt, err := tx.PrepareNamed(sql)
 	if err != nil {
 		return 0, errors.Wrap(err, "preparing create-with-id statement")
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(args...).Scan(&id)
+	err = stmt.QueryRow(arg).Scan(&id)
 	if err != nil {
 		return 0, errors.Wrap(err, "scanning created id")
 	}

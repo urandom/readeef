@@ -61,13 +61,13 @@ func (r subscriptionRepo) Update(subscription content.Subscription) error {
 	}
 	defer tx.Rollback()
 
-	stmt, err := tx.Preparex(r.db.SQL().Subscription.Update)
+	stmt, err := tx.PrepareNamed(r.db.SQL().Subscription.Update)
 	if err != nil {
 		return errors.Wrap(err, "preparing subscription update stmt")
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(subscription.Link, subscription.LeaseDuration, subscription.VerificationTime, subscription.SubscriptionFailure, subscription.FeedID)
+	res, err := stmt.Exec(subscription)
 	if err != nil {
 		return errors.Wrap(err, "executing subscription update stmt")
 	}
@@ -80,13 +80,13 @@ func (r subscriptionRepo) Update(subscription content.Subscription) error {
 		return nil
 	}
 
-	stmt, err = tx.Preparex(r.db.SQL().Subscription.Create)
+	stmt, err = tx.PrepareNamed(r.db.SQL().Subscription.Create)
 	if err != nil {
 		return errors.Wrap(err, "preparing subscription create stmt")
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(subscription.FeedID, subscription.Link, subscription.LeaseDuration, subscription.VerificationTime, subscription.SubscriptionFailure)
+	_, err = stmt.Exec(subscription)
 	if err != nil {
 		return errors.Wrap(err, "executing subscription create stmt")
 	}

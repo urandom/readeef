@@ -50,13 +50,13 @@ func (r scoresRepo) Update(scores content.Scores) error {
 	defer tx.Rollback()
 
 	s := r.db.SQL()
-	stmt, err := tx.Preparex(s.Scores.Update)
+	stmt, err := tx.PrepareNamed(s.Scores.Update)
 	if err != nil {
 		return errors.Wrap(err, "preparing scores update stmt")
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(scores.Score, scores.Score1, scores.Score2, scores.Score3, scores.Score4, scores.Score5, scores.ArticleID)
+	res, err := stmt.Exec(scores)
 	if err != nil {
 		return errors.Wrap(err, "executing scores update stmt")
 	}
@@ -69,13 +69,13 @@ func (r scoresRepo) Update(scores content.Scores) error {
 		return nil
 	}
 
-	stmt, err = tx.Preparex(s.Scores.Create)
+	stmt, err = tx.PrepareNamed(s.Scores.Create)
 	if err != nil {
 		return errors.Wrap(err, "preparing scores create stmt")
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(scores.ArticleID, scores.Score, scores.Score1, scores.Score2, scores.Score3, scores.Score4, scores.Score5)
+	_, err = stmt.Exec(scores)
 	if err != nil {
 		return errors.Wrap(err, "executing scores create stmt")
 	}

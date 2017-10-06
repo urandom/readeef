@@ -551,13 +551,13 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log log.Log) (cont
 
 	s := db.SQL()
 
-	stmt, err := tx.Preparex(s.Article.Update)
+	stmt, err := tx.PrepareNamed(s.Article.Update)
 	if err != nil {
 		return content.Article{}, errors.Wrap(err, "preparing article update statement")
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(a.Title, a.Description, a.Date, a.Guid, a.Link, a.FeedID)
+	res, err := stmt.Exec(a)
 	if err != nil {
 		return content.Article{}, errors.Wrap(err, "executing article update statement")
 	}
@@ -565,11 +565,10 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log log.Log) (cont
 	if num, err := res.RowsAffected(); err != nil && err == sql.ErrNoRows || num == 0 {
 		log.Infof("Creating article %s\n", a)
 
-		id, err := db.CreateWithID(tx, s.Article.Create, a.FeedID, a.Link, a.Guid,
-			a.Title, a.Description, a.Date)
+		id, err := db.CreateWithID(tx, s.Article.Create, a)
 
 		if err != nil {
-			return content.Article{}, errors.WithMessage(err, "updating article")
+			return content.Article{}, errors.WithMessage(err, "creating article")
 		}
 
 		a.ID = content.ArticleID(id)

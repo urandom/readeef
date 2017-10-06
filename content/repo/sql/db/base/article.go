@@ -25,14 +25,14 @@ func init() {
 const (
 	createFeedArticle = `
 INSERT INTO articles(feed_id, link, guid, title, description, date)
-	SELECT $1, $2, $3, $4, $5, $6 EXCEPT
-		SELECT feed_id, link, CAST($3 AS TEXT), CAST($4 as TEXT), CAST($5 AS TEXT), CAST($6 AS TIMESTAMP WITH TIME ZONE)
-		FROM articles WHERE feed_id = $1 AND link = $2
+	SELECT :feed_id, :link, :guid, :title, :description, :date EXCEPT
+	SELECT feed_id, link, CAST(:guid AS TEXT), CAST(:title as TEXT), CAST(:description AS TEXT), CAST(:date AS TIMESTAMP WITH TIME ZONE)
+	FROM articles WHERE feed_id = :feed_id AND link = :link
 `
 
 	updateFeedArticle = `
-UPDATE articles SET title = $1, description = $2, date = $3, guid = $4, link = $5
-	WHERE feed_id = $6 AND (guid = $4 OR link = $5)
+UPDATE articles SET title = :title, description = :description, date = :date, guid = :guid, link = :link
+	WHERE feed_id = :feed_id AND (guid = :guid OR link = :link)
 `
 	articleCountTemplate = `
 SELECT count(a.id)

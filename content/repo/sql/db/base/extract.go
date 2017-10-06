@@ -14,8 +14,8 @@ WHERE ae.article_id = $1
 `
 	createArticleExtract = `
 INSERT INTO articles_extracts(article_id, title, content, top_image, language)
-	SELECT $1, $2, $3, $4, $5 EXCEPT SELECT article_id, title, content, top_image, language FROM articles_extracts WHERE article_id = $1
+	SELECT :article_id, :title, :content, :top_image, :language EXCEPT SELECT article_id, title, content, top_image, language FROM articles_extracts WHERE article_id = :article_id
 `
 	updateArticleExtract = `
-UPDATE articles_extracts SET title = $1, content = $2, top_image = $3, language = $4 WHERE article_id = $5`
+UPDATE articles_extracts SET title = :title, content = :content, top_image = :top_image, language = :language WHERE article_id = :article_id`
 )

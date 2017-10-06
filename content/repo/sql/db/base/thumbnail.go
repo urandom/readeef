@@ -14,8 +14,8 @@ WHERE at.article_id = $1
 `
 	createArticleThumbnail = `
 INSERT INTO articles_thumbnails(article_id, thumbnail, link, processed)
-	SELECT $1, $2, $3, $4 EXCEPT SELECT article_id, thumbnail, link, processed FROM articles_thumbnails WHERE article_id = $1
+	SELECT :article_id, :thumbnail, :link, :processed EXCEPT SELECT article_id, thumbnail, link, processed FROM articles_thumbnails WHERE article_id = :article_id 
 `
 	updateArticleThumbnail = `
-UPDATE articles_thumbnails SET thumbnail = $1, link = $2, processed = $3 WHERE article_id = $4`
+UPDATE articles_thumbnails SET thumbnail = :thumbnail, link = :link, processed = :processed WHERE article_id = :article_id`
 )

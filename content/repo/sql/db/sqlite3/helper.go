@@ -153,9 +153,9 @@ const (
 	// Casting to timestamp produces only the year
 	createFeedArticle = `
 INSERT INTO articles(feed_id, link, guid, title, description, date)
-	SELECT $1, $2, $3, $4, $5, $6 EXCEPT
-		SELECT feed_id, link, $3, $4, $5, $6
-		FROM articles WHERE feed_id = $1 AND link = $2
+	SELECT :feed_id, :link, :guid, :title, :description, :date EXCEPT
+	SELECT feed_id, link, :guid, :title, :description, :date 
+		FROM articles WHERE feed_id = :feed_id AND link = :link 
 `
 	getUserFeeds = `
 SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error

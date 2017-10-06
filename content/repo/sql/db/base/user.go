@@ -16,10 +16,10 @@ const (
 
 	createUser = `
 INSERT INTO users(login, first_name, last_name, email, admin, active, profile_data, hash_type, salt, hash, md5_api)
-	SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11 EXCEPT
-	SELECT login, first_name, last_name, email, admin, active, profile_data, hash_type, salt, hash, md5_api FROM users WHERE login = $1`
+	SELECT :login, :first_name, :last_name, :email, :admin, :active, :profile_data, :hash_type, :salt, :hash, :md5_api EXCEPT
+	SELECT login, first_name, last_name, email, admin, active, profile_data, hash_type, salt, hash, md5_api FROM users WHERE login = :login`
 	updateUser = `
-UPDATE users SET first_name = $1, last_name = $2, email = $3, admin = $4, active = $5, profile_data = $6, hash_type = $7, salt = $8, hash = $9, md5_api = $10
-	WHERE login = $11`
-	deleteUser = `DELETE FROM users WHERE login = $1`
+UPDATE users SET first_name = :first_name, last_name = :last_name, email = :email, admin = :admin, active = :active, profile_data = :profile_data, hash_type = :hash_type, salt = :salt, hash = :hash, md5_api = :md5_api
+	WHERE login = :login`
+	deleteUser = `DELETE FROM users WHERE login = :login`
 )

@@ -25,9 +25,9 @@ const (
 	feedIDs    = `SELECT id FROM feeds`
 	createFeed = `
 INSERT INTO feeds(link, title, description, hub_link, site_link, update_error, subscribe_error)
-	SELECT $1, $2, $3, $4, $5, $6, $7 EXCEPT SELECT link, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds WHERE link = $1`
-	updateFeed = `UPDATE feeds SET link = $1, title = $2, description = $3, hub_link = $4, site_link = $5, update_error = $6, subscribe_error = $7 WHERE id = $8`
-	deleteFeed = `DELETE FROM feeds WHERE id = $1`
+SELECT :link, :title, :description, :hub_link, :site_link, :update_error, :subscribe_error EXCEPT SELECT link, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds WHERE link = :link`
+	updateFeed = `UPDATE feeds SET link = :link, title = :title, description = :description, hub_link = :hub_link, site_link = :site_link, update_error = :update_error, subscribe_error = :subscribe_error WHERE id = :id`
+	deleteFeed = `DELETE FROM feeds WHERE id = :id`
 
 	getLatestFeedArticles = `
 SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid
@@ -47,12 +47,12 @@ INSERT INTO users_feeds(user_login, feed_id)
 
 	createUserFeedTag = `
 INSERT INTO users_feeds_tags(user_login, feed_id, tag_id)
-	SELECT $1, $2, $3 EXCEPT SELECT user_login, feed_id, tag_id
+	SELECT :user_login, :feed_id, :tag_id EXCEPT SELECT user_login, feed_id, tag_id
 		FROM users_feeds_tags
-		WHERE user_login = $1 AND feed_id = $2 AND tag_id = $3
+		WHERE user_login = :user_login AND feed_id = :feed_id AND tag_id = :tag_id
 `
 	deleteUserFeedTags = `
-DELETE FROM users_feeds_tags WHERE user_login = $1 AND feed_id = $2
+DELETE FROM users_feeds_tags WHERE user_login = :user_login AND feed_id = :feed_id
 `
 
 	getFeed       = `SELECT link, title, description, hub_link, site_link, update_error, subscribe_error FROM feeds WHERE id = $1`

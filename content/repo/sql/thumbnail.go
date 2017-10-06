@@ -50,13 +50,13 @@ func (r thumbnailRepo) Update(thumbnail content.Thumbnail) error {
 	defer tx.Rollback()
 
 	s := r.db.SQL()
-	stmt, err := tx.Preparex(s.Thumbnail.Update)
+	stmt, err := tx.PrepareNamed(s.Thumbnail.Update)
 	if err != nil {
 		return errors.Wrap(err, "preparing thumbnail update stmt")
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(thumbnail.Thumbnail, thumbnail.Link, thumbnail.Processed, thumbnail.ArticleID)
+	res, err := stmt.Exec(thumbnail)
 	if err != nil {
 		return errors.Wrap(err, "executing thumbnail update stmt")
 	}
@@ -69,13 +69,13 @@ func (r thumbnailRepo) Update(thumbnail content.Thumbnail) error {
 		return nil
 	}
 
-	stmt, err = tx.Preparex(s.Thumbnail.Create)
+	stmt, err = tx.PrepareNamed(s.Thumbnail.Create)
 	if err != nil {
 		return errors.Wrap(err, "preparing thumbnail create stmt")
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(thumbnail.ArticleID, thumbnail.Thumbnail, thumbnail.Link, thumbnail.Processed)
+	_, err = stmt.Exec(thumbnail)
 	if err != nil {
 		return errors.Wrap(err, "executing thumbnail create stmt")
 	}

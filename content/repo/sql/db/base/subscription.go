@@ -17,12 +17,12 @@ SELECT link, feed_id, lease_duration, verification_time, subscription_failure
 
 	createHubbubSubscription = `
 INSERT INTO hubbub_subscriptions(feed_id, link, lease_duration, verification_time, subscription_failure)
-	SELECT $1, $2, $3, $4, $5 EXCEPT
+	SELECT :feed_id, :link, :lease_duration, :verification_time, :subscription_failure EXCEPT
 	SELECT feed_id, link, lease_duration, verification_time, subscription_failure
-		FROM hubbub_subscriptions WHERE feed_id = $1
+		FROM hubbub_subscriptions WHERE feed_id = :feed_id
 `
 	updateHubbubSubscription = `
-UPDATE hubbub_subscriptions SET link = $1, lease_duration = $2,
-	verification_time = $3, subscription_failure = $4 WHERE feed_id = $5
+UPDATE hubbub_subscriptions SET link = :link, lease_duration = :lease_duration,
+	verification_time = :verification_time, subscription_failure = :subscription_failure WHERE feed_id = :feed_id 
 `
 )

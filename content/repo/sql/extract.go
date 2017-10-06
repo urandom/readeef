@@ -50,13 +50,13 @@ func (r extractRepo) Update(extract content.Extract) error {
 	defer tx.Rollback()
 
 	s := r.db.SQL()
-	stmt, err := tx.Preparex(s.Extract.Update)
+	stmt, err := tx.PrepareNamed(s.Extract.Update)
 	if err != nil {
 		return errors.Wrap(err, "preparing extract update stmt")
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(extract.Title, extract.Content, extract.TopImage, extract.Language, extract.ArticleID)
+	res, err := stmt.Exec(extract)
 	if err != nil {
 		return errors.Wrap(err, "executing extract update stmt")
 	}
@@ -69,13 +69,13 @@ func (r extractRepo) Update(extract content.Extract) error {
 		return nil
 	}
 
-	stmt, err = tx.Preparex(s.Extract.Create)
+	stmt, err = tx.PrepareNamed(s.Extract.Create)
 	if err != nil {
 		return errors.Wrap(err, "preparing extract create stmt")
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(extract.ArticleID, extract.Title, extract.Content, extract.TopImage, extract.Language)
+	_, err = stmt.Exec(extract)
 	if err != nil {
 		return errors.Wrap(err, "executing extract create stmt")
 	}

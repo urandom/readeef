@@ -3,10 +3,10 @@ package base
 func init() {
 	sqlStmts.Tag.Get = getUserTag
 	sqlStmts.Tag.GetByValue = getTagByValue
+	sqlStmts.Tag.GetUserFeedIDs = getUserTagFeedIDs
 	sqlStmts.Tag.AllForUser = getUserTags
 	sqlStmts.Tag.AllForFeed = getUserFeedTags
 	sqlStmts.Tag.Create = createTag
-	sqlStmts.Tag.GetUserFeedIDs = getUserTagFeedIDs
 	sqlStmts.Tag.DeleteStale = deleteStaleTags
 }
 
@@ -29,16 +29,15 @@ FROM tags t LEFT OUTER JOIN users_feeds_tags uft
 	ON t.id = uft.tag_id
 WHERE uft.user_login = $1
 `
-
-	createTag = `
-INSERT INTO tags (value)
-	SELECT $1 EXCEPT SELECT value FROM tags WHERE value = $1
-`
-
 	getUserTagFeedIDs = `
 SELECT uft.feed_id
 FROM users_feeds_tags uft
 WHERE uft.user_login = $1 AND uft.tag_id = $2
+`
+
+	createTag = `
+INSERT INTO tags (value)
+	SELECT :value EXCEPT SELECT value FROM tags WHERE value = :value
 `
 
 	deleteStaleTags = `DELETE FROM tags WHERE id NOT IN (SELECT tag_id FROM users_feeds_tags)`

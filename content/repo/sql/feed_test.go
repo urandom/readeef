@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
 	"sync"
@@ -450,12 +451,12 @@ func createFeed(feed *content.Feed, users ...content.User) {
 	r := service.FeedRepo()
 
 	if _, err := r.Update(feed); err != nil {
-		panic(err)
+		panic(fmt.Sprintf("%+v", err))
 	}
 
 	for _, u := range users {
 		if err := r.AttachTo(*feed, u); err != nil {
-			panic(err)
+			panic(fmt.Sprintf("%+v", err))
 		}
 	}
 }
