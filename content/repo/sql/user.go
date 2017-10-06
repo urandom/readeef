@@ -65,7 +65,7 @@ func (r userRepo) Update(user content.User) error {
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(user.FirstName, user.LastName, user.Email, user.Admin, user.Active, user.ProfileJSON, user.HashType, user.Salt, user.Hash, user.MD5API, user.Login)
+	res, err := stmt.Exec(user.FirstName, user.LastName, user.Email, user.Admin, user.Active, user.ProfileData, user.HashType, user.Salt, user.Hash, user.MD5API, user.Login)
 	if err != nil {
 		return errors.Wrap(err, "executing user update stmt")
 	}
@@ -84,7 +84,7 @@ func (r userRepo) Update(user content.User) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(user.Login, user.FirstName, user.LastName, user.Email, user.Admin, user.Active, user.ProfileJSON, user.HashType, user.Salt, user.Hash, user.MD5API)
+	_, err = stmt.Exec(user.Login, user.FirstName, user.LastName, user.Email, user.Admin, user.Active, user.ProfileData, user.HashType, user.Salt, user.Hash, user.MD5API)
 	if err != nil {
 		return errors.Wrap(err, "executing user create stmt")
 	}

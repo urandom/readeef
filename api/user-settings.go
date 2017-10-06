@@ -95,9 +95,7 @@ func setSettingValue(repo repo.User, secret []byte, log log.Log) http.HandlerFun
 				user.Email = email
 			}
 		case profileSetting:
-			if err = json.Unmarshal(b, &user.ProfileData); err == nil {
-				user.ProfileJSON = b
-			}
+			err = json.Unmarshal(b, &user.ProfileData)
 		case activeSetting:
 			user.Active = string(b) == "true"
 		case passwordSetting:

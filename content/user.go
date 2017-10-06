@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"crypto/subtle"
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"net/mail"
 
@@ -16,6 +17,7 @@ import (
 
 // Login is the user login name.
 type Login string
+type ProfileData map[string]interface{}
 
 // User represents a readeef user.
 type User struct {
@@ -26,13 +28,11 @@ type User struct {
 	HashType  string `db:"hash_type" json:"-"`
 	Admin     bool   `json:"admin"`
 	Active    bool   `json:"active"`
-	// TODO: remove this, make a custom ProfileData db serializer
-	ProfileJSON []byte `db:"profile_data" json:"-"`
-	Salt        []byte `json:"-"`
-	Hash        []byte `json:"-"`
-	MD5API      []byte `db:"md5_api" json:"-"` // "md5(user:pass)"
+	Salt      []byte `json:"-"`
+	Hash      []byte `json:"-"`
+	MD5API    []byte `db:"md5_api" json:"-"` // "md5(user:pass)"
 
-	ProfileData map[string]interface{}
+	ProfileData ProfileData `db:"profile_data" json:"profileData"`
 }
 
 func (u *User) Password(password string, secret []byte) error {
@@ -124,4 +124,22 @@ func (val *Login) Scan(src interface{}) error {
 
 func (val Login) Value() (driver.Value, error) {
 	return string(val), nil
+}
+
+func (val *ProfileData) Scan(src interface{}) error {
+	var data []byte
+	switch t := src.(type) {
+	case string:
+		data = []byte(t)
+	case []byte:
+		data = t
+	default:
+		return fmt.Errorf("Scan source '%#v' (%T) was not of type string (Login)", src, src)
+	}
+
+	return json.Unmarshal(data, val)
+}
+
+func (val ProfileData) Value() (driver.Value, error) {
+	return json.Marshal(val)
 }
