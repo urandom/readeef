@@ -1,13 +1,13 @@
 package postgres
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content/repo/sql/db"
 	"github.com/urandom/readeef/content/repo/sql/db/base"
 )
@@ -27,13 +27,13 @@ func (h Helper) CreateWithID(tx *sqlx.Tx, sql string, args ...interface{}) (int6
 
 	stmt, err := tx.Preparex(sql)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "preparing create-with-id statement")
 	}
 	defer stmt.Close()
 
 	err = stmt.QueryRow(args...).Scan(&id)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "scanning created id")
 	}
 
 	return id, nil
@@ -176,8 +176,7 @@ func init() {
 	helper := &Helper{Helper: base.NewHelper()}
 
 	helper.Set(db.SqlStmts{
-		User: db.UserStmts{GetFeeds: getUserFeeds},
-		Tag:  db.TagStmts{GetUserFeeds: getUserTagFeeds},
+		Feed: db.FeedStmts{AllForUser: getUserFeeds},
 	})
 
 	db.Register("postgres", helper)
@@ -189,14 +188,6 @@ SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.
 FROM feeds f, users_feeds uf
 WHERE f.id = uf.feed_id
 	AND uf.user_login = $1
-ORDER BY f.title COLLATE "default"
-`
-	getUserTagFeeds = `
-SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
-FROM feeds f, users_feeds_tags uft, tags t
-WHERE f.id = uft.feed_id
-	AND t.id = uft.tag_id
-	AND uft.user_login = $1 AND t.value = $2
 ORDER BY f.title COLLATE "default"
 `
 

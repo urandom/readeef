@@ -23,7 +23,7 @@ func (r thumbnailRepo) Get(article content.Article) (content.Thumbnail, error) {
 	r.log.Infof("Getting thumbnail for article %s", article)
 
 	var thumbnail content.Thumbnail
-	if err := r.db.Get(&thumbnail, r.db.SQL().Article.GetThumbnail, article.ID); err != nil {
+	if err := r.db.Get(&thumbnail, r.db.SQL().Thumbnail.Get, article.ID); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -50,7 +50,7 @@ func (r thumbnailRepo) Update(thumbnail content.Thumbnail) error {
 	defer tx.Rollback()
 
 	s := r.db.SQL()
-	stmt, err := tx.Preparex(s.Article.UpdateThumbnail)
+	stmt, err := tx.Preparex(s.Thumbnail.Update)
 	if err != nil {
 		return errors.Wrap(err, "preparing thumbnail update stmt")
 	}
@@ -69,7 +69,7 @@ func (r thumbnailRepo) Update(thumbnail content.Thumbnail) error {
 		return nil
 	}
 
-	stmt, err = tx.Preparex(s.Article.CreateThumbnail)
+	stmt, err = tx.Preparex(s.Thumbnail.Create)
 	if err != nil {
 		return errors.Wrap(err, "preparing thumbnail create stmt")
 	}

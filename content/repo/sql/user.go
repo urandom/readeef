@@ -19,7 +19,7 @@ func (r userRepo) Get(login content.Login) (content.User, error) {
 	r.log.Infof("Getting user %s", login)
 
 	var user content.User
-	err := r.db.Get(&user, r.db.SQL().Repo.GetUser, login)
+	err := r.db.Get(&user, r.db.SQL().User.Get, login)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
@@ -37,7 +37,7 @@ func (r userRepo) All() ([]content.User, error) {
 	r.log.Infoln("Getting all users")
 
 	var users []content.User
-	if err := r.db.Select(&users, r.db.SQL().Repo.GetUsers); err != nil {
+	if err := r.db.Select(&users, r.db.SQL().User.All); err != nil {
 		return users, errors.Wrap(err, "getting all users")
 	}
 
@@ -102,7 +102,7 @@ func (r userRepo) Delete(user content.User) error {
 		return errors.WithMessage(err, "validating user")
 	}
 
-	r.log.Infof("Deleting user %s", r)
+	r.log.Infof("Deleting user %s", user)
 
 	tx, err := r.db.Beginx()
 	if err != nil {
@@ -136,7 +136,7 @@ func (r userRepo) FindByMD5(hash []byte) (content.User, error) {
 	r.log.Infof("Getting user using md5 api field %v", hash)
 
 	var user content.User
-	if err := r.db.Get(&user, r.db.SQL().Repo.GetUserByMD5API, string(hash)); err != nil {
+	if err := r.db.Get(&user, r.db.SQL().User.GetByMD5API, string(hash)); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}

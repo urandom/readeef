@@ -3,19 +3,23 @@ package base
 func init() {
 	sqlStmts.Article.Create = createFeedArticle
 	sqlStmts.Article.Update = updateFeedArticle
-	sqlStmts.Article.CreateUserUnread = createUserArticleUnread
-	sqlStmts.Article.DeleteUserUnread = deleteUserArticleUnread
-	sqlStmts.Article.CreateUserFavorite = createUserArticleFavorite
-	sqlStmts.Article.DeleteUserFavorite = deleteUserArticleFavorite
-	sqlStmts.Article.GetScores = getArticleScores
-	sqlStmts.Article.CreateScores = createArticleScores
-	sqlStmts.Article.UpdateScores = updateArticleScores
-	sqlStmts.Article.GetThumbnail = getArticleThumbnail
-	sqlStmts.Article.CreateThumbnail = createArticleThumbnail
-	sqlStmts.Article.UpdateThumbnail = updateArticleThumbnail
-	sqlStmts.Article.GetExtract = getArticleExtract
-	sqlStmts.Article.CreateExtract = createArticleExtract
-	sqlStmts.Article.UpdateExtract = updateArticleExtract
+
+	sqlStmts.Article.CountTemplate = articleCountTemplate
+	sqlStmts.Article.GetUserlessTemplate = getArticlesUserlessTemplate
+	sqlStmts.Article.GetTemplate = getArticlesTemplate
+	sqlStmts.Article.CountUserFeedsJoin = articleCountUserFeedsJoin
+	sqlStmts.Article.StateReadColumn = stateReadColumn
+	sqlStmts.Article.StateUnreadJoin = stateUnreadJoin
+	sqlStmts.Article.StateFavoriteJoin = stateFavoriteJoin
+	sqlStmts.Article.GetIDsTemplate = getArticleIDsTemplate
+	sqlStmts.Article.DeleteStaleUnreadRecords = deleteStaleUnreadRecords
+	sqlStmts.Article.GetScoreJoin = getArticlesScoreJoin
+	sqlStmts.Article.GetUntaggedJoin = getArticlesUntaggedJoin
+
+	sqlStmts.Article.ReadStateInsertTemplate = readStateInsertTemplate
+	sqlStmts.Article.ReadStateDeleteTemplate = readStateDeleteTemplate
+	sqlStmts.Article.FavoriteStateInsertTemplate = favoriteStateInsertTemplate
+	sqlStmts.Article.FavoriteStateDeleteTemplate = favoriteStateDeleteTemplate
 }
 
 const (
@@ -30,58 +34,122 @@ INSERT INTO articles(feed_id, link, guid, title, description, date)
 UPDATE articles SET title = $1, description = $2, date = $3, guid = $4, link = $5
 	WHERE feed_id = $6 AND (guid = $4 OR link = $5)
 `
-
-	createUserArticleUnread = `
-INSERT INTO users_articles_unread(user_login, article_id)
-	SELECT $1, $2 EXCEPT
-		SELECT user_login, article_id
-		FROM users_articles_unread WHERE user_login = $1 AND article_id = $2
+	articleCountTemplate = `
+SELECT count(a.id)
+FROM articles a
+{{ .Join }}
+{{ .Where }}
 `
-
-	deleteUserArticleUnread = `
-DELETE FROM users_articles_unread WHERE user_login = $1 AND article_id = $2`
-
-	createUserArticleFavorite = `
-INSERT INTO users_articles_favorite(user_login, article_id)
-	SELECT $1, $2 EXCEPT
-		SELECT user_login, article_id
-		FROM users_articles_favorite WHERE user_login = $1 AND article_id = $2
+	getArticlesUserlessTemplate = `
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
+	COALESCE(at.thumbnail, '') as thumbnail,
+	COALESCE(at.link, '') as thumbnail_link
+	{{ .Columns }}
+FROM articles a
+{{ .Join }}
+LEFT OUTER JOIN articles_thumbnails at
+    ON a.id = at.article_id
+{{ .Where }}
+{{ .Order }}
+{{ .Limit }}
 `
-
-	deleteUserArticleFavorite = `
-DELETE FROM users_articles_favorite WHERE user_login = $1 AND article_id = $2`
-
-	getArticleScores = `
-SELECT asco.score, asco.score1, asco.score2, asco.score3, asco.score4, asco.score5
-FROM articles_scores asco
-WHERE asco.article_id = $1
+	getArticlesTemplate = `
+SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
+	CASE WHEN au.article_id IS NULL THEN 1 ELSE 0 END AS read,
+	CASE WHEN af.article_id IS NULL THEN 0 ELSE 1 END AS favorite,
+	COALESCE(at.thumbnail, '') as thumbnail,
+	COALESCE(at.link, '') as thumbnail_link
+	{{ .Columns }}
+FROM users_feeds uf INNER JOIN articles a
+	ON uf.feed_id = a.feed_id
+	AND uf.user_login = $1
+{{ .Join }}
+LEFT OUTER JOIN users_articles_unread au
+    ON a.id = au.article_id AND uf.user_login = au.user_login
+LEFT OUTER JOIN users_articles_favorite af
+    ON a.id = af.article_id AND uf.user_login = af.user_login
+LEFT OUTER JOIN articles_thumbnails at
+    ON a.id = at.article_id
+{{ .Where }}
+{{ .Order }}
+{{ .Limit }}
 `
-	createArticleScores = `
-INSERT INTO articles_scores(article_id, score, score1, score2, score3, score4, score5)
-	SELECT $1, $2, $3, $4, $5, $6, $7 EXCEPT SELECT article_id, score, score1, score2, score3, score4, score5 FROM articles_scores WHERE article_id = $1`
-	updateArticleScores = `UPDATE articles_scores SET score = $1, score1 = $2, score2 = $3, score3 = $4, score4 = $5, score5 = $6 WHERE article_id = $7`
-
-	getArticleThumbnail = `
-SELECT at.thumbnail, at.link, at.processed
-FROM articles_thumbnails at
-WHERE at.article_id = $1
+	articleCountUserFeedsJoin = `
+INNER JOIN users_feeds uf
+	ON uf.feed_id = a.feed_id
+	AND uf.user_login = $1
 `
-	createArticleThumbnail = `
-INSERT INTO articles_thumbnails(article_id, thumbnail, link, processed)
-	SELECT $1, $2, $3, $4 EXCEPT SELECT article_id, thumbnail, link, processed FROM articles_thumbnails WHERE article_id = $1
+	stateReadColumn   = ` CASE WHEN au.article_id IS NULL THEN 1 ELSE 0 END AS read `
+	stateFavoriteJoin = `
+LEFT OUTER JOIN users_articles_favorite af
+	ON a.id = af.article_id AND af.user_login = uf.user_login
 `
-	updateArticleThumbnail = `
-UPDATE articles_thumbnails SET thumbnail = $1, link = $2, processed = $3 WHERE article_id = $4`
-
-	getArticleExtract = `
-SELECT ae.title, ae.content, ae.top_image, ae.language
-FROM articles_extracts ae
-WHERE ae.article_id = $1
+	stateUnreadJoin = `
+LEFT OUTER JOIN users_articles_unread au
+	ON a.id = au.article_id AND au.user_login = uf.user_login
 `
-	createArticleExtract = `
-INSERT INTO articles_extracts(article_id, title, content, top_image, language)
-	SELECT $1, $2, $3, $4, $5 EXCEPT SELECT article_id, title, content, top_image, language FROM articles_extracts WHERE article_id = $1
+	getArticleIDsTemplate = `
+SELECT a.id FROM (
+    SELECT a.id
+	{{ .Columns }}
+	FROM articles a
+	{{ .Join }}
+	{{ .Where }}
+	{{ .Order }}
+	{{ .Limit }}
+) a
 `
-	updateArticleExtract = `
-UPDATE articles_extracts SET title = $1, content = $2, top_image = $3, language = $4 WHERE article_id = $5`
+	deleteStaleUnreadRecords = `DELETE FROM users_articles_unread WHERE insert_date < $1`
+	getArticlesScoreJoin     = `
+	INNER JOIN articles_scores asco ON a.id = asco.article_id
+`
+	getArticlesUntaggedJoin = `
+LEFT OUTER JOIN users_feeds_tags uft
+	ON uft.feed_id = uf.feed_id
+	AND uft.user_login = uf.user_login
+`
+	readStateInsertTemplate = `
+INSERT INTO users_articles_unread (user_login, article_id)
+SELECT uf.user_login, a.id
+FROM users_feeds uf
+INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+{{ .Join }}
+{{ .Where }}
+EXCEPT SELECT au.user_login, au.article_id
+FROM users_articles_unread au
+WHERE au.user_login = $1
+`
+	readStateDeleteTemplate = `
+DELETE FROM users_articles_unread WHERE user_login = $1 AND article_id IN (
+	SELECT a.id
+	FROM users_feeds uf INNER JOIN articles a
+		ON uf.feed_id = a.feed_id
+		AND uf.user_login = $1
+	{{ .Join }}
+	{{ .Where }}
+)
+`
+	favoriteStateInsertTemplate = `
+INSERT INTO users_articles_favorite (user_login, article_id)
+SELECT uf.user_login, a.id
+FROM users_feeds uf
+INNER JOIN articles a
+	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+{{ .Join }}
+{{ .Where }}
+EXCEPT SELECT af.user_login, af.article_id
+FROM users_articles_favorite af
+WHERE af.user_login = $1
+`
+	favoriteStateDeleteTemplate = `
+DELETE FROM users_articles_favorite WHERE user_login = $1 AND article_id IN (
+	SELECT a.id
+	FROM users_feeds uf INNER JOIN articles a
+		ON uf.feed_id = a.feed_id
+		AND uf.user_login = $1
+	{{ .Join }}
+	{{ .Where }}
+)
+`
 )

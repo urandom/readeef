@@ -18,7 +18,7 @@ import (
 var (
 	getArticlesUserlessTemplate *template.Template
 	getArticlesTemplate         *template.Template
-	getArticleIdsTemplate       *template.Template
+	getArticleIDsTemplate       *template.Template
 	articleCountTemplate        *template.Template
 	readStateInsertTemplate     *template.Template
 	readStateDeleteTemplate     *template.Template
@@ -70,7 +70,7 @@ func (r articleRepo) All(opts ...content.QueryOpt) ([]content.Article, error) {
 	var err error
 	if getArticlesUserlessTemplate == nil {
 		getArticlesUserlessTemplate, err = template.New("userless-articles").
-			Parse(r.db.SQL().User.GetArticlesUserlessTemplate)
+			Parse(r.db.SQL().Article.GetUserlessTemplate)
 
 		if err != nil {
 			return []content.Article{}, errors.Wrap(err, "generating get-articles-userless template")
@@ -118,7 +118,7 @@ func (r articleRepo) Count(user content.User, opts ...content.QueryOpt) (int64, 
 	var err error
 	if articleCountTemplate == nil {
 		articleCountTemplate, err = template.New("article-count-sql").
-			Parse(s.User.ArticleCountTemplate)
+			Parse(s.Article.CountTemplate)
 
 		if err != nil {
 			return 0, errors.Wrap(err, "generating article-count template")
@@ -129,15 +129,15 @@ func (r articleRepo) Count(user content.User, opts ...content.QueryOpt) (int64, 
 	var renderData getArticlesData
 
 	if user.Login != "" {
-		renderData.Join += s.User.ArticleCountUserFeedsJoin
+		renderData.Join += s.Article.CountUserFeedsJoin
 		login = user.Login
 	}
 
 	if o.FavoriteOnly {
-		renderData.Join += s.User.StateFavoriteJoin
+		renderData.Join += s.Article.StateFavoriteJoin
 	}
 	if o.ReadOnly || o.UnreadOnly {
-		renderData.Join += s.User.StateUnreadJoin
+		renderData.Join += s.Article.StateUnreadJoin
 	}
 
 	o.IncludeScores = false
@@ -177,9 +177,9 @@ func (r articleRepo) IDs(user content.User, opts ...content.QueryOpt) ([]content
 	s := r.db.SQL()
 
 	var err error
-	if getArticleIdsTemplate == nil {
-		getArticleIdsTemplate, err = template.New("article-ids-sql").
-			Parse(s.User.GetArticleIdsTemplate)
+	if getArticleIDsTemplate == nil {
+		getArticleIDsTemplate, err = template.New("article-ids-sql").
+			Parse(s.Article.GetIDsTemplate)
 
 		if err != nil {
 			return []content.ArticleID{}, errors.Wrap(err, "generating article-ids template")
@@ -190,19 +190,19 @@ func (r articleRepo) IDs(user content.User, opts ...content.QueryOpt) ([]content
 	var renderData getArticlesData
 
 	if user.Login != "" {
-		renderData.Join += s.User.ArticleCountUserFeedsJoin
+		renderData.Join += s.Article.CountUserFeedsJoin
 		login = user.Login
 	}
 
 	if o.FavoriteOnly {
-		renderData.Join += s.User.StateFavoriteJoin
+		renderData.Join += s.Article.StateFavoriteJoin
 	}
 	if o.ReadOnly || o.UnreadOnly || o.UnreadFirst {
-		renderData.Join += s.User.StateUnreadJoin
+		renderData.Join += s.Article.StateUnreadJoin
 	}
 
 	if o.UnreadFirst {
-		renderData.Columns += ", " + s.User.StateReadColumn
+		renderData.Columns += ", " + s.Article.StateReadColumn
 	}
 
 	o.IncludeScores = false
@@ -217,7 +217,7 @@ func (r articleRepo) IDs(user content.User, opts ...content.QueryOpt) ([]content
 	buf := pool.Buffer.Get()
 	defer pool.Buffer.Put(buf)
 
-	if err := getArticleIdsTemplate.Execute(buf, renderData); err != nil {
+	if err := getArticleIDsTemplate.Execute(buf, renderData); err != nil {
 		return []content.ArticleID{}, errors.Wrap(err, "executing article-count template")
 	}
 
@@ -249,7 +249,7 @@ func (r articleRepo) Favor(
 func (r articleRepo) RemoveStaleUnreadRecords() error {
 	r.log.Infof("Removing stale unread article records")
 
-	_, err := r.db.Exec(r.db.SQL().Repo.DeleteStaleUnreadRecords, time.Now().AddDate(0, -1, 0))
+	_, err := r.db.Exec(r.db.SQL().Article.DeleteStaleUnreadRecords, time.Now().AddDate(0, -1, 0))
 	if err != nil {
 		return errors.Wrap(err, "removing stale unread article records")
 	}
@@ -261,7 +261,7 @@ func getArticles(login content.Login, dbo *db.DB, log log.Log, opts content.Quer
 	var err error
 	if getArticlesTemplate == nil {
 		getArticlesTemplate, err = template.New("get-articles-sql").
-			Parse(dbo.SQL().User.GetArticlesTemplate)
+			Parse(dbo.SQL().Article.GetTemplate)
 
 		if err != nil {
 			return []content.Article{}, errors.Wrap(err, "generating get-articles template")
@@ -385,10 +385,10 @@ func articleStateSet(
 	renderData.Join, renderData.Where, _, _, args = constructSQLQueryOptions(user.Login, o, db)
 
 	if o.FavoriteOnly {
-		renderData.Join += s.User.StateFavoriteJoin
+		renderData.Join += s.Article.StateFavoriteJoin
 	}
 	if o.ReadOnly || o.UnreadOnly {
-		renderData.Join += s.User.StateUnreadJoin
+		renderData.Join += s.Article.StateUnreadJoin
 	}
 
 	buf := pool.Buffer.Get()
@@ -428,12 +428,12 @@ func constructSQLQueryOptions(
 
 	s := db.SQL()
 	if opts.IncludeScores {
-		join += s.User.GetArticlesScoreJoin
+		join += s.Article.GetScoreJoin
 	}
 
 	if hasUser {
 		if opts.UntaggedOnly {
-			join += s.User.GetArticlesUntaggedJoin
+			join += s.Article.GetUntaggedJoin
 		}
 	}
 
@@ -583,7 +583,7 @@ func instantiateStateTemplates(s db.SqlStmts) error {
 	var err error
 	if readStateInsertTemplate == nil {
 		readStateInsertTemplate, err = template.New("read-state-insert-sql").
-			Parse(s.User.ReadStateInsertTemplate)
+			Parse(s.Article.ReadStateInsertTemplate)
 
 		if err != nil {
 			return errors.Wrap(err, "generating read-state-insert template")
@@ -592,7 +592,7 @@ func instantiateStateTemplates(s db.SqlStmts) error {
 
 	if readStateDeleteTemplate == nil {
 		readStateDeleteTemplate, err = template.New("read-state-delete-sql").
-			Parse(s.User.ReadStateDeleteTemplate)
+			Parse(s.Article.ReadStateDeleteTemplate)
 
 		if err != nil {
 			return errors.Wrap(err, "generating read-state-delete template")
@@ -601,7 +601,7 @@ func instantiateStateTemplates(s db.SqlStmts) error {
 
 	if favoriteStateInsertTemplate == nil {
 		favoriteStateInsertTemplate, err = template.New("favorite-state-insert-sql").
-			Parse(s.User.FavoriteStateInsertTemplate)
+			Parse(s.Article.FavoriteStateInsertTemplate)
 
 		if err != nil {
 			return errors.Wrap(err, "generating favorite-state-insert template")
@@ -610,7 +610,7 @@ func instantiateStateTemplates(s db.SqlStmts) error {
 
 	if favoriteStateDeleteTemplate == nil {
 		favoriteStateDeleteTemplate, err = template.New("favorite-state-delete-sql").
-			Parse(s.User.FavoriteStateDeleteTemplate)
+			Parse(s.Article.FavoriteStateDeleteTemplate)
 
 		if err != nil {
 			return errors.Wrap(err, "generating favorite-state-delete template")

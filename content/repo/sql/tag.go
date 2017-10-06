@@ -24,7 +24,7 @@ func (r tagRepo) Get(id content.TagID, user content.User) (content.Tag, error) {
 	r.log.Infof("Getting tag %d for %s", id, user)
 
 	var tag content.Tag
-	if err := r.db.Get(&tag, r.db.SQL().User.GetTag, id, user.Login); err != nil {
+	if err := r.db.Get(&tag, r.db.SQL().Tag.Get, id, user.Login); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -46,7 +46,7 @@ func (r tagRepo) ForUser(user content.User) ([]content.Tag, error) {
 
 	var tags []content.Tag
 
-	if err := r.db.Select(&tags, r.db.SQL().User.GetTags, user.Login); err != nil {
+	if err := r.db.Select(&tags, r.db.SQL().Tag.AllForUser, user.Login); err != nil {
 		return []content.Tag{}, errors.Wrapf(err, "getting user %s tags", user)
 	}
 
@@ -65,7 +65,7 @@ func (r tagRepo) ForFeed(feed content.Feed, user content.User) ([]content.Tag, e
 	r.log.Infof("Getting tags for user %s feed %s", user, feed)
 
 	var tags []content.Tag
-	if err := r.db.Select(&tags, r.db.SQL().Feed.GetUserTags, user.Login, feed.ID); err != nil {
+	if err := r.db.Select(&tags, r.db.SQL().Tag.AllForFeed, user.Login, feed.ID); err != nil {
 		return []content.Tag{}, errors.Wrapf(err, "getting user %s feed %s tags", user, feed)
 	}
 

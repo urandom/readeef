@@ -23,7 +23,7 @@ func (r extractRepo) Get(article content.Article) (content.Extract, error) {
 	r.log.Infof("Getting extract for article %s", article)
 
 	var extract content.Extract
-	if err := r.db.Get(&extract, r.db.SQL().Article.GetExtract, article.ID); err != nil {
+	if err := r.db.Get(&extract, r.db.SQL().Extract.Get, article.ID); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -50,7 +50,7 @@ func (r extractRepo) Update(extract content.Extract) error {
 	defer tx.Rollback()
 
 	s := r.db.SQL()
-	stmt, err := tx.Preparex(s.Article.UpdateExtract)
+	stmt, err := tx.Preparex(s.Extract.Update)
 	if err != nil {
 		return errors.Wrap(err, "preparing extract update stmt")
 	}
@@ -69,7 +69,7 @@ func (r extractRepo) Update(extract content.Extract) error {
 		return nil
 	}
 
-	stmt, err = tx.Preparex(s.Article.CreateExtract)
+	stmt, err = tx.Preparex(s.Extract.Create)
 	if err != nil {
 		return errors.Wrap(err, "preparing extract create stmt")
 	}

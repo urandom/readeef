@@ -32,15 +32,15 @@ func Test_feedRepo_Get(t *testing.T) {
 		want    content.Feed
 		wantErr bool
 	}{
-		{"get 1 without user", args{1, ""}, feed1, false},
-		{"get 2 without user", args{2, ""}, feed2, false},
-		{"get 1 with user1", args{1, "user1"}, feed1, false},
-		{"get 2 with user1", args{2, "user1"}, feed2, false},
-		{"get 2 with user2", args{2, "user2"}, feed2, false},
+		{"get 1 without user", args{feed1.ID, ""}, feed1, false},
+		{"get 2 without user", args{feed2.ID, ""}, feed2, false},
+		{"get 1 with user1", args{feed1.ID, "user1"}, feed1, false},
+		{"get 2 with user1", args{feed2.ID, "user1"}, feed2, false},
+		{"get 2 with user2", args{feed2.ID, "user2"}, feed2, false},
 		{"get unknown without user", args{3, ""}, content.Feed{}, true},
 		{"get unknown with user", args{3, "user1"}, content.Feed{}, true},
-		{"get 1 with user2", args{1, "user2"}, content.Feed{}, true},
-		{"get 2 with user3", args{2, "user3"}, content.Feed{}, true},
+		{"get 1 with user2", args{feed1.ID, "user2"}, content.Feed{}, true},
+		{"get 2 with user3", args{feed2.ID, "user3"}, content.Feed{}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -186,7 +186,7 @@ func Test_feedRepo_All(t *testing.T) {
 
 	expected := 2
 	for _, f := range got {
-		if f.ID == 1 || f.ID == 2 {
+		if f.ID == feed1.ID || f.ID == feed2.ID {
 			expected--
 		}
 	}
@@ -214,7 +214,7 @@ func Test_feedRepo_IDs(t *testing.T) {
 
 	expected := 2
 	for _, id := range got {
-		if id == 1 || id == 2 {
+		if id == feed1.ID || id == feed2.ID {
 			expected--
 		}
 	}
@@ -236,7 +236,7 @@ func Test_feedRepo_UpdateDelete(t *testing.T) {
 		wantErr bool
 	}{
 		{"test1", content.Feed{Title: "title 3", Link: "http://sugr.org/3"}, parser.Feed{Title: "title 3"}, []content.Article{}, false},
-		{"test2", content.Feed{Title: "title 3", Link: "http://sugr.org/3"}, parser.Feed{Title: "title 3", Articles: []parser.Article{
+		{"test2", content.Feed{Title: "title 4", Link: "http://sugr.org/4"}, parser.Feed{Title: "title 4", Articles: []parser.Article{
 			{Title: "Article 100", Link: "http://sugr.org/3/article/100"},
 			{Title: "Article 200", Link: "http://sugr.org/3/article/200"},
 		}}, []content.Article{

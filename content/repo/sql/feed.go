@@ -22,9 +22,9 @@ func (r feedRepo) Get(id content.FeedID, user content.User) (content.Feed, error
 	var feed content.Feed
 	var err error
 	if user.Login == "" {
-		err = r.db.Get(&feed, r.db.SQL().Repo.GetFeed, id)
+		err = r.db.Get(&feed, r.db.SQL().Feed.Get, id)
 	} else {
-		err = r.db.Get(&feed, r.db.SQL().User.GetFeed, id, user.Login)
+		err = r.db.Get(&feed, r.db.SQL().Feed.GetForUser, id, user.Login)
 	}
 
 	if err != nil {
@@ -44,7 +44,7 @@ func (r feedRepo) FindByLink(link string) (content.Feed, error) {
 	r.log.Infof("Getting feed by link %s", link)
 
 	var feed content.Feed
-	if err := r.db.Get(&feed, r.db.SQL().Repo.GetFeedByLink, link); err != nil {
+	if err := r.db.Get(&feed, r.db.SQL().Feed.GetByLink, link); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -65,7 +65,7 @@ func (r feedRepo) ForUser(user content.User) ([]content.Feed, error) {
 	r.log.Infof("Getting user %s feeds", user)
 
 	var feeds []content.Feed
-	if err := r.db.Select(&feeds, r.db.SQL().User.GetFeeds, user.Login); err != nil {
+	if err := r.db.Select(&feeds, r.db.SQL().Feed.AllForUser, user.Login); err != nil {
 		return []content.Feed{}, errors.Wrapf(err, "getting user %s feeds", user)
 	}
 
@@ -84,7 +84,7 @@ func (r feedRepo) ForTag(tag content.Tag, user content.User) ([]content.Feed, er
 	r.log.Infof("Getting tag %s feeds", tag)
 
 	var feeds []content.Feed
-	if err := r.db.Select(&feeds, r.db.SQL().Tag.GetUserFeeds, user.Login, tag.Value); err != nil {
+	if err := r.db.Select(&feeds, r.db.SQL().Feed.AllForTag, user.Login, tag.Value); err != nil {
 		return []content.Feed{}, errors.Wrap(err, "getting tag feeds")
 	}
 
@@ -95,7 +95,7 @@ func (r feedRepo) All() ([]content.Feed, error) {
 	r.log.Infoln("Getting all feeds")
 
 	var feeds []content.Feed
-	if err := r.db.Select(&feeds, r.db.SQL().Repo.GetFeeds); err != nil {
+	if err := r.db.Select(&feeds, r.db.SQL().Feed.All); err != nil {
 		return []content.Feed{}, errors.Wrap(err, "getting all feeds")
 	}
 
@@ -116,7 +116,7 @@ func (r feedRepo) Unsubscribed() ([]content.Feed, error) {
 	r.log.Infoln("Getting all unsubscribed feeds")
 
 	var feeds []content.Feed
-	if err := r.db.Select(&feeds, r.db.SQL().Repo.GetUnsubscribedFeeds); err != nil {
+	if err := r.db.Select(&feeds, r.db.SQL().Feed.Unsubscribed); err != nil {
 		return []content.Feed{}, errors.Wrap(err, "getting unsubscribed feeds")
 	}
 
@@ -142,8 +142,7 @@ func (r feedRepo) Update(feed *content.Feed) ([]content.Article, error) {
 
 	changed := int64(0)
 	if feed.ID != 0 {
-		s := r.db.SQL()
-		stmt, err := tx.Preparex(s.Feed.Update)
+		stmt, err := tx.Preparex(r.db.SQL().Feed.Update)
 		if err != nil {
 			return newArticles, errors.Wrap(err, "preparing feed update stmt")
 		}

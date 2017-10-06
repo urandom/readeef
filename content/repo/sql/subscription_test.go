@@ -1,7 +1,6 @@
 package sql
 
 import (
-	"reflect"
 	"sort"
 	"sync"
 	"testing"
@@ -47,7 +46,7 @@ func Test_subscriptionRepo_Get(t *testing.T) {
 				return
 			}
 
-			if !reflect.DeepEqual(got, tt.want) {
+			if !subscriptionsEqual(got, tt.want) {
 				t.Errorf("subscriptionRepo.Get() = %v, want %v", got, tt.want)
 			}
 		})
@@ -77,8 +76,14 @@ func Test_subscriptionRepo_All(t *testing.T) {
 				return got[i].FeedID < got[j].FeedID
 			})
 
-			if !reflect.DeepEqual(got, tt.want) {
+			if len(got) != len(tt.want) {
 				t.Errorf("subscriptionRepo.All() = %v, want %v", got, tt.want)
+			}
+
+			for i := range got {
+				if !subscriptionsEqual(got[i], tt.want[i]) {
+					t.Errorf("subscriptionRepo.All() = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}
@@ -115,8 +120,8 @@ func Test_subscriptionRepo_Update(t *testing.T) {
 				return
 			}
 
-			if !reflect.DeepEqual(got, tt.subscription) {
-				t.Errorf("subscriptionRepo.Update() = %v, want %v", got, tt.subscription)
+			if !subscriptionsEqual(got, tt.subscription) {
+				t.Errorf("subscriptionRepo.Update() = %#v, want %#v", got, tt.subscription)
 			}
 		})
 	}
@@ -137,4 +142,12 @@ func setupSubscription() {
 			panic(err)
 		}
 	})
+}
+
+func subscriptionsEqual(a, b content.Subscription) bool {
+	return a.FeedID == b.FeedID &&
+		a.Link == b.Link &&
+		a.LeaseDuration == b.LeaseDuration &&
+		a.SubscriptionFailure == b.SubscriptionFailure &&
+		a.VerificationTime.Equal(b.VerificationTime)
 }

@@ -23,7 +23,7 @@ func (r scoresRepo) Get(article content.Article) (content.Scores, error) {
 	r.log.Infof("Getting scores for article %s", article)
 
 	var scores content.Scores
-	if err := r.db.Get(&scores, r.db.SQL().Article.GetScores, article.ID); err != nil {
+	if err := r.db.Get(&scores, r.db.SQL().Scores.Get, article.ID); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
@@ -50,7 +50,7 @@ func (r scoresRepo) Update(scores content.Scores) error {
 	defer tx.Rollback()
 
 	s := r.db.SQL()
-	stmt, err := tx.Preparex(s.Article.UpdateScores)
+	stmt, err := tx.Preparex(s.Scores.Update)
 	if err != nil {
 		return errors.Wrap(err, "preparing scores update stmt")
 	}
@@ -69,7 +69,7 @@ func (r scoresRepo) Update(scores content.Scores) error {
 		return nil
 	}
 
-	stmt, err = tx.Preparex(s.Article.CreateScores)
+	stmt, err = tx.Preparex(s.Scores.Create)
 	if err != nil {
 		return errors.Wrap(err, "preparing scores create stmt")
 	}

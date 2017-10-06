@@ -16,123 +16,101 @@ type ArticleStmts struct {
 	Create string
 	Update string
 
-	CreateUserUnread   string
-	DeleteUserUnread   string
-	CreateUserFavorite string
-	DeleteUserFavorite string
+	GetUserlessTemplate      string
+	GetTemplate              string
+	CountTemplate            string
+	CountUserFeedsJoin       string
+	StateReadColumn          string
+	StateUnreadJoin          string
+	StateFavoriteJoin        string
+	GetIDsTemplate           string
+	DeleteStaleUnreadRecords string
+	GetScoreJoin             string
+	GetUntaggedJoin          string
 
-	GetScores    string
-	CreateScores string
-	UpdateScores string
+	ReadStateInsertTemplate     string
+	ReadStateDeleteTemplate     string
+	FavoriteStateInsertTemplate string
+	FavoriteStateDeleteTemplate string
+}
 
-	GetThumbnail    string
-	CreateThumbnail string
-	UpdateThumbnail string
-
-	GetExtract    string
-	CreateExtract string
-	UpdateExtract string
-
-	GetArticlesTemplate string
+type ExtractStmts struct {
+	Get    string
+	Create string
+	Update string
 }
 
 type FeedStmts struct {
+	Get          string
+	GetByLink    string
+	GetForUser   string
+	All          string
+	AllForUser   string
+	AllForTag    string
+	Unsubscribed string
+
 	IDs    string
 	Create string
 	Update string
 	Delete string
 
-	GetAllArticles    string
 	GetLatestArticles string
 
-	GetHubbubSubscription   string
-	GetUsers                string
-	Attach                  string
-	Detach                  string
-	GetUserTags             string
-	CreateUserTag           string
-	DeleteUserTags          string
-	ReadStateInsertTemplate string
+	GetUsers       string
+	Attach         string
+	Detach         string
+	CreateUserTag  string
+	DeleteUserTags string
 }
 
-type RepoStmts struct {
-	GetUser                  string
-	GetUserByMD5API          string
-	GetUsers                 string
-	GetFeed                  string
-	GetFeedByLink            string
-	GetFeeds                 string
-	GetUnsubscribedFeeds     string
-	GetHubbubSubscriptions   string
-	FailHubbubSubscriptions  string
-	DeleteStaleUnreadRecords string
+type ScoresStmts struct {
+	Get    string
+	Create string
+	Update string
 }
 
 type SubscriptionStmts struct {
+	GetForFeed string
+	All        string
+
 	Create string
 	Update string
-	Delete string
 }
 
 type TagStmts struct {
+	Get            string
 	GetByValue     string
+	AllForUser     string
+	AllForFeed     string
 	Create         string
-	Update         string
-	GetUserFeeds   string
 	GetUserFeedIDs string
 	DeleteStale    string
+}
 
-	GetArticlesJoin     string
-	ReadStateInsertJoin string
-	ReadStateDeleteJoin string
-	ArticleCountJoin    string
+type ThumbnailStmts struct {
+	Get    string
+	Create string
+	Update string
 }
 
 type UserStmts struct {
+	Get         string
+	GetByMD5API string
+	All         string
+
 	Create string
 	Update string
 	Delete string
-
-	GetFeed        string
-	GetFeeds       string
-	GetFeedIdsTags string
-
-	GetTags       string
-	GetTag        string
-	GetTagByValue string
-
-	GetArticlesUserlessTemplate string
-	GetArticlesTemplate         string
-	GetArticlesScoreJoin        string
-	GetArticlesUntaggedJoin     string
-
-	GetArticleIdsTemplate      string
-	GetArticleIdsUserFeedsJoin string
-	GetArticleIdsUnreadJoin    string
-	GetArticleIdsFavoriteJoin  string
-	GetArticleIdsUntaggedJoin  string
-
-	StateReadColumn             string
-	StateUnreadJoin             string
-	StateFavoriteJoin           string
-	ReadStateInsertTemplate     string
-	ReadStateDeleteTemplate     string
-	FavoriteStateInsertTemplate string
-	FavoriteStateDeleteTemplate string
-
-	ArticleCountTemplate      string
-	ArticleCountUserFeedsJoin string
-	ArticleCountUnreadJoin    string
-	ArticleCountFavoriteJoin  string
-	ArticleCountUntaggedJoin  string
 }
 
 type SqlStmts struct {
 	Article      ArticleStmts
+	Extract      ExtractStmts
 	Feed         FeedStmts
-	Repo         RepoStmts
+	Scores       ScoresStmts
 	Subscription SubscriptionStmts
 	Tag          TagStmts
+	Thumbnail    ThumbnailStmts
 	User         UserStmts
 }
 
