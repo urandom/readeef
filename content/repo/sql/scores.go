@@ -2,7 +2,9 @@ package sql
 
 import (
 	"database/sql"
+	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo/sql/db"
@@ -22,16 +24,16 @@ func (r scoresRepo) Get(article content.Article) (content.Scores, error) {
 
 	r.log.Infof("Getting scores for article %s", article)
 
-	var scores content.Scores
-	if err := r.db.Get(&scores, r.db.SQL().Scores.Get, article.ID); err != nil {
+	scores := content.Scores{ArticleID: article.ID}
+	if err := r.db.WithNamedStmt(r.db.SQL().Scores.Get, nil, func(stmt *sqlx.NamedStmt) error {
+		return stmt.Get(&scores, scores)
+	}); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
 
-		return content.Scores{}, errors.Wrapf(err, "getting scores for article %s", article)
+		return content.Scores{}, errors.WithMessage(err, fmt.Sprintf("getting scores for article %s", article))
 	}
-
-	scores.ArticleID = article.ID
 
 	return scores, nil
 }
@@ -43,46 +45,25 @@ func (r scoresRepo) Update(scores content.Scores) error {
 
 	r.log.Infof("Updating scores %s", scores)
 
-	tx, err := r.db.Beginx()
-	if err != nil {
-		return errors.Wrap(err, "creating transaction")
-	}
-	defer tx.Rollback()
-
 	s := r.db.SQL()
-	stmt, err := tx.PrepareNamed(s.Scores.Update)
-	if err != nil {
-		return errors.Wrap(err, "preparing scores update stmt")
-	}
-	defer stmt.Close()
+	return r.db.WithTx(func(tx *sqlx.Tx) error {
+		return r.db.WithNamedStmt(s.Scores.Update, tx, func(stmt *sqlx.NamedStmt) error {
+			res, err := stmt.Exec(scores)
+			if err != nil {
+				return errors.WithMessage(err, "executing scores update stmt")
+			}
 
-	res, err := stmt.Exec(scores)
-	if err != nil {
-		return errors.Wrap(err, "executing scores update stmt")
-	}
+			if num, err := res.RowsAffected(); err == nil && num > 0 {
+				return nil
+			}
 
-	if num, err := res.RowsAffected(); err == nil && num > 0 {
-		if err := tx.Commit(); err != nil {
-			return errors.Wrap(err, "committing transaction")
-		}
+			return r.db.WithNamedStmt(s.Scores.Create, tx, func(stmt *sqlx.NamedStmt) error {
+				if _, err = stmt.Exec(scores); err != nil {
+					return errors.WithMessage(err, "executing scores create stmt")
+				}
 
-		return nil
-	}
-
-	stmt, err = tx.PrepareNamed(s.Scores.Create)
-	if err != nil {
-		return errors.Wrap(err, "preparing scores create stmt")
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(scores)
-	if err != nil {
-		return errors.Wrap(err, "executing scores create stmt")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "committing transaction")
-	}
-
-	return nil
+				return nil
+			})
+		})
+	})
 }

@@ -63,10 +63,34 @@ func (db *DB) WhereMultipleORs(column, prefix string, length int) string {
 	}
 }
 
-func (db *DB) WithNamedStmt(query string, cb func(*sqlx.NamedStmt) error) error {
-	stmt, err := db.PrepareNamed(query)
+func (db *DB) WithNamedStmt(query string, tx *sqlx.Tx, cb func(*sqlx.NamedStmt) error) error {
+	var stmt *sqlx.NamedStmt
+	var err error
+
+	if tx == nil {
+		stmt, err = db.PrepareNamed(query)
+	} else {
+		stmt, err = tx.PrepareNamed(query)
+	}
 	if err != nil {
 		return errors.Wrap(err, "preparing named statement")
+	}
+	defer stmt.Close()
+
+	return cb(stmt)
+}
+
+func (db *DB) WithStmt(query string, tx *sqlx.Tx, cb func(*sqlx.Stmt) error) error {
+	var stmt *sqlx.Stmt
+	var err error
+
+	if tx == nil {
+		stmt, err = db.Preparex(query)
+	} else {
+		stmt, err = tx.Preparex(query)
+	}
+	if err != nil {
+		return errors.Wrap(err, "preparing statement")
 	}
 	defer stmt.Close()
 

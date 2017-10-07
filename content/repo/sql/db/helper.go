@@ -54,8 +54,6 @@ type FeedStmts struct {
 	Update string
 	Delete string
 
-	GetLatestArticles string
-
 	GetUsers       string
 	Attach         string
 	Detach         string

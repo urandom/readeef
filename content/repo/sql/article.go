@@ -109,7 +109,7 @@ func (r articleRepo) All(opts ...content.QueryOpt) ([]content.Article, error) {
 
 	r.log.Debugf("Articles SQL:\n%s\nArgs:%v\n", sql, args)
 
-	if err = r.db.WithNamedStmt(sql, func(stmt *sqlx.NamedStmt) error {
+	if err = r.db.WithNamedStmt(sql, nil, func(stmt *sqlx.NamedStmt) error {
 		return stmt.Select(&articles, args)
 	}); err != nil {
 		err = errors.WithMessage(err, "getting articles")
@@ -173,7 +173,7 @@ func (r articleRepo) Count(user content.User, opts ...content.QueryOpt) (int64, 
 	var count int64
 	r.log.Debugf("Article count SQL:\n%s\nArgs:%v\n", buf.String(), args)
 
-	if err = r.db.WithNamedStmt(buf.String(), func(stmt *sqlx.NamedStmt) error {
+	if err = r.db.WithNamedStmt(buf.String(), nil, func(stmt *sqlx.NamedStmt) error {
 		return stmt.Get(&count, args)
 	}); err != nil {
 		return 0, errors.WithMessage(err, "getting article count")
@@ -242,7 +242,7 @@ func (r articleRepo) IDs(user content.User, opts ...content.QueryOpt) ([]content
 	var ids []content.ArticleID
 	r.log.Debugf("Article ids SQL:\n%s\nArgs:%v\n", buf.String(), args)
 
-	if err = r.db.WithNamedStmt(buf.String(), func(stmt *sqlx.NamedStmt) error {
+	if err = r.db.WithNamedStmt(buf.String(), nil, func(stmt *sqlx.NamedStmt) error {
 		return stmt.Select(&ids, args)
 	}); err != nil {
 		return []content.ArticleID{}, errors.WithMessage(err, "getting article ids")
@@ -356,7 +356,7 @@ func internalGetArticles(login content.Login, dbo *db.DB, log log.Log, opts cont
 
 	log.Debugf("Articles SQL:\n%s\nArgs:%v\n", sql, args)
 
-	if err := dbo.WithNamedStmt(sql, func(stmt *sqlx.NamedStmt) error {
+	if err := dbo.WithNamedStmt(sql, nil, func(stmt *sqlx.NamedStmt) error {
 		return stmt.Select(&articles, args)
 	}); err != nil {
 		return []content.Article{}, errors.Wrap(err, "getting articles")
@@ -575,29 +575,27 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log log.Log) (cont
 
 	s := db.SQL()
 
-	stmt, err := tx.PrepareNamed(s.Article.Update)
-	if err != nil {
-		return content.Article{}, errors.Wrap(err, "preparing article update statement")
-	}
-	defer stmt.Close()
-
-	res, err := stmt.Exec(a)
-	if err != nil {
-		return content.Article{}, errors.Wrap(err, "executing article update statement")
-	}
-
-	if num, err := res.RowsAffected(); err != nil && err == sql.ErrNoRows || num == 0 {
-		log.Infof("Creating article %s\n", a)
-
-		id, err := db.CreateWithID(tx, s.Article.Create, a)
-
+	db.WithNamedStmt(s.Article.Update, tx, func(stmt *sqlx.NamedStmt) error {
+		res, err := stmt.Exec(a)
 		if err != nil {
-			return content.Article{}, errors.WithMessage(err, "creating article")
+			return errors.WithMessage(err, "executing article update statement")
 		}
 
-		a.ID = content.ArticleID(id)
-		a.IsNew = true
-	}
+		if num, err := res.RowsAffected(); err != nil && err == sql.ErrNoRows || num == 0 {
+			log.Infof("Creating article %s\n", a)
+
+			id, err := db.CreateWithID(tx, s.Article.Create, a)
+
+			if err != nil {
+				return errors.WithMessage(err, "creating article")
+			}
+
+			a.ID = content.ArticleID(id)
+			a.IsNew = true
+		}
+
+		return nil
+	})
 
 	return a, nil
 }

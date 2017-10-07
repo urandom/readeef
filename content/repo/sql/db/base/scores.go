@@ -10,7 +10,7 @@ const (
 	getArticleScores = `
 SELECT asco.score, asco.score1, asco.score2, asco.score3, asco.score4, asco.score5
 FROM articles_scores asco
-WHERE asco.article_id = $1
+WHERE asco.article_id = :article_id
 `
 	createArticleScores = `
 INSERT INTO articles_scores(article_id, score, score1, score2, score3, score4, score5)

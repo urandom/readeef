@@ -10,7 +10,7 @@ func init() {
 const (
 	getFeedHubbubSubscription = `
 SELECT link, lease_duration, verification_time, subscription_failure
-	FROM hubbub_subscriptions WHERE feed_id = $1`
+FROM hubbub_subscriptions WHERE feed_id = :feed_id`
 	getHubbubSubscriptions = `
 SELECT link, feed_id, lease_duration, verification_time, subscription_failure
 	FROM hubbub_subscriptions`

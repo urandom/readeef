@@ -2,6 +2,7 @@ package sql
 
 import (
 	"database/sql"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -16,6 +17,13 @@ type tagRepo struct {
 	log log.Log
 }
 
+type tagQuery struct {
+	ID        content.TagID    `db:"id"`
+	Value     content.TagValue `db:"value"`
+	UserLogin content.Login    `db:"user_login"`
+	FeedID    content.FeedID   `db:"feed_id"`
+}
+
 func (r tagRepo) Get(id content.TagID, user content.User) (content.Tag, error) {
 	if err := user.Validate(); err != nil {
 		return content.Tag{}, errors.WithMessage(err, "validating user")
@@ -23,16 +31,16 @@ func (r tagRepo) Get(id content.TagID, user content.User) (content.Tag, error) {
 
 	r.log.Infof("Getting tag %d for %s", id, user)
 
-	var tag content.Tag
-	if err := r.db.Get(&tag, r.db.SQL().Tag.Get, id, user.Login); err != nil {
+	tag := content.Tag{ID: id}
+	if err := r.db.WithNamedStmt(r.db.SQL().Tag.Get, nil, func(stmt *sqlx.NamedStmt) error {
+		return stmt.Get(&tag, tagQuery{ID: id, UserLogin: user.Login})
+	}); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
 
-		return content.Tag{}, errors.Wrapf(err, "getting tag %d", id)
+		return content.Tag{}, errors.WithMessage(err, fmt.Sprintf("getting tag %d", id))
 	}
-
-	tag.ID = id
 
 	return tag, nil
 }
@@ -45,9 +53,10 @@ func (r tagRepo) ForUser(user content.User) ([]content.Tag, error) {
 	r.log.Infof("Getting tags for %s", user)
 
 	var tags []content.Tag
-
-	if err := r.db.Select(&tags, r.db.SQL().Tag.AllForUser, user.Login); err != nil {
-		return []content.Tag{}, errors.Wrapf(err, "getting user %s tags", user)
+	if err := r.db.WithNamedStmt(r.db.SQL().Tag.AllForUser, nil, func(stmt *sqlx.NamedStmt) error {
+		return stmt.Select(&tags, tagQuery{UserLogin: user.Login})
+	}); err != nil {
+		return []content.Tag{}, errors.WithMessage(err, fmt.Sprintf("getting user %s tags", user))
 	}
 
 	return tags, nil
@@ -65,8 +74,10 @@ func (r tagRepo) ForFeed(feed content.Feed, user content.User) ([]content.Tag, e
 	r.log.Infof("Getting tags for user %s feed %s", user, feed)
 
 	var tags []content.Tag
-	if err := r.db.Select(&tags, r.db.SQL().Tag.AllForFeed, user.Login, feed.ID); err != nil {
-		return []content.Tag{}, errors.Wrapf(err, "getting user %s feed %s tags", user, feed)
+	if err := r.db.WithNamedStmt(r.db.SQL().Tag.AllForFeed, nil, func(stmt *sqlx.NamedStmt) error {
+		return stmt.Select(&tags, tagQuery{UserLogin: user.Login, FeedID: feed.ID})
+	}); err != nil {
+		return []content.Tag{}, errors.WithMessage(err, fmt.Sprintf("getting user %s feed %s tags", user, feed))
 	}
 
 	return tags, nil
@@ -84,21 +95,25 @@ func (r tagRepo) FeedIDs(tag content.Tag, user content.User) ([]content.FeedID, 
 	r.log.Infof("Getting tag %s feed ids", tag)
 
 	var ids []content.FeedID
-	if err := r.db.Select(&ids, r.db.SQL().Tag.GetUserFeedIDs, user.Login, tag.ID); err != nil {
-		return []content.FeedID{}, errors.Wrap(err, "getting tag feed ids")
+	if err := r.db.WithNamedStmt(r.db.SQL().Tag.GetUserFeedIDs, nil, func(stmt *sqlx.NamedStmt) error {
+		return stmt.Select(&ids, tagQuery{UserLogin: user.Login, ID: tag.ID})
+	}); err != nil {
+		return []content.FeedID{}, errors.WithMessage(err, "getting tag feed ids")
 	}
 
 	return ids, nil
 }
 
-func findTagByValue(value content.TagValue, stmt string, tx *sqlx.Tx) (content.Tag, error) {
+func findTagByValue(value content.TagValue, stmt string, db *db.DB, tx *sqlx.Tx) (content.Tag, error) {
 	var tag content.Tag
-	if err := tx.Get(&tag, stmt, value); err != nil {
+	if err := db.WithNamedStmt(stmt, tx, func(stmt *sqlx.NamedStmt) error {
+		return stmt.Get(&tag, tagQuery{Value: value})
+	}); err != nil {
 		if err == sql.ErrNoRows {
 			return content.Tag{}, content.ErrNoContent
 		}
 
-		return content.Tag{}, errors.Wrapf(err, "getting tag by value %s", value)
+		return content.Tag{}, errors.WithMessage(err, fmt.Sprintf("getting tag by value %s", value))
 	}
 
 	return tag, nil

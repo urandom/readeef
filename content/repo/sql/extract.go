@@ -2,7 +2,9 @@ package sql
 
 import (
 	"database/sql"
+	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo/sql/db"
@@ -22,16 +24,16 @@ func (r extractRepo) Get(article content.Article) (content.Extract, error) {
 
 	r.log.Infof("Getting extract for article %s", article)
 
-	var extract content.Extract
-	if err := r.db.Get(&extract, r.db.SQL().Extract.Get, article.ID); err != nil {
+	extract := content.Extract{ArticleID: article.ID}
+	if err := r.db.WithNamedStmt(r.db.SQL().Extract.Get, nil, func(stmt *sqlx.NamedStmt) error {
+		return stmt.Get(&extract, extract)
+	}); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
 
-		return content.Extract{}, errors.Wrapf(err, "getting extract for article %s", article)
+		return content.Extract{}, errors.WithMessage(err, fmt.Sprintf("getting extract for article %s", article))
 	}
-
-	extract.ArticleID = article.ID
 
 	return extract, nil
 }
@@ -43,46 +45,24 @@ func (r extractRepo) Update(extract content.Extract) error {
 
 	r.log.Infof("Updating extract %s", extract)
 
-	tx, err := r.db.Beginx()
-	if err != nil {
-		return errors.Wrap(err, "creating transaction")
-	}
-	defer tx.Rollback()
+	return r.db.WithTx(func(tx *sqlx.Tx) error {
+		s := r.db.SQL()
+		return r.db.WithNamedStmt(s.Extract.Update, tx, func(stmt *sqlx.NamedStmt) error {
+			res, err := stmt.Exec(extract)
+			if err != nil {
+				return errors.WithMessage(err, "executing extract update stmt")
+			}
 
-	s := r.db.SQL()
-	stmt, err := tx.PrepareNamed(s.Extract.Update)
-	if err != nil {
-		return errors.Wrap(err, "preparing extract update stmt")
-	}
-	defer stmt.Close()
+			if num, err := res.RowsAffected(); err == nil && num > 0 {
+				return nil
+			}
 
-	res, err := stmt.Exec(extract)
-	if err != nil {
-		return errors.Wrap(err, "executing extract update stmt")
-	}
-
-	if num, err := res.RowsAffected(); err == nil && num > 0 {
-		if err := tx.Commit(); err != nil {
-			return errors.Wrap(err, "committing transaction")
-		}
-
-		return nil
-	}
-
-	stmt, err = tx.PrepareNamed(s.Extract.Create)
-	if err != nil {
-		return errors.Wrap(err, "preparing extract create stmt")
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(extract)
-	if err != nil {
-		return errors.Wrap(err, "executing extract create stmt")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "committing transaction")
-	}
-
-	return nil
+			return r.db.WithNamedStmt(s.Extract.Create, tx, func(stmt *sqlx.NamedStmt) error {
+				if _, err = stmt.Exec(extract); err != nil {
+					return errors.WithMessage(err, "executing extract create stmt")
+				}
+				return nil
+			})
+		})
+	})
 }

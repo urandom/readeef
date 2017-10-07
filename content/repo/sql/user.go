@@ -2,7 +2,9 @@ package sql
 
 import (
 	"database/sql"
+	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo/sql/db"
@@ -18,17 +20,16 @@ type userRepo struct {
 func (r userRepo) Get(login content.Login) (content.User, error) {
 	r.log.Infof("Getting user %s", login)
 
-	var user content.User
-	err := r.db.Get(&user, r.db.SQL().User.Get, login)
-	if err != nil {
+	user := content.User{Login: login}
+	if err := r.db.WithNamedStmt(r.db.SQL().User.Get, nil, func(stmt *sqlx.NamedStmt) error {
+		return stmt.Get(&user, user)
+	}); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
 
-		return content.User{}, errors.Wrapf(err, "getting user %s", login)
+		return content.User{}, errors.WithMessage(err, fmt.Sprintf("getting user %s", login))
 	}
-
-	user.Login = login
 
 	return user, nil
 }
@@ -37,8 +38,10 @@ func (r userRepo) All() ([]content.User, error) {
 	r.log.Infoln("Getting all users")
 
 	var users []content.User
-	if err := r.db.Select(&users, r.db.SQL().User.All); err != nil {
-		return users, errors.Wrap(err, "getting all users")
+	if err := r.db.WithStmt(r.db.SQL().User.All, nil, func(stmt *sqlx.Stmt) error {
+		return stmt.Select(&users)
+	}); err != nil {
+		return users, errors.WithMessage(err, "getting all users")
 	}
 
 	return users, nil
@@ -52,48 +55,27 @@ func (r userRepo) Update(user content.User) error {
 
 	r.log.Infof("Updating user %s", user)
 
-	tx, err := r.db.Beginx()
-	if err != nil {
-		return errors.Wrap(err, "creating transaction")
-	}
-	defer tx.Rollback()
+	return r.db.WithTx(func(tx *sqlx.Tx) error {
+		s := r.db.SQL()
+		return r.db.WithNamedStmt(s.User.Update, tx, func(stmt *sqlx.NamedStmt) error {
+			res, err := stmt.Exec(user)
+			if err != nil {
+				return errors.WithMessage(err, "executing user update stmt")
+			}
 
-	s := r.db.SQL()
-	stmt, err := tx.PrepareNamed(s.User.Update)
-	if err != nil {
-		return errors.Wrap(err, "preparing user update stmt")
-	}
-	defer stmt.Close()
+			if num, err := res.RowsAffected(); err == nil && num > 0 {
+				return nil
+			}
 
-	res, err := stmt.Exec(user)
-	if err != nil {
-		return errors.Wrap(err, "executing user update stmt")
-	}
+			return r.db.WithNamedStmt(s.User.Create, tx, func(stmt *sqlx.NamedStmt) error {
+				if _, err := stmt.Exec(user); err != nil {
+					return errors.WithMessage(err, "executing user create stmt")
+				}
 
-	if num, err := res.RowsAffected(); err == nil && num > 0 {
-		if err := tx.Commit(); err != nil {
-			return errors.Wrap(err, "committing transaction")
-		}
-
-		return nil
-	}
-
-	stmt, err = tx.PrepareNamed(s.User.Create)
-	if err != nil {
-		return errors.Wrap(err, "preparing user create stmt")
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(user)
-	if err != nil {
-		return errors.Wrap(err, "executing user create stmt")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "committing transaction")
-	}
-
-	return nil
+				return nil
+			})
+		})
+	})
 }
 
 // Delete deleted the user from the database.
@@ -104,28 +86,12 @@ func (r userRepo) Delete(user content.User) error {
 
 	r.log.Infof("Deleting user %s", user)
 
-	tx, err := r.db.Beginx()
-	if err != nil {
-		return errors.Wrap(err, "creating transaction")
-	}
-	defer tx.Rollback()
-
-	stmt, err := tx.PrepareNamed(r.db.SQL().User.Delete)
-	if err != nil {
-		return errors.Wrap(err, "preparing user delete stmt")
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(user)
-	if err != nil {
-		return errors.Wrap(err, "executing user delete stmt")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "committing transaction")
-	}
-
-	return nil
+	return r.db.WithNamedTx(r.db.SQL().User.Delete, func(stmt *sqlx.NamedStmt) error {
+		if _, err := stmt.Exec(user); err != nil {
+			return errors.WithMessage(err, "executing user delete stmt")
+		}
+		return nil
+	})
 }
 
 func (r userRepo) FindByMD5(hash []byte) (content.User, error) {
@@ -135,16 +101,20 @@ func (r userRepo) FindByMD5(hash []byte) (content.User, error) {
 
 	r.log.Infof("Getting user using md5 api field %v", hash)
 
-	var user content.User
-	if err := r.db.Get(&user, r.db.SQL().User.GetByMD5API, string(hash)); err != nil {
-		if err == sql.ErrNoRows {
-			err = content.ErrNoContent
+	user := content.User{MD5API: hash}
+	if err := r.db.WithNamedStmt(r.db.SQL().User.GetByMD5API, nil, func(stmt *sqlx.NamedStmt) error {
+		if err := stmt.Get(&user, user); err != nil {
+			if err == sql.ErrNoRows {
+				err = content.ErrNoContent
+			}
+
+			return errors.WithMessage(err, fmt.Sprintf("getting user by md5 %s", hash))
 		}
 
-		return content.User{}, errors.Wrapf(err, "getting user by md5 %s", hash)
+		return nil
+	}); err != nil {
+		return content.User{}, err
 	}
-
-	user.MD5API = hash
 
 	return user, nil
 }

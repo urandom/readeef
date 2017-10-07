@@ -15,24 +15,24 @@ const (
 SELECT t.value
 FROM tags t LEFT OUTER JOIN users_feeds_tags uft
 	ON t.id = uft.tag_id
-WHERE id = $1 AND uft.user_login = $2
+WHERE id = :id AND uft.user_login = :user_login
 `
-	getTagByValue   = `SELECT id FROM tags WHERE value = $1`
+	getTagByValue   = `SELECT id FROM tags WHERE value = :value`
 	getUserFeedTags = `
 SELECT t.id, t.value
 FROM users_feeds_tags uft INNER JOIN tags t
 	ON uft.tag_id = t.id
-WHERE uft.user_login = $1 AND uft.feed_id = $2`
+WHERE uft.user_login = :user_login AND uft.feed_id = :feed_id`
 	getUserTags = `
 SELECT DISTINCT t.id, t.value
 FROM tags t LEFT OUTER JOIN users_feeds_tags uft
 	ON t.id = uft.tag_id
-WHERE uft.user_login = $1
+WHERE uft.user_login = :user_login
 `
 	getUserTagFeedIDs = `
 SELECT uft.feed_id
 FROM users_feeds_tags uft
-WHERE uft.user_login = $1 AND uft.tag_id = $2
+WHERE uft.user_login = :user_login AND uft.tag_id = :id
 `
 
 	createTag = `

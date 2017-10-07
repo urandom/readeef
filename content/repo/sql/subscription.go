@@ -2,7 +2,9 @@ package sql
 
 import (
 	"database/sql"
+	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo/sql/db"
@@ -21,17 +23,16 @@ func (r subscriptionRepo) Get(feed content.Feed) (content.Subscription, error) {
 	}
 	r.log.Infoln("Getting feed subscription")
 
-	var subscription content.Subscription
-	err := r.db.Get(&subscription, r.db.SQL().Subscription.GetForFeed, feed.ID)
-	if err != nil {
+	subscription := content.Subscription{FeedID: feed.ID}
+	if err := r.db.WithNamedStmt(r.db.SQL().Subscription.GetForFeed, nil, func(stmt *sqlx.NamedStmt) error {
+		return stmt.Get(&subscription, subscription)
+	}); err != nil {
 		if err == sql.ErrNoRows {
 			err = content.ErrNoContent
 		}
 
-		return content.Subscription{}, errors.Wrapf(err, "getting subscription for feed %s", feed)
+		return content.Subscription{}, errors.WithMessage(err, fmt.Sprintf("getting subscription for feed %s", feed))
 	}
-
-	subscription.FeedID = feed.ID
 
 	return subscription, nil
 }
@@ -40,9 +41,10 @@ func (r subscriptionRepo) All() ([]content.Subscription, error) {
 	r.log.Infoln("Getting all subscriptions")
 
 	var subscriptions []content.Subscription
-	err := r.db.Select(&subscriptions, r.db.SQL().Subscription.All)
-	if err != nil {
-		return []content.Subscription{}, errors.Wrap(err, "getting hubbub subscriptions")
+	if err := r.db.WithStmt(r.db.SQL().Subscription.All, nil, func(stmt *sqlx.Stmt) error {
+		return stmt.Select(&subscriptions)
+	}); err != nil {
+		return []content.Subscription{}, errors.WithMessage(err, "getting hubbub subscriptions")
 	}
 
 	return subscriptions, nil
@@ -55,46 +57,28 @@ func (r subscriptionRepo) Update(subscription content.Subscription) error {
 
 	r.log.Infof("Updating subscription %s", subscription)
 
-	tx, err := r.db.Beginx()
-	if err != nil {
-		return errors.Wrap(err, "creating transaction")
-	}
-	defer tx.Rollback()
+	return r.db.WithTx(func(tx *sqlx.Tx) error {
+		s := r.db.SQL()
 
-	stmt, err := tx.PrepareNamed(r.db.SQL().Subscription.Update)
-	if err != nil {
-		return errors.Wrap(err, "preparing subscription update stmt")
-	}
-	defer stmt.Close()
+		r.db.WithNamedStmt(s.Subscription.Update, tx, func(stmt *sqlx.NamedStmt) error {
+			res, err := stmt.Exec(subscription)
+			if err != nil {
+				return errors.WithMessage(err, "executing subscription update stmt")
+			}
 
-	res, err := stmt.Exec(subscription)
-	if err != nil {
-		return errors.Wrap(err, "executing subscription update stmt")
-	}
+			if num, err := res.RowsAffected(); err == nil && num > 0 {
+				return nil
+			}
 
-	if num, err := res.RowsAffected(); err == nil && num > 0 {
-		if err := tx.Commit(); err != nil {
-			return errors.Wrap(err, "committing transaction")
-		}
+			return r.db.WithNamedStmt(s.Subscription.Create, tx, func(stmt *sqlx.NamedStmt) error {
+				if _, err := stmt.Exec(subscription); err != nil {
+					return errors.WithMessage(err, "executing subscription create stmt")
+				}
+
+				return nil
+			})
+		})
 
 		return nil
-	}
-
-	stmt, err = tx.PrepareNamed(r.db.SQL().Subscription.Create)
-	if err != nil {
-		return errors.Wrap(err, "preparing subscription create stmt")
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(subscription)
-	if err != nil {
-		return errors.Wrap(err, "executing subscription create stmt")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "committing transaction")
-	}
-
-	return nil
-
+	})
 }

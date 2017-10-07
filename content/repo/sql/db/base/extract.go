@@ -10,7 +10,7 @@ const (
 	getArticleExtract = `
 SELECT ae.title, ae.content, ae.top_image, ae.language
 FROM articles_extracts ae
-WHERE ae.article_id = $1
+WHERE ae.article_id = :article_id
 `
 	createArticleExtract = `
 INSERT INTO articles_extracts(article_id, title, content, top_image, language)

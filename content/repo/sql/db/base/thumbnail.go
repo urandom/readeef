@@ -10,7 +10,7 @@ const (
 	getArticleThumbnail = `
 SELECT at.thumbnail, at.link, at.processed
 FROM articles_thumbnails at
-WHERE at.article_id = $1
+WHERE at.article_id = :article_id
 `
 	createArticleThumbnail = `
 INSERT INTO articles_thumbnails(article_id, thumbnail, link, processed)

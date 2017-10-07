@@ -187,7 +187,7 @@ const (
 SELECT f.id, f.link, f.title, f.description, f.link, f.hub_link, f.site_link, f.update_error, f.subscribe_error
 FROM feeds f, users_feeds uf
 WHERE f.id = uf.feed_id
-	AND uf.user_login = $1
+	AND uf.user_login = :user_login
 ORDER BY f.title COLLATE "default"
 `
 
