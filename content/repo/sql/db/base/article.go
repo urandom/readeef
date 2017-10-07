@@ -62,7 +62,7 @@ SELECT a.feed_id, a.id, a.title, a.description, a.link, a.date, a.guid,
 	{{ .Columns }}
 FROM users_feeds uf INNER JOIN articles a
 	ON uf.feed_id = a.feed_id
-	AND uf.user_login = $1
+	AND uf.user_login = :user_login
 {{ .Join }}
 LEFT OUTER JOIN users_articles_unread au
     ON a.id = au.article_id AND uf.user_login = au.user_login
@@ -77,7 +77,7 @@ LEFT OUTER JOIN articles_thumbnails at
 	articleCountUserFeedsJoin = `
 INNER JOIN users_feeds uf
 	ON uf.feed_id = a.feed_id
-	AND uf.user_login = $1
+	AND uf.user_login = :user_login
 `
 	stateReadColumn   = ` CASE WHEN au.article_id IS NULL THEN 1 ELSE 0 END AS read `
 	stateFavoriteJoin = `
@@ -99,7 +99,7 @@ SELECT a.id FROM (
 	{{ .Limit }}
 ) a
 `
-	deleteStaleUnreadRecords = `DELETE FROM users_articles_unread WHERE insert_date < $1`
+	deleteStaleUnreadRecords = `DELETE FROM users_articles_unread WHERE insert_date < :insert_date`
 	getArticlesScoreJoin     = `
 	INNER JOIN articles_scores asco ON a.id = asco.article_id
 `
@@ -113,19 +113,19 @@ INSERT INTO users_articles_unread (user_login, article_id)
 SELECT uf.user_login, a.id
 FROM users_feeds uf
 INNER JOIN articles a
-	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+		ON uf.feed_id = a.feed_id AND uf.user_login = :user_login
 {{ .Join }}
 {{ .Where }}
 EXCEPT SELECT au.user_login, au.article_id
 FROM users_articles_unread au
-WHERE au.user_login = $1
+WHERE au.user_login = :user_login
 `
 	readStateDeleteTemplate = `
-DELETE FROM users_articles_unread WHERE user_login = $1 AND article_id IN (
+DELETE FROM users_articles_unread WHERE user_login = :user_login AND article_id IN (
 	SELECT a.id
 	FROM users_feeds uf INNER JOIN articles a
 		ON uf.feed_id = a.feed_id
-		AND uf.user_login = $1
+		AND uf.user_login = :user_login
 	{{ .Join }}
 	{{ .Where }}
 )
@@ -135,19 +135,19 @@ INSERT INTO users_articles_favorite (user_login, article_id)
 SELECT uf.user_login, a.id
 FROM users_feeds uf
 INNER JOIN articles a
-	ON uf.feed_id = a.feed_id AND uf.user_login = $1
+	ON uf.feed_id = a.feed_id AND uf.user_login = :user_login
 {{ .Join }}
 {{ .Where }}
 EXCEPT SELECT af.user_login, af.article_id
 FROM users_articles_favorite af
-WHERE af.user_login = $1
+WHERE af.user_login = :user_login
 `
 	favoriteStateDeleteTemplate = `
-DELETE FROM users_articles_favorite WHERE user_login = $1 AND article_id IN (
+DELETE FROM users_articles_favorite WHERE user_login = :user_login AND article_id IN (
 	SELECT a.id
 	FROM users_feeds uf INNER JOIN articles a
 		ON uf.feed_id = a.feed_id
-		AND uf.user_login = $1
+		AND uf.user_login = :user_login
 	{{ .Join }}
 	{{ .Where }}
 )

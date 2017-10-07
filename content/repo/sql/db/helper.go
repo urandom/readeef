@@ -9,7 +9,7 @@ type Helper interface {
 	CreateWithID(tx *sqlx.Tx, sql string, arg interface{}) (int64, error)
 	Upgrade(db *DB, old, new int) error
 
-	WhereMultipleORs(string, int, int) string
+	WhereMultipleORs(string, string, int) string
 }
 
 type ArticleStmts struct {

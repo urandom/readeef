@@ -40,6 +40,18 @@ type getArticlesData struct {
 	Limit   string
 }
 
+const (
+	userLogin    = "user_login"
+	beforeID     = "before_id"
+	afterID      = "after_id"
+	beforeDate   = "before_date"
+	afterDate    = "after_date"
+	idPrefix     = "id"
+	feedIDPRefix = "feed_id"
+	limit        = "limit"
+	offset       = "offset"
+)
+
 // ForUser returns all user articles restricted by the QueryOptions
 func (r articleRepo) ForUser(user content.User, opts ...content.QueryOpt) ([]content.Article, error) {
 	articles := []content.Article{}
@@ -82,7 +94,7 @@ func (r articleRepo) All(opts ...content.QueryOpt) ([]content.Article, error) {
 		renderData.Columns += ", asco.score"
 	}
 
-	var args []interface{}
+	var args map[string]interface{}
 	renderData.Join, renderData.Where, renderData.Order, renderData.Limit, args = constructSQLQueryOptions("", o, r.db)
 
 	buf := pool.Buffer.Get()
@@ -96,8 +108,11 @@ func (r articleRepo) All(opts ...content.QueryOpt) ([]content.Article, error) {
 	var articles []content.Article
 
 	r.log.Debugf("Articles SQL:\n%s\nArgs:%v\n", sql, args)
-	if err = r.db.Select(&articles, sql, args...); err != nil {
-		err = errors.Wrap(err, "getting articles")
+
+	if err = r.db.WithNamedStmt(sql, func(stmt *sqlx.NamedStmt) error {
+		return stmt.Select(&articles, args)
+	}); err != nil {
+		err = errors.WithMessage(err, "getting articles")
 	}
 
 	return articles, err
@@ -157,8 +172,11 @@ func (r articleRepo) Count(user content.User, opts ...content.QueryOpt) (int64, 
 
 	var count int64
 	r.log.Debugf("Article count SQL:\n%s\nArgs:%v\n", buf.String(), args)
-	if err = r.db.Get(&count, buf.String(), args...); err != nil {
-		return 0, errors.Wrap(err, "getting article count")
+
+	if err = r.db.WithNamedStmt(buf.String(), func(stmt *sqlx.NamedStmt) error {
+		return stmt.Get(&count, args)
+	}); err != nil {
+		return 0, errors.WithMessage(err, "getting article count")
 	}
 
 	return count, nil
@@ -223,8 +241,11 @@ func (r articleRepo) IDs(user content.User, opts ...content.QueryOpt) ([]content
 
 	var ids []content.ArticleID
 	r.log.Debugf("Article ids SQL:\n%s\nArgs:%v\n", buf.String(), args)
-	if err = r.db.Select(&ids, buf.String(), args...); err != nil {
-		return []content.ArticleID{}, errors.Wrap(err, "getting article count")
+
+	if err = r.db.WithNamedStmt(buf.String(), func(stmt *sqlx.NamedStmt) error {
+		return stmt.Select(&ids, args)
+	}); err != nil {
+		return []content.ArticleID{}, errors.WithMessage(err, "getting article ids")
 	}
 
 	return ids, nil
@@ -246,12 +267,21 @@ func (r articleRepo) Favor(
 	return articleStateSet(favoriteState, state, user, r.db, r.log, opts)
 }
 
+type staleArgs struct {
+	InsertDate time.Time `db:"insert_date"`
+}
+
 func (r articleRepo) RemoveStaleUnreadRecords() error {
 	r.log.Infof("Removing stale unread article records")
 
-	_, err := r.db.Exec(r.db.SQL().Article.DeleteStaleUnreadRecords, time.Now().AddDate(0, -1, 0))
-	if err != nil {
-		return errors.Wrap(err, "removing stale unread article records")
+	if err := r.db.WithNamedTx(
+		r.db.SQL().Article.DeleteStaleUnreadRecords,
+		func(stmt *sqlx.NamedStmt) error {
+			_, err := stmt.Exec(staleArgs{time.Now().AddDate(0, -1, 0)})
+			return err
+		},
+	); err != nil {
+		return errors.WithMessage(err, "removing stale unread article records")
 	}
 
 	return nil
@@ -307,7 +337,7 @@ func getArticles(login content.Login, dbo *db.DB, log log.Log, opts content.Quer
 func internalGetArticles(login content.Login, dbo *db.DB, log log.Log, opts content.QueryOptions) ([]content.Article, error) {
 	renderData := getArticlesData{}
 
-	var args []interface{}
+	var args map[string]interface{}
 	renderData.Join, renderData.Where, renderData.Order, renderData.Limit, args = constructSQLQueryOptions(login, opts, dbo)
 
 	if opts.IncludeScores {
@@ -325,7 +355,10 @@ func internalGetArticles(login content.Login, dbo *db.DB, log log.Log, opts cont
 	var articles []content.Article
 
 	log.Debugf("Articles SQL:\n%s\nArgs:%v\n", sql, args)
-	if err := dbo.Select(&articles, sql, args...); err != nil {
+
+	if err := dbo.WithNamedStmt(sql, func(stmt *sqlx.NamedStmt) error {
+		return stmt.Select(&articles, args)
+	}); err != nil {
 		return []content.Article{}, errors.Wrap(err, "getting articles")
 	}
 
@@ -381,7 +414,7 @@ func articleStateSet(
 
 	s := db.SQL()
 	renderData := getArticlesData{}
-	var args []interface{}
+	var args map[string]interface{}
 	renderData.Join, renderData.Where, _, _, args = constructSQLQueryOptions(user.Login, o, db)
 
 	if o.FavoriteOnly {
@@ -398,19 +431,12 @@ func articleStateSet(
 		return errors.Wrap(err, "executing article state template")
 	}
 
-	tx, err := db.Beginx()
-	if err != nil {
-		return errors.Wrap(err, "creating transaction")
-	}
-	defer tx.Rollback()
-
 	log.Debugf("Articles state SQL:\n%s\nArgs:%v\n", buf.String(), args)
-	if _, err := tx.Exec(buf.String(), args...); err != nil {
+	if err := db.WithNamedTx(buf.String(), func(stmt *sqlx.NamedStmt) error {
+		_, err := stmt.Exec(args)
+		return err
+	}); err != nil {
 		return errors.Wrap(err, "executing article state statement")
-	}
-
-	if err = tx.Commit(); err != nil {
-		return errors.Wrap(err, "committing transaction")
 	}
 
 	return nil
@@ -420,7 +446,8 @@ func constructSQLQueryOptions(
 	login content.Login,
 	opts content.QueryOptions,
 	db *db.DB,
-) (string, string, string, string, []interface{}) {
+) (string, string, string, string, map[string]interface{}) {
+	args := map[string]interface{}{}
 
 	hasUser := login != ""
 
@@ -432,14 +459,10 @@ func constructSQLQueryOptions(
 	}
 
 	if hasUser {
+		args[userLogin] = login
 		if opts.UntaggedOnly {
 			join += s.Article.GetUntaggedJoin
 		}
-	}
-
-	args := make([]interface{}, 0, 6)
-	if hasUser {
-		args = append(args, login)
 	}
 
 	whereSlice := []string{}
@@ -461,35 +484,35 @@ func constructSQLQueryOptions(
 	}
 
 	if opts.BeforeID > 0 {
-		whereSlice = append(whereSlice, fmt.Sprintf("a.id < $%d", len(args)+1))
-		args = append(args, opts.BeforeID)
+		whereSlice = append(whereSlice, "a.id < :before_id")
+		args[beforeID] = opts.BeforeID
 	}
 	if opts.AfterID > 0 {
-		whereSlice = append(whereSlice, fmt.Sprintf("a.id > $%d", len(args)+1))
-		args = append(args, opts.AfterID)
+		whereSlice = append(whereSlice, "a.id > :after_id")
+		args[afterID] = opts.AfterID
 	}
 
 	if !opts.BeforeDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf("(a.date IS NULL OR a.date < $%d)", len(args)+1))
-		args = append(args, opts.BeforeDate)
+		whereSlice = append(whereSlice, "(a.date IS NULL OR a.date < :before_date)")
+		args[beforeDate] = opts.BeforeDate
 	}
 
 	if !opts.AfterDate.IsZero() {
-		whereSlice = append(whereSlice, fmt.Sprintf("a.date > $%d", len(args)+1))
-		args = append(args, opts.AfterDate)
+		whereSlice = append(whereSlice, "a.date > :after_date")
+		args[afterDate] = opts.AfterDate
 	}
 
 	if len(opts.IDs) > 0 {
-		whereSlice = append(whereSlice, db.WhereMultipleORs("a.id", len(opts.IDs), len(args)+1))
+		whereSlice = append(whereSlice, db.WhereMultipleORs("a.id", idPrefix, len(opts.IDs)))
 		for i := range opts.IDs {
-			args = append(args, opts.IDs[i])
+			args[fmt.Sprintf("%s%d", idPrefix, i)] = opts.IDs[i]
 		}
 	}
 
 	if len(opts.FeedIDs) > 0 {
-		whereSlice = append(whereSlice, db.WhereMultipleORs("a.feed_id", len(opts.FeedIDs), len(args)+1))
+		whereSlice = append(whereSlice, db.WhereMultipleORs("a.feed_id", feedIDPRefix, len(opts.FeedIDs)))
 		for i := range opts.FeedIDs {
-			args = append(args, opts.FeedIDs[i])
+			args[fmt.Sprintf("%s%d", feedIDPRefix, i)] = opts.FeedIDs[i]
 		}
 	}
 
@@ -533,13 +556,14 @@ func constructSQLQueryOptions(
 		}
 	}
 
-	var limit string
+	var paging string
 	if opts.Limit > 0 {
-		limit = fmt.Sprintf(" LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
-		args = append(args, opts.Limit, opts.Offset)
+		paging = " LIMIT :limit OFFSET :offset"
+		args[limit] = opts.Limit
+		args[offset] = opts.Offset
 	}
 
-	return join, where, order, limit, args
+	return join, where, order, paging, args
 }
 
 func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log log.Log) (content.Article, error) {

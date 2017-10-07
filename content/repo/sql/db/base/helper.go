@@ -72,10 +72,10 @@ func (h Helper) CreateWithID(tx *sqlx.Tx, sql string, arg interface{}) (int64, e
 	return id, nil
 }
 
-func (h Helper) WhereMultipleORs(column string, length, off int) string {
+func (h Helper) WhereMultipleORs(column, prefix string, length int) string {
 	orSlice := make([]string, length)
 	for i := 0; i < length; i++ {
-		orSlice[i] = fmt.Sprintf("$%d", off+i)
+		orSlice[i] = fmt.Sprintf(":%s%d", prefix, i)
 	}
 
 	return fmt.Sprintf("%s IN (%s)", column, strings.Join(orSlice, ", "))

@@ -60,15 +60,15 @@ func (h Helper) Upgrade(db *db.DB, old, new int) error {
 	return nil
 }
 
-func (h Helper) WhereMultipleORs(column string, length, off int) string {
+func (h Helper) WhereMultipleORs(column, prefix string, length int) string {
 	if length < 70 {
-		return h.Helper.WhereMultipleORs(column, length, off)
+		return h.Helper.WhereMultipleORs(column, prefix, length)
 	}
 
 	orSlice := make([]string, length)
-	orSlice[0] = fmt.Sprintf("VALUES($%d::bigint)", off)
+	orSlice[0] = fmt.Sprintf("VALUES(:%s0::bigint)", prefix)
 	for i := 1; i < length; i++ {
-		orSlice[i] = fmt.Sprintf("($%d::bigint)", off+i)
+		orSlice[i] = fmt.Sprintf("(:%s%d::bigint)", prefix, i)
 	}
 
 	return fmt.Sprintf("%s IN (%s)", column, strings.Join(orSlice, ", "))

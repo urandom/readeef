@@ -45,11 +45,11 @@ func (db *DB) CreateWithID(tx *sqlx.Tx, sql string, arg interface{}) (int64, err
 	}
 }
 
-func (db *DB) WhereMultipleORs(column string, length, off int) string {
+func (db *DB) WhereMultipleORs(column, prefix string, length int) string {
 	if length < 20 {
 		orSlice := make([]string, length)
 		for i := 0; i < length; i++ {
-			orSlice[i] = fmt.Sprintf("%s = $%d", column, off+i)
+			orSlice[i] = fmt.Sprintf("%s = :%s%d", column, prefix, i)
 		}
 
 		return "(" + strings.Join(orSlice, " OR ") + ")"
@@ -57,10 +57,50 @@ func (db *DB) WhereMultipleORs(column string, length, off int) string {
 
 	driver := db.DriverName()
 	if h, ok := helpers[driver]; ok {
-		return h.WhereMultipleORs(column, length, off)
+		return h.WhereMultipleORs(column, prefix, length)
 	} else {
 		panic("No helper registered for " + driver)
 	}
+}
+
+func (db *DB) WithNamedStmt(query string, cb func(*sqlx.NamedStmt) error) error {
+	stmt, err := db.PrepareNamed(query)
+	if err != nil {
+		return errors.Wrap(err, "preparing named statement")
+	}
+	defer stmt.Close()
+
+	return cb(stmt)
+}
+
+func (db *DB) WithTx(cb func(*sqlx.Tx) error) error {
+	tx, err := db.Beginx()
+	if err != nil {
+		return errors.Wrap(err, "creating transaction")
+	}
+	defer tx.Rollback()
+
+	if err := cb(tx); err != nil {
+		return errors.Wrap(err, "executing transaction")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(err, "committing transaction")
+	}
+
+	return nil
+}
+
+func (db *DB) WithNamedTx(query string, cb func(*sqlx.NamedStmt) error) error {
+	return db.WithTx(func(tx *sqlx.Tx) error {
+		stmt, err := tx.PrepareNamed(query)
+		if err != nil {
+			return errors.Wrap(err, "preparing named statement")
+		}
+		defer stmt.Close()
+
+		return cb(stmt)
+	})
 }
 
 func (db *DB) init() error {
