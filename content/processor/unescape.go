@@ -21,7 +21,7 @@ func (p Unescape) ProcessArticles(articles []content.Article) []content.Article 
 		return articles
 	}
 
-	p.log.Infof("Unescaping articles o ffeed %d", articles[0].FeedID)
+	p.log.Infof("Unescaping articles of feed %d", articles[0].FeedID)
 
 	for i := range articles {
 		articles[i].Description = p.processDescription(articles[i].Description)

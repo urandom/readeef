@@ -2,7 +2,6 @@ package sql
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -28,7 +27,7 @@ func (r userRepo) Get(login content.Login) (content.User, error) {
 			err = content.ErrNoContent
 		}
 
-		return content.User{}, errors.WithMessage(err, fmt.Sprintf("getting user %s", login))
+		return content.User{}, errors.Wrapf(err, "getting user %s", login)
 	}
 
 	return user, nil
@@ -41,7 +40,7 @@ func (r userRepo) All() ([]content.User, error) {
 	if err := r.db.WithStmt(r.db.SQL().User.All, nil, func(stmt *sqlx.Stmt) error {
 		return stmt.Select(&users)
 	}); err != nil {
-		return users, errors.WithMessage(err, "getting all users")
+		return users, errors.Wrap(err, "getting all users")
 	}
 
 	return users, nil
@@ -60,7 +59,7 @@ func (r userRepo) Update(user content.User) error {
 		return r.db.WithNamedStmt(s.User.Update, tx, func(stmt *sqlx.NamedStmt) error {
 			res, err := stmt.Exec(user)
 			if err != nil {
-				return errors.WithMessage(err, "executing user update stmt")
+				return errors.Wrap(err, "executing user update stmt")
 			}
 
 			if num, err := res.RowsAffected(); err == nil && num > 0 {
@@ -69,7 +68,7 @@ func (r userRepo) Update(user content.User) error {
 
 			return r.db.WithNamedStmt(s.User.Create, tx, func(stmt *sqlx.NamedStmt) error {
 				if _, err := stmt.Exec(user); err != nil {
-					return errors.WithMessage(err, "executing user create stmt")
+					return errors.Wrap(err, "executing user create stmt")
 				}
 
 				return nil
@@ -88,7 +87,7 @@ func (r userRepo) Delete(user content.User) error {
 
 	return r.db.WithNamedTx(r.db.SQL().User.Delete, func(stmt *sqlx.NamedStmt) error {
 		if _, err := stmt.Exec(user); err != nil {
-			return errors.WithMessage(err, "executing user delete stmt")
+			return errors.Wrap(err, "executing user delete stmt")
 		}
 		return nil
 	})
@@ -108,7 +107,7 @@ func (r userRepo) FindByMD5(hash []byte) (content.User, error) {
 				err = content.ErrNoContent
 			}
 
-			return errors.WithMessage(err, fmt.Sprintf("getting user by md5 %s", hash))
+			return errors.Wrapf(err, "getting user by md5 %s", hash)
 		}
 
 		return nil

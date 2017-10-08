@@ -2,7 +2,6 @@ package sql
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -32,7 +31,7 @@ func (r scoresRepo) Get(article content.Article) (content.Scores, error) {
 			err = content.ErrNoContent
 		}
 
-		return content.Scores{}, errors.WithMessage(err, fmt.Sprintf("getting scores for article %s", article))
+		return content.Scores{}, errors.Wrapf(err, "getting scores for article %s", article)
 	}
 
 	return scores, nil
@@ -50,7 +49,7 @@ func (r scoresRepo) Update(scores content.Scores) error {
 		return r.db.WithNamedStmt(s.Scores.Update, tx, func(stmt *sqlx.NamedStmt) error {
 			res, err := stmt.Exec(scores)
 			if err != nil {
-				return errors.WithMessage(err, "executing scores update stmt")
+				return errors.Wrap(err, "executing scores update stmt")
 			}
 
 			if num, err := res.RowsAffected(); err == nil && num > 0 {
@@ -59,7 +58,7 @@ func (r scoresRepo) Update(scores content.Scores) error {
 
 			return r.db.WithNamedStmt(s.Scores.Create, tx, func(stmt *sqlx.NamedStmt) error {
 				if _, err = stmt.Exec(scores); err != nil {
-					return errors.WithMessage(err, "executing scores create stmt")
+					return errors.Wrap(err, "executing scores create stmt")
 				}
 
 				return nil

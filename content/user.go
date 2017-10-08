@@ -137,6 +137,10 @@ func (val *ProfileData) Scan(src interface{}) error {
 		return fmt.Errorf("Scan source '%#v' (%T) was not of type string (Login)", src, src)
 	}
 
+	if len(data) == 0 {
+		return nil
+	}
+
 	return json.Unmarshal(data, val)
 }
 

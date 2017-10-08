@@ -2,7 +2,6 @@ package sql
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -41,7 +40,7 @@ func (r feedRepo) Get(id content.FeedID, user content.User) (content.Feed, error
 			err = content.ErrNoContent
 		}
 
-		return content.Feed{}, errors.WithMessage(err, fmt.Sprintf("getting feed %d", id))
+		return content.Feed{}, errors.Wrapf(err, "getting feed %d", id)
 	}
 
 	return feed, nil
@@ -79,7 +78,7 @@ func (r feedRepo) ForUser(user content.User) ([]content.Feed, error) {
 	if err := r.db.WithNamedStmt(r.db.SQL().Feed.AllForUser, nil, func(stmt *sqlx.NamedStmt) error {
 		return stmt.Select(&feeds, feedQuery{UserLogin: user.Login})
 	}); err != nil {
-		return []content.Feed{}, errors.WithMessage(err, fmt.Sprintf("getting user %s feeds", user))
+		return []content.Feed{}, errors.Wrapf(err, "getting user %s feeds", user)
 	}
 
 	return feeds, nil
@@ -101,7 +100,7 @@ func (r feedRepo) ForTag(tag content.Tag, user content.User) ([]content.Feed, er
 	if err := r.db.WithNamedStmt(r.db.SQL().Feed.AllForTag, nil, func(stmt *sqlx.NamedStmt) error {
 		return stmt.Select(&feeds, feedQuery{UserLogin: user.Login, TagValue: tag.Value})
 	}); err != nil {
-		return []content.Feed{}, errors.WithMessage(err, "getting tag feeds")
+		return []content.Feed{}, errors.Wrap(err, "getting tag feeds")
 	}
 
 	return feeds, nil
@@ -165,7 +164,7 @@ func (r feedRepo) Update(feed *content.Feed) ([]content.Article, error) {
 			if err = r.db.WithNamedStmt(s.Feed.Update, tx, func(stmt *sqlx.NamedStmt) error {
 				res, err := stmt.Exec(feed)
 				if err != nil {
-					return errors.WithMessage(err, "executing feed update stmt")
+					return errors.Wrap(err, "executing feed update stmt")
 				}
 
 				if changed, err = res.RowsAffected(); err != nil {
@@ -174,7 +173,7 @@ func (r feedRepo) Update(feed *content.Feed) ([]content.Article, error) {
 
 				return nil
 			}); err != nil {
-				return errors.WithMessage(err, "executing feed update stmt")
+				return errors.Wrap(err, "executing feed update stmt")
 			}
 		}
 
@@ -182,7 +181,7 @@ func (r feedRepo) Update(feed *content.Feed) ([]content.Article, error) {
 			id, err := r.db.CreateWithID(tx, r.db.SQL().Feed.Create, feed)
 
 			if err != nil {
-				return errors.WithMessage(err, "executing feed create stmt")
+				return errors.Wrap(err, "executing feed create stmt")
 			}
 
 			feed.ID = content.FeedID(id)
@@ -210,7 +209,7 @@ func (r feedRepo) Delete(feed content.Feed) error {
 
 	return r.db.WithNamedTx(r.db.SQL().Feed.Delete, func(stmt *sqlx.NamedStmt) error {
 		if _, err := stmt.Exec(feed); err != nil {
-			return errors.WithMessage(err, "executing feed delete stmt")
+			return errors.Wrap(err, "executing feed delete stmt")
 		}
 		return nil
 	})
@@ -227,7 +226,7 @@ func (r feedRepo) Users(feed content.Feed) ([]content.User, error) {
 	if err := r.db.WithNamedStmt(r.db.SQL().Feed.GetUsers, nil, func(stmt *sqlx.NamedStmt) error {
 		return stmt.Select(&users, feed)
 	}); err != nil {
-		return []content.User{}, errors.WithMessage(err, "getting feed users")
+		return []content.User{}, errors.Wrap(err, "getting feed users")
 	}
 
 	return users, nil
@@ -248,7 +247,7 @@ func (r feedRepo) AttachTo(feed content.Feed, user content.User) error {
 		_, err := stmt.Exec(feedQuery{UserLogin: user.Login, ID: feed.ID})
 		return err
 	}); err != nil {
-		return errors.WithMessage(err, "executing feed attach stmt")
+		return errors.Wrap(err, "executing feed attach stmt")
 	}
 
 	return nil
@@ -269,7 +268,7 @@ func (r feedRepo) DetachFrom(feed content.Feed, user content.User) error {
 		_, err := stmt.Exec(feedQuery{UserLogin: user.Login, ID: feed.ID})
 		return err
 	}); err != nil {
-		return errors.WithMessage(err, "executing feed detach stmt")
+		return errors.Wrap(err, "executing feed detach stmt")
 	}
 
 	return nil
@@ -303,19 +302,19 @@ func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []*cont
 			return errors.Errorf("feed %s does not belong to user %s", feed, user)
 		}
 	} else {
-		return errors.WithMessage(err, "getting feed users")
+		return errors.Wrap(err, "getting feed users")
 	}
 
 	r.log.Infof("Setting feed %s user %s tags", feed, user)
 
-	if err := r.db.WithTx(func(tx *sqlx.Tx) error {
+	return r.db.WithTx(func(tx *sqlx.Tx) error {
 		s := r.db.SQL()
 
 		if err := r.db.WithNamedStmt(s.Feed.DeleteUserTags, tx, func(stmt *sqlx.NamedStmt) error {
 			_, err := stmt.Exec(userFeedTag{UserLogin: user.Login, FeedID: feed.ID})
 			return err
 		}); err != nil {
-			return errors.WithMessage(err, fmt.Sprintf("deleting tags for feed %s", feed))
+			return errors.Wrapf(err, "deleting tags for feed %s", feed)
 		}
 
 		for i := range tags {
@@ -325,10 +324,10 @@ func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []*cont
 					if content.IsNoContent(err) {
 						tag, err = createTag(*tags[i], tx, r.db)
 						if err != nil {
-							return errors.WithMessage(err, fmt.Sprintf("creating tag %s", tags[i].Value))
+							return errors.Wrapf(err, "creating tag %s", tags[i].Value)
 						}
 					} else {
-						return errors.WithMessage(err, fmt.Sprintf("getting tag by value %s", tags[i].Value))
+						return errors.Wrapf(err, "getting tag by value %s", tags[i].Value)
 					}
 				}
 
@@ -341,7 +340,7 @@ func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []*cont
 				for i := range tags {
 					_, err := stmt.Exec(userFeedTag{user.Login, feed.ID, tags[i].ID})
 					if err != nil {
-						return errors.WithMessage(err, fmt.Sprintf("creating user %s feed %s tag %s", user, feed, tags[i]))
+						return errors.Wrapf(err, "creating user %s feed %s tag %s", user, feed, tags[i])
 					}
 				}
 
@@ -355,11 +354,7 @@ func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []*cont
 			_, err := stmt.Exec()
 			return err
 		})
-	}); err != nil {
-		return errors.WithMessage(err, "setting feed tags")
-	}
-
-	return nil
+	})
 }
 
 func (r feedRepo) updateFeedArticles(feed content.Feed, tx *sqlx.Tx) ([]content.Article, error) {
@@ -370,7 +365,7 @@ func (r feedRepo) updateFeedArticles(feed content.Feed, tx *sqlx.Tx) ([]content.
 
 		var err error
 		if a, err = updateArticle(a, tx, r.db, r.log); err != nil {
-			return []content.Article{}, errors.WithMessage(err, "updating feed articles")
+			return []content.Article{}, errors.Wrap(err, "updating feed articles")
 		}
 
 		if a.IsNew {

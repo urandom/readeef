@@ -2,7 +2,6 @@ package sql
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -32,7 +31,7 @@ func (r extractRepo) Get(article content.Article) (content.Extract, error) {
 			err = content.ErrNoContent
 		}
 
-		return content.Extract{}, errors.WithMessage(err, fmt.Sprintf("getting extract for article %s", article))
+		return content.Extract{}, errors.Wrapf(err, "getting extract for article %s", article)
 	}
 
 	return extract, nil
@@ -50,7 +49,7 @@ func (r extractRepo) Update(extract content.Extract) error {
 		return r.db.WithNamedStmt(s.Extract.Update, tx, func(stmt *sqlx.NamedStmt) error {
 			res, err := stmt.Exec(extract)
 			if err != nil {
-				return errors.WithMessage(err, "executing extract update stmt")
+				return errors.Wrap(err, "executing extract update stmt")
 			}
 
 			if num, err := res.RowsAffected(); err == nil && num > 0 {
@@ -59,7 +58,7 @@ func (r extractRepo) Update(extract content.Extract) error {
 
 			return r.db.WithNamedStmt(s.Extract.Create, tx, func(stmt *sqlx.NamedStmt) error {
 				if _, err = stmt.Exec(extract); err != nil {
-					return errors.WithMessage(err, "executing extract create stmt")
+					return errors.Wrap(err, "executing extract create stmt")
 				}
 				return nil
 			})

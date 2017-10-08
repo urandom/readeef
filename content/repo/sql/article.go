@@ -67,7 +67,7 @@ func (r articleRepo) ForUser(user content.User, opts ...content.QueryOpt) ([]con
 
 	articles, err := getArticles(user.Login, r.db, r.log, o)
 	if err != nil {
-		err = errors.WithMessage(err, fmt.Sprintf("getting articles for user %s", user))
+		err = errors.Wrapf(err, "getting articles for user %s", user)
 	}
 
 	return articles, err
@@ -112,7 +112,7 @@ func (r articleRepo) All(opts ...content.QueryOpt) ([]content.Article, error) {
 	if err = r.db.WithNamedStmt(sql, nil, func(stmt *sqlx.NamedStmt) error {
 		return stmt.Select(&articles, args)
 	}); err != nil {
-		err = errors.WithMessage(err, "getting articles")
+		err = errors.Wrap(err, "getting articles")
 	}
 
 	return articles, err
@@ -176,7 +176,7 @@ func (r articleRepo) Count(user content.User, opts ...content.QueryOpt) (int64, 
 	if err = r.db.WithNamedStmt(buf.String(), nil, func(stmt *sqlx.NamedStmt) error {
 		return stmt.Get(&count, args)
 	}); err != nil {
-		return 0, errors.WithMessage(err, "getting article count")
+		return 0, errors.Wrap(err, "getting article count")
 	}
 
 	return count, nil
@@ -245,7 +245,7 @@ func (r articleRepo) IDs(user content.User, opts ...content.QueryOpt) ([]content
 	if err = r.db.WithNamedStmt(buf.String(), nil, func(stmt *sqlx.NamedStmt) error {
 		return stmt.Select(&ids, args)
 	}); err != nil {
-		return []content.ArticleID{}, errors.WithMessage(err, "getting article ids")
+		return []content.ArticleID{}, errors.Wrap(err, "getting article ids")
 	}
 
 	return ids, nil
@@ -281,7 +281,7 @@ func (r articleRepo) RemoveStaleUnreadRecords() error {
 			return err
 		},
 	); err != nil {
-		return errors.WithMessage(err, "removing stale unread article records")
+		return errors.Wrap(err, "removing stale unread article records")
 	}
 
 	return nil
@@ -578,7 +578,7 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log log.Log) (cont
 	db.WithNamedStmt(s.Article.Update, tx, func(stmt *sqlx.NamedStmt) error {
 		res, err := stmt.Exec(a)
 		if err != nil {
-			return errors.WithMessage(err, "executing article update statement")
+			return errors.Wrap(err, "executing article update statement")
 		}
 
 		if num, err := res.RowsAffected(); err != nil && err == sql.ErrNoRows || num == 0 {
@@ -587,7 +587,7 @@ func updateArticle(a content.Article, tx *sqlx.Tx, db *db.DB, log log.Log) (cont
 			id, err := db.CreateWithID(tx, s.Article.Create, a)
 
 			if err != nil {
-				return errors.WithMessage(err, "creating article")
+				return errors.Wrap(err, "creating article")
 			}
 
 			a.ID = content.ArticleID(id)

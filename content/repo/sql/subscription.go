@@ -2,7 +2,6 @@ package sql
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -31,7 +30,7 @@ func (r subscriptionRepo) Get(feed content.Feed) (content.Subscription, error) {
 			err = content.ErrNoContent
 		}
 
-		return content.Subscription{}, errors.WithMessage(err, fmt.Sprintf("getting subscription for feed %s", feed))
+		return content.Subscription{}, errors.Wrapf(err, "getting subscription for feed %s", feed)
 	}
 
 	return subscription, nil
@@ -44,7 +43,7 @@ func (r subscriptionRepo) All() ([]content.Subscription, error) {
 	if err := r.db.WithStmt(r.db.SQL().Subscription.All, nil, func(stmt *sqlx.Stmt) error {
 		return stmt.Select(&subscriptions)
 	}); err != nil {
-		return []content.Subscription{}, errors.WithMessage(err, "getting hubbub subscriptions")
+		return []content.Subscription{}, errors.Wrap(err, "getting hubbub subscriptions")
 	}
 
 	return subscriptions, nil
@@ -63,7 +62,7 @@ func (r subscriptionRepo) Update(subscription content.Subscription) error {
 		r.db.WithNamedStmt(s.Subscription.Update, tx, func(stmt *sqlx.NamedStmt) error {
 			res, err := stmt.Exec(subscription)
 			if err != nil {
-				return errors.WithMessage(err, "executing subscription update stmt")
+				return errors.Wrap(err, "executing subscription update stmt")
 			}
 
 			if num, err := res.RowsAffected(); err == nil && num > 0 {
@@ -72,7 +71,7 @@ func (r subscriptionRepo) Update(subscription content.Subscription) error {
 
 			return r.db.WithNamedStmt(s.Subscription.Create, tx, func(stmt *sqlx.NamedStmt) error {
 				if _, err := stmt.Exec(subscription); err != nil {
-					return errors.WithMessage(err, "executing subscription create stmt")
+					return errors.Wrap(err, "executing subscription create stmt")
 				}
 
 				return nil

@@ -2,7 +2,6 @@ package sql
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -39,7 +38,7 @@ func (r tagRepo) Get(id content.TagID, user content.User) (content.Tag, error) {
 			err = content.ErrNoContent
 		}
 
-		return content.Tag{}, errors.WithMessage(err, fmt.Sprintf("getting tag %d", id))
+		return content.Tag{}, errors.Wrapf(err, "getting tag %d", id)
 	}
 
 	return tag, nil
@@ -56,7 +55,7 @@ func (r tagRepo) ForUser(user content.User) ([]content.Tag, error) {
 	if err := r.db.WithNamedStmt(r.db.SQL().Tag.AllForUser, nil, func(stmt *sqlx.NamedStmt) error {
 		return stmt.Select(&tags, tagQuery{UserLogin: user.Login})
 	}); err != nil {
-		return []content.Tag{}, errors.WithMessage(err, fmt.Sprintf("getting user %s tags", user))
+		return []content.Tag{}, errors.Wrapf(err, "getting user %s tags", user)
 	}
 
 	return tags, nil
@@ -77,7 +76,7 @@ func (r tagRepo) ForFeed(feed content.Feed, user content.User) ([]content.Tag, e
 	if err := r.db.WithNamedStmt(r.db.SQL().Tag.AllForFeed, nil, func(stmt *sqlx.NamedStmt) error {
 		return stmt.Select(&tags, tagQuery{UserLogin: user.Login, FeedID: feed.ID})
 	}); err != nil {
-		return []content.Tag{}, errors.WithMessage(err, fmt.Sprintf("getting user %s feed %s tags", user, feed))
+		return []content.Tag{}, errors.Wrapf(err, "getting user %s feed %s tags", user, feed)
 	}
 
 	return tags, nil
@@ -98,7 +97,7 @@ func (r tagRepo) FeedIDs(tag content.Tag, user content.User) ([]content.FeedID, 
 	if err := r.db.WithNamedStmt(r.db.SQL().Tag.GetUserFeedIDs, nil, func(stmt *sqlx.NamedStmt) error {
 		return stmt.Select(&ids, tagQuery{UserLogin: user.Login, ID: tag.ID})
 	}); err != nil {
-		return []content.FeedID{}, errors.WithMessage(err, "getting tag feed ids")
+		return []content.FeedID{}, errors.Wrap(err, "getting tag feed ids")
 	}
 
 	return ids, nil
@@ -113,7 +112,7 @@ func findTagByValue(value content.TagValue, stmt string, db *db.DB, tx *sqlx.Tx)
 			return content.Tag{}, content.ErrNoContent
 		}
 
-		return content.Tag{}, errors.WithMessage(err, fmt.Sprintf("getting tag by value %s", value))
+		return content.Tag{}, errors.Wrapf(err, "getting tag by value %s", value)
 	}
 
 	return tag, nil

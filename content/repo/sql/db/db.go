@@ -73,7 +73,7 @@ func (db *DB) WithNamedStmt(query string, tx *sqlx.Tx, cb func(*sqlx.NamedStmt) 
 		stmt, err = tx.PrepareNamed(query)
 	}
 	if err != nil {
-		return errors.Wrap(err, "preparing named statement")
+		return errors.WithMessage(err, "preparing named statement")
 	}
 	defer stmt.Close()
 
@@ -90,7 +90,7 @@ func (db *DB) WithStmt(query string, tx *sqlx.Tx, cb func(*sqlx.Stmt) error) err
 		stmt, err = tx.Preparex(query)
 	}
 	if err != nil {
-		return errors.Wrap(err, "preparing statement")
+		return errors.WithMessage(err, "preparing statement")
 	}
 	defer stmt.Close()
 
@@ -100,16 +100,16 @@ func (db *DB) WithStmt(query string, tx *sqlx.Tx, cb func(*sqlx.Stmt) error) err
 func (db *DB) WithTx(cb func(*sqlx.Tx) error) error {
 	tx, err := db.Beginx()
 	if err != nil {
-		return errors.Wrap(err, "creating transaction")
+		return errors.WithMessage(err, "creating transaction")
 	}
 	defer tx.Rollback()
 
 	if err := cb(tx); err != nil {
-		return errors.Wrap(err, "executing transaction")
+		return errors.WithMessage(err, "executing transaction")
 	}
 
 	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "committing transaction")
+		return errors.WithMessage(err, "committing transaction")
 	}
 
 	return nil
@@ -119,7 +119,7 @@ func (db *DB) WithNamedTx(query string, cb func(*sqlx.NamedStmt) error) error {
 	return db.WithTx(func(tx *sqlx.Tx) error {
 		stmt, err := tx.PrepareNamed(query)
 		if err != nil {
-			return errors.Wrap(err, "preparing named statement")
+			return errors.WithMessage(err, "preparing named statement")
 		}
 		defer stmt.Close()
 

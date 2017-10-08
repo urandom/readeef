@@ -2,7 +2,6 @@ package sql
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -32,7 +31,7 @@ func (r thumbnailRepo) Get(article content.Article) (content.Thumbnail, error) {
 			err = content.ErrNoContent
 		}
 
-		return content.Thumbnail{}, errors.WithMessage(err, fmt.Sprintf("getting thumbnail for article %s", article))
+		return content.Thumbnail{}, errors.Wrapf(err, "getting thumbnail for article %s", article)
 	}
 
 	return thumbnail, nil
@@ -50,7 +49,7 @@ func (r thumbnailRepo) Update(thumbnail content.Thumbnail) error {
 		return r.db.WithNamedStmt(s.Thumbnail.Update, tx, func(stmt *sqlx.NamedStmt) error {
 			res, err := stmt.Exec(thumbnail)
 			if err != nil {
-				return errors.WithMessage(err, "executing thumbnail update stmt")
+				return errors.Wrap(err, "executing thumbnail update stmt")
 			}
 
 			if num, err := res.RowsAffected(); err == nil && num > 0 {
@@ -59,7 +58,7 @@ func (r thumbnailRepo) Update(thumbnail content.Thumbnail) error {
 
 			return r.db.WithNamedStmt(s.Thumbnail.Create, tx, func(stmt *sqlx.NamedStmt) error {
 				if _, err := stmt.Exec(thumbnail); err != nil {
-					return errors.WithMessage(err, "executing thumbnail create stmt")
+					return errors.Wrap(err, "executing thumbnail create stmt")
 				}
 
 				return nil
