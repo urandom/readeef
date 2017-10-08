@@ -1,11 +1,11 @@
-package sql
+package repo_test
 
 import (
 	"os"
 	"testing"
 
 	"github.com/urandom/readeef/config"
-	"github.com/urandom/readeef/content/repo/sql/db"
+	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/log"
 )
 
@@ -14,8 +14,7 @@ var (
 
 	cfg     config.Log
 	logger  log.Log
-	dbo     *db.DB
-	service Service
+	service repo.Service
 )
 
 func skipTest(t *testing.T) {
@@ -29,6 +28,4 @@ func init() {
 	cfg.Converted.Prefix = "[testing] "
 
 	logger = log.WithStd(cfg)
-	dbo = db.New(logger)
-	service = Service{dbo, logger}
 }

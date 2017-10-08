@@ -1,4 +1,4 @@
-package sql
+package repo_test
 
 import (
 	"fmt"
