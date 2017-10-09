@@ -21,6 +21,10 @@ ngb-carousel {
     max-width: 100px;
 }
 
+::ng-deep .carousel-indicators {
+    display: none;
+}
+
 a {
     color: black;
 }

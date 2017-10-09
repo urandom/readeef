@@ -237,6 +237,10 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 }
             }
 
+            if (articles[idx].read) {
+                return id;
+            }
+
             return articles[idx].id;
         }).take(1).filter(a => a != id).flatMap(id =>
             Observable.fromPromise(this.router.navigate(
@@ -261,6 +265,10 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 if (!articles[idx].read) {
                     break;
                 }
+            }
+
+            if (articles[idx].read) {
+                return id;
             }
 
             return articles[idx].id;
