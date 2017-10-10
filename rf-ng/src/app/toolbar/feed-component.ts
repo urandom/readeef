@@ -201,7 +201,7 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
     }
 
     toggleRead() {
-        this.articleID.switchMap(id => {
+        this.articleID.take(1).switchMap(id => {
             if (id == -1) {
                 Observable.empty();
             }
