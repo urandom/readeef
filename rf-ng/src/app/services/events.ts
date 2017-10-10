@@ -2,9 +2,13 @@
 
 import { Injectable } from '@angular/core'
 import { Observable } from "rxjs";
+import { Serializable } from "./api";
 import { TokenService } from './auth'
 
-export interface ArticleStateEvent {
+export class ArticleStateEvent extends Serializable {
+    state: string
+    ids: number[]
+    value: boolean
 }
 
 @Injectable()
@@ -36,6 +40,8 @@ export class EventService {
 
         this.articleState = this.eventSourceObservable.flatMap(source => 
             Observable.fromEvent(source, "article-state-change")
-        ).map((event : DataEvent) => +event.data)
+        ).map((event: DataEvent) =>
+            new ArticleStateEvent().fromJSON(JSON.parse(event.data))
+        )
     }
 }

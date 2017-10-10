@@ -9,6 +9,7 @@ import { QueryPreferences, PreferencesService } from "../services/preferences"
 import { Observable, BehaviorSubject, ConnectableObservable, Subject } from "rxjs";
 import { listRoute, getArticleRoute } from "../main/routing-util"
 import 'rxjs/add/observable/of'
+import 'rxjs/add/operator/distinctUntilChanged'
 import 'rxjs/add/operator/distinctUntilKeyChanged'
 import 'rxjs/add/operator/combineLatest'
 import 'rxjs/add/operator/filter'
@@ -142,7 +143,7 @@ class ScanData {
 }
 
 interface ArticleProperty {
-    id: number
+    ids: number[]
     name: string
     value: any
 }
@@ -297,12 +298,36 @@ export class ArticleService {
 
                             return acc;
                         }, new ScanData()).combineLatest(
-                            this.stateChange.startWith(null),
+                            this.stateChange.startWith(null)
+                                .distinctUntilChanged((a, b) => {
+                                    if (!a || !b) {
+                                        return false;
+                                    }
+
+                                    if (a.name != b.name || a.value != b.value) {
+                                        return false;
+                                    }
+
+                                    if (a.ids.length != b.ids.length) {
+                                        return false;
+                                    }
+
+                                    let aSet = new Set(a.ids);
+                                    for (let id of b.ids) {
+                                        if (!aSet.has(id)) {
+                                            return false;
+                                        }
+                                    }
+
+                                    return true;
+                                }),
                             (data, propChange) => {
                                 if (propChange != null) {
-                                    let idx = data.indexMap[propChange.id]
-                                    if (idx != -1) {
-                                        data.articles[idx][propChange.name] = propChange.value;
+                                    for (let id of propChange.ids) {
+                                        let idx = data.indexMap[id]
+                                        if (idx != -1) {
+                                            data.articles[idx][propChange.name] = propChange.value;
+                                        }
                                     }
                                 }
                                 return data;
@@ -314,6 +339,14 @@ export class ArticleService {
         ).publishReplay(1);
 
         this.articles.connect();
+
+        this.eventService.articleState.subscribe(
+            event => this.stateChange.next({
+                    ids: event.ids,
+                    name: event.state,
+                    value: event.value,
+            })
+        )
     }
 
     articleObservable() : Observable<Article[]> {
@@ -356,7 +389,7 @@ export class ArticleService {
         ).map(success => {
             if (success) {
                 this.stateChange.next({
-                    id: id,
+                    ids: [id],
                     name: name,
                     value: state,
                 })
