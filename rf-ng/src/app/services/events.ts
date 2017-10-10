@@ -4,9 +4,13 @@ import { Injectable } from '@angular/core'
 import { Observable } from "rxjs";
 import { TokenService } from './auth'
 
+export interface ArticleStateEvent {
+}
+
 @Injectable()
 export class EventService {
     feedUpdate : Observable<number>
+    articleState : Observable<ArticleStateEvent>
 
     private eventSourceObservable : Observable<EventSource>
 
@@ -28,6 +32,10 @@ export class EventService {
 
         this.feedUpdate = this.eventSourceObservable.flatMap(source => 
             Observable.fromEvent(source, "feed-update")
+        ).map((event : DataEvent) => +event.data)
+
+        this.articleState = this.eventSourceObservable.flatMap(source => 
+            Observable.fromEvent(source, "article-state-change")
         ).map((event : DataEvent) => +event.data)
     }
 }

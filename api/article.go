@@ -249,9 +249,17 @@ const (
 	favorite
 )
 
+type articleStateEvent struct {
+	user  content.User
+	State string              `json:"state"`
+	IDs   []content.ArticleID `json:"ids"`
+	Value bool                `json:"value"`
+}
+
 func articleStateChange(
 	repo repo.Article,
 	state articleState,
+	eventBus bus,
 	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -277,20 +285,24 @@ func articleStateChange(
 
 		if previousState != value {
 			var err error
+			ids := []content.ArticleID{article.ID}
+
 			if state == read {
-				err = repo.Read(value, user, content.IDs([]content.ArticleID{article.ID}))
+				err = repo.Read(value, user, content.IDs(ids))
 			} else {
-				err = repo.Favor(value, user, content.IDs([]content.ArticleID{article.ID}))
+				err = repo.Favor(value, user, content.IDs(ids))
 			}
 
 			if err != nil {
 				fatal(w, log, "Error setting article "+state.String()+"state: %+v", err)
 				return
 			}
+
+			eventBus.Dispatch("article-state-change", articleStateEvent{user, read.String(), ids, value})
 		}
 
 		args{
-			"success":      previousState != value,
+			"success":      true,
 			state.String(): value,
 		}.WriteJSON(w)
 	}
@@ -300,6 +312,7 @@ func articlesReadStateChange(
 	service repo.Service,
 	repoType articleRepoType,
 	articlesLimit int,
+	eventBus bus,
 	log log.Log,
 ) http.HandlerFunc {
 	articleRepo := service.ArticleRepo()
@@ -353,6 +366,10 @@ func articlesReadStateChange(
 		if err := articleRepo.Read(value, user, o...); err != nil {
 			fatal(w, log, "Error setting read state: %+v", err)
 			return
+		}
+
+		if ids, err := articleRepo.IDs(user, o...); err == nil {
+			eventBus.Dispatch("article-state-change", articleStateEvent{user, read.String(), ids, value})
 		}
 
 		args{"success": true}.WriteJSON(w)

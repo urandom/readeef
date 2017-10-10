@@ -27,9 +27,10 @@ func eventSocket(
 	repo repo.Feed,
 	storage token.Storage,
 	feedManager *readeef.FeedManager,
+	eventBus bus,
 	log log.Log,
 ) http.HandlerFunc {
-	monitor := &feedMonitor{ops: make(chan func(connMap)), log: log}
+	monitor := &feedMonitor{ops: make(chan func(connMap)), eventBus: eventBus, log: log}
 
 	go monitor.loop(ctx)
 	feedManager.AddFeedMonitor(monitor)
@@ -65,7 +66,7 @@ func eventSocket(
 
 		defer monitor.removeConn(r.RemoteAddr)
 
-		done := monitor.addConn(w, flusher, connectionValidator(storage, r), r.RemoteAddr, feedSet)
+		done := monitor.addConn(w, flusher, connectionValidator(storage, r), r.RemoteAddr, feedSet, user)
 
 		log.Debugln("Initializing event stream")
 		err = event{Type: "connection-established"}.Write(w, flusher, log)
@@ -109,8 +110,9 @@ func connectionValidator(storage token.Storage, r *http.Request) func() bool {
 }
 
 type feedMonitor struct {
-	ops chan func(connMap)
-	log log.Log
+	ops      chan func(connMap)
+	eventBus bus
+	log      log.Log
 }
 
 type connMap map[string]connData
@@ -121,6 +123,7 @@ type connData struct {
 	flusher   http.Flusher
 	validator func() bool
 	feedSet   feedSet
+	login     content.Login
 	done      chan struct{}
 }
 
@@ -185,11 +188,35 @@ func (fm *feedMonitor) FeedDeleted(feed content.Feed) error {
 	return nil
 }
 
-func (fm *feedMonitor) addConn(w io.Writer, flusher http.Flusher, validator func() bool, addr string, feedSet feedSet) chan struct{} {
+func (fm *feedMonitor) processEvent(event event) {
+	articleState, ok := event.Data.(articleStateEvent)
+	if !ok {
+		return
+	}
+
+	fm.ops <- func(conns connMap) {
+		for _, d := range conns {
+			if d.login == articleState.user.Login {
+				if !d.validator() {
+					close(d.done)
+					continue
+				}
+
+				err := event.Write(d.writer, d.flusher, fm.log)
+				if err != nil {
+					fm.log.Printf("Error sending article state event: %+v", err)
+					close(d.done)
+				}
+			}
+		}
+	}
+}
+
+func (fm *feedMonitor) addConn(w io.Writer, flusher http.Flusher, validator func() bool, addr string, feedSet feedSet, user content.User) chan struct{} {
 	done := make(chan struct{})
 
 	fm.ops <- func(conns connMap) {
-		conns[addr] = connData{w, flusher, validator, feedSet, done}
+		conns[addr] = connData{w, flusher, validator, feedSet, user.Login, done}
 	}
 
 	return done
@@ -204,12 +231,16 @@ func (fm *feedMonitor) removeConn(addr string) {
 func (fm *feedMonitor) loop(ctx context.Context) {
 	conns := make(connMap)
 
+	listener := fm.eventBus.Listener()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case op := <-fm.ops:
 			op(conns)
+		case event := <-listener:
+			go fm.processEvent(event)
 		}
 	}
 }

@@ -70,14 +70,16 @@ func Mux(
 	emulatorRoutes := emulatorRoutes(ctx, service, searchProvider, feedManager, processors, config, log, access)
 	routes = append(routes, emulatorRoutes...)
 
+	eventBus := NewBus(ctx)
+
 	routes = append(routes, mainRoutes(
 		userMiddleware(service.UserRepo(), storage, []byte(config.Auth.Secret), log),
 		featureRoutes(features, access),
 		feedsRoutes(service, feedManager, log, access),
 		tagRoutes(service.TagRepo(), log, access),
-		articlesRoutes(service, extractor, searchProvider, processors, config, log, access),
+		articlesRoutes(service, extractor, searchProvider, processors, eventBus, config, log, access),
 		opmlRoutes(service, feedManager, log, access),
-		eventsRoutes(ctx, service, storage, feedManager, log),
+		eventsRoutes(ctx, service, storage, feedManager, eventBus, log),
 		userRoutes(service, []byte(config.Auth.Secret), log, access),
 	))
 
@@ -255,6 +257,7 @@ func articlesRoutes(
 	extractor extract.Generator,
 	searchProvider search.Provider,
 	processors []processor.Article,
+	eventBus bus,
 	config config.Config,
 	log log.Log,
 	access mw,
@@ -278,7 +281,7 @@ func articlesRoutes(
 			})
 		}
 
-		r.Post("/read", articlesReadStateChange(service, userRepoType, config.API.Limits.ArticlesPerQuery, log))
+		r.Post("/read", articlesReadStateChange(service, userRepoType, config.API.Limits.ArticlesPerQuery, eventBus, log))
 
 		r.Route("/{articleID:[0-9]+}", func(r chi.Router) {
 			r.Use(articleContext(articleRepo, processors, log))
@@ -287,16 +290,16 @@ func articlesRoutes(
 			if extractor != nil {
 				r.Get("/format", formatArticle(service.ExtractRepo(), extractor, processors, log))
 			}
-			r.Post("/read", articleStateChange(articleRepo, read, log))
-			r.Delete("/read", articleStateChange(articleRepo, read, log))
-			r.Post("/favorite", articleStateChange(articleRepo, favorite, log))
-			r.Delete("/favorite", articleStateChange(articleRepo, favorite, log))
+			r.Post("/read", articleStateChange(articleRepo, read, eventBus, log))
+			r.Delete("/read", articleStateChange(articleRepo, read, eventBus, log))
+			r.Post("/favorite", articleStateChange(articleRepo, favorite, eventBus, log))
+			r.Delete("/favorite", articleStateChange(articleRepo, favorite, eventBus, log))
 		})
 
 		r.Route("/favorite", func(r chi.Router) {
 			r.Get("/", getArticles(service, favoriteRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
-			r.Post("/read", articlesReadStateChange(service, favoriteRepoType, config.API.Limits.ArticlesPerQuery, log))
+			r.Post("/read", articlesReadStateChange(service, favoriteRepoType, config.API.Limits.ArticlesPerQuery, eventBus, log))
 		})
 
 		r.Route("/popular", func(r chi.Router) {
@@ -312,7 +315,7 @@ func articlesRoutes(
 
 			r.Get("/", getArticles(service, feedRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
-			r.Post("/read", articlesReadStateChange(service, feedRepoType, config.API.Limits.ArticlesPerQuery, log))
+			r.Post("/read", articlesReadStateChange(service, feedRepoType, config.API.Limits.ArticlesPerQuery, eventBus, log))
 		})
 
 		r.Route("/tag/{tagID:[0-9]+}", func(r chi.Router) {
@@ -320,7 +323,7 @@ func articlesRoutes(
 
 			r.Get("/", getArticles(service, tagRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
-			r.Post("/read", articlesReadStateChange(service, tagRepoType, config.API.Limits.ArticlesPerQuery, log))
+			r.Post("/read", articlesReadStateChange(service, tagRepoType, config.API.Limits.ArticlesPerQuery, eventBus, log))
 		})
 
 	}}
@@ -339,10 +342,11 @@ func eventsRoutes(
 	service repo.Service,
 	storage token.Storage,
 	feedManager *readeef.FeedManager,
+	eventBus bus,
 	log log.Log,
 ) routes {
 	return routes{path: "/events", route: func(r chi.Router) {
-		r.Get("/", eventSocket(ctx, service.FeedRepo(), storage, feedManager, log))
+		r.Get("/", eventSocket(ctx, service.FeedRepo(), storage, feedManager, eventBus, log))
 	}}
 }
 
