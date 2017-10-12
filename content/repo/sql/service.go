@@ -10,9 +10,14 @@ import (
 )
 
 type Service struct {
-	db *db.DB
-
-	log log.Log
+	user         repo.User
+	tag          repo.Tag
+	feed         repo.Feed
+	subscription repo.Subscription
+	article      repo.Article
+	extract      repo.Extract
+	scores       repo.Scores
+	thumbnail    repo.Thumbnail
 }
 
 func NewService(driver, source string, log log.Log) (Service, error) {
@@ -23,40 +28,49 @@ func NewService(driver, source string, log log.Log) (Service, error) {
 			return Service{}, errors.Wrap(err, "connecting to database")
 		}
 
-		return Service{db, log}, nil
+		return Service{
+			user:         userRepo{db, log},
+			tag:          tagRepo{db, log},
+			feed:         feedRepo{db, log},
+			subscription: subscriptionRepo{db, log},
+			article:      articleRepo{db, log},
+			extract:      extractRepo{db, log},
+			scores:       scoresRepo{db, log},
+			thumbnail:    thumbnailRepo{db, log},
+		}, nil
 	default:
 		panic(fmt.Sprintf("Cannot provide a repo for driver '%s'\n", driver))
 	}
 }
 
 func (s Service) UserRepo() repo.User {
-	return userRepo{s.db, s.log}
+	return s.user
 }
 
 func (s Service) TagRepo() repo.Tag {
-	return tagRepo{s.db, s.log}
+	return s.tag
 }
 
 func (s Service) FeedRepo() repo.Feed {
-	return feedRepo{s.db, s.log}
+	return s.feed
 }
 
 func (s Service) SubscriptionRepo() repo.Subscription {
-	return subscriptionRepo{s.db, s.log}
+	return s.subscription
 }
 
 func (s Service) ArticleRepo() repo.Article {
-	return articleRepo{s.db, s.log}
+	return s.article
 }
 
 func (s Service) ExtractRepo() repo.Extract {
-	return extractRepo{s.db, s.log}
-}
-
-func (s Service) ThumbnailRepo() repo.Thumbnail {
-	return thumbnailRepo{s.db, s.log}
+	return s.extract
 }
 
 func (s Service) ScoresRepo() repo.Scores {
-	return scoresRepo{s.db, s.log}
+	return s.scores
+}
+
+func (s Service) ThumbnailRepo() repo.Thumbnail {
+	return s.thumbnail
 }

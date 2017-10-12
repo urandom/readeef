@@ -259,7 +259,6 @@ type articleStateEvent struct {
 func articleStateChange(
 	repo repo.Article,
 	state articleState,
-	eventBus bus,
 	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -297,8 +296,6 @@ func articleStateChange(
 				fatal(w, log, "Error setting article "+state.String()+"state: %+v", err)
 				return
 			}
-
-			eventBus.Dispatch("article-state-change", articleStateEvent{user, read.String(), ids, value})
 		}
 
 		args{
@@ -312,7 +309,6 @@ func articlesReadStateChange(
 	service repo.Service,
 	repoType articleRepoType,
 	articlesLimit int,
-	eventBus bus,
 	log log.Log,
 ) http.HandlerFunc {
 	articleRepo := service.ArticleRepo()
@@ -366,10 +362,6 @@ func articlesReadStateChange(
 		if err := articleRepo.Read(value, user, o...); err != nil {
 			fatal(w, log, "Error setting read state: %+v", err)
 			return
-		}
-
-		if ids, err := articleRepo.IDs(user, o...); err == nil {
-			eventBus.Dispatch("article-state-change", articleStateEvent{user, read.String(), ids, value})
 		}
 
 		args{"success": true}.WriteJSON(w)

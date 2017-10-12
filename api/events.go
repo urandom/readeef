@@ -13,24 +13,25 @@ import (
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api/token"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/content/repo/eventable"
 	"github.com/urandom/readeef/log"
 )
 
 type event struct {
 	Type string      `json:"type"`
 	Data interface{} `json:"data,omitempty"`
+	skip bool
 }
 
 func eventSocket(
 	ctx context.Context,
-	repo repo.Feed,
+	service eventable.Service,
 	storage token.Storage,
 	feedManager *readeef.FeedManager,
-	eventBus bus,
 	log log.Log,
 ) http.HandlerFunc {
-	monitor := &feedMonitor{ops: make(chan func(connMap)), eventBus: eventBus, log: log}
+	repo := service.FeedRepo()
+	monitor := &feedMonitor{ops: make(chan func(connMap)), service: service, log: log}
 
 	go monitor.loop(ctx)
 	feedManager.AddFeedMonitor(monitor)
@@ -110,9 +111,9 @@ func connectionValidator(storage token.Storage, r *http.Request) func() bool {
 }
 
 type feedMonitor struct {
-	ops      chan func(connMap)
-	eventBus bus
-	log      log.Log
+	ops     chan func(connMap)
+	service eventable.Service
+	log     log.Log
 }
 
 type connMap map[string]connData
@@ -128,6 +129,10 @@ type connData struct {
 }
 
 func (e event) Write(w io.Writer, flusher http.Flusher, log log.Log) error {
+	if e.skip {
+		return nil
+	}
+
 	if e.Type == "" {
 		// Comment event to keep the connection alive
 		if _, err := w.Write([]byte(": ping\n\n")); err != nil {
@@ -172,7 +177,7 @@ func (fm *feedMonitor) FeedUpdated(feed content.Feed, articles []content.Article
 					continue
 				}
 
-				err := event{"feed-update", feed.ID}.Write(d.writer, d.flusher, fm.log)
+				err := event{"feed-update", feed.ID, false}.Write(d.writer, d.flusher, fm.log)
 				if err != nil {
 					fm.log.Printf("Error sending feed update event: %+v", err)
 					close(d.done)
@@ -188,19 +193,16 @@ func (fm *feedMonitor) FeedDeleted(feed content.Feed) error {
 	return nil
 }
 
-func (fm *feedMonitor) processEvent(event event) {
-	articleState, ok := event.Data.(articleStateEvent)
-	if !ok {
-		return
-	}
-
+func (fm *feedMonitor) processEvent(ev eventable.Event) {
 	fm.ops <- func(conns connMap) {
 		for _, d := range conns {
-			if d.login == articleState.user.Login {
+			if d.login == ev.Data.UserLogin() {
 				if !d.validator() {
 					close(d.done)
 					continue
 				}
+
+				event := event{Type: ev.Name, Data: ev.Data}
 
 				err := event.Write(d.writer, d.flusher, fm.log)
 				if err != nil {
@@ -231,7 +233,7 @@ func (fm *feedMonitor) removeConn(addr string) {
 func (fm *feedMonitor) loop(ctx context.Context) {
 	conns := make(connMap)
 
-	listener := fm.eventBus.Listener()
+	listener := fm.service.Listener()
 
 	for {
 		select {
@@ -240,6 +242,7 @@ func (fm *feedMonitor) loop(ctx context.Context) {
 		case op := <-fm.ops:
 			op(conns)
 		case event := <-listener:
+			fm.log.Debugf("Got service event %#v", event)
 			go fm.processEvent(event)
 		}
 	}

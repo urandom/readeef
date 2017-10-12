@@ -27,6 +27,7 @@ import (
 	"github.com/urandom/readeef/content/monitor"
 	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/content/repo/eventable"
 	"github.com/urandom/readeef/content/repo/sql"
 	"github.com/urandom/readeef/content/search"
 	"github.com/urandom/readeef/content/thumbnail"
@@ -84,10 +85,14 @@ func runServer(cfg config.Config, args []string) error {
 	mux := chi.NewRouter()
 	mux.Mount("/", accessMiddleware(handler))
 
-	service, err := sql.NewService(cfg.DB.Driver, cfg.DB.Connect, logger)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	baseService, err := sql.NewService(cfg.DB.Driver, cfg.DB.Connect, logger)
 	if err != nil {
 		return errors.WithMessage(err, "creating content service")
 	}
+	service := eventable.NewService(ctx, baseService, logger)
 
 	if err = initAdminUser(service.UserRepo(), []byte(cfg.Auth.Secret)); err != nil {
 		return errors.WithMessage(err, "initializing admin user")
@@ -119,9 +124,6 @@ func runServer(cfg config.Config, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "initializing thumbnail generator")
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	initPopularityScore(ctx, service, cfg.Popularity, logger)
 

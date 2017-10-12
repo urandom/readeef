@@ -7,8 +7,21 @@ import { TokenService } from './auth'
 
 export class ArticleStateEvent extends Serializable {
     state: string
-    ids: number[]
     value: boolean
+    options: QueryOptions
+}
+
+interface QueryOptions {
+    ids: number[]
+    feedIDs: number[]
+    readOnly: boolean
+    unreadOnly: boolean
+    favoriteOnly: boolean
+    untaggedOnly: boolean
+    beforeID: number
+    afterID: number
+    beforeDate: Date
+    afterDate: Date
 }
 
 @Injectable()

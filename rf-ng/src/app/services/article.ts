@@ -300,26 +300,7 @@ export class ArticleService {
                         }, new ScanData()).combineLatest(
                             this.stateChange.startWith(null)
                                 .distinctUntilChanged((a, b) => {
-                                    if (!a || !b) {
-                                        return false;
-                                    }
-
-                                    if (a.name != b.name || a.value != b.value) {
-                                        return false;
-                                    }
-
-                                    if (a.ids.length != b.ids.length) {
-                                        return false;
-                                    }
-
-                                    let aSet = new Set(a.ids);
-                                    for (let id of b.ids) {
-                                        if (!aSet.has(id)) {
-                                            return false;
-                                        }
-                                    }
-
-                                    return true;
+                                    return JSON.stringify(a) == JSON.stringify(b);
                                 }),
                             (data, propChange) => {
                                 if (propChange != null) {
@@ -342,7 +323,7 @@ export class ArticleService {
 
         this.eventService.articleState.subscribe(
             event => this.stateChange.next({
-                    ids: event.ids,
+                    ids: event.options.ids,
                     name: event.state,
                     value: event.value,
             })
