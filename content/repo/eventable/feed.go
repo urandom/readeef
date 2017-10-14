@@ -62,11 +62,14 @@ func (r feedRepo) Update(feed *content.Feed) ([]content.Article, error) {
 	articles, err := r.Feed.Update(feed)
 
 	if err == nil && len(articles) > 0 {
-		r.log.Debugf("Logging feed update event")
+		r.log.Debugf("Dispatching feed update event")
+
 		r.eventBus.Dispatch(
 			FeedUpdateEvent,
 			FeedUpdateData{*feed, articles},
 		)
+
+		r.log.Debugf("Dispatch of feed update event end")
 	}
 
 	return articles, err
@@ -76,11 +79,14 @@ func (r feedRepo) Delete(feed content.Feed) error {
 	err := r.Feed.Delete(feed)
 
 	if err == nil {
-		r.log.Debugf("Logging feed delete event")
+		r.log.Debugf("Dispatching feed delete event")
+
 		r.eventBus.Dispatch(
 			FeedDeleteEvent,
 			FeedDeleteData{feed},
 		)
+
+		r.log.Debugf("Dispatch of feed delete event end")
 	}
 
 	return err

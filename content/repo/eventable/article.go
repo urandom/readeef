@@ -37,11 +37,14 @@ func (r articleRepo) Read(state bool, user content.User, opts ...content.QueryOp
 	err := r.Article.Read(state, user, opts...)
 
 	if err == nil {
-		r.log.Debugf("Logging article read state event")
+		r.log.Debugf("Dispatching article read state event")
+
 		r.eventBus.Dispatch(
 			ArticleStateEvent,
 			ArticleStateData{user.Login, read, state, convertOptions(o)},
 		)
+
+		r.log.Debugf("Dispatch of article read state event end")
 	}
 
 	return err
@@ -54,11 +57,14 @@ func (r articleRepo) Favor(state bool, user content.User, opts ...content.QueryO
 	err := r.Article.Favor(state, user, opts...)
 
 	if err == nil {
-		r.log.Debugf("Logging article favor state event")
+		r.log.Debugf("Dispatching article favor state event")
+
 		r.eventBus.Dispatch(
 			ArticleStateEvent,
 			ArticleStateData{user.Login, read, state, convertOptions(o)},
 		)
+
+		r.log.Debugf("Dispatch of article favor state event end")
 	}
 
 	return err

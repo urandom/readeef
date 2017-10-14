@@ -13,6 +13,7 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/alexedwards/scs/engine/boltstore"
+	"github.com/alexedwards/scs/engine/memstore"
 	"github.com/alexedwards/scs/session"
 	"github.com/boltdb/bolt"
 	"github.com/go-chi/chi"
@@ -51,12 +52,14 @@ func runServer(cfg config.Config, args []string) error {
 		fs = http.Dir(".")
 	}
 
-	sessDb, engine, err := initSessionEngine(cfg.Auth)
-	if err != nil {
-		return errors.WithMessage(err, "creating session engine")
-	}
-	defer sessDb.Close()
-	// engine := memstore.New(5 * time.Minute)
+	/*
+		sessDb, engine, err := initSessionEngine(cfg.Auth)
+		if err != nil {
+			return errors.WithMessage(err, "creating session engine")
+		}
+		defer sessDb.Close()
+	*/
+	engine := memstore.New(5 * time.Minute)
 
 	logger := initLog(cfg.Log)
 

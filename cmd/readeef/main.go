@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime/pprof"
+	"time"
 
 	toml "github.com/pelletier/go-toml"
 	"github.com/pkg/errors"
@@ -21,13 +23,30 @@ type Command struct {
 }
 
 var (
-	configPath = flag.String("config", "readeef.toml", "readeef config path")
-	commands   = []Command{}
+	configPath      = flag.String("config", "readeef.toml", "readeef config path")
+	cpuProfile      = flag.String("cpu-profile", "", "cpu profile destination path")
+	profileDuration = flag.Int("profile-duration", 5, "duration of profiling [minutes]")
+	commands        = []Command{}
 )
 
 func main() {
 	flag.Usage = usage
 	flag.Parse()
+
+	if *cpuProfile != "" {
+		go func() {
+			f, err := os.Create(*cpuProfile)
+			if err != nil {
+				log.Fatalf("Error creating cpu profile file %s: %v", *cpuProfile, err)
+			}
+			defer f.Close()
+
+			pprof.StartCPUProfile(f)
+			defer pprof.StopCPUProfile()
+
+			time.Sleep(time.Duration(*profileDuration) * time.Minute)
+		}()
+	}
 
 	args := flag.Args()
 

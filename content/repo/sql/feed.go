@@ -196,6 +196,8 @@ func (r feedRepo) Update(feed *content.Feed) ([]content.Article, error) {
 		return newArticles, err
 	}
 
+	r.log.Debugf("Feed %s new articles: %d", feed, len(newArticles))
+
 	return newArticles, nil
 }
 

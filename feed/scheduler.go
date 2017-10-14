@@ -94,6 +94,7 @@ func (s Scheduler) updateFeed(ctx context.Context, payload schedulePayload, cont
 			s.unscheduleFeed(ctx, payload.feed)
 			return
 		default:
+			s.log.Debugf("Sending update data for feed %s", payload.feed)
 			if data.isUpdated() || data.IsErr() {
 				payload.updateData <- data
 			}
