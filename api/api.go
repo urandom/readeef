@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
 	"github.com/urandom/handler/auth"
+	"github.com/urandom/handler/encoding"
 	"github.com/urandom/handler/method"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api/fever"
@@ -57,29 +58,33 @@ func Mux(
 		Extractor:  extractor != nil,
 	}
 
+	var gzip mw = func(n http.Handler) http.Handler {
+		return encoding.Gzip(n, encoding.Logger(log))
+	}
+
 	storage, err := initTokenStorage(config.Auth)
 	if err != nil {
 		return nil, errors.Wrap(err, "initializing token storage")
 	}
 
-	routes := []routes{tokenRoutes(service.UserRepo(), storage, []byte(config.Auth.Secret), log, access)}
+	routes := []routes{tokenRoutes(service.UserRepo(), storage, []byte(config.Auth.Secret), log, gzip, access)}
 
 	if hubbub != nil {
-		routes = append(routes, hubbubRoutes(hubbub, service, log, access))
+		routes = append(routes, hubbubRoutes(hubbub, service, log, gzip, access))
 	}
 
-	emulatorRoutes := emulatorRoutes(ctx, service, searchProvider, feedManager, processors, config, log, access)
+	emulatorRoutes := emulatorRoutes(ctx, service, searchProvider, feedManager, processors, config, log, gzip, access)
 	routes = append(routes, emulatorRoutes...)
 
 	routes = append(routes, mainRoutes(
 		userMiddleware(service.UserRepo(), storage, []byte(config.Auth.Secret), log),
-		featureRoutes(features, access),
-		feedsRoutes(service, feedManager, log, access),
-		tagRoutes(service.TagRepo(), log, access),
-		articlesRoutes(service, extractor, searchProvider, processors, config, log, access),
-		opmlRoutes(service, feedManager, log, access),
+		featureRoutes(features, gzip, access),
+		feedsRoutes(service, feedManager, log, gzip, access),
+		tagRoutes(service.TagRepo(), log, gzip, access),
+		articlesRoutes(service, extractor, searchProvider, processors, config, log, gzip, access),
+		opmlRoutes(service, feedManager, log, gzip, access),
 		eventsRoutes(ctx, service, storage, feedManager, log),
-		userRoutes(service, []byte(config.Auth.Secret), log, access),
+		userRoutes(service, []byte(config.Auth.Secret), log, gzip, access),
 	))
 
 	r := chi.NewRouter()
@@ -128,19 +133,19 @@ func timeout(d time.Duration) func(http.Handler) http.Handler {
 	}
 }
 
-func tokenRoutes(repo repo.User, storage token.Storage, secret []byte, log log.Log, access mw) routes {
+func tokenRoutes(repo repo.User, storage token.Storage, secret []byte, log log.Log, gzip, access mw) routes {
 	return routes{path: "/token", route: func(r chi.Router) {
-		r.Use(timeout(time.Second), access)
+		r.Use(timeout(time.Second), gzip, access)
 		r.Method(method.POST, "/", tokenCreate(repo, secret, log))
 		r.Method(method.DELETE, "/", tokenDelete(storage, secret, log))
 	}}
 }
 
-func hubbubRoutes(hubbub *readeef.Hubbub, service repo.Service, log log.Log, access mw) routes {
+func hubbubRoutes(hubbub *readeef.Hubbub, service repo.Service, log log.Log, gzip, access mw) routes {
 	handler := hubbubRegistration(hubbub, service, log)
 
 	return routes{path: "/hubbub", route: func(r chi.Router) {
-		r.Use(timeout(5*time.Second), access)
+		r.Use(timeout(5*time.Second), gzip, access)
 		r.Get("/", handler)
 		r.Post("/", handler)
 	}}
@@ -154,7 +159,7 @@ func emulatorRoutes(
 	processors []processor.Article,
 	config config.Config,
 	log log.Log,
-	access mw,
+	gzip, access mw,
 ) []routes {
 	rr := make([]routes, 0, len(config.API.Emulators))
 
@@ -164,7 +169,7 @@ func emulatorRoutes(
 			rr = append(rr, routes{
 				path: "/tt-rss/",
 				route: func(r chi.Router) {
-					r.Use(timeout(5*time.Second), access)
+					r.Use(timeout(5*time.Second), gzip, access)
 					r.Get("/", ttrss.FakeWebHandler)
 
 					r.Post("/api/", ttrss.Handler(
@@ -178,7 +183,7 @@ func emulatorRoutes(
 			rr = append(rr, routes{
 				path: "/fever/",
 				route: func(r chi.Router) {
-					r.Use(timeout(5*time.Second), access)
+					r.Use(timeout(5*time.Second), gzip, access)
 					r.Post("/", fever.Handler(service, processors, log))
 				},
 			})
@@ -214,17 +219,17 @@ func userMiddleware(repo repo.User, storage token.Storage, secret []byte, log lo
 	}
 }
 
-func featureRoutes(features features, access mw) routes {
+func featureRoutes(features features, gzip, access mw) routes {
 	return routes{path: "/features", route: func(r chi.Router) {
-		r.Use(timeout(time.Second), access)
+		r.Use(timeout(time.Second), gzip, access)
 		r.Get("/", featuresHandler(features))
 	}}
 }
 
-func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log, access mw) routes {
+func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log, gzip, access mw) routes {
 	return routes{path: "/feed", route: func(r chi.Router) {
 		feedRepo := service.FeedRepo()
-		r.Use(access)
+		r.Use(gzip, access)
 		r.With(timeout(5*time.Second)).Get("/", listFeeds(feedRepo, log))
 		r.With(timeout(15*time.Second)).Post("/", addFeed(feedRepo, feedManager))
 
@@ -243,9 +248,9 @@ func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log
 	}}
 }
 
-func tagRoutes(repo repo.Tag, log log.Log, access mw) routes {
+func tagRoutes(repo repo.Tag, log log.Log, gzip, access mw) routes {
 	return routes{path: "/tag", route: func(r chi.Router) {
-		r.Use(timeout(5*time.Second), access)
+		r.Use(timeout(5*time.Second), gzip, access)
 		r.Get("/", listTags(repo, log))
 		r.Get("/feedIDs", getTagsFeedIDs(repo, log))
 	}}
@@ -258,14 +263,14 @@ func articlesRoutes(
 	processors []processor.Article,
 	config config.Config,
 	log log.Log,
-	access mw,
+	gzip, access mw,
 ) routes {
 	articleRepo := service.ArticleRepo()
 	feedRepo := service.FeedRepo()
 	tagRepo := service.TagRepo()
 
 	return routes{path: "/article", route: func(r chi.Router) {
-		r.Use(timeout(10*time.Second), access)
+		r.Use(timeout(10*time.Second), gzip, access)
 		r.Get("/", getArticles(service, userRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
 		if searchProvider != nil {
@@ -327,9 +332,9 @@ func articlesRoutes(
 	}}
 }
 
-func opmlRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log, access mw) routes {
+func opmlRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log, gzip, access mw) routes {
 	return routes{path: "/opml", route: func(r chi.Router) {
-		r.Use(access)
+		r.Use(gzip, access)
 		r.With(timeout(10*time.Second)).Get("/", exportOPML(service, feedManager, log))
 		r.With(timeout(30*time.Second)).Post("/", importOPML(service.FeedRepo(), feedManager, log))
 	}}
@@ -347,10 +352,10 @@ func eventsRoutes(
 	}}
 }
 
-func userRoutes(service repo.Service, secret []byte, log log.Log, access mw) routes {
+func userRoutes(service repo.Service, secret []byte, log log.Log, gzip, access mw) routes {
 	repo := service.UserRepo()
 	return routes{path: "/user", route: func(r chi.Router) {
-		r.Use(timeout(5*time.Second), access)
+		r.Use(timeout(5*time.Second), gzip, access)
 
 		r.Get("/current", getUserData)
 

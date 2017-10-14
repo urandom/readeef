@@ -18,6 +18,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
 	"github.com/rs/cors"
+	"github.com/urandom/handler/encoding"
 	handlerLog "github.com/urandom/handler/log"
 	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api"
@@ -83,7 +84,7 @@ func runServer(cfg config.Config, args []string) error {
 	}
 
 	mux := chi.NewRouter()
-	mux.Mount("/", accessMiddleware(handler))
+	mux.Mount("/", accessMiddleware(encoding.Gzip(handler)))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
