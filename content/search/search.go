@@ -19,6 +19,7 @@ type Provider interface {
 	IsNewIndex() bool
 	Search(string, content.User, ...content.QueryOpt) ([]content.Article, error)
 	BatchIndex(articles []content.Article, op indexOperation) error
+	RemoveFeed(content.FeedID) error
 }
 
 func Reindex(p Provider, repo repo.Article) error {

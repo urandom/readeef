@@ -55,10 +55,6 @@ func NewHubbub(
 	}
 }
 
-func (h *Hubbub) ProcessFeedUpdate(feed content.Feed, articles []content.Article) {
-	h.feedManager.processFeedUpdateMonitors(feed, articles)
-}
-
 func (h *Hubbub) Subscribe(f content.Feed) error {
 	if u, err := url.Parse(h.config.Hubbub.CallbackURL); err != nil {
 		return ErrNotConfigured

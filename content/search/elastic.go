@@ -67,7 +67,7 @@ func (e elasticSearch) Search(
 	o := content.QueryOptions{}
 	o.Apply(opts)
 
-	search := e.client.Search().Index(elasticIndexName)
+	search := e.client.Search(elasticIndexName)
 
 	var query elastic.Query
 
@@ -208,6 +208,19 @@ func (e elasticSearch) BatchIndex(articles []content.Article, op indexOperation)
 		if _, err := bulk.Do(ctx); err != nil {
 			return errors.Wrap(err, "indexing article batch")
 		}
+	}
+
+	return nil
+}
+
+func (e elasticSearch) RemoveFeed(id content.FeedID) error {
+	q := elastic.NewTermQuery("feed_id", int64(id))
+
+	ctx, cancel := timeout(10 * time.Second)
+	defer cancel()
+
+	if _, err := e.client.DeleteByQuery(elasticIndexName).Query(q).Do(ctx); err != nil {
+		return errors.Wrapf(err, "deleting articles for feed %d", id)
 	}
 
 	return nil

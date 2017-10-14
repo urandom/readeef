@@ -78,7 +78,6 @@ export interface QueryOptions {
     unreadFirst?: boolean,
     unreadOnly?: boolean,
     olderFirst?: boolean,
-    afterID?: number,
     ids?: number[],
 }
 
@@ -171,7 +170,6 @@ export class ArticleService {
         private preferences: PreferencesService,
     ) {
         let queryPreferences = this.preferences.queryPreferences();
-        let afterID = 0;
 
         let source = listRoute(this.router).map(
             route => this.nameToSource(route.data, route.params),
@@ -203,11 +201,11 @@ export class ArticleService {
                                 articles: articles,
                                 fromEvent: false,
                             }),
-                            this.eventService.feedUpdate.filter(id =>
+                            this.eventService.feedUpdate.filter(event =>
                                 source.updatable
-                            ).flatMap(id => 
-                                this.getArticlesFor(new FeedSource(id), {
-                                    afterID: afterID,
+                            ).flatMap(event => 
+                                this.getArticlesFor(new FeedSource(event.feedID), {
+                                    ids: event.articleIDs,
                                     olderFirst: prefs.olderFirst,
                                     unreadOnly: prefs.unreadOnly,
                                 }, this.limit, 0)
@@ -272,9 +270,6 @@ export class ArticleService {
                                 for (let i = 0; i < acc.articles.length; i++) {
                                     let article = acc.articles[i];
                                     acc.indexMap[article.id] = i;
-                                    if (afterID < article.id) {
-                                        afterID = article.id;
-                                    }
                                 }
 
                                 for (let update of updates) {
@@ -288,10 +283,6 @@ export class ArticleService {
                                         acc.articles[idx] = article;
                                     } else {
                                         acc.indexMap[article.id] = acc.articles.push(article) - 1;
-                                    }
-
-                                    if (afterID < article.id) {
-                                        afterID = article.id;
                                     }
                                 }
                             }
@@ -390,7 +381,7 @@ export class ArticleService {
             unreadFirst: true,
             olderFirst: prefs.olderFirst,
             unreadOnly: prefs.unreadOnly,
-            afterID: prefs.afterID,
+            ids: prefs.ids,
         }
 
         let res = this.api.get(this.buildURL("article" + source.url, options))

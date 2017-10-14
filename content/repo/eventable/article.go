@@ -14,10 +14,10 @@ const (
 )
 
 type ArticleStateData struct {
-	User    content.Login        `json:"user"`
-	State   string               `json:"state"`
-	Value   bool                 `json:"value"`
-	Options content.QueryOptions `json:"options"`
+	User    content.Login          `json:"user"`
+	State   string                 `json:"state"`
+	Value   bool                   `json:"value"`
+	Options map[string]interface{} `json:"options"`
 }
 
 func (e ArticleStateData) UserLogin() content.Login {
@@ -40,7 +40,7 @@ func (r articleRepo) Read(state bool, user content.User, opts ...content.QueryOp
 		r.log.Debugf("Logging article read state event")
 		r.eventBus.Dispatch(
 			ArticleStateEvent,
-			ArticleStateData{user.Login, read, state, o},
+			ArticleStateData{user.Login, read, state, convertOptions(o)},
 		)
 	}
 
@@ -57,9 +57,55 @@ func (r articleRepo) Favor(state bool, user content.User, opts ...content.QueryO
 		r.log.Debugf("Logging article favor state event")
 		r.eventBus.Dispatch(
 			ArticleStateEvent,
-			ArticleStateData{user.Login, read, state, o},
+			ArticleStateData{user.Login, read, state, convertOptions(o)},
 		)
 	}
 
 	return err
+}
+
+func convertOptions(o content.QueryOptions) map[string]interface{} {
+	data := map[string]interface{}{}
+
+	if o.ReadOnly {
+		data["readOnly"] = true
+	}
+
+	if o.UnreadOnly {
+		data["unreadOnly"] = true
+	}
+
+	if o.FavoriteOnly {
+		data["favoriteOnly"] = true
+	}
+
+	if o.UntaggedOnly {
+		data["untaggedOnly"] = true
+	}
+
+	if o.BeforeID > 0 {
+		data["beforeID"] = o.BeforeID
+	}
+
+	if o.AfterID > 0 {
+		data["afterID"] = o.AfterID
+	}
+
+	if !o.BeforeDate.IsZero() {
+		data["beforeDate"] = o.BeforeDate
+	}
+
+	if !o.AfterDate.IsZero() {
+		data["afterDate"] = o.AfterDate
+	}
+
+	if len(o.IDs) > 0 {
+		data["ids"] = o.IDs
+	}
+
+	if len(o.FeedIDs) > 0 {
+		data["feedIDs"] = o.FeedIDs
+	}
+
+	return data
 }

@@ -127,12 +127,9 @@ func runServer(cfg config.Config, args []string) error {
 
 	initPopularityScore(ctx, service, cfg.Popularity, logger)
 
-	monitors := initFeedMonitors(ctx, cfg.FeedManager, service, searchProvider, thumbnailer, logger)
-	for _, m := range monitors {
-		feedManager.AddFeedMonitor(m)
-	}
+	initFeedMonitors(ctx, cfg.FeedManager, service, searchProvider, thumbnailer, logger)
 
-	hubbub, err := initHubbub(cfg, service, monitors, feedManager, logger)
+	hubbub, err := initHubbub(cfg, service, feedManager, logger)
 	if err != nil {
 		return errors.WithMessage(err, "initializing hubbub")
 	}
@@ -394,33 +391,30 @@ func initPopularityScore(ctx context.Context, service repo.Service, config confi
 func initFeedMonitors(
 	ctx context.Context,
 	config config.FeedManager,
-	service repo.Service,
+	service eventable.Service,
 	searchProvider search.Provider,
 	thumbnailer thumbnail.Generator,
 	log log.Log,
-) []monitor.Feed {
-	monitors := []monitor.Feed{monitor.NewUnread(ctx, service, log)}
+) {
+	go monitor.Unread(ctx, service, log)
 
 	for _, m := range config.Monitors {
 		switch m {
 		case "index":
 			if searchProvider != nil {
-				monitors = append(monitors, monitor.NewIndex(service.ArticleRepo(), searchProvider, log))
+				go monitor.Index(service, searchProvider, log)
 			}
 		case "thumbnailer":
 			if thumbnailer != nil {
-				monitors = append(monitors, monitor.NewThumbnailer(thumbnailer, log))
+				go monitor.Thumbnailer(service, thumbnailer, log)
 			}
 		}
 	}
-
-	return monitors
 }
 
 func initHubbub(
 	config config.Config,
 	service repo.Service,
-	monitors []monitor.Feed,
 	feedManager *readeef.FeedManager,
 	log log.Log,
 ) (*readeef.Hubbub, error) {

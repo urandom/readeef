@@ -1,63 +1,54 @@
 package monitor
 
 import (
-	"fmt"
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
+	"github.com/urandom/readeef/content/repo/eventable"
 	"github.com/urandom/readeef/content/thumbnail"
 	"github.com/urandom/readeef/log"
 )
 
-type Thumbnailer struct {
-	generator thumbnail.Generator
-	log       log.Log
-}
+func Thumbnailer(service eventable.Service, generator thumbnail.Generator, log log.Log) {
+	for event := range service.Listener() {
+		switch data := event.Data.(type) {
+		case eventable.FeedUpdateData:
+			log.Infof("Generating article thumbnails for feed %s", data.Feed)
 
-func NewThumbnailer(g thumbnail.Generator, l log.Log) Thumbnailer {
-	return Thumbnailer{generator: g, log: l}
-}
+			processors := generateProcessors(data.NewArticles)
+			numProcessors := 20
+			done := make(chan struct{})
+			errc := make(chan error)
 
-func (t Thumbnailer) FeedUpdated(feed content.Feed, articles []content.Article) error {
-	t.log.Debugln("Generating thumbnailer processors")
+			defer close(done)
 
-	processors := t.generateProcessors(articles)
-	numProcessors := 20
-	done := make(chan struct{})
-	errc := make(chan error)
+			var wg sync.WaitGroup
 
-	defer close(done)
-
-	var wg sync.WaitGroup
-
-	wg.Add(numProcessors)
-	for i := 0; i < numProcessors; i++ {
-		go func() {
-			err := t.process(done, processors)
-			if err != nil {
-				errc <- err
+			wg.Add(numProcessors)
+			for i := 0; i < numProcessors; i++ {
+				go func() {
+					err := process(generator, done, processors)
+					if err != nil {
+						errc <- err
+					}
+					wg.Done()
+				}()
 			}
-			wg.Done()
-		}()
+
+			go func() {
+				wg.Wait()
+				close(errc)
+			}()
+
+			for err := range errc {
+				log.Printf("Error generating thumbnails for feed %s articles: %+v", data.Feed, err)
+			}
+		}
 	}
-
-	go func() {
-		wg.Wait()
-		close(errc)
-	}()
-
-	for err := range errc {
-		return err
-	}
-
-	return nil
 }
 
-func (t Thumbnailer) FeedDeleted(feed content.Feed) error {
-	return nil
-}
-
-func (t Thumbnailer) generateProcessors(articles []content.Article) <-chan content.Article {
+func generateProcessors(articles []content.Article) <-chan content.Article {
 	processors := make(chan content.Article)
 
 	go func() {
@@ -71,14 +62,14 @@ func (t Thumbnailer) generateProcessors(articles []content.Article) <-chan conte
 	return processors
 }
 
-func (t Thumbnailer) process(done <-chan struct{}, processors <-chan content.Article) error {
+func process(generator thumbnail.Generator, done <-chan struct{}, processors <-chan content.Article) error {
 	for a := range processors {
 		select {
 		case <-done:
 			return nil
 		default:
-			if err := t.generator.Generate(a); err != nil {
-				return fmt.Errorf("Error generating thumbnail: %v\n", err)
+			if err := generator.Generate(a); err != nil {
+				return errors.Wrapf(err, "generating thumbnail for article %s", a)
 			}
 		}
 	}

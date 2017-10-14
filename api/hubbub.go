@@ -74,11 +74,10 @@ func hubbubRegistration(
 				return
 			}
 
-			var articles []content.Article
 			if pf, err := parser.ParseFeed(buf.Bytes(), parser.ParseRss2, parser.ParseAtom, parser.ParseRss1); err == nil {
 				f.Refresh(pf)
 
-				if articles, err = feedRepo.Update(&f); err != nil {
+				if _, err = feedRepo.Update(&f); err != nil {
 					log.Printf("Error updating feed %s: %+v", f, err)
 					return
 				}
@@ -86,8 +85,6 @@ func hubbubRegistration(
 				log.Printf("Error parsing feed from subscription %s: %+v", s, err)
 				return
 			}
-
-			hubbub.ProcessFeedUpdate(f, articles)
 
 			return
 		}

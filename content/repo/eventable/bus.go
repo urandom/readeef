@@ -8,11 +8,15 @@ import (
 
 type Event struct {
 	Name string
-	Data UserData
+	Data interface{}
 }
 
 type UserData interface {
 	UserLogin() content.Login
+}
+
+type FeedData interface {
+	FeedID() content.FeedID
 }
 
 type Stream chan Event
@@ -37,7 +41,7 @@ func newBus(ctx context.Context) bus {
 	return b
 }
 
-func (b bus) Dispatch(name string, data UserData) {
+func (b bus) Dispatch(name string, data interface{}) {
 	b.ops <- func(p *busPayload) {
 		event := Event{name, data}
 		for i := range p.listeners {
@@ -47,7 +51,7 @@ func (b bus) Dispatch(name string, data UserData) {
 }
 
 func (b bus) Listener() Stream {
-	ret := make(chan Event)
+	ret := make(chan Event, 10)
 
 	b.ops <- func(p *busPayload) {
 		p.listeners = append(p.listeners, ret)

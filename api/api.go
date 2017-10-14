@@ -343,7 +343,7 @@ func eventsRoutes(
 	log log.Log,
 ) routes {
 	return routes{path: "/events", route: func(r chi.Router) {
-		r.Get("/", eventSocket(ctx, service, storage, feedManager, log))
+		r.Get("/", eventSocket(ctx, service, storage, log))
 	}}
 }
 

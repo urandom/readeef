@@ -3,7 +3,6 @@ package content
 import (
 	"database/sql"
 	"database/sql/driver"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -81,52 +80,6 @@ type QueryOptions struct {
 
 	SortField sortingField
 	SortOrder sortingOrder
-}
-
-func (q QueryOptions) MarshalJSON() ([]byte, error) {
-	data := map[string]interface{}{}
-
-	if q.ReadOnly {
-		data["readOnly"] = true
-	}
-
-	if q.UnreadOnly {
-		data["unreadOnly"] = true
-	}
-
-	if q.FavoriteOnly {
-		data["favoriteOnly"] = true
-	}
-
-	if q.UntaggedOnly {
-		data["untaggedOnly"] = true
-	}
-
-	if q.BeforeID > 0 {
-		data["beforeID"] = q.BeforeID
-	}
-
-	if q.AfterID > 0 {
-		data["afterID"] = q.AfterID
-	}
-
-	if !q.BeforeDate.IsZero() {
-		data["beforeDate"] = q.BeforeDate
-	}
-
-	if !q.AfterDate.IsZero() {
-		data["afterDate"] = q.AfterDate
-	}
-
-	if len(q.IDs) > 0 {
-		data["ids"] = q.IDs
-	}
-
-	if len(q.FeedIDs) > 0 {
-		data["feedIDs"] = q.FeedIDs
-	}
-
-	return json.Marshal(data)
 }
 
 // Paging sets the article query paging optons.

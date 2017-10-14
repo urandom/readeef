@@ -5,6 +5,11 @@ import { Observable } from "rxjs";
 import { Serializable } from "./api";
 import { TokenService } from './auth'
 
+export class FeedUpdateEvent extends Serializable {
+    feedID: number
+    articleIDs: number[]
+}
+
 export class ArticleStateEvent extends Serializable {
     state: string
     value: boolean
@@ -26,7 +31,7 @@ interface QueryOptions {
 
 @Injectable()
 export class EventService {
-    feedUpdate : Observable<number>
+    feedUpdate : Observable<FeedUpdateEvent>
     articleState : Observable<ArticleStateEvent>
 
     private eventSourceObservable : Observable<EventSource>
@@ -49,7 +54,9 @@ export class EventService {
 
         this.feedUpdate = this.eventSourceObservable.flatMap(source => 
             Observable.fromEvent(source, "feed-update")
-        ).map((event : DataEvent) => +event.data)
+        ).map((event : DataEvent) =>
+            new FeedUpdateEvent().fromJSON(JSON.parse(event.data))
+        )
 
         this.articleState = this.eventSourceObservable.flatMap(source => 
             Observable.fromEvent(source, "article-state-change")

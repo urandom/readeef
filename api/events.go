@@ -10,7 +10,6 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 	"github.com/urandom/handler/auth"
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/api/token"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo/eventable"
@@ -20,21 +19,18 @@ import (
 type event struct {
 	Type string      `json:"type"`
 	Data interface{} `json:"data,omitempty"`
-	skip bool
 }
 
 func eventSocket(
 	ctx context.Context,
 	service eventable.Service,
 	storage token.Storage,
-	feedManager *readeef.FeedManager,
 	log log.Log,
 ) http.HandlerFunc {
 	repo := service.FeedRepo()
 	monitor := &feedMonitor{ops: make(chan func(connMap)), service: service, log: log}
 
 	go monitor.loop(ctx)
-	feedManager.AddFeedMonitor(monitor)
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		flusher, ok := w.(http.Flusher)
@@ -129,10 +125,6 @@ type connData struct {
 }
 
 func (e event) Write(w io.Writer, flusher http.Flusher, log log.Log) error {
-	if e.skip {
-		return nil
-	}
-
 	if e.Type == "" {
 		// Comment event to keep the connection alive
 		if _, err := w.Write([]byte(": ping\n\n")); err != nil {
@@ -168,47 +160,30 @@ func (e event) Write(w io.Writer, flusher http.Flusher, log log.Log) error {
 	return nil
 }
 
-func (fm *feedMonitor) FeedUpdated(feed content.Feed, articles []content.Article) error {
-	fm.ops <- func(conns connMap) {
-		for _, d := range conns {
-			if _, ok := d.feedSet[feed.ID]; ok {
-				if !d.validator() {
-					close(d.done)
-					continue
-				}
-
-				err := event{"feed-update", feed.ID, false}.Write(d.writer, d.flusher, fm.log)
-				if err != nil {
-					fm.log.Printf("Error sending feed update event: %+v", err)
-					close(d.done)
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-func (fm *feedMonitor) FeedDeleted(feed content.Feed) error {
-	return nil
-}
-
 func (fm *feedMonitor) processEvent(ev eventable.Event) {
 	fm.ops <- func(conns connMap) {
 		for _, d := range conns {
-			if d.login == ev.Data.UserLogin() {
-				if !d.validator() {
-					close(d.done)
+			if ud, ok := ev.Data.(eventable.UserData); ok && d.login != ud.UserLogin() {
+				continue
+			}
+
+			if fd, ok := ev.Data.(eventable.FeedData); ok {
+				if _, ok := d.feedSet[fd.FeedID()]; !ok {
 					continue
 				}
+			}
 
-				event := event{Type: ev.Name, Data: ev.Data}
+			if !d.validator() {
+				close(d.done)
+				continue
+			}
 
-				err := event.Write(d.writer, d.flusher, fm.log)
-				if err != nil {
-					fm.log.Printf("Error sending article state event: %+v", err)
-					close(d.done)
-				}
+			event := event{Type: ev.Name, Data: ev.Data}
+
+			err := event.Write(d.writer, d.flusher, fm.log)
+			if err != nil {
+				fm.log.Printf("Error sending article state event: %+v", err)
+				close(d.done)
 			}
 		}
 	}

@@ -4,57 +4,48 @@ import (
 	"context"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/content/repo/eventable"
 	"github.com/urandom/readeef/log"
 )
 
-type Unread struct {
-	articleRepo repo.Article
-	userRepo    repo.User
-	log         log.Log
-}
+func Unread(ctx context.Context, service eventable.Service, log log.Log) {
+	articleRepo := service.ArticleRepo()
 
-func NewUnread(ctx context.Context, service repo.Service, log log.Log) Unread {
-	repo := service.ArticleRepo()
 	go func() {
-		repo.RemoveStaleUnreadRecords()
+		articleRepo.RemoveStaleUnreadRecords()
 
 		ticker := time.NewTicker(24 * time.Hour)
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			repo.RemoveStaleUnreadRecords()
+			articleRepo.RemoveStaleUnreadRecords()
 		}
 	}()
 
-	return Unread{articleRepo: repo, userRepo: service.UserRepo(), log: log}
-}
+	userRepo := service.UserRepo()
+	for event := range service.Listener() {
+		switch data := event.Data.(type) {
+		case eventable.FeedUpdateData:
+			log.Infof("Setting new feed %s articles to unread", data.Feed)
 
-func (i Unread) FeedUpdated(feed content.Feed, articles []content.Article) error {
-	i.log.Infof("Adding 'unread' states for all new articles of %s' for all users\n", feed)
+			ids := make([]content.ArticleID, len(data.NewArticles))
+			for i := range data.NewArticles {
+				ids[i] = data.NewArticles[i].ID
+			}
 
-	ids := make([]content.ArticleID, len(articles))
-	for i := range articles {
-		ids[i] = articles[i].ID
-	}
+			users, err := userRepo.All()
+			if err != nil {
+				log.Printf("Error getting all users: %+v", err)
+				continue
+			}
 
-	users, err := i.userRepo.All()
-	if err != nil {
-		return errors.WithMessage(err, "getting all users")
-	}
-
-	for _, user := range users {
-		if err := i.articleRepo.Read(false, user, content.IDs(ids)); err != nil {
-			return errors.WithMessage(err, "marking new articles as unread")
+			for _, user := range users {
+				if err := articleRepo.Read(false, user, content.IDs(ids)); err != nil {
+					log.Printf("Error marking new articles as unread: %+v", err)
+				}
+			}
 		}
 	}
-
-	return nil
-}
-
-func (i Unread) FeedDeleted(feed content.Feed) error {
-	return nil
 }

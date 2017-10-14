@@ -122,7 +122,7 @@ func (b bleveSearch) Search(
 
 	q = query.NewConjunctionQuery(conjunct)
 
-	searchRequest := bleve.NewSearchRequest(query.NewQueryStringQuery(term))
+	searchRequest := bleve.NewSearchRequest(q)
 
 	searchRequest.Highlight = bleve.NewHighlightWithStyle("html")
 	searchRequest.Highlight.AddField("title")
@@ -241,6 +241,33 @@ func (b bleveSearch) BatchIndex(articles []content.Article, op indexOperation) e
 	}
 
 	return nil
+}
+
+func (b bleveSearch) RemoveFeed(id content.FeedID) error {
+	val := float64(id)
+	inclusive := true
+
+	q := query.NewNumericRangeInclusiveQuery(&val, &val, &inclusive, &inclusive)
+	q.SetField("feed_id")
+
+	req := bleve.NewSearchRequest(q)
+	req.Fields = []string{"article_id"}
+	req.Size = int(^uint(0) >> 1)
+
+	resp, err := b.index.Search(req)
+	if err != nil {
+		return errors.Wrapf(err, "fetching feed %d article ids", id)
+	}
+
+	articles := make([]content.Article, 0, len(resp.Hits))
+
+	for i := range resp.Hits {
+		if id, ok := resp.Hits[i].Fields["article_id"].(float64); ok {
+			articles = append(articles, content.Article{ID: content.ArticleID(id)})
+		}
+	}
+
+	return b.BatchIndex(articles, BatchDelete)
 }
 
 func prepareArticle(article content.Article) (string, indexArticle) {

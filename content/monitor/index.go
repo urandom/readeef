@@ -1,41 +1,26 @@
 package monitor
 
 import (
-	"fmt"
-
-	"github.com/pkg/errors"
-	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/repo"
+	"github.com/urandom/readeef/content/repo/eventable"
 	"github.com/urandom/readeef/content/search"
 	"github.com/urandom/readeef/log"
 )
 
-type Index struct {
-	repo     repo.Article
-	provider search.Provider
-	log      log.Log
-}
+func Index(service eventable.Service, provider search.Provider, log log.Log) {
+	for event := range service.Listener() {
+		switch data := event.Data.(type) {
+		case eventable.FeedUpdateData:
+			log.Infof("Updating article search index for feed %s", data.Feed)
 
-func NewIndex(repo repo.Article, sp search.Provider, l log.Log) Index {
-	return Index{repo: repo, provider: sp, log: l}
-}
+			if err := provider.BatchIndex(data.NewArticles, search.BatchAdd); err != nil {
+				log.Printf("Error adding articles from %s to search index: %+v", data.Feed, err)
+			}
+		case eventable.FeedDeleteData:
+			log.Infof("Deleting article search index for feed %s", data.Feed)
 
-func (i Index) FeedUpdated(feed content.Feed, articles []content.Article) error {
-	i.log.Infof("Updating article search index for feed %s", feed)
-
-	return i.provider.BatchIndex(articles, search.BatchAdd)
-}
-
-func (i Index) FeedDeleted(feed content.Feed) error {
-	i.log.Infof("Deleting article search index for feed %s", feed)
-
-	articles, err := i.repo.All(content.FeedIDs([]content.FeedID{feed.ID}))
-
-	if err != nil {
-		return errors.WithMessage(err, fmt.Sprintf("getting feed %s articles", feed))
+			if err := provider.RemoveFeed(data.Feed.ID); err != nil {
+				log.Printf("Error removing feed %s from search index: %+v", data.Feed, err)
+			}
+		}
 	}
-	i.log.Infof("Deleting article search index for feed %s", feed)
-
-	return i.provider.BatchIndex(articles, search.BatchDelete)
-
 }

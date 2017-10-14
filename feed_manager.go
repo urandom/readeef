@@ -3,7 +3,6 @@ package readeef
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"regexp"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/config"
 	"github.com/urandom/readeef/content"
-	"github.com/urandom/readeef/content/monitor"
 	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/feed"
@@ -30,7 +28,6 @@ type FeedManager struct {
 	hubbub           *Hubbub
 	scheduler        feed.Scheduler
 	parserProcessors []processor.Feed
-	feedMonitors     []monitor.Feed
 }
 
 var (
@@ -56,10 +53,6 @@ func (fm *FeedManager) SetHubbub(hubbub *Hubbub) {
 
 func (fm *FeedManager) AddFeedProcessor(p processor.Feed) {
 	fm.parserProcessors = append(fm.parserProcessors, p)
-}
-
-func (fm *FeedManager) AddFeedMonitor(m monitor.Feed) {
-	fm.feedMonitors = append(fm.feedMonitors, m)
 }
 
 func (fm *FeedManager) Start(ctx context.Context) error {
@@ -126,13 +119,9 @@ func (fm *FeedManager) AddFeedByLink(link string) (content.Feed, error) {
 			break
 		}
 
-		newArticles, err := fm.repo.Update(&f)
-		if err != nil {
+		if _, err = fm.repo.Update(&f); err != nil {
 			return content.Feed{}, errors.WithMessage(err, "updating feed with parsed data")
 		}
-
-		// Do not halt the adding process due to slow monitors
-		go fm.processFeedUpdateMonitors(f, newArticles)
 	}
 
 	fm.log.Infoln("Adding feed " + f.String() + " to manager")
@@ -236,14 +225,6 @@ func (fm *FeedManager) stopUpdatingFeed(feed content.Feed) {
 		if len(users) == 0 {
 			fm.log.Infoln("Removing orphan feed " + feed.String() + " from the database")
 
-			for _, m := range fm.feedMonitors {
-				if err := m.FeedDeleted(feed); err != nil {
-					fm.log.Printf(
-						"Error invoking monitor '%s' on deleted feed '%s': %v\n",
-						reflect.TypeOf(m), feed, err)
-				}
-			}
-
 			if err = fm.repo.Delete(feed); err != nil {
 				fm.log.Printf("Error deleting feed '%s' from the repository: %v\n", feed, err)
 			}
@@ -252,25 +233,10 @@ func (fm *FeedManager) stopUpdatingFeed(feed content.Feed) {
 }
 
 func (fm FeedManager) updateFeed(feed content.Feed) {
-	if newArticles, err := fm.repo.Update(&feed); err != nil {
+	if _, err := fm.repo.Update(&feed); err != nil {
 		fm.log.Printf("Error updating feed '%s' database record: %+v", feed, err)
-	} else {
-		fm.processFeedUpdateMonitors(feed, newArticles)
 	}
 
-}
-
-func (fm FeedManager) processFeedUpdateMonitors(feed content.Feed, newArticles []content.Article) {
-	if len(newArticles) > 0 {
-		for _, m := range fm.feedMonitors {
-			if err := m.FeedUpdated(feed, newArticles); err != nil {
-				fm.log.Printf("Error invoking monitor '%s' on updated feed '%s': %+v",
-					reflect.TypeOf(m), feed, err)
-			}
-		}
-	} else {
-		fm.log.Infoln("No new articles for " + feed.String())
-	}
 }
 
 func (fm FeedManager) processParserFeed(pf parser.Feed) parser.Feed {
