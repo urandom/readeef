@@ -16,17 +16,17 @@ export class ArticleStateEvent extends Serializable {
     options: QueryOptions
 }
 
-interface QueryOptions {
-    ids: number[]
-    feedIDs: number[]
-    readOnly: boolean
-    unreadOnly: boolean
-    favoriteOnly: boolean
-    untaggedOnly: boolean
-    beforeID: number
-    afterID: number
-    beforeDate: Date
-    afterDate: Date
+export interface QueryOptions {
+    ids?: number[]
+    feedIDs?: number[]
+    readOnly?: boolean
+    unreadOnly?: boolean
+    favoriteOnly?: boolean
+    untaggedOnly?: boolean
+    beforeID?: number
+    afterID?: number
+    beforeDate?: Date
+    afterDate?: Date
 }
 
 @Injectable()

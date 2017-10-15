@@ -54,7 +54,8 @@ func generateThumbnail(r io.Reader) (b []byte, mimeType string, err error) {
 	return
 }
 
-func generateThumbnailFromDescription(description io.Reader) (t, link string) {
+func generateThumbnailFromDescription(description io.Reader) (string, string) {
+	var data, link string
 	if d, err := goquery.NewDocumentFromReader(description); err == nil {
 		d.Find("img").EachWithBreak(func(i int, s *goquery.Selection) bool {
 			if src, ok := s.Attr("src"); ok {
@@ -89,7 +90,7 @@ func generateThumbnailFromDescription(description io.Reader) (t, link string) {
 					b, mimeType, err := generateThumbnail(r)
 					if err == nil {
 						link = u.String()
-						t = base64DataUri(b, mimeType)
+						data = base64DataUri(b, mimeType)
 					} else {
 						return true
 					}
@@ -103,7 +104,7 @@ func generateThumbnailFromDescription(description io.Reader) (t, link string) {
 		})
 	}
 
-	return
+	return data, link
 }
 
 func generateThumbnailFromImageLink(link string) (t string) {

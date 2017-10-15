@@ -32,6 +32,8 @@ func FromExtract(
 		return nil, errors.New("no extract.Generator")
 	}
 
+	processors = filterProcessors(processors)
+
 	return ext{repo: repo, extractRepo: extractRepo, generator: g, processors: processors, log: log}, nil
 }
 
@@ -65,4 +67,18 @@ func (t ext) Generate(a content.Article) error {
 	}
 
 	return nil
+}
+
+func filterProcessors(input []processor.Article) []processor.Article {
+	processors := make([]processor.Article, 0, len(input))
+
+	for i := range input {
+		if _, ok := input[i].(processor.ProxyHTTP); ok {
+			continue
+		}
+
+		processors = append(processors, input[i])
+	}
+
+	return processors
 }

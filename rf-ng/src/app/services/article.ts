@@ -4,7 +4,8 @@ import { APIService, Serializable } from "./api";
 import { TokenService } from "./auth";
 import { Router, ActivatedRouteSnapshot, NavigationEnd, ParamMap, Data, Params } from '@angular/router';
 import { Feed, FeedService } from "../services/feed"
-import { EventService } from "../services/events"
+import { Tag, TagFeedIDs, TagService } from "../services/tag"
+import { EventService, FeedUpdateEvent, QueryOptions as EventableQueryOptions } from "../services/events"
 import { QueryPreferences, PreferencesService } from "../services/preferences"
 import { Observable, BehaviorSubject, ConnectableObservable, Subject } from "rxjs";
 import { listRoute, getArticleRoute } from "../main/routing-util"
@@ -142,7 +143,7 @@ class ScanData {
 }
 
 interface ArticleProperty {
-    ids: number[]
+    options: EventableQueryOptions,
     name: string
     value: any
 }
@@ -160,18 +161,20 @@ export class ArticleService {
     private refresh = new BehaviorSubject<any>(null)
     private limit: number = 200
     private initialFetched = false
+    private source : Observable<Source>
 
     constructor(
         private api: APIService,
         private tokenService: TokenService,
         private feedService: FeedService,
+        private tagService: TagService,
         private eventService: EventService,
         private router: Router,
         private preferences: PreferencesService,
     ) {
         let queryPreferences = this.preferences.queryPreferences();
 
-        let source = listRoute(this.router).map(
+        this.source = listRoute(this.router).map(
             route => this.nameToSource(route.data, route.params),
         ).filter(source =>
             source != null
@@ -179,14 +182,25 @@ export class ArticleService {
 
         this.articles = this.tokenService.tokenObservable(
         ).switchMap(token =>
-                this.feedService.getFeeds().map(feeds =>
-                feeds.reduce((map, feed) => {
-                    map[feed.id] = feed.title;
+            this.feedService.getFeeds().combineLatest(
+                this.tagService.getTagsFeedIDs(),
+                (feeds, tags) : [Map<number, string>, Map<number, number[]>] => {
+                    let feedMap = feeds.reduce((map, feed) => {
+                        map[feed.id] = feed.title;
 
-                    return map;
-                }, new Map<number, string>())
-            ).switchMap(feedMap =>
-                source.combineLatest(
+                        return map;
+                    }, new Map<number, string>());
+
+                    let tagMap = tags.reduce((map, tagFeeds) => {
+                        map[tagFeeds.tag.id] = tagFeeds.ids;
+
+                        return map;
+                    }, new Map<number, number[]>());
+
+                    return [feedMap, tagMap]
+                }
+            ).switchMap(feedsTags =>
+                this.source.combineLatest(
                     this.refresh, (source, v) => source
                 ).switchMap(source => {
                     this.paging = new BehaviorSubject<number>(0);
@@ -202,7 +216,7 @@ export class ArticleService {
                                 fromEvent: false,
                             }),
                             this.eventService.feedUpdate.filter(event =>
-                                source.updatable
+                                this.shouldUpdate(event, source, feedsTags[1])
                             ).flatMap(event => 
                                 this.getArticlesFor(new FeedSource(event.feedID), {
                                     ids: event.articleIDs,
@@ -227,7 +241,7 @@ export class ArticleService {
                                 if (!article.stripped) {
                                     article.stripped = article.description.replace(/<[^>]+>/g, '');
                                 }
-                                article.feed = feedMap[article.feedID];
+                                article.feed = feedsTags[0][article.feedID];
 
                                 return article;
                             })
@@ -295,10 +309,32 @@ export class ArticleService {
                                 }),
                             (data, propChange) => {
                                 if (propChange != null) {
-                                    for (let id of propChange.ids) {
-                                        let idx = data.indexMap[id]
-                                        if (idx != -1) {
-                                            data.articles[idx][propChange.name] = propChange.value;
+                                    if (propChange.options.ids) {
+                                        for (let id of propChange.options.ids) {
+                                            let idx = data.indexMap[id]
+                                            if (idx != undefined && idx != -1) {
+                                                data.articles[idx][propChange.name] = propChange.value;
+                                            }
+                                        }
+                                    }
+
+                                    if (this.hasOptions(propChange.options)) {
+                                        let tagged = new Set<number>()
+
+                                        feedsTags[1].forEach(ids => {
+                                            for (let id of ids) {
+                                                tagged.add(id);
+                                            }
+                                        })
+
+                                        for (let i = 0; i < data.articles.length; i++) {
+                                            if (this.shouldSet(data.articles[i], propChange.options, tagged)) {
+                                                data.articles[i][propChange.name] = propChange.value;
+                                            }
+                                        }
+                                    } else if (!propChange.options.ids) {
+                                        for (let i = 0; i < data.articles.length; i++) {
+                                            data.articles[i][propChange.name] = propChange.value;
                                         }
                                     }
                                 }
@@ -314,7 +350,7 @@ export class ArticleService {
 
         this.eventService.articleState.subscribe(
             event => this.stateChange.next({
-                    ids: event.options.ids,
+                    options: event.options,
                     name: event.state,
                     value: event.value,
             })
@@ -347,6 +383,21 @@ export class ArticleService {
         return this.articleStateChange(id, "read", read);
     }
 
+    public readAll() {
+        this.source.take(1).filter(
+            source => source.updatable
+        ).map(
+            source => "article" + source.url + "/read"
+        ).flatMap(
+            url => this.api.post(url, JSON.stringify(true))
+        ).map(response =>
+            new ArticleStateResponse().fromJSON(response.json()).success
+        ).subscribe(
+            success => {},
+            error => console.log(error),
+        )
+    }
+
     private articleStateChange(id: number, name: string, state: boolean) : Observable<Boolean> {
         let url = `article/${id}/${name}`
         let o : Observable<Response>
@@ -361,7 +412,7 @@ export class ArticleService {
         ).map(success => {
             if (success) {
                 this.stateChange.next({
-                    ids: [id],
+                    options: { ids: [id] },
                     name: name,
                     value: state,
                 })
@@ -488,6 +539,24 @@ export class ArticleService {
         }
     }
 
+    private shouldUpdate(event : FeedUpdateEvent, source: Source, tagMap: Map<number, number[]>) : boolean {
+        let s = source
+        if (s instanceof UserSource) {
+            return true;
+        } else if (source instanceof FeedSource) {
+            if (event.feedID == source.id) {
+                return true;
+            }
+        } else if (source instanceof TagSource) {
+            let ids = tagMap[source.id];
+            if (ids && ids.indexOf(event.feedID) != -1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private shouldInsert(incoming: Article, current: Article, options: QueryOptions) : boolean {
         if (options.unreadFirst && incoming.read != current.read) {
             return !incoming.read;
@@ -504,5 +573,56 @@ export class ArticleService {
         }
 
         return false
+    }
+
+    private hasOptions(options: EventableQueryOptions) : boolean {
+        if (!options.feedIDs && !options.readOnly &&
+            !options.unreadOnly && !options.favoriteOnly &&
+            !options.untaggedOnly && !options.beforeID &&
+            !options.afterID && !options.beforeDate && !options.afterDate) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private shouldSet(article: Article, options: EventableQueryOptions, tagged: Set<number>) : boolean {
+        if (options.feedIDs && options.feedIDs.indexOf(article.feedID) == -1) {
+            return false;
+        }
+
+        if (options.readOnly && !article.read) {
+            return false;
+        }
+
+        if (options.unreadOnly && article.read) {
+            return false;
+        }
+
+        if (options.favoriteOnly && !article.favorite) {
+            return false;
+        }
+
+        if (options.untaggedOnly && !tagged.has(article.feedID)) {
+            return false;
+        }
+
+        if (options.beforeID && article.id >= options.beforeID) {
+            return false;
+        }
+
+        if (options.afterID && article.id <= options.afterID) {
+            return false;
+        }
+
+        if (options.beforeDate && article.date >= options.beforeDate) {
+            return false;
+        }
+
+        if (options.afterDate && article.date <= options.afterDate) {
+            return false;
+        }
+
+        return true;
     }
 }

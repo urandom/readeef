@@ -32,6 +32,7 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
     showsArticle = false
     articleRead = false
     searchButton = false
+    markAllRead = false
     inSearch = false
     enabledShares = false
 
@@ -140,30 +141,34 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
                 route => route == null
             ).distinctUntilChanged().combineLatest(
                 listRoute(this.router),
-                (inList, route) : [boolean, boolean] => {
-                    let showButton = false
-                    let showEntry = false
+                (inList, route) : [boolean, boolean, boolean] => {
+                    let showButton = false;
+                    let showEntry = false;
+                    let showAllRead = false;
                     if (inList) {
                         let route = getListRoute([this.router.routerState.snapshot.root])
 
                         switch (route.data["primary"]) {
                         case "favorite":
+                            showAllRead = true;
                         case "popular":
                             break
                         case "search":
-                            showEntry = true
+                            showEntry = true;
                         default:
-                            showButton = true
+                            showButton = true;
+                            showAllRead = true;
                         }
                     }
 
-                    return[showButton, showEntry] 
+                    return[showButton, showEntry, showAllRead] 
                 }
             )
         ).subscribe(
             res => {
                 this.searchButton = res[0]
                 this.searchEntry = res[1]
+                this.markAllRead = res[2]
             },
             error => console.log(error),
         ));
@@ -188,6 +193,10 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
 
     toggleUnreadOnly() {
         this.preferences.unreadOnly = !this.preferences.unreadOnly;
+    }
+
+    markAsRead() {
+        this.articleService.readAll();
     }
 
     up() {

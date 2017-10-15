@@ -374,6 +374,7 @@ func initThumbnailGenerator(
 	processors []processor.Article,
 	log log.Log,
 ) (thumbnail.Generator, error) {
+
 	switch config.ThumbnailGenerator {
 	case "extract":
 		if t, err := thumbnail.FromExtract(service.ThumbnailRepo(), service.ExtractRepo(), extract, processors, log); err == nil {
