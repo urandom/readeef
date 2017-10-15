@@ -217,7 +217,7 @@ export class ArticleService {
                             }),
                             this.eventService.feedUpdate.filter(event =>
                                 this.shouldUpdate(event, source, feedsTags[1])
-                            ).flatMap(event => 
+                            ).delay(30000).flatMap(event => 
                                 this.getArticlesFor(new FeedSource(event.feedID), {
                                     ids: event.articleIDs,
                                     olderFirst: prefs.olderFirst,

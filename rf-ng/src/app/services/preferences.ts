@@ -7,11 +7,13 @@ import 'rxjs/add/operator/distinctUntilChanged'
 class Prefs extends Serializable {
     olderFirst: boolean
     unreadOnly: boolean
+    unreadFirst: boolean
 }
 
 export interface QueryPreferences {
     olderFirst: boolean
     unreadOnly: boolean
+    unreadFirst: boolean
 }
 
 @Injectable()
@@ -24,6 +26,8 @@ export class PreferencesService {
         this.prefs.fromJSON(
             JSON.parse(localStorage.getItem(PreferencesService.key))
         )
+
+        this.prefs.unreadFirst = true;
 
         this.queryPreferencesSubject = new BehaviorSubject(this.prefs);
     }
