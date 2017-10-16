@@ -8,7 +8,7 @@ import (
 func defaultConfig() (Config, error) {
 	var def Config
 
-	err := toml.Unmarshal([]byte(defaultCfg), &def)
+	err := toml.Unmarshal([]byte(DefaultCfg), &def)
 
 	if err != nil {
 		return Config{}, errors.Wrap(err, "parsing default config")
@@ -18,7 +18,8 @@ func defaultConfig() (Config, error) {
 	return def, nil
 }
 
-var defaultCfg = `
+// DefaultCfg shows the default configuration of the readeef server
+var DefaultCfg = `
 [server]
 	port = 80
 [server.auto-cert]
