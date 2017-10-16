@@ -65,10 +65,10 @@ func nodesCleanup(nodes []*html.Node) bool {
 		}
 
 		if n.Type == html.ElementNode {
-			// Remove all 'on*' attributes, and any that contain 'javascript:'
+			// Remove all 'on*' attributes, xmlns attributes, and any that contain 'javascript:'
 			attrs := []html.Attribute{}
 			for _, a := range n.Attr {
-				if strings.HasPrefix(a.Key, "on") {
+				if strings.HasPrefix(a.Key, "on") || a.Key == "xmlns" {
 					changed = true
 					break
 				}
