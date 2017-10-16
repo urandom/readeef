@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -18,11 +19,19 @@ func NewCleanup(l log.Log) Cleanup {
 	return Cleanup{log: l}
 }
 
+var (
+	iframeFixer = regexp.MustCompile(`(<iframe [^>]+)/>`)
+)
+
 func (p Cleanup) ProcessFeed(f parser.Feed) parser.Feed {
 	p.log.Infof("Cleaning up feed '%s'\n", f.Title)
 
 	for i := range f.Articles {
 		f.Articles[i].Description = strings.TrimSpace(f.Articles[i].Description)
+
+		// html.Parse breaks on self-closing iframe tags
+		f.Articles[i].Description =
+			iframeFixer.ReplaceAllString(f.Articles[i].Description, "$1></iframe>")
 
 		if nodes, err := html.ParseFragment(strings.NewReader(f.Articles[i].Description), nil); err == nil {
 			if nodesCleanup(nodes) {
@@ -95,6 +104,9 @@ func nodesCleanup(nodes []*html.Node) bool {
 			}
 
 			n.Attr = attrs
+
+			if n.Data == "iframe" {
+			}
 
 			// Add a target attribute to the article links
 			if n.Data == "a" {
