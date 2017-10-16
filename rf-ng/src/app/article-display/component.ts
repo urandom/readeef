@@ -3,6 +3,7 @@ import {
      ViewChild, ElementRef, OnChanges,
      HostListener,
 } from '@angular/core';
+import { DomSanitizer } from "@angular/platform-browser";
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbCarouselConfig, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
 import { Article, ArticleFormat, ArticleService } from '../services/article'
@@ -61,6 +62,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         private router: Router,
         private articleService: ArticleService,
         private featuresService: FeaturesService,
+        private sanitizer: DomSanitizer,
     ) {
         config.interval = 0
         config.wrap = false
@@ -103,6 +105,9 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                         slides.push(articles[index + 1]);
                     }
 
+                    slides.forEach(slide => {
+                    })
+
                     slides = slides.map(slide => {
                         if (slide.id == stateChange[0]) {
                             switch (stateChange[1]) {
@@ -119,6 +124,8 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                         } else {
                             slide["formatted"] = slide.description
                         }
+
+                        slide["formatted"] = this.sanitizer.bypassSecurityTrustHtml(slide["formatted"])
                         return slide
                     })
 
