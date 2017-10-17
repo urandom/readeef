@@ -8,6 +8,7 @@ virtual-scroll {
     overflow-y: auto;
     display: block;
     flex-grow: 1;
+    background: #eee;
 }
 
 list-item {
