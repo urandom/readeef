@@ -61,7 +61,7 @@ func (r articleRepo) Favor(state bool, user content.User, opts ...content.QueryO
 
 		r.eventBus.Dispatch(
 			ArticleStateEvent,
-			ArticleStateData{user.Login, read, state, convertOptions(o)},
+			ArticleStateData{user.Login, favor, state, convertOptions(o)},
 		)
 
 		r.log.Debugf("Dispatch of article favor state event end")
