@@ -82,6 +82,15 @@ type QueryOptions struct {
 	SortOrder sortingOrder
 }
 
+type Filter struct {
+	FeedIDs      []FeedID
+	ExcludeFeeds bool
+	Term         string
+	ExcludeTerm  bool
+	MatchURL     bool
+	MatchTitle   bool
+}
+
 // Paging sets the article query paging optons.
 func Paging(limit, offset int) QueryOpt {
 	return QueryOpt{func(o *QueryOptions) {

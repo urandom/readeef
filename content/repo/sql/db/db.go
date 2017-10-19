@@ -45,11 +45,15 @@ func (db *DB) CreateWithID(tx *sqlx.Tx, sql string, arg interface{}) (int64, err
 	}
 }
 
-func (db *DB) WhereMultipleORs(column, prefix string, length int) string {
+func (db *DB) WhereMultipleORs(column, prefix string, length int, equal bool) string {
 	if length < 20 {
 		orSlice := make([]string, length)
+		sign := "="
+		if !equal {
+			sign = "!="
+		}
 		for i := 0; i < length; i++ {
-			orSlice[i] = fmt.Sprintf("%s = :%s%d", column, prefix, i)
+			orSlice[i] = fmt.Sprintf("%s %s :%s%d", column, sign, prefix, i)
 		}
 
 		return "(" + strings.Join(orSlice, " OR ") + ")"
@@ -57,7 +61,7 @@ func (db *DB) WhereMultipleORs(column, prefix string, length int) string {
 
 	driver := db.DriverName()
 	if h, ok := helpers[driver]; ok {
-		return h.WhereMultipleORs(column, prefix, length)
+		return h.WhereMultipleORs(column, prefix, length, equal)
 	} else {
 		panic("No helper registered for " + driver)
 	}

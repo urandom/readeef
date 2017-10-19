@@ -60,9 +60,9 @@ func (h Helper) Upgrade(db *db.DB, old, new int) error {
 	return nil
 }
 
-func (h Helper) WhereMultipleORs(column, prefix string, length int) string {
+func (h Helper) WhereMultipleORs(column, prefix string, length int, equal bool) string {
 	if length < 70 {
-		return h.Helper.WhereMultipleORs(column, prefix, length)
+		return h.Helper.WhereMultipleORs(column, prefix, length, equal)
 	}
 
 	orSlice := make([]string, length)
@@ -71,7 +71,12 @@ func (h Helper) WhereMultipleORs(column, prefix string, length int) string {
 		orSlice[i] = fmt.Sprintf("(CAST(:%s%d AS bigint))", prefix, i)
 	}
 
-	return fmt.Sprintf("%s IN (%s)", column, strings.Join(orSlice, ", "))
+	sign := "IN"
+	if !equal {
+		sign = "NOT IN"
+	}
+
+	return fmt.Sprintf("%s %s (%s)", column, sign, strings.Join(orSlice, ", "))
 }
 func upgrade1to2(db *db.DB) error {
 	tx, err := db.Beginx()

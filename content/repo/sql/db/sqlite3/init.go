@@ -132,6 +132,14 @@ CREATE TABLE IF NOT EXISTS hubbub_subscriptions (
 
 	PRIMARY KEY(feed_id),
 	FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
-)`,
+)`, `
+CREATE INDEX IF NOT EXISTS articles_feed_id_idx ON articles (feed_id);
+`, `
+CREATE INDEX IF NOT EXISTS articles_title_idx ON articles (lower(title));
+`, `
+CREATE INDEX IF NOT EXISTS articles_link_idx ON articles (lower(link));
+`, `
+CREATE INDEX IF NOT EXISTS articles_date_idx ON articles (date);
+`,
 	}
 )

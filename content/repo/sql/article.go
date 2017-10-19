@@ -503,14 +503,14 @@ func constructSQLQueryOptions(
 	}
 
 	if len(opts.IDs) > 0 {
-		whereSlice = append(whereSlice, db.WhereMultipleORs("a.id", idPrefix, len(opts.IDs)))
+		whereSlice = append(whereSlice, db.WhereMultipleORs("a.id", idPrefix, len(opts.IDs), true))
 		for i := range opts.IDs {
 			args[fmt.Sprintf("%s%d", idPrefix, i)] = opts.IDs[i]
 		}
 	}
 
 	if len(opts.FeedIDs) > 0 {
-		whereSlice = append(whereSlice, db.WhereMultipleORs("a.feed_id", feedIDPRefix, len(opts.FeedIDs)))
+		whereSlice = append(whereSlice, db.WhereMultipleORs("a.feed_id", feedIDPRefix, len(opts.FeedIDs), true))
 		for i := range opts.FeedIDs {
 			args[fmt.Sprintf("%s%d", feedIDPRefix, i)] = opts.FeedIDs[i]
 		}
