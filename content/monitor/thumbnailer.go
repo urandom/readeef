@@ -14,37 +14,41 @@ func Thumbnailer(service eventable.Service, generator thumbnail.Generator, log l
 	for event := range service.Listener() {
 		switch data := event.Data.(type) {
 		case eventable.FeedUpdateData:
-			log.Infof("Generating article thumbnails for feed %s", data.Feed)
-
-			processors := generateProcessors(data.NewArticles)
-			numProcessors := 20
-			done := make(chan struct{})
-			errc := make(chan error)
-
-			defer close(done)
-
-			var wg sync.WaitGroup
-
-			wg.Add(numProcessors)
-			for i := 0; i < numProcessors; i++ {
-				go func() {
-					err := process(generator, done, processors)
-					if err != nil {
-						errc <- err
-					}
-					wg.Done()
-				}()
-			}
-
-			go func() {
-				wg.Wait()
-				close(errc)
-			}()
-
-			for err := range errc {
-				log.Printf("Error generating thumbnails for feed %s articles: %+v", data.Feed, err)
-			}
+			go processThumbnailerEvent(data, generator, log)
 		}
+	}
+}
+
+func processThumbnailerEvent(data eventable.FeedUpdateData, generator thumbnail.Generator, log log.Log) {
+	log.Infof("Generating article thumbnails for feed %s", data.Feed)
+
+	processors := generateProcessors(data.NewArticles)
+	numProcessors := 20
+	done := make(chan struct{})
+	errc := make(chan error)
+
+	defer close(done)
+
+	var wg sync.WaitGroup
+
+	wg.Add(numProcessors)
+	for i := 0; i < numProcessors; i++ {
+		go func() {
+			err := process(generator, done, processors)
+			if err != nil {
+				errc <- err
+			}
+			wg.Done()
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(errc)
+	}()
+
+	for err := range errc {
+		log.Printf("Error generating thumbnails for feed %s articles: %+v", data.Feed, err)
 	}
 }
 

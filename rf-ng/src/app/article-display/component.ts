@@ -105,9 +105,6 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                         slides.push(articles[index + 1]);
                     }
 
-                    slides.forEach(slide => {
-                    })
-
                     slides = slides.map(slide => {
                         if (slide.id == stateChange[0]) {
                             switch (stateChange[1]) {

@@ -10,7 +10,9 @@ import (
 )
 
 func Unread(ctx context.Context, service eventable.Service, log log.Log) {
-	articleRepo := service.ArticleRepo()
+	// Grab the non-eventable article repo. We don't want to notify on the
+	// initial unread mark.
+	articleRepo := service.Service.ArticleRepo()
 
 	go func() {
 		articleRepo.RemoveStaleUnreadRecords()
