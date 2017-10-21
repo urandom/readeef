@@ -41,15 +41,17 @@ type getArticlesData struct {
 }
 
 const (
-	userLogin    = "user_login"
-	beforeID     = "before_id"
-	afterID      = "after_id"
-	beforeDate   = "before_date"
-	afterDate    = "after_date"
-	idPrefix     = "id"
-	feedIDPRefix = "feed_id"
-	limit        = "limit"
-	offset       = "offset"
+	userLogin      = "user_login"
+	beforeID       = "before_id"
+	afterID        = "after_id"
+	beforeDate     = "before_date"
+	afterDate      = "after_date"
+	idPrefix       = "id"
+	feedIDPRefix   = "feed_id"
+	limit          = "limit"
+	offset         = "offset"
+	filterPrefix   = "filter"
+	filterIDPrefix = "filterID"
 )
 
 // ForUser returns all user articles restricted by the QueryOptions
@@ -509,11 +511,65 @@ func constructSQLQueryOptions(
 		}
 	}
 
+	feedIDset := make(map[content.FeedID]struct{})
 	if len(opts.FeedIDs) > 0 {
 		whereSlice = append(whereSlice, db.WhereMultipleORs("a.feed_id", feedIDPRefix, len(opts.FeedIDs), true))
 		for i := range opts.FeedIDs {
 			args[fmt.Sprintf("%s%d", feedIDPRefix, i)] = opts.FeedIDs[i]
+			feedIDset[opts.FeedIDs[i]] = struct{}{}
 		}
+	}
+
+	for i, f := range opts.Filters {
+		if !f.Valid() {
+			continue
+		}
+
+		ids := f.FeedIDs
+		if len(opts.FeedIDs) > 0 && len(ids) > 0 {
+			ids = make([]content.FeedID, 0, len(opts.FeedIDs))
+			for _, id := range f.FeedIDs {
+				if _, ok := feedIDset[id]; ok {
+					ids = append(ids, id)
+				}
+			}
+
+			if len(ids) == 0 {
+				continue
+			}
+		}
+
+		var idsPart string
+		if len(ids) > 0 {
+			idsPart = db.WhereMultipleORs("a.feed_id", fmt.Sprintf("%s%dx", filterIDPrefix, i), len(ids), !f.NotFeeds)
+
+			for j := range ids {
+				args[fmt.Sprintf("%s%dx%d", filterIDPrefix, i, j)] = ids[j]
+			}
+		}
+
+		sign := "LIKE"
+		if f.NotTerm {
+			sign = "NOT LIKE"
+		}
+
+		args[fmt.Sprintf("%s%d", filterPrefix, i)] = fmt.Sprintf("%%%s%%", f.Term)
+
+		orPart := []string{}
+		if f.MatchURL {
+			orPart = append(orPart, fmt.Sprintf("LOWER(a.link) %s :%s%d", sign, filterPrefix, i))
+		}
+
+		if f.MatchTitle {
+			orPart = append(orPart, fmt.Sprintf("LOWER(a.title) %s :%s%d", sign, filterPrefix, i))
+		}
+
+		if idsPart == "" {
+			whereSlice = append(whereSlice, "NOT ("+strings.Join(orPart, " OR ")+")")
+		} else {
+			whereSlice = append(whereSlice, "NOT ( ("+strings.Join(orPart, " OR ")+") AND "+idsPart+")")
+		}
+
 	}
 
 	var where string

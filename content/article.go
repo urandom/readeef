@@ -77,18 +77,23 @@ type QueryOptions struct {
 	AfterDate       time.Time
 	IDs             []ArticleID
 	FeedIDs         []FeedID
+	Filters         []Filter
 
 	SortField sortingField
 	SortOrder sortingOrder
 }
 
 type Filter struct {
-	FeedIDs      []FeedID
-	ExcludeFeeds bool
-	Term         string
-	ExcludeTerm  bool
-	MatchURL     bool
-	MatchTitle   bool
+	FeedIDs    []FeedID
+	NotFeeds   bool
+	Term       string
+	NotTerm    bool
+	MatchURL   bool
+	MatchTitle bool
+}
+
+func (f Filter) Valid() bool {
+	return f.Term != "" && (f.MatchTitle || f.MatchURL)
 }
 
 // Paging sets the article query paging optons.
@@ -126,6 +131,13 @@ func TimeRange(after, before time.Time) QueryOpt {
 	return QueryOpt{func(o *QueryOptions) {
 		o.AfterDate = after
 		o.BeforeDate = before
+	}}
+}
+
+// Filters ads configurable filters to limit the query result.
+func Filters(filters []Filter) QueryOpt {
+	return QueryOpt{func(o *QueryOptions) {
+		o.Filters = filters
 	}}
 }
 
