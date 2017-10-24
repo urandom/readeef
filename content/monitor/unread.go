@@ -44,7 +44,10 @@ func Unread(ctx context.Context, service eventable.Service, log log.Log) {
 			}
 
 			for _, user := range users {
-				if err := articleRepo.Read(false, user, content.IDs(ids)); err != nil {
+				if err := articleRepo.Read(
+					false, user, content.IDs(ids),
+					content.Filters(content.GetUserFilters(user)),
+				); err != nil {
 					log.Printf("Error marking new articles as unread: %+v", err)
 				}
 			}

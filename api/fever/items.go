@@ -40,7 +40,9 @@ func items(
 ) error {
 	log.Infoln("Fetching fever items")
 
-	count, err := service.ArticleRepo().Count(user)
+	count, err := service.ArticleRepo().Count(user,
+		content.Filters(content.GetUserFilters(user)))
+
 	if err != nil {
 		return errors.WithMessage(err, "getting user article count")
 	}
@@ -62,7 +64,10 @@ func items(
 		var articles []content.Article
 
 		// Fever clients do their own paging
-		opts := []content.QueryOpt{content.Paging(50, 0)}
+		opts := []content.QueryOpt{
+			content.Paging(50, 0),
+			content.Filters(content.GetUserFilters(user)),
+		}
 
 		if withIds, ok := r.Form["with_ids"]; ok {
 			stringIds := strings.Split(withIds[0], ",")

@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	FeedUpdateEvent = "feed-update"
-	FeedDeleteEvent = "feed-delete"
+	FeedUpdateEvent  = "feed-update"
+	FeedDeleteEvent  = "feed-delete"
+	FeedSetTagsEvent = "feed-set-tags"
 )
 
 type FeedUpdateData struct {
@@ -52,6 +53,32 @@ func (f FeedDeleteData) FeedID() content.FeedID {
 	return f.Feed.ID
 }
 
+type FeedSetTagsData struct {
+	Feed content.Feed
+	User content.User
+	Tags []*content.Tag
+}
+
+func (f FeedSetTagsData) MarshalJSON() ([]byte, error) {
+	data := map[string]interface{}{}
+
+	data["feedID"] = f.Feed.ID
+	data["user"] = f.User.Login
+
+	tagIDs := make([]content.TagID, len(f.Tags))
+	for i := range f.Tags {
+		tagIDs[i] = f.Tags[i].ID
+	}
+
+	data["tagIDs"] = tagIDs
+
+	return json.Marshal(data)
+}
+
+func (f FeedSetTagsData) FeedID() content.FeedID {
+	return f.Feed.ID
+}
+
 type feedRepo struct {
 	repo.Feed
 	eventBus bus
@@ -87,6 +114,23 @@ func (r feedRepo) Delete(feed content.Feed) error {
 		)
 
 		r.log.Debugf("Dispatch of feed delete event end")
+	}
+
+	return err
+}
+
+func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []*content.Tag) error {
+	err := r.Feed.SetUserTags(feed, user, tags)
+
+	if err == nil {
+		r.log.Debugf("Dispatching feed set tags event")
+
+		r.eventBus.Dispatch(
+			FeedSetTagsEvent,
+			FeedSetTagsData{feed, user, tags},
+		)
+
+		r.log.Debugf("Dispatch of feed set tags end")
 	}
 
 	return err

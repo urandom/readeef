@@ -402,6 +402,7 @@ func initFeedMonitors(
 	log log.Log,
 ) {
 	go monitor.Unread(ctx, service, log)
+	go monitor.UserFilters(service, log)
 
 	for _, m := range config.Monitors {
 		switch m {

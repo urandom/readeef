@@ -21,7 +21,10 @@ func unreadRecent(
 	log.Infoln("Marking recently read fever items as unread")
 
 	t := time.Now().Add(-24 * time.Hour)
-	err := service.ArticleRepo().Read(false, user, content.TimeRange(t, time.Now()))
+	err := service.ArticleRepo().Read(false, user,
+		content.TimeRange(t, time.Now()),
+		content.Filters(content.GetUserFilters(user)),
+	)
 
 	if err != nil {
 		return errors.WithMessage(err, "marking recently read articles as unread")
@@ -38,7 +41,9 @@ func markItem(
 	log log.Log,
 ) error {
 	val := r.FormValue("mark")
-	opts := []content.QueryOpt{}
+	opts := []content.QueryOpt{
+		content.Filters(content.GetUserFilters(user)),
+	}
 
 	id, err := strconv.ParseInt(r.PostFormValue("id"), 10, 64)
 	if err != nil {

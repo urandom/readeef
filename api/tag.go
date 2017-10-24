@@ -62,6 +62,28 @@ func getTagsFeedIDs(repo repo.Tag, log log.Log) http.HandlerFunc {
 	}
 }
 
+func getTagFeedIDs(repo repo.Tag, log log.Log) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		tag, stop := tagFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		ids, err := repo.FeedIDs(tag, user)
+		if err != nil {
+			fatal(w, log, "Error getting tag feed ids: %+v", err)
+			return
+		}
+
+		args{"feedIDs": ids}.WriteJSON(w)
+	}
+}
+
 func getFeedTags(repo repo.Tag, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)

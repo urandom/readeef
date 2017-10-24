@@ -33,7 +33,10 @@ func getCategories(req request, user content.User, service repo.Service) (interf
 			return nil, errors.WithMessage(err, "getting tag feed ids")
 		}
 
-		count, err := articleRepo.Count(user, content.UnreadOnly, content.FeedIDs(ids))
+		count, err := articleRepo.Count(user,
+			content.UnreadOnly, content.FeedIDs(ids),
+			content.Filters(content.GetUserFilters(user)),
+		)
 		if err != nil {
 			return nil, errors.WithMessage(err, "getting unread tag count")
 		}
@@ -45,7 +48,10 @@ func getCategories(req request, user content.User, service repo.Service) (interf
 		}
 	}
 
-	count, err := articleRepo.Count(user, content.UnreadOnly, content.UntaggedOnly)
+	count, err := articleRepo.Count(user,
+		content.UnreadOnly, content.UntaggedOnly,
+		content.Filters(content.GetUserFilters(user)),
+	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getting unread untagged count")
 	}
@@ -56,7 +62,10 @@ func getCategories(req request, user content.User, service repo.Service) (interf
 		)
 	}
 
-	count, err = articleRepo.Count(user, content.UnreadOnly, content.FavoriteOnly)
+	count, err = articleRepo.Count(user,
+		content.UnreadOnly, content.FavoriteOnly,
+		content.Filters(content.GetUserFilters(user)),
+	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getting unread favorite count")
 	}

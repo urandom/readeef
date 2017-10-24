@@ -83,7 +83,10 @@ func getHeadlines(
 
 	var feedTitle string
 	var firstID content.ArticleID
-	opts := []content.QueryOpt{content.Paging(limit, req.Skip), content.UnreadFirst}
+	opts := []content.QueryOpt{
+		content.Paging(limit, req.Skip), content.UnreadFirst,
+		content.Filters(content.GetUserFilters(user)),
+	}
 
 	switch req.OrderBy {
 	case "date_reverse":
@@ -214,7 +217,10 @@ func updateArticle(req request, user content.User, service repo.Service) (interf
 		return nil, errors.Errorf("Unknown field %d", req.Field)
 	}
 
-	articles, err := service.ArticleRepo().ForUser(user, content.IDs(req.ArticleIds))
+	articles, err := service.ArticleRepo().ForUser(user,
+		content.IDs(req.ArticleIds),
+		content.Filters(content.GetUserFilters(user)),
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting usr articles")
 	}
@@ -262,7 +268,10 @@ func updateArticle(req request, user content.User, service repo.Service) (interf
 
 	var updateCount int
 	if len(read) > 0 {
-		if err = service.ArticleRepo().Read(true, user, content.IDs(read)); err != nil {
+		if err = service.ArticleRepo().Read(true, user,
+			content.IDs(read),
+			content.Filters(content.GetUserFilters(user)),
+		); err != nil {
 			return nil, errors.WithMessage(err, "marking articles as read")
 		}
 
@@ -270,7 +279,10 @@ func updateArticle(req request, user content.User, service repo.Service) (interf
 	}
 
 	if len(unread) > 0 {
-		if err = service.ArticleRepo().Read(false, user, content.IDs(unread)); err != nil {
+		if err = service.ArticleRepo().Read(false, user,
+			content.IDs(unread),
+			content.Filters(content.GetUserFilters(user)),
+		); err != nil {
 			return nil, errors.WithMessage(err, "marking articles as unread")
 		}
 
@@ -278,7 +290,10 @@ func updateArticle(req request, user content.User, service repo.Service) (interf
 	}
 
 	if len(favor) > 0 {
-		if err = service.ArticleRepo().Favor(true, user, content.IDs(favor)); err != nil {
+		if err = service.ArticleRepo().Favor(true, user,
+			content.IDs(favor),
+			content.Filters(content.GetUserFilters(user)),
+		); err != nil {
 			return nil, errors.WithMessage(err, "marking articles as favorite")
 		}
 
@@ -286,7 +301,10 @@ func updateArticle(req request, user content.User, service repo.Service) (interf
 	}
 
 	if len(unfavor) > 0 {
-		if err = service.ArticleRepo().Favor(false, user, content.IDs(unfavor)); err != nil {
+		if err = service.ArticleRepo().Favor(false, user,
+			content.IDs(unfavor),
+			content.Filters(content.GetUserFilters(user)),
+		); err != nil {
 			return nil, errors.WithMessage(err, "marking articles as not favorite")
 		}
 
@@ -302,7 +320,10 @@ func getArticle(
 	service repo.Service,
 	processors []processor.Article,
 ) (interface{}, error) {
-	articles, err := service.ArticleRepo().ForUser(user, content.IDs(req.ArticleIds))
+	articles, err := service.ArticleRepo().ForUser(user,
+		content.IDs(req.ArticleIds),
+		content.Filters(content.GetUserFilters(user)),
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting user articles")
 	}

@@ -75,6 +75,7 @@ func links(
 		content.Paging(50, 50*int(page-1)),
 		content.IncludeScores,
 		content.Sorting(content.DefaultSort, content.DescendingOrder),
+		content.Filters(content.GetUserFilters(user)),
 	)
 
 	if err != nil {

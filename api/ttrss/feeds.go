@@ -43,7 +43,10 @@ func getFeeds(req request, user content.User, service repo.Service) (interface{}
 
 	articleRepo := service.ArticleRepo()
 	if req.CatId == CAT_ALL || req.CatId == CAT_SPECIAL {
-		unreadFav, err := articleRepo.Count(user, content.UnreadOnly, content.FavoriteOnly)
+		unreadFav, err := articleRepo.Count(user,
+			content.UnreadOnly, content.FavoriteOnly,
+			content.Filters(content.GetUserFilters(user)),
+		)
 		if err != nil {
 			return nil, errors.WithMessage(err, "getting unread favorite count")
 		}
@@ -58,7 +61,10 @@ func getFeeds(req request, user content.User, service repo.Service) (interface{}
 		}
 
 		freshTime := time.Now().Add(FRESH_DURATION)
-		unreadFresh, err := articleRepo.Count(user, content.TimeRange(freshTime, time.Time{}), content.UnreadOnly)
+		unreadFresh, err := articleRepo.Count(user,
+			content.TimeRange(freshTime, time.Time{}), content.UnreadOnly,
+			content.Filters(content.GetUserFilters(user)),
+		)
 		if err != nil {
 			return nil, errors.WithMessage(err, "getting unread fresh count")
 		}
@@ -72,7 +78,9 @@ func getFeeds(req request, user content.User, service repo.Service) (interface{}
 			})
 		}
 
-		unreadAll, err := articleRepo.Count(user, content.UnreadOnly)
+		unreadAll, err := articleRepo.Count(user, content.UnreadOnly,
+			content.Filters(content.GetUserFilters(user)),
+		)
 		if err != nil {
 			return nil, errors.WithMessage(err, "getting unread count")
 		}
@@ -138,7 +146,10 @@ func getFeeds(req request, user content.User, service repo.Service) (interface{}
 			}
 
 			unread, err := articleRepo.Count(
-				user, content.UnreadOnly, content.FeedIDs([]content.FeedID{f.ID}))
+				user, content.UnreadOnly,
+				content.FeedIDs([]content.FeedID{f.ID}),
+				content.Filters(content.GetUserFilters(user)),
+			)
 			if err != nil {
 				return nil, errors.WithMessage(err, "getting feed unread count")
 			}
@@ -165,7 +176,10 @@ func updateFeed(req request, user content.User, service repo.Service) (interface
 }
 
 func catchupFeed(req request, user content.User, service repo.Service) (interface{}, error) {
-	o := []content.QueryOpt{content.TimeRange(time.Time{}, time.Now())}
+	o := []content.QueryOpt{
+		content.TimeRange(time.Time{}, time.Now()),
+		content.Filters(content.GetUserFilters(user)),
+	}
 
 	var feedGenerator func() ([]content.Feed, error)
 
@@ -314,7 +328,10 @@ func feedListCategoryFeed(
 	if feed.ID > 0 {
 		c.Name = feed.Title
 		c.Unread, err = repo.Count(
-			user, content.UnreadOnly, content.FeedIDs([]content.FeedID{feed.ID}))
+			user, content.UnreadOnly,
+			content.FeedIDs([]content.FeedID{feed.ID}),
+			content.Filters(content.GetUserFilters(user)),
+		)
 
 		if err != nil {
 			return category{}, errors.WithMessage(err, "getting feed unread count")
@@ -323,14 +340,19 @@ func feedListCategoryFeed(
 		c.Name = specialTitle(id)
 		switch id {
 		case FAVORITE_ID:
-			c.Unread, err = repo.Count(user, content.UnreadOnly, content.FavoriteOnly)
+			c.Unread, err = repo.Count(user, content.UnreadOnly, content.FavoriteOnly,
+				content.Filters(content.GetUserFilters(user)),
+			)
 		case FRESH_ID:
 			c.Unread, err = repo.Count(
 				user, content.UnreadOnly,
 				content.TimeRange(time.Now().Add(FRESH_DURATION), time.Time{}),
+				content.Filters(content.GetUserFilters(user)),
 			)
 		case ALL_ID:
-			c.Unread, err = repo.Count(user, content.UnreadOnly)
+			c.Unread, err = repo.Count(user, content.UnreadOnly,
+				content.Filters(content.GetUserFilters(user)),
+			)
 		}
 
 		if err != nil {

@@ -169,7 +169,7 @@ func emulatorRoutes(
 			rr = append(rr, routes{
 				path: "/tt-rss/",
 				route: func(r chi.Router) {
-					r.Use(timeout(5*time.Second), gzip, access)
+					r.Use(timeout(10*time.Second), gzip, access)
 					r.Get("/", ttrss.FakeWebHandler)
 
 					r.Post("/api/", ttrss.Handler(
@@ -183,7 +183,7 @@ func emulatorRoutes(
 			rr = append(rr, routes{
 				path: "/fever/",
 				route: func(r chi.Router) {
-					r.Use(timeout(5*time.Second), gzip, access)
+					r.Use(timeout(10*time.Second), gzip, access)
 					r.Post("/", fever.Handler(service, processors, log))
 				},
 			})
@@ -253,6 +253,12 @@ func tagRoutes(repo repo.Tag, log log.Log, gzip, access mw) routes {
 		r.Use(timeout(5*time.Second), gzip, access)
 		r.Get("/", listTags(repo, log))
 		r.Get("/feedIDs", getTagsFeedIDs(repo, log))
+
+		r.Route("/{tagID:[0-9]+}", func(r chi.Router) {
+			r.Use(tagContext(repo, log))
+
+			r.Get("/feedIDs", getTagFeedIDs(repo, log))
+		})
 	}}
 }
 

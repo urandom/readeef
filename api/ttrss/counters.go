@@ -19,7 +19,9 @@ type counter struct {
 }
 
 func getUnread(req request, user content.User, service repo.Service) (interface{}, error) {
-	opts := []content.QueryOpt{}
+	opts := []content.QueryOpt{
+		content.Filters(content.GetUserFilters(user)),
+	}
 
 	var feedGenerator func() ([]content.Feed, error)
 
@@ -88,7 +90,9 @@ func getCounters(req request, user content.User, service repo.Service) (interfac
 	cContent := countersContent{}
 
 	articleRepo := service.ArticleRepo()
-	unreadCount, err := articleRepo.Count(user, content.UnreadOnly)
+	unreadCount, err := articleRepo.Count(user, content.UnreadOnly,
+		content.Filters(content.GetUserFilters(user)),
+	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getting user unread count")
 	}
@@ -104,12 +108,16 @@ func getCounters(req request, user content.User, service repo.Service) (interfac
 
 	cContent = append(cContent, counter{Id: ARCHIVED_ID})
 
-	unreadFavCount, err := articleRepo.Count(user, content.UnreadOnly, content.FavoriteOnly)
+	unreadFavCount, err := articleRepo.Count(user, content.UnreadOnly, content.FavoriteOnly,
+		content.Filters(content.GetUserFilters(user)),
+	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getting favorite unread count")
 	}
 
-	favCount, err := articleRepo.Count(user, content.FavoriteOnly)
+	favCount, err := articleRepo.Count(user, content.FavoriteOnly,
+		content.Filters(content.GetUserFilters(user)),
+	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getting favorite count")
 	}
@@ -122,7 +130,10 @@ func getCounters(req request, user content.User, service repo.Service) (interfac
 	cContent = append(cContent, counter{Id: PUBLISHED_ID})
 
 	freshTime := time.Now().Add(FRESH_DURATION)
-	freshCount, err := articleRepo.Count(user, content.UnreadOnly, content.TimeRange(freshTime, time.Time{}))
+	freshCount, err := articleRepo.Count(user, content.UnreadOnly,
+		content.TimeRange(freshTime, time.Time{}),
+		content.Filters(content.GetUserFilters(user)),
+	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getting fresh unread count")
 	}
@@ -131,7 +142,9 @@ func getCounters(req request, user content.User, service repo.Service) (interfac
 			Counter:    freshCount,
 			AuxCounter: 0})
 
-	userCount, err := articleRepo.Count(user)
+	userCount, err := articleRepo.Count(user,
+		content.Filters(content.GetUserFilters(user)),
+	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getting user count")
 	}
@@ -141,7 +154,10 @@ func getCounters(req request, user content.User, service repo.Service) (interfac
 			AuxCounter: 0})
 
 	for _, f := range feeds {
-		feedCount, err := articleRepo.Count(user, content.FeedIDs([]content.FeedID{f.ID}))
+		feedCount, err := articleRepo.Count(user,
+			content.FeedIDs([]content.FeedID{f.ID}),
+			content.Filters(content.GetUserFilters(user)),
+		)
 		if err != nil {
 			return nil, errors.WithMessage(err, "getting feed count")
 		}
@@ -164,7 +180,10 @@ func getCounters(req request, user content.User, service repo.Service) (interfac
 			return nil, errors.WithMessage(err, "getting tag feed ids")
 		}
 
-		tagCount, err := articleRepo.Count(user, content.UnreadOnly, content.FeedIDs(ids))
+		tagCount, err := articleRepo.Count(user, content.UnreadOnly,
+			content.FeedIDs(ids),
+			content.Filters(content.GetUserFilters(user)),
+		)
 		if err != nil {
 			return nil, errors.WithMessage(err, "getting tag unread count")
 		}
@@ -177,7 +196,10 @@ func getCounters(req request, user content.User, service repo.Service) (interfac
 		)
 	}
 
-	unreadUntaggedCount, err := articleRepo.Count(user, content.UnreadOnly, content.UntaggedOnly)
+	unreadUntaggedCount, err := articleRepo.Count(user,
+		content.UnreadOnly, content.UntaggedOnly,
+		content.Filters(content.GetUserFilters(user)),
+	)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getting unread untagged count")
 	}

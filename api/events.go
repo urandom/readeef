@@ -217,7 +217,7 @@ func (fm *feedMonitor) loop(ctx context.Context) {
 		case op := <-fm.ops:
 			op(conns)
 		case event := <-listener:
-			fm.log.Debugf("Got service event %#v", event)
+			fm.log.Debugf("Got service event %s", event.Name)
 			go fm.processEvent(event)
 		}
 	}

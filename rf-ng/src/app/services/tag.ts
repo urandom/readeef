@@ -22,6 +22,10 @@ class TagsFeedIDs extends Serializable {
     tagFeeds: TagFeedIDs[]
 }
 
+class FeedIDsResponse extends Serializable {
+    feedIDs: number[]
+}
+
 @Injectable()
 export class TagService {
     constructor(private api: APIService) { }
@@ -29,6 +33,11 @@ export class TagService {
     getTags() : Observable<Tag[]> {
         return this.api.get("tag")
             .map(response => new TagsResponse().fromJSON(response.json()).tags);
+    }
+
+    getFeedIDs(tag: {id: number}): Observable<number[]> {
+        return this.api.get(`tag/${tag.id}/feedIDs`)
+            .map(response => new FeedIDsResponse().fromJSON(response.json()).feedIDs)
     }
 
     getTagsFeedIDs(): Observable<TagFeedIDs[]> {

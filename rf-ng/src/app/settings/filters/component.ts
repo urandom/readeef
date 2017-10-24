@@ -122,6 +122,7 @@ export class NewFilterDialog {
     constructor(
         private dialogRef: MatDialogRef<NewFilterDialog>,
         private userService: UserService,
+        private tagService: TagService,
         @Inject(MAT_DIALOG_DATA) private data: {feeds: Feed[], tags: Tag[]},
         formBuilder: FormBuilder,
     ) {
@@ -157,8 +158,6 @@ export class NewFilterDialog {
         let value = this.form.value;
 
         this.userService.getCurrentUser().flatMap(user => {
-            let profile = user.profileData || new Map<string, any>();
-            let filters = (profile["filters"] || []) as Filter[];
             let filter : Filter = {
                 term: value.term,
             }
@@ -178,11 +177,28 @@ export class NewFilterDialog {
                 }
             }
 
-            filters.push(filter);
+            let o : Observable<Filter>
+            if (filter.tagID > 0) {
+                o = this.tagService.getFeedIDs({id: filter.tagID}).map(
+                    ids => {
+                        filter.feedIDs = ids;
+                        return filter;
+                    }
+                );
+            } else {
+                o = Observable.of(filter);
+            }
 
-            profile["filters"] = filters;
+            return o.flatMap(filter => {
+                let profile = user.profileData || new Map<string, any>();
+                let filters = (profile["filters"] || []) as Filter[];
 
-            return this.userService.setProfile(user.login, profile);
+                filters.push(filter);
+
+                profile["filters"] = filters;
+
+                return this.userService.setProfile(user.login, profile);
+            });
         }).subscribe(
             success => this.close(),
             error => console.log(error),

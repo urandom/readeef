@@ -20,7 +20,8 @@ func unreadItemIDs(
 ) error {
 	log.Infoln("Fetching unread fever item ids")
 
-	ids, err := service.ArticleRepo().IDs(user, content.UnreadOnly)
+	ids, err := service.ArticleRepo().IDs(user,
+		content.UnreadOnly, content.Filters(content.GetUserFilters(user)))
 	if err != nil {
 		return errors.WithMessage(err, "getting unread ids")
 	}
@@ -50,7 +51,8 @@ func savedItemIDs(
 ) error {
 	log.Infoln("Fetching saved fever item ids")
 
-	ids, err := service.ArticleRepo().IDs(user, content.FavoriteOnly)
+	ids, err := service.ArticleRepo().IDs(user,
+		content.FavoriteOnly, content.Filters(content.GetUserFilters(user)))
 	if err != nil {
 		return errors.WithMessage(err, "getting unread ids")
 	}
