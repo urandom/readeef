@@ -1,0 +1,77 @@
+.filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.filter .info {
+    flex: 1 0 0;
+}
+
+.filter span {
+    padding-left: 4px;
+    padding-right: 4px;
+}
+
+.filter .term, .filter .tag, .filter .feeds {
+    padding-left: 8px;
+    padding-right: 8px;
+    font-weight: bold;
+}
+
+.filter .url-and-title {
+    font-style: italic;
+}
+
+.delete {
+    margin-left: 8px;
+}
+
+.error {
+    margin-left: 8px;
+    visibility: hidden;
+}
+
+.error.visible {
+    visibility: visible;
+}
+
+.footer {
+    text-align: end;
+    padding-bottom: 8px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+form mat-form-field {
+    flex: 1 0 auto;
+}
+
+form mat-slide-toggle {
+    align-self: center;
+    flex: 1 0 auto;
+}
+
+form mat-checkbox {
+    font-size: 14px;
+}
+
+form mat-checkbox ::ng-deep .mat-checkbox-layout {
+    white-space: normal;
+}
+
+form p {
+    border-bottom: 1px solid #ddd;
+    margin-top: 12px;
+    margin-bottom: 24px;
+    font-size: 13px;
+}
+
+form mat-input-container {
+    width: 100%;
+}

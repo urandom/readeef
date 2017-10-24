@@ -2,11 +2,11 @@ import { NgModule } from '@angular/core';
 import { CommonModule }   from '@angular/common';
 import { FormsModule, ReactiveFormsModule }   from '@angular/forms';
 import {
-    MdButtonModule,
-    MdCheckboxModule,
-    MdDialogModule,
-    MdIconModule,
-    MdInputModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatDialogModule,
+    MatIconModule,
+    MatInputModule,
 } from "@angular/material";
 import {
     AdminSettingsComponent,
@@ -25,11 +25,11 @@ import {
         CommonModule,
         FormsModule,
         ReactiveFormsModule,
-        MdButtonModule,
-        MdCheckboxModule,
-        MdDialogModule,
-        MdIconModule,
-        MdInputModule,
+        MatButtonModule,
+        MatCheckboxModule,
+        MatDialogModule,
+        MatIconModule,
+        MatInputModule,
     ],
     exports: [
         AdminSettingsComponent,

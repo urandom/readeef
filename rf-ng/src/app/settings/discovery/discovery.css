@@ -1,4 +1,4 @@
-md-input-container {
+mat-input-container {
     width: 100%;
 }
 
@@ -9,6 +9,6 @@ input[type="file"] {
     margin-bottom: 1em;
 }
 
-md-progress-bar {
+mat-progress-bar {
     margin-top: 1em;
 }

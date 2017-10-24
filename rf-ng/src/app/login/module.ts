@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { FormsModule }   from '@angular/forms';
-import { MdInputModule, MdButtonModule } from "@angular/material";
+import { MatInputModule, MatButtonModule } from "@angular/material";
 import { LoginComponent } from './component'
 
 @NgModule({
@@ -9,8 +9,8 @@ import { LoginComponent } from './component'
   ],
   imports: [
     FormsModule,
-    MdInputModule,
-    MdButtonModule,
+    MatInputModule,
+    MatButtonModule,
   ],
   exports: [
       LoginComponent,

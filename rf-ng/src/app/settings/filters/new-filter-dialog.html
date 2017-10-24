@@ -1,0 +1,55 @@
+<div>
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate autocomplete="off">
+        <mat-input-container>
+            <input matInput i18n-placeholder placeholder="Filter by" formControlName="term" required>
+            <mat-error *ngIf="form.hasError('required', ['term'])" i18n>
+                Empty filter term
+            </mat-error>
+        </mat-input-container>
+        <br>
+        <mat-checkbox formControlName="inverse" i18n>
+            Match filter if term does not match.
+        </mat-checkbox>
+        <p i18n>
+            Filters can be applied to article URLs or title. At least one target must be selected:
+        </p>
+        <mat-checkbox formControlName="matchURL" i18n>
+            Match by URL
+        </mat-checkbox>
+        <mat-error *ngIf="form.hasError('nomatch')" i18n>
+            A filter must match at least a URL or title
+        </mat-error>
+        <br>
+        <mat-checkbox formControlName="matchTitle" i18n>
+            Match by title
+        </mat-checkbox>
+        <p i18n>
+            Optional parameters
+        </p>
+        <mat-slide-toggle formControlName="useFeeds" i18n>
+            Limit to feeds (on) or tag (off)
+        </mat-slide-toggle>
+        <mat-form-field *ngIf="form.value.useFeeds">
+            <mat-select multiple formControlName="feeds" i18n-placeholder placeholder="Feeds">
+                <mat-option *ngFor="let feed of feeds" [value]="feed.id">
+                    {{ feed.title }}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+        <mat-form-field *ngIf="!form.value.useFeeds">
+            <mat-select formControlName="tag" i18n-placeholder placeholder="Tag">
+                <mat-option *ngFor="let tag of tags" [value]="tag.id">
+                    {{ tag.value }}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+    
+        <mat-checkbox formControlName="inverseFeeds" i18n>
+            Match filter if article is not part of the selected feeds/tag.
+        </mat-checkbox>
+    </form>
+</div>
+<div class="footer">
+    <button mat-raised-button (click)="save()" i18n>Save</button>
+    <button mat-raised-button (click)="close()" i18n>Close</button>
+</div>

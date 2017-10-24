@@ -2,16 +2,16 @@
     <ng-template ngbSlide *ngFor="let item of slides" [id]="item.id.toString()">
         <div class="container">
             <h3 class="title">
-                <button md-card-avatar md-icon-button (click)="favorArticle(item)">
-                    <md-icon>
+                <button mat-card-avatar mat-icon-button (click)="favorArticle(item)">
+                    <mat-icon>
                         {{ item.favorite ? "bookmark" : "bookmark_border" }}
-                    </md-icon>
+                    </mat-icon>
                 </button>
                 <a href="{{ item.link }}" target="_blank" [innerHTML]="item.title">
                 </a>
             </h3>
             <div class="row align-items-center info" [class.read]="item.read">
-                <div class="col-md-auto feed" *ngIf="item.feed">
+                <div class="col-mat-auto feed" *ngIf="item.feed">
                     {{ item.feed }}
                 </div>
                 <div class="col index">
@@ -25,17 +25,17 @@
 
             <div class="row">
                 <div class="col">
-                    <a md-button href="{{ item.link }}" target="_blank" i18n>
+                    <a mat-button href="{{ item.link }}" target="_blank" i18n>
                         View
                     </a>
                 </div>
                 <div class="col-sd-auto" *ngIf="canExtract">
-                    <button md-button i18n (click)="formatArticle(item)">
+                    <button mat-button i18n (click)="formatArticle(item)">
                         Format
                     </button>
                 </div>
                 <div class="col-sd-auto" *ngIf="canExtract">
-                    <button md-button i18n (click)="summarizeArticle(item)">
+                    <button mat-button i18n (click)="summarizeArticle(item)">
                         Summary
                     </button>
                 </div>

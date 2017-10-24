@@ -3,31 +3,31 @@
     <p i18n>
         You can enter the url of a feed directly, as well as a url of a site that may contain one or more feeds, or a search query.
     </p>
-    <md-input-container>
-        <input mdInput [(ngModel)]="query" i18n-placeholder placeholder="URL/query" (keydown.Enter)="search()">
-        <md-error *ngIf="queryFormControl.hasError('empty')" i18n>
+    <mat-input-container>
+        <input matInput [(ngModel)]="query" i18n-placeholder placeholder="URL/query" (keydown.Enter)="search()">
+        <mat-error *ngIf="queryFormControl.hasError('empty')" i18n>
             No query or opml file specified
-        </md-error>
-        <md-error *ngIf="queryFormControl.hasError('search')" i18n>
+        </mat-error>
+        <mat-error *ngIf="queryFormControl.hasError('search')" i18n>
             Error during search
-        </md-error>
-    </md-input-container>
+        </mat-error>
+    </mat-input-container>
     <br>
     <p i18n>
         Alternatively, upload an OPML file.
     </p>
     <input type="file" i18n-placeholder placeholder="OPML import" (keydown.Enter)="search()" accept=".opml" #opmlInput>
     <br>
-    <button md-raised-button (click)="search()" [disabled]="loading" i18n>Search</button>
+    <button mat-raised-button (click)="search()" [disabled]="loading" i18n>Search</button>
     <br>
-    <md-progress-bar mode="indeterminate" *ngIf="loading"></md-progress-bar>
+    <mat-progress-bar mode="indeterminate" *ngIf="loading"></mat-progress-bar>
 </div>
 <div *ngIf="phase == 'search-result'">
     <p *ngIf="feeds.length == 0" i18n>
         No new feeds found
     </p>
     <div *ngFor="let feed of feeds">
-        <md-checkbox>{{ feed.title }}</md-checkbox>
+        <mat-checkbox>{{ feed.title }}</mat-checkbox>
         <br>
         <a href="{{ baseURL(feed.link) }}">{{ feed.description || feed.title }}</a>
         <br>
@@ -38,7 +38,7 @@
         No feeds selected
     </p>
 
-    <button md-raised-button (click)="add()" [disabled]="loading" *ngIf="feeds.length > 0" i18n>Add</button>
+    <button mat-raised-button (click)="add()" [disabled]="loading" *ngIf="feeds.length > 0" i18n>Add</button>
 </div>
 <div *ngIf="phase == 'add-result'">
     <p *ngIf="!addFeedResult.success" i18n>
@@ -53,5 +53,5 @@
         </p>
     </div>
 
-    <button md-raised-button (click)="phase = 'query'"i18n>Discover more feeds</button>
+    <button mat-raised-button (click)="phase = 'query'"i18n>Discover more feeds</button>
 </div>

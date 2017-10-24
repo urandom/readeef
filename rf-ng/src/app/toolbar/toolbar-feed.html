@@ -1,52 +1,52 @@
-<button md-icon-button (click)="up()" *ngIf="showsArticle || inSearch">
-    <md-icon>keyboard_backspace</md-icon>
+<button mat-icon-button (click)="up()" *ngIf="showsArticle || inSearch">
+    <mat-icon>keyboard_backspace</mat-icon>
 </button>
 <span i18n *ngIf="!searchEntry">Articles</span>
 <span class="spacer" *ngIf="!searchEntry"></span>
 
 <div class="input-group" *ngIf="searchEntry">
-    <button md-icon-button *ngIf="searchQuery" (click)="searchQuery = ''; search.focus()"> 
-        <md-icon>clear</md-icon>
+    <button mat-icon-button *ngIf="searchQuery" (click)="searchQuery = ''; search.focus()"> 
+        <mat-icon>clear</mat-icon>
     </button>
-    <input mdInput [(ngModel)]="searchQuery" focused class="spacer search mat-toolbar mat-primary form-control" #search>
-    <button md-icon-button *ngIf="searchQuery" (click)="performSearch(searchQuery)"> 
-        <md-icon>keyboard_return</md-icon>
+    <input matInput [(ngModel)]="searchQuery" focused class="spacer search mat-toolbar mat-primary form-control" #search>
+    <button mat-icon-button *ngIf="searchQuery" (click)="performSearch(searchQuery)"> 
+        <mat-icon>keyboard_return</mat-icon>
     </button>
 </div>
 
-<button md-icon-button *ngIf="searchButton" (click)="searchEntry = !searchEntry">
-    <md-icon>search</md-icon>
+<button mat-icon-button *ngIf="searchButton" (click)="searchEntry = !searchEntry">
+    <mat-icon>search</mat-icon>
 </button>
 
-<button md-icon-button *ngIf="!showsArticle" (click)="refresh()">
-    <md-icon>refresh</md-icon>
+<button mat-icon-button *ngIf="!showsArticle" (click)="refresh()">
+    <mat-icon>refresh</mat-icon>
 </button>
 
-<md-checkbox [(ngModel)]="articleRead" *ngIf="showsArticle" (click)="toggleRead()" i18n>Read</md-checkbox>
+<mat-checkbox [(ngModel)]="articleRead" *ngIf="showsArticle" (click)="toggleRead()" i18n>Read</mat-checkbox>
 
-<button md-icon-button *ngIf="showsArticle && enabledShares" [mdMenuTriggerFor]="shares">
-    <md-icon>share</md-icon>
+<button mat-icon-button *ngIf="showsArticle && enabledShares" [matMenuTriggerFor]="shares">
+    <mat-icon>share</mat-icon>
 </button>
-<md-menu #shares="mdMenu">
-    <button md-menu-item *ngFor="let share of shareServices" (click)="shareArticleTo(share)">
+<mat-menu #shares="matMenu">
+    <button mat-menu-item *ngFor="let share of shareServices" (click)="shareArticleTo(share)">
         {{ share.description }}
     </button>
-</md-menu>
+</mat-menu>
 
-<button md-icon-button [mdMenuTriggerFor]="other" *ngIf="!showsArticle">
-    <md-icon>more_vert</md-icon>
+<button mat-icon-button [matMenuTriggerFor]="other" *ngIf="!showsArticle">
+    <mat-icon>more_vert</mat-icon>
 </button>
-<md-menu #other="mdMenu">
-    <button md-menu-item *ngIf="!olderFirst" (click)="toggleOlderFirst()">
+<mat-menu #other="matMenu">
+    <button mat-menu-item *ngIf="!olderFirst" (click)="toggleOlderFirst()">
         <span>Older first</span>
     </button>
-    <button md-menu-item *ngIf="olderFirst" (click)="toggleOlderFirst()">
+    <button mat-menu-item *ngIf="olderFirst" (click)="toggleOlderFirst()">
         <span>Newer first</span>
     </button>
-    <button md-menu-item (click)="toggleUnreadOnly()">
+    <button mat-menu-item (click)="toggleUnreadOnly()">
         <span>Unread only</span>
     </button>
-    <button md-menu-item (click)="markAsRead()" *ngIf="!inSearch && markAllRead">
+    <button mat-menu-item (click)="markAsRead()" *ngIf="!inSearch && markAllRead">
         <span>Mark all as read</span>
     </button>
-</md-menu>
+</mat-menu>

@@ -1,26 +1,26 @@
-<md-card [class.read]="item.read" (click)="openArticle(item)">
-    <md-card-header class="row align-items-center">
-        <md-card-title class="col title">
-            <button md-card-avatar md-icon-button (click)="$event.stopPropagation(); favor(item.id, !item.favorite)">
-                <md-icon>
+<mat-card [class.read]="item.read" (click)="openArticle(item)">
+    <mat-card-header class="row align-items-center">
+        <mat-card-title class="col title">
+            <button mat-card-avatar mat-icon-button (click)="$event.stopPropagation(); favor(item.id, !item.favorite)">
+                <mat-icon>
                     {{ item.favorite ? "bookmark" : "bookmark_border" }}
-                </md-icon>
+                </mat-icon>
             </button>
             <span [innerHTML]="item.title"></span>
-        </md-card-title>
-    </md-card-header>
-    <div md-card-image [style.backgroundImage]="'url(' + item.thumbnail + ')'" *ngIf="item.thumbnail"></div>
-    <md-card-content>
+        </mat-card-title>
+    </mat-card-header>
+    <div mat-card-image [style.backgroundImage]="'url(' + item.thumbnail + ')'" *ngIf="item.thumbnail"></div>
+    <mat-card-content>
         <div [innerHTML]="item.stripped"></div>
-    </md-card-content>
-    <md-card-actions>
+    </mat-card-content>
+    <mat-card-actions>
         <div class="row align-items-center" [class.read]="item.read">
-            <div class="col-md-auto feed" *ngIf="item.feed">
+            <div class="col-mat-auto feed" *ngIf="item.feed">
                 {{ item.feed }}
             </div>
             <div class="col time">
                 {{ item.time }}
             </div>
         </div>
-    </md-card-actions>
-</md-card>
+    </mat-card-actions>
+</mat-card>

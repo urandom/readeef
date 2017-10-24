@@ -276,11 +276,11 @@ func articlesRoutes(
 		if searchProvider != nil {
 			r.Route("/search", func(r chi.Router) {
 				r.Get("/",
-					articleSearch(tagRepo, searchProvider, userRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
+					articleSearch(service, searchProvider, userRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 				r.With(feedContext(feedRepo, log)).Get("/feed/{feedID:[0-9]+}",
-					articleSearch(tagRepo, searchProvider, feedRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
+					articleSearch(service, searchProvider, feedRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 				r.With(tagContext(tagRepo, log)).Get("/tag/{tagID:[0-9]+}",
-					articleSearch(tagRepo, searchProvider, tagRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
+					articleSearch(service, searchProvider, tagRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 			})
 		}
 
@@ -371,7 +371,9 @@ func userRoutes(service repo.Service, secret []byte, log log.Log, gzip, access m
 			r.Get("/", listUsers(repo, log))
 
 			r.Post("/", addUser(repo, secret, log))
-			r.Delete("/{name}", deleteUser(repo, log))
+			r.Route("/{name}", func(r chi.Router) {
+				r.Delete("/", deleteUser(repo, log))
+			})
 
 			r.Put("/{name}/settings/{key}", setSettingValue(repo, secret, log))
 		})

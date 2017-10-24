@@ -1,7 +1,7 @@
 import { Component, OnInit } from "@angular/core" ;
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UserService, User } from "../../services/user";
-import { MdDialog, MdDialogRef } from "@angular/material";
+import { MatDialog, MatDialogRef } from "@angular/material";
 import { Observable, Subject } from "rxjs";
 import 'rxjs/add/operator/combineLatest'
 import 'rxjs/add/operator/filter'
@@ -20,7 +20,7 @@ export class AdminSettingsComponent implements OnInit {
 
     constructor(
         private userService: UserService,
-        private dialog: MdDialog,
+        private dialog: MatDialog,
     ) {}
 
     ngOnInit(): void {
@@ -85,7 +85,7 @@ export class NewUserDialog {
     form: FormGroup
 
     constructor(
-        private dialogRef: MdDialogRef<NewUserDialog>,
+        private dialogRef: MatDialogRef<NewUserDialog>,
         private userService: UserService,
         formBuilder: FormBuilder,
     ) {
@@ -96,6 +96,10 @@ export class NewUserDialog {
     }
 
     save() {
+        if (!this.form.valid) {
+            return;
+        }
+
         let formModel = this.form.value;
 
         this.userService.addUser({

@@ -5,12 +5,12 @@
 <div *ngIf="users.length">
     <h6 i18n>List of users:</h6>
     <div *ngFor="let user of users" class="user">
-        <md-checkbox (change)="toggleActive(user.login, check.checked)" [(ngModel)]="user.active" #check>{{ user.login }}</md-checkbox>
-        <button md-icon-button (click)="deleteUser($event, user.login)" class="delete"> 
-            <md-icon>delete</md-icon>
+        <mat-checkbox (change)="toggleActive(user.login, check.checked)" [(ngModel)]="user.active" #check>{{ user.login }}</mat-checkbox>
+        <button mat-icon-button (click)="deleteUser($event, user.login)" class="delete"> 
+            <mat-icon>delete</mat-icon>
         </button>
     </div>
 </div>
 <div class="footer">
-    <button md-raised-button i18n (click)="newUser()">Add user</button>
+    <button mat-raised-button i18n (click)="newUser()">Add user</button>
 </div>

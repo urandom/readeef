@@ -84,16 +84,17 @@ type QueryOptions struct {
 }
 
 type Filter struct {
-	FeedIDs    []FeedID
-	NotFeeds   bool
-	Term       string
-	NotTerm    bool
-	MatchURL   bool
-	MatchTitle bool
+	TagID        TagID    `json:"tagID"`
+	FeedIDs      []FeedID `json:"feedIDs"`
+	InverseFeeds bool     `json:"inverseFeeds"`
+	Term         string   `json:"term"`
+	Inverse      bool     `json:"inverse"`
+	MatchURL     bool     `json:"matchURL"`
+	MatchTitle   bool     `json:"matchTitle"`
 }
 
 func (f Filter) Valid() bool {
-	return f.Term != "" && (f.MatchTitle || f.MatchURL)
+	return (f.Term != "" && (f.MatchTitle || f.MatchURL)) || (f.TagID > 0 && len(f.FeedIDs) == 0)
 }
 
 // Paging sets the article query paging optons.
@@ -230,4 +231,12 @@ func (id *ArticleID) Scan(src interface{}) error {
 
 func (id ArticleID) Value() (driver.Value, error) {
 	return int64(id), nil
+}
+
+func GetUserFilters(u User) []Filter {
+	if filters, ok := u.ProfileData["filters"].([]Filter); ok {
+		return filters
+	}
+
+	return []Filter{}
 }

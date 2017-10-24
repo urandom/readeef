@@ -1,8 +1,8 @@
 import { NgModule } from '@angular/core';
 import { CommonModule }   from '@angular/common';
 import {
-    MdCardModule,
-    MdSlideToggleModule,
+    MatCardModule,
+    MatSlideToggleModule,
 } from "@angular/material";
 import {
     ShareServicesSettingsComponent
@@ -14,8 +14,8 @@ import {
     ],
     imports: [
         CommonModule,
-        MdCardModule,
-        MdSlideToggleModule
+        MatCardModule,
+        MatSlideToggleModule
     ],
     exports: [
         ShareServicesSettingsComponent,

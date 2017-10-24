@@ -1,6 +1,6 @@
 import { Component, OnInit } from "@angular/core" ;
 import { FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
-import { MdDialog, MdDialogRef } from "@angular/material";
+import { MatDialog, MatDialogRef } from "@angular/material";
 import { UserService, PasswordChange } from "../../services/user";
 
 @Component({
@@ -18,7 +18,7 @@ export class GeneralSettingsComponent implements OnInit {
 
     constructor(
         private userService: UserService,
-        private dialog: MdDialog,
+        private dialog: MatDialog,
     ) {
         this.language = localStorage.getItem("locale") || "en";
     }
@@ -95,7 +95,7 @@ export class PasswordDialog {
     passwordFormControl = new FormControl('', [Validators.required]);
 
     constructor(
-        private dialogRef: MdDialogRef<PasswordDialog>,
+        private dialogRef: MatDialogRef<PasswordDialog>,
         private userService: UserService,
     ) {}
 

@@ -11,6 +11,7 @@ import { SettingsComponent } from "../settings/component";
 import { GeneralSettingsComponent } from "../settings/general/component";
 import { DiscoverySettingsComponent } from "../settings/discovery/component";
 import { ManagementSettingsComponent } from "../settings/management/component";
+import { FiltersSettingsComponent } from "../settings/filters/component";
 import { ShareServicesSettingsComponent } from "../settings/share-services/component";
 import { AdminSettingsComponent } from "../settings/admin/component";
 
@@ -98,6 +99,10 @@ const routes: Routes = [
                             {
                                 path: "management",
                                 component: ManagementSettingsComponent,
+                            },
+                            {
+                                path: "filters",
+                                component: FiltersSettingsComponent,
                             },
                             {
                                 path: "share-services",

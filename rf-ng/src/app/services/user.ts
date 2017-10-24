@@ -11,6 +11,7 @@ export class User {
     email: string
     admin: boolean
     active: boolean
+    profileData: Map<string, any>
 }
 
 export interface PasswordChange {
@@ -20,6 +21,15 @@ export interface PasswordChange {
 
 class UserResponse extends Serializable {
     user: User
+
+    fromJSON(json) {
+        if ("profileData" in json) {
+            let data = json["profileData"];
+            json["profileData"] = new Map<string, any>(data);
+        }
+
+        return super.fromJSON(json);
+    }
 }
 
 class UsersResponse extends Serializable {
@@ -88,6 +98,12 @@ export class UserService {
     toggleActive(user: string, active: boolean) : Observable<boolean> {
         return this.api.put(
             `user/${user}/settings/is-active`, JSON.stringify(active)
+        ).map(response => !!response.json()["success"]);
+    }
+
+    setProfile(user: string, profile: Map<string, any>) : Observable<boolean> {
+        return this.api.put(
+            `user/${user}/settings/profile`, JSON.stringify(profile)
         ).map(response => !!response.json()["success"]);
     }
 }

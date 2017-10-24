@@ -1,6 +1,6 @@
 import { Component, ViewChild, ViewChildren, QueryList } from "@angular/core" ;
 import { FormControl } from '@angular/forms';
-import { MdCheckbox } from "@angular/material";
+import { MatCheckbox } from "@angular/material";
 import { FeedService, Feed, OPMLimport, AddFeedResponse } from "../../services/feed";
 import { Observable, Observer } from "rxjs";
 import 'rxjs/add/operator/mergeMap'
@@ -23,8 +23,8 @@ export class DiscoverySettingsComponent {
     @ViewChild("opmlInput")
     private opml;
 
-    @ViewChildren(MdCheckbox)
-    private feedChecks: QueryList<MdCheckbox>;
+    @ViewChildren(MatCheckbox)
+    private feedChecks: QueryList<MatCheckbox>;
 
     constructor(
         private feedService: FeedService,

@@ -67,10 +67,14 @@ func (r articleRepo) ForUser(user content.User, opts ...content.QueryOpt) ([]con
 
 	r.log.Infof("Getting articles for user %s", user)
 
+	now := time.Now()
+
 	articles, err := getArticles(user.Login, r.db, r.log, o)
 	if err != nil {
 		err = errors.Wrapf(err, "getting articles for user %s", user)
 	}
+
+	r.log.Debugf("Article query time: %s", time.Now().Sub(now))
 
 	return articles, err
 }
@@ -541,7 +545,7 @@ func constructSQLQueryOptions(
 
 		var idsPart string
 		if len(ids) > 0 {
-			idsPart = db.WhereMultipleORs("a.feed_id", fmt.Sprintf("%s%dx", filterIDPrefix, i), len(ids), !f.NotFeeds)
+			idsPart = db.WhereMultipleORs("a.feed_id", fmt.Sprintf("%s%dx", filterIDPrefix, i), len(ids), !f.InverseFeeds)
 
 			for j := range ids {
 				args[fmt.Sprintf("%s%dx%d", filterIDPrefix, i, j)] = ids[j]
@@ -549,7 +553,7 @@ func constructSQLQueryOptions(
 		}
 
 		sign := "LIKE"
-		if f.NotTerm {
+		if f.Inverse {
 			sign = "NOT LIKE"
 		}
 

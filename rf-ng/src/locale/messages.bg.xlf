@@ -8,7 +8,11 @@
         <context-group purpose="location">
           <context context-type="sourcefile">app/login/component.ts</context>
           <context context-type="linenumber">4</context>
-        </context-group>
+	  </context-group>
+	  <context-group purpose="location">
+		  <context context-type="sourcefile">app/settings/admin/component.ts</context>
+		  <context context-type="linenumber">4</context>
+	  </context-group>
       </trans-unit>
       <trans-unit id="c32ef07f8803a223a83ed17024b38e8d82292407" datatype="html">
         <source>Password</source>
@@ -245,7 +249,7 @@
         </context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">app/sidebar/settings-component.ts</context>
-          <context context-type="linenumber">13</context>
+          <context context-type="linenumber">14</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2efe5a11c535986f60fd32bb171de59c85ec357d" datatype="html">
@@ -282,12 +286,20 @@
           <context context-type="linenumber">7</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7240bf47e6acc8685c4ebfc74ce0d5b4db6bde4f" datatype="html">
+	  <trans-unit id="1298c1d2bbbb7415f5494e800f6775fdb70f4df6" datatype="html">
+		  <source>Filters</source>
+		  <target>Филтри</target>
+		  <context-group purpose="location">
+			  <context context-type="sourcefile">app/sidebar/settings-component.ts</context>
+			  <context context-type="linenumber">8</context>
+		  </context-group>
+	  </trans-unit>
+	  <trans-unit id="7240bf47e6acc8685c4ebfc74ce0d5b4db6bde4f" datatype="html">
         <source>Share Services</source>
         <target>Канали за споделяне</target>
         <context-group purpose="location">
           <context context-type="sourcefile">app/sidebar/settings-component.ts</context>
-          <context context-type="linenumber">8</context>
+          <context context-type="linenumber">9</context>
         </context-group>
       </trans-unit>
       <trans-unit id="b7648e7aced164498aa843b5c4e8f2f1c36a7919" datatype="html">
@@ -303,8 +315,13 @@
         <target>Емисии</target>
         <context-group purpose="location">
           <context context-type="sourcefile">app/sidebar/settings-component.ts</context>
-          <context context-type="linenumber">12</context>
+          <context context-type="linenumber">13</context>
         </context-group>
+		<context-group purpose="location">
+			<context context-type="sourcefile">app/settings/filters/component.ts</context>
+			<context context-type="linenumber">33</context>
+		</context-group>
+
       </trans-unit>
       <trans-unit id="3b6143a528c6f4586e60e9af4ced8ac0fbe08251" datatype="html">
         <source>Articles</source>
@@ -407,7 +424,7 @@
         <target>Промяна на парола</target>
         <context-group purpose="location">
           <context context-type="sourcefile">app/settings/general/component.ts</context>
-          <context context-type="linenumber">23</context>
+          <context context-type="linenumber">25</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6d6539a26b432fb1906f9fda102cf3ac332c8b8a" datatype="html">
@@ -461,6 +478,10 @@
           <context context-type="sourcefile">app/settings/general/component.ts</context>
           <context context-type="linenumber">21</context>
         </context-group>
+		<context-group purpose="location">
+			<context context-type="sourcefile">app/settings/filters/component.ts</context>
+			<context context-type="linenumber">53</context>
+		</context-group>
         <context-group purpose="location">
           <context context-type="sourcefile">app/settings/admin/component.ts</context>
           <context context-type="linenumber">18</context>
@@ -619,7 +640,215 @@
 		  <context context-type="sourcefile">app/settings/management/component.ts</context>
 		  <context context-type="linenumber">5</context>
 		</context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">54</context>
+        </context-group>
 	  </trans-unit>
+	  <trans-unit id="78a6f89ed9e0cf32497131786780cb1849d06450" datatype="html">
+		  <source>Manage Filters</source>
+		  <target>Управление на филтри</target>
+		  <context-group purpose="location">
+			  <context context-type="sourcefile">app/settings/filters/component.ts</context>
+			  <context context-type="linenumber">1</context>
+		  </context-group>
+	  </trans-unit>
+      <trans-unit id="58225eba05594edb2dbf2227edcf972c45484190" datatype="html">
+        <source>
+    No filters have been defined
+</source>
+		<target>Няма дефинирани филтри</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">2</context>
+        </context-group>
+      </trans-unit>
+	  <trans-unit id="01aa5508abb4473531a18c605c1c41ae4b6074d0" datatype="html">
+		  <source>Matches</source>
+		  <target>Съвпада</target>
+		  <context-group purpose="location">
+			  <context context-type="sourcefile">app/settings/filters/component.ts</context>
+			  <context context-type="linenumber">7</context>
+		  </context-group>
+	  </trans-unit>
+	  <trans-unit id="84bbbe38f927eaeddf081648c8783d06b4348b24" datatype="html">
+		  <source>Does not match</source>
+		  <target>Не съвпада</target>
+		  <context-group purpose="location">
+			  <context context-type="sourcefile">app/settings/filters/component.ts</context>
+			  <context context-type="linenumber">8</context>
+		  </context-group>
+	  </trans-unit>
+      <trans-unit id="583cfbb9fc11b6d18ba2859c6f6ef9801f01303a" datatype="html">
+        <source>by URL</source>
+		<target>по URL</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">10</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="dce4fb53bd401f2ded36a8c45cb471eff6b529d4" datatype="html">
+        <source>and</source>
+		<target>и</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">11</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="7bd342c384e331d17e60ccdf6eb0c23152317d51" datatype="html">
+        <source>by title</source>
+		<target>по заглавие</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">12</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="5ec699eaa79e1ac10b6ce2a16bfc89436bcb7120" datatype="html">
+        <source>excluding tag:</source>
+		<target>без таг:</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">13</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="a01b7cd68dedce110e9721fe35c8447aa6c7addf" datatype="html">
+        <source>excluding feeds:</source>
+		<target>без емисии:</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">14</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="567eded396fef0222ca8ab79c661062ea2d0b0ba" datatype="html">
+        <source>on tag:</source>
+		<target>на таг:</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">15</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="ee5dbbdc2ddbcc6b9aa7262b6d6b1fd93f4a7667" datatype="html">
+        <source>on feeds:</source>
+		<target>на емисии:</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">16</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="f0296c99c29c326e114d9b5e586e525ced19acb7" datatype="html">
+        <source>Add filter</source>
+		<target>Добавянае на филтър</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">25</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="a9d805cecaee920384d385b8920379b7c304f22d" datatype="html">
+        <source>Filter by</source>
+		<target>Филтриране по</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">4</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="d850550121bd1b71c21dac194ddcb66c9705bcf4" datatype="html">
+        <source>
+                Empty filter term
+            </source>
+		<target>Празен текст за търсене</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">5</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="9266de248a327f78b2d978c1d1b72779bc60e0c1" datatype="html">
+        <source>
+            Match filter if term does not match.
+        </source>
+		<target>Съвпадане с филтъра ако текста не отговаря</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">10</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="d9af29358ab3bc2e6afd405ca70f4b68f3134028" datatype="html">
+        <source>
+            Filters can be applied to article URLs or title. At least one target must be selected:
+        </source>
+		<target>Филтърът може да се приложи на URL или заглавие на статия. Поне една цел трябва да бъде избрана:</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">13</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="8136357a78651329e29f77a44c5bbf7baf905a1f" datatype="html">
+        <source>
+            Match by URL
+        </source>
+		<target>Съответствие по URL</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">16</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="fc9c1cf53b31d0f5bd0a8e28b56b83797a536101" datatype="html">
+        <source>
+            A filter must match at least a URL or title
+        </source>
+		<target>Филтърът трябва да съвпада поне с URL или заглавие</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">19</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="41159ef06ad9baa6cf3f39a0f59d62bb2b577baa" datatype="html">
+        <source>
+            Match by title
+        </source>
+		<target>Съответствие по заглавие</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">23</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="421759c8d438a7e13844a18b48945cf1cf425769" datatype="html">
+        <source>
+            Optional parameters
+        </source>
+		<target>Незадължителни параметри</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">26</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="d6b4548586d998ad7c8df930f5ed38b8d8de02d3" datatype="html">
+        <source>
+            Limit to feeds (on) or tag (off)
+        </source>
+		<target>Лимитиране по емисии (вкл.) или таг (изкл.)</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">29</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="337ca2e5eeea28eaca91e8511eb5eaafdb385ce6" datatype="html">
+        <source>Tag</source>
+		<target>Таг</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">40</context>
+        </context-group>
+      </trans-unit>
+      <trans-unit id="80de392929f7cade444426837fc6a322091e8143" datatype="html">
+        <source>
+            Match filter if article is not part of the selected feeds/tag.
+        </source>
+		<target>Филтърът съвпада ако заглавието не е от избраните емисии/таг.</target>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">47</context>
+        </context-group>
+       </trans-unit>
 	  <trans-unit id="cb593cb234b63428439631044bdf77fc3452357c" datatype="html">
         <source>Manage Users</source>
         <target>Управление на потребители</target>

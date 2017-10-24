@@ -1,19 +1,19 @@
-<md-sidenav-container>
-    <md-sidenav #sidenav>
+<mat-sidenav-container>
+    <mat-sidenav #sidenav>
         <router-outlet name="sidebar"></router-outlet>
-    </md-sidenav>
+    </mat-sidenav>
 
     <div class="content">
-        <md-toolbar color="primary">
-            <button md-icon-button (click)="sidenav.toggle()" *ngIf="!showsArticle && !inSearch">
-                <md-icon>menu</md-icon>
+        <mat-toolbar color="primary">
+            <button mat-icon-button (click)="sidenav.toggle()" *ngIf="!showsArticle && !inSearch">
+                <mat-icon>menu</mat-icon>
             </button>
             <router-outlet name="toolbar"></router-outlet>
-        </md-toolbar>
+        </mat-toolbar>
 
         <router-outlet></router-outlet>
     </div>
-</md-sidenav-container>
+</mat-sidenav-container>
 
 <share-service id="evernode"
  i18n-description description="Evernote"

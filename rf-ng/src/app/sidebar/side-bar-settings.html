@@ -1,14 +1,15 @@
-<md-toolbar color="primary" i18n>
+<mat-toolbar color="primary" i18n>
     Settings
-</md-toolbar>
+</mat-toolbar>
 <div class="content">
-    <a md-button [routerLink]="['general']" i18n>General</a>
-    <a md-button [routerLink]="['discovery']" i18n>Add Feed</a>
-    <a md-button [routerLink]="['management']" i18n>Manage Feeds</a>
-    <a md-button [routerLink]="['share-services']" i18n>Share Services</a>
-    <a md-button [routerLink]="['admin']" *ngIf="admin" i18n>Administration</a>
+    <a mat-button [routerLink]="['general']" i18n>General</a>
+    <a mat-button [routerLink]="['discovery']" i18n>Add Feed</a>
+    <a mat-button [routerLink]="['management']" i18n>Manage Feeds</a>
+    <a mat-button [routerLink]="['filters']" i18n>Filters</a>
+    <a mat-button [routerLink]="['share-services']" i18n>Share Services</a>
+    <a mat-button [routerLink]="['admin']" *ngIf="admin" i18n>Administration</a>
     <hr>
 
-    <a md-button routerLink="/feed" i18n>Feeds</a>
-    <a md-button routerLink="/login" i18n>Logout</a>
+    <a mat-button routerLink="/feed" i18n>Feeds</a>
+    <a mat-button routerLink="/login" i18n>Logout</a>
 </div>

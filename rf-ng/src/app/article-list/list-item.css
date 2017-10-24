@@ -2,26 +2,26 @@
     height: 500px;
 }
 
-md-card {
+mat-card {
     display: flex;
     flex-direction: column;
     max-height: calc(100% - 12px);
     cursor: pointer;
 }
 
-md-card-header {
+mat-card-header {
     overflow: hidden;
     flex: 0 0 auto;
 }
 
-[md-card-image] {
+[mat-card-image] {
     height: 240px;
     flex: 1 0 auto;
     background-position: center center;
     background-repeat: no-repeat;
 }
 
-md-card-content {
+mat-card-content {
     flex: 0 1 auto;
     overflow: hidden;
     text-overflow: ellipsis-lastline;
@@ -32,7 +32,7 @@ md-card-content {
     */
 }
 
-md-card-actions {
+mat-card-actions {
     flex: 0 0 auto;
 }
 

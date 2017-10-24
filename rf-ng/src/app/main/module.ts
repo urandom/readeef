@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule }   from '@angular/common';
 import { RouterModule } from '@angular/router'
-import { MdSidenavModule, MdButtonModule, MdIconModule, MdToolbarModule } from "@angular/material";
+import { MatSidenavModule, MatButtonModule, MatIconModule, MatToolbarModule } from "@angular/material";
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { MainComponent } from './component'
 import { SideBarModule } from '../sidebar/module';
@@ -12,6 +12,7 @@ import { SettingsModule } from "../settings/module";
 import { GeneralSettingsModule } from "../settings/general/module";
 import { DiscoverySettingsModule } from "../settings/discovery/module";
 import { ManagementSettingsModule } from "../settings/management/module";
+import { FiltersSettingsModule } from "../settings/filters/module";
 import { ShareServicesSettingsModule } from "../settings/share-services/module";
 import { AdminSettingsModule } from "../settings/admin/module";
 import { ShareServiceModule } from "../share-service/module";
@@ -24,10 +25,10 @@ import { routesModule } from "./routing";
     imports: [
         CommonModule,
         RouterModule,
-        MdSidenavModule,
-        MdButtonModule,
-        MdIconModule,
-        MdToolbarModule,
+        MatSidenavModule,
+        MatButtonModule,
+        MatIconModule,
+        MatToolbarModule,
         NgbModule,
         SideBarModule,
         ToolbarModule,
@@ -37,6 +38,7 @@ import { routesModule } from "./routing";
         GeneralSettingsModule,
         DiscoverySettingsModule,
         ManagementSettingsModule,
+        FiltersSettingsModule,
         ShareServicesSettingsModule,
         AdminSettingsModule,
         ShareServiceModule,

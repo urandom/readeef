@@ -45,6 +45,7 @@ func getArticles(
 	log log.Log,
 ) http.HandlerFunc {
 	repo := service.ArticleRepo()
+	userRepo := service.UserRepo()
 	tagRepo := service.TagRepo()
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +58,8 @@ func getArticles(
 		if stop {
 			return
 		}
+
+		o = append(o, content.Filters(updateFilters(user, userRepo, tagRepo)))
 
 		switch repoType {
 		case favoriteRepoType:
@@ -135,13 +138,16 @@ func getArticles(
 }
 
 func articleSearch(
-	repo repo.Tag,
+	service repo.Service,
 	searchProvider search.Provider,
 	repoType articleRepoType,
 	processors []processor.Article,
 	articlesLimit int,
 	log log.Log,
 ) http.HandlerFunc {
+	userRepo := service.UserRepo()
+	repo := service.TagRepo()
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query().Get("query")
 		if query == "" {
@@ -158,6 +164,8 @@ func articleSearch(
 		if stop {
 			return
 		}
+
+		o = append(o, content.Filters(updateFilters(user, userRepo, repo)))
 
 		switch repoType {
 		case userRepoType:
@@ -470,6 +478,35 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request, articlesLimit i
 	}
 
 	return o, false
+}
+
+func updateFilters(user content.User, userRepo repo.User, tagRepo repo.Tag) []content.Filter {
+	original := content.GetUserFilters(user)
+	filters := make([]content.Filter, 0, len(original))
+	for i := range original {
+		if original[i].TagID > 0 {
+			ids, err := tagRepo.FeedIDs(content.Tag{ID: original[i].TagID}, user)
+			if err != nil {
+				continue
+			}
+
+			original[i].FeedIDs = ids
+			if original[i].Valid() {
+				filters = append(filters, original[i])
+			}
+		} else {
+			if original[i].Valid() {
+				filters = append(filters, original[i])
+			}
+		}
+	}
+
+	if len(filters) != len(original) {
+		user.ProfileData["filters"] = filters
+		userRepo.Update(user)
+	}
+
+	return filters
 }
 
 func articleContext(repo repo.Article, processors []processor.Article, log log.Log) func(http.Handler) http.Handler {

@@ -147,3 +147,34 @@ func (val *ProfileData) Scan(src interface{}) error {
 func (val ProfileData) Value() (driver.Value, error) {
 	return json.Marshal(val)
 }
+
+func (p *ProfileData) UnmarshalJSON(b []byte) error {
+	data := map[string]json.RawMessage{}
+
+	if err := json.Unmarshal(b, &data); err != nil {
+		return errors.Wrap(err, "unmarshaling profile data")
+	}
+
+	for k, v := range data {
+		switch k {
+		case "filters":
+			var filters []Filter
+
+			if err := json.Unmarshal(v, &filters); err != nil {
+				return errors.Wrapf(err, "unmarshaling filters value %s", v)
+			}
+
+			(*p)[k] = filters
+		default:
+			var val interface{}
+
+			if err := json.Unmarshal(v, &val); err != nil {
+				return errors.Wrapf(err, "unmarshaling key %s value %s", k, v)
+			}
+
+			(*p)[k] = val
+		}
+	}
+
+	return nil
+}

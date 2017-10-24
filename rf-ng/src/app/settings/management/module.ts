@@ -1,10 +1,10 @@
 import { NgModule } from '@angular/core';
 import { CommonModule }   from '@angular/common';
 import {
-    MdButtonModule,
-    MdDialogModule,
-    MdIconModule,
-    MdInputModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatIconModule,
+    MatInputModule,
 } from "@angular/material";
 import {
     ManagementSettingsComponent,
@@ -21,10 +21,10 @@ import {
     ],
     imports: [
         CommonModule,
-        MdButtonModule,
-        MdDialogModule,
-        MdIconModule,
-        MdInputModule,
+        MatButtonModule,
+        MatDialogModule,
+        MatIconModule,
+        MatInputModule,
     ],
     exports: [
         ManagementSettingsComponent,

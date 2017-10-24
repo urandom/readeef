@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule }   from '@angular/common';
 import { RouterModule } from '@angular/router'
-import { MdButtonModule, MdIconModule, MdCardModule } from "@angular/material";
+import { MatButtonModule, MatIconModule, MatCardModule } from "@angular/material";
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { VirtualScrollModule } from 'angular2-virtual-scroll';
 import { ArticleListComponent } from './component'
@@ -16,9 +16,9 @@ import { ListItemComponent } from './list-item'
         CommonModule,
         RouterModule,
         NgbModule,
-        MdButtonModule,
-        MdIconModule,
-        MdCardModule,
+        MatButtonModule,
+        MatIconModule,
+        MatCardModule,
         VirtualScrollModule,
     ],
     exports: [

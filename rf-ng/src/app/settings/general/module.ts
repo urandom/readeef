@@ -2,10 +2,10 @@ import { NgModule } from '@angular/core';
 import { CommonModule }   from '@angular/common';
 import { FormsModule, ReactiveFormsModule }   from '@angular/forms';
 import {
-    MdInputModule,
-    MdButtonModule,
-    MdDialogModule,
-    MdSelectModule,
+    MatInputModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatSelectModule,
 } from "@angular/material";
 import {
     GeneralSettingsComponent,
@@ -25,10 +25,10 @@ import {
         CommonModule,
         FormsModule,
         ReactiveFormsModule,
-        MdInputModule,
-        MdButtonModule,
-        MdDialogModule,
-        MdSelectModule,
+        MatInputModule,
+        MatButtonModule,
+        MatDialogModule,
+        MatSelectModule,
     ],
     exports: [
         GeneralSettingsComponent,

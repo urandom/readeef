@@ -2,10 +2,10 @@ import { NgModule } from '@angular/core';
 import { CommonModule }   from '@angular/common';
 import { FormsModule, ReactiveFormsModule }   from '@angular/forms';
 import {
-    MdButtonModule,
-    MdCheckboxModule,
-    MdInputModule,
-    MdProgressBarModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatInputModule,
+    MatProgressBarModule,
 } from "@angular/material";
 import {
     DiscoverySettingsComponent
@@ -19,10 +19,10 @@ import {
         CommonModule,
         FormsModule,
         ReactiveFormsModule,
-        MdButtonModule,
-        MdCheckboxModule,
-        MdInputModule,
-        MdProgressBarModule,
+        MatButtonModule,
+        MatCheckboxModule,
+        MatInputModule,
+        MatProgressBarModule,
     ],
     exports: [
         DiscoverySettingsComponent,

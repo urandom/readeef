@@ -1,5 +1,5 @@
 import { Component, OnInit, Inject, ViewChild, ElementRef } from "@angular/core" ;
-import { MdDialog, MdDialogRef, MD_DIALOG_DATA } from '@angular/material';
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { FeedService, Feed } from "../../services/feed";
 import { TagService } from "../../services/tag";
 import { FaviconService } from "../../services/favicon";
@@ -21,7 +21,7 @@ export class ManagementSettingsComponent implements OnInit {
         private feedService: FeedService,
         private tagService: TagService,
         private faviconService: FaviconService,
-        private errorDialog: MdDialog,
+        private errorDialog: MatDialog,
     ) {}
 
     ngOnInit(): void {
@@ -104,8 +104,8 @@ export class ManagementSettingsComponent implements OnInit {
 })
 export class ErrorDialog {
     constructor(
-        private dialogRef: MdDialogRef<ErrorDialog>,
-        @Inject(MD_DIALOG_DATA) public errors: string[],
+        private dialogRef: MatDialogRef<ErrorDialog>,
+        @Inject(MAT_DIALOG_DATA) public errors: string[],
     ) {}
 
     close() {

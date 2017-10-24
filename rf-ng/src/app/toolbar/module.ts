@@ -3,12 +3,12 @@ import { FormsModule }   from '@angular/forms';
 import { CommonModule }   from '@angular/common';
 import { RouterModule } from '@angular/router'
 import {
-    MdButtonModule,
-    MdIconModule,
-    MdToolbarModule,
-    MdMenuModule,
-    MdCheckboxModule,
-    MdInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatToolbarModule,
+    MatMenuModule,
+    MatCheckboxModule,
+    MatInputModule,
 } from "@angular/material";
 import { ToolbarFeedComponent } from './feed-component'
 import { ToolbarSettingsComponent } from './settings-component'
@@ -22,11 +22,11 @@ import { ToolbarSettingsComponent } from './settings-component'
         CommonModule,
         FormsModule,
         RouterModule,
-        MdButtonModule,
-        MdIconModule,
-        MdToolbarModule,
-        MdMenuModule,
-        MdCheckboxModule,
+        MatButtonModule,
+        MatIconModule,
+        MatToolbarModule,
+        MatMenuModule,
+        MatCheckboxModule,
     ],
     exports: [
         ToolbarFeedComponent,

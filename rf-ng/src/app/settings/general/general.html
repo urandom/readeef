@@ -1,24 +1,26 @@
 <h5 class="title" i18n>Personalize your feed reader</h5>
-<md-input-container>
-    <input mdInput [(ngModel)]="firstName" i18n-placeholder placeholder="First name" (change)="firstNameChange()">
-</md-input-container>
+<mat-input-container>
+    <input matInput [(ngModel)]="firstName" i18n-placeholder placeholder="First name" (change)="firstNameChange()">
+</mat-input-container>
 <br>
-<md-input-container>
-    <input mdInput [(ngModel)]="lastName" (change)="lastNameChange()" i18n-placeholder placeholder="Last name">
-</md-input-container>
+<mat-input-container>
+    <input matInput [(ngModel)]="lastName" (change)="lastNameChange()" i18n-placeholder placeholder="Last name">
+</mat-input-container>
 <br>
-<md-input-container>
-    <input mdInput [(ngModel)]="email" type="email" (change)="emailChange()" i18n-placeholder placeholder="Email" [formControl]="emailFormControl">
-    <md-error *ngIf="emailFormControl.hasError('email')" i18n>
+<mat-input-container>
+    <input matInput [(ngModel)]="email" type="email" (change)="emailChange()" i18n-placeholder placeholder="Email" [formControl]="emailFormControl">
+    <mat-error *ngIf="emailFormControl.hasError('email')" i18n>
         Please enter a valid email address
-    </md-error>
-</md-input-container>
+    </mat-error>
+</mat-input-container>
 <br>
-<md-select i18n-placeholder placeholder="Language" (change)="languageChange($event.value)" [(ngModel)]="language">
-    <md-option [value]="'en'">English</md-option>
-    <md-option [value]="'bg'">Български</md-option>
- </md-select>
+<mat-form-field>
+    <mat-select i18n-placeholder placeholder="Language" (change)="languageChange($event.value)" [(ngModel)]="language">
+        <mat-option [value]="'en'">English</mat-option>
+        <mat-option [value]="'bg'">Български</mat-option>
+    </mat-select>
+</mat-form-field>
 <br>
 <div class="footer">
-    <button md-raised-button (click)="changePassword()" i18n>Change password</button>
+    <button mat-raised-button (click)="changePassword()" i18n>Change password</button>
 </div>

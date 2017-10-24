@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule }   from '@angular/common';
 import { RouterModule } from '@angular/router'
-import { MdButtonModule, MdIconModule } from "@angular/material";
+import { MatButtonModule, MatIconModule } from "@angular/material";
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { ArticleDisplayComponent } from './component'
 
@@ -13,8 +13,8 @@ import { ArticleDisplayComponent } from './component'
         CommonModule,
         RouterModule,
         NgbModule,
-        MdButtonModule,
-        MdIconModule,
+        MatButtonModule,
+        MatIconModule,
     ],
     exports: [
     ]
