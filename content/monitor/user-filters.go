@@ -63,7 +63,9 @@ func UserFilters(service eventable.Service, log log.Log) {
 
 			if len(filters) != len(original) || changed {
 				data.User.ProfileData["filters"] = filters
-				userRepo.Update(data.User)
+				if err := userRepo.Update(data.User); err != nil {
+					log.Printf("Error updating user %s: %+v", data.User, err)
+				}
 			}
 		}
 	}
