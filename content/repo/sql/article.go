@@ -67,14 +67,10 @@ func (r articleRepo) ForUser(user content.User, opts ...content.QueryOpt) ([]con
 
 	r.log.Infof("Getting articles for user %s", user)
 
-	now := time.Now()
-
 	articles, err := getArticles(user.Login, r.db, r.log, o)
 	if err != nil {
 		err = errors.Wrapf(err, "getting articles for user %s", user)
 	}
-
-	r.log.Debugf("Article query time: %s", time.Now().Sub(now))
 
 	return articles, err
 }

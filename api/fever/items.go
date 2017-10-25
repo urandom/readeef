@@ -40,8 +40,9 @@ func items(
 ) error {
 	log.Infoln("Fetching fever items")
 
-	count, err := service.ArticleRepo().Count(user,
-		content.Filters(content.GetUserFilters(user)))
+	// Do not use filters in the count, it takes twice as long for something
+	// that doesn't need to be precise.
+	count, err := service.ArticleRepo().Count(user)
 
 	if err != nil {
 		return errors.WithMessage(err, "getting user article count")

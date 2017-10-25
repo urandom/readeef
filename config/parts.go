@@ -23,10 +23,11 @@ type Server struct {
 }
 
 type Log struct {
-	Level      string `toml:"level"`
-	File       string `toml:"file"`
-	AccessFile string `toml:"access-file"`
-	Formatter  string `toml:"formatter"`
+	Level            string `toml:"level"`
+	File             string `toml:"file"`
+	AccessFile       string `toml:"access-file"`
+	Formatter        string `toml:"formatter"`
+	RepoCallDuration bool   `toml:"repo-call-duration"`
 
 	Converted struct {
 		Writer io.Writer

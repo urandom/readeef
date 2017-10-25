@@ -35,7 +35,7 @@ UPDATE articles SET title = :title, description = :description, date = :date, gu
 	WHERE feed_id = :feed_id AND (guid = :guid OR link = :link)
 `
 	articleCountTemplate = `
-SELECT count(a.id)
+SELECT count(*)
 FROM articles a
 {{ .Join }}
 {{ .Where }}

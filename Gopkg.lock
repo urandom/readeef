@@ -11,7 +11,7 @@
   branch = "master"
   name = "github.com/ChimeraCoder/anaconda"
   packages = ["."]
-  revision = "b2574bf45ceab73b763dc5e411b25d4ee046f1ac"
+  revision = "63ac04497fe5e76a698c595abf57578b5db5140c"
 
 [[projects]]
   branch = "master"
@@ -35,7 +35,7 @@
   branch = "master"
   name = "github.com/advancedlogic/GoOse"
   packages = ["."]
-  revision = "64218f7a6ab78f55666fc83fb5afe67f79c01b21"
+  revision = "a95a4992668d4f3d897ae48b5ef867ac470edb09"
 
 [[projects]]
   name = "github.com/alexedwards/scs"
@@ -82,8 +82,8 @@
 [[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = [".","request"]
-  revision = "d2709f9f1f31ebcda9651b03077758c1f3a0018c"
-  version = "v3.0.0"
+  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
+  version = "v3.1.0"
 
 [[projects]]
   branch = "master"
@@ -101,19 +101,19 @@
   branch = "master"
   name = "github.com/garyburd/go-oauth"
   packages = ["oauth"]
-  revision = "166ce8d672783fbb5a72247c3cf459267717e1ec"
+  revision = "4cff9ef7b7003713efa191899dbaab8fa75e3e73"
 
 [[projects]]
   name = "github.com/go-chi/chi"
   packages = ["."]
-  revision = "04ec7fc4179604b2390947258f9143eaae23b596"
-  version = "v3.2.1"
+  revision = "f7c66f685bcab06bcce78ac212c5f3553c063d19"
+  version = "v3.3.0"
 
 [[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  revision = "130e6b02ab059e7b717a096f397c5b60111cae74"
+  revision = "1643683e1b54a9e88ad26d98f81400c8c9d9f4f9"
 
 [[projects]]
   branch = "master"
@@ -125,19 +125,19 @@
   branch = "master"
   name = "github.com/jmoiron/sqlx"
   packages = [".","reflectx"]
-  revision = "d9bd385d68c068f1fabb5057e3dedcbcbb039d0f"
+  revision = "3379e5993990b1f927fc8db926485e6f6becf2d2"
 
 [[projects]]
   branch = "master"
   name = "github.com/lib/pq"
   packages = [".","oid"]
-  revision = "b77235e3890a962fe8a6f8c4c7198679ca7814e7"
+  revision = "b609790bd85edf8e9ab7e0f8912750a786177bcf"
 
 [[projects]]
   name = "github.com/mattn/go-sqlite3"
   packages = ["."]
-  revision = "ca5e3819723d8eeaf170ad510e7da1d6d2e94a08"
-  version = "v1.2.0"
+  revision = "5160b48509cf5c877bc22c11c373f8c7738cdb38"
+  version = "v1.3.0"
 
 [[projects]]
   branch = "master"
@@ -154,8 +154,8 @@
 [[projects]]
   name = "github.com/patrickmn/go-cache"
   packages = ["."]
-  revision = "1881a9bccb818787f68c52bfba648c6cf34c34fa"
-  version = "v2.0.0"
+  revision = "a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0"
+  version = "v2.1.0"
 
 [[projects]]
   name = "github.com/pelletier/go-toml"
@@ -195,9 +195,9 @@
 
 [[projects]]
   name = "github.com/urandom/handler"
-  packages = [".","auth","lang","log","method"]
-  revision = "2fbdf329000684f4953b7a0d869dccfe9903d545"
-  version = "v0.8.3"
+  packages = [".","auth","encoding","lang","log","method"]
+  revision = "6ca53aeb10b0580d279579fdbdcfa54f682fa93c"
+  version = "v0.8.4"
 
 [[projects]]
   branch = "master"
@@ -209,25 +209,25 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["acme","acme/autocert","pbkdf2","scrypt","ssh/terminal"]
-  revision = "9419663f5a44be8b34ca85f08abc5fe1be11f8a3"
+  revision = "2509b142fb2b797aa7587dad548f113b2c0f20ce"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","html","html/atom","html/charset"]
-  revision = "0a9397675ba34b2845f758fe3cd68828369c6517"
+  revision = "4b14673ba32bee7f5ac0f990a48f033919fd418b"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix","windows"]
-  revision = "314a259e304ff91bd6985da2a7149bbf91237993"
+  revision = "607525c0eb3534cf37ade3d0f24fb9505c33caf3"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["encoding","encoding/charmap","encoding/htmlindex","encoding/internal","encoding/internal/identifier","encoding/japanese","encoding/korean","encoding/simplifiedchinese","encoding/traditionalchinese","encoding/unicode","internal/gen","internal/tag","internal/utf8internal","language","runes","transform","unicode/cldr"]
-  revision = "1cbadb444a806fd9430d14ad08967ed91da4fa0a"
+  revision = "6eab0e8f74e86c598ec3b6fad4888e0c11482d48"
 
 [[projects]]
   name = "gopkg.in/fatih/set.v0"
@@ -238,8 +238,8 @@
 [[projects]]
   name = "gopkg.in/gcfg.v1"
   packages = [".","scanner","token","types"]
-  revision = "27e4946190b4a327b539185f2b5b1f7c84730728"
-  version = "v1.2.0"
+  revision = "298b7a6a3838f79debfaee8bd3bfb2b8d779e756"
+  version = "v1.2.1"
 
 [[projects]]
   name = "gopkg.in/natefinch/lumberjack.v2"
@@ -250,8 +250,8 @@
 [[projects]]
   name = "gopkg.in/olivere/elastic.v5"
   packages = [".","config","uritemplates"]
-  revision = "2a08d39723b7f4df92b96e2dff891a60952714d6"
-  version = "v5.0.48"
+  revision = "3f891f0d04aba0bba9a8bd365a9d3846efcb3527"
+  version = "v5.0.52"
 
 [[projects]]
   name = "gopkg.in/warnings.v0"
@@ -268,6 +268,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a42c3b7fdb00a6a43efdb44d8b30833e7018d1563a03ed69476c8310a00694aa"
+  inputs-digest = "5b40298d9804e0d76d8e5eee12c511f0029dabdbdd3ba6cf59e71ce681528ab3"
   solver-name = "gps-cdcl"
   solver-version = 1

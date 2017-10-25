@@ -30,6 +30,7 @@ import (
 	"github.com/urandom/readeef/content/processor"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/content/repo/eventable"
+	"github.com/urandom/readeef/content/repo/logging"
 	"github.com/urandom/readeef/content/repo/sql"
 	"github.com/urandom/readeef/content/search"
 	"github.com/urandom/readeef/content/thumbnail"
@@ -92,9 +93,14 @@ func runServer(cfg config.Config, args []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	baseService, err := sql.NewService(cfg.DB.Driver, cfg.DB.Connect, logger)
+	var baseService repo.Service
+	baseService, err = sql.NewService(cfg.DB.Driver, cfg.DB.Connect, logger)
 	if err != nil {
 		return errors.WithMessage(err, "creating content service")
+	}
+
+	if cfg.Log.RepoCallDuration {
+		baseService = logging.NewService(baseService, logger)
 	}
 	service := eventable.NewService(ctx, baseService, logger)
 
