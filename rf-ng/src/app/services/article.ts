@@ -9,6 +9,7 @@ import { EventService, FeedUpdateEvent, QueryOptions as EventableQueryOptions } 
 import { QueryPreferences, PreferencesService } from "../services/preferences"
 import { Observable, BehaviorSubject, ConnectableObservable, Subject } from "rxjs";
 import { listRoute, getArticleRoute } from "../main/routing-util"
+import 'rxjs/add/observable/interval'
 import 'rxjs/add/observable/of'
 import 'rxjs/add/operator/distinctUntilChanged'
 import 'rxjs/add/operator/distinctUntilKeyChanged'
@@ -180,11 +181,11 @@ export class ArticleService {
             source != null
         ).distinctUntilKeyChanged("url");
 
-        this.articles = this.tokenService.tokenObservable(
+        let feedsTagsObservable = this.tokenService.tokenObservable(
         ).switchMap(token =>
             this.feedService.getFeeds().combineLatest(
                 this.tagService.getTagsFeedIDs(),
-                (feeds, tags) : [Map<number, string>, Map<number, number[]>] => {
+                (feeds, tags): [Map<number, string>, Map<number, number[]>] => {
                     let feedMap = feeds.reduce((map, feed) => {
                         map[feed.id] = feed.title;
 
@@ -199,154 +200,167 @@ export class ArticleService {
 
                     return [feedMap, tagMap]
                 }
-            ).switchMap(feedsTags =>
-                this.source.combineLatest(
-                    this.refresh, (source, v) => source
-                ).switchMap(source => {
-                    this.paging = new BehaviorSubject<number>(0);
+            )
+        ).shareReplay(1);
 
-                    return queryPreferences.switchMap(prefs =>
-                        Observable.merge(
-                            this.paging.map(page => {
-                                return page * this.limit;
-                            }).switchMap(offset => {
-                                return this.getArticlesFor(source, prefs, this.limit, offset);
-                            }).map(articles => <ArticlesPayload>{
-                                articles: articles,
-                                fromEvent: false,
-                            }),
-                            this.eventService.feedUpdate.filter(event =>
-                                this.shouldUpdate(event, source, feedsTags[1])
-                            ).delay(30000).flatMap(event => 
-                                this.getArticlesFor(new FeedSource(event.feedID), {
-                                    ids: event.articleIDs,
-                                    olderFirst: prefs.olderFirst,
-                                    unreadOnly: prefs.unreadOnly,
-                                }, this.limit, 0)
+        this.articles = feedsTagsObservable.switchMap(feedsTags =>
+            this.source.combineLatest(
+                this.refresh, (source, v) => source
+            ).switchMap(source => {
+                this.paging = new BehaviorSubject<number>(0);
+
+                return queryPreferences.switchMap(prefs =>
+                    Observable.merge(
+                        this.paging.map(page => {
+                            return page * this.limit;
+                        }).switchMap(offset => {
+                            return this.getArticlesFor(source, prefs, this.limit, offset);
+                        }).map(articles => <ArticlesPayload>{
+                            articles: articles,
+                            fromEvent: false,
+                        }),
+                        this.eventService.feedUpdate.filter(event =>
+                            this.shouldUpdate(event, source, feedsTags[1])
+                        ).delay(30000).flatMap(event =>
+                            this.getArticlesFor(new FeedSource(event.feedID), {
+                                ids: event.articleIDs,
+                                olderFirst: prefs.olderFirst,
+                                unreadOnly: prefs.unreadOnly,
+                            }, this.limit, 0)
                             ).map(articles => <ArticlesPayload>{
                                 articles: articles,
                                 fromEvent: true,
                             })
-                        ).map(payload => {
-                            payload.articles = payload.articles.map(article => {
-                                if (article.hits && article.hits.fragments) {
-                                    if (article.hits.fragments.title.length > 0) {
-                                        article.title = article.hits.fragments.title.join(" ")
-                                    }
-
-                                    if (article.hits.fragments.description.length > 0) {
-                                        article.stripped = article.hits.fragments.description.join(" ")
-                                    }
+                    ).filter(p => p.articles != null).map(payload => {
+                        payload.articles = payload.articles.map(article => {
+                            if (article.hits && article.hits.fragments) {
+                                if (article.hits.fragments.title.length > 0) {
+                                    article.title = article.hits.fragments.title.join(" ")
                                 }
-                                if (!article.stripped) {
-                                    article.stripped = article.description.replace(/<[^>]+>/g, '');
+
+                                if (article.hits.fragments.description.length > 0) {
+                                    article.stripped = article.hits.fragments.description.join(" ")
                                 }
-                                article.feed = feedsTags[0][article.feedID];
+                            }
+                            if (!article.stripped) {
+                                article.stripped = article.description.replace(/<[^>]+>/g, '');
+                            }
+                            article.feed = feedsTags[0][article.feedID];
 
-                                return article;
-                            })
+                            return article;
+                        })
 
-                            return payload;
-                        }).scan((acc, payload) => {
-                            if (payload.fromEvent) {
-                                let updates = new Array<Article>();
+                        return payload;
+                    }).scan((acc, payload) => {
+                        if (payload.fromEvent) {
+                            let updates = new Array<Article>();
 
-                                for (let incoming of payload.articles) {
-                                    if (acc.indexMap.has(incoming.id)) {
-                                        updates.push(incoming);
-                                        continue
-                                    }
+                            for (let incoming of payload.articles) {
+                                if (acc.indexMap.has(incoming.id)) {
+                                    updates.push(incoming);
+                                    continue
+                                }
 
-                                    if (prefs.olderFirst) {
-                                        for (let i = acc.articles.length - 1; i >= 0; i--) {
-                                            if (this.shouldInsert(
-                                                incoming, acc.articles[i], prefs
-                                            )) {
-                                                acc.articles.splice(i, 0, incoming)
-                                                break
-                                            }
-
+                                if (prefs.olderFirst) {
+                                    for (let i = acc.articles.length - 1; i >= 0; i--) {
+                                        if (this.shouldInsert(
+                                            incoming, acc.articles[i], prefs
+                                        )) {
+                                            acc.articles.splice(i, 0, incoming)
+                                            break
                                         }
-                                    } else {
-                                        for (let i = 0; i < acc.articles.length; i++) {
 
-                                            if (this.shouldInsert(
-                                                incoming, acc.articles[i], prefs
-                                            )) {
-                                                acc.articles.splice(i, 0, incoming)
-                                                break
-                                            }
-                                        }
                                     }
-                                }
+                                } else {
+                                    for (let i = 0; i < acc.articles.length; i++) {
 
-                                acc.indexMap = new Map()
-                                for (let i = 0; i < acc.articles.length; i++) {
-                                    let article = acc.articles[i];
-                                    acc.indexMap[article.id] = i;
-                                }
-
-                                for (let update of updates) {
-                                    let idx = acc.indexMap[update.id];
-                                    acc.articles[idx] = update;
-                                }
-                            } else {
-                                for (let article of payload.articles) {
-                                    if (acc.indexMap.has(article.id)) {
-                                        let idx = acc.indexMap[article.id];
-                                        acc.articles[idx] = article;
-                                    } else {
-                                        acc.indexMap[article.id] = acc.articles.push(article) - 1;
+                                        if (this.shouldInsert(
+                                            incoming, acc.articles[i], prefs
+                                        )) {
+                                            acc.articles.splice(i, 0, incoming)
+                                            break
+                                        }
                                     }
                                 }
                             }
 
-                            return acc;
-                        }, new ScanData()).combineLatest(
-                            this.stateChange.startWith(null)
-                                .distinctUntilChanged((a, b) => {
-                                    return JSON.stringify(a) == JSON.stringify(b);
-                                }),
-                            (data, propChange) => {
-                                if (propChange != null) {
-                                    if (propChange.options.ids) {
-                                        for (let id of propChange.options.ids) {
-                                            let idx = data.indexMap[id]
-                                            if (idx != undefined && idx != -1) {
-                                                data.articles[idx][propChange.name] = propChange.value;
-                                            }
+                            acc.indexMap = new Map()
+                            for (let i = 0; i < acc.articles.length; i++) {
+                                let article = acc.articles[i];
+                                acc.indexMap[article.id] = i;
+                            }
+
+                            for (let update of updates) {
+                                let idx = acc.indexMap[update.id];
+                                acc.articles[idx] = update;
+                            }
+                        } else {
+                            for (let article of payload.articles) {
+                                if (acc.indexMap.has(article.id)) {
+                                    let idx = acc.indexMap[article.id];
+                                    acc.articles[idx] = article;
+                                } else {
+                                    acc.indexMap[article.id] = acc.articles.push(article) - 1;
+                                }
+                            }
+                        }
+
+                        return acc;
+                    }, new ScanData()).combineLatest(
+                        this.stateChange.startWith(null)
+                            .distinctUntilChanged((a, b) => {
+                                return JSON.stringify(a) == JSON.stringify(b);
+                            }),
+                        (data, propChange) => {
+                            if (propChange != null) {
+                                if (propChange.options.ids) {
+                                    for (let id of propChange.options.ids) {
+                                        let idx = data.indexMap[id]
+                                        if (idx != undefined && idx != -1) {
+                                            data.articles[idx][propChange.name] = propChange.value;
                                         }
                                     }
+                                }
 
-                                    if (this.hasOptions(propChange.options)) {
-                                        let tagged = new Set<number>()
+                                if (this.hasOptions(propChange.options)) {
+                                    let tagged = new Set<number>()
 
-                                        feedsTags[1].forEach(ids => {
-                                            for (let id of ids) {
-                                                tagged.add(id);
-                                            }
-                                        })
-
-                                        for (let i = 0; i < data.articles.length; i++) {
-                                            if (this.shouldSet(data.articles[i], propChange.options, tagged)) {
-                                                data.articles[i][propChange.name] = propChange.value;
-                                            }
+                                    feedsTags[1].forEach(ids => {
+                                        for (let id of ids) {
+                                            tagged.add(id);
                                         }
-                                    } else if (!propChange.options.ids) {
-                                        for (let i = 0; i < data.articles.length; i++) {
+                                    })
+
+                                    for (let i = 0; i < data.articles.length; i++) {
+                                        if (this.shouldSet(data.articles[i], propChange.options, tagged)) {
                                             data.articles[i][propChange.name] = propChange.value;
                                         }
                                     }
+                                } else if (!propChange.options.ids) {
+                                    for (let i = 0; i < data.articles.length; i++) {
+                                        data.articles[i][propChange.name] = propChange.value;
+                                    }
                                 }
-                                return data;
                             }
+                            return data;
+                        }
                         ).map(data => data.articles)
-                    ).startWith([])
-                })
-            )
+                ).startWith([])
+            })
         ).publishReplay(1);
 
         this.articles.connect();
+
+        var lastTick = new Date().getTime();
+        Observable.interval(5000).subscribe(
+            tick => {
+                if (new Date().getTime() - lastTick > 10000) {
+                    this.refreshArticles();
+                }
+
+                lastTick = new Date().getTime();
+            }
+        );
 
         this.eventService.articleState.subscribe(
             event => this.stateChange.next({
@@ -355,6 +369,42 @@ export class ArticleService {
                     value: event.value,
             })
         )
+
+        let lastNotification = new Date().getTime();
+        Notification.requestPermission(p => {
+            if (p == "granted") {
+                feedsTagsObservable.combineLatest(
+                    this.source,
+                    (feedsTags, source) : [Map<number, string>, Map<number, number[]>, Source] => {
+                        return [feedsTags[0], feedsTags[1], source];
+                    }
+                ).switchMap(data =>
+                    this.eventService.feedUpdate.filter(event => 
+                        this.shouldUpdate(event, data[2], data[1])
+                    ).map(event => {
+                        let title = data[0].get(event.feedID);
+                        if (!title) {
+                            return null;
+                        }
+
+                        return ["readeef: updates", `Feed ${title} has been updated`];
+                    }).filter(msg => msg != null).delay(30000)
+                ).subscribe(
+                    msg => {
+                        if (!document.hasFocus()) {
+                            if (new Date().getTime() - lastNotification > 30000) {
+                                new Notification(msg[0], {
+                                    body: msg[1],
+                                    icon: "/en/readeef.png",
+                                    tag: "readeef",
+                                })
+                                lastNotification = new Date().getTime();
+                            }
+                        }
+                    }
+                );
+            }
+        });
     }
 
     articleObservable() : Observable<Article[]> {
