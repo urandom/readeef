@@ -11,6 +11,7 @@ import { Observable, BehaviorSubject, ConnectableObservable, Subject } from "rxj
 import { listRoute, getArticleRoute } from "../main/routing-util"
 import 'rxjs/add/observable/interval'
 import 'rxjs/add/observable/of'
+import 'rxjs/add/operator/catch'
 import 'rxjs/add/operator/distinctUntilChanged'
 import 'rxjs/add/operator/distinctUntilKeyChanged'
 import 'rxjs/add/operator/combineLatest'
@@ -518,7 +519,7 @@ export class ArticleService {
             }
         }
 
-        return res;
+        return res.catch(err => Observable.of(null));
     }
 
     private buildURL(base: string, options?: QueryOptions) : string {

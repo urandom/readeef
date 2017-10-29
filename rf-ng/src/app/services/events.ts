@@ -1,9 +1,11 @@
 /// <reference path="./eventsource.d.ts" />
 
 import { Injectable } from '@angular/core'
-import { Observable } from "rxjs";
+import { Observable, Subject } from "rxjs";
 import { Serializable } from "./api";
 import { TokenService } from './auth'
+import 'rxjs/add/operator/combineLatest'
+import 'rxjs/add/operator/startWith'
 
 export class FeedUpdateEvent extends Serializable {
     feedID: number
@@ -35,9 +37,12 @@ export class EventService {
     articleState : Observable<ArticleStateEvent>
 
     private eventSourceObservable : Observable<EventSource>
+    private refreshSubject = new Subject<any>();
 
     constructor(private tokenService : TokenService) {
         this.eventSourceObservable = this.tokenService.tokenObservable(
+        ).combineLatest(
+            this.refreshSubject.startWith(null), (token, v) => token,
         ).scan((source: EventSource, token :string) : EventSource => {
             if (source != null) {
                 source.close()
@@ -45,6 +50,9 @@ export class EventService {
 
             if (token != "") {
                 source = new EventSource("/api/v2/events?token=" + token)
+                source['onerror'] = error => {
+                    setTimeout(() => this.refresh(), 3000);
+                };
             }
 
             return source
@@ -63,5 +71,9 @@ export class EventService {
         ).map((event: DataEvent) =>
             new ArticleStateEvent().fromJSON(JSON.parse(event.data))
         )
+    }
+
+    refresh() {
+        this.refreshSubject.next(null);
     }
 }
