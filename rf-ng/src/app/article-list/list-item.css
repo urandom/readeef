@@ -53,6 +53,10 @@ mat-card-actions {
     height: 3.85em;
 }
 
+.info {
+    margin: 0;
+}
+
 .feed {
     font-weight: 200;
     font-size: 10px;

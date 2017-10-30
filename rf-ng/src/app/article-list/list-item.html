@@ -14,7 +14,7 @@
         <div [innerHTML]="item.stripped"></div>
     </mat-card-content>
     <mat-card-actions>
-        <div class="row align-items-center" [class.read]="item.read">
+        <div class="row align-items-center info" [class.read]="item.read">
             <div class="col-mat-auto feed" *ngIf="item.feed">
                 {{ item.feed }}
             </div>

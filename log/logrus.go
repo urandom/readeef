@@ -16,7 +16,7 @@ func WithLogrus(cfg config.Log) Log {
 
 	switch cfg.Formatter {
 	case "text", "":
-		logger.Formatter = &lg.TextFormatter{}
+		logger.Formatter = &lg.TextFormatter{DisableTimestamp: true}
 	case "json":
 		logger.Formatter = &lg.JSONFormatter{}
 	}
