@@ -104,14 +104,17 @@ func addFeed(repo repo.Feed, feedManager feedManager) http.HandlerFunc {
 		}
 
 		errs := make([]error, 0, len(data.Links))
+		feeds := map[string]content.Feed{}
 		for _, link := range data.Links {
-			err := addFeedByURL(link, user, repo, feedManager)
-			if err != nil {
+			feed, err := addFeedByURL(link, user, repo, feedManager)
+			if err == nil {
+				feeds[link] = feed
+			} else {
 				errs = append(errs, err)
 			}
 		}
 
-		args{"errors": errs, "success": len(errs) < len(data.Links)}.WriteJSON(w)
+		args{"errors": errs, "feedIDs": feeds, "success": len(errs) < len(data.Links)}.WriteJSON(w)
 	}
 }
 
@@ -120,20 +123,20 @@ func addFeedByURL(
 	user content.User,
 	repo repo.Feed,
 	feedManager feedManager,
-) error {
+) (content.Feed, error) {
 	u, err := url.Parse(link)
 	if err != nil {
-		return addFeedError{Link: link, Message: "Not a url"}
+		return content.Feed{}, addFeedError{Link: link, Message: "Not a url"}
 	}
 
 	if !u.IsAbs() {
-		return addFeedError{Link: link, Message: "Link is not absolute"}
+		return content.Feed{}, addFeedError{Link: link, Message: "Link is not absolute"}
 	}
 
 	if f, err := feedManager.AddFeedByLink(link); err == nil {
 		err = repo.AttachTo(f, user)
 		if err != nil {
-			return addFeedError{Link: link, Title: f.Title, Message: fmt.Sprintf("adding feed to user %s: %s", user, err.Error())}
+			return content.Feed{}, addFeedError{Link: link, Title: f.Title, Message: fmt.Sprintf("adding feed to user %s: %s", user, err.Error())}
 		}
 
 		tags := strings.SplitN(u.Fragment, ",", -1)
@@ -144,14 +147,14 @@ func addFeedByURL(
 			}
 
 			if err = repo.SetUserTags(f, user, t); err != nil {
-				return addFeedError{Link: link, Title: f.Title, Message: "Error adding feed to the database: " + err.Error()}
+				return content.Feed{}, addFeedError{Link: link, Title: f.Title, Message: "Error adding feed to the database: " + err.Error()}
 			}
 		}
-	} else {
-		return addFeedError{Link: link, Message: "Error adding feed to the database"}
+
+		return f, nil
 	}
 
-	return nil
+	return content.Feed{}, addFeedError{Link: link, Message: "Error adding feed to the database"}
 }
 
 func deleteFeed(repo repo.Feed, feedManager feedManager, log log.Log) http.HandlerFunc {

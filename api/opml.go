@@ -70,10 +70,12 @@ func importOPML(
 						f.Link += "#" + strings.Join(opmlFeed.Tags, ",")
 					}
 
-					feeds = append(feeds, f)
-
-					if !payload.DryRun {
-						if err := addFeedByURL(f.Link, user, repo, feedManager); err != nil {
+					if payload.DryRun {
+						feeds = append(feeds, f)
+					} else {
+						if feed, err := addFeedByURL(f.Link, user, repo, feedManager); err == nil {
+							feeds = append(feeds, feed)
+						} else {
 							fatal(w, log, "Error adding feed: %+v", err)
 							return
 						}

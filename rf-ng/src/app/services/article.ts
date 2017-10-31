@@ -176,7 +176,9 @@ export class ArticleService {
     ) {
         let queryPreferences = this.preferences.queryPreferences();
 
-        this.source = listRoute(this.router).map(
+        this.source = listRoute(this.router).filter(
+            route => route != null
+        ).map(
             route => this.nameToSource(route.data, route.params),
         ).filter(source =>
             source != null
