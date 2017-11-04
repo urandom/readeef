@@ -1,0 +1,843 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file source-language="en" datatype="plaintext" original="ng2.template" target-language="en">
+    <body>
+      <trans-unit id="024886ca34a6f309e3e51c2ed849320592c3faaa" datatype="html">
+        <source>User name</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/login/component.ts</context>
+          <context context-type="linenumber">4</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/admin/component.ts</context>
+          <context context-type="linenumber">4</context>
+        </context-group>
+      <target state="final">User name</target></trans-unit>
+      <trans-unit id="c32ef07f8803a223a83ed17024b38e8d82292407" datatype="html">
+        <source>Password</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/login/component.ts</context>
+          <context context-type="linenumber">7</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/admin/component.ts</context>
+          <context context-type="linenumber">11</context>
+        </context-group>
+      <target state="final">Password</target></trans-unit>
+      <trans-unit id="71c77bb8cecdf11ec3eead24dd1ba506573fa9cd" datatype="html">
+        <source>Submit</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/login/component.ts</context>
+          <context context-type="linenumber">10</context>
+        </context-group>
+      <target state="final">Submit</target></trans-unit>
+      <trans-unit id="692e44560646c0bdeea893155ffcc76928378a1e" datatype="html">
+        <source>Evernote</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">19</context>
+        </context-group>
+      <target state="final">Evernote</target></trans-unit>
+      <trans-unit id="ded8d756f6ae7dbe4a6d936f6cc3c4aab891fa1e" datatype="html">
+        <source>Read-it-later</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">20</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">27</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">34</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">41</context>
+        </context-group>
+      <target state="final">Read-it-later</target></trans-unit>
+      <trans-unit id="35009adf932b9b5ef2c030703e87fc8837c69eb3" datatype="html">
+        <source>Instapaper</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">26</context>
+        </context-group>
+      <target state="final">Instapaper</target></trans-unit>
+      <trans-unit id="ebe46a6ad0c84110be6b37c800f3d3663eeb6aba" datatype="html">
+        <source>Readability</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">33</context>
+        </context-group>
+      <target state="final">Readability</target></trans-unit>
+      <trans-unit id="3031c36d6183f1bb68d18b5ee4aea8ae31bb0eeb" datatype="html">
+        <source>Pocket</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">40</context>
+        </context-group>
+      <target state="final">Pocket</target></trans-unit>
+      <trans-unit id="6ff575335272d7e0a6843ba597216f8201b57991" datatype="html">
+        <source>Google+</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">47</context>
+        </context-group>
+      <target state="final">Google+</target></trans-unit>
+      <trans-unit id="81baa3357bebcb29271c8121a87c17915bdbb41f" datatype="html">
+        <source>Social network</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">48</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">55</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">62</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">69</context>
+        </context-group>
+      <target state="final">Social network</target></trans-unit>
+      <trans-unit id="838a46816b130c73fe73b96e69176da9eb3b1190" datatype="html">
+        <source>Facebook</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">54</context>
+        </context-group>
+      <target state="final">Facebook</target></trans-unit>
+      <trans-unit id="99cb827741e93125476a0f5b676372d85d15b5fc" datatype="html">
+        <source>Twitter</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">61</context>
+        </context-group>
+      <target state="final">Twitter</target></trans-unit>
+      <trans-unit id="77ce98fa8988bd33011b2221a28c373dd35a5db1" datatype="html">
+        <source>Pinterest</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">68</context>
+        </context-group>
+      <target state="final">Pinterest</target></trans-unit>
+      <trans-unit id="8df49d58c2d6296211e3a4d6a7dcbb2256cad458" datatype="html">
+        <source>Tumblr</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">75</context>
+        </context-group>
+      <target state="final">Tumblr</target></trans-unit>
+      <trans-unit id="889e1152e6351fd7607f7547eb5547f6c7a7f3df" datatype="html">
+        <source>Blogging</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">76</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">83</context>
+        </context-group>
+      <target state="final">Blogging</target></trans-unit>
+      <trans-unit id="9ed5758c5418a3aa0ecbf9c043a8d89b96852680" datatype="html">
+        <source>Flipboard</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">82</context>
+        </context-group>
+      <target state="final">Flipboard</target></trans-unit>
+      <trans-unit id="244aae9346da82b0922506c2d2581373a15641cc" datatype="html">
+        <source>Email</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">89</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">90</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">96</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/general/component.ts</context>
+          <context context-type="linenumber">11</context>
+        </context-group>
+      <target state="final">Email</target></trans-unit>
+      <trans-unit id="f381d5239a6369e5f4b8582a35e135c8e3d9dfc8" datatype="html">
+        <source>Gmail</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/main/component.ts</context>
+          <context context-type="linenumber">95</context>
+        </context-group>
+      <target state="final">Gmail</target></trans-unit>
+      <trans-unit id="416441a4532345eaa0c5cab38f0aeb148c8566e0" datatype="html">
+        <source>
+    Feeds
+</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/feed-component.ts</context>
+          <context context-type="linenumber">1</context>
+        </context-group>
+      <target state="final">
+    Feeds
+</target></trans-unit>
+      <trans-unit id="11a0771f88158a540a54e0e4ec5d25733d65fc0e" datatype="html">
+        <source>Favorite</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/feed-component.ts</context>
+          <context context-type="linenumber">5</context>
+        </context-group>
+      <target state="final">Favorite</target></trans-unit>
+      <trans-unit id="8fc026bb4b317bf3a6159c364818202f5bb95a4e" datatype="html">
+        <source>Popular</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/feed-component.ts</context>
+          <context context-type="linenumber">11</context>
+        </context-group>
+      <target state="final">Popular</target></trans-unit>
+      <trans-unit id="dfc3c34e182ea73c5d784ff7c8135f087992dac1" datatype="html">
+        <source>All</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/feed-component.ts</context>
+          <context context-type="linenumber">27</context>
+        </context-group>
+      <target state="final">All</target></trans-unit>
+      <trans-unit id="121cc5391cd2a5115bc2b3160379ee5b36cd7716" datatype="html">
+        <source>Settings</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/feed-component.ts</context>
+          <context context-type="linenumber">50</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/toolbar/settings-component.ts</context>
+          <context context-type="linenumber">1</context>
+        </context-group>
+      <target state="final">Settings</target></trans-unit>
+      <trans-unit id="bb694b49d408265c91c62799c2b3a7e3151c824d" datatype="html">
+        <source>Logout</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/feed-component.ts</context>
+          <context context-type="linenumber">51</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/settings-component.ts</context>
+          <context context-type="linenumber">14</context>
+        </context-group>
+      <target state="final">Logout</target></trans-unit>
+      <trans-unit id="2efe5a11c535986f60fd32bb171de59c85ec357d" datatype="html">
+        <source>
+    Settings
+</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/settings-component.ts</context>
+          <context context-type="linenumber">1</context>
+        </context-group>
+      <target state="final">
+    Settings
+</target></trans-unit>
+      <trans-unit id="3d53f64033c4b76fdc1076ba15955d913209866c" datatype="html">
+        <source>General</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/settings-component.ts</context>
+          <context context-type="linenumber">5</context>
+        </context-group>
+      <target state="final">General</target></trans-unit>
+      <trans-unit id="b6e9d3a76584feec84c2204f11301598fb90d7ef" datatype="html">
+        <source>Add Feed</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/settings-component.ts</context>
+          <context context-type="linenumber">6</context>
+        </context-group>
+      <target state="final">Add Feed</target></trans-unit>
+      <trans-unit id="446bc7942ed7cd24d6b84079bb82bd7f1d4d280b" datatype="html">
+        <source>Manage Feeds</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/settings-component.ts</context>
+          <context context-type="linenumber">7</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/management/component.ts</context>
+          <context context-type="linenumber">1</context>
+        </context-group>
+      <target state="final">Manage Feeds</target></trans-unit>
+      <trans-unit id="1298c1d2bbbb7415f5494e800f6775fdb70f4df6" datatype="html">
+        <source>Filters</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/settings-component.ts</context>
+          <context context-type="linenumber">8</context>
+        </context-group>
+      <target state="final">Filters</target></trans-unit>
+      <trans-unit id="7240bf47e6acc8685c4ebfc74ce0d5b4db6bde4f" datatype="html">
+        <source>Share Services</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/settings-component.ts</context>
+          <context context-type="linenumber">9</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/share-services/component.ts</context>
+          <context context-type="linenumber">1</context>
+        </context-group>
+      <target state="final">Share Services</target></trans-unit>
+      <trans-unit id="b7648e7aced164498aa843b5c4e8f2f1c36a7919" datatype="html">
+        <source>Administration</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/sidebar/settings-component.ts</context>
+          <context context-type="linenumber">10</context>
+        </context-group>
+      <target state="final">Administration</target></trans-unit>
+      <trans-unit id="7b928f1d459648a4733d54d7fb0c7141ba6955af" datatype="html">
+        <source>Feeds</source>
+        
+        
+      <target state="final">Feeds</target><context-group purpose="location"><context context-type="sourcefile">app/sidebar/settings-component.ts</context><context context-type="linenumber">13</context></context-group><context-group purpose="location"><context context-type="sourcefile">app/settings/filters/component.ts</context><context context-type="linenumber">32</context></context-group></trans-unit>
+      <trans-unit id="3b6143a528c6f4586e60e9af4ced8ac0fbe08251" datatype="html">
+        <source>Articles</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/toolbar/feed-component.ts</context>
+          <context context-type="linenumber">4</context>
+        </context-group>
+      <target state="final">Articles</target></trans-unit>
+      <trans-unit id="9b1d5e95f6bdcfb4b737413f5fa157e0dcb103d5" datatype="html">
+        <source>Read</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/toolbar/feed-component.ts</context>
+          <context context-type="linenumber">25</context>
+        </context-group>
+      <target state="final">Read</target></trans-unit>
+      <trans-unit id="94516fa213706c67ce5a5b5765681d7fb032033a" datatype="html">
+        <source>Loading...</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/article-list/component.ts</context>
+          <context context-type="linenumber">5</context>
+        </context-group>
+      <target state="final">Loading...</target></trans-unit>
+      <trans-unit id="bba44ce85e0028ddbc8b0e38d5a04fabc13c8f61" datatype="html">
+        <source>
+                        View
+                    </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/article-display/component.ts</context>
+          <context context-type="linenumber">28</context>
+        </context-group>
+      <target state="final">
+                        View
+                    </target></trans-unit>
+      <trans-unit id="d5e281892feed2ccbc7c3135846913de48ed7876" datatype="html">
+        <source>
+                        Format
+                    </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/article-display/component.ts</context>
+          <context context-type="linenumber">33</context>
+        </context-group>
+      <target state="final">
+                        Format
+                    </target></trans-unit>
+      <trans-unit id="170d0510bd494799bed6a127fc04eabc9f8bed23" datatype="html">
+        <source>
+                        Summary
+                    </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/article-display/component.ts</context>
+          <context context-type="linenumber">38</context>
+        </context-group>
+      <target state="final">
+                        Summary
+                    </target></trans-unit>
+      <trans-unit id="2034c9a8ec1a387f9614599aed924afedba51287" datatype="html">
+        <source>Personalize your feed reader</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/general/component.ts</context>
+          <context context-type="linenumber">1</context>
+        </context-group>
+      <target state="final">Personalize your feed reader</target></trans-unit>
+      <trans-unit id="62b6c66981335ca6eecc36b331103c60f09d1026" datatype="html">
+        <source>First name</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/general/component.ts</context>
+          <context context-type="linenumber">3</context>
+        </context-group>
+      <target state="final">First name</target></trans-unit>
+      <trans-unit id="6ce3dadf53dda1a1ab0c3167a8ed8dced471b0dc" datatype="html">
+        <source>Last name</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/general/component.ts</context>
+          <context context-type="linenumber">7</context>
+        </context-group>
+      <target state="final">Last name</target></trans-unit>
+      <trans-unit id="782e37fb591e59a26363f1558db22cd373660ca9" datatype="html">
+        <source>
+        Please enter a valid email address
+    </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/general/component.ts</context>
+          <context context-type="linenumber">12</context>
+        </context-group>
+      <target state="final">
+        Please enter a valid email address
+    </target></trans-unit>
+      <trans-unit id="fe46ccaae902ce974e2441abe752399288298619" datatype="html">
+        <source>Language</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/general/component.ts</context>
+          <context context-type="linenumber">18</context>
+        </context-group>
+      <target state="final">Language</target></trans-unit>
+      <trans-unit id="739516c2ca75843d5aec9cf0e6b3e4335c4227b9" datatype="html">
+        <source>Change password</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/general/component.ts</context>
+          <context context-type="linenumber">25</context>
+        </context-group>
+      <target state="final">Change password</target></trans-unit>
+      <trans-unit id="6d6539a26b432fb1906f9fda102cf3ac332c8b8a" datatype="html">
+        <source>Change your password</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/general/component.ts</context>
+          <context context-type="linenumber">1</context>
+        </context-group>
+      <target state="final">Change your password</target></trans-unit>
+      <trans-unit id="d4ee9c4a4fe08d273b716bf0a399570466bbd87c" datatype="html">
+        <source>
+        Invalid password
+    </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/general/component.ts</context>
+          <context context-type="linenumber">4</context>
+        </context-group>
+      <target state="final">
+        Invalid password
+    </target></trans-unit>
+      <trans-unit id="e70e209561583f360b1e9cefd2cbb1fe434b6229" datatype="html">
+        <source>New password</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/general/component.ts</context>
+          <context context-type="linenumber">10</context>
+        </context-group>
+      <target state="final">New password</target></trans-unit>
+      <trans-unit id="71980fe48d948363935aab88e2077c7c76de93bd" datatype="html">
+        <source>
+        Passwords do not match
+    </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/general/component.ts</context>
+          <context context-type="linenumber">11</context>
+        </context-group>
+      <target state="final">
+        Passwords do not match
+    </target></trans-unit>
+      <trans-unit id="ede41f01c781b168a783cfcefc6fb67d48780d9b" datatype="html">
+        <source>Confirm new password</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/general/component.ts</context>
+          <context context-type="linenumber">17</context>
+        </context-group>
+      <target state="final">Confirm new password</target></trans-unit>
+      <trans-unit id="52c9a103b812f258bcddc3d90a6e3f46871d25fe" datatype="html">
+        <source>Save</source>
+        
+        
+        
+      <target state="final">Save</target><context-group purpose="location"><context context-type="sourcefile">app/settings/general/component.ts</context><context context-type="linenumber">21</context></context-group><context-group purpose="location"><context context-type="sourcefile">app/settings/filters/component.ts</context><context context-type="linenumber">52</context></context-group><context-group purpose="location"><context context-type="sourcefile">app/settings/admin/component.ts</context><context context-type="linenumber">18</context></context-group></trans-unit>
+      <trans-unit id="2fa6619f44220045d57d900966a51c211caad6fc" datatype="html">
+        <source>Discover/import feeds</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">1</context>
+        </context-group>
+      <target state="final">Discover/import feeds</target></trans-unit>
+      <trans-unit id="25f68d3a620967ef32cd915d3b395be2ffe01952" datatype="html">
+        <source>
+        You can enter the url of a feed directly, as well as a url of a site that may contain one or more feeds, or a search query.
+    </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">3</context>
+        </context-group>
+      <target state="final">
+        You can enter the url of a feed directly, as well as a url of a site that may contain one or more feeds, or a search query.
+    </target></trans-unit>
+      <trans-unit id="c09f5d00683d3ea7a0bac506894a81c47075628f" datatype="html">
+        <source>URL/query</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">7</context>
+        </context-group>
+      <target state="final">URL/query</target></trans-unit>
+      <trans-unit id="bd2cda3ba20b1a481578e587ff255c5dd69226bb" datatype="html">
+        <source>
+            No query or opml file specified
+        </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">8</context>
+        </context-group>
+      <target state="final">
+            No query or opml file specified
+        </target></trans-unit>
+      <trans-unit id="8350af72cf77a2936cd54ac59cc1ab9adec34f74" datatype="html">
+        <source>
+            Error during search
+        </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">11</context>
+        </context-group>
+      <target state="final">
+            Error during search
+        </target></trans-unit>
+      <trans-unit id="0e6f6d047ad0445f95577c3886f5cb462ecfd614" datatype="html">
+        <source>
+        Alternatively, upload an OPML file.
+    </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">16</context>
+        </context-group>
+      <target state="final">
+        Alternatively, upload an OPML file.
+    </target></trans-unit>
+      <trans-unit id="62eb4be126bc452812fe66b9675417704c09123a" datatype="html">
+        <source>OPML import</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">19</context>
+        </context-group>
+      <target state="final">OPML import</target></trans-unit>
+      <trans-unit id="7e892ba15f2c6c17e83510e273b3e10fc32ea016" datatype="html">
+        <source>Search</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">21</context>
+        </context-group>
+      <target state="final">Search</target></trans-unit>
+      <trans-unit id="d95b1d4402bbe08c4ab7c089005abb260bf0fb62" datatype="html">
+        <source>
+        No new feeds found
+    </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">26</context>
+        </context-group>
+      <target state="final">
+        No new feeds found
+    </target></trans-unit>
+      <trans-unit id="f6755cff4957d5c3c89bafce5651f1b6fa2b1fd9" datatype="html">
+        <source>Add</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">41</context>
+        </context-group>
+      <target state="final">Add</target></trans-unit>
+      <trans-unit id="f1910eaad1af7b9e7635f930ddc55586f157e3bd" datatype="html">
+        <source>
+        No feeds added.
+    </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">44</context>
+        </context-group>
+      <target state="final">
+        No feeds added.
+    </target></trans-unit>
+      <trans-unit id="ccd3b9334639513fbd609704f4ec8536a15aeb97" datatype="html">
+        <source>
+        Feeds were added successfully.
+    </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">47</context>
+        </context-group>
+      <target state="final">
+        Feeds were added successfully.
+    </target></trans-unit>
+      <trans-unit id="51a0b2a443f1b6b1ceab1a868605d7b0f2065e28" datatype="html">
+        <source>
+            Error adding feed <x id="INTERPOLATION"/>: <x id="INTERPOLATION_1"/>
+        </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">51</context>
+        </context-group>
+      <target state="final">
+            Error adding feed <x id="INTERPOLATION"/>: <x id="INTERPOLATION_1"/>
+        </target></trans-unit>
+      <trans-unit id="9d9bc3eecf1610ec05a5c2b63bb7c1324529cba5" datatype="html">
+        <source>Discover more feeds</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/discovery/component.ts</context>
+          <context context-type="linenumber">56</context>
+        </context-group>
+      <target state="final">Discover more feeds</target></trans-unit>
+      <trans-unit id="9f12050a433d9709f2231916ecfb33c4f2ed1c01" datatype="html">
+        <source>tags</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/management/component.ts</context>
+          <context context-type="linenumber">12</context>
+        </context-group>
+      <target state="final">tags</target></trans-unit>
+      <trans-unit id="cf59c3b27a0d7b925f32cd1c1e2785a1bf73f829" datatype="html">
+        <source>Export OPML</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/management/component.ts</context>
+          <context context-type="linenumber">20</context>
+        </context-group>
+      <target state="final">Export OPML</target></trans-unit>
+      <trans-unit id="f4e529ae5ffd73001d1ff4bbdeeb0a72e342e5c8" datatype="html">
+        <source>Close</source>
+        
+        
+      <target state="final">Close</target><context-group purpose="location"><context context-type="sourcefile">app/settings/management/component.ts</context><context context-type="linenumber">5</context></context-group><context-group purpose="location"><context context-type="sourcefile">app/settings/filters/component.ts</context><context context-type="linenumber">53</context></context-group></trans-unit>
+      <trans-unit id="78a6f89ed9e0cf32497131786780cb1849d06450" datatype="html">
+        <source>Manage Filters</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">1</context>
+        </context-group>
+      <target state="final">Manage Filters</target></trans-unit>
+      <trans-unit id="58225eba05594edb2dbf2227edcf972c45484190" datatype="html">
+        <source>
+    No filters have been defined
+</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">2</context>
+        </context-group>
+      <target state="final">
+    No filters have been defined
+</target></trans-unit>
+      <trans-unit id="01aa5508abb4473531a18c605c1c41ae4b6074d0" datatype="html">
+        <source>Matches</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">8</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">17</context>
+        </context-group>
+      <target state="final">Matches</target></trans-unit>
+      <trans-unit id="84bbbe38f927eaeddf081648c8783d06b4348b24" datatype="html">
+        <source>Does not match</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">9</context>
+        </context-group>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">18</context>
+        </context-group>
+      <target state="final">Does not match</target></trans-unit>
+      <trans-unit id="583cfbb9fc11b6d18ba2859c6f6ef9801f01303a" datatype="html">
+        <source>by URL</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">11</context>
+        </context-group>
+      <target state="final">by URL</target></trans-unit>
+      <trans-unit id="7bd342c384e331d17e60ccdf6eb0c23152317d51" datatype="html">
+        <source>by title</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">20</context>
+        </context-group>
+      <target state="final">by title</target></trans-unit>
+      <trans-unit id="5ec699eaa79e1ac10b6ce2a16bfc89436bcb7120" datatype="html">
+        <source>excluding tag:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">22</context>
+        </context-group>
+      <target state="final">excluding tag:</target></trans-unit>
+      <trans-unit id="a01b7cd68dedce110e9721fe35c8447aa6c7addf" datatype="html">
+        <source>excluding feeds:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">23</context>
+        </context-group>
+      <target state="final">excluding feeds:</target></trans-unit>
+      <trans-unit id="567eded396fef0222ca8ab79c661062ea2d0b0ba" datatype="html">
+        <source>on tag:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">24</context>
+        </context-group>
+      <target state="final">on tag:</target></trans-unit>
+      <trans-unit id="ee5dbbdc2ddbcc6b9aa7262b6d6b1fd93f4a7667" datatype="html">
+        <source>on feeds:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">25</context>
+        </context-group>
+      <target state="final">on feeds:</target></trans-unit>
+      <trans-unit id="f0296c99c29c326e114d9b5e586e525ced19acb7" datatype="html">
+        <source>Add filter</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">34</context>
+        </context-group>
+      <target state="final">Add filter</target></trans-unit>
+      <trans-unit id="760d27bbd4821e0c2c36328a956b7e2a548af1b2" datatype="html">
+        <source>
+            Filters can be applied to article URLs and title. At least one target must be selected:
+        </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">3</context>
+        </context-group>
+      <target state="final">
+            Filters can be applied to article URLs and title. At least one target must be selected:
+        </target></trans-unit>
+      <trans-unit id="34501d547e3d70233dfcc545621b3f9524046c76" datatype="html">
+        <source>Filter by title</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">7</context>
+        </context-group>
+      <target state="final">Filter by title</target></trans-unit>
+      <trans-unit id="12a3c6674683fc857378e516d09535cfe6030f50" datatype="html">
+        <source>
+            Match filter if title term does not match.
+        </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">10</context>
+        </context-group>
+      <target state="final">
+            Match filter if title term does not match.
+        </target></trans-unit>
+      <trans-unit id="3664165270130fd3d4f89f5f7e4c56fb7c485375" datatype="html">
+        <source>Filter by URL</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">14</context>
+        </context-group>
+      <target state="final">Filter by URL</target></trans-unit>
+      <trans-unit id="1ee7e26019fd1e347d1e23443cf6895a02d62d9c" datatype="html">
+        <source>
+            Match filter if URL term does not match.
+        </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">17</context>
+        </context-group>
+      <target state="final">
+            Match filter if URL term does not match.
+        </target></trans-unit>
+      <trans-unit id="fc9c1cf53b31d0f5bd0a8e28b56b83797a536101" datatype="html">
+        <source>
+            A filter must match at least a URL or title
+        </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">20</context>
+        </context-group>
+      <target state="final">
+            A filter must match at least a URL or title
+        </target></trans-unit>
+      <trans-unit id="421759c8d438a7e13844a18b48945cf1cf425769" datatype="html">
+        <source>
+            Optional parameters
+        </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">24</context>
+        </context-group>
+      <target state="final">
+            Optional parameters
+        </target></trans-unit>
+      
+      <trans-unit id="337ca2e5eeea28eaca91e8511eb5eaafdb385ce6" datatype="html">
+        <source>Tag</source>
+        
+      <target state="final">Tag</target><context-group purpose="location"><context context-type="sourcefile">app/settings/filters/component.ts</context><context context-type="linenumber">39</context></context-group></trans-unit>
+      <trans-unit id="80de392929f7cade444426837fc6a322091e8143" datatype="html">
+        <source>
+            Match filter if article is not part of the selected feeds/tag.
+        </source>
+        
+      <target state="final">
+            Match filter if article is not part of the selected feeds/tag.
+        </target><context-group purpose="location"><context context-type="sourcefile">app/settings/filters/component.ts</context><context context-type="linenumber">46</context></context-group></trans-unit>
+      <trans-unit id="cb593cb234b63428439631044bdf77fc3452357c" datatype="html">
+        <source>Manage Users</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/admin/component.ts</context>
+          <context context-type="linenumber">1</context>
+        </context-group>
+      <target state="final">Manage Users</target></trans-unit>
+      <trans-unit id="1df08418100ac5e70836b8adf5fa12d4c1b4b0dd" datatype="html">
+        <source>
+    Current user: <x id="INTERPOLATION"/>
+</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/admin/component.ts</context>
+          <context context-type="linenumber">2</context>
+        </context-group>
+      <target state="final">
+    Current user: <x id="INTERPOLATION"/>
+</target></trans-unit>
+      <trans-unit id="75bff245ba90b410bd49da2788c55f572ce7f784" datatype="html">
+        <source>List of users:</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/admin/component.ts</context>
+          <context context-type="linenumber">6</context>
+        </context-group>
+      <target state="final">List of users:</target></trans-unit>
+      <trans-unit id="f8c7e16da78e5daf06335e60dd27f03ec30530f4" datatype="html">
+        <source>Add user</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/admin/component.ts</context>
+          <context context-type="linenumber">15</context>
+        </context-group>
+      <target state="final">Add user</target></trans-unit>
+      <trans-unit id="fab6f6aad7a682400356ad9ba30f1c25e80c8930" datatype="html">
+        <source>Add a new user</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/admin/component.ts</context>
+          <context context-type="linenumber">1</context>
+        </context-group>
+      <target state="final">Add a new user</target></trans-unit>
+      <trans-unit id="81300fcfd7313522c85ffe86cc04a5c19278bf12" datatype="html">
+        <source>
+            Empty user name
+        </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/admin/component.ts</context>
+          <context context-type="linenumber">5</context>
+        </context-group>
+      <target state="final">
+            Empty user name
+        </target></trans-unit>
+      <trans-unit id="2985844c6198518d1b99c84e29e1c8795754cf8b" datatype="html">
+        <source>
+            Empty password
+        </source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/admin/component.ts</context>
+          <context context-type="linenumber">12</context>
+        </context-group>
+      <target state="final">
+            Empty password
+        </target></trans-unit>
+    <trans-unit id="7b00e7c2dacd433e78459995668de3ae88faed6f" datatype="html">
+        <source>Limit to feeds</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">28</context>
+        </context-group>
+      <target state="final">Limit to feeds</target></trans-unit><trans-unit id="48568468ed7a42b94708b89595e8e0ba4c5c4880" datatype="html">
+        <source>Limit to tag</source>
+        <context-group purpose="location">
+          <context context-type="sourcefile">app/settings/filters/component.ts</context>
+          <context context-type="linenumber">29</context>
+        </context-group>
+      <target state="final">Limit to tag</target></trans-unit></body>
+  </file>
+</xliff>

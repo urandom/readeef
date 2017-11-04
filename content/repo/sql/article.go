@@ -41,17 +41,18 @@ type getArticlesData struct {
 }
 
 const (
-	userLogin      = "user_login"
-	beforeID       = "before_id"
-	afterID        = "after_id"
-	beforeDate     = "before_date"
-	afterDate      = "after_date"
-	idPrefix       = "id"
-	feedIDPRefix   = "feed_id"
-	limit          = "limit"
-	offset         = "offset"
-	filterPrefix   = "filter"
-	filterIDPrefix = "filterID"
+	userLogin         = "user_login"
+	beforeID          = "before_id"
+	afterID           = "after_id"
+	beforeDate        = "before_date"
+	afterDate         = "after_date"
+	idPrefix          = "id"
+	feedIDPRefix      = "feed_id"
+	limit             = "limit"
+	offset            = "offset"
+	filterURLPrefix   = "filterURL"
+	filterTitlePrefix = "filterTitle"
+	filterIDPrefix    = "filterID"
 )
 
 // ForUser returns all user articles restricted by the QueryOptions
@@ -525,6 +526,33 @@ func constructSQLQueryOptions(
 			continue
 		}
 
+		parts := make([]string, 0, 3)
+		if f.URLTerm != "" {
+			sign := "LIKE"
+			if f.InverseURL {
+				sign = "NOT LIKE"
+			}
+
+			args[fmt.Sprintf("%s%d", filterURLPrefix, i)] = fmt.Sprintf("%%%s%%", f.URLTerm)
+
+			parts = append(parts,
+				fmt.Sprintf("LOWER(a.link) %s :%s%d", sign, filterURLPrefix, i),
+			)
+		}
+
+		if f.TitleTerm != "" {
+			sign := "LIKE"
+			if f.InverseTitle {
+				sign = "NOT LIKE"
+			}
+
+			args[fmt.Sprintf("%s%d", filterTitlePrefix, i)] = fmt.Sprintf("%%%s%%", f.TitleTerm)
+
+			parts = append(parts,
+				fmt.Sprintf("LOWER(a.title) %s :%s%d", sign, filterTitlePrefix, i),
+			)
+		}
+
 		ids := f.FeedIDs
 		if len(opts.FeedIDs) > 0 && len(ids) > 0 {
 			ids = make([]content.FeedID, 0, len(opts.FeedIDs))
@@ -539,37 +567,22 @@ func constructSQLQueryOptions(
 			}
 		}
 
-		var idsPart string
 		if len(ids) > 0 {
-			idsPart = db.WhereMultipleORs("a.feed_id", fmt.Sprintf("%s%dx", filterIDPrefix, i), len(ids), !f.InverseFeeds)
+			parts = append(parts,
+				db.WhereMultipleORs(
+					"a.feed_id",
+					fmt.Sprintf("%s%dx", filterIDPrefix, i),
+					len(ids),
+					!f.InverseFeeds,
+				),
+			)
 
 			for j := range ids {
 				args[fmt.Sprintf("%s%dx%d", filterIDPrefix, i, j)] = ids[j]
 			}
 		}
 
-		sign := "LIKE"
-		if f.Inverse {
-			sign = "NOT LIKE"
-		}
-
-		args[fmt.Sprintf("%s%d", filterPrefix, i)] = fmt.Sprintf("%%%s%%", f.Term)
-
-		orPart := []string{}
-		if f.MatchURL {
-			orPart = append(orPart, fmt.Sprintf("LOWER(a.link) %s :%s%d", sign, filterPrefix, i))
-		}
-
-		if f.MatchTitle {
-			orPart = append(orPart, fmt.Sprintf("LOWER(a.title) %s :%s%d", sign, filterPrefix, i))
-		}
-
-		if idsPart == "" {
-			whereSlice = append(whereSlice, "NOT ("+strings.Join(orPart, " OR ")+")")
-		} else {
-			whereSlice = append(whereSlice, "NOT ( ("+strings.Join(orPart, " OR ")+") AND "+idsPart+")")
-		}
-
+		whereSlice = append(whereSlice, "NOT ("+strings.Join(parts, " AND ")+")")
 	}
 
 	var where string

@@ -1,33 +1,32 @@
 <div>
     <form [formGroup]="form" (ngSubmit)="save()" novalidate autocomplete="off">
+        <p i18n>
+            Filters can be applied to article URLs and title. At least one target must be selected:
+        </p>
         <mat-input-container>
-            <input matInput i18n-placeholder placeholder="Filter by" formControlName="term" required>
-            <mat-error *ngIf="form.hasError('required', ['term'])" i18n>
-                Empty filter term
-            </mat-error>
+            <input matInput i18n-placeholder placeholder="Filter by title" formControlName="titleTerm">
         </mat-input-container>
         <br>
-        <mat-checkbox formControlName="inverse" i18n>
-            Match filter if term does not match.
+        <mat-checkbox formControlName="inverseTitle" i18n>
+            Match filter if title term does not match.
         </mat-checkbox>
-        <p i18n>
-            Filters can be applied to article URLs or title. At least one target must be selected:
-        </p>
-        <mat-checkbox formControlName="matchURL" i18n>
-            Match by URL
+        <mat-input-container>
+            <input matInput i18n-placeholder placeholder="Filter by URL" formControlName="urlTerm">
+        </mat-input-container>
+        <br>
+        <mat-checkbox formControlName="inverseURL" i18n>
+            Match filter if URL term does not match.
         </mat-checkbox>
         <mat-error *ngIf="form.hasError('nomatch')" i18n>
             A filter must match at least a URL or title
         </mat-error>
         <br>
-        <mat-checkbox formControlName="matchTitle" i18n>
-            Match by title
-        </mat-checkbox>
         <p i18n>
             Optional parameters
         </p>
-        <mat-slide-toggle formControlName="useFeeds" i18n>
-            Limit to feeds (on) or tag (off)
+        <mat-slide-toggle formControlName="useFeeds">
+            <span *ngIf="form.value.useFeeds" i18n>Limit to feeds</span>
+            <span *ngIf="!form.value.useFeeds" i18n>Limit to tag</span>
         </mat-slide-toggle>
         <mat-form-field *ngIf="form.value.useFeeds">
             <mat-select multiple formControlName="feeds" i18n-placeholder placeholder="Feeds">

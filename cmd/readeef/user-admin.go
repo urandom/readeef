@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -107,6 +108,12 @@ func userAdminGet(args []string, service repo.Service, config config.Config, log
 		fmt.Println(u.Admin)
 	case "active":
 		fmt.Println(u.Active)
+	case "profile":
+		if b, err := json.Marshal(u.ProfileData); err == nil {
+			fmt.Println(string(b))
+		} else {
+			return errors.Wrapf(err, "marshaling %s profile data", u)
+		}
 	default:
 		return errors.Errorf("unknown property %s", args[1])
 	}
@@ -143,8 +150,14 @@ func userAdminSet(args []string, service repo.Service, config config.Config, log
 		} else {
 			u.Active = enabled
 		}
+	case "profile":
+		if err = json.Unmarshal([]byte(args[2]), &u.ProfileData); err != nil {
+			return errors.Wrapf(err, "unmarshaling profile data for %s", u)
+		}
 	case "password":
-		u.Password(args[2], []byte(config.Auth.Secret))
+		if err = u.Password(args[2], []byte(config.Auth.Secret)); err != nil {
+			return errors.Wrapf(err, "setting %s password", u)
+		}
 	default:
 		return errors.Errorf("unknown property %s", args[1])
 	}
@@ -223,6 +236,7 @@ func init() {
 					used by the fever api emulation
 		- admin 		whether the user is an admin
 		- active 		whether the user is active
+		- profile 		the json profile data
 	set LOGIN PROPERTY VALUE 	sets a new value to a given property
 		- instead of a salt/hashtype/hash and md5api, a password property is used
 	list 				lists all users

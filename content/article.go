@@ -87,14 +87,14 @@ type Filter struct {
 	TagID        TagID    `json:"tagID"`
 	FeedIDs      []FeedID `json:"feedIDs"`
 	InverseFeeds bool     `json:"inverseFeeds"`
-	Term         string   `json:"term"`
-	Inverse      bool     `json:"inverse"`
-	MatchURL     bool     `json:"matchURL"`
-	MatchTitle   bool     `json:"matchTitle"`
+	URLTerm      string   `json:"urlTerm"`
+	TitleTerm    string   `json:"titleTerm"`
+	InverseURL   bool     `json:"inverseURL"`
+	InverseTitle bool     `json:"inverseTitle"`
 }
 
 func (f Filter) Valid() bool {
-	return (f.Term != "" && (f.MatchTitle || f.MatchURL)) || (f.TagID > 0 && len(f.FeedIDs) == 0)
+	return (f.URLTerm != "" || f.TitleTerm != "") && (f.TagID == 0 || len(f.FeedIDs) > 0)
 }
 
 // Paging sets the article query paging optons.

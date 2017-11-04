@@ -4,12 +4,21 @@
 </p>
 <div *ngFor="let filter of filters" class="filter">
     <div class="info">
-        <span *ngIf="!filter.inverse" i18n>Matches</span>
-        <span *ngIf="filter.inverse" i18n>Does not match</span>
-        <span class="term">{{ filter.term }}</span>
-        <span class="match-url" *ngIf="filter.matchURL" i18n>by URL</span>
-        <span class="url-and-title" *ngIf="filter.matchURL && filter.matchTitle" i18n>and</span>
-        <span class="match-title" *ngIf="filter.matchTitle" i18n>by title</span>
+        <span *ngIf="filter.urlTerm">
+            <span *ngIf="!filter.inverseURL" i18n>Matches</span>
+            <span *ngIf="filter.inverseURL" i18n>Does not match</span>
+            <span class="term">{{ filter.urlTerm }}</span>
+            <span class="match-url" i18n>by URL</span>
+        </span>
+        <span class="url-and-title" *ngIf="filter.urlTerm && filter.titleTerm">
+            and
+        </span>
+        <span *ngIf="filter.titleTerm">
+            <span *ngIf="!filter.inverseTitle" i18n>Matches</span>
+            <span *ngIf="filter.inverseTitle" i18n>Does not match</span>
+            <span class="term">{{ filter.titleTerm }}</span>
+            <span class="match-title" i18n>by title</span>
+        </span>
         <span class="match-tag" *ngIf="filter.inverseFeeds && filter.tagID" i18n>excluding tag:</span>
         <span class="match-feeds" *ngIf="filter.inverseFeeds && filter.feedIDs && !filter.tagID" i18n>excluding feeds:</span>
         <span class="match-tag" *ngIf="filter.tagID" i18n>on tag:</span>

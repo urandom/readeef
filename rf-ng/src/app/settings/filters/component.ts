@@ -9,10 +9,10 @@ import { Observable } from "rxjs";
 import 'rxjs/add/operator/combineLatest'
 
 interface Filter {
-    term: string,
-    inverse?: boolean,
-    matchURL?: boolean,
-    matchTitle?: boolean,
+    urlTerm?: string,
+    inverseURL?: boolean,
+    titleTerm?: string,
+    inverseTitle?: boolean,
     tagID?: number,
     feedIDs?: number[],
     inverseFeeds?: boolean,
@@ -79,10 +79,10 @@ export class FiltersSettingsComponent implements OnInit {
             let filters = (profile["filters"] || []) as Filter[];
 
             let filtered = filters.filter(f =>
-                f.term != filter.term ||
-                f.inverse != filter.inverse ||
-                f.matchURL != filter.matchURL ||
-                f.matchTitle != filter.matchTitle ||
+                f.urlTerm != filter.urlTerm ||
+                f.inverseURL != filter.inverseURL ||
+                f.titleTerm != filter.titleTerm ||
+                f.inverseTitle != filter.inverseTitle ||
                 f.tagID != filter.tagID ||
                 f.feedIDs != filter.feedIDs ||
                 f.inverseFeeds != filter.inverseFeeds
@@ -127,10 +127,10 @@ export class NewFilterDialog {
         formBuilder: FormBuilder,
     ) {
         this.form = formBuilder.group({
-            term: ['', Validators.required],
-            inverse: [false],
-            matchURL: [true],
-            matchTitle: [false],
+            urlTerm: [''],
+            titleTerm: [''],
+            inverseURL: [false],
+            inverseTitle: [false],
             useFeeds: [true],
             feeds: [[] as number[]],
             tag: [],
@@ -138,8 +138,8 @@ export class NewFilterDialog {
         }, {
             validator: (control: FormGroup) : ValidationErrors | null => {
                 if (
-                    !control.controls.matchURL.value &&
-                    !control.controls.matchTitle.value) {
+                    !control.controls.urlTerm.value &&
+                    !control.controls.titleTerm.value) {
                     return {"nomatch": true};
                 }
                 return null;
@@ -159,13 +159,12 @@ export class NewFilterDialog {
 
         this.userService.getCurrentUser().flatMap(user => {
             let filter : Filter = {
-                term: value.term,
+                urlTerm: value.urlTerm,
+                inverseURL: value.inverseURL,
+                titleTerm: value.titleTerm,
+                inverseTitle: value.inverseTitle,
+                inverseFeeds: value.inverseFeeds,
             }
-
-            filter.inverse = value.inverse;
-            filter.matchTitle = value.matchTitle;
-            filter.matchURL = value.matchURL;
-            filter.inverseFeeds = value.inverseFeeds;
 
             if (value.useFeeds) {
                 if (value.feeds && value.feeds.length > 0) {

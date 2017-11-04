@@ -18,4 +18,5 @@ build-devel-watch:
 	ng build -op ui/en --base-href /en/ --watch
 
 xi18n:
-	ng xi18n --locale en
+	ng xi18n --locale en --outputPath ./src/locale
+	xliffmerge --profile xliffmerge.json en bg
