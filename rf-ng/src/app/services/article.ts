@@ -180,8 +180,8 @@ export class ArticleService {
             route => route != null
         ).map(
             route => this.nameToSource(route.data, route.params),
-        ).filter(source =>
-            source != null
+        ).filter(
+            source => source != null
         ).distinctUntilKeyChanged("url");
 
         let feedsTagsObservable = this.tokenService.tokenObservable(
@@ -521,7 +521,9 @@ export class ArticleService {
             }
         }
 
-        return res.catch(err => Observable.of(null));
+        return res.catch(err => {
+            return Observable.of(null);
+        });
     }
 
     private buildURL(base: string, options?: QueryOptions) : string {

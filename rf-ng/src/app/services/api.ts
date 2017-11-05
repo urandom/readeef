@@ -1,14 +1,18 @@
 import { Injectable } from '@angular/core'
 import { Location } from '@angular/common'
-import { Http, Headers, Response } from '@angular/http'
+import { Http, Headers, Response, ResponseType } from '@angular/http'
 import { Router } from '@angular/router';
 import { environment } from "../../environments/environment"
 import { Observable } from "rxjs/Observable";
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/operator/catch';
+import 'rxjs/add/operator/retryWhen';
+import 'rxjs/add/operator/zip';
 import 'rxjs/add/observable/empty';
+import 'rxjs/add/observable/range';
 import 'rxjs/add/observable/of';
+import 'rxjs/add/observable/timer';
 
 export class Serializable {
     fromJSON(json) {
@@ -31,7 +35,8 @@ export class APIService {
             { headers: authHeaders(headers) }
         )
             .map(checkRequestForToken)
-            .catch(unathorizeHandler(this.router));
+            .catch(unathorizeHandler(this.router))
+            .retryWhen(errorRetry());
     }
 
     post(endpoint: string, body?: any, headers?: Headers) {
@@ -41,7 +46,8 @@ export class APIService {
             { headers: authHeaders(headers) }
         )
             .map(checkRequestForToken)
-            .catch(unathorizeHandler(this.router));
+            .catch(unathorizeHandler(this.router))
+            .retryWhen(errorRetry());
     }
 
     delete(endpoint: string, headers?: Headers) {
@@ -50,7 +56,8 @@ export class APIService {
             { headers: authHeaders(headers) }
         )
             .map(checkRequestForToken)
-            .catch(unathorizeHandler(this.router));
+            .catch(unathorizeHandler(this.router))
+            .retryWhen(errorRetry());
     }
 
     put(endpoint: string, body: any, headers?: Headers) {
@@ -60,7 +67,8 @@ export class APIService {
             { headers: authHeaders(headers) }
         )
             .map(checkRequestForToken)
-            .catch(unathorizeHandler(this.router));
+            .catch(unathorizeHandler(this.router))
+            .retryWhen(errorRetry());
     }
 }
 
@@ -74,9 +82,23 @@ export function unathorizeHandler(router: Router) : (response: Response) => Obse
                 return Observable.empty<Response>();
             }
 
+            if (response.type == ResponseType.Error) {
+                throw response;
+            }
+
             return Observable.of(response);
         })
     }
+}
+
+function errorRetry() : (errors: Observable<Response>) => Observable<any> {
+    return errors => Observable.range(1, 10).zip(errors, (i, err) => {
+        if (i == 10) {
+            throw err;
+        }
+
+        return i;
+    }).flatMap(i => Observable.timer(i * 1000));
 }
 
 let absEndpoint = function (endpoint: string): string {
