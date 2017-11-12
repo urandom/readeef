@@ -123,9 +123,10 @@ func setFeedTags(repo repo.Feed, log log.Log) http.HandlerFunc {
 			return
 		}
 
+		tagStrings := r.Form["tag"]
 		var tagValues []content.TagValue
-		if stop := readJSON(w, r.Body, &tagValues); stop {
-			return
+		for _, t := range tagStrings {
+			tagValues = append(tagValues, content.TagValue(t))
 		}
 
 		tags := make([]*content.Tag, 0, len(tagValues))

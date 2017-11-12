@@ -72,10 +72,6 @@ func listFeeds(repo repo.Feed, log log.Log) http.HandlerFunc {
 	}
 }
 
-type addFeedData struct {
-	Links []string `json:"links"`
-}
-
 type addFeedError struct {
 	Link    string `json:"link"`
 	Title   string `json:"title"`
@@ -98,14 +94,11 @@ func addFeed(repo repo.Feed, feedManager feedManager) http.HandlerFunc {
 			return
 		}
 
-		data := addFeedData{}
-		if stop = readJSON(w, r.Body, &data); stop {
-			return
-		}
+		links := r.Form["link"]
 
-		errs := make([]error, 0, len(data.Links))
+		errs := make([]error, 0, len(links))
 		feeds := map[string]content.Feed{}
-		for _, link := range data.Links {
+		for _, link := range links {
 			feed, err := addFeedByURL(link, user, repo, feedManager)
 			if err == nil {
 				feeds[link] = feed
@@ -114,7 +107,7 @@ func addFeed(repo repo.Feed, feedManager feedManager) http.HandlerFunc {
 			}
 		}
 
-		args{"errors": errs, "feedIDs": feeds, "success": len(errs) < len(data.Links)}.WriteJSON(w)
+		args{"errors": errs, "feedIDs": feeds, "success": len(errs) < len(links)}.WriteJSON(w)
 	}
 }
 

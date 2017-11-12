@@ -57,7 +57,13 @@ export class FeedService {
     }
 
     importOPML(data: OPMLimport): Observable<Feed[]> {
-        return this.api.post("opml", JSON.stringify(data)).map(response =>
+        var body = new FormData();
+        body.append("opml", data.opml);
+        if (data.dryRun) {
+            body.append("dryRun", "true");
+        }
+
+        return this.api.post("opml", body).map(response =>
              new FeedsResponse().fromJSON(response.json()).feeds
         );
     }
@@ -69,8 +75,10 @@ export class FeedService {
     }
 
     addFeeds(links: string[]) : Observable<AddFeedResponse> {
-        let data : AddFeedData = {links: links}
-        return this.api.post("feed", JSON.stringify(data)).map(response =>
+        var body = new FormData();
+        links.forEach(link => body.append("link", link));
+
+        return this.api.post("feed", body).map(response =>
             new AddFeedResponse().fromJSON(response.json())
         )
     }
@@ -82,7 +90,10 @@ export class FeedService {
     }
 
     updateTags(id: number, tags: string[]) : Observable<boolean> {
-        return this.api.put(`feed/${id}/tags`, JSON.stringify(tags)).map(response =>
+        var body = new FormData();
+        tags.forEach(tag => body.append("tag", tag));
+
+        return this.api.put(`feed/${id}/tags`, body).map(response =>
             !!response.json()["success"]
         )
     }

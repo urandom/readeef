@@ -102,9 +102,9 @@ export class NewUserDialog {
 
         let formModel = this.form.value;
 
-        this.userService.addUser({
-            login: formModel.login, password: formModel.password
-        }).subscribe(
+        this.userService.addUser(
+            formModel.login, formModel.password,
+        ).subscribe(
             success => {
                 if (success) {
                     this.close();

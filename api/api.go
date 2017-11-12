@@ -2,13 +2,11 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -215,6 +213,21 @@ func userMiddleware(repo repo.User, storage token.Storage, secret []byte, log lo
 		func(next http.Handler) http.Handler {
 			return userContext(repo, next, log)
 		},
+		func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var err error
+				if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+					err = r.ParseMultipartForm(0)
+				} else {
+					err = r.ParseForm()
+				}
+				if err != nil {
+					http.Error(w, "Error parsing form data", http.StatusBadRequest)
+					return
+				}
+				next.ServeHTTP(w, r)
+			})
+		},
 		userValidator,
 	}
 }
@@ -291,6 +304,7 @@ func articlesRoutes(
 		}
 
 		r.Post("/read", articlesReadStateChange(service, userRepoType, config.API.Limits.ArticlesPerQuery, log))
+		r.Delete("/read", articlesReadStateChange(service, userRepoType, config.API.Limits.ArticlesPerQuery, log))
 
 		r.Route("/{articleID:[0-9]+}", func(r chi.Router) {
 			r.Use(articleContext(articleRepo, processors, log))
@@ -309,6 +323,7 @@ func articlesRoutes(
 			r.Get("/", getArticles(service, favoriteRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
 			r.Post("/read", articlesReadStateChange(service, favoriteRepoType, config.API.Limits.ArticlesPerQuery, log))
+			r.Delete("/read", articlesReadStateChange(service, favoriteRepoType, config.API.Limits.ArticlesPerQuery, log))
 		})
 
 		r.Route("/popular", func(r chi.Router) {
@@ -325,6 +340,7 @@ func articlesRoutes(
 			r.Get("/", getArticles(service, feedRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
 			r.Post("/read", articlesReadStateChange(service, feedRepoType, config.API.Limits.ArticlesPerQuery, log))
+			r.Delete("/read", articlesReadStateChange(service, feedRepoType, config.API.Limits.ArticlesPerQuery, log))
 		})
 
 		r.Route("/tag/{tagID:[0-9]+}", func(r chi.Router) {
@@ -333,6 +349,7 @@ func articlesRoutes(
 			r.Get("/", getArticles(service, tagRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
 			r.Post("/read", articlesReadStateChange(service, tagRepoType, config.API.Limits.ArticlesPerQuery, log))
+			r.Delete("/read", articlesReadStateChange(service, tagRepoType, config.API.Limits.ArticlesPerQuery, log))
 		})
 
 	}}
@@ -384,20 +401,6 @@ func userRoutes(service repo.Service, secret []byte, log log.Log, gzip, access m
 			r.Put("/{name}/settings/{key}", setSettingValue(repo, secret, log))
 		})
 	}}
-}
-
-func readJSON(w http.ResponseWriter, r io.Reader, data interface{}) (stop bool) {
-	if b, err := ioutil.ReadAll(r); err == nil {
-		if err = json.Unmarshal(b, data); err != nil {
-			http.Error(w, "Error decoding JSON request: "+err.Error(), http.StatusBadRequest)
-			return true
-		}
-	} else {
-		http.Error(w, "Error reading request body: "+err.Error(), http.StatusInternalServerError)
-		return true
-	}
-
-	return false
 }
 
 func fatal(w http.ResponseWriter, log log.Log, format string, err error) {

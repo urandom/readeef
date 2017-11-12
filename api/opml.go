@@ -12,23 +12,16 @@ import (
 	"github.com/urandom/readeef/parser"
 )
 
-type importOPMLData struct {
-	OPML   string `json:"opml"`
-	DryRun bool   `json:"dryRun"`
-}
-
 func importOPML(
 	repo repo.Feed,
 	feedManager *readeef.FeedManager,
 	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var payload importOPMLData
-		if stop := readJSON(w, r.Body, &payload); stop {
-			return
-		}
+		opmlData := r.Form.Get("opml")
+		_, dryRun := r.Form["dryRun"]
 
-		opml, err := parser.ParseOpml([]byte(payload.OPML))
+		opml, err := parser.ParseOpml([]byte(opmlData))
 		if err != nil {
 			http.Error(w, "Error parsing OPML: "+err.Error(), http.StatusBadRequest)
 			return
@@ -70,7 +63,7 @@ func importOPML(
 						f.Link += "#" + strings.Join(opmlFeed.Tags, ",")
 					}
 
-					if payload.DryRun {
+					if dryRun {
 						feeds = append(feeds, f)
 					} else {
 						if feed, err := addFeedByURL(f.Link, user, repo, feedManager); err == nil {

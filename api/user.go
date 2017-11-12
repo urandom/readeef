@@ -35,16 +35,6 @@ func listUsers(repo repo.User, log log.Log) http.HandlerFunc {
 	}
 }
 
-type addUserData struct {
-	Login     content.Login `json:"login"`
-	FirstName string        `json:"firstName"`
-	LastName  string        `json:"lastName"`
-	Email     string        `json:"email"`
-	Admin     bool          `json:"admin"`
-	Active    bool          `json:"active"`
-	Password  string        `json:"password"`
-}
-
 func addUser(repo repo.User, secret []byte, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, stop := userFromRequest(w, r)
@@ -52,12 +42,9 @@ func addUser(repo repo.User, secret []byte, log log.Log) http.HandlerFunc {
 			return
 		}
 
-		var userData addUserData
-		if stop := readJSON(w, r.Body, &userData); stop {
-			return
-		}
+		login := content.Login(r.Form.Get("login"))
 
-		u, err := repo.Get(userData.Login)
+		u, err := repo.Get(login)
 		if err == nil {
 			http.Error(w, "User exists", http.StatusConflict)
 			return
@@ -67,15 +54,21 @@ func addUser(repo repo.User, secret []byte, log log.Log) http.HandlerFunc {
 		}
 
 		u = content.User{
-			Login:     userData.Login,
-			FirstName: userData.FirstName,
-			LastName:  userData.LastName,
-			Email:     userData.Email,
-			Admin:     userData.Admin,
-			Active:    userData.Active,
+			Login:     login,
+			FirstName: r.Form.Get("firstName"),
+			LastName:  r.Form.Get("lastName"),
+			Email:     r.Form.Get("email"),
 		}
 
-		if err = u.Password(userData.Password, secret); err != nil {
+		if _, ok := r.Form["admin"]; ok {
+			u.Admin = true
+		}
+
+		if _, ok := r.Form["active"]; ok {
+			u.Active = true
+		}
+
+		if err = u.Password(r.Form.Get("password"), secret); err != nil {
 			fatal(w, log, "Error setting user password: %+v", err)
 			return
 		}

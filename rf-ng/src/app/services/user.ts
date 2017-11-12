@@ -83,8 +83,12 @@ export class UserService {
         );
     }
 
-    addUser(data: AddUser) : Observable<boolean> {
-        return this.api.post("user", JSON.stringify(data)).map(
+    addUser(login: string, password: string) : Observable<boolean> {
+        var body = new FormData();
+        body.append("login", login);
+        body.append("password", password);
+
+        return this.api.post("user", body).map(
             response => !!response.json()["success"]
         );
     }

@@ -255,13 +255,6 @@ const (
 	favorite
 )
 
-type articleStateEvent struct {
-	user  content.User
-	State string              `json:"state"`
-	IDs   []content.ArticleID `json:"ids"`
-	Value bool                `json:"value"`
-}
-
 func articleStateChange(
 	repo repo.Article,
 	state articleState,
@@ -326,10 +319,7 @@ func articlesReadStateChange(
 			return
 		}
 
-		var value bool
-		if stop = readJSON(w, r.Body, &value); stop {
-			return
-		}
+		value := r.Method == http.MethodPost
 
 		o, stop := articleQueryOptions(w, r, articlesLimit)
 		if stop {
@@ -377,7 +367,7 @@ func articlesReadStateChange(
 func articleQueryOptions(w http.ResponseWriter, r *http.Request, articlesLimit int) ([]content.QueryOpt, bool) {
 	o := []content.QueryOpt{}
 
-	query := r.URL.Query()
+	query := r.Form
 
 	var err error
 	var limit, offset int
