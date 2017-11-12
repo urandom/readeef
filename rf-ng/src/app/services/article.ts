@@ -442,7 +442,7 @@ export class ArticleService {
         ).map(
             source => "article" + source.url + "/read"
         ).flatMap(
-            url => this.api.post(url, JSON.stringify(true))
+            url => this.api.post(url)
         ).map(response =>
             new ArticleStateResponse().fromJSON(response.json()).success
         ).subscribe(

@@ -303,8 +303,8 @@ func articlesRoutes(
 			})
 		}
 
-		r.Post("/read", articlesReadStateChange(service, userRepoType, config.API.Limits.ArticlesPerQuery, log))
-		r.Delete("/read", articlesReadStateChange(service, userRepoType, config.API.Limits.ArticlesPerQuery, log))
+		r.Post("/read", articlesReadStateChange(service, userRepoType, log))
+		r.Delete("/read", articlesReadStateChange(service, userRepoType, log))
 
 		r.Route("/{articleID:[0-9]+}", func(r chi.Router) {
 			r.Use(articleContext(articleRepo, processors, log))
@@ -322,8 +322,8 @@ func articlesRoutes(
 		r.Route("/favorite", func(r chi.Router) {
 			r.Get("/", getArticles(service, favoriteRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
-			r.Post("/read", articlesReadStateChange(service, favoriteRepoType, config.API.Limits.ArticlesPerQuery, log))
-			r.Delete("/read", articlesReadStateChange(service, favoriteRepoType, config.API.Limits.ArticlesPerQuery, log))
+			r.Post("/read", articlesReadStateChange(service, favoriteRepoType, log))
+			r.Delete("/read", articlesReadStateChange(service, favoriteRepoType, log))
 		})
 
 		r.Route("/popular", func(r chi.Router) {
@@ -339,8 +339,8 @@ func articlesRoutes(
 
 			r.Get("/", getArticles(service, feedRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
-			r.Post("/read", articlesReadStateChange(service, feedRepoType, config.API.Limits.ArticlesPerQuery, log))
-			r.Delete("/read", articlesReadStateChange(service, feedRepoType, config.API.Limits.ArticlesPerQuery, log))
+			r.Post("/read", articlesReadStateChange(service, feedRepoType, log))
+			r.Delete("/read", articlesReadStateChange(service, feedRepoType, log))
 		})
 
 		r.Route("/tag/{tagID:[0-9]+}", func(r chi.Router) {
@@ -348,8 +348,8 @@ func articlesRoutes(
 
 			r.Get("/", getArticles(service, tagRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
-			r.Post("/read", articlesReadStateChange(service, tagRepoType, config.API.Limits.ArticlesPerQuery, log))
-			r.Delete("/read", articlesReadStateChange(service, tagRepoType, config.API.Limits.ArticlesPerQuery, log))
+			r.Post("/read", articlesReadStateChange(service, tagRepoType, log))
+			r.Delete("/read", articlesReadStateChange(service, tagRepoType, log))
 		})
 
 	}}

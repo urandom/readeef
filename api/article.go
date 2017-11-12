@@ -307,7 +307,6 @@ func articleStateChange(
 func articlesReadStateChange(
 	service repo.Service,
 	repoType articleRepoType,
-	articlesLimit int,
 	log log.Log,
 ) http.HandlerFunc {
 	articleRepo := service.ArticleRepo()
@@ -321,7 +320,7 @@ func articlesReadStateChange(
 
 		value := r.Method == http.MethodPost
 
-		o, stop := articleQueryOptions(w, r, articlesLimit)
+		o, stop := articleQueryOptions(w, r, 0)
 		if stop {
 			return
 		}
@@ -387,7 +386,7 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request, articlesLimit i
 		}
 	}
 
-	if limit == 0 || limit > articlesLimit {
+	if articlesLimit > 0 && (limit == 0 || limit > articlesLimit) {
 		limit = articlesLimit
 	}
 
