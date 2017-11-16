@@ -1,6 +1,9 @@
 package parser
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+	"strings"
+)
 
 type Opml struct {
 	Feeds []OpmlFeed
@@ -51,7 +54,7 @@ func ParseOpml(content []byte) (Opml, error) {
 	return opml, nil
 }
 
-func processOutline(opml *Opml, outlines []OpmlOutline, tag string) {
+func processOutline(opml *Opml, outlines []OpmlOutline, text string) {
 	for _, outline := range outlines {
 		if len(outline.Outline) == 0 {
 			feed := OpmlFeed{Title: outline.Text}
@@ -60,7 +63,22 @@ func processOutline(opml *Opml, outlines []OpmlOutline, tag string) {
 			} else {
 				feed.URL = outline.URL
 			}
-			if tag != "" {
+
+			tagSet := map[string]struct{}{}
+			if text == "" {
+				if outline.Category != "" {
+					for _, tag := range strings.Split(outline.Category, ",") {
+						tagSet[strings.TrimSpace(tag)] = struct{}{}
+					}
+				}
+			} else {
+				for _, tag := range strings.Split(text, ",") {
+					tagSet[strings.TrimSpace(tag)] = struct{}{}
+				}
+			}
+
+			feed.Tags = make([]string, 0, len(tagSet))
+			for tag := range tagSet {
 				feed.Tags = append(feed.Tags, tag)
 			}
 			opml.Feeds = append(opml.Feeds, feed)

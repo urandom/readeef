@@ -1,14 +1,132 @@
 package parser
 
 import (
-	"strings"
+	"reflect"
 	"testing"
 	"time"
 )
 
-var rss1Xml = `
-<?xml version="1.0"?>
+func TestParseRss1(t *testing.T) {
+	tests := []struct {
+		name    string
+		b       []byte
+		want    Feed
+		wantErr bool
+	}{
+		{"single", []byte(singleRss1XML), singleRss1Feed, false},
+		{"single date", []byte(singleDateRss1XML), singleRss1Feed, false},
+		{"single no date", []byte(singleNoDateRss1XML), singleNoDateRss1Feed, false},
+		{"multi last no date", []byte(multiLastNoDateRss1XML), multiLastNoDateRss1Feed, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRss1(tt.b)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseRss1() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ParseRss1() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
 
+var (
+	singleRss1Feed = Feed{
+		Title:    "XML.com",
+		SiteLink: "http://xml.com/pub",
+		Description: `
+      XML.com features a rich mix of information and services 
+      for the XML community.
+    `,
+		Image: Image{
+			Title: "XML.com",
+			Url:   "http://xml.com/universal/images/xml_tiny.gif",
+		},
+		TTL:       30 * time.Minute,
+		SkipHours: map[int]bool{3: true, 15: true, 23: true},
+		SkipDays:  map[string]bool{"Monday": true, "Saturday": true},
+		Articles: []Article{
+			{
+				Title: "Title 1",
+				Link:  "http://xml.com/link1.html",
+				Guid:  "http://xml.com/id1.html",
+				Description: `
+	Descr 1
+	`,
+				Date: time.Date(2003, time.June, 3, 9, 39, 21, 0, gmt),
+			},
+		},
+	}
+
+	singleNoDateRss1Feed = Feed{
+		Title:    "XML.com",
+		SiteLink: "http://xml.com/pub",
+		Description: `
+      XML.com features a rich mix of information and services 
+      for the XML community.
+    `,
+		Image: Image{
+			Title: "XML.com",
+			Url:   "http://xml.com/universal/images/xml_tiny.gif",
+		},
+		TTL:       30 * time.Minute,
+		SkipHours: map[int]bool{3: true, 15: true, 23: true},
+		SkipDays:  map[string]bool{"Monday": true, "Saturday": true},
+		Articles: []Article{
+			{
+				Title: "Title 1",
+				Link:  "http://xml.com/link1.html",
+				Guid:  "http://xml.com/id1.html",
+				Description: `
+	Descr 1
+	`,
+				Date: time.Unix(0, 0),
+			},
+		},
+	}
+
+	multiLastNoDateRss1Feed = Feed{
+		Title:    "XML.com",
+		SiteLink: "http://xml.com/pub",
+		Description: `
+      XML.com features a rich mix of information and services 
+      for the XML community.
+    `,
+		Image: Image{
+			Title: "XML.com",
+			Url:   "http://xml.com/universal/images/xml_tiny.gif",
+		},
+		TTL:       30 * time.Minute,
+		SkipHours: map[int]bool{3: true, 15: true, 23: true},
+		SkipDays:  map[string]bool{"Monday": true, "Saturday": true},
+		Articles: []Article{
+			{
+				Title: "Title 1",
+				Link:  "http://xml.com/link1.html",
+				Guid:  "http://xml.com/id1.html",
+				Description: `
+	Descr 1
+	`,
+				Date: time.Date(2003, time.June, 3, 9, 39, 21, 0, gmt),
+			},
+			{
+				Title: "Title 2",
+				Link:  "http://xml.com/link2.html",
+				Guid:  "http://xml.com/id2.html",
+				Description: `
+	Descr 2
+	`,
+				Date: time.Date(2003, time.June, 3, 9, 39, 22, 0, gmt),
+			},
+		},
+	}
+)
+
+const (
+	singleRss1XML = `
+<?xml version="1.0"?>
 <rdf:RDF 
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   xmlns="http://purl.org/rss/1.0/"
@@ -51,26 +169,127 @@ var rss1Xml = `
     <url>http://xml.com/universal/images/xml_tiny.gif</url>
   </image>
   
-  <item rdf:about="http://xml.com/pub/2000/08/09/xslt/xslt.html">
-    <title>Processing Inclusions with XSLT</title>
-    <link>http://xml.com/pub/2000/08/09/xslt/xslt.html</link>
+  <item rdf:about="http://xml.com/id1.html">
+    <title>Title 1</title>
+    <link>http://xml.com/link1.html</link>
     <description>
-     Processing document inclusions with general XML tools can be 
-     problematic. This article proposes a way of preserving inclusion 
-     information through SAX-based processing.
-    </description>
+	Descr 1
+	</description>
+    <pubDate>Tue, 03 Jun 2003 09:39:21 GMT</pubDate>
   </item>
   
-  <item rdf:about="http://xml.com/pub/2000/08/09/rdfdb/index.html">
-    <title>Putting RDF to Work</title>
-    <link>http://xml.com/pub/2000/08/09/rdfdb/index.html</link>
-    <description>
-     Tool and API support for the Resource Description Framework 
-     is slowly coming of age. Edd Dumbill takes a look at RDFDB, 
-     one of the most exciting new RDF toolkits.
-    </description>
-  </item>
+  <textinput rdf:about="http://search.xml.com">
+    <title>Search XML.com</title>
+    <description>Search XML.com's XML collection</description>
+    <name>s</name>
+    <link>http://search.xml.com</link>
+  </textinput>
 
+</rdf:RDF>
+`
+	singleDateRss1XML = `
+<?xml version="1.0"?>
+<rdf:RDF 
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns="http://purl.org/rss/1.0/"
+>
+
+  <channel rdf:about="http://www.xml.com/xml/news.rss">
+    <title>XML.com</title>
+    <link>http://xml.com/pub</link>
+    <description>
+      XML.com features a rich mix of information and services 
+      for the XML community.
+    </description>
+	<ttl>30</ttl>
+	<skipHours>
+		<hour>3</hour>
+		<hour>15</hour>
+		<hour>23</hour>
+	</skipHours>
+	<skipDays>
+		<day>Monday</day>
+		<day>Saturday</day>
+	</skipDays>
+
+	<image rdf:about="http://xml.com/universal/images/xml_tiny.gif">
+	  <title>XML.com</title>
+	  <link>http://www.xml.com</link>
+	  <url>http://xml.com/universal/images/xml_tiny.gif</url>
+	</image>
+  
+    <items>
+      <rdf:Seq>
+        <rdf:li resource="http://xml.com/pub/2000/08/09/xslt/xslt.html" />
+        <rdf:li resource="http://xml.com/pub/2000/08/09/rdfdb/index.html" />
+      </rdf:Seq>
+    </items>
+
+    <textinput rdf:resource="http://search.xml.com" />
+
+  </channel>
+  
+  <item rdf:about="http://xml.com/id1.html">
+    <title>Title 1</title>
+    <link>http://xml.com/link1.html</link>
+    <description>
+	Descr 1
+	</description>
+    <date>Tue, 03 Jun 2003 09:39:21 GMT</date>
+  </item>
+</rdf:RDF>
+`
+
+	singleNoDateRss1XML = `
+<?xml version="1.0"?>
+<rdf:RDF 
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns="http://purl.org/rss/1.0/"
+>
+
+  <channel rdf:about="http://www.xml.com/xml/news.rss">
+    <title>XML.com</title>
+    <link>http://xml.com/pub</link>
+    <description>
+      XML.com features a rich mix of information and services 
+      for the XML community.
+    </description>
+	<ttl>30</ttl>
+	<skipHours>
+		<hour>3</hour>
+		<hour>15</hour>
+		<hour>23</hour>
+	</skipHours>
+	<skipDays>
+		<day>Monday</day>
+		<day>Saturday</day>
+	</skipDays>
+
+	<image rdf:about="http://xml.com/universal/images/xml_tiny.gif">
+	  <title>XML.com</title>
+	  <link>http://www.xml.com</link>
+	  <url>http://xml.com/universal/images/xml_tiny.gif</url>
+	</image>
+  
+    <items>
+      <rdf:Seq>
+        <rdf:li resource="http://xml.com/pub/2000/08/09/xslt/xslt.html" />
+        <rdf:li resource="http://xml.com/pub/2000/08/09/rdfdb/index.html" />
+      </rdf:Seq>
+    </items>
+
+    <textinput rdf:resource="http://search.xml.com" />
+
+  </channel>
+  
+  <item rdf:about="http://xml.com/id1.html">
+    <title>Title 1</title>
+    <link>http://xml.com/link1.html</link>
+    <description>
+	Descr 1
+	</description>
+  </item>
+  
   <textinput rdf:about="http://search.xml.com">
     <title>Search XML.com</title>
     <description>Search XML.com's XML collection</description>
@@ -81,89 +300,65 @@ var rss1Xml = `
 </rdf:RDF>
 `
 
-func TestRss1Parse(t *testing.T) {
-	f, err := ParseRss1([]byte(""))
-	if err == nil {
-		t.Fatalf("Expected an error, got none, feed: '%v'\n", f)
-	}
+	multiLastNoDateRss1XML = `
+<?xml version="1.0"?>
+<rdf:RDF 
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns="http://purl.org/rss/1.0/"
+>
 
-	f, err = ParseRss1([]byte(rss1Xml))
-	if err != nil {
-		t.Fatal(err)
-	}
+  <channel rdf:about="http://www.xml.com/xml/news.rss">
+    <title>XML.com</title>
+    <link>http://xml.com/pub</link>
+    <description>
+      XML.com features a rich mix of information and services 
+      for the XML community.
+    </description>
+	<ttl>30</ttl>
+	<skipHours>
+		<hour>3</hour>
+		<hour>15</hour>
+		<hour>23</hour>
+	</skipHours>
+	<skipDays>
+		<day>Monday</day>
+		<day>Saturday</day>
+	</skipDays>
 
-	if f.Title != "XML.com" {
-		t.Fatalf("Unexpected feed title: '%s'\n", f.Title)
-	}
+	<image rdf:about="http://xml.com/universal/images/xml_tiny.gif">
+	  <title>XML.com</title>
+	  <link>http://www.xml.com</link>
+	  <url>http://xml.com/universal/images/xml_tiny.gif</url>
+	</image>
+  
+    <items>
+      <rdf:Seq>
+        <rdf:li resource="http://xml.com/pub/2000/08/09/xslt/xslt.html" />
+        <rdf:li resource="http://xml.com/pub/2000/08/09/rdfdb/index.html" />
+      </rdf:Seq>
+    </items>
 
-	descr := `XML.com features a rich mix of information and services 
-      for the XML community.`
-	if strings.TrimSpace(f.Description) != descr {
-		t.Fatalf("Unexpected feed description: '%s'\n", strings.TrimSpace(f.Description))
-	}
+    <textinput rdf:resource="http://search.xml.com" />
 
-	if f.SiteLink != "http://xml.com/pub" {
-		t.Fatalf("Unexpected feed link: '%s'\n", f.SiteLink)
-	}
+  </channel>
+  
+  <item rdf:about="http://xml.com/id1.html">
+    <title>Title 1</title>
+    <link>http://xml.com/link1.html</link>
+    <description>
+	Descr 1
+	</description>
+    <date>Tue, 03 Jun 2003 09:39:21 GMT</date>
+  </item>
 
-	if f.HubLink != "" {
-		t.Fatalf("Unexpected feed hub link: '%s'\n", f.HubLink)
-	}
+  <item rdf:about="http://xml.com/id2.html">
+    <title>Title 2</title>
+    <link>http://xml.com/link2.html</link>
+    <description>
+	Descr 2
+	</description>
+  </item>
 
-	if f.Image != (Image{"XML.com", "http://xml.com/universal/images/xml_tiny.gif", 0, 0}) {
-		t.Fatalf("Unexpected feed image: '%v'\n", f.Image)
-	}
-
-	if 2 != len(f.Articles) {
-		t.Fatalf("Unexpected number of feed articles: '%d'\n", len(f.Articles))
-	}
-
-	a := f.Articles[0]
-	expectedStr := "http://xml.com/pub/2000/08/09/xslt/xslt.html"
-	if a.Guid != expectedStr {
-		t.Fatalf("Expected %s as id, got '%s'\n", expectedStr, a.Guid)
-	}
-
-	if a.Title != "Processing Inclusions with XSLT" {
-		t.Fatalf("Unexpected article title: '%v'\n", a.Title)
-	}
-
-	if !strings.Contains(a.Description, `Processing document inclusions with general XML tools can be `) {
-		t.Fatalf("Unexpected article description: '%v'\n", a.Description)
-	}
-
-	if a.Link != "http://xml.com/pub/2000/08/09/xslt/xslt.html" {
-		t.Fatalf("Unexpected article link: '%v'\n", a.Link)
-	}
-
-	if !a.Date.Equal(unknownTime) {
-		t.Fatalf("Unexpected article date: '%s'\n", a.Date)
-	}
-
-	expectedDuration := 30 * time.Minute
-	if f.TTL != expectedDuration {
-		t.Fatalf("Expected ttl '%d', got: %d\n", expectedDuration, f.TTL)
-	}
-
-	expectedInt := 3
-	if len(f.SkipHours) != expectedInt {
-		t.Fatalf("Expected '%d' number of skipHours, got '%d'\n", expectedInt, len(f.SkipHours))
-	}
-
-	for _, expectedInt = range []int{3, 15, 23} {
-		if !f.SkipHours[expectedInt] {
-			t.Fatalf("Expected '%d' skipHour\n", expectedInt)
-		}
-	}
-
-	expectedInt = 2
-	if len(f.SkipDays) != expectedInt {
-		t.Fatalf("Expected '%d' number of skipDays, got '%d'\n", expectedInt, len(f.SkipDays))
-	}
-
-	for _, expectedStr := range []string{"Monday", "Saturday"} {
-		if !f.SkipDays[expectedStr] {
-			t.Fatalf("Expected '%s' skipDay\n", expectedStr)
-		}
-	}
-}
+</rdf:RDF>
+`
+)
