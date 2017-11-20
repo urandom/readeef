@@ -1,4 +1,5 @@
 import { Injectable } from "@angular/core"
+import { Headers } from '@angular/http'
 import { APIService, Serializable } from "./api";
 import { Observable } from "rxjs";
 import 'rxjs/add/operator/map'
@@ -59,12 +60,20 @@ export class UserService {
         return this.user
     }
 
-    changeUserPassword(value: PasswordChange) : Observable<boolean> {
-        return this.setUserSetting("password", value)
+    changeUserPassword(updated: string, current: string) : Observable<boolean> {
+        return this.setUserSetting("password", updated, {"current": current});
     }
 
-    setUserSetting(key: string, value: any) : Observable<boolean> {
-        return this.api.put(`user/settings/${key}`, JSON.stringify(value)).map(
+    setUserSetting(key: string, value: any, extra?: {[key: string]: string}) : Observable<boolean> {
+        var data = `value=${encodeURIComponent(value)}`;
+        if (extra) {
+            for (let key in extra) {
+                data += `&${key}=${encodeURIComponent(extra[key])}`;
+            }
+        }
+        return this.api.put(`user/settings/${key}`, data, new Headers({
+            "Content-Type": "application/x-www-form-urlencoded",
+        })).map(
             response => {
                 if (response.ok) {
                     return new SettingsResponse().fromJSON(response.json()).success
@@ -100,14 +109,11 @@ export class UserService {
     }
 
     toggleActive(user: string, active: boolean) : Observable<boolean> {
+        var data = `value=${active}`
         return this.api.put(
-            `user/${user}/settings/is-active`, JSON.stringify(active)
-        ).map(response => !!response.json()["success"]);
-    }
-
-    setProfile(user: string, profile: Map<string, any>) : Observable<boolean> {
-        return this.api.put(
-            `user/${user}/settings/profile`, JSON.stringify(profile)
+            `user/${user}/settings/is-active`, data, new Headers({
+                "Content-Type": "application/x-www-form-urlencoded",
+            })
         ).map(response => !!response.json()["success"]);
     }
 }

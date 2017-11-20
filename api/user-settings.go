@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/mail"
 
@@ -71,47 +70,34 @@ func setSettingValue(repo repo.User, secret []byte, log log.Log) http.HandlerFun
 			}
 		}
 
-		b, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			fatal(w, log, "Error reading request body: %+v", err)
-			return
-		}
+		value := r.Form.Get("value")
 
+		var err error
 		switch chi.URLParam(r, "key") {
 		case firstNameSetting:
-			err = json.Unmarshal(b, &user.FirstName)
+			user.FirstName = value
 		case lastNameSetting:
-			err = json.Unmarshal(b, &user.LastName)
+			user.LastName = value
 		case emailSetting:
-			var email string
-			err = json.Unmarshal(b, &email)
-			if err == nil {
-				if _, err = mail.ParseAddress(email); err != nil {
-					log.Printf("Error parsing address %s: %v", email, err)
-					http.Error(w, "Invalid email format", http.StatusBadRequest)
-					return
-				}
-
-				user.Email = email
+			email := value
+			if _, err = mail.ParseAddress(email); err != nil {
+				log.Printf("Error parsing address %s: %v", email, err)
+				http.Error(w, "Invalid email format", http.StatusBadRequest)
+				return
 			}
-		case profileSetting:
-			err = json.Unmarshal(b, &user.ProfileData)
-		case activeSetting:
-			user.Active = string(b) == "true"
-		case passwordSetting:
-			passwd := struct {
-				Current string `json:"current"`
-				New     string `json:"new"`
-			}{}
 
-			if err = json.Unmarshal(b, &passwd); err == nil {
-				var auth bool
-				if auth, err = user.Authenticate(passwd.Current, secret); auth {
-					err = user.Password(passwd.New, secret)
-				} else {
-					http.Error(w, "Not authorized", http.StatusBadRequest)
-					return
-				}
+			user.Email = email
+		case profileSetting:
+			err = json.Unmarshal([]byte(value), &user.ProfileData)
+		case activeSetting:
+			user.Active = value == "true"
+		case passwordSetting:
+			var auth bool
+			if auth, err = user.Authenticate(r.Form.Get("current"), secret); auth {
+				err = user.Password(value, secret)
+			} else {
+				http.Error(w, "Not authorized", http.StatusBadRequest)
+				return
 			}
 		default:
 			http.Error(w, "Not found", http.StatusNotFound)

@@ -163,6 +163,7 @@ func (p *ProfileData) UnmarshalJSON(b []byte) error {
 			if err := json.Unmarshal(v, &filters); err != nil {
 				return errors.Wrapf(err, "unmarshaling filters value %s", v)
 			}
+			(*p)[k] = filters
 		default:
 			var val interface{}
 
@@ -173,8 +174,6 @@ func (p *ProfileData) UnmarshalJSON(b []byte) error {
 			(*p)[k] = val
 		}
 	}
-
-	(*p)["filters"] = filters
 
 	return nil
 }

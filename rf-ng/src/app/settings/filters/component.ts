@@ -1,4 +1,4 @@
-import { Component, OnInit, Inject, ViewChild, ElementRef } from "@angular/core" ;
+import { Component, OnInit, Inject, ViewChild, ElementRef } from "@angular/core";
 import { FormBuilder, FormGroup, Validators, ValidationErrors } from '@angular/forms';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
 import { UserService, User } from "../../services/user";
@@ -94,7 +94,7 @@ export class FiltersSettingsComponent implements OnInit {
 
             profile["filters"] = filtered;
 
-            return this.userService.setProfile(user.login, profile);
+            return this.userService.setUserSetting("profile", JSON.stringify(profile));
         }).subscribe(
             success => {
                 if (success) {
@@ -196,7 +196,7 @@ export class NewFilterDialog {
 
                 profile["filters"] = filters;
 
-                return this.userService.setProfile(user.login, profile);
+                return this.userService.setUserSetting("profile", JSON.stringify(profile));
             });
         }).subscribe(
             success => this.close(),

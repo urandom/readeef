@@ -44,7 +44,7 @@ func addUser(repo repo.User, secret []byte, log log.Log) http.HandlerFunc {
 
 		login := content.Login(r.Form.Get("login"))
 
-		u, err := repo.Get(login)
+		_, err := repo.Get(login)
 		if err == nil {
 			http.Error(w, "User exists", http.StatusConflict)
 			return
@@ -53,7 +53,7 @@ func addUser(repo repo.User, secret []byte, log log.Log) http.HandlerFunc {
 			return
 		}
 
-		u = content.User{
+		u := content.User{
 			Login:     login,
 			FirstName: r.Form.Get("firstName"),
 			LastName:  r.Form.Get("lastName"),

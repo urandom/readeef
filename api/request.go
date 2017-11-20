@@ -12,6 +12,10 @@ import (
 	"github.com/urandom/readeef/log"
 )
 
+type contextKey string
+
+var userKey = contextKey("user")
+
 func userContext(repo repo.User, next http.Handler, log log.Log) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if c, ok := auth.Claims(r).(*jwt.StandardClaims); ok {
@@ -21,13 +25,13 @@ func userContext(repo repo.User, next http.Handler, log log.Log) http.Handler {
 				if content.IsNoContent(err) {
 					http.Error(w, "Not found", http.StatusNotFound)
 					return
-				} else {
-					fatal(w, log, "Error loading user: %+v", err)
-					return
 				}
+
+				fatal(w, log, "Error loading user: %+v", err)
+				return
 			}
 
-			ctx := context.WithValue(r.Context(), "user", user)
+			ctx := context.WithValue(r.Context(), userKey, user)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
@@ -40,16 +44,16 @@ func userValidator(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, stop := userFromRequest(w, r); stop {
 			return
-		} else {
-			next.ServeHTTP(w, r)
 		}
+
+		next.ServeHTTP(w, r)
 
 	})
 }
 
 func userFromRequest(w http.ResponseWriter, r *http.Request) (user content.User, stop bool) {
 	var ok bool
-	if user, ok = r.Context().Value("user").(content.User); ok {
+	if user, ok = r.Context().Value(userKey).(content.User); ok {
 		return user, false
 	}
 

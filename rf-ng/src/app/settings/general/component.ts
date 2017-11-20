@@ -112,7 +112,7 @@ export class PasswordDialog {
         }
 
         this.userService.changeUserPassword(
-            {current: this.current, new: this.password}
+            this.password, this.current
         ).subscribe(
             success => {
                 if (!success) {
