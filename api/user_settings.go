@@ -47,7 +47,7 @@ func getSettingValue(w http.ResponseWriter, r *http.Request) {
 	case activeSetting:
 		val = user.Active
 	default:
-		http.Error(w, "Not found", http.StatusNotFound)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
@@ -100,7 +100,7 @@ func setSettingValue(repo repo.User, secret []byte, log log.Log) http.HandlerFun
 				return
 			}
 		default:
-			http.Error(w, "Not found", http.StatusNotFound)
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}
 

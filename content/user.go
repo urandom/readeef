@@ -157,6 +157,10 @@ func (p *ProfileData) UnmarshalJSON(b []byte) error {
 
 	var filters []Filter
 
+	if len(data) > 0 {
+		*p = ProfileData{}
+	}
+
 	for k, v := range data {
 		switch k {
 		case "filters":
