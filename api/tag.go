@@ -11,6 +11,8 @@ import (
 	"github.com/urandom/readeef/log"
 )
 
+var tagKey = contextKey("tag")
+
 func listTags(repo repo.Tag, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		user, stop := userFromRequest(w, r)
@@ -103,8 +105,8 @@ func getFeedTags(repo repo.Tag, log log.Log) http.HandlerFunc {
 		}
 
 		t := make([]string, len(tags))
-		for _, tag := range tags {
-			t = append(t, tag.String())
+		for i := range tags {
+			t[i] = tags[i].String()
 		}
 
 		args{"tags": t}.WriteJSON(w)
@@ -162,14 +164,14 @@ func tagContext(repo repo.Tag, log log.Log) func(http.Handler) http.Handler {
 			tag, err := repo.Get(content.TagID(id), user)
 			if err != nil {
 				if content.IsNoContent(err) {
-					http.Error(w, "Not found", http.StatusNotFound)
+					http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 				} else {
 					fatal(w, log, "Error getting tag: %+v", err)
 				}
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), "tag", tag)
+			ctx := context.WithValue(r.Context(), tagKey, tag)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -177,7 +179,7 @@ func tagContext(repo repo.Tag, log log.Log) func(http.Handler) http.Handler {
 
 func tagFromRequest(w http.ResponseWriter, r *http.Request) (tag content.Tag, stop bool) {
 	var ok bool
-	if tag, ok = r.Context().Value("tag").(content.Tag); ok {
+	if tag, ok = r.Context().Value(tagKey).(content.Tag); ok {
 		return tag, false
 	}
 

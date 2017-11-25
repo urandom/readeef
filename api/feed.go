@@ -15,6 +15,8 @@ import (
 	"github.com/urandom/readeef/log"
 )
 
+var feedKey = contextKey("feed")
+
 func feedContext(repo repo.Feed, log log.Log) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +41,7 @@ func feedContext(repo repo.Feed, log log.Log) func(http.Handler) http.Handler {
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), "feed", feed)
+			ctx := context.WithValue(r.Context(), feedKey, feed)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -47,7 +49,7 @@ func feedContext(repo repo.Feed, log log.Log) func(http.Handler) http.Handler {
 
 func feedFromRequest(w http.ResponseWriter, r *http.Request) (feed content.Feed, stop bool) {
 	var ok bool
-	if feed, ok = r.Context().Value("feed").(content.Feed); ok {
+	if feed, ok = r.Context().Value(feedKey).(content.Feed); ok {
 		return feed, false
 	}
 
