@@ -213,6 +213,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     @HostListener('window:keydown.h')
     goUp() {
         this.router.navigate(['../../'], { relativeTo: this.route })
+        document.getSelection().removeAllRanges();
     }
 
     @HostListener('window:keydown.arrowRight')
