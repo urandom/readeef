@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/log"
@@ -14,21 +13,21 @@ import (
 
 func importOPML(
 	repo repo.Feed,
-	feedManager *readeef.FeedManager,
+	feedManager feedManager,
 	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
+
 		opmlData := r.Form.Get("opml")
 		_, dryRun := r.Form["dryRun"]
 
 		opml, err := parser.ParseOpml([]byte(opmlData))
 		if err != nil {
 			http.Error(w, "Error parsing OPML: "+err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		user, stop := userFromRequest(w, r)
-		if stop {
 			return
 		}
 
@@ -83,7 +82,6 @@ func importOPML(
 
 func exportOPML(
 	service repo.Service,
-	feedManager *readeef.FeedManager,
 	log log.Log,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

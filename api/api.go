@@ -358,7 +358,7 @@ func articlesRoutes(
 func opmlRoutes(service repo.Service, feedManager *readeef.FeedManager, log log.Log, gzip, access mw) routes {
 	return routes{path: "/opml", route: func(r chi.Router) {
 		r.Use(gzip, access)
-		r.With(timeout(10*time.Second)).Get("/", exportOPML(service, feedManager, log))
+		r.With(timeout(10*time.Second)).Get("/", exportOPML(service, log))
 		r.With(timeout(30*time.Second)).Post("/", importOPML(service.FeedRepo(), feedManager, log))
 	}}
 }

@@ -12,9 +12,9 @@ import (
 
 	"golang.org/x/crypto/acme/autocert"
 
-	"github.com/alexedwards/scs/engine/boltstore"
-	"github.com/alexedwards/scs/engine/memstore"
-	"github.com/alexedwards/scs/session"
+	"github.com/alexedwards/scs"
+	"github.com/alexedwards/scs/stores/boltstore"
+	"github.com/alexedwards/scs/stores/memstore"
 	"github.com/boltdb/bolt"
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
@@ -61,10 +61,12 @@ func runServer(cfg config.Config, args []string) error {
 		defer sessDb.Close()
 	*/
 	engine := memstore.New(5 * time.Minute)
+	sessionManager := scs.NewManager(engine)
+	sessionManager.Lifetime(240 * time.Hour)
 
 	logger := initLog(cfg.Log)
 
-	handler, err := web.Mux(fs, engine, cfg, logger)
+	handler, err := web.Mux(fs, sessionManager, cfg, logger)
 	if err != nil {
 		return errors.WithMessage(err, "creating web mux")
 	}
@@ -217,7 +219,7 @@ func runServer(cfg config.Config, args []string) error {
 	return nil
 }
 
-func initSessionEngine(config config.Auth) (*bolt.DB, session.Engine, error) {
+func initSessionEngine(config config.Auth) (*bolt.DB, scs.Store, error) {
 	if err := os.MkdirAll(filepath.Dir(config.SessionStoragePath), 0777); err != nil {
 		return nil, nil, errors.Wrapf(err, "creating session storage path %s", config.SessionStoragePath)
 	}
@@ -227,7 +229,8 @@ func initSessionEngine(config config.Auth) (*bolt.DB, session.Engine, error) {
 		return nil, nil, errors.Wrapf(err, "opening bolt db with path: %s", config.SessionStoragePath)
 	}
 
-	return db, boltstore.New(db, 30), nil
+	store := boltstore.New(db, 30)
+	return db, store, nil
 }
 
 func initLog(config config.Log) log.Log {

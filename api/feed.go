@@ -87,6 +87,7 @@ func (e addFeedError) Error() string {
 type feedManager interface {
 	AddFeedByLink(link string) (content.Feed, error)
 	RemoveFeed(feed content.Feed)
+	DiscoverFeeds(link string) ([]content.Feed, error)
 }
 
 func addFeed(repo repo.Feed, feedManager feedManager) http.HandlerFunc {
@@ -175,11 +176,7 @@ func deleteFeed(repo repo.Feed, feedManager feedManager, log log.Log) http.Handl
 	}
 }
 
-type feedDiscoverer interface {
-	DiscoverFeeds(link string) ([]content.Feed, error)
-}
-
-func discoverFeeds(repo repo.Feed, discoverer feedDiscoverer, log log.Log) http.HandlerFunc {
+func discoverFeeds(repo repo.Feed, discoverer feedManager, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		query := r.URL.Query().Get("query")
 		if query == "" {
@@ -201,7 +198,7 @@ func discoverFeeds(repo repo.Feed, discoverer feedDiscoverer, log log.Log) http.
 	}
 }
 
-func discoverFeedsByQuery(query string, user content.User, repo repo.Feed, discoverer feedDiscoverer) ([]content.Feed, error) {
+func discoverFeedsByQuery(query string, user content.User, repo repo.Feed, discoverer feedManager) ([]content.Feed, error) {
 	userFeeds, err := repo.ForUser(user)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getting feeds for user")

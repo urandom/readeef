@@ -43,7 +43,7 @@
 
 [[constraint]]
   name = "github.com/alexedwards/scs"
-  version = "0.1.0"
+  version = "1.1.0"
 
 [[constraint]]
   branch = "master"
@@ -112,6 +112,10 @@
 [[constraint]]
   branch = "master"
   name = "golang.org/x/text"
+
+[[constraint]]
+  name = "github.com/golang/mock"
+  revision = "747e9e639"
 
 [[constraint]]
   name = "gopkg.in/gcfg.v1"

@@ -21,7 +21,7 @@ func (r scoresRepo) Get(article content.Article) (content.Scores, error) {
 		return content.Scores{}, errors.WithMessage(err, "validating article")
 	}
 
-	r.log.Infof("Getting scores for article %s", article)
+	r.log.Debugf("Getting scores for article %s", article)
 
 	scores := content.Scores{ArticleID: article.ID}
 	if err := r.db.WithNamedStmt(r.db.SQL().Scores.Get, nil, func(stmt *sqlx.NamedStmt) error {

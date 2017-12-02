@@ -15,7 +15,7 @@ import (
 
 	ttemplate "text/template"
 
-	"github.com/alexedwards/scs/session"
+	"github.com/alexedwards/scs"
 	"github.com/nicksnyder/go-i18n/i18n"
 	"github.com/pkg/errors"
 	"github.com/urandom/handler/lang"
@@ -27,16 +27,15 @@ const (
 	visitorKey = "visitor"
 )
 
-type sessionWrapper struct{}
 type e struct{}
 
-func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log log.Log) (http.Handler, error) {
+func Mux(fs http.FileSystem, sessionManager *scs.Manager, config config.Config, log log.Log) (http.Handler, error) {
 	mux := http.NewServeMux()
 
 	if hasProxy(config) {
 		mux.Handle(
 			"/proxy",
-			http.TimeoutHandler(http.HandlerFunc(ProxyHandler), 10*time.Second, ""),
+			http.TimeoutHandler(http.HandlerFunc(ProxyHandler(sessionManager)), 10*time.Second, ""),
 		)
 	}
 
@@ -45,10 +44,8 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log lo
 	buildPathCache(path.Join("/", config.UI.Path), pathCache, fs)
 
 	mux.Handle("/", http.TimeoutHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		if err = session.PutBool(r, visitorKey, true); err == nil {
-			err = session.Save(w, r)
-		}
+		session := sessionManager.Load(r)
+		err := session.PutBool(w, visitorKey, true)
 
 		if err != nil {
 			log.Printf("Error saving session: %+v", err)
@@ -71,8 +68,7 @@ func Mux(fs http.FileSystem, engine session.Engine, config config.Config, log lo
 
 	}), time.Second, ""))
 
-	session := session.Manage(engine, session.Lifetime(240*time.Hour))
-	return session(mux), nil
+	return sessionManager.Use(mux), nil
 }
 
 func buildPathCache(p string, cache map[string]e, fs http.FileSystem) {
@@ -122,14 +118,6 @@ func hasProxy(config config.Config) bool {
 	}
 
 	return hasProxy
-}
-
-func (s sessionWrapper) Get(r *http.Request, key string) (string, error) {
-	return session.GetString(r, key)
-}
-
-func (s sessionWrapper) Set(r *http.Request, key, value string) error {
-	return session.PutString(r, key, value)
 }
 
 func requestFuncMaps(r *http.Request) template.FuncMap {
