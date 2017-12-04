@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/urandom/readeef"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/log"
@@ -16,7 +15,6 @@ import (
 )
 
 func hubbubRegistration(
-	hubbub *readeef.Hubbub,
 	service repo.Service,
 	log log.Log,
 ) http.HandlerFunc {
@@ -24,8 +22,6 @@ func hubbubRegistration(
 	subRepo := service.SubscriptionRepo()
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		params := r.URL.Query()
-
 		feedID, err := strconv.ParseInt(path.Base(r.URL.Path), 10, 64)
 
 		if err != nil {
@@ -35,7 +31,7 @@ func hubbubRegistration(
 
 		f, err := feedRepo.Get(content.FeedID(feedID), content.User{})
 		if err != nil {
-			fatal(w, log, fmt.Sprintf("Error getting feed %d", feedID), err)
+			fatal(w, log, fmt.Sprintf("Error getting feed %d", feedID)+": %+v", err)
 			return
 		}
 
@@ -45,24 +41,24 @@ func hubbubRegistration(
 			return
 		}
 
-		log.Infoln("Receiving hubbub event " + params.Get("hub.mode") + " for " + f.String())
+		log.Infoln("Receiving hubbub event " + r.Form.Get("hub.mode") + " for " + f.String())
 
-		switch params.Get("hub.mode") {
+		switch r.Form.Get("hub.mode") {
 		case "subscribe":
-			if lease, err := strconv.Atoi(params.Get("hub.lease_seconds")); err == nil {
+			if lease, err := strconv.Atoi(r.Form.Get("hub.lease_seconds")); err == nil {
 				s.LeaseDuration = int64(lease) * int64(time.Second)
 			}
 			s.VerificationTime = time.Now()
 			s.SubscriptionFailure = false
 
-			w.Write([]byte(params.Get("hub.challenge")))
+			w.Write([]byte(r.Form.Get("hub.challenge")))
 		case "unsubscribe":
 			s.SubscriptionFailure = true
 
-			w.Write([]byte(params.Get("hub.challenge")))
+			w.Write([]byte(r.Form.Get("hub.challenge")))
 		case "denied":
 			w.Write([]byte{})
-			log.Printf("Unable to subscribe to '%s': %s\n", params.Get("hub.topic"), params.Get("hub.reason"))
+			log.Printf("Unable to subscribe to '%s': %s\n", r.Form.Get("hub.topic"), r.Form.Get("hub.reason"))
 		default:
 			w.Write([]byte{})
 

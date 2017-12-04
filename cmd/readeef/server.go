@@ -150,7 +150,7 @@ func runServer(cfg config.Config, args []string) error {
 		feedManager.SetHubbub(hubbub)
 	}
 
-	handler, err = api.Mux(ctx, service, feedManager, hubbub, searchProvider, extractor, fs, articleProcessors, cfg, logger, accessMiddleware)
+	handler, err = api.Mux(ctx, service, feedManager, searchProvider, extractor, fs, articleProcessors, cfg, logger, accessMiddleware)
 	if err != nil {
 		return errors.WithMessage(err, "creating api mux")
 	}

@@ -355,8 +355,6 @@ func Test_exportOPML(t *testing.T) {
 			tagRepo := mock_repo.NewMockTag(ctrl)
 
 			r := httptest.NewRequest("GET", "/", nil)
-			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			r.ParseForm()
 			w := httptest.NewRecorder()
 
 			code := http.StatusOK

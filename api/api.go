@@ -33,7 +33,6 @@ func Mux(
 	ctx context.Context,
 	service eventable.Service,
 	feedManager *readeef.FeedManager,
-	hubbub *readeef.Hubbub,
 	searchProvider search.Provider,
 	extractor extract.Generator,
 	fs http.FileSystem,
@@ -67,8 +66,8 @@ func Mux(
 
 	routes := []routes{tokenRoutes(service.UserRepo(), storage, []byte(config.Auth.Secret), log, gzip, access)}
 
-	if hubbub != nil {
-		routes = append(routes, hubbubRoutes(hubbub, service, log, gzip, access))
+	if config.Hubbub.CallbackURL != "" {
+		routes = append(routes, hubbubRoutes(service, log, gzip, access))
 	}
 
 	emulatorRoutes := emulatorRoutes(ctx, service, searchProvider, feedManager, processors, config, log, gzip, access)
@@ -139,8 +138,8 @@ func tokenRoutes(repo repo.User, storage token.Storage, secret []byte, log log.L
 	}}
 }
 
-func hubbubRoutes(hubbub *readeef.Hubbub, service repo.Service, log log.Log, gzip, access mw) routes {
-	handler := hubbubRegistration(hubbub, service, log)
+func hubbubRoutes(service repo.Service, log log.Log, gzip, access mw) routes {
+	handler := hubbubRegistration(service, log)
 
 	return routes{path: "/hubbub", route: func(r chi.Router) {
 		r.Use(timeout(5*time.Second), gzip, access)
