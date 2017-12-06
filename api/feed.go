@@ -110,7 +110,7 @@ func addFeed(repo repo.Feed, feedManager feedManager) http.HandlerFunc {
 			}
 		}
 
-		args{"errors": errs, "feedIDs": feeds, "success": len(errs) < len(links)}.WriteJSON(w)
+		args{"errors": errs, "feeds": feeds, "success": len(errs) < len(links)}.WriteJSON(w)
 	}
 }
 
@@ -143,14 +143,15 @@ func addFeedByURL(
 			}
 
 			if err = repo.SetUserTags(f, user, t); err != nil {
-				return content.Feed{}, addFeedError{Link: link, Title: f.Title, Message: "Error adding feed to the database: " + err.Error()}
+				return content.Feed{}, addFeedError{Link: link, Title: f.Title, Message: "adding feed tags to the database: " + err.Error()}
 			}
 		}
 
 		return f, nil
+	} else {
+		return content.Feed{}, addFeedError{Link: link, Message: "adding feed to the database: " + err.Error()}
 	}
 
-	return content.Feed{}, addFeedError{Link: link, Message: "Error adding feed to the database"}
 }
 
 func deleteFeed(repo repo.Feed, feedManager feedManager, log log.Log) http.HandlerFunc {
