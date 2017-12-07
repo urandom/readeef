@@ -259,3 +259,175 @@ func Test_addFeed(t *testing.T) {
 		})
 	}
 }
+
+func Test_deleteFeed(t *testing.T) {
+	tests := []struct {
+		name      string
+		noUser    bool
+		noFeed    bool
+		detachErr error
+	}{
+		{name: "no user", noUser: true},
+		{name: "no feed", noFeed: true},
+		{name: "detach err", detachErr: errors.New("err")},
+		{name: "success"},
+	}
+
+	type data struct {
+		Success bool `json:"success"`
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			feedRepo := mock_repo.NewMockFeed(ctrl)
+			feedManager := NewMockfeedManager(ctrl)
+
+			r := httptest.NewRequest("DELETE", "/", nil)
+			w := httptest.NewRecorder()
+
+			code := http.StatusOK
+			want := data{}
+			switch {
+			default:
+				var user content.User
+				var feed content.Feed
+				if tt.noUser {
+					code = http.StatusBadRequest
+					break
+				} else {
+					user = content.User{Login: "test"}
+					r = r.WithContext(context.WithValue(r.Context(), userKey, user))
+				}
+
+				if tt.noFeed {
+					code = http.StatusBadRequest
+					break
+				} else {
+					feed = content.Feed{ID: 1, Link: "http://example.com"}
+					r = r.WithContext(context.WithValue(r.Context(), feedKey, feed))
+				}
+
+				feedRepo.EXPECT().DetachFrom(feed, user).Return(tt.detachErr)
+
+				if tt.detachErr != nil {
+					code = http.StatusInternalServerError
+					break
+				}
+
+				feedManager.EXPECT().RemoveFeed(feed)
+
+				want.Success = true
+			}
+
+			deleteFeed(feedRepo, feedManager, logger).ServeHTTP(w, r)
+
+			if code != w.Code {
+				t.Errorf("deleteFeed() code = %v, want %v", w.Code, code)
+				return
+			}
+
+			var got data
+			if err := json.Unmarshal(w.Body.Bytes(), &got); (err != nil) && (code == http.StatusOK) {
+				t.Errorf("deleteFeed() body = %s, error = %+v", w.Body, err)
+				return
+			}
+
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("deleteFeed() got = %v, want = %v", got, want)
+			}
+		})
+	}
+}
+
+func Test_discoverFeeds(t *testing.T) {
+	tests := []struct {
+		name             string
+		url              string
+		noUser           bool
+		noQuery          bool
+		userFeeds        []content.Feed
+		userFeedsErr     error
+		discoverFeeds    []content.Feed
+		discoverFeedsErr error
+	}{
+		{name: "no user", url: "/?query=test", noUser: true},
+		{name: "no query", url: "/?query2=test", noQuery: true},
+		{name: "user feeds err", url: "/?query=test", userFeedsErr: errors.New("err")},
+		{name: "discover feeds err", url: "/?query=test", userFeeds: []content.Feed{{ID: 1, Link: "http://example.com"}, {ID: 2, Link: "http://www.example2.com"}}, discoverFeedsErr: errors.New("err")},
+		{name: "some discovered feeds", url: "/?query=test", userFeeds: []content.Feed{{ID: 1, Link: "http://example.com"}, {ID: 2, Link: "http://www.example2.com"}}, discoverFeeds: []content.Feed{{Link: "http://example3.com"}, {Link: "http://example4.com"}}},
+		{name: "no discovered feeds", url: "/?query=test", userFeeds: []content.Feed{{ID: 1, Link: "http://example.com"}, {ID: 2, Link: "http://www.example2.com"}}, discoverFeeds: []content.Feed{}},
+	}
+
+	type data struct {
+		Feeds []content.Feed `json:"feeds"`
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			feedRepo := mock_repo.NewMockFeed(ctrl)
+			feedManager := NewMockfeedManager(ctrl)
+
+			r := httptest.NewRequest("GET", tt.url, nil)
+			r.ParseForm()
+			w := httptest.NewRecorder()
+
+			code := http.StatusOK
+			want := data{}
+			switch {
+			default:
+				var user content.User
+				var query string
+				if tt.noUser {
+					code = http.StatusBadRequest
+					break
+				} else {
+					user = content.User{Login: "test"}
+					r = r.WithContext(context.WithValue(r.Context(), userKey, user))
+				}
+
+				if tt.noQuery {
+					code = http.StatusBadRequest
+					break
+				} else {
+					query = r.Form.Get("query")
+				}
+
+				feedRepo.EXPECT().ForUser(userMatcher{user}).Return(tt.userFeeds, tt.userFeedsErr)
+
+				if tt.userFeedsErr != nil {
+					code = http.StatusInternalServerError
+					break
+				}
+
+				feedManager.EXPECT().DiscoverFeeds(query).Return(tt.discoverFeeds, tt.discoverFeedsErr)
+
+				if tt.discoverFeedsErr != nil {
+					code = http.StatusInternalServerError
+					break
+				}
+
+				want.Feeds = tt.discoverFeeds
+			}
+
+			discoverFeeds(feedRepo, feedManager, logger).ServeHTTP(w, r)
+
+			if code != w.Code {
+				t.Errorf("discoverFeed() code = %v, want %v", w.Code, code)
+				return
+			}
+
+			var got data
+			if err := json.Unmarshal(w.Body.Bytes(), &got); (err != nil) && (code == http.StatusOK) {
+				t.Errorf("discoverFeed() body = %s, error = %+v", w.Body, err)
+				return
+			}
+
+			if !reflect.DeepEqual(got, want) {
+				t.Errorf("discoverFeed() got = %v, want = %v", got, want)
+			}
+		})
+	}
+}

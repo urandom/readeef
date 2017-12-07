@@ -179,7 +179,7 @@ func deleteFeed(repo repo.Feed, feedManager feedManager, log log.Log) http.Handl
 
 func discoverFeeds(repo repo.Feed, discoverer feedManager, log log.Log) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		query := r.URL.Query().Get("query")
+		query := r.Form.Get("query")
 		if query == "" {
 			http.Error(w, "No query", http.StatusBadRequest)
 			return
