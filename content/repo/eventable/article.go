@@ -31,13 +31,13 @@ type articleRepo struct {
 }
 
 func (r articleRepo) Read(state bool, user content.User, opts ...content.QueryOpt) error {
-	o := content.QueryOptions{}
-	o.Apply(opts)
-
 	err := r.Article.Read(state, user, opts...)
 
 	if err == nil {
 		r.log.Debugf("Dispatching article read state event")
+
+		o := content.QueryOptions{}
+		o.Apply(opts)
 
 		r.eventBus.Dispatch(
 			ArticleStateEvent,
@@ -51,13 +51,13 @@ func (r articleRepo) Read(state bool, user content.User, opts ...content.QueryOp
 }
 
 func (r articleRepo) Favor(state bool, user content.User, opts ...content.QueryOpt) error {
-	o := content.QueryOptions{}
-	o.Apply(opts)
-
 	err := r.Article.Favor(state, user, opts...)
 
 	if err == nil {
 		r.log.Debugf("Dispatching article favor state event")
+
+		o := content.QueryOptions{}
+		o.Apply(opts)
 
 		r.eventBus.Dispatch(
 			ArticleStateEvent,

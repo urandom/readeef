@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 	"github.com/urandom/handler/auth"
 	"github.com/urandom/readeef/api/token"
@@ -28,11 +27,13 @@ func eventSocket(
 	log log.Log,
 ) http.HandlerFunc {
 	repo := service.FeedRepo()
-	monitor := &feedMonitor{ops: make(chan func(connMap)), service: service, log: log}
+	monitor := &feedMonitor{ops: make(chan func(connMap), 10), service: service, log: log}
 
 	go monitor.loop(ctx)
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		log.Debugln("Event connection initializing")
+
 		flusher, ok := w.(http.Flusher)
 		if !ok {
 			http.Error(w, "Streaming not supported", http.StatusNotAcceptable)
@@ -81,10 +82,13 @@ func eventSocket(
 					return
 				}
 			case <-done:
+				log.Debugln("Connection done")
 				return
 			case <-w.(http.CloseNotifier).CloseNotify():
+				log.Debugln("Connection closed")
 				return
 			case <-ctx.Done():
+				log.Debugln("Context cancelled")
 				return
 			}
 		}
@@ -94,11 +98,14 @@ func eventSocket(
 func connectionValidator(storage token.Storage, r *http.Request) func() bool {
 	return func() bool {
 		if token := auth.Token(r); token != "" {
+			// Check that the claim isn't blacklisted
 			if exists, err := storage.Exists(token); err == nil && exists {
 				return false
 			}
 		}
-		if claims, ok := auth.Claims(r).(*jwt.StandardClaims); ok {
+
+		if claims := auth.Claims(r); claims != nil {
+			// Check that the claim hasn't expired
 			return claims.Valid() == nil
 		}
 
@@ -207,18 +214,29 @@ func (fm *feedMonitor) removeConn(addr string) {
 
 func (fm *feedMonitor) loop(ctx context.Context) {
 	conns := make(connMap)
+	done := make(chan struct{})
 
 	listener := fm.service.Listener()
 
+	closed := false
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			if !closed {
+				closed = true
+				// Give some time for the ops channel to drain the connection
+				// removal actions before exiting the loop.
+				time.AfterFunc(100*time.Millisecond, func() {
+					close(done)
+				})
+			}
 		case op := <-fm.ops:
 			op(conns)
 		case event := <-listener:
 			fm.log.Debugf("Got service event %s", event.Name)
 			go fm.processEvent(event)
+		case <-done:
+			return
 		}
 	}
 }
