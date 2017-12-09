@@ -76,11 +76,8 @@ func eventSocket(
 		for {
 			select {
 			case <-time.After(10 * time.Second):
-				err = event{}.Write(w, flusher, log)
-				if err != nil {
-					log.Printf("Error sending ping event: %+v", err)
-					return
-				}
+				log.Debugln("Sending ping")
+				monitor.ping(r.RemoteAddr)
 			case <-done:
 				log.Debugln("Connection done")
 				return
@@ -190,6 +187,23 @@ func (fm *feedMonitor) processEvent(ev eventable.Event) {
 			err := event.Write(d.writer, d.flusher, fm.log)
 			if err != nil {
 				fm.log.Printf("Error sending article state event: %+v", err)
+				close(d.done)
+			}
+		}
+	}
+}
+
+func (fm *feedMonitor) ping(addr string) {
+	fm.ops <- func(conns connMap) {
+		if d, ok := conns[addr]; ok {
+			if !d.validator() {
+				close(d.done)
+				return
+			}
+
+			err := event{}.Write(d.writer, d.flusher, fm.log)
+			if err != nil {
+				fm.log.Printf("Error sending ping event: %+v", err)
 				close(d.done)
 			}
 		}
