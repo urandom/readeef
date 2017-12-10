@@ -53,14 +53,16 @@ func tokenValidator(
 			_, err := repo.Get(content.Login(c.Subject))
 
 			if err != nil {
-				if content.IsNoContent(err) {
+				if !content.IsNoContent(err) {
 					log.Printf("Error getting user %s from repo: %+v\n", c.Subject, err)
 				}
 
 				return false
 			}
+
+			return true
 		}
 
-		return true
+		return false
 	})
 }
