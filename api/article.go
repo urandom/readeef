@@ -498,7 +498,7 @@ func articleContext(repo repo.Article, processors []processor.Article, log log.L
 				articles = processor.Articles(processors).Process(articles)
 			}
 
-			ctx := context.WithValue(r.Context(), "article", articles[0])
+			ctx := context.WithValue(r.Context(), articleKey, articles[0])
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -510,6 +510,6 @@ func articleFromRequest(w http.ResponseWriter, r *http.Request) (article content
 		return article, false
 	}
 
-	http.Error(w, "Bad Request", http.StatusBadRequest)
+	http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 	return content.Article{}, true
 }

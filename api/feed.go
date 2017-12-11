@@ -53,7 +53,7 @@ func feedFromRequest(w http.ResponseWriter, r *http.Request) (feed content.Feed,
 		return feed, false
 	}
 
-	http.Error(w, "Bad Request", http.StatusBadRequest)
+	http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 	return content.Feed{}, true
 }
 

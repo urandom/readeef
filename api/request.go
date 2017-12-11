@@ -57,7 +57,7 @@ func userFromRequest(w http.ResponseWriter, r *http.Request) (user content.User,
 		return user, false
 	}
 
-	http.Error(w, "Bad Request", http.StatusBadRequest)
+	http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 	return content.User{}, true
 }
 
