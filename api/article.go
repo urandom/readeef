@@ -17,6 +17,8 @@ import (
 	"github.com/urandom/text-summary/summarize"
 )
 
+var articleKey = contextKey("article")
+
 func getArticle(w http.ResponseWriter, r *http.Request) {
 	if article, stop := articleFromRequest(w, r); stop {
 		return
@@ -504,7 +506,7 @@ func articleContext(repo repo.Article, processors []processor.Article, log log.L
 
 func articleFromRequest(w http.ResponseWriter, r *http.Request) (article content.Article, stop bool) {
 	var ok bool
-	if article, ok = r.Context().Value("article").(content.Article); ok {
+	if article, ok = r.Context().Value(articleKey).(content.Article); ok {
 		return article, false
 	}
 
