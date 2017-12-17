@@ -138,9 +138,13 @@ func getArticles(
 	}
 }
 
+type searcher interface {
+	Search(string, content.User, ...content.QueryOpt) ([]content.Article, error)
+}
+
 func articleSearch(
 	service repo.Service,
-	searchProvider search.Provider,
+	searchProvider searcher,
 	repoType articleRepoType,
 	processors []processor.Article,
 	articlesLimit int,
@@ -149,7 +153,7 @@ func articleSearch(
 	repo := service.TagRepo()
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		query := r.URL.Query().Get("query")
+		query := r.Form.Get("query")
 		if query == "" {
 			http.Error(w, "No query provided", http.StatusBadRequest)
 			return

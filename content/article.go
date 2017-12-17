@@ -238,5 +238,5 @@ func GetUserFilters(u User) []Filter {
 		return filters
 	}
 
-	return []Filter{}
+	return nil
 }
