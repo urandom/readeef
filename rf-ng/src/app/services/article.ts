@@ -22,8 +22,9 @@ import 'rxjs/add/operator/publishReplay'
 import 'rxjs/add/operator/shareReplay'
 import 'rxjs/add/operator/startWith'
 import 'rxjs/add/operator/switchMap'
+import { ObserveOnSubscriber } from 'rxjs/operators/observeOn';
 
-export class Article extends Serializable {
+export class Article {
     id: number
     feed: string
     feedID: number
@@ -38,18 +39,6 @@ export class Article extends Serializable {
     time: string
     hits: Hits
     format: ArticleFormat
-
-    fromJSON(json) {
-        if ("date" in json) {
-            let date = json["date"];
-            delete json["date"];
-
-            this.date = new Date(date * 1000);
-
-        }
-
-        return super.fromJSON(json);
-    }
 }
 
 export class ArticleFormat extends Serializable {
@@ -69,6 +58,19 @@ interface Fragments {
 
 class ArticlesResponse extends Serializable {
     articles: Article[]
+
+    fromJSON(json) {
+        super.fromJSON(json);
+        this.articles.map(article => {
+            if (typeof article.date == "string") {
+                article.date = new Date(article.date);
+            }
+
+            return article;
+        });
+
+        return this;
+    }
 }
 
 class ArticleStateResponse extends Serializable {
@@ -82,6 +84,8 @@ export interface QueryOptions {
     unreadOnly?: boolean,
     olderFirst?: boolean,
     ids?: number[],
+    beforeID?: number
+    afterID?: number,
 }
 
 export interface Source {
@@ -160,6 +164,7 @@ export class ArticleService {
     private articles : ConnectableObservable<Article[]>
     private paging = new BehaviorSubject<number>(0)
     private stateChange = new Subject<ArticleProperty>()
+    private updateSubject = new Subject<QueryOptions>()
     private refresh = new BehaviorSubject<any>(null)
     private limit: number = 200
     private initialFetched = false
@@ -222,6 +227,12 @@ export class ArticleService {
                             articles: articles,
                             fromEvent: false,
                         }),
+                        this.updateSubject.switchMap(opts =>
+                             this.getArticlesFor(source, opts, this.limit, 0)
+                        ).map(articles => <ArticlesPayload>{
+                            articles: articles,
+                            fromEvent: true,
+                        }),
                         this.eventService.feedUpdate.filter(event =>
                             this.shouldUpdate(event, source, feedsTags[1])
                         ).delay(30000).flatMap(event =>
@@ -230,10 +241,10 @@ export class ArticleService {
                                 olderFirst: prefs.olderFirst,
                                 unreadOnly: prefs.unreadOnly,
                             }, this.limit, 0)
-                            ).map(articles => <ArticlesPayload>{
-                                articles: articles,
-                                fromEvent: true,
-                            })
+                        ).map(articles => <ArticlesPayload>{
+                            articles: articles,
+                            fromEvent: true,
+                        })
                     ).filter(p => p.articles != null).map(payload => {
                         payload.articles = payload.articles.map(article => {
                             if (article.hits && article.hits.fragments) {
@@ -259,7 +270,7 @@ export class ArticleService {
                             let updates = new Array<Article>();
 
                             for (let incoming of payload.articles) {
-                                if (acc.indexMap.has(incoming.id)) {
+                                if (incoming.id in acc.indexMap) {
                                     updates.push(incoming);
                                     continue
                                 }
@@ -299,7 +310,7 @@ export class ArticleService {
                             }
                         } else {
                             for (let article of payload.articles) {
-                                if (acc.indexMap.has(article.id)) {
+                                if (article.id in acc.indexMap) {
                                     let idx = acc.indexMap[article.id];
                                     acc.articles[idx] = article;
                                 } else {
@@ -354,16 +365,52 @@ export class ArticleService {
 
         this.articles.connect();
 
-        var lastTick = new Date().getTime();
-        Observable.interval(5000).subscribe(
-            tick => {
-                if (new Date().getTime() - lastTick > 10000) {
-                    this.refreshArticles();
-                }
+        Observable.interval(10000).scan(
+            (ticks, v) => {
+                return [ticks[1], new Date().getTime()];
+            }, [new Date().getTime(), new Date().getTime()]
+        ).map(
+            ticks => ticks[1] - ticks[0]
+        ).switchMap(duration => {
+            // Day
+            if (duration > 86400000) {
+                return this.eventService.connection().filter(
+                    c => c
+                ).first().map(c => null);
+            // Minute
+            } else if (duration > 60000) {
+                return this.eventService.connection().filter(
+                    c => c
+                ).first().switchMap(v =>
+                    this.articles.filter(
+                        articles => articles.length > 0
+                    ).map(articles => {
+                        if (this.preferences.olderFirst) {
+                            let id = Math.min.apply(
+                                Math, articles.map(article => article.id)
+                            );
 
-                lastTick = new Date().getTime();
+                            return { olderFirst: false, beforeID: id };
+                        } else {
+                            let id = Math.max.apply(
+                                Math, articles.map(article => article.id)
+                            );
+
+                            return { olderFirst: true, afterID: id };
+                        }
+                    }).first()
+                );
             }
-        );
+
+            return Observable.of({});
+        }).subscribe(opts => {
+            if (opts === null) {
+                this.refreshArticles();
+            }
+            if (Object.keys(opts).length > 0) {
+                this.updateSubject.next(opts);
+            }
+        });
 
         this.eventService.articleState.subscribe(
             event => this.stateChange.next({
@@ -480,13 +527,7 @@ export class ArticleService {
         limit: number,
         offset: number,
     ): Observable<Article[]> {
-        let options : QueryOptions = {
-            limit: limit, offset: offset,
-            unreadFirst: true,
-            olderFirst: prefs.olderFirst,
-            unreadOnly: prefs.unreadOnly,
-            ids: prefs.ids,
-        }
+        let options : QueryOptions = Object.assign({}, prefs, {limit: limit, offset: offset})
 
         let res = this.api.get(this.buildURL("article" + source.url, options))
             .map(response => new ArticlesResponse().fromJSON(response.json()).articles);

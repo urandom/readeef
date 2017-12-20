@@ -1,4 +1,4 @@
-<mat-card [class.read]="item.read" (click)="openArticle(item)">
+<mat-card [class.read]="item.read" (click)="openArticle(item)" data-id="{{ item.id }}">
     <mat-card-header class="row align-items-center">
         <mat-card-title class="col title">
             <button mat-card-avatar mat-icon-button (click)="$event.stopPropagation(); favor(item.id, !item.favorite)">

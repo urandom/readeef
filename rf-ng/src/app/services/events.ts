@@ -1,7 +1,7 @@
 /// <reference path="./eventsource.d.ts" />
 
 import { Injectable } from '@angular/core'
-import { Observable, Subject } from "rxjs";
+import { Observable, Subject, BehaviorSubject } from "rxjs";
 import { Serializable } from "./api";
 import { TokenService } from './auth'
 import 'rxjs/add/operator/combineLatest'
@@ -37,6 +37,7 @@ export class EventService {
     articleState : Observable<ArticleStateEvent>
 
     private eventSourceObservable : Observable<EventSource>
+    private connectionSubject = new BehaviorSubject<boolean>(false);
     private refreshSubject = new Subject<any>();
 
     constructor(private tokenService : TokenService) {
@@ -50,8 +51,14 @@ export class EventService {
 
             if (token != "") {
                 source = new EventSource("/api/v2/events?token=" + token)
+                source['onopen'] = () => {
+                    this.connectionSubject.next(true);
+                };
                 source['onerror'] = error => {
-                    setTimeout(() => this.refresh(), 3000);
+                    setTimeout(() => {
+                        this.connectionSubject.next(false);
+                        this.refresh();
+                    }, 3000);
                 };
             }
 
@@ -71,6 +78,10 @@ export class EventService {
         ).map((event: DataEvent) =>
             new ArticleStateEvent().fromJSON(JSON.parse(event.data))
         )
+    }
+
+    connection() : Observable<boolean> {
+        return this.connectionSubject.asObservable();
     }
 
     refresh() {
