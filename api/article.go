@@ -214,6 +214,103 @@ func articleSearch(
 	}
 }
 
+func getIDs(
+	service repo.Service,
+	repoType articleRepoType,
+	subType articleRepoType,
+	articlesLimit int,
+	log log.Log,
+) http.HandlerFunc {
+	repo := service.ArticleRepo()
+	tagRepo := service.TagRepo()
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		o, stop := articleQueryOptions(w, r, articlesLimit*50)
+		if stop {
+			return
+		}
+
+		o = append(o, content.Filters(content.GetUserFilters(user)))
+
+		switch repoType {
+		case favoriteRepoType:
+			o = append(o, content.FavoriteOnly)
+		case userRepoType:
+		case popularRepoType:
+			o = append(o, content.IncludeScores)
+			o = append(o, content.HighScoredFirst)
+			o = append(o, content.TimeRange(time.Now().AddDate(0, 0, -5), time.Now()))
+
+			switch subType {
+			case userRepoType:
+			case tagRepoType:
+				tag, stop := tagFromRequest(w, r)
+				if stop {
+					return
+				}
+
+				ids, err := tagRepo.FeedIDs(tag, user)
+				if err != nil {
+					fatal(w, log, "Error getting tag feed ids: %+v", err)
+					return
+				}
+
+				o = append(o, content.FeedIDs(ids))
+			case feedRepoType:
+				feed, stop := feedFromRequest(w, r)
+				if stop {
+					return
+				}
+
+				o = append(o, content.FeedIDs([]content.FeedID{feed.ID}))
+			default:
+				http.Error(w, "Unknown article repository", http.StatusBadRequest)
+				return
+			}
+		case tagRepoType:
+			tag, stop := tagFromRequest(w, r)
+			if stop {
+				return
+			}
+
+			ids, err := tagRepo.FeedIDs(tag, user)
+			if err != nil {
+				fatal(w, log, "Error getting tag feed ids: %+v", err)
+				return
+			}
+
+			o = append(o, content.FeedIDs(ids))
+		case feedRepoType:
+			feed, stop := feedFromRequest(w, r)
+			if stop {
+				return
+			}
+
+			o = append(o, content.FeedIDs([]content.FeedID{feed.ID}))
+		default:
+			http.Error(w, "Unknown article repository", http.StatusBadRequest)
+			return
+		}
+
+		ids, err := repo.IDs(user, o...)
+
+		if err != nil {
+			fatal(w, log, "Error getting articles: %+v", err)
+			return
+		}
+
+		if ids == nil {
+			ids = []content.ArticleID{}
+		}
+		args{"ids": ids}.WriteJSON(w)
+	}
+}
+
 func formatArticle(
 	repo repo.Extract,
 	extractor extract.Generator,

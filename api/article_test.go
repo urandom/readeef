@@ -178,12 +178,12 @@ func Test_getArticles(t *testing.T) {
 
 			var got data
 			if err := json.Unmarshal(w.Body.Bytes(), &got); (err != nil) && (tt.code == http.StatusOK) {
-				t.Errorf("listFeeds() body = %s", w.Body)
+				t.Errorf("getArticles() body = %s", w.Body)
 				return
 			}
 
 			if !reflect.DeepEqual(got.Articles, tt.articles) {
-				t.Errorf("listFeeds() got = %v, want %v", got.Articles, tt.articles)
+				t.Errorf("getArticles() got = %v, want %v", got.Articles, tt.articles)
 				return
 			}
 		})
@@ -329,6 +329,149 @@ func Test_articleSearch(t *testing.T) {
 
 			if !reflect.DeepEqual(got.Articles, tt.articles) {
 				t.Errorf("articleSearch() got = %v, want %v", got.Articles, tt.articles)
+				return
+			}
+		})
+	}
+}
+
+func Test_getIDs(t *testing.T) {
+	tests := []struct {
+		name       string
+		noUser     bool
+		url        string
+		badQuery   bool
+		repoType   articleRepoType
+		subType    articleRepoType
+		noFeed     bool
+		noTag      bool
+		feedIDsErr error
+		opts       content.QueryOptions
+		ids        []content.ArticleID
+		idsErr     error
+		code       int
+	}{
+		{name: "no user", url: "/", noUser: true, code: 400},
+		{name: "invalid limit opt", url: "/?limit=no", badQuery: true, code: 400},
+		{name: "invalid offset opt", url: "/?offset=no", badQuery: true, code: 400},
+		{name: "invalid before id opt", url: "/?beforeID=no", badQuery: true, code: 400},
+		{name: "invalid after id opt", url: "/?afterID=no", badQuery: true, code: 400},
+		{name: "invalid before time opt", url: "/?beforeTime=no", badQuery: true, code: 400},
+		{name: "invalid after time opt", url: "/?afterTime=no", badQuery: true, code: 400},
+		{name: "invalid ids", url: "/?id=4&id=no", badQuery: true, code: 400},
+		{name: "invalid repo type", url: "/?id=4&id=1&limit=10&beforeID=3", code: 400},
+		{name: "articles err", url: "/", repoType: favoriteRepoType, idsErr: errors.New("err"), code: 500, opts: content.QueryOptions{Limit: 2500, FavoriteOnly: true, SortField: content.SortByDate, SortOrder: content.DescendingOrder}},
+		{name: "popular user", url: "/", repoType: popularRepoType, subType: userRepoType, ids: []content.ArticleID{1}, code: 200, opts: content.QueryOptions{Limit: 2500, IncludeScores: true, HighScoredFirst: true, BeforeDate: time.Now(), AfterDate: time.Now().AddDate(0, 0, -5), SortField: content.SortByDate, SortOrder: content.DescendingOrder}},
+		{name: "popular tag", url: "/?limit=25&offset=10", repoType: popularRepoType, subType: tagRepoType, ids: []content.ArticleID{1}, code: 200, opts: content.QueryOptions{Limit: 25, Offset: 10, IncludeScores: true, HighScoredFirst: true, BeforeDate: time.Now(), AfterDate: time.Now().AddDate(0, 0, -5), FeedIDs: []content.FeedID{1, 2, 3, 4}, SortField: content.SortByDate, SortOrder: content.DescendingOrder}},
+		{name: "popular no tag", url: "/?limit=25&offset=10", repoType: popularRepoType, subType: tagRepoType, noTag: true, code: 400},
+		{name: "popular tag err", url: "/?limit=25&offset=10", repoType: popularRepoType, subType: tagRepoType, code: 500, feedIDsErr: errors.New("err")},
+		{name: "popular feed", url: "/?limit=25", repoType: popularRepoType, subType: feedRepoType, ids: []content.ArticleID{1}, code: 200, opts: content.QueryOptions{Limit: 25, IncludeScores: true, HighScoredFirst: true, BeforeDate: time.Now(), AfterDate: time.Now().AddDate(0, 0, -5), FeedIDs: []content.FeedID{1}, SortField: content.SortByDate, SortOrder: content.DescendingOrder}},
+		{name: "popular no feed", url: "/?limit=25&offset=10", repoType: popularRepoType, subType: feedRepoType, noFeed: true, code: 400},
+		{name: "popular unknown", url: "/?limit=25&offset=10", repoType: popularRepoType, subType: 0, code: 400},
+		{name: "tag", url: "/?limit=25&unreadOnly&olderFirst", repoType: tagRepoType, code: 200, opts: content.QueryOptions{Limit: 25, UnreadOnly: true, FeedIDs: []content.FeedID{1, 2, 3, 4}, SortField: content.SortByDate, SortOrder: content.AscendingOrder}, ids: []content.ArticleID{1, 2}},
+		{name: "tag err", url: "/?limit=25&unreadOnly&olderFirst", repoType: tagRepoType, code: 500, feedIDsErr: errors.New("err")},
+		{name: "no tag", url: "/?limit=25&unreadOnly&olderFirst", repoType: tagRepoType, code: 400, noTag: true},
+		{name: "feed", url: "/?limit=25&unreadFirst", repoType: feedRepoType, code: 200, opts: content.QueryOptions{Limit: 25, UnreadFirst: true, FeedIDs: []content.FeedID{1}, SortField: content.SortByDate, SortOrder: content.DescendingOrder}, ids: []content.ArticleID{1, 2}},
+		{name: "no feed", url: "/?limit=25&unreadFirst", repoType: feedRepoType, code: 400, noFeed: true},
+		{name: "user", url: "/?limit=25&beforeTime=100000&afterTime=500", repoType: userRepoType, code: 200, opts: content.QueryOptions{Limit: 25, AfterDate: time.Unix(500, 0), BeforeDate: time.Unix(100000, 0), SortField: content.SortByDate, SortOrder: content.DescendingOrder}, ids: []content.ArticleID{1, 2}},
+	}
+	type data struct {
+		IDs []content.ArticleID `json:"ids"`
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			service := mock_repo.NewMockService(ctrl)
+			articleRepo := mock_repo.NewMockArticle(ctrl)
+			tagRepo := mock_repo.NewMockTag(ctrl)
+
+			r := httptest.NewRequest("GET", tt.url, nil)
+			r.ParseForm()
+			w := httptest.NewRecorder()
+
+			service.EXPECT().ArticleRepo().Return(articleRepo)
+			service.EXPECT().TagRepo().Return(tagRepo)
+
+			switch {
+			default:
+				var user content.User
+				var feed content.Feed
+				var tag content.Tag
+				if tt.noUser {
+					break
+				}
+				user = content.User{Login: "test"}
+				r = r.WithContext(context.WithValue(r.Context(), userKey, user))
+
+				if tt.badQuery {
+					break
+				}
+
+				if tt.repoType == feedRepoType || tt.subType == feedRepoType {
+					if tt.noFeed {
+						break
+					}
+					feed = content.Feed{ID: 1}
+					r = r.WithContext(context.WithValue(r.Context(), feedKey, feed))
+				}
+
+				if tt.repoType == tagRepoType || tt.subType == tagRepoType {
+					if tt.noTag {
+						break
+					}
+					tag = content.Tag{ID: 1}
+					r = r.WithContext(context.WithValue(r.Context(), tagKey, tag))
+
+					ids := []content.FeedID{1, 2, 3, 4}
+					tagRepo.EXPECT().FeedIDs(tag, userMatcher{user}).Return(ids, tt.feedIDsErr)
+
+					if tt.feedIDsErr != nil {
+						break
+					}
+				}
+
+				if tt.repoType == 0 || tt.repoType == popularRepoType && tt.subType == 0 {
+					break
+				}
+
+				articleRepo.EXPECT().IDs(userMatcher{user}, gomock.Any()).DoAndReturn(func(user content.User, opts ...content.QueryOpt) ([]content.ArticleID, error) {
+					o := content.QueryOptions{}
+					o.Apply(opts)
+
+					if o.BeforeDate.Sub(tt.opts.BeforeDate) > time.Second || o.AfterDate.Sub(tt.opts.AfterDate) > time.Second {
+						t.Errorf("getIDs() date options = %#v, want %#v", o, tt.opts)
+						return tt.ids, tt.idsErr
+					}
+
+					tt.opts.BeforeDate, tt.opts.AfterDate, o.BeforeDate, o.AfterDate = time.Time{}, time.Time{}, time.Time{}, time.Time{}
+
+					if !reflect.DeepEqual(o, tt.opts) {
+						t.Errorf("getIDs() options = %#v, want %#v", o, tt.opts)
+					}
+
+					return tt.ids, tt.idsErr
+				})
+
+				if tt.idsErr != nil {
+					break
+				}
+			}
+
+			getIDs(service, tt.repoType, tt.subType, 50, logger).ServeHTTP(w, r)
+
+			if tt.code != w.Code {
+				t.Errorf("getIDs() code = %v, want %v", w.Code, tt.code)
+			}
+
+			var got data
+			if err := json.Unmarshal(w.Body.Bytes(), &got); (err != nil) && (tt.code == http.StatusOK) {
+				t.Errorf("getIDs() body = %s", w.Body)
+				return
+			}
+
+			if !reflect.DeepEqual(got.IDs, tt.ids) {
+				t.Errorf("getIDs() got = %v, want %v", got.IDs, tt.ids)
 				return
 			}
 		})
