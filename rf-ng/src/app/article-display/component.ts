@@ -122,7 +122,10 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                             slide["formatted"] = slide.description
                         }
 
-                        slide["formatted"] = this.sanitizer.bypassSecurityTrustHtml(slide["formatted"])
+                        slide["formatted"] =
+                            this.sanitizer.bypassSecurityTrustHtml(
+                                this.formatSource(slide["formatted"])
+                            )
                         return slide
                     })
 
@@ -170,10 +173,6 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 }
 
                 this.index = `${data.index + 1}/${data.total}`
-
-                setTimeout(() => {
-                    this.stylizeContent(this.carouselElement.nativeElement)
-                }, 5)
             },
             error => console.log(error)
         ));
@@ -387,12 +386,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         )
     }
 
-    private stylizeContent(container) {
-        for (let descr of container.querySelectorAll(".description")) {
-            let img = descr.querySelector("img")
-            if (img) {
-                img.classList.add("center")
-            }
-        }
+    private formatSource(source: string) : string {
+        return source.replace("<img ", `<img class="center"`);
     }
 }
