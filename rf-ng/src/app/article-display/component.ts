@@ -146,7 +146,10 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
             if (data.active.read) {
                 return Observable.of(data);
             }
-            return this.articleService.read(data.active.id, true).map(s => data);
+            return Observable.race(
+                this.articleService.read(data.active.id, true).map(s => data),
+                Observable.of(data),
+            )
         }).switchMap(data =>
             Observable.interval(60000).startWith(0).map(v => {
                 data.slides = data.slides.map(article => {
