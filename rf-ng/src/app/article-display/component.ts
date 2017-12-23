@@ -387,6 +387,6 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     }
 
     private formatSource(source: string) : string {
-        return source.replace("<img ", `<img class="center"`);
+        return source.replace("<img ", `<img class="center" `);
     }
 }
