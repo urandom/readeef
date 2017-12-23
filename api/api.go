@@ -302,6 +302,8 @@ func articlesRoutes(
 			})
 		}
 
+		r.Get("/ids", getIDs(service, userRepoType, noRepoType, config.API.Limits.ArticlesPerQuery, log))
+
 		r.Post("/read", articlesReadStateChange(service, userRepoType, log))
 		r.Delete("/read", articlesReadStateChange(service, userRepoType, log))
 
@@ -320,23 +322,37 @@ func articlesRoutes(
 
 		r.Route("/favorite", func(r chi.Router) {
 			r.Get("/", getArticles(service, favoriteRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
+			r.Get("/ids", getIDs(service, favoriteRepoType, noRepoType, config.API.Limits.ArticlesPerQuery, log))
 
 			r.Post("/read", articlesReadStateChange(service, favoriteRepoType, log))
 			r.Delete("/read", articlesReadStateChange(service, favoriteRepoType, log))
 		})
 
 		r.Route("/popular", func(r chi.Router) {
-			r.With(feedContext(feedRepo, log)).Get("/feed/{feedID:[0-9]+}",
-				getArticles(service, popularRepoType, feedRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
-			r.With(tagContext(tagRepo, log)).Get("/tag/{tagID:[0-9]+}",
-				getArticles(service, popularRepoType, tagRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
+
+			r.Route("/feed/{feedID:[0-9]+}", func(r chi.Router) {
+				r.Use(feedContext(feedRepo, log))
+
+				r.Get("/", getArticles(service, popularRepoType, feedRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
+				r.Get("/ids", getIDs(service, popularRepoType, feedRepoType, config.API.Limits.ArticlesPerQuery, log))
+			})
+
+			r.Route("/tag/{tagID:[0-9]+}", func(r chi.Router) {
+				r.Use(tagContext(tagRepo, log))
+
+				r.Get("/", getArticles(service, popularRepoType, tagRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
+				r.Get("/ids", getIDs(service, popularRepoType, tagRepoType, config.API.Limits.ArticlesPerQuery, log))
+			})
+
 			r.Get("/", getArticles(service, popularRepoType, userRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
+			r.Get("/ids", getIDs(service, popularRepoType, userRepoType, config.API.Limits.ArticlesPerQuery, log))
 		})
 
 		r.Route("/feed/{feedID:[0-9]+}", func(r chi.Router) {
 			r.Use(feedContext(feedRepo, log))
 
 			r.Get("/", getArticles(service, feedRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
+			r.Get("/ids", getIDs(service, feedRepoType, noRepoType, config.API.Limits.ArticlesPerQuery, log))
 
 			r.Post("/read", articlesReadStateChange(service, feedRepoType, log))
 			r.Delete("/read", articlesReadStateChange(service, feedRepoType, log))
@@ -346,6 +362,7 @@ func articlesRoutes(
 			r.Use(tagContext(tagRepo, log))
 
 			r.Get("/", getArticles(service, tagRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
+			r.Get("/ids", getIDs(service, tagRepoType, noRepoType, config.API.Limits.ArticlesPerQuery, log))
 
 			r.Post("/read", articlesReadStateChange(service, tagRepoType, log))
 			r.Delete("/read", articlesReadStateChange(service, tagRepoType, log))

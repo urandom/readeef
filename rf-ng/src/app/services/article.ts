@@ -23,6 +23,7 @@ import 'rxjs/add/operator/shareReplay'
 import 'rxjs/add/operator/startWith'
 import 'rxjs/add/operator/switchMap'
 import { ObserveOnSubscriber } from 'rxjs/operators/observeOn';
+import { fromEvent } from 'rxjs/observable/fromEvent';
 
 export class Article {
     id: number
@@ -157,6 +158,8 @@ interface ArticleProperty {
 interface ArticlesPayload {
     articles: Article[]
     fromEvent: boolean
+    unreadIDs?: Set<number> 
+    unreadIDRange?: number[]
 }
 
 @Injectable()
@@ -164,7 +167,7 @@ export class ArticleService {
     private articles : ConnectableObservable<Article[]>
     private paging = new BehaviorSubject<number>(0)
     private stateChange = new Subject<ArticleProperty>()
-    private updateSubject = new Subject<QueryOptions>()
+    private updateSubject = new Subject<[QueryOptions, number]>()
     private refresh = new BehaviorSubject<any>(null)
     private limit: number = 200
     private initialFetched = false
@@ -228,11 +231,18 @@ export class ArticleService {
                             fromEvent: false,
                         }),
                         this.updateSubject.switchMap(opts =>
-                             this.getArticlesFor(source, opts, this.limit, 0)
-                        ).map(articles => <ArticlesPayload>{
-                            articles: articles,
-                            fromEvent: true,
-                        }),
+                             this.getArticlesFor(
+                                 source, opts[0], this.limit, 0
+                            ).combineLatest(
+                                this.ids(source, { unreadOnly: true, beforeID: opts[0].afterID + 1, afterID: opts[1] - 1 }),
+                                (articles, ids) => <ArticlesPayload>{
+                                    articles: articles,
+                                    unreadIDs: new Set(ids),
+                                    unreadIDRange: [opts[1], opts[0].afterID],
+                                    fromEvent: true 
+                                }
+                            )
+                        ),
                         this.eventService.feedUpdate.filter(event =>
                             this.shouldUpdate(event, source, feedsTags[1])
                         ).delay(30000).flatMap(event =>
@@ -301,6 +311,9 @@ export class ArticleService {
                             acc.indexMap = new Map()
                             for (let i = 0; i < acc.articles.length; i++) {
                                 let article = acc.articles[i];
+                                if (payload.unreadIDs && article.id >= payload.unreadIDRange[0] && article.id <= payload.unreadIDRange[1]) {
+                                    article.read = !payload.unreadIDs.has(article.id);
+                                }
                                 acc.indexMap[article.id] = i;
                             }
 
@@ -384,32 +397,26 @@ export class ArticleService {
                 ).first().switchMap(v =>
                     this.articles.filter(
                         articles => articles.length > 0
-                    ).map(articles => {
-                        if (this.preferences.olderFirst) {
-                            let id = Math.min.apply(
-                                Math, articles.map(article => article.id)
-                            );
-
-                            return { olderFirst: false, beforeID: id };
-                        } else {
-                            let id = Math.max.apply(
-                                Math, articles.map(article => article.id)
-                            );
-
-                            return { olderFirst: true, afterID: id };
-                        }
-                    }).first()
+                    ).map(
+                        articles => articles.map(a => a.id)
+                    ).map(ids =>
+                        [Math.min.apply(Math, ids), Math.max.apply(Math, ids)]
+                    ).first().map((minMax) : [QueryOptions, number] =>
+                        this.preferences.olderFirst ?
+                            [ { afterID: minMax[1] } , minMax[0]] :
+                            [ { olderFirst: true, afterID: minMax[1] } , minMax[0]]
+                    )
                 );
             }
 
-            return Observable.of({});
-        }).subscribe(opts => {
+            return Observable.of(undefined);
+        }).filter(
+            opts => opts !== undefined
+        ).subscribe(opts => {
             if (opts === null) {
                 this.refreshArticles();
             }
-            if (Object.keys(opts).length > 0) {
-                this.updateSubject.next(opts);
-            }
+            this.updateSubject.next(opts);
         });
 
         this.eventService.articleState.subscribe(
@@ -463,6 +470,14 @@ export class ArticleService {
 
     requestNextPage() {
         this.paging.next(this.paging.value + 1);
+    }
+
+    ids(source: Source, options: QueryOptions): Observable<number[]> {
+        return this.api.get(this.buildURL(`article${source.url}/ids`, options))
+            .map(response => {
+                let ids : number[] = response.json()['ids'];
+                return ids;
+            })
     }
 
     formatArticle(id: number): Observable<ArticleFormat> {
