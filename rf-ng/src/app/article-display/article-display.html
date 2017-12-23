@@ -7,7 +7,7 @@
                         {{ item.favorite ? "bookmark" : "bookmark_border" }}
                     </mat-icon>
                 </button>
-                <a href="{{ item.link }}" target="_blank" [innerHTML]="item.title">
+                <a href="{{ item.link }}" target="_blank" [innerHTML]="item.title" (click)="viewActive()">
                 </a>
             </h3>
             <div class="row align-items-center info" [class.read]="item.read">
@@ -25,7 +25,7 @@
 
             <div class="row">
                 <div class="col">
-                    <a mat-button href="{{ item.link }}" target="_blank" i18n>
+                    <a mat-button href="{{ item.link }}" target="_blank" (click)="viewActive()" i18n>
                         View
                     </a>
                 </div>

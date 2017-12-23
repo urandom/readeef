@@ -17,6 +17,7 @@ import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/mergeMap'
 import 'rxjs/add/operator/switchMap'
 import * as moment from 'moment';
+import { viewParentEl } from '@angular/core/src/view/util';
 
 enum State {
     DESCRIPTION, FORMAT, SUMMARY,
@@ -291,10 +292,17 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     }
 
     @HostListener('window:keydown.v')
-    viewActive() {
+    viewActive() : boolean {
         if (this.active != null) {
-            window.open(this.active.link, "_blank");
+            if (window.dispatchEvent(new CustomEvent('open-link', {
+                cancelable: true,
+                detail: this.active.link,
+            }))) {
+                window.open(this.active.link, "_blank");
+            }
         }
+
+        return false;
     }
 
     @HostListener('window:keydown.c')
