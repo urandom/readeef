@@ -294,7 +294,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     @HostListener('window:keydown.v')
     viewActive() : boolean {
         if (this.active != null) {
-            if (window.dispatchEvent(new CustomEvent('open-link', {
+            if (document.body.dispatchEvent(new CustomEvent('open-link', {
                 cancelable: true,
                 detail: this.active.link,
             }))) {
