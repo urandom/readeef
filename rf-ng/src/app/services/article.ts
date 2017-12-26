@@ -276,6 +276,15 @@ export class ArticleService {
 
                         return payload;
                     }).scan((acc, payload) => {
+                        if (payload.unreadIDs) {
+                            for (let i = 0; i < acc.articles.length; i++) {
+                                let id = acc.articles[i].id;
+                                if (id >= payload.unreadIDRange[0] && id <= payload.unreadIDRange[1]) {
+                                    acc.articles[i].read = !payload.unreadIDs.has(id);
+                                }
+                            }
+                        }
+
                         if (payload.fromEvent) {
                             let updates = new Array<Article>();
 
@@ -311,9 +320,6 @@ export class ArticleService {
                             acc.indexMap = new Map()
                             for (let i = 0; i < acc.articles.length; i++) {
                                 let article = acc.articles[i];
-                                if (payload.unreadIDs && article.id >= payload.unreadIDRange[0] && article.id <= payload.unreadIDRange[1]) {
-                                    article.read = !payload.unreadIDs.has(article.id);
-                                }
                                 acc.indexMap[article.id] = i;
                             }
 
