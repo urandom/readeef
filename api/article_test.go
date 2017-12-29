@@ -679,12 +679,13 @@ func Test_articleStateChange(t *testing.T) {
 	}
 }
 
-func Test_articlesReadStateChange(t *testing.T) {
+func Test_articlesStateChange(t *testing.T) {
 	tests := []struct {
 		name       string
 		value      bool
 		url        string
 		repoType   articleRepoType
+		state      articleState
 		noUser     bool
 		badQuery   bool
 		noFeed     bool
@@ -710,6 +711,7 @@ func Test_articlesReadStateChange(t *testing.T) {
 		{name: "feed", url: "/?limit=25&unreadFirst", repoType: feedRepoType, code: 200, opts: content.QueryOptions{Limit: 25, UnreadFirst: true, FeedIDs: []content.FeedID{1}, SortField: content.SortByDate, SortOrder: content.DescendingOrder}},
 		{name: "no feed", url: "/?limit=25&unreadFirst", repoType: feedRepoType, code: 400, noFeed: true},
 		{name: "user", url: "/?limit=25&beforeTime=100000&afterTime=500", repoType: userRepoType, code: 200, opts: content.QueryOptions{Limit: 25, AfterDate: time.Unix(500, 0), BeforeDate: time.Unix(100000, 0), SortField: content.SortByDate, SortOrder: content.DescendingOrder}},
+		{name: "user favorite", url: "/?id=5&id=13&id=14", repoType: userRepoType, state: favorite, code: 200, opts: content.QueryOptions{IDs: []content.ArticleID{5, 13, 14}, SortField: content.SortByDate, SortOrder: content.DescendingOrder}},
 	}
 	type data struct {
 		Success bool `json:"success"`
@@ -777,7 +779,7 @@ func Test_articlesReadStateChange(t *testing.T) {
 					break
 				}
 
-				articleRepo.EXPECT().Read(tt.value, userMatcher{user}, gomock.Any()).DoAndReturn(func(value bool, user content.User, opts ...content.QueryOpt) error {
+				do := func(value bool, user content.User, opts ...content.QueryOpt) error {
 					o := content.QueryOptions{}
 					o.Apply(opts)
 
@@ -793,10 +795,16 @@ func Test_articlesReadStateChange(t *testing.T) {
 					}
 
 					return tt.stateErr
-				})
+				}
+
+				if tt.state == read {
+					articleRepo.EXPECT().Read(tt.value, userMatcher{user}, gomock.Any()).DoAndReturn(do)
+				} else if tt.state == favorite {
+					articleRepo.EXPECT().Favor(tt.value, userMatcher{user}, gomock.Any()).DoAndReturn(do)
+				}
 			}
 
-			articlesReadStateChange(service, tt.repoType, logger).ServeHTTP(w, r)
+			articlesStateChange(service, tt.repoType, tt.state, logger).ServeHTTP(w, r)
 
 			if tt.code != w.Code {
 				t.Errorf("articleReadStateChange() code = %v, want %v", w.Code, tt.code)

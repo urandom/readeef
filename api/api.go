@@ -304,8 +304,8 @@ func articlesRoutes(
 
 		r.Get("/ids", getIDs(service, userRepoType, noRepoType, config.API.Limits.ArticlesPerQuery, log))
 
-		r.Post("/read", articlesReadStateChange(service, userRepoType, log))
-		r.Delete("/read", articlesReadStateChange(service, userRepoType, log))
+		r.Post("/read", articlesStateChange(service, userRepoType, read, log))
+		r.Delete("/read", articlesStateChange(service, userRepoType, read, log))
 
 		r.Route("/{articleID:[0-9]+}", func(r chi.Router) {
 			r.Use(articleContext(articleRepo, processors, log))
@@ -322,10 +322,13 @@ func articlesRoutes(
 
 		r.Route("/favorite", func(r chi.Router) {
 			r.Get("/", getArticles(service, favoriteRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
+			r.Post("/", articlesStateChange(service, userRepoType, favorite, log))
+			r.Delete("/", articlesStateChange(service, userRepoType, favorite, log))
+
 			r.Get("/ids", getIDs(service, favoriteRepoType, noRepoType, config.API.Limits.ArticlesPerQuery, log))
 
-			r.Post("/read", articlesReadStateChange(service, favoriteRepoType, log))
-			r.Delete("/read", articlesReadStateChange(service, favoriteRepoType, log))
+			r.Post("/read", articlesStateChange(service, favoriteRepoType, read, log))
+			r.Delete("/read", articlesStateChange(service, favoriteRepoType, read, log))
 		})
 
 		r.Route("/popular", func(r chi.Router) {
@@ -354,8 +357,8 @@ func articlesRoutes(
 			r.Get("/", getArticles(service, feedRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 			r.Get("/ids", getIDs(service, feedRepoType, noRepoType, config.API.Limits.ArticlesPerQuery, log))
 
-			r.Post("/read", articlesReadStateChange(service, feedRepoType, log))
-			r.Delete("/read", articlesReadStateChange(service, feedRepoType, log))
+			r.Post("/read", articlesStateChange(service, feedRepoType, read, log))
+			r.Delete("/read", articlesStateChange(service, feedRepoType, read, log))
 		})
 
 		r.Route("/tag/{tagID:[0-9]+}", func(r chi.Router) {
@@ -364,8 +367,8 @@ func articlesRoutes(
 			r.Get("/", getArticles(service, tagRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 			r.Get("/ids", getIDs(service, tagRepoType, noRepoType, config.API.Limits.ArticlesPerQuery, log))
 
-			r.Post("/read", articlesReadStateChange(service, tagRepoType, log))
-			r.Delete("/read", articlesReadStateChange(service, tagRepoType, log))
+			r.Post("/read", articlesStateChange(service, tagRepoType, read, log))
+			r.Delete("/read", articlesStateChange(service, tagRepoType, read, log))
 		})
 
 	}}

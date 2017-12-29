@@ -407,9 +407,10 @@ func articleStateChange(
 	}
 }
 
-func articlesReadStateChange(
+func articlesStateChange(
 	service repo.Service,
 	repoType articleRepoType,
+	state articleState,
 	log log.Log,
 ) http.HandlerFunc {
 	articleRepo := service.ArticleRepo()
@@ -457,8 +458,15 @@ func articlesReadStateChange(
 			return
 		}
 
-		if err := articleRepo.Read(value, user, o...); err != nil {
-			fatal(w, log, "Error setting read state: %+v", err)
+		var err error
+		if state == read {
+			err = articleRepo.Read(value, user, o...)
+		} else {
+			err = articleRepo.Favor(value, user, o...)
+		}
+
+		if err != nil {
+			fatal(w, log, "Error setting "+state.String()+" state: %+v", err)
 			return
 		}
 
