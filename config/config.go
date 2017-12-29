@@ -2,6 +2,7 @@ package config
 
 import (
 	"io/ioutil"
+	"os"
 
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
@@ -31,15 +32,9 @@ func Read(path string) (Config, error) {
 		return Config{}, errors.WithMessage(err, "initializing default config")
 	}
 
-	if path != "" {
-		b, err := ioutil.ReadFile(path)
-		if err != nil {
-			return Config{}, errors.Wrapf(err, "reading config from %s", path)
-		}
-
-		if err = toml.Unmarshal(b, &c); err != nil {
-			return Config{}, errors.Wrapf(err, "unmarshaling toml config from %s", path)
-		}
+	c, err = readPath(c, path)
+	if err != nil {
+		return Config{}, err
 	}
 
 	for _, c := range []converter{&c.API, &c.Log, &c.Timeout, &c.FeedManager, &c.Popularity} {
@@ -48,4 +43,22 @@ func Read(path string) (Config, error) {
 
 	return c, nil
 
+}
+
+func readPath(c Config, path string) (Config, error) {
+	if path != "" {
+		b, err := ioutil.ReadFile(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return c, nil
+			}
+			return Config{}, errors.Wrapf(err, "reading config from %s", path)
+		}
+
+		if err = toml.Unmarshal(b, &c); err != nil {
+			return Config{}, errors.Wrapf(err, "unmarshaling toml config from %s", path)
+		}
+	}
+
+	return c, nil
 }
