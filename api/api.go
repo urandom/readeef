@@ -42,13 +42,7 @@ func Mux(
 	access mw,
 ) (http.Handler, error) {
 
-	languageSupport := false
-	if languages, err := readeef.GetLanguages(fs); err == nil {
-		languageSupport = len(languages) > 0
-	}
-
 	features := features{
-		I18N:       languageSupport,
 		Popularity: len(config.Popularity.Providers) > 0,
 		ProxyHTTP:  hasProxy(config),
 		Search:     searchProvider != nil,

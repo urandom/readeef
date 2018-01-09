@@ -13,8 +13,8 @@ func Test_featuresHandler(t *testing.T) {
 		features features
 		wantErr  bool
 	}{
-		{"all", features{I18N: true, Search: true, Extractor: true, ProxyHTTP: true, Popularity: true}, false},
-		{"some", features{I18N: true, Extractor: true}, false},
+		{"all", features{Search: true, Extractor: true, ProxyHTTP: true, Popularity: true}, false},
+		{"some", features{Extractor: true}, false},
 	}
 	type data struct {
 		Features features `json:"features"`
