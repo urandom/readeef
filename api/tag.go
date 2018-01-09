@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -125,16 +126,32 @@ func setFeedTags(repo repo.Feed, log log.Log) http.HandlerFunc {
 			return
 		}
 
-		tagStrings := r.Form["tag"]
-		var tagValues []content.TagValue
-		for _, t := range tagStrings {
-			tagValues = append(tagValues, content.TagValue(t))
+		tagValues := make([]content.TagValue, len(r.Form["tag"]))
+		tagIDs := make([]content.TagID, len(r.Form["id"]))
+		for i, t := range r.Form["tag"] {
+			tagValues[i] = content.TagValue(t)
 		}
 
-		tags := make([]*content.Tag, 0, len(tagValues))
+		for i, v := range r.Form["id"] {
+			id, err := strconv.ParseInt(v, 10, 64)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Invalid id: %s", v), http.StatusBadRequest)
+				break
+			}
+
+			tagIDs[i] = content.TagID(id)
+		}
+
+		tags := make([]*content.Tag, 0, len(tagValues)+len(tagIDs))
 		for i := range tagValues {
 			if tagValues[i] != "" {
 				tags = append(tags, &content.Tag{Value: tagValues[i]})
+			}
+		}
+
+		for i := range tagIDs {
+			if tagIDs[i] > 0 {
+				tags = append(tags, &content.Tag{ID: tagIDs[i]})
 			}
 		}
 
