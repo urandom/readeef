@@ -282,7 +282,7 @@ func articlesRoutes(
 	tagRepo := service.TagRepo()
 
 	return routes{path: "/article", route: func(r chi.Router) {
-		r.Use(timeout(10*time.Second), gzip, access)
+		r.Use(timeout(30*time.Second), gzip, access)
 		r.Get("/", getArticles(service, userRepoType, noRepoType, processors, config.API.Limits.ArticlesPerQuery, log))
 
 		if searchProvider != nil {
