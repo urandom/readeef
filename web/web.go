@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
-	"strings"
 	"time"
 
 	"golang.org/x/text/language"
@@ -40,8 +39,6 @@ func Mux(fs http.FileSystem, sessionManager *scs.Manager, config config.Config, 
 	}
 
 	fileServer := http.FileServer(fs)
-	pathCache := make(map[string]e, 50)
-	buildPathCache(path.Join("/", config.UI.Path), pathCache, fs)
 
 	mux.Handle("/", http.TimeoutHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session := sessionManager.Load(r)
@@ -54,46 +51,33 @@ func Mux(fs http.FileSystem, sessionManager *scs.Manager, config config.Config, 
 		}
 
 		current := path.Join("/", config.UI.Path, r.URL.Path)
-		if _, ok := pathCache[current]; ok {
-			if strings.HasSuffix(r.URL.Path, "/") {
-				r.URL.Path = current + "/"
-			} else {
-				r.URL.Path = current
-			}
-			fileServer.ServeHTTP(w, r)
-		} else {
-			r.URL.Path = closestParent(current, fs)
-			fileServer.ServeHTTP(w, r)
+		path, err := closestParent(current, fs)
+		if err != nil {
+			log.Printf("Error getting file path for %s: %+v", r.URL.Path, err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
 		}
+		r.URL.Path = path
+		fileServer.ServeHTTP(w, r)
 
 	}), time.Second, ""))
 
 	return sessionManager.Use(mux), nil
 }
 
-func buildPathCache(p string, cache map[string]e, fs http.FileSystem) {
+func closestParent(p string, fs http.FileSystem) (string, error) {
 	f, err := fs.Open(p)
 	if err == nil {
-		defer f.Close()
-		cache[p] = e{}
-
 		stat, err := f.Stat()
-		if err == nil && stat.IsDir() {
-			files, err := f.Readdir(-1)
-			if err == nil {
-				for _, file := range files {
-					buildPathCache(path.Join(p, file.Name()), cache, fs)
-				}
-			}
-		}
-	}
-}
-
-func closestParent(p string, fs http.FileSystem) string {
-	f, err := fs.Open(p)
-	if err == nil {
 		f.Close()
-		return p + "/"
+		if err != nil {
+			return "", errors.Wrapf(err, "getting file stat for %s", p)
+		}
+
+		if stat.IsDir() {
+			return p + "/", nil
+		}
+		return p, nil
 	}
 
 	return closestParent(path.Dir(p), fs)
