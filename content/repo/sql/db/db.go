@@ -3,6 +3,9 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -26,13 +29,20 @@ func New(log log.Log) *DB {
 }
 
 func (db *DB) Open(driver, connect string) (err error) {
+	if u, err := url.Parse(connect); err == nil && u.Scheme == "file" {
+		if dir := filepath.Dir(u.Opaque); dir != "" {
+			if err := os.MkdirAll(dir, 0700); err != nil {
+				return errors.Wrapf(err, "creating db directory %s", dir)
+			}
+		}
+	}
 	db.DB, err = sqlx.Connect(driver, connect)
 
 	if err == nil {
 		err = db.init()
 	}
 
-	return
+	return err
 }
 
 func (db *DB) CreateWithID(tx *sqlx.Tx, sql string, arg interface{}) (int64, error) {
