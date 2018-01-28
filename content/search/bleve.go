@@ -66,7 +66,7 @@ func NewBleve(path string, size int64, service repo.Service, log log.Log) (bleve
 		index, err = bleve.NewUsing(path, m, upsidedown.Name, goleveldb.Name, nil)
 
 		if err != nil {
-			return bleveSearch{}, errors.Wrap(err, "creating search index")
+			return bleveSearch{}, errors.Wrapf(err, "creating search index with path %s", path)
 		}
 	} else {
 		return bleveSearch{}, errors.Wrapf(err, "getting file '%s' stat", path)

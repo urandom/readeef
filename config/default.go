@@ -21,14 +21,14 @@ func defaultConfig() (Config, error) {
 // DefaultCfg shows the default configuration of the readeef server
 var DefaultCfg = `
 [server]
-	port = 80
+	port = 8080
 [server.auto-cert]
 	storage-path = "./storage/certs"
 [log]
-	level = "error"    # error, info, debug
+	level = "info"     # error, info, debug
 	file = "-"         # stderr, or a filename
 	formatter = "text" # text, json
-	access-file = "-"  # stdout or a filename
+	access-file = ""   # stdout or a filename
 [api]
 	emulators = []     # ["tt-rss", "fever"]
 [api.limits]
@@ -54,16 +54,16 @@ var DefaultCfg = `
 	processors = ["cleanup", "top-image-marker", "absolutize-urls", "unescape"]
 	proxy-http-url-template = "/proxy?url={{ . }}"
 [content]
-	extractor = "goose" # readability
-	thumbnailer = "description"
-	search-provider = "bleve"
-
-	article-processors = ["insert-thumbnail-target"]
-
-	search-batch-size = 100
-
+	thumbnail-generator = "description"
+[content.extract]
+	generator = "goose" # readability
+[content.search]
+	provider = "bleve"
+	batch-size = 100
 	bleve-path = "./storage/search.bleve"
 	elastic-url = "http://localhost:9200"
+[content.article]
+	processors = ["insert-thumbnail-target"]
 	proxy-http-url-template = "/proxy?url={{ . }}"
 [ui]
 	path = "./rf-ng/ui"
