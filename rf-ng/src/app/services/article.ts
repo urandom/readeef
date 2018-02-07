@@ -595,13 +595,7 @@ export class ArticleService {
                     .map(
                         response => new ArticlesResponse().fromJSON(response.json()).articles
                     ).map(
-                        read => {
-                            let v = articles.concat(read)
-
-                            console.log(v.length);
-
-                            return v;
-                        }
+                        read => articles.concat(read)
                     )
             });
         }
