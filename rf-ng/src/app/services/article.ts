@@ -6,7 +6,7 @@ import { Router, ActivatedRouteSnapshot, NavigationEnd, ParamMap, Data, Params }
 import { Feed, FeedService } from "../services/feed"
 import { Tag, TagFeedIDs, TagService } from "../services/tag"
 import { EventService, FeedUpdateEvent, QueryOptions as EventableQueryOptions } from "../services/events"
-import { QueryPreferences, PreferencesService } from "../services/preferences"
+import { ListPreferences, PreferencesService } from "../services/preferences"
 import { Observable, BehaviorSubject, ConnectableObservable, Subject } from "rxjs";
 import { listRoute, getArticleRoute } from "../main/routing-util"
 import 'rxjs/add/observable/interval'
@@ -24,6 +24,7 @@ import 'rxjs/add/operator/startWith'
 import 'rxjs/add/operator/switchMap'
 import { ObserveOnSubscriber } from 'rxjs/operators/observeOn';
 import { fromEvent } from 'rxjs/observable/fromEvent';
+import { QueryEncoder } from '@angular/http/src/url_search_params';
 
 export class Article {
     id: number
@@ -81,12 +82,14 @@ class ArticleStateResponse extends Serializable {
 export interface QueryOptions {
     limit?: number,
     offset?: number,
-    unreadFirst?: boolean,
     unreadOnly?: boolean,
+    readOnly?: boolean,
     olderFirst?: boolean,
     ids?: number[],
     beforeID?: number
     afterID?: number,
+    beforeTime?: number,
+    afterTime?: number,
 }
 
 export interface Source {
@@ -165,7 +168,7 @@ interface ArticlesPayload {
 @Injectable()
 export class ArticleService {
     private articles : ConnectableObservable<Article[]>
-    private paging = new BehaviorSubject<number>(0)
+    private paging = new BehaviorSubject<any>(null)
     private stateChange = new Subject<ArticleProperty>()
     private updateSubject = new Subject<[QueryOptions, number]>()
     private refresh = new BehaviorSubject<any>(null)
@@ -222,17 +225,17 @@ export class ArticleService {
 
                 return queryPreferences.switchMap(prefs =>
                     Observable.merge(
-                        this.paging.map(page => {
-                            return page * this.limit;
-                        }).switchMap(offset => {
-                            return this.getArticlesFor(source, prefs, this.limit, offset);
+                        this.paging.flatMap(
+                            v => this.datePaging(prefs.unreadFirst)
+                        ).switchMap(paging => {
+                            return this.getArticlesFor(source, {olderFirst: prefs.olderFirst, unreadOnly: prefs.unreadOnly}, this.limit, paging);
                         }).map(articles => <ArticlesPayload>{
                             articles: articles,
                             fromEvent: false,
                         }),
                         this.updateSubject.switchMap(opts =>
                              this.getArticlesFor(
-                                 source, opts[0], this.limit, 0
+                                 source, opts[0], this.limit, []
                             ).combineLatest(
                                 this.ids(source, { unreadOnly: true, beforeID: opts[0].afterID + 1, afterID: opts[1] - 1 }),
                                 (articles, ids) => <ArticlesPayload>{
@@ -250,7 +253,7 @@ export class ArticleService {
                                 ids: event.articleIDs,
                                 olderFirst: prefs.olderFirst,
                                 unreadOnly: prefs.unreadOnly,
-                            }, this.limit, 0)
+                            }, this.limit, [])
                         ).map(articles => <ArticlesPayload>{
                             articles: articles,
                             fromEvent: true,
@@ -475,7 +478,7 @@ export class ArticleService {
     }
 
     requestNextPage() {
-        this.paging.next(this.paging.value + 1);
+        this.paging.next(null);
     }
 
     ids(source: Source, options: QueryOptions): Observable<number[]> {
@@ -546,12 +549,62 @@ export class ArticleService {
         source: Source,
         prefs: QueryOptions,
         limit: number,
-        offset: number,
+        paging: number[],
     ): Observable<Article[]> {
-        let options : QueryOptions = Object.assign({}, prefs, {limit: limit, offset: offset})
+        let original : QueryOptions = Object.assign({}, prefs, {limit: limit});
+        let options : QueryOptions = Object.assign({}, original);
+
+        let time = -1
+        if (paging.length == 1) {
+            time = paging[0];
+        } else if (paging.length == 2) {
+            time = paging[0];
+            options.unreadOnly = true;
+        }
+
+        if (time != -1) {
+            if (prefs.olderFirst) {
+                options.afterTime = time;
+            } else {
+                options.beforeTime = time;
+            }
+        }
 
         let res = this.api.get(this.buildURL("article" + source.url, options))
             .map(response => new ArticlesResponse().fromJSON(response.json()).articles);
+
+        if (paging.length == 2) {
+            options = Object.assign({}, original);
+            options.readOnly = true;
+            if (paging[1] != -1) {
+                if (prefs.olderFirst) {
+                    options.afterTime = paging[1];
+                } else {
+                    options.beforeTime = paging[1];
+                }
+            }
+
+            res = res.flatMap(articles => {
+                if (articles.length == limit) {
+                    return Observable.of(articles);
+                }
+
+                options.limit = limit - articles.length;
+
+                return this.api.get(this.buildURL("article" + source.url, options))
+                    .map(
+                        response => new ArticlesResponse().fromJSON(response.json()).articles
+                    ).map(
+                        read => {
+                            let v = articles.concat(read)
+
+                            console.log(v.length);
+
+                            return v;
+                        }
+                    )
+            });
+        }
 
         if (!this.initialFetched) {
             this.initialFetched = true;
@@ -571,7 +624,12 @@ export class ArticleService {
                         if (article.id == initial.id) {
                             return articles
                         }
-                        if (this.shouldInsert(initial, article, options)) {
+                        let prefs: ListPreferences = {
+                            unreadFirst: paging.length == 2,
+                            unreadOnly: options.unreadOnly,
+                            olderFirst: options.olderFirst,
+                        };
+                        if (this.shouldInsert(initial, article, prefs)) {
                             articles.splice(i, 0, initial)
                             return articles
                         }
@@ -590,7 +648,7 @@ export class ArticleService {
 
     private buildURL(base: string, options?: QueryOptions) : string {
         if (!options) {
-            options = {unreadFirst: true};
+            options = {};
         }
 
         if (!options.limit) {
@@ -656,6 +714,53 @@ export class ArticleService {
         }
     }
 
+    private datePaging(unreadFirst: boolean) : Observable<number[]> {
+        return this.articles.take(1).map(articles => {
+            if (articles.length == 0) {
+                // Initial query
+                return unreadFirst ? [-1, -1] : [-1];
+            }
+
+            let last = articles[articles.length - 1];
+            let paging : number[] = [last.date.getTime() / 1000];
+
+            if (unreadFirst) {
+                // fast-path
+                if (!last.read) {
+                    paging.unshift(paging[0]);
+                    return paging;
+                }
+
+                for (let i = 1; i < articles.length; i++) {
+                    let article = articles[i];
+                    let prev = articles[i-1];
+                    if (article.read && !prev.read) {
+                        paging.unshift(prev.date.getTime() / 1000);
+                        break;
+                    }
+                }
+
+                // no unread articles
+                if (paging.length == 1) {
+                    paging.unshift(-1);
+                }
+            }
+
+            return paging;
+        });
+    }
+
+    private hasOptions(options: EventableQueryOptions) : boolean {
+        if (!options.feedIDs && !options.readOnly &&
+            !options.unreadOnly && !options.favoriteOnly &&
+            !options.untaggedOnly && !options.beforeID &&
+            !options.afterID && !options.beforeDate && !options.afterDate) {
+            return false;
+        }
+
+        return true;
+    }
+
     private shouldUpdate(event : FeedUpdateEvent, source: Source, tagMap: Map<number, number[]>) : boolean {
         let s = source
         if (s instanceof UserSource) {
@@ -674,7 +779,7 @@ export class ArticleService {
         return false;
     }
 
-    private shouldInsert(incoming: Article, current: Article, options: QueryOptions) : boolean {
+    private shouldInsert(incoming: Article, current: Article, options: ListPreferences) : boolean {
         if (options.unreadFirst && incoming.read != current.read) {
             return !incoming.read;
         }
@@ -690,17 +795,6 @@ export class ArticleService {
         }
 
         return false
-    }
-
-    private hasOptions(options: EventableQueryOptions) : boolean {
-        if (!options.feedIDs && !options.readOnly &&
-            !options.unreadOnly && !options.favoriteOnly &&
-            !options.untaggedOnly && !options.beforeID &&
-            !options.afterID && !options.beforeDate && !options.afterDate) {
-            return false;
-        }
-
-        return true;
     }
 
     private shouldSet(article: Article, options: EventableQueryOptions, tagged: Set<number>) : boolean {

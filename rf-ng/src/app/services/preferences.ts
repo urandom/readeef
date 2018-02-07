@@ -10,7 +10,7 @@ class Prefs extends Serializable {
     unreadFirst: boolean
 }
 
-export interface QueryPreferences {
+export interface ListPreferences {
     olderFirst: boolean
     unreadOnly: boolean
     unreadFirst: boolean
@@ -19,7 +19,7 @@ export interface QueryPreferences {
 @Injectable()
 export class PreferencesService {
     private prefs = new Prefs()
-    private queryPreferencesSubject : BehaviorSubject<QueryPreferences>
+    private queryPreferencesSubject : BehaviorSubject<ListPreferences>
     private static key = "preferences"
 
     constructor() {
@@ -54,7 +54,7 @@ export class PreferencesService {
         this.saveToStorage();
     }
 
-    queryPreferences() : Observable<QueryPreferences> {
+    queryPreferences() : Observable<ListPreferences> {
         return this.queryPreferencesSubject.asObservable();
     }
 

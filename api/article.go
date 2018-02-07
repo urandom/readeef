@@ -480,17 +480,9 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request, articlesLimit i
 	query := r.Form
 
 	var err error
-	var limit, offset int
+	var limit int
 	if query.Get("limit") != "" {
 		limit, err = strconv.Atoi(query.Get("limit"))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return o, true
-		}
-	}
-
-	if query.Get("offset") != "" {
-		offset, err = strconv.Atoi(query.Get("offset"))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return o, true
@@ -501,7 +493,7 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request, articlesLimit i
 		limit = articlesLimit
 	}
 
-	o = append(o, content.Paging(limit, offset))
+	o = append(o, content.Paging(limit, 0))
 
 	var afterID, beforeID int64
 	if query.Get("afterID") != "" {
@@ -563,6 +555,10 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request, articlesLimit i
 
 	if _, ok := query["unreadOnly"]; ok {
 		o = append(o, content.UnreadOnly)
+	}
+
+	if _, ok := query["readOnly"]; ok {
+		o = append(o, content.ReadOnly)
 	}
 
 	if _, ok := query["unreadFirst"]; ok {

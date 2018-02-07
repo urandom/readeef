@@ -301,43 +301,6 @@ func getArticles(login content.Login, dbo *db.DB, log log.Log, opts content.Quer
 		}
 	}
 
-	/* Much faster than using 'ORDER BY read'
-	 * TODO: potential overall improvement for fetching pages other than the
-	 * first by using the unread count and moving the offset based on it
-	 */
-	if opts.UnreadFirst && opts.Offset == 0 {
-		originalUnreadOnly := opts.UnreadOnly
-
-		opts.UnreadFirst = false
-		opts.UnreadOnly = true
-
-		articles, err := internalGetArticles(login, dbo, log, opts)
-		if err != nil {
-			return []content.Article{}, errors.WithMessage(err, "getting unread articles first")
-		}
-
-		if !originalUnreadOnly && (opts.Limit == 0 || opts.Limit > len(articles)) {
-			if opts.Limit > 0 {
-				opts.Limit -= len(articles)
-			}
-			opts.UnreadOnly = false
-			opts.ReadOnly = true
-
-			readOnly, err := internalGetArticles(login, dbo, log, opts)
-			if err != nil {
-				return []content.Article{}, errors.WithMessage(err, "getting read articles only")
-			}
-
-			articles = append(articles, readOnly...)
-		}
-
-		return articles, nil
-	}
-
-	return internalGetArticles(login, dbo, log, opts)
-}
-
-func internalGetArticles(login content.Login, dbo *db.DB, log log.Log, opts content.QueryOptions) ([]content.Article, error) {
 	renderData := getArticlesData{}
 
 	var args map[string]interface{}
@@ -627,9 +590,14 @@ func constructSQLQueryOptions(
 
 	var paging string
 	if opts.Limit > 0 {
-		paging = " LIMIT :limit OFFSET :offset"
-		args[limit] = opts.Limit
-		args[offset] = opts.Offset
+		if opts.Offset > 0 {
+			paging = " LIMIT :limit OFFSET :offset"
+			args[limit] = opts.Limit
+			args[offset] = opts.Offset
+		} else {
+			paging = " LIMIT :limit"
+			args[limit] = opts.Limit
+		}
 	}
 
 	return join, where, order, paging, args
