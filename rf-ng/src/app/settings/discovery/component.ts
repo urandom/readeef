@@ -57,7 +57,7 @@ export class DiscoverySettingsComponent {
                     observer.complete();
                 }
 
-                fileReader.onerror = function(event: ErrorEvent) {
+                fileReader.onerror = function(event: ErrorEvent) : any {
                     observer.error(event);
                 }
 

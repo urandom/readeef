@@ -69,13 +69,13 @@ export class EventService {
 
         this.feedUpdate = this.eventSourceObservable.flatMap(source => 
             Observable.fromEvent(source, "feed-update")
-        ).map((event : DataEvent) =>
+        ).map((event : MessageEvent) =>
             new FeedUpdateEvent().fromJSON(JSON.parse(event.data))
         )
 
         this.articleState = this.eventSourceObservable.flatMap(source => 
             Observable.fromEvent(source, "article-state-change")
-        ).map((event: DataEvent) =>
+        ).map((event: MessageEvent) =>
             new ArticleStateEvent().fromJSON(JSON.parse(event.data))
         )
     }

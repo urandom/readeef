@@ -87,17 +87,31 @@ func (e elasticSearch) Search(
 		}
 	}
 
-	idFilter := elastic.NewBoolQuery()
+	filter := make([]elastic.Query, 1, 3)
 
 	for _, id := range feedIDs {
-		idFilter = idFilter.Should(elastic.NewTermQuery("feed_id", int64(id)))
+		filter[0] = elastic.NewBoolQuery().Should(elastic.NewTermQuery("feed_id", int64(id)))
 	}
 
-	query = elastic.NewBoolQuery().Must(query).Filter(idFilter)
+	if !o.BeforeDate.IsZero() || !o.AfterDate.IsZero() {
+		filter = append(
+			filter,
+			elastic.NewRangeQuery("date").Gt(o.AfterDate).Lt(o.BeforeDate),
+		)
+	}
+
+	if o.BeforeID > 0 || o.AfterID > 0 {
+		filter = append(
+			filter,
+			elastic.NewRangeQuery("id").Gt(o.AfterID).Lt(o.BeforeID),
+		)
+	}
+
+	query = elastic.NewBoolQuery().Must(query).Filter(filter...)
 
 	search.Query(query)
 	search.Highlight(elastic.NewHighlight().PreTags("<mark>").PostTags("</mark>").Field("title").Field("description"))
-	search.From(o.Offset).Size(o.Limit)
+	search.Size(o.Limit)
 
 	switch o.SortField {
 	case content.SortByDate:

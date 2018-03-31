@@ -104,7 +104,7 @@ func (b bleveSearch) Search(
 	}
 
 	queries := make([]query.Query, len(feedIDs))
-	conjunct := make([]query.Query, 2)
+	conjunct := make([]query.Query, 2, 4)
 
 	inclusive := true
 	for i, id := range feedIDs {
@@ -120,6 +120,22 @@ func (b bleveSearch) Search(
 	conjunct[0] = q
 	conjunct[1] = disjunct
 
+	if !o.BeforeDate.IsZero() || !o.AfterDate.IsZero() {
+		q := query.NewDateRangeQuery(o.AfterDate, o.BeforeDate)
+		q.SetField("date")
+
+		conjunct = append(conjunct, q)
+	}
+
+	if o.BeforeID > 0 || o.AfterID > 0 {
+		start := float64(o.AfterID)
+		end := float64(o.BeforeID)
+		q := query.NewNumericRangeQuery(&start, &end)
+		q.SetField("id")
+
+		conjunct = append(conjunct, q)
+	}
+
 	q = query.NewConjunctionQuery(conjunct)
 
 	searchRequest := bleve.NewSearchRequest(q)
@@ -129,7 +145,6 @@ func (b bleveSearch) Search(
 	searchRequest.Highlight.AddField("description")
 
 	searchRequest.Size = o.Limit
-	searchRequest.From = o.Offset
 
 	var sort search.SearchSort
 	switch o.SortField {

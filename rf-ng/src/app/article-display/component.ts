@@ -75,7 +75,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         ).switchMap(articles =>
             this.stateChange.switchMap(stateChange => 
                 this.offset.startWith(0).map(
-                    (offset) : [number, [number | State]] => {
+                    (offset) : [number, [number, State]] => {
                         return [offset, stateChange]
                     }
                 )

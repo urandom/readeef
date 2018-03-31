@@ -226,7 +226,7 @@ export class ArticleService {
                 return queryPreferences.switchMap(prefs =>
                     Observable.merge(
                         this.paging.flatMap(
-                            v => this.datePaging(prefs.unreadFirst)
+                            v => this.datePaging(source, prefs.unreadFirst)
                         ).switchMap(paging => {
                             return this.getArticlesFor(source, {olderFirst: prefs.olderFirst, unreadOnly: prefs.unreadOnly}, this.limit, paging);
                         }).map(articles => <ArticlesPayload>{
@@ -708,7 +708,7 @@ export class ArticleService {
         }
     }
 
-    private datePaging(unreadFirst: boolean) : Observable<number[]> {
+    private datePaging(source: Source, unreadFirst: boolean) : Observable<number[]> {
         return this.articles.take(1).map(articles => {
             if (articles.length == 0) {
                 // Initial query
@@ -718,7 +718,8 @@ export class ArticleService {
             let last = articles[articles.length - 1];
             let paging : number[] = [last.date.getTime() / 1000];
 
-            if (unreadFirst) {
+            // The search indexes do not know which articles are read.
+            if (unreadFirst && !(source instanceof SearchSource)) {
                 // fast-path
                 if (!last.read) {
                     paging.unshift(paging[0]);
