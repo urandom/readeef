@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from "@angular/core";
 import { Router } from '@angular/router';
 import { Subscription } from "rxjs";
 import { listRoute, articleRoute } from "./routing-util"
+import { TokenService } from "../services/auth";
 
 @Component({
     moduleId: module.id,
@@ -12,30 +13,36 @@ export class MainComponent implements OnInit, OnDestroy {
     showsArticle = false
     inSearch = false
 
-    private subscriptions = new Array<Subscription>()
+    private subscription : Subscription;
 
     constructor(
+        private tokenService: TokenService,
         private router: Router,
     ) {}
 
     ngOnInit() {
-        this.subscriptions.push(articleRoute(
-            this.router
-        ).map(route => route != null).subscribe(
-            showsArticle => this.showsArticle = showsArticle
-        ))
-
-        this.subscriptions.push(listRoute(this.router).map(
-            route => route != null && route.data["primary"] == "search"
+        this.subscription = this.tokenService.tokenObservable().filter(
+            token => token != ""
+        ).switchMap(token =>
+            articleRoute(this.router).map(
+                route => route != null
+            ).combineLatest(
+                listRoute(this.router).map(route =>
+                    route != null && route.data["primary"] == "search"
+                ),
+                (inArticles, inSearch) : [boolean, boolean] =>
+                    [inArticles, inSearch]
+            )
         ).subscribe(
-            inSearch => this.inSearch = inSearch,
-            error => console.log(error),
-        ))
+            data => {
+                this.showsArticle = data[0];
+                this.inSearch = data[1];
+            },
+            error => console.log(error)
+        );
     }
 
     ngOnDestroy(): void {
-        for (let subscription of this.subscriptions) {
-            subscription.unsubscribe()
-        }
+        this.subscription.unsubscribe()
     }
 }

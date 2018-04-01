@@ -75,7 +75,7 @@ export class APIService {
 export function unathorizeHandler(router: Router) : (response: Response) => Observable<Response> {
     return (response: Response) => {
         return Observable.of(response).flatMap(response => {
-            if (response.status == 403) {
+            if (response.status == 403 || response.status == 401) {
                 if (!router.routerState.snapshot.url.startsWith("/login")) {
                     router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
                 }
