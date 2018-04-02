@@ -13,6 +13,7 @@ import 'rxjs/add/observable/interval'
 import 'rxjs/add/observable/of'
 import 'rxjs/add/operator/combineLatest'
 import 'rxjs/add/operator/distinctUntilChanged'
+import 'rxjs/add/operator/ignoreElements'
 import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/mergeMap'
 import 'rxjs/add/operator/switchMap'
@@ -150,10 +151,10 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
             if (data.active.read) {
                 return Observable.of(data);
             }
-            return Observable.race(
-                this.articleService.read(data.active.id, true).map(s => data),
-                Observable.of(data),
-            )
+
+            return this.articleService.read(data.active.id, true).map(
+                s => data
+            ).ignoreElements().startWith(data);
         }).switchMap(data =>
             Observable.interval(60000).startWith(0).map(v => {
                 data.slides = data.slides.map(article => {

@@ -58,8 +58,11 @@ func Mux(fs http.FileSystem, sessionManager *scs.Manager, config config.Config, 
 			return
 		}
 		r.URL.Path = path
-		fileServer.ServeHTTP(w, r)
 
+		// Firefox does not seem to be able to load its own cached files.
+		r.Header.Del("If-Modified-Since")
+
+		fileServer.ServeHTTP(w, r)
 	}), time.Second, ""))
 
 	return sessionManager.Use(mux), nil
