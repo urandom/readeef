@@ -36,13 +36,13 @@ All three subcommands come with a comprehensive usage text:
 
 > readeef search-index --help
 
-> \# Adding a user
+### Adding a user
 
 As a first step, you might want to add a new user to the system, using the 'user-admin' subcommand:
 
 > readeef -config $CONFIG_PATH user-admin add $USER_LOGIN $USER_PASS
 
-> \# Turning a user into an admin
+### Turning a user into an admin
 
 You might then want to turn that user into an administrator:
 
