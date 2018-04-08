@@ -34,7 +34,6 @@ export class APIService {
             absEndpoint(endpoint),
             { headers: authHeaders(headers) }
         )
-            .map(checkRequestForToken)
             .catch(unathorizeHandler(this.router))
             .retryWhen(errorRetry());
     }
@@ -45,7 +44,6 @@ export class APIService {
             body,
             { headers: authHeaders(headers) }
         )
-            .map(checkRequestForToken)
             .catch(unathorizeHandler(this.router))
             .retryWhen(errorRetry());
     }
@@ -55,7 +53,6 @@ export class APIService {
             absEndpoint(endpoint),
             { headers: authHeaders(headers) }
         )
-            .map(checkRequestForToken)
             .catch(unathorizeHandler(this.router))
             .retryWhen(errorRetry());
     }
@@ -66,7 +63,6 @@ export class APIService {
             body,
             { headers: authHeaders(headers) }
         )
-            .map(checkRequestForToken)
             .catch(unathorizeHandler(this.router))
             .retryWhen(errorRetry());
     }
@@ -111,13 +107,4 @@ let authHeaders = function(headers?: Headers) : Headers {
     headers.set("Accept", "application/json");
 
     return headers;
-}
-
-let checkRequestForToken = function(response: Response) : Response {
-    var token = response.headers.get("Authorization");
-    if (token) {
-        localStorage.setItem("token", token);
-    }
-
-    return response;
 }

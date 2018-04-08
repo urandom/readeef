@@ -65,6 +65,41 @@ func Test_getUserData(t *testing.T) {
 	}
 }
 
+func Test_createUserToken(t *testing.T) {
+	tests := []struct {
+		name   string
+		noUser bool
+		code   int
+	}{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest("GET", "/", nil)
+			w := httptest.NewRecorder()
+
+			switch {
+			default:
+				if tt.noUser {
+					break
+				}
+
+				r = r.WithContext(context.WithValue(r.Context(), userKey, content.User{Login: "test"}))
+			}
+
+			createUserToken(secret, logger).ServeHTTP(w, r)
+
+			if tt.code != w.Code {
+				t.Errorf("createUserToken() code = %v, want %v", w.Code, tt.code)
+				return
+			}
+
+			if strings.HasPrefix(w.Header().Get("Authorization"), "Bearer ") != (w.Code == http.StatusOK) {
+				t.Errorf("createUserToken() authorization header = %v, code %v", w.Header().Get("Authorization"), w.Code)
+				return
+			}
+		})
+	}
+}
+
 func Test_listUsers(t *testing.T) {
 	tests := []struct {
 		name  string

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/urandom/handler/auth"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/content/repo"
 	"github.com/urandom/readeef/log"
@@ -16,6 +17,25 @@ func getUserData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	args{"user": user}.WriteJSON(w)
+}
+
+func createUserToken(secret []byte, log log.Log) http.HandlerFunc {
+	generator := auth.TokenGenerator(nil, auth.AuthenticatorFunc(func(user, pass string) bool {
+		// We're already logged in at this point, and the data is fake
+		return true
+	}), secret, auth.Logger(log))
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		user, stop := userFromRequest(w, r)
+		if stop {
+			return
+		}
+
+		r.Form.Set("user", string(user.Login))
+		r.Form.Set("password", "phony")
+
+		generator.ServeHTTP(w, r)
+	}
 }
 
 func listUsers(repo repo.User, log log.Log) http.HandlerFunc {

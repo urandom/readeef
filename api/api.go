@@ -394,6 +394,7 @@ func userRoutes(service repo.Service, secret []byte, log log.Log, gzip, access m
 		r.Use(timeout(5*time.Second), gzip, access)
 
 		r.Get("/current", getUserData)
+		r.Post("/token", createUserToken(secret, log))
 
 		r.Route("/settings", func(r chi.Router) {
 			r.Get("/", getSettingKeys)
