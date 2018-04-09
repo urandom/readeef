@@ -23,7 +23,7 @@ build-ui-devel-watch:
 
 xi18n-ui:
 	cd rf-ng; ng xi18n --locale en --outputPath ./src/locale
-	xliffmerge --profile xliffmerge.json en bg
+	cd rf-ng; xliffmerge --profile xliffmerge.json en bg
 
 generate: build-ui
 	go generate .
