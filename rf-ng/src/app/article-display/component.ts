@@ -146,7 +146,10 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         ).filter(
             data => data != null
         ).distinctUntilChanged((a, b) =>
-            a.active.id == b.active.id && a.slides.length == b.slides.length && a.active.state == b.active.state
+            a.active.id == b.active.id && a.slides.length == b.slides.length &&
+				a.active.state == b.active.state && a.total == b.total &&
+				(a.slides[0] || {})['id'] == (b.slides[0] || {})['id'] &&
+				(a.slides[2] || {})['id'] == (b.slides[2] || {})['id']
         ).flatMap(data => {
             if (data.active.read) {
                 return Observable.of(data);
