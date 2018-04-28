@@ -46,6 +46,8 @@ const (
 	afterID           = "after_id"
 	beforeDate        = "before_date"
 	afterDate         = "after_date"
+	beforeScore       = "before_score"
+	afterScore        = "after_score"
 	idPrefix          = "id"
 	feedIDPRefix      = "feed_id"
 	limit             = "limit"
@@ -420,7 +422,7 @@ func constructSQLQueryOptions(
 	var join string
 
 	s := db.SQL()
-	if opts.IncludeScores {
+	if opts.IncludeScores || opts.BeforeScore > 0 || opts.AfterScore > 0 {
 		join += s.Article.GetScoreJoin
 	}
 
@@ -449,23 +451,12 @@ func constructSQLQueryOptions(
 		}
 	}
 
-	if opts.BeforeID > 0 {
-		whereSlice = append(whereSlice, "a.id < :before_id")
-		args[beforeID] = opts.BeforeID
-	}
-	if opts.AfterID > 0 {
-		whereSlice = append(whereSlice, "a.id > :after_id")
-		args[afterID] = opts.AfterID
+	if clause := createRowValueClause(opts.BeforeID, opts.BeforeDate, opts.BeforeScore, "before", args); clause != "" {
+		whereSlice = append(whereSlice, clause)
 	}
 
-	if !opts.BeforeDate.IsZero() {
-		whereSlice = append(whereSlice, "(a.date IS NULL OR a.date < :before_date)")
-		args[beforeDate] = opts.BeforeDate
-	}
-
-	if !opts.AfterDate.IsZero() {
-		whereSlice = append(whereSlice, "a.date > :after_date")
-		args[afterDate] = opts.AfterDate
+	if clause := createRowValueClause(opts.AfterID, opts.AfterDate, opts.AfterScore, "after", args); clause != "" {
+		whereSlice = append(whereSlice, clause)
 	}
 
 	if len(opts.IDs) > 0 {
@@ -473,6 +464,10 @@ func constructSQLQueryOptions(
 		for i := range opts.IDs {
 			args[fmt.Sprintf("%s%d", idPrefix, i)] = opts.IDs[i]
 		}
+	}
+
+	if opts.IncludeScores {
+		whereSlice = append(whereSlice, "asco.score > 0")
 	}
 
 	feedIDset := make(map[content.FeedID]struct{})
@@ -676,4 +671,60 @@ func instantiateStateTemplates(s db.SqlStmts) error {
 	}
 
 	return nil
+}
+
+func createRowValueClause(id content.ArticleID, date time.Time, score int64, prefix string, args map[string]interface{}) string {
+	op := "<"
+	if prefix == "after" {
+		op = ">"
+	}
+
+	if id > 0 && !date.IsZero() && score > 0 {
+		args[prefix+"_id"] = id
+		args[prefix+"_date"] = date
+		args[prefix+"_score"] = score
+
+		return fmt.Sprintf("(a.id, a.date, asco.score) %s (:%s_id, :%s_date, :%s_score)", op, prefix, prefix, prefix)
+	}
+
+	if id > 0 && !date.IsZero() {
+		args[prefix+"_id"] = id
+		args[prefix+"_date"] = date
+
+		return fmt.Sprintf("(a.id, a.date) %s (:%s_id, :%s_date)", op, prefix, prefix)
+	}
+
+	if id > 0 && score > 0 {
+		args[prefix+"_id"] = id
+		args[prefix+"_score"] = score
+
+		return fmt.Sprintf("(a.id.date, asco.score) %s (:%s_id, :%s_score)", op, prefix, prefix)
+	}
+
+	if !date.IsZero() && score > 0 {
+		args[prefix+"_date"] = date
+		args[prefix+"_score"] = score
+
+		return fmt.Sprintf("(a.date, asco.score) %s (:%s_date, :%s_score)", op, prefix, prefix)
+	}
+
+	if id > 0 {
+		args[prefix+"_id"] = id
+
+		return fmt.Sprintf("a.id %s :%s_id", op, prefix)
+	}
+
+	if !date.IsZero() {
+		args[prefix+"_date"] = date
+
+		return fmt.Sprintf("a.date %s :%s_date", op, prefix)
+	}
+
+	if score > 0 {
+		args[prefix+"_score"] = score
+
+		return fmt.Sprintf("asco.score %s :%s_score", op, prefix)
+	}
+
+	return ""
 }

@@ -32,7 +32,7 @@ type Log struct {
 	Converted struct {
 		Writer io.Writer
 		Prefix string
-	}
+	} `toml:"-"`
 }
 
 type API struct {
@@ -50,7 +50,7 @@ type Timeout struct {
 	Converted struct {
 		Connect   time.Duration
 		ReadWrite time.Duration
-	}
+	} `toml:"-"`
 }
 
 type DB struct {
@@ -80,9 +80,16 @@ type Popularity struct {
 		AccessTokenSecret string `toml:"access-token-secret"`
 	} `toml:"twitter"`
 
+	Reddit struct {
+		ID       string `toml:"id"`
+		Secret   string `toml:"secret"`
+		Username string `toml:"username"`
+		Password string `toml:"password"`
+	} `toml:"reddit"`
+
 	Converted struct {
 		Delay time.Duration
-	}
+	} `toml:"-"`
 }
 
 type FeedParser struct {
@@ -98,7 +105,7 @@ type FeedManager struct {
 
 	Converted struct {
 		UpdateInterval time.Duration
-	}
+	} `toml:"-"`
 }
 
 type Content struct {

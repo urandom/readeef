@@ -6,17 +6,19 @@ import (
 
 	"github.com/ChimeraCoder/anaconda"
 	"github.com/urandom/readeef/config"
+	"github.com/urandom/readeef/log"
 )
 
 type Twitter struct {
 	api *anaconda.TwitterApi
+	log log.Log
 }
 
-func NewTwitter(config config.Popularity) Twitter {
+func FromTwitter(config config.Popularity, log log.Log) Twitter {
 	anaconda.SetConsumerKey(config.Twitter.ConsumerKey)
 	anaconda.SetConsumerSecret(config.Twitter.ConsumerSecret)
 
-	return Twitter{api: anaconda.NewTwitterApi(config.Twitter.AccessToken, config.Twitter.AccessTokenSecret)}
+	return Twitter{api: anaconda.NewTwitterApi(config.Twitter.AccessToken, config.Twitter.AccessTokenSecret), log: log}
 }
 
 func (t Twitter) Score(link string) (int64, error) {
@@ -45,6 +47,8 @@ func (t Twitter) Score(link string) (int64, error) {
 
 		values.Set("max_id", v.Get("max_id"))
 	}
+
+	t.log.Debugf("Popularity: Tweets for url %s: %d", link, score)
 
 	return score, nil
 }

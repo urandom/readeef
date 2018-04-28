@@ -1,55 +1,56 @@
 package popularity
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"net/url"
+
+	"github.com/pkg/errors"
+	"github.com/turnage/graw/reddit"
+	"github.com/urandom/readeef/config"
+	"github.com/urandom/readeef/log"
 )
 
-type Reddit struct{}
+type Reddit struct {
+	bot reddit.Bot
+	log log.Log
+}
 
-type redditResult struct {
-	Data struct {
-		Children []struct {
-			Data struct {
-				Score    int64 `json:"score"`
-				Comments int64 `json:"num_comments"`
-			} `json:"data"`
-		} `json:"children"`
-	} `json:"data"`
+func FromReddit(config config.Popularity, log log.Log) (Reddit, error) {
+	if config.Reddit.ID == "" || config.Reddit.Secret == "" {
+		return Reddit{}, errors.New("invalid credentials")
+	}
+
+	bot, err := reddit.NewBot(reddit.BotConfig{
+		Agent: fmt.Sprintf("readeef:score_bot by /u/%s", config.Reddit.Username),
+		App: reddit.App{
+			ID:       config.Reddit.ID,
+			Secret:   config.Reddit.Secret,
+			Username: config.Reddit.Username,
+			Password: config.Reddit.Password,
+		},
+	})
+	if err != nil {
+		return Reddit{}, errors.Wrap(err, "initializing reddit api")
+	}
+	return Reddit{bot: bot, log: log}, nil
 }
 
 func (r Reddit) Score(link string) (int64, error) {
 	var score int64 = -1
 
-	link = url.QueryEscape(link)
-
-	resp, err := http.Get("http://buttons.reddit.com/button_info.json?url=" + link)
+	harvest, err := r.bot.ListingWithParams("/api/info", map[string]string{
+		"url": link,
+	})
 
 	if err != nil {
-		return score, err
-	}
-	defer func() {
-		// Drain the body so that the connection can be reused
-		io.Copy(ioutil.Discard, resp.Body)
-		resp.Body.Close()
-	}()
-
-	dec := json.NewDecoder(resp.Body)
-
-	var result redditResult
-	if err := dec.Decode(&result); err != nil {
-		return score, fmt.Errorf("Error scoring link %s using reddit: %v", link, err)
+		return score, errors.Wrapf(err, "getting reddit info for link %s", link)
 	}
 
 	score = 0
-	for _, d := range result.Data.Children {
-		score += d.Data.Score + d.Data.Comments
-
+	for _, post := range harvest.Posts {
+		score += int64(post.Score + post.NumComments)
 	}
+
+	r.log.Debugf("Popularity: Reddit score and comments for url %s: %d", link, score)
 
 	return score, nil
 }

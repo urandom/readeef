@@ -3,6 +3,7 @@ html, body, mat-sidenav-container, .content {
     height: 100vh;
     display: flex;
     flex-direction: column;
+	overflow: hidden;
 }
 
 mat-sidenav {

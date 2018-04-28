@@ -69,7 +69,7 @@ func getArticles(
 		case popularRepoType:
 			o = append(o, content.IncludeScores)
 			o = append(o, content.HighScoredFirst)
-			o = append(o, content.TimeRange(time.Now().AddDate(0, 0, -5), time.Now()))
+			o = append(o, content.TimeRange(time.Now().AddDate(0, 0, -5), time.Now().Add(-15*time.Minute)))
 
 			switch subType {
 			case userRepoType:

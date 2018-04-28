@@ -240,7 +240,7 @@ func (c Config) convertToV2() (config.Config, error) {
 
 	cfg.Popularity.Delay = c.Popularity.Delay
 	cfg.Popularity.Providers = c.Popularity.Providers
-	cfg.Popularity.Converted = c.Popularity.Converted
+	cfg.Popularity.Converted.Delay = c.Popularity.Converted.Delay
 	cfg.Popularity.Twitter.AccessToken = c.Popularity.TwitterAccessToken
 	cfg.Popularity.Twitter.AccessTokenSecret = c.Popularity.TwitterAccessTokenSecret
 	cfg.Popularity.Twitter.ConsumerKey = c.Popularity.TwitterConsumerKey

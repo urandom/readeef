@@ -35,7 +35,7 @@ var DefaultCfg = `
 	articles-per-query = 200
 [db]
 	driver = "sqlite3"
-	connect = "file:./storage/content.sqlite3?cache=shared&mode=rwc"
+	connect = "file:./storage/content.sqlite3?cache=shared&mode=rwc&_busy_timeout=50000000"
 [auth]
 	session-storage-path = "./storage/session.db"
 	token-storage-path = "./storage/token.db"
@@ -49,7 +49,7 @@ var DefaultCfg = `
 	from = "readeef"
 [popularity]
 	delay = "5s"
-	providers = ["Facebook", "Reddit"]
+	# providers = ["Reddit", "Twitter"]
 [feed-parser]
 	processors = ["cleanup", "top-image-marker", "absolutize-urls", "unescape"]
 	proxy-http-url-template = "/proxy?url={{ . }}"

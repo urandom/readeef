@@ -40,18 +40,16 @@ func New(config config.Popularity, log log.Log) Popularity {
 	scoreProviders := []scoreProvider{}
 	for _, p := range config.Providers {
 		switch p {
-		case "Facebook":
-			scoreProviders = append(scoreProviders, Facebook{})
-		case "GoogleP":
-			scoreProviders = append(scoreProviders, GoogleP{})
-		case "Linkedin":
-			scoreProviders = append(scoreProviders, Linkedin{})
-		case "Reddint":
-			scoreProviders = append(scoreProviders, Reddit{})
-		case "StumbleUpon":
-			scoreProviders = append(scoreProviders, StumbleUpon{})
+		case "Reddit":
+			log.Infoln("Initializing Reddit popularity provider")
+			if reddit, err := FromReddit(config, log); err == nil {
+				scoreProviders = append(scoreProviders, reddit)
+			} else {
+				log.Printf("Error initializing Reddit popularity provider: %v", err)
+			}
 		case "Twitter":
-			scoreProviders = append(scoreProviders, NewTwitter(config))
+			log.Infoln("Initializing Twitter popularity provider")
+			scoreProviders = append(scoreProviders, FromTwitter(config, log))
 		}
 	}
 
@@ -82,7 +80,7 @@ func (p Popularity) ScoreContent(ctx context.Context, service repo.Service) {
 
 func (p Popularity) scoreArticles(ctx context.Context, service repo.Service) error {
 	articles, err := service.ArticleRepo().All(
-		content.TimeRange(time.Now().AddDate(0, 0, -5), time.Time{}),
+		content.TimeRange(time.Now().AddDate(0, 0, -5), time.Now().Add(-15*time.Minute)),
 	)
 
 	if err != nil {
@@ -121,6 +119,9 @@ func (p Popularity) scoreArticle(ctx context.Context, article content.Article, r
 	}
 
 	scores = calculateAgedScore(scores, score, article.Date)
+	if scores.Score < 1 {
+		return nil
+	}
 	if err = repo.Update(scores); err != nil {
 		return errors.WithMessage(err, fmt.Sprintf("updating article %s scores", article))
 	}
@@ -167,7 +168,7 @@ func (p Popularity) calculateScore(ctx context.Context, link, text string) (int6
 
 	score++
 
-	p.log.Debugf("Popularity score of '%s' is %d\n", link, score)
+	p.log.Debugf("Popularity score of '%s' is %d", link, score)
 
 	return score, nil
 }

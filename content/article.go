@@ -75,6 +75,8 @@ type QueryOptions struct {
 	AfterID         ArticleID
 	BeforeDate      time.Time
 	AfterDate       time.Time
+	BeforeScore     int64
+	AfterScore      int64
 	IDs             []ArticleID
 	FeedIDs         []FeedID
 	Filters         []Filter
@@ -132,6 +134,14 @@ func TimeRange(after, before time.Time) QueryOpt {
 	return QueryOpt{func(o *QueryOptions) {
 		o.AfterDate = after
 		o.BeforeDate = before
+	}}
+}
+
+// ScoreRange sets the minimum and maximum scores of returned articles.
+func ScoreRange(after, before int64) QueryOpt {
+	return QueryOpt{func(o *QueryOptions) {
+		o.AfterScore = after
+		o.BeforeScore = before
 	}}
 }
 
