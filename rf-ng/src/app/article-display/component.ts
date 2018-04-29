@@ -72,6 +72,9 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
+		this.articleService.articleObservable().subscribe(
+			articles => console.log(articles.length),
+		);
         this.subscriptions.push(this.articleService.articleObservable(
         ).switchMap(articles =>
             this.stateChange.switchMap(stateChange => 
@@ -157,7 +160,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
             return this.articleService.read(data.active.id, true).map(
                 s => data
-            ).ignoreElements().startWith(data);
+            ).catch(err => Observable.of(err)).ignoreElements().startWith(data);
         }).switchMap(data =>
             Observable.interval(60000).startWith(0).map(v => {
                 data.slides = data.slides.map(article => {
