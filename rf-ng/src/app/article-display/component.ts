@@ -72,9 +72,6 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
-		this.articleService.articleObservable().subscribe(
-			articles => console.log(articles.length),
-		);
         this.subscriptions.push(this.articleService.articleObservable(
         ).switchMap(articles =>
             this.stateChange.switchMap(stateChange => 
