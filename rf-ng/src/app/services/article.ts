@@ -27,20 +27,21 @@ import { fromEvent } from 'rxjs/observable/fromEvent';
 import { QueryEncoder } from '@angular/http/src/url_search_params';
 
 export class Article {
-    id: number
-    feed: string
-    feedID: number
-    title: string
-    description: string
-    stripped: string
-    link: string
-    date: Date
-    read: boolean
-    favorite: boolean
-    thumbnail: string
-    time: string
-    hits: Hits
-    format: ArticleFormat
+    id: number;
+    feed: string;
+    feedID: number;
+    title: string;
+    description: string;
+    stripped: string;
+    link: string;
+    date: Date;
+    read: boolean;
+    favorite: boolean;
+    thumbnail: string;
+    time: string;
+    hits: Hits;
+    format: ArticleFormat;
+	score?: number;
 }
 
 export class ArticleFormat extends Serializable {
@@ -75,21 +76,30 @@ class ArticlesResponse extends Serializable {
     }
 }
 
+interface Paging {
+	time?: number;
+	unreadTime?: number;
+	score?: number;
+	unreadScore?: number;
+}
+
 class ArticleStateResponse extends Serializable {
     success: boolean
 }
 
 export interface QueryOptions {
-    limit?: number,
-    offset?: number,
-    unreadOnly?: boolean,
-    readOnly?: boolean,
-    olderFirst?: boolean,
-    ids?: number[],
+    limit?: number;
+    offset?: number;
+    unreadOnly?: boolean;
+    readOnly?: boolean;
+    olderFirst?: boolean;
+    ids?: number[];
     beforeID?: number
-    afterID?: number,
-    beforeTime?: number,
-    afterTime?: number,
+    afterID?: number;
+    beforeTime?: number;
+    afterTime?: number;
+	beforeScore?: number;
+	afterScore?: number;
 }
 
 export interface Source {
@@ -159,10 +169,10 @@ interface ArticleProperty {
 }
 
 interface ArticlesPayload {
-    articles: Article[]
-    fromEvent: boolean
-    unreadIDs?: Set<number> 
-    unreadIDRange?: number[]
+    articles: Article[];
+    fromEvent: boolean;
+    unreadIDs?: Set<number>;
+    unreadIDRange?: number[];
 }
 
 @Injectable()
@@ -235,14 +245,14 @@ export class ArticleService {
                         }),
                         this.updateSubject.switchMap(opts =>
                              this.getArticlesFor(
-                                 source, opts[0], this.limit, []
+                                 source, opts[0], this.limit, {}
                             ).combineLatest(
                                 this.ids(source, { unreadOnly: true, beforeID: opts[0].afterID + 1, afterID: opts[1] - 1 }),
                                 (articles, ids) => <ArticlesPayload>{
                                     articles: articles,
                                     unreadIDs: new Set(ids),
                                     unreadIDRange: [opts[1], opts[0].afterID],
-                                    fromEvent: true 
+                                    fromEvent: true,
                                 }
                             )
                         ),
@@ -253,7 +263,7 @@ export class ArticleService {
                                 ids: event.articleIDs,
                                 olderFirst: prefs.olderFirst,
                                 unreadOnly: prefs.unreadOnly,
-                            }, this.limit, [])
+                            }, this.limit, {})
                         ).map(articles => <ArticlesPayload>{
                             articles: articles,
                             fromEvent: true,
@@ -445,7 +455,7 @@ export class ArticleService {
                         return [feedsTags[0], feedsTags[1], source];
                     }
                 ).switchMap(data =>
-                    this.eventService.feedUpdate.filter(event => 
+                    this.eventService.feedUpdate.filter(event =>
                         this.shouldUpdate(event, data[2], data[1])
                     ).map(event => {
                         let title = data[0].get(event.feedID);
@@ -549,38 +559,53 @@ export class ArticleService {
         source: Source,
         prefs: QueryOptions,
         limit: number,
-        paging: number[],
+        paging: Paging,
     ): Observable<Article[]> {
         let original : QueryOptions = Object.assign({}, prefs, {limit: limit});
         let options : QueryOptions = Object.assign({}, original);
 
         let time = -1
-        if (paging.length == 1) {
-            time = paging[0];
-        } else if (paging.length == 2) {
-            time = paging[0];
+		let score = 0;
+		if (paging.unreadTime) {
+			time = paging.unreadTime;
+			score = paging.unreadScore;
             options.unreadOnly = true;
-        }
+		} else if (paging.time) {
+			time = paging.time;
+			score = paging.score;
+		}
 
         if (time != -1) {
             if (prefs.olderFirst) {
                 options.afterTime = time;
+				if (score) {
+					options.afterScore = score;
+				}
             } else {
                 options.beforeTime = time;
+				if (score) {
+					options.beforeScore = score;
+				}
             }
         }
 
         let res = this.api.get(this.buildURL("article" + source.url, options))
             .map(response => new ArticlesResponse().fromJSON(response.json()).articles);
 
-        if (paging.length == 2) {
+        if (paging.unreadTime) {
             options = Object.assign({}, original);
             options.readOnly = true;
-            if (paging[1] != -1) {
+            if (paging.time) {
                 if (prefs.olderFirst) {
-                    options.afterTime = paging[1];
+                    options.afterTime = paging.time;
+					if (paging.score) {
+						options.afterScore = paging.score;
+					}
                 } else {
-                    options.beforeTime = paging[1];
+                    options.beforeTime = paging.time;
+					if (paging.score) {
+						options.beforeScore = paging.score;
+					}
                 }
             }
 
@@ -619,7 +644,7 @@ export class ArticleService {
                             return articles
                         }
                         let prefs: ListPreferences = {
-                            unreadFirst: paging.length == 2,
+                            unreadFirst: !!paging.unreadTime,
                             unreadOnly: options.unreadOnly,
                             olderFirst: options.olderFirst,
                         };
@@ -676,7 +701,7 @@ export class ArticleService {
         }
 
         if (query.length > 0) {
-            return base + (base.indexOf("?") == -1 ? "?" : "&") + query.join("&"); 
+            return base + (base.indexOf("?") == -1 ? "?" : "&") + query.join("&");
         }
 
         return base;
@@ -708,21 +733,28 @@ export class ArticleService {
         }
     }
 
-    private datePaging(source: Source, unreadFirst: boolean) : Observable<number[]> {
+    private datePaging(source: Source, unreadFirst: boolean) : Observable<Paging> {
         return this.articles.take(1).map(articles => {
             if (articles.length == 0) {
                 // Initial query
-                return unreadFirst ? [-1, -1] : [-1];
+				return unreadFirst ? {unreadTime: -1} : {};
             }
 
             let last = articles[articles.length - 1];
-            let paging : number[] = [last.date.getTime() / 1000];
+            let paging : Paging = {time: last.date.getTime() / 1000};
+
+			if (source instanceof PopularSource) {
+				paging.score = last.score;
+			}
 
             // The search indexes do not know which articles are read.
             if (unreadFirst && !(source instanceof SearchSource)) {
                 // fast-path
                 if (!last.read) {
-                    paging.unshift(paging[0]);
+					paging.unreadTime = paging.time;
+					if (source instanceof PopularSource) {
+						paging.unreadScore = paging.score;
+					}
                     return paging;
                 }
 
@@ -730,15 +762,16 @@ export class ArticleService {
                     let article = articles[i];
                     let prev = articles[i-1];
                     if (article.read && !prev.read) {
-                        paging.unshift(prev.date.getTime() / 1000);
+                        paging.unreadTime = (prev.date.getTime() / 1000);
+						paging.unreadScore = prev.score;
                         break;
                     }
                 }
 
                 // no unread articles
-                if (paging.length == 1) {
-                    paging.unshift(-1);
-                }
+				if (!paging.unreadTime) {
+					paging.unreadTime = -1;
+				}
             }
 
             return paging;

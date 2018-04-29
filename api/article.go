@@ -539,6 +539,26 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request, articlesLimit i
 		o = append(o, content.TimeRange(afterTime, beforeTime))
 	}
 
+	var afterScore, beforeScore int64
+	if query.Get("afterScore") != "" {
+		afterScore, err = strconv.ParseInt(query.Get("afterScore"), 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return o, true
+		}
+	}
+
+	if query.Get("beforeScore") != "" {
+		beforeScore, err = strconv.ParseInt(query.Get("beforeScore"), 10, 64)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return o, true
+		}
+	}
+	if afterScore > 0 || beforeScore > 0 {
+		o = append(o, content.ScoreRange(afterScore, beforeScore))
+	}
+
 	if queryIDs, ok := query["id"]; ok {
 		ids := make([]content.ArticleID, len(queryIDs))
 		for i := range queryIDs {
