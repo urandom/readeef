@@ -4,7 +4,8 @@ import { FeedService, Feed } from "../../services/feed";
 import { TagService } from "../../services/tag";
 import { FaviconService } from "../../services/favicon";
 import { Observable } from "rxjs";
-import 'rxjs/add/operator/combineLatest'
+import { combineLatest } from "rxjs/operators";
+
 
 @Component({
     selector: "settings-management",
@@ -25,24 +26,26 @@ export class ManagementSettingsComponent implements OnInit {
     ) {}
 
     ngOnInit(): void {
-        this.feedService.getFeeds().combineLatest(
-            this.tagService.getTagsFeedIDs(),
-            (feeds, tags) : [Feed, string[]][] => {
-                let tagMap  = new Map<number, string[]>()
-                for (let tag of tags) {
-                    for (let id of tag.ids) {
-                        if (tagMap.has(id)) {
-                            tagMap.get(id).push(tag.tag.value);
-                        } else {
-                            tagMap.set(id, [tag.tag.value]);
+        this.feedService.getFeeds().pipe(
+            combineLatest(
+                this.tagService.getTagsFeedIDs(),
+                (feeds, tags): [Feed, string[]][] => {
+                    let tagMap = new Map<number, string[]>()
+                    for (let tag of tags) {
+                        for (let id of tag.ids) {
+                            if (tagMap.has(id)) {
+                                tagMap.get(id).push(tag.tag.value);
+                            } else {
+                                tagMap.set(id, [tag.tag.value]);
+                            }
                         }
                     }
-                }
 
-                return feeds.map((feed) : [Feed, string[]] => 
-                    [feed, tagMap.get(feed.id) || []]
-                );
-            }
+                    return feeds.map((feed): [Feed, string[]] =>
+                        [feed, tagMap.get(feed.id) || []]
+                    );
+                }
+            ),
         ).subscribe(
             feeds => this.feeds = feeds || [],
             error => console.log(error),

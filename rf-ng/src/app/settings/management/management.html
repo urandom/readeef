@@ -8,9 +8,9 @@
     <button mat-icon-button (click)="showError(feed[0].updateError)" class="error" [class.visible]="feed[0].updateError"> 
         <mat-icon>warning</mat-icon>
     </button>
-    <mat-input-container class="tags">
+    <mat-form-field class="tags">
         <input matInput value="{{ feed[1].join(', ') }}" (change)="tagsChange($event, feed[0].id)" i18n-placeholder placeholder="tags">
-    </mat-input-container>
+    </mat-form-field>
     <button mat-icon-button (click)="deleteFeed($event, feed[0].id)" class="delete"> 
         <mat-icon>delete</mat-icon>
     </button>

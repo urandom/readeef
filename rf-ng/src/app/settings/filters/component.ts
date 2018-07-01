@@ -5,8 +5,9 @@ import { UserService, User } from "../../services/user";
 import { FeedService, Feed } from "../../services/feed";
 import { TagService, Tag } from "../../services/tag";
 import { FaviconService } from "../../services/favicon";
-import { Observable } from "rxjs";
-import 'rxjs/add/operator/combineLatest'
+import { Observable, of } from "rxjs";
+import { combineLatest, flatMap, map } from "rxjs/operators";
+
 
 interface Filter {
     urlTerm?: string,
@@ -38,10 +39,12 @@ export class FiltersSettingsComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        this.feedService.getFeeds().combineLatest(
-            this.tagService.getTags(),
-            this.userService.getCurrentUser(),
-            (feeds, tags, user) : [Feed[], Tag[], User] => [feeds, tags, user]
+        this.feedService.getFeeds().pipe(
+            combineLatest(
+                this.tagService.getTags(),
+                this.userService.getCurrentUser(),
+                (feeds, tags, user): [Feed[], Tag[], User] => [feeds, tags, user]
+            ),
         ).subscribe(
             data => {
                 this.feeds = data[0];
@@ -74,28 +77,30 @@ export class FiltersSettingsComponent implements OnInit {
     }
 
     deleteFilter(event: Event, filter: Filter) {
-        this.userService.getCurrentUser().flatMap(user => {
-            let profile = user.profileData || new Map<string, any>();
-            let filters = (profile["filters"] || []) as Filter[];
+        this.userService.getCurrentUser().pipe(
+            flatMap(user => {
+                let profile = user.profileData || new Map<string, any>();
+                let filters = (profile["filters"] || []) as Filter[];
 
-            let filtered = filters.filter(f =>
-                f.urlTerm != filter.urlTerm ||
-                f.inverseURL != filter.inverseURL ||
-                f.titleTerm != filter.titleTerm ||
-                f.inverseTitle != filter.inverseTitle ||
-                f.tagID != filter.tagID ||
-                f.feedIDs != filter.feedIDs ||
-                f.inverseFeeds != filter.inverseFeeds
-            )
+                let filtered = filters.filter(f =>
+                    f.urlTerm != filter.urlTerm ||
+                    f.inverseURL != filter.inverseURL ||
+                    f.titleTerm != filter.titleTerm ||
+                    f.inverseTitle != filter.inverseTitle ||
+                    f.tagID != filter.tagID ||
+                    f.feedIDs != filter.feedIDs ||
+                    f.inverseFeeds != filter.inverseFeeds
+                )
 
-            if (filtered.length == filters.length) {
-                return Observable.of(true);
-            }
+                if (filtered.length == filters.length) {
+                    return of(true);
+                }
 
-            profile["filters"] = filtered;
+                profile["filters"] = filtered;
 
-            return this.userService.setUserSetting("profile", JSON.stringify(profile));
-        }).subscribe(
+                return this.userService.setUserSetting("profile", JSON.stringify(profile));
+            }),
+        ).subscribe(
             success => {
                 if (success) {
                     let el = event.target["parentNode"];
@@ -157,48 +162,50 @@ export class NewFilterDialog {
 
         let value = this.form.value;
 
-        this.userService.getCurrentUser().flatMap(user => {
-            let filter : Filter = {
-                urlTerm: value.urlTerm,
-                inverseURL: value.inverseURL,
-                titleTerm: value.titleTerm,
-                inverseTitle: value.inverseTitle,
-                inverseFeeds: value.inverseFeeds,
-            }
-
-            if (value.useFeeds) {
-                if (value.feeds && value.feeds.length > 0) {
-                    filter.feedIDs = value.feeds;
+        this.userService.getCurrentUser().pipe(
+            flatMap(user => {
+                let filter: Filter = {
+                    urlTerm: value.urlTerm,
+                    inverseURL: value.inverseURL,
+                    titleTerm: value.titleTerm,
+                    inverseTitle: value.inverseTitle,
+                    inverseFeeds: value.inverseFeeds,
                 }
-            } else {
-                if (value.tag) {
-                    filter.tagID = value.tag;
-                }
-            }
 
-            let o : Observable<Filter>
-            if (filter.tagID > 0) {
-                o = this.tagService.getFeedIDs({id: filter.tagID}).map(
-                    ids => {
-                        filter.feedIDs = ids;
-                        return filter;
+                if (value.useFeeds) {
+                    if (value.feeds && value.feeds.length > 0) {
+                        filter.feedIDs = value.feeds;
                     }
-                );
-            } else {
-                o = Observable.of(filter);
-            }
+                } else {
+                    if (value.tag) {
+                        filter.tagID = value.tag;
+                    }
+                }
 
-            return o.flatMap(filter => {
-                let profile = user.profileData || new Map<string, any>();
-                let filters = (profile["filters"] || []) as Filter[];
+                let o: Observable<Filter>
+                if (filter.tagID > 0) {
+                    o = this.tagService.getFeedIDs({ id: filter.tagID }).pipe(
+                        map(ids => {
+                            filter.feedIDs = ids;
+                            return filter;
+                        }),
+                    );
+                } else {
+                    o = of(filter);
+                }
 
-                filters.push(filter);
+                return o.pipe(flatMap(filter => {
+                    let profile = user.profileData || new Map<string, any>();
+                    let filters = (profile["filters"] || []) as Filter[];
 
-                profile["filters"] = filters;
+                    filters.push(filter);
 
-                return this.userService.setUserSetting("profile", JSON.stringify(profile));
-            });
-        }).subscribe(
+                    profile["filters"] = filters;
+
+                    return this.userService.setUserSetting("profile", JSON.stringify(profile));
+                }));
+            }),
+        ).subscribe(
             success => this.close(),
             error => console.log(error),
         )

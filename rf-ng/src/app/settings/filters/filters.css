@@ -72,6 +72,6 @@ form p {
     font-size: 13px;
 }
 
-form mat-input-container {
+form mat-form-field {
     width: 100%;
 }

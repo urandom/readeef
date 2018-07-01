@@ -1,18 +1,18 @@
 <h6 class="title" i18n>Add a new user</h6>
 <form [formGroup]="form" (ngSubmit)="save()" novalidate autocomplete="off">
-    <mat-input-container>
+    <mat-form-field>
         <input matInput i18n-placeholder placeholder="User name" formControlName="login" required>
         <mat-error *ngIf="form.hasError('required', ['login'])" i18n>
             Empty user name
         </mat-error>
-    </mat-input-container>
+    </mat-form-field>
     <br>
-    <mat-input-container>
+    <mat-form-field>
         <input matInput type="password" i18n-placeholder placeholder="Password" formControlName="password" required>
         <mat-error *ngIf="form.hasError('required', ['password'])" i18n>
             Empty password
         </mat-error>
-    </mat-input-container>
+    </mat-form-field>
     <br>
     <div class="footer">
         <button mat-raised-button type="submit" [disabled]="form.pristine" i18n>Save</button>

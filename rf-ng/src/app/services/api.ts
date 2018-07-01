@@ -1,110 +1,113 @@
 import { Injectable } from '@angular/core'
 import { Location } from '@angular/common'
-import { Http, Headers, Response, ResponseType } from '@angular/http'
+import { HttpClient, HttpResponse, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { environment } from "../../environments/environment"
-import { Observable } from "rxjs/Observable";
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/mergeMap';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/retryWhen';
-import 'rxjs/add/operator/zip';
-import 'rxjs/add/observable/empty';
-import 'rxjs/add/observable/range';
-import 'rxjs/add/observable/of';
-import 'rxjs/add/observable/timer';
+import { Observable, pipe ,  range ,  timer ,  of, empty} from "rxjs";
+import { catchError, flatMap, retryWhen, map, zip } from "rxjs/operators"
 
-export class Serializable {
-    fromJSON(json) {
-        for (var propName in json)
-            this[propName] = json[propName];
-        return this;
-    }
-}
-
-@Injectable()
+@Injectable({
+    providedIn: "root",
+})
 export class APIService {
     constructor(
-        private http: Http,
+        private http: HttpClient,
         private router: Router,
     ) { }
 
-    get(endpoint: string, headers?: Headers) {
-        return this.http.get(
+    get<T>(endpoint: string, headers?: HttpHeaders) : Observable<T> {
+        return this.http.get<T>(
             absEndpoint(endpoint),
             { headers: authHeaders(headers) }
-        )
-            .catch(unathorizeHandler(this.router))
-            .retryWhen(errorRetry());
+        ).pipe(
+            catchError(unathorizeHandler(this.router)),
+            retryWhen(errorRetry())
+        );
     }
 
-    post(endpoint: string, body?: any, headers?: Headers) {
-        return this.http.post(
+    post<T>(endpoint: string, body?: any, headers?: HttpHeaders) : Observable<T>  {
+        return this.http.post<T>(
             absEndpoint(endpoint),
             body,
             { headers: authHeaders(headers) }
-        )
-            .catch(unathorizeHandler(this.router))
-            .retryWhen(errorRetry());
+        ).pipe(
+            catchError(unathorizeHandler(this.router)),
+            retryWhen(errorRetry())
+        );
     }
 
-    delete(endpoint: string, headers?: Headers) {
-        return this.http.delete(
+    rawPost<T>(endpoint: string, body?: any, headers?: HttpHeaders) : Observable<HttpResponse<T>>  {
+        return this.http.post<T>(
+            absEndpoint(endpoint),
+            body,
+            { headers: authHeaders(headers), observe: "response" }
+        ).pipe(
+            catchError(unathorizeHandler(this.router)),
+            retryWhen(errorRetry())
+        );
+    }
+
+    delete<T>(endpoint: string, headers?: HttpHeaders) : Observable<T> {
+        return this.http.delete<T>(
             absEndpoint(endpoint),
             { headers: authHeaders(headers) }
-        )
-            .catch(unathorizeHandler(this.router))
-            .retryWhen(errorRetry());
+        ).pipe(
+            catchError(unathorizeHandler(this.router)),
+            retryWhen(errorRetry())
+        );
     }
 
-    put(endpoint: string, body: any, headers?: Headers) {
-        return this.http.put(
+    put<T>(endpoint: string, body: any, headers?: HttpHeaders) : Observable<T> {
+        return this.http.put<T>(
             absEndpoint(endpoint),
             body,
             { headers: authHeaders(headers) }
-        )
-            .catch(unathorizeHandler(this.router))
-            .retryWhen(errorRetry());
+        ).pipe(
+            catchError(unathorizeHandler(this.router)),
+            retryWhen(errorRetry())
+        );
     }
 }
 
-export function unathorizeHandler(router: Router) : (response: Response) => Observable<Response> {
-    return (response: Response) => {
-        return Observable.of(response).flatMap(response => {
+export function unathorizeHandler<T>(router: Router) : (err: HttpErrorResponse, caught: Observable<T>) => Observable<T> {
+    return (err: HttpErrorResponse, caught: Observable<T>) => {
+        return of(err).pipe(flatMap(response => {
             if (response.status == 403 || response.status == 401) {
                 if (!router.routerState.snapshot.url.startsWith("/login")) {
                     router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
                 }
-                return Observable.empty<Response>();
+                return empty();
             }
 
-            if (response.type == ResponseType.Error) {
-                throw response;
-            }
 
-            return Observable.of(response);
-        })
+            throw response;
+        }))
     }
 }
 
-function errorRetry() : (errors: Observable<Response>) => Observable<any> {
-    return errors => Observable.range(1, 10).zip(errors, (i, err) => {
-        if (i == 10) {
-            throw err;
-        }
+function errorRetry() : (errors: Observable<HttpErrorResponse>) => Observable<any> {
+    return errors => range(1, 10).pipe(
+        zip(errors, (i, err) => {
+            if (i == 10) {
+                throw err;
+            }
 
-        return i;
-    }).flatMap(i => Observable.timer(i * 1000));
+            return i;
+        }),
+        flatMap(i => timer(i * 1000)),
+    )
 }
 
 let absEndpoint = function (endpoint: string): string {
     return environment.apiEndpoint + endpoint;
 }
 
-let authHeaders = function(headers?: Headers) : Headers {
-    var headers = new Headers(headers);
-    headers.set("Authorization", localStorage.getItem("token"));
-    headers.set("Accept", "application/json");
+let authHeaders = function(headers?: HttpHeaders) : HttpHeaders {
+    headers = headers ? headers : new HttpHeaders();
 
-    return headers;
+    return headers.set(
+        "Authorization", localStorage.getItem("token")
+    ).set(
+        "Accept", "application/json"
+    );
 }

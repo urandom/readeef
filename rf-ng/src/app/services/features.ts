@@ -1,21 +1,25 @@
 import { Injectable } from '@angular/core'
 import { Router } from '@angular/router'
-import { Observable } from "rxjs";
-import { APIService, Serializable } from "./api";
+import { Observable, ConnectableObservable } from "rxjs";
+import { APIService } from "./api";
 import { TokenService } from "./auth";
-import 'rxjs/add/operator/map'
-import 'rxjs/add/operator/switchMap'
-import 'rxjs/add/operator/publishReplay'
+import { switchMap, publishReplay, map } from 'rxjs/operators';
 
-export class Features extends Serializable {
-	i18n:       boolean
-	search:     boolean
-	extractor:  boolean
-	proxyHTTP:  boolean
-	popularity: boolean
+
+
+interface featuresPayload {
+    features: Features
 }
 
-@Injectable()
+export interface Features {
+	i18n:       boolean;
+	search:     boolean;
+	extractor:  boolean;
+	proxyHTTP:  boolean;
+	popularity: boolean;
+}
+
+@Injectable({providedIn: "root"})
 export class FeaturesService {
     private features: Observable<Features>;
 
@@ -23,12 +27,12 @@ export class FeaturesService {
         private api: APIService,
         private tokenService: TokenService,
     ) {
-        var features = this.tokenService.tokenObservable().switchMap(token =>
-            this.api.get("features")
-                .map(response =>
-                    new Features().fromJSON(response.json().features)
-                )
-        ).publishReplay(1);
+        var features = this.tokenService.tokenObservable().pipe(
+            switchMap(token => this.api.get<featuresPayload>("features").pipe(
+                map(p => p.features)
+            )),
+            publishReplay<Features>(1)
+        ) as ConnectableObservable<Features>;
         features.connect();
 
         this.features = features;

@@ -3,7 +3,7 @@
     <p i18n>
         You can enter the url of a feed directly, as well as a url of a site that may contain one or more feeds, or a search query.
     </p>
-    <mat-input-container>
+    <mat-form-field>
         <input matInput [(ngModel)]="query" i18n-placeholder placeholder="URL/query" (keydown.Enter)="search()">
         <mat-error *ngIf="queryFormControl.hasError('empty')" i18n>
             No query or opml file specified
@@ -11,7 +11,7 @@
         <mat-error *ngIf="queryFormControl.hasError('search')" i18n>
             Error during search
         </mat-error>
-    </mat-input-container>
+    </mat-form-field>
     <br>
     <p i18n>
         Alternatively, upload an OPML file.

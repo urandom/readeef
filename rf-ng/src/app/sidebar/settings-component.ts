@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { UserService } from "../services/user"
 import { Subscription } from "rxjs";
+import { map } from 'rxjs/operators';
 
 @Component({
     selector: 'side-bar',
@@ -17,9 +18,9 @@ export class SideBarSettingsComponent implements OnInit, OnDestroy {
     ) { }
 
     ngOnInit(): void {
-        this.subscriptions.push(this.userService.getCurrentUser().map(
+        this.subscriptions.push(this.userService.getCurrentUser().pipe(map(
             user => user.admin
-        ).subscribe(
+        )).subscribe(
             admin => this.admin = admin,
             error => console.log(error),
         ))

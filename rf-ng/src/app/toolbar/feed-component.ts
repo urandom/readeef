@@ -5,20 +5,9 @@ import { FeaturesService } from "../services/features";
 import { PreferencesService } from "../services/preferences";
 import { SharingService, ShareService } from "../services/sharing";
 import { Router, NavigationStart } from '@angular/router';
-import { Observable, Subscription } from "rxjs";
+import { Observable, Subscription, of, timer, empty } from "rxjs";
 import { articleRoute, listRoute, getListRoute } from "../main/routing-util"
-import 'rxjs/add/observable/empty'
-import 'rxjs/add/observable/of'
-import 'rxjs/add/observable/timer'
-import 'rxjs/add/operator/delayWhen'
-import 'rxjs/add/operator/distinctUntilChanged'
-import 'rxjs/add/operator/filter'
-import 'rxjs/add/operator/map'
-import 'rxjs/add/operator/mergeMap'
-import 'rxjs/add/operator/shareReplay'
-import 'rxjs/add/operator/startWith'
-import 'rxjs/add/operator/switchMap'
-import 'rxjs/add/operator/take'
+import { map, distinctUntilChanged, shareReplay, switchMap, delayWhen, filter, combineLatest, take, flatMap } from 'rxjs/operators';
 
 @Component({
   templateUrl: './toolbar-feed.html',
@@ -85,85 +74,97 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         let articleRouteObservable = articleRoute(this.router)
 
-        this.subscriptions.push(articleRouteObservable.map(
+        this.subscriptions.push(articleRouteObservable.pipe(map(
             route => route != null
-        ).subscribe(
+        )).subscribe(
             showsArticle => this.showsArticle = showsArticle
         ));
 
-        this.articleID = articleRouteObservable.map(route => {
-            if (route == null) {
-                return -1;
-            }
-
-            return +route.params["articleID"];
-        }).distinctUntilChanged().shareReplay(1)
-
-        this.subscriptions.push(this.articleID.switchMap(id => {
-            if (id == -1) {
-                return Observable.of(false);
-            }
-
-            let initial = true
-            return this.articleService.articleObservable().map(articles => {
-                for (let article of articles) {
-                    if (article.id == id) {
-                        return article.read;
-                    }
+        this.articleID = articleRouteObservable.pipe(
+            map(route => {
+                if (route == null) {
+                    return -1;
                 }
 
-                return false;
-            }).delayWhen(read => {
-                if (read && !initial) {
-                    return Observable.timer(1000);
+                return +route.params["articleID"];
+            }),
+            distinctUntilChanged(),
+            shareReplay(1),
+        );
+
+        this.subscriptions.push(this.articleID.pipe(
+            switchMap(id => {
+                if (id == -1) {
+                    return of(false);
                 }
 
-                initial = false
+                let initial = true
+                return this.articleService.articleObservable().pipe(
+                    map(articles => {
+                        for (let article of articles) {
+                            if (article.id == id) {
+                                return article.read;
+                            }
+                        }
 
-                return Observable.timer(0);
-            })
-        }).subscribe(
+                        return false;
+                    }),
+                    delayWhen(read => {
+                        if (read && !initial) {
+                            return timer(1000);
+                        }
+
+                        initial = false
+
+                        return timer(0);
+                    }),
+                )
+            }),
+        ).subscribe(
             read => this.articleRead = read,
             error => console.log(error),
         ))
 
-        this.subscriptions.push(listRoute(this.router).map(
-            route => route != null && route.data["primary"] == "search"
+        this.subscriptions.push(listRoute(this.router).pipe(
+            map(route => route != null && route.data["primary"] == "search"),
         ).subscribe(
             inSearch => this.inSearch = inSearch,
             error => console.log(error),
         ))
 
-        this.subscriptions.push(this.featuresServices.getFeatures().filter(
-            features => features.search
-        ).switchMap(features =>
-            articleRouteObservable.map(
-                route => route == null
-            ).distinctUntilChanged().combineLatest(
-                listRoute(this.router),
-                (inList, route) : [boolean, boolean, boolean] => {
-                    let showButton = false;
-                    let showEntry = false;
-                    let showAllRead = false;
-                    if (inList) {
-                        let route = getListRoute([this.router.routerState.snapshot.root])
+        this.subscriptions.push(this.featuresServices.getFeatures().pipe(
+            filter(features => features.search),
+            switchMap(features =>
+                articleRouteObservable.pipe(
+                    map(route => route == null),
+                    distinctUntilChanged(),
+                    combineLatest(
+                        listRoute(this.router),
+                        (inList, route): [boolean, boolean, boolean] => {
+                            let showButton = false;
+                            let showEntry = false;
+                            let showAllRead = false;
+                            if (inList) {
+                                let route = getListRoute([this.router.routerState.snapshot.root])
 
-                        switch (route.data["primary"]) {
-                        case "favorite":
-                            showAllRead = true;
-                        case "popular":
-                            break
-                        case "search":
-                            showEntry = true;
-                        default:
-                            showButton = true;
-                            showAllRead = true;
+                                switch (route.data["primary"]) {
+                                    case "favorite":
+                                        showAllRead = true;
+                                    case "popular":
+                                        break
+                                    case "search":
+                                        showEntry = true;
+                                    default:
+                                        showButton = true;
+                                        showAllRead = true;
+                                }
+                            }
+
+                            return [showButton, showEntry, showAllRead]
                         }
-                    }
-
-                    return[showButton, showEntry, showAllRead] 
-                }
-            )
+                    ),
+                )
+            ),
         ).subscribe(
             res => {
                 this.searchButton = res[0]
@@ -210,22 +211,27 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
     }
 
     toggleRead() {
-        this.articleID.take(1).switchMap(id => {
-            if (id == -1) {
-                Observable.empty();
-            }
-
-            return this.articleService.articleObservable().map(articles => {
-                for (let article of articles) {
-                    if (article.id == id) {
-                        return article;
-                    }
+        this.articleID.pipe(
+            take(1),
+            switchMap(id => {
+                if (id == -1) {
+                    empty();
                 }
 
-                return null;
-            }).take(1)
-        }).flatMap(article =>
-            this.articleService.read(article.id, !article.read)
+                return this.articleService.articleObservable().pipe(
+                    map(articles => {
+                        for (let article of articles) {
+                            if (article.id == id) {
+                                return article;
+                            }
+                        }
+
+                        return null;
+                    }),
+                    take(1),
+                )
+            }),
+            flatMap(article => this.articleService.read(article.id, !article.read)),
         ).subscribe(
             success => {},
             error => console.log(error),
@@ -253,15 +259,18 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
     }
 
     shareArticleTo(share: ShareService) {
-        this.articleID.take(1).filter(
-            id => id != -1
-        ).switchMap(id =>
-             this.articleService.articleObservable().map(articles =>
-                articles.filter(a => a.id == id)
-            ).filter(
-                articles => articles.length > 0
-            ).map(articles => articles[0])
-        ).take(1).subscribe(
+        this.articleID.pipe(
+            take(1),
+            filter(id => id != -1),
+            switchMap(id =>
+                this.articleService.articleObservable().pipe(
+                    map(articles => articles.filter(a => a.id == id)),
+                    filter(articles => articles.length > 0),
+                    map(articles => articles[0]),
+                )
+            ),
+            take(1),
+        ).subscribe(
             article => this.sharingService.submit(share.id, article)
         )
     }

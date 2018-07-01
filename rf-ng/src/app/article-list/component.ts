@@ -2,13 +2,13 @@ import { Component, OnInit, OnDestroy, HostListener } from "@angular/core";
 import { Router, ActivatedRoute, ParamMap, Data, Params } from '@angular/router';
 import { Article, Source, UserSource, FavoriteSource, PopularSource, FeedSource, TagSource, ArticleService, QueryOptions } from "../services/article"
 import { ChangeEvent } from 'angular2-virtual-scroll';
-import { Observable, Subscription } from "rxjs";
-import { BehaviorSubject } from "rxjs/BehaviorSubject";
+import { Observable, Subscription ,  BehaviorSubject, interval } from "rxjs";
 import * as moment from 'moment';
-import 'rxjs/add/observable/interval'
-import 'rxjs/add/operator/scan'
-import 'rxjs/add/operator/startWith'
-import 'rxjs/add/operator/switchMap'
+import { scan, map, switchMap, startWith } from "rxjs/operators";
+
+
+
+
 
 class ArticleCounter {
     constructor(
@@ -41,25 +41,25 @@ export class ArticleListComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.loading = true;
 
-        this.subscription = this.articleService.articleObservable(
-        ).scan((acc, articles) => {
-            if (acc.iteration > 0 && acc.articles.length == articles.length) {
-                this.finished = true
-            }
+        this.subscription = this.articleService.articleObservable().pipe(
+            scan<Article[], ArticleCounter>((acc, articles, index) => {
+                if (acc.iteration > 0 && acc.articles.length == articles.length) {
+                    this.finished = true
+                }
 
-            acc.articles = [].concat(articles)
-            acc.iteration++
-            return acc
-        }, new ArticleCounter(0, [])).map(
-            acc => acc.articles
-        ).switchMap(articles =>
-            Observable.interval(60000).startWith(0).map(v =>
-                articles.map(article => {
+                acc.articles = [].concat(articles)
+                acc.iteration++
+                return acc
+            }, new ArticleCounter(0, [])),
+            map(acc => acc.articles),
+            switchMap(articles => interval(60000).pipe(
+                startWith(0),
+                map(v => articles.map(article => {
                     article.time = moment(article.date).fromNow();
                     return article;
-                })
+                })),
             )
-        ).subscribe(
+        )).subscribe(
             articles => {
                 this.loading = false;
                 this.items = articles;

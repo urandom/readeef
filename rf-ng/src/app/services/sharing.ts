@@ -10,7 +10,7 @@ export interface ShareService {
     template: string
 }
 
-@Injectable()
+@Injectable({providedIn: "root"})
 export class SharingService {
     private services = new Map<string, ShareService>()
     private enabled : Set<string>

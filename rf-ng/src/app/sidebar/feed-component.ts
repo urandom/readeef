@@ -3,8 +3,9 @@ import { Tag, TagFeedIDs, TagService } from '../services/tag';
 import { Feed, FeedService } from '../services/feed';
 import { Features, FeaturesService } from "../services/features"
 import { FaviconService } from "../services/favicon"
-import 'rxjs/add/operator/mergeMap'
-import 'rxjs/add/operator/combineLatest'
+import { combineLatest } from 'rxjs/operators';
+
+
 
 @Component({
   selector: 'side-bar',
@@ -29,14 +30,16 @@ export class SideBarFeedComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        this.featuresService.getFeatures().combineLatest(
-            this.feedService.getFeeds(),
-            this.tagService.getTagsFeedIDs(),
-            (features, feeds, tags) => {
-                let res : [Features, Feed[], TagFeedIDs[]];
-                res = [features, feeds, tags];
-                return res;
-            }
+        this.featuresService.getFeatures().pipe(
+            combineLatest(
+                this.feedService.getFeeds(),
+                this.tagService.getTagsFeedIDs(),
+                (features, feeds, tags) => {
+                    let res: [Features, Feed[], TagFeedIDs[]];
+                    res = [features, feeds, tags];
+                    return res;
+                }
+            ),
         ).subscribe(
             data => {
                 this.popularity = data[0].popularity;

@@ -1,16 +1,17 @@
 import { Injectable } from '@angular/core'
 import { Router } from '@angular/router'
 import { Observable } from "rxjs";
-import { APIService, Serializable } from "./api";
-import 'rxjs/add/operator/map'
+import { APIService } from "./api";
+import { map } from 'rxjs/operators';
+
 
 export class Tag {
-    id: number
-    value: string
+    id: number;
+    value: string;
 }
 
-class TagsResponse extends Serializable {
-    tags: Tag[]
+interface TagsResponse {
+    tags: Tag[];
 }
 
 export class TagFeedIDs {
@@ -18,30 +19,33 @@ export class TagFeedIDs {
     ids: number[]
 }
 
-class TagsFeedIDs extends Serializable {
-    tagFeeds: TagFeedIDs[]
+interface TagsFeedIDs  {
+    tagFeeds: TagFeedIDs[];
 }
 
-class FeedIDsResponse extends Serializable {
-    feedIDs: number[]
+interface FeedIDsResponse  {
+    feedIDs: number[];
 }
 
-@Injectable()
+@Injectable({providedIn: "root"})
 export class TagService {
     constructor(private api: APIService) { }
 
     getTags() : Observable<Tag[]> {
-        return this.api.get("tag")
-            .map(response => new TagsResponse().fromJSON(response.json()).tags);
+        return this.api.get<TagsResponse>("tag").pipe(
+            map(response => response.tags)
+        );
     }
 
     getFeedIDs(tag: {id: number}): Observable<number[]> {
-        return this.api.get(`tag/${tag.id}/feedIDs`)
-            .map(response => new FeedIDsResponse().fromJSON(response.json()).feedIDs)
+        return this.api.get<FeedIDsResponse>(`tag/${tag.id}/feedIDs`).pipe(
+            map(response => response.feedIDs)
+        );
     }
 
     getTagsFeedIDs(): Observable<TagFeedIDs[]> {
-        return this.api.get("tag/feedIDs")
-            .map(response => new TagsFeedIDs().fromJSON(response.json()).tagFeeds)
+        return this.api.get<TagsFeedIDs>("tag/feedIDs").pipe(
+            map(response => response.tagFeeds)
+        );
     }
 }

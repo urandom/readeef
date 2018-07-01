@@ -1,21 +1,19 @@
-/// <reference path="./eventsource.d.ts" />
-
 import { Injectable } from '@angular/core'
-import { Observable, Subject, BehaviorSubject } from "rxjs";
-import { Serializable } from "./api";
+import { Observable, Subject, BehaviorSubject, fromEvent } from "rxjs";
 import { TokenService } from './auth'
-import 'rxjs/add/operator/combineLatest'
-import 'rxjs/add/operator/startWith'
+import { combineLatest, scan, filter, shareReplay, startWith, flatMap, map } from 'rxjs/operators';
 
-export class FeedUpdateEvent extends Serializable {
-    feedID: number
-    articleIDs: number[]
+
+
+export interface FeedUpdateEvent  {
+    feedID: number;
+    articleIDs: number[];
 }
 
-export class ArticleStateEvent extends Serializable {
-    state: string
-    value: boolean
-    options: QueryOptions
+interface ArticleStateEvent  {
+    state: string;
+    value: boolean;
+    options: QueryOptions;
 }
 
 export interface QueryOptions {
@@ -31,7 +29,7 @@ export interface QueryOptions {
     afterDate?: Date
 }
 
-@Injectable()
+@Injectable({providedIn: "root"})
 export class EventService {
     feedUpdate : Observable<FeedUpdateEvent>
     articleState : Observable<ArticleStateEvent>
@@ -41,43 +39,47 @@ export class EventService {
     private refreshSubject = new Subject<any>();
 
     constructor(private tokenService : TokenService) {
-        this.eventSourceObservable = this.tokenService.tokenObservable(
-        ).combineLatest(
-            this.refreshSubject.startWith(null), (token, v) => token,
-        ).scan((source: EventSource, token :string) : EventSource => {
-            if (source != null) {
-                source.close()
-            }
+        this.eventSourceObservable = this.tokenService.tokenObservable().pipe(
+            combineLatest(this.refreshSubject.pipe(startWith(null)), (token, v) => token),
+            scan((source: EventSource, token: string): EventSource => {
+                if (source != null) {
+                    source.close()
+                }
 
-            if (token != "") {
-                source = new EventSource("/api/v2/events?token=" + token)
-                source['onopen'] = () => {
-                    this.connectionSubject.next(true);
-                };
-                source['onerror'] = error => {
-                    setTimeout(() => {
-                        this.connectionSubject.next(false);
-                        this.refresh();
-                    }, 3000);
-                };
-            }
+                if (token != "") {
+                    source = new EventSource("/api/v2/events?token=" + token)
+                    source['onopen'] = () => {
+                        this.connectionSubject.next(true);
+                    };
+                    source['onerror'] = error => {
+                        setTimeout(() => {
+                            this.connectionSubject.next(false);
+                            this.refresh();
+                        }, 3000);
+                    };
+                }
 
-            return source
-        }, <EventSource> null).filter(
-            source => source != null
-        ).shareReplay(1)
+                return source
+            }, <EventSource> null),
+            filter(source => source != null),
+            shareReplay(1),
+        );
 
-        this.feedUpdate = this.eventSourceObservable.flatMap(source => 
-            Observable.fromEvent(source, "feed-update")
-        ).map((event : MessageEvent) =>
-            new FeedUpdateEvent().fromJSON(JSON.parse(event.data))
-        )
+        this.feedUpdate = this.eventSourceObservable.pipe(
+            flatMap(source => fromEvent(source, "feed-update")),
+            map((event : MessageEvent) => {
+                let updateEvent : FeedUpdateEvent = JSON.parse(event.data);
+                return updateEvent;
+            })
+        );
 
-        this.articleState = this.eventSourceObservable.flatMap(source => 
-            Observable.fromEvent(source, "article-state-change")
-        ).map((event: MessageEvent) =>
-            new ArticleStateEvent().fromJSON(JSON.parse(event.data))
-        )
+        this.articleState = this.eventSourceObservable.pipe(
+            flatMap(source => fromEvent(source, "article-state-change")),
+            map((event: MessageEvent) => {
+                let stateEvent : ArticleStateEvent = JSON.parse(event.data);
+                return stateEvent;
+            })
+        );
     }
 
     connection() : Observable<boolean> {

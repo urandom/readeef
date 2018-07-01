@@ -3,9 +3,10 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UserService, User } from "../../services/user";
 import { MatDialog, MatDialogRef } from "@angular/material";
 import { Observable, Subject } from "rxjs";
-import 'rxjs/add/operator/combineLatest'
-import 'rxjs/add/operator/filter'
-import 'rxjs/add/operator/startWith'
+import { startWith, switchMap, combineLatest } from "rxjs/operators";
+
+
+
 
 @Component({
     selector: "settings-admin",
@@ -24,12 +25,13 @@ export class AdminSettingsComponent implements OnInit {
     ) {}
 
     ngOnInit(): void {
-        this.refresher.startWith(null).switchMap(
-            v => this.userService.list()
-        ).combineLatest(
-            this.userService.getCurrentUser(),
-            (users, current) =>
-                users.filter(user => user.login != current.login)
+        this.refresher.pipe(
+            startWith(null),
+            switchMap(v => this.userService.list()),
+            combineLatest(
+                this.userService.getCurrentUser(),
+                (users, current) => users.filter(user => user.login != current.login)
+            ),
         ).subscribe(
             users => this.users = users,
             error => console.log(error),

@@ -3,16 +3,16 @@
         <p i18n>
             Filters can be applied to article URLs and title. At least one target must be selected:
         </p>
-        <mat-input-container>
+        <mat-form-field>
             <input matInput i18n-placeholder placeholder="Filter by title" formControlName="titleTerm">
-        </mat-input-container>
+        </mat-form-field>
         <br>
         <mat-checkbox formControlName="inverseTitle" i18n>
             Match filter if title term does not match.
         </mat-checkbox>
-        <mat-input-container>
+        <mat-form-field>
             <input matInput i18n-placeholder placeholder="Filter by URL" formControlName="urlTerm">
-        </mat-input-container>
+        </mat-form-field>
         <br>
         <mat-checkbox formControlName="inverseURL" i18n>
             Match filter if URL term does not match.

@@ -1,18 +1,18 @@
 <h5 class="title" i18n>Personalize your feed reader</h5>
-<mat-input-container>
+<mat-form-field>
     <input matInput [(ngModel)]="firstName" i18n-placeholder placeholder="First name" (change)="firstNameChange()">
-</mat-input-container>
+</mat-form-field>
 <br>
-<mat-input-container>
+<mat-form-field>
     <input matInput [(ngModel)]="lastName" (change)="lastNameChange()" i18n-placeholder placeholder="Last name">
-</mat-input-container>
+</mat-form-field>
 <br>
-<mat-input-container>
-    <input matInput [(ngModel)]="email" type="email" (change)="emailChange()" i18n-placeholder placeholder="Email" [formControl]="emailFormControl">
+<mat-form-field>
+    <input matInput type="email" (change)="emailChange()" i18n-placeholder placeholder="Email" [formControl]="emailFormControl">
     <mat-error *ngIf="emailFormControl.hasError('email')" i18n>
         Please enter a valid email address
     </mat-error>
-</mat-input-container>
+</mat-form-field>
 <br>
 <mat-form-field>
     <mat-select i18n-placeholder placeholder="Language" (change)="languageChange($event.value)" [(ngModel)]="language">

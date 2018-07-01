@@ -1,44 +1,36 @@
 import { Injectable } from "@angular/core"
-import { Headers } from '@angular/http'
-import { APIService, Serializable } from "./api";
+import { APIService } from "./api";
 import { Observable } from "rxjs";
-import 'rxjs/add/operator/map'
-import 'rxjs/add/operator/shareReplay'
+
+
+import { HttpHeaders } from "@angular/common/http";
+import { map, shareReplay } from "rxjs/operators";
 
 export class User {
-    login: string
-    firstName: string
-    lastName: string
-    email: string
-    admin: boolean
-    active: boolean
-    profileData: Map<string, any>
+    login: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    admin: boolean;
+    active: boolean;
+    profileData?: Map<string, any>;
 }
 
 export interface PasswordChange {
-    current: string
-    new: string
+    current: string;
+    new: string;
 }
 
-class UserResponse extends Serializable {
-    user: User
-
-    fromJSON(json) {
-        if ("profileData" in json) {
-            let data = json["profileData"];
-            json["profileData"] = new Map<string, any>(data);
-        }
-
-        return super.fromJSON(json);
-    }
+interface UserResponse {
+    user: User;
 }
 
-class UsersResponse extends Serializable {
-    users: User[]
+interface UsersResponse {
+    users: User[];
 }
 
-class SettingsResponse extends Serializable {
-    success: boolean
+interface SettingsResponse  {
+    success: boolean;
 }
 
 export interface AddUser {
@@ -46,14 +38,15 @@ export interface AddUser {
     password: string
 }
 
-@Injectable()
+@Injectable({providedIn: "root"})
 export class UserService {
     user : Observable<User>
 
     constructor(private api: APIService) {
-        this.user = this.api.get("user/current").map(response =>
-            new UserResponse().fromJSON(response.json()).user
-        ).shareReplay(1)
+        this.user = this.api.get<UserResponse>("user/current").pipe(
+            map(response => response.user),
+            shareReplay(1)
+        );
     }
 
     getCurrentUser() : Observable<User> {
@@ -71,24 +64,16 @@ export class UserService {
                 data += `&${key}=${encodeURIComponent(extra[key])}`;
             }
         }
-        return this.api.put(`user/settings/${key}`, data, new Headers({
+        return this.api.put<SettingsResponse>(`user/settings/${key}`, data, new HttpHeaders({
             "Content-Type": "application/x-www-form-urlencoded",
-        })).map(
-            response => {
-                if (response.ok) {
-                    return new SettingsResponse().fromJSON(response.json()).success
-                } else if (response.status >= 500) {
-                    throw new Error("Error: " + response.text())
-                }
-
-                return false
-            }
-        )
+        })).pipe(
+            map( response => response.success)
+        );
     }
 
     list() : Observable<User[]> {
-        return this.api.get("user").map(response =>
-            new UsersResponse().fromJSON(response.json()).users
+        return this.api.get<UsersResponse>("user").pipe(
+            map(response => response.users)
         );
     }
 
@@ -97,23 +82,25 @@ export class UserService {
         body.append("login", login);
         body.append("password", password);
 
-        return this.api.post("user", body).map(
-            response => !!response.json()["success"]
+        return this.api.post<SettingsResponse>("user", body).pipe(
+            map(response => response.success)
         );
     }
 
     deleteUser(user: string) : Observable<boolean> {
-        return this.api.delete(`user/${user}`).map(response =>
-            !!response.json()["success"]
+        return this.api.delete<SettingsResponse>(`user/${user}`).pipe(
+            map(response => response.success)
         );
     }
 
     toggleActive(user: string, active: boolean) : Observable<boolean> {
         var data = `value=${active}`
-        return this.api.put(
-            `user/${user}/settings/is-active`, data, new Headers({
+        return this.api.put<SettingsResponse>(
+            `user/${user}/settings/is-active`, data, new HttpHeaders({
                 "Content-Type": "application/x-www-form-urlencoded",
             })
-        ).map(response => !!response.json()["success"]);
+        ).pipe(
+            map(response => response.success)
+        );
     }
 }

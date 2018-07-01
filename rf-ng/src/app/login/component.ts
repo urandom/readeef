@@ -1,6 +1,7 @@
 import { Component, OnInit } from "@angular/core";
 import { Router, ActivatedRoute } from "@angular/router";
 import { TokenService } from "../services/auth"
+import { HttpErrorResponse } from "@angular/common/http";
 
 @Component({
     moduleId: module.id,
@@ -8,11 +9,12 @@ import { TokenService } from "../services/auth"
     styleUrls: ["./login.css"],
 })
 export class LoginComponent implements OnInit {
-    user: string
-    password: string
-    loading = false
+    user: string;
+    password: string;
+    loading = false;
+    invalidLogin = false;
 
-    returnURL: string
+    returnURL: string;
 
     constructor(
         private router: Router,
@@ -29,8 +31,14 @@ export class LoginComponent implements OnInit {
     login() {
         this.loading = true
         this.tokenService.create(this.user, this.password).subscribe(
-            data => this.router.navigate([this.returnURL]),
-            error => {
+            data => {
+                this.invalidLogin = false;
+                this.router.navigate([this.returnURL]);
+            },
+            (error: HttpErrorResponse) => {
+                if (error.status == 401) {
+                    this.invalidLogin = true;
+                }
                 this.loading = false;
             }
         )

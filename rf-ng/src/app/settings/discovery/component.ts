@@ -3,7 +3,7 @@ import { FormControl } from '@angular/forms';
 import { MatCheckbox } from "@angular/material";
 import { FeedService, Feed, OPMLimport, AddFeedResponse } from "../../services/feed";
 import { Observable, Observer } from "rxjs";
-import 'rxjs/add/operator/mergeMap'
+
 
 @Component({
     selector: "settings-discovery",

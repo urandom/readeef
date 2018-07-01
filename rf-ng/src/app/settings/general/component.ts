@@ -1,7 +1,8 @@
 import { Component, OnInit } from "@angular/core" ;
-import { FormBuilder, FormGroup, FormControl, Validators } from '@angular/forms';
+import { FormControl, Validators } from '@angular/forms';
 import { MatDialog, MatDialogRef } from "@angular/material";
-import { UserService, PasswordChange } from "../../services/user";
+import { UserService } from "../../services/user";
+import { HttpErrorResponse } from "@angular/common/http";
 
 @Component({
     selector: "settings-general",
@@ -11,7 +12,6 @@ import { UserService, PasswordChange } from "../../services/user";
 export class GeneralSettingsComponent implements OnInit {
     firstName: string
     lastName: string
-    email: string
     language: string
 
     emailFormControl = new FormControl('', [Validators.email]);
@@ -28,7 +28,7 @@ export class GeneralSettingsComponent implements OnInit {
             user => {
                 this.firstName = user.firstName;
                 this.lastName = user.lastName;
-                this.email = user.email;
+                this.emailFormControl.setValue(user.email);
             },
             error => console.log(error),
         )
@@ -38,7 +38,7 @@ export class GeneralSettingsComponent implements OnInit {
         this.userService.setUserSetting(
             "first-name", this.firstName
         ).subscribe(
-            success => {},
+            () => { },
             error => console.log(error),
         )
     }
@@ -47,7 +47,7 @@ export class GeneralSettingsComponent implements OnInit {
         this.userService.setUserSetting(
             "last-name", this.lastName
         ).subscribe(
-            success => {},
+            () => { },
             error => console.log(error),
         )
     }
@@ -60,7 +60,7 @@ export class GeneralSettingsComponent implements OnInit {
         }
 
         this.userService.setUserSetting(
-            "email", this.email
+            "email", this.emailFormControl.value
         ).subscribe(
             success => {
                 if (!success) {
@@ -87,8 +87,6 @@ export class GeneralSettingsComponent implements OnInit {
     styleUrls: ["../common.css", "./general.css"]
 })
 export class PasswordDialog {
-    current: string
-    password: string
     passwordConfirm: string
 
     currentFormControl = new FormControl('', [Validators.required]);
@@ -100,7 +98,7 @@ export class PasswordDialog {
     ) {}
 
     save() {
-        if (this.password != this.passwordConfirm) {
+        if (this.passwordFormControl.value != this.passwordConfirm) {
             this.passwordFormControl.setErrors({"mismatch": true})
             return
         }
@@ -112,17 +110,23 @@ export class PasswordDialog {
         }
 
         this.userService.changeUserPassword(
-            this.password, this.current
+            this.passwordFormControl.value, this.currentFormControl.value
         ).subscribe(
             success => {
                 if (!success) {
-                    this.currentFormControl.setErrors({"auth": true})
-                    return
+                    this.currentFormControl.setErrors({"auth": true});
+                    return;
                 }
 
                 this.close();
             },
-            error => console.log(error),
+            (error: HttpErrorResponse) => {
+                if (error.status == 400) {
+                    this.currentFormControl.setErrors({"auth": true});
+                    return;
+                }
+                console.log(error);
+            },
         )
     }
 

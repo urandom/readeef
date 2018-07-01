@@ -1,25 +1,26 @@
 import { Injectable } from '@angular/core'
 import { Observable } from "rxjs";
-import { APIService, Serializable } from "./api";
-import 'rxjs/add/operator/map'
+import { APIService } from "./api";
+import { map } from 'rxjs/operators';
+
 
 export class Feed {
-    id: number
-    title: string
-    description: string
-    link: string
-    updateError: string
-    subscribeError: string
+    id: number;
+    title: string;
+    description: string;
+    link: string;
+    updateError: string;
+    subscribeError: string;
 }
 
 export interface OPMLimport {
-    opml: string
-    dryRun: boolean
+    opml: string;
+    dryRun: boolean;
 }
 
-export class AddFeedResponse extends Serializable {
-    success: boolean
-    errors: AddFeedError[]
+export interface AddFeedResponse {
+    success: boolean;
+    errors: AddFeedError[];
 }
 
 export class AddFeedError {
@@ -28,31 +29,35 @@ export class AddFeedError {
     error: string
 }
 
-class FeedsResponse extends Serializable {
+interface FeedsResponse {
     feeds: Feed[]
 }
 
-class OPMLResponse extends Serializable {
-    opml: string
+interface OPMLResponse {
+    opml: string;
 }
 
 interface AddFeedData {
     links: string[]
 }
 
-@Injectable()
+interface Status {
+    success: boolean;
+}
+
+@Injectable({providedIn: "root"})
 export class FeedService {
     constructor(private api: APIService) { }
 
     getFeeds() : Observable<Feed[]> {
-        return this.api.get("feed").map(response =>
-             new FeedsResponse().fromJSON(response.json()).feeds
+        return this.api.get<FeedsResponse>("feed").pipe(
+            map(response => response.feeds)
         );
     }
 
     discover(query: string) : Observable<Feed[]> {
-        return this.api.get(`feed/discover?query=${query}`).map(response =>
-             new FeedsResponse().fromJSON(response.json()).feeds
+        return this.api.get<FeedsResponse>(`feed/discover?query=${query}`).pipe(
+            map(response => response.feeds)
         );
     }
 
@@ -63,14 +68,14 @@ export class FeedService {
             body.append("dryRun", "true");
         }
 
-        return this.api.post("opml", body).map(response =>
-             new FeedsResponse().fromJSON(response.json()).feeds
+        return this.api.post<FeedsResponse>("opml", body).pipe(
+            map(response => response.feeds)
         );
     }
 
     exportOPML(): Observable<string> {
-        return this.api.get("opml").map(response =>
-             new OPMLResponse().fromJSON(response.json()).opml
+        return this.api.get<OPMLResponse>("opml").pipe(
+            map(response => response.opml)
         );
     }
 
@@ -78,23 +83,21 @@ export class FeedService {
         var body = new FormData();
         links.forEach(link => body.append("link", link));
 
-        return this.api.post("feed", body).map(response =>
-            new AddFeedResponse().fromJSON(response.json())
-        )
+        return this.api.post<AddFeedResponse>("feed", body);
     }
 
     deleteFeed(id: number) : Observable<boolean> {
-        return this.api.delete(`feed/${id}`).map(response =>
-            !!response.json()["success"]
-        )
+        return this.api.delete<Status>(`feed/${id}`).pipe(
+            map(response => response.success)
+        );
     }
 
     updateTags(id: number, tags: string[]) : Observable<boolean> {
         var body = new FormData();
         tags.forEach(tag => body.append("tag", tag));
 
-        return this.api.put(`feed/${id}/tags`, body).map(response =>
-            !!response.json()["success"]
-        )
+        return this.api.put<Status>(`feed/${id}/tags`, body).pipe(
+            map(response => response.success)
+        );
     }
 }
