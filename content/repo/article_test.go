@@ -360,7 +360,7 @@ func Test_articleRepo_IDs(t *testing.T) {
 
 			for _, id := range got {
 				if _, ok := idSet[id]; !ok {
-					t.Errorf("articleRepo.IDs() unknown id = %s", id)
+					t.Errorf("articleRepo.IDs() unknown id = %d", id)
 					return
 				}
 			}
