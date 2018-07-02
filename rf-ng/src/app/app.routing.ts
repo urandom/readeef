@@ -1,23 +1,23 @@
 import { Routes, RouterModule } from '@angular/router'
 import { environment } from '../environments/environment'
 
-import { LoginComponent } from './login/component';
+import { LoginComponent } from './login/login.component';
 
 import { AuthGuard } from './guards/auth';
-import { MainComponent } from './main/component';
-import { ArticleListComponent } from './article-list/component';
-import { ArticleDisplayComponent } from './article-display/component';
-import { SideBarFeedComponent } from './sidebar/feed-component';
-import { ToolbarFeedComponent } from './toolbar/feed-component';
-import { SettingsComponent } from './settings/component';
-import { GeneralSettingsComponent } from './settings/general/component';
-import { DiscoverySettingsComponent } from './settings/discovery/component';
-import { ManagementSettingsComponent } from './settings/management/component';
-import { FiltersSettingsComponent } from './settings/filters/component';
-import { ShareServicesSettingsComponent } from './settings/share-services/component';
-import { AdminSettingsComponent } from './settings/admin/component';
-import { SideBarSettingsComponent } from './sidebar/settings-component';
-import { ToolbarSettingsComponent } from './toolbar/settings-component';
+import { MainComponent } from './main/main.component';
+import { ArticleListComponent } from './article-list/article-list.component';
+import { ArticleDisplayComponent } from './article-display/article-display.component';
+import { SideBarFeedComponent } from './sidebar/sidebar.feed.component';
+import { ToolbarFeedComponent } from './toolbar/toolbar.feed.component';
+import { SettingsComponent } from './settings/settings.component';
+import { GeneralSettingsComponent } from './settings/general/general.component';
+import { DiscoverySettingsComponent } from './settings/discovery/discovery.component';
+import { ManagementSettingsComponent } from './settings/management/management.component';
+import { FiltersSettingsComponent } from './settings/filters/filters.component';
+import { ShareServicesSettingsComponent } from './settings/share-services/share-services.component';
+import { AdminSettingsComponent } from './settings/admin/admin.component';
+import { SideBarSettingsComponent } from './sidebar/sidebar.settings.component';
+import { ToolbarSettingsComponent } from './toolbar/toolbar.settings.component';
 
 export const AppRouting = RouterModule.forRoot([
     {
