@@ -38,7 +38,7 @@ func settings(url string, width, height int) webview.Settings {
 		Resizable: true,
 		Title:     "readeef",
 		URL:       url,
-		Debug:     false,
+		Debug:     true,
 		ExternalInvokeCallback: webviewRPC,
 	}
 }
@@ -87,7 +87,7 @@ func onReadeefLoad(w webview.WebView) {
 		w.Eval(`
 document.body.addEventListener('open-link', (event) => {
 	event.preventDefault();
-	window.external.invoke("open:" + event.detail);
+	window.webkit.messageHandlers.external.postMessage("open:" + event.detail);
 })
 `)
 	})
@@ -114,7 +114,7 @@ var rpcData = {
 };
 $('form').on('submit', function(event) {
 	event.preventDefault();
-	window.external.invoke("set-url:" + $("[name=server]").val());
+	window.webkit.messageHandlers.external.postMessage("set-url:" + $("[name=server]").val());
 	setTimeout(processResult, 10);
 });
 
