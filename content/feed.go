@@ -17,7 +17,7 @@ type Feed struct {
 	ID             FeedID          `json:"id"`
 	Title          string          `json:"title"`
 	Description    string          `json:"description"`
-	Link           string          `json:"link"`
+	Link           string          `json:"link" storm:"index"`
 	SiteLink       string          `db:"site_link" json:"-"`
 	HubLink        string          `db:"hub_link" json:"-"`
 	UpdateError    string          `db:"update_error" json:"updateError"`

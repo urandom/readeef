@@ -21,7 +21,7 @@ type ProfileData map[string]interface{}
 
 // User represents a readeef user.
 type User struct {
-	Login     Login  `json:"login"`
+	Login     Login  `json:"login" storm:"id"`
 	FirstName string `db:"first_name" json:"firstName"`
 	LastName  string `db:"last_name" json:"lastName"`
 	Email     string `json:"email"`
@@ -30,7 +30,7 @@ type User struct {
 	Active    bool   `json:"active"`
 	Salt      []byte `json:"-"`
 	Hash      []byte `json:"-"`
-	MD5API    []byte `db:"md5_api" json:"-"` // "md5(user:pass)"
+	MD5API    []byte `db:"md5_api" json:"-" storm:"index"` // "md5(user:pass)"
 
 	ProfileData ProfileData `db:"profile_data" json:"profileData"`
 }
