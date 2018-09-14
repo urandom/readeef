@@ -28,6 +28,7 @@ import { ShareServicesSettingsComponent } from './settings/share-services/share-
 import { ListItemComponent } from './article-list/list-item.component';
 import { VirtualScrollModule } from 'angular2-virtual-scroll';
 import { SideBarFeedComponent } from './sidebar/sidebar.feed.component';
+import 'hammerjs';
 
 @NgModule({
   declarations: [
