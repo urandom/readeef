@@ -49,6 +49,10 @@ interface ArticlesResponse {
     articles: Article[];
 }
 
+interface IDsResponse {
+    ids: number[];
+}
+
 interface Paging {
 	time?: number;
 	unreadTime?: number;
@@ -507,7 +511,9 @@ export class ArticleService {
     }
 
     ids(source: Source, options: QueryOptions): Observable<number[]> {
-        return this.api.get<number[]>(this.buildURL(`article${source.url}/ids`, options));
+        return this.api.get<IDsResponse>(
+            this.buildURL(`article${source.url}/ids`, options)
+        ).pipe(map(r => r.ids));
     }
 
     formatArticle(id: number): Observable<ArticleFormat> {
