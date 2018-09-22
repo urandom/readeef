@@ -406,50 +406,23 @@ export class ArticleService {
 
         this.articles.connect();
 
-        interval(10000).pipe(
-            scan<number, number[]>((ticks, v) => {
-                    return [ticks[1], new Date().getTime()];
-                }, [new Date().getTime(), new Date().getTime()]
+        this.eventService.connection().pipe(
+            filter(c => c),
+            switchMap(v => this.articles.pipe(
+                first(),
+            )),
+            filter(articles => articles.length > 0),
+            map(articles => articles.map(a => a.id)),
+            map(ids => [Math.min.apply(Math, ids), Math.max.apply(Math, ids)]),
+            map((minMax): [QueryOptions, number] =>
+                this.preferences.olderFirst ?
+                    [{ afterID: minMax[1] }, minMax[0]] :
+                    [{ olderFirst: true, afterID: minMax[1] }, minMax[0]]
             ),
-            map(ticks => ticks[1] - ticks[0]),
-            switchMap(duration => {
-                // Day
-                if (duration > 86400000) {
-                    return this.eventService.connection().pipe(
-                        filter(c => c),
-                        first(),
-                        map(c => null)
-                    );
-                // Minute
-                } else if (duration > 60000) {
-                    return this.eventService.connection().pipe(
-                        filter(c => c),
-                        first(),
-                        switchMap(v =>
-                            this.articles.pipe(
-                                filter(articles => articles.length > 0),
-                                map(articles => articles.map(a => a.id)),
-                                map(ids => [Math.min.apply(Math, ids), Math.max.apply(Math, ids)]),
-                                first(),
-                                map((minMax): [QueryOptions, number] =>
-                                    this.preferences.olderFirst ?
-                                        [{ afterID: minMax[1] }, minMax[0]] :
-                                        [{ olderFirst: true, afterID: minMax[1] }, minMax[0]]
-                                ),
-                            )
-                        ),
-                    );
-                }
-
-                return of(undefined);
-            }),
-            filter(opts => opts !== undefined),
-        ).subscribe(opts => {
-            if (opts === null) {
-                this.refreshArticles();
-            }
-            this.updateSubject.next(opts);
-        });
+        ).subscribe(
+            opts => this.updateSubject.next(opts),
+            err => console.log("Error refreshing article list after reconnect: ", err)
+        )
 
         this.eventService.articleState.subscribe(
             event => this.stateChange.next({
@@ -636,6 +609,21 @@ export class ArticleService {
                     map(read => articles.concat(read))
                 );
             }));
+        }
+
+        if (options.afterID) {
+            res = res.pipe(flatMap(articles => {
+                if (!articles || !articles.length) {
+                    return of(articles);
+                }
+
+                let maxID = Math.max.apply(Math, articles.map(a => a.id))
+
+                let mod: QueryOptions = Object.assign({}, options, {afterID: maxID});
+                return this.getArticlesFor(source, mod, limit, paging).pipe(
+                    map(next => next && next.length ? next.concat(articles) : articles)
+                );
+            }))
         }
 
         if (!this.initialFetched) {
