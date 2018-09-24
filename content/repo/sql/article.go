@@ -279,8 +279,9 @@ type staleArgs struct {
 func (r articleRepo) RemoveStaleUnreadRecords() error {
 	r.log.Infof("Removing stale unread article records")
 
-	if err := r.db.WithNamedTx(
+	if err := r.db.WithNamedStmt(
 		r.db.SQL().Article.DeleteStaleUnreadRecords,
+		nil,
 		func(stmt *sqlx.NamedStmt) error {
 			_, err := stmt.Exec(staleArgs{time.Now().AddDate(0, -1, 0)})
 			return err
@@ -400,7 +401,7 @@ func articleStateSet(
 	}
 
 	log.Debugf("Articles state SQL:\n%s\nArgs:%v\n", buf.String(), args)
-	if err := db.WithNamedTx(buf.String(), func(stmt *sqlx.NamedStmt) error {
+	if err := db.WithNamedStmt(buf.String(), nil, func(stmt *sqlx.NamedStmt) error {
 		_, err := stmt.Exec(args)
 		return err
 	}); err != nil {

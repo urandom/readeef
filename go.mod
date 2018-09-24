@@ -54,6 +54,7 @@ require (
 	github.com/urandom/handler v0.8.6
 	github.com/urandom/text-summary v0.0.0-20150104142726-3e2dd4c46c53
 	github.com/willf/bitset v1.1.3
+	github.com/zserge/webview v0.0.0-20180817065719-24af6cb9b33b
 	golang.org/x/crypto v0.0.0-20180621125126-a49355c7e3f8
 	golang.org/x/net v0.0.0-20180629035331-4cb1c02c05b0
 	golang.org/x/oauth2 v0.0.0-20180620175406-ef147856a6dd

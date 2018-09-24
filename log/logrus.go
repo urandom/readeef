@@ -34,7 +34,7 @@ func WithLogrus(cfg config.Log) Log {
 }
 
 func (l logrus) Print(args ...interface{}) {
-	l.Logger.Error(args)
+	l.Logger.Error(args...)
 }
 
 func (l logrus) Printf(format string, args ...interface{}) {

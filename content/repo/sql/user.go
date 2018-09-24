@@ -85,7 +85,7 @@ func (r userRepo) Delete(user content.User) error {
 
 	r.log.Infof("Deleting user %s", user)
 
-	return r.db.WithNamedTx(r.db.SQL().User.Delete, func(stmt *sqlx.NamedStmt) error {
+	return r.db.WithNamedStmt(r.db.SQL().User.Delete, nil, func(stmt *sqlx.NamedStmt) error {
 		if _, err := stmt.Exec(user); err != nil {
 			return errors.Wrap(err, "executing user delete stmt")
 		}

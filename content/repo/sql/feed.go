@@ -209,7 +209,7 @@ func (r feedRepo) Delete(feed content.Feed) error {
 
 	r.log.Infof("Deleting feed %s", feed)
 
-	return r.db.WithNamedTx(r.db.SQL().Feed.Delete, func(stmt *sqlx.NamedStmt) error {
+	return r.db.WithNamedStmt(r.db.SQL().Feed.Delete, nil, func(stmt *sqlx.NamedStmt) error {
 		if _, err := stmt.Exec(feed); err != nil {
 			return errors.Wrap(err, "executing feed delete stmt")
 		}
@@ -245,7 +245,7 @@ func (r feedRepo) AttachTo(feed content.Feed, user content.User) error {
 
 	r.log.Infof("Attaching feed %s to %s", feed, user)
 
-	if err := r.db.WithNamedTx(r.db.SQL().Feed.Attach, func(stmt *sqlx.NamedStmt) error {
+	if err := r.db.WithNamedStmt(r.db.SQL().Feed.Attach, nil, func(stmt *sqlx.NamedStmt) error {
 		_, err := stmt.Exec(feedQuery{UserLogin: user.Login, ID: feed.ID})
 		return err
 	}); err != nil {
@@ -266,7 +266,7 @@ func (r feedRepo) DetachFrom(feed content.Feed, user content.User) error {
 
 	r.log.Infof("Detaching feed %s from %s", feed, user)
 
-	if err := r.db.WithNamedTx(r.db.SQL().Feed.Detach, func(stmt *sqlx.NamedStmt) error {
+	if err := r.db.WithNamedStmt(r.db.SQL().Feed.Detach, nil, func(stmt *sqlx.NamedStmt) error {
 		_, err := stmt.Exec(feedQuery{UserLogin: user.Login, ID: feed.ID})
 		return err
 	}); err != nil {

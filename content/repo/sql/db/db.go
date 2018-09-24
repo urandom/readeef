@@ -15,6 +15,10 @@ import (
 
 type DB struct {
 	*sqlx.DB
+
+	stmtCache      map[string]*sqlx.Stmt
+	namedStmtCache map[string]*sqlx.NamedStmt
+
 	log log.Log
 }
 
@@ -25,7 +29,7 @@ var (
 )
 
 func New(log log.Log) *DB {
-	return &DB{log: log}
+	return &DB{stmtCache: make(map[string]*sqlx.Stmt), namedStmtCache: make(map[string]*sqlx.NamedStmt), log: log}
 }
 
 func (db *DB) Open(driver, connect string) (err error) {
@@ -78,35 +82,27 @@ func (db *DB) WhereMultipleORs(column, prefix string, length int, equal bool) st
 }
 
 func (db *DB) WithNamedStmt(query string, tx *sqlx.Tx, cb func(*sqlx.NamedStmt) error) error {
-	var stmt *sqlx.NamedStmt
-	var err error
-
-	if tx == nil {
-		stmt, err = db.PrepareNamed(query)
-	} else {
-		stmt, err = tx.PrepareNamed(query)
-	}
+	stmt, err := db.getNamedStmt(query)
 	if err != nil {
 		return errors.WithMessage(err, "preparing named statement")
 	}
-	defer stmt.Close()
+
+	if tx != nil {
+		stmt = tx.NamedStmt(stmt)
+	}
 
 	return cb(stmt)
 }
 
 func (db *DB) WithStmt(query string, tx *sqlx.Tx, cb func(*sqlx.Stmt) error) error {
-	var stmt *sqlx.Stmt
-	var err error
-
-	if tx == nil {
-		stmt, err = db.Preparex(query)
-	} else {
-		stmt, err = tx.Preparex(query)
-	}
+	stmt, err := db.getStmt(query)
 	if err != nil {
 		return errors.WithMessage(err, "preparing statement")
 	}
-	defer stmt.Close()
+
+	if tx != nil {
+		stmt = tx.Stmtx(stmt)
+	}
 
 	return cb(stmt)
 }
@@ -127,18 +123,6 @@ func (db *DB) WithTx(cb func(*sqlx.Tx) error) error {
 	}
 
 	return nil
-}
-
-func (db *DB) WithNamedTx(query string, cb func(*sqlx.NamedStmt) error) error {
-	return db.WithTx(func(tx *sqlx.Tx) error {
-		stmt, err := tx.PrepareNamed(query)
-		if err != nil {
-			return errors.WithMessage(err, "preparing named statement")
-		}
-		defer stmt.Close()
-
-		return cb(stmt)
-	})
 }
 
 func (db *DB) init() error {
@@ -186,4 +170,24 @@ func (db *DB) init() error {
 	}
 
 	return nil
+}
+
+func (db *DB) getNamedStmt(query string) (stmt *sqlx.NamedStmt, err error) {
+	if stmt = db.namedStmtCache[query]; stmt == nil {
+		if stmt, err = db.PrepareNamed(query); err == nil {
+			db.namedStmtCache[query] = stmt
+		}
+	}
+
+	return stmt, err
+}
+
+func (db *DB) getStmt(query string) (stmt *sqlx.Stmt, err error) {
+	if stmt = db.stmtCache[query]; stmt == nil {
+		if stmt, err = db.Preparex(query); err == nil {
+			db.stmtCache[query] = stmt
+		}
+	}
+
+	return stmt, err
 }
