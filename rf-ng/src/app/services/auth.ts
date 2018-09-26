@@ -20,7 +20,7 @@ export class TokenService {
         this.tokenSubject = new BehaviorSubject(localStorage.getItem("token"));
 
         this.tokenSubject.pipe(
-            skip(1),
+            filter(token => token != localStorage.getItem("token"))
         ).subscribe(token => {
             if (token == "") {
                 localStorage.removeItem("token");
@@ -40,14 +40,17 @@ export class TokenService {
             map(v => new Date(localStorage.getItem("token_age"))),
             filter(date => new Date().getTime() - date.getTime() > 86400000),
             switchMap(
-                v => this.api.rawPost("user/token").pipe(
-                    map(r => r.headers.get("Authorization")),
-                    filter(token => token != ""),
-                    catchError(err => {
-                        console.log("Error generating new user token: ", err);
-                        return never();
-                    }),
-                )
+                v => {
+                    console.log("Renewing user token");
+                    return this.api.rawPost("user/token").pipe(
+                        map(r => r.headers.get("Authorization")),
+                        filter(token => token != ""),
+                        catchError(err => {
+                            console.log("Error generating new user token: ", err);
+                            return never();
+                        }),
+                    );
+                }
             ),
         ).subscribe(token => this.tokenSubject.next(token));
     }

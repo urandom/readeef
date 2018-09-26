@@ -36,11 +36,11 @@ export class APIService {
         );
     }
 
-    rawPost<T>(endpoint: string, body?: any, headers?: HttpHeaders) : Observable<HttpResponse<T>>  {
-        return this.http.post<T>(
+    rawPost(endpoint: string, body?: any, headers?: HttpHeaders) : Observable<HttpResponse<string>>  {
+        return this.http.post(
             absEndpoint(endpoint),
             body,
-            { headers: authHeaders(headers), observe: "response" }
+            { headers: authHeaders(headers), observe: "response", responseType: "text" }
         ).pipe(
             catchError(unathorizeHandler(this.router)),
             retryWhen(errorRetry())
