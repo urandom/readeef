@@ -26,7 +26,6 @@
     "angular2-virtual-scroll": "^0.3.2",
     "bootstrap": "^4.1.1",
     "core-js": "^2.5.7",
-    "hammerjs": "^2.0.8",
     "jwt-decode": "^2.2.0",
     "moment": "^2.22.2",
     "rxjs": "^6.2.0",
