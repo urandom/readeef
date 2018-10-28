@@ -6,4 +6,5 @@
 export const environment = {
   production: false,
   apiEndpoint: "/api/v2/",
+  routeTracing: false,
 };

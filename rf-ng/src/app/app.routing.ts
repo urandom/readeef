@@ -167,4 +167,4 @@ export const AppRouting = RouterModule.forRoot([
          ]
     },
     { path: "login", component: LoginComponent }
-], {enableTracing: !environment.production})
+], {enableTracing: environment.routeTracing})
