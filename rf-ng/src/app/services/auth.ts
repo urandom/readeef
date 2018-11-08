@@ -34,11 +34,11 @@ export class TokenService {
 			localStorage.setItem("token_age", new Date().toString());
 		}
 
-		// Renew the token once a day
+		// Renew the token once every 5 days
 		this.tokenSubject.pipe(
             switchMap(t => t == "" ? never() : timer(0, 3600000)),
             map(v => new Date(localStorage.getItem("token_age"))),
-            filter(date => new Date().getTime() - date.getTime() > 86400000),
+            filter(date => new Date().getTime() - date.getTime() > 432000000),
             switchMap(
                 v => {
                     console.log("Renewing user token");
