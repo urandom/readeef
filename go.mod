@@ -25,6 +25,7 @@ require (
 	github.com/gigawattio/window v0.0.0-20180317192513-0f5467e35573
 	github.com/glycerine/go-unsnap-stream v0.0.0-20180323001048-9f0cb55181dd
 	github.com/go-chi/chi v3.3.2+incompatible
+	github.com/go-test/deep v1.0.1 // indirect
 	github.com/golang/mock v0.0.0-20171121184817-747e9e6390e1
 	github.com/golang/protobuf v1.1.0
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db

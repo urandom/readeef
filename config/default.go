@@ -51,7 +51,7 @@ var DefaultCfg = `
 	delay = "5s"
 	# providers = ["Reddit", "Twitter"]
 [feed-parser]
-	processors = ["cleanup", "top-image-marker", "absolutize-urls", "unescape"]
+	processors = ["cleanup", "top-image-marker", "absolutize-urls"]
 	proxy-http-url-template = "/proxy?url={{ . }}"
 [content]
 	thumbnail-generator = "description"

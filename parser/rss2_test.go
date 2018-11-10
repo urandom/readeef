@@ -1,9 +1,10 @@
 package parser
 
 import (
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/go-test/deep"
 )
 
 func TestParseRss2(t *testing.T) {
@@ -17,6 +18,7 @@ func TestParseRss2(t *testing.T) {
 		{"single date", []byte(singleDateRss2XML), singleRss2Feed, false},
 		{"single no date", []byte(singleNoDateRss2XML), singleNoDateRss2Feed, false},
 		{"multi last no date", []byte(multiLastNoDateRss2XML), multiLastNoDateRss2Feed, false},
+		{"html escapes in xml", []byte(htmlEscapesInXML), htmlEscapesInXMLFeed, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -25,8 +27,8 @@ func TestParseRss2(t *testing.T) {
 				t.Errorf("ParseRss2() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ParseRss2() = %v, want %v", got, tt.want)
+			if diff := deep.Equal(got, tt.want); diff != nil {
+				t.Errorf("ParseRss2() = %v", diff)
 			}
 		})
 	}
@@ -92,6 +94,30 @@ var (
 				Guid:        "http://liftoff.msfc.nasa.gov/2003/05/30.html#item572",
 				Description: `Descr 2`,
 				Date:        time.Date(2003, time.June, 3, 9, 39, 22, 0, gmt),
+			},
+		},
+	}
+
+	htmlEscapesInXMLFeed = Feed{
+		Title:       "xkcd.com",
+		SiteLink:    "https://xkcd.com/",
+		Description: "xkcd.com: A webcomic of romance and math humor.",
+		SkipHours:   map[int]bool{},
+		SkipDays:    map[string]bool{},
+		Articles: []Article{
+			{
+				Title:       "Election Night",
+				Link:        "https://xkcd.com/2068/",
+				Guid:        "https://xkcd.com/2068/",
+				Description: `<img src="https://imgs.xkcd.com/comics/election_night.png" title="&quot;Even the blind—those who are anxious to hear, but are not able to see—will be taken care of. Immense megaphones have been constructed and will be in use at The Tribune office and in the Coliseum. The one at the Coliseum will be operated by a gentleman who draws $60 a week from Barnum & Bailey's circus for the use of his voice.&quot;" alt="&quot;Even the blind—those who are anxious to hear, but are not able to see—will be taken care of. Immense megaphones have been constructed and will be in use at The Tribune office and in the Coliseum. The one at the Coliseum will be operated by a gentleman who draws $60 a week from Barnum & Bailey's circus for the use of his voice.&quot;" />`,
+				Date:        time.Date(2018, time.November, 5, 5, 0, 0, 0, gmt),
+			},
+			{
+				Title:       "Challengers",
+				Link:        "https://xkcd.com/2067/",
+				Guid:        "https://xkcd.com/2067/",
+				Description: `<img src="https://imgs.xkcd.com/comics/challengers.png" title="Use your mouse or fingers to pan + zoom. To edit the map, submit your ballot on November 6th." alt="Use your mouse or fingers to pan + zoom. To edit the map, submit your ballot on November 6th." />`,
+				Date:        time.Date(2018, time.November, 2, 4, 0, 0, 0, gmt),
 			},
 		},
 	}
@@ -241,5 +267,32 @@ const (
       </item>
    </channel>
 </rss>
+`
+	htmlEscapesInXML = `
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+    <channel>
+        <title>xkcd.com</title>
+        <link>https://xkcd.com/</link>
+        <description>xkcd.com: A webcomic of romance and math humor.</description>
+        <language>en</language>
+        <item>
+            <title>Election Night</title>
+            <link>https://xkcd.com/2068/</link>
+            <description>&lt;img src="https://imgs.xkcd.com/comics/election_night.png" title="&amp;quot;Even the blind&#x2014;those who are anxious to hear, but are not able to see&#x2014;will be taken care of. Immense megaphones have been constructed and will be in use at The Tribune office and in the Coliseum. The one at the Coliseum will be operated by a gentleman who draws $60 a week from Barnum &amp; Bailey's circus for the use of his voice.&amp;quot;" alt="&amp;quot;Even the blind&#x2014;those who are anxious to hear, but are not able to see&#x2014;will be taken care of. Immense megaphones have been constructed and will be in use at The Tribune office and in the Coliseum. The one at the Coliseum will be operated by a gentleman who draws $60 a week from Barnum &amp; Bailey's circus for the use of his voice.&amp;quot;" /&gt;</description>
+            <pubDate>Mon, 05 Nov 2018 05:00:00 -0000</pubDate>
+            <guid>https://xkcd.com/2068/</guid>
+        </item>
+        <item>
+            <title>Challengers</title>
+            <link>https://xkcd.com/2067/</link>
+            <description>&lt;img src="https://imgs.xkcd.com/comics/challengers.png" title="Use your mouse or fingers to pan + zoom. To edit the map, submit your ballot on November 6th." alt="Use your mouse or fingers to pan + zoom. To edit the map, submit your ballot on November 6th." /&gt;</description>
+            <pubDate>Fri, 02 Nov 2018 04:00:00 -0000</pubDate>
+            <guid>https://xkcd.com/2067/</guid>
+        </item>
+    </channel>
+</rss>
+
+
 `
 )
