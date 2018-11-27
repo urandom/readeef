@@ -28,8 +28,14 @@ func NewService(source string, log log.Log) (Service, error) {
 
 	dc := api.NewDgraphClient(conn)
 	dg := dgo.NewDgraphClient(dc)
+
+	if err := loadSchema(dg); err != nil {
+		return Service{}, err
+	}
+
 	return Service{
 		user: userRepo{dg, log},
+		feed: feedRepo{dg, log},
 	}, nil
 }
 

@@ -12,12 +12,13 @@ import (
 	"github.com/urandom/readeef/log"
 )
 
-type user struct {
+type User struct {
 	content.User
 	Uid
 }
 
 type userInter struct {
+	Uid
 	Login       content.Login `json:"login"`
 	FirstName   string        `json:"firstName"`
 	LastName    string        `json:"lastName"`
@@ -29,12 +30,11 @@ type userInter struct {
 	Hash        []byte        `json:"hash"`
 	MD5API      []byte        `json:"md5api"`
 	ProfileData string        `json:"profileData"`
-
-	Uid
 }
 
-func (u user) MarshalJSON() ([]byte, error) {
+func (u User) MarshalJSON() ([]byte, error) {
 	res := userInter{
+		Uid:       u.Uid,
 		Login:     u.Login,
 		FirstName: u.FirstName,
 		LastName:  u.LastName,
@@ -45,7 +45,6 @@ func (u user) MarshalJSON() ([]byte, error) {
 		Salt:      u.Salt,
 		Hash:      u.Hash,
 		MD5API:    u.MD5API,
-		Uid:       u.Uid,
 	}
 
 	b, err := json.Marshal(u.ProfileData)
@@ -58,14 +57,13 @@ func (u user) MarshalJSON() ([]byte, error) {
 	return json.Marshal(res)
 }
 
-func (u *user) UnmarshalJSON(b []byte) error {
+func (u *User) UnmarshalJSON(b []byte) error {
 	res := userInter{}
 	if err := json.Unmarshal(b, &res); err != nil {
 		return errors.WithMessage(err, "unmarshaling intermediate user data")
 	}
 
-	var profile content.ProfileData
-	if err := json.Unmarshal([]byte(res.ProfileData), &profile); err != nil {
+	if err := json.Unmarshal([]byte(res.ProfileData), &u.ProfileData); err != nil {
 		return errors.WithMessage(err, "unmarshaling profile data")
 	}
 
@@ -81,7 +79,6 @@ func (u *user) UnmarshalJSON(b []byte) error {
 	u.MD5API = res.MD5API
 	u.Uid = res.Uid
 
-	u.ProfileData = profile
 	return nil
 }
 
@@ -117,7 +114,7 @@ user(func: eq(login, $login)) {
 	}
 
 	var root struct {
-		User []user `json:"user"`
+		User []User `json:"user"`
 	}
 
 	if err := json.Unmarshal(resp.Json, &root); err != nil {
@@ -158,7 +155,7 @@ user(func: has(login)) {
 	}
 
 	var root struct {
-		User []user `json:"user"`
+		User []User `json:"user"`
 	}
 
 	if err := json.Unmarshal(resp.Json, &root); err != nil {
@@ -204,10 +201,10 @@ query Uid($login: string) {
 	var b []byte
 	if len(data.Uid) == 0 {
 		r.log.Infof("Creating user %s", u)
-		b, err = json.Marshal(user{User: u})
+		b, err = json.Marshal(User{User: u})
 	} else {
 		r.log.Infof("Updating user %s with uid %d", u, data.Uid[0].ToInt())
-		b, err = json.Marshal(user{u, data.Uid[0]})
+		b, err = json.Marshal(User{u, data.Uid[0]})
 	}
 	if err != nil {
 		return errors.Wrapf(err, "marshaling user %s", u)
@@ -306,7 +303,7 @@ user(func: eq(md5api, $hash)) {
 	}
 
 	var root struct {
-		User []user `json:"user"`
+		User []User `json:"user"`
 	}
 
 	if err := json.Unmarshal(resp.Json, &root); err != nil {

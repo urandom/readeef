@@ -17,7 +17,7 @@ active: bool .
 feed: uid .
 tag: uid .
 
-link: string @index(hash) .
+feed.link: string @index(hash) .
 ttl: int .
 
 value: string .
