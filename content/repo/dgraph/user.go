@@ -14,11 +14,11 @@ import (
 
 type User struct {
 	content.User
-	Uid
+	UID
 }
 
 type userInter struct {
-	Uid
+	UID
 	Login       content.Login `json:"login"`
 	FirstName   string        `json:"firstName"`
 	LastName    string        `json:"lastName"`
@@ -34,7 +34,7 @@ type userInter struct {
 
 func (u User) MarshalJSON() ([]byte, error) {
 	res := userInter{
-		Uid:       u.Uid,
+		UID:       u.UID,
 		Login:     u.Login,
 		FirstName: u.FirstName,
 		LastName:  u.LastName,
@@ -77,7 +77,7 @@ func (u *User) UnmarshalJSON(b []byte) error {
 	u.Salt = res.Salt
 	u.Hash = res.Hash
 	u.MD5API = res.MD5API
-	u.Uid = res.Uid
+	u.UID = res.UID
 
 	return nil
 }
@@ -151,20 +151,20 @@ user(func: has(login)) {
 }`)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "getting users")
+		return nil, errors.Wrap(err, "getting all users")
 	}
 
 	var root struct {
-		User []User `json:"user"`
+		Users []User `json:"user"`
 	}
 
 	if err := json.Unmarshal(resp.Json, &root); err != nil {
 		return nil, errors.Wrap(err, "unmarshaling user data")
 	}
 
-	users := make([]content.User, 0, len(root.User))
+	users := make([]content.User, 0, len(root.Users))
 
-	for _, u := range root.User {
+	for _, u := range root.Users {
 		users = append(users, u.User)
 	}
 
@@ -180,31 +180,18 @@ func (r userRepo) Update(u content.User) error {
 	tx := r.dg.NewTxn()
 	defer tx.Discard(ctx)
 
-	resp, err := tx.QueryWithVars(ctx, `
-query Uid($login: string) {
-	uid(func: eq(login, $login)) {
-		uid
-	}
-}`, map[string]string{"$login": string(u.Login)})
+	uid, err := userUID(ctx, tx, u)
 	if err != nil {
-		return errors.Wrapf(err, "querying for existing user %s", u)
-	}
-
-	var data struct {
-		Uid []Uid `json:"uid"`
-	}
-
-	if err := json.Unmarshal(resp.Json, &data); err != nil {
-		return errors.Wrapf(err, "parsing user query for %s", u)
+		return err
 	}
 
 	var b []byte
-	if len(data.Uid) == 0 {
+	if uid.Valid() {
+		r.log.Infof("Updating user %s with uid %d", u, uid.ToInt())
+		b, err = json.Marshal(User{u, uid})
+	} else {
 		r.log.Infof("Creating user %s", u)
 		b, err = json.Marshal(User{User: u})
-	} else {
-		r.log.Infof("Updating user %s with uid %d", u, data.Uid[0].ToInt())
-		b, err = json.Marshal(User{u, data.Uid[0]})
 	}
 	if err != nil {
 		return errors.Wrapf(err, "marshaling user %s", u)
@@ -233,29 +220,16 @@ func (r userRepo) Delete(u content.User) error {
 	tx := r.dg.NewTxn()
 	defer tx.Discard(ctx)
 
-	resp, err := tx.QueryWithVars(ctx, `
-query Uid($login: string) {
-	uid(func: eq(login, $login)) {
-		uid
-	}
-}`, map[string]string{"$login": string(u.Login)})
+	uid, err := userUID(ctx, tx, u)
 	if err != nil {
-		return errors.Wrapf(err, "querying for existing user %s", u)
+		return err
 	}
 
-	var data struct {
-		Uid []Uid `json:"uid"`
-	}
-
-	if err := json.Unmarshal(resp.Json, &data); err != nil {
-		return errors.Wrapf(err, "parsing user query for %s", u)
-	}
-
-	if len(data.Uid) == 0 {
+	if !uid.Valid() {
 		return nil
 	}
 
-	b, err := json.Marshal(data.Uid[0])
+	b, err := json.Marshal(uid)
 	if err != nil {
 		return errors.Wrapf(err, "marshaling uid for user %s", u)
 	}
@@ -318,4 +292,30 @@ user(func: eq(md5api, $hash)) {
 	user.MD5API = hash
 
 	return user, nil
+}
+
+func userUID(ctx context.Context, tx *dgo.Txn, u content.User) (UID, error) {
+	resp, err := tx.QueryWithVars(ctx, `
+query Uid($login: string) {
+	uid(func: eq(login, $login)) {
+		uid
+	}
+}`, map[string]string{"$login": string(u.Login)})
+	if err != nil {
+		return UID{}, errors.Wrapf(err, "querying for existing user %s", u)
+	}
+
+	var data struct {
+		UID []UID `json:"uid"`
+	}
+
+	if err := json.Unmarshal(resp.Json, &data); err != nil {
+		return UID{}, errors.Wrapf(err, "parsing user query for %s", u)
+	}
+
+	if len(data.UID) == 0 {
+		return UID{}, nil
+	}
+
+	return data.UID[0], nil
 }

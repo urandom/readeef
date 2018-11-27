@@ -16,7 +16,7 @@ type Feed content.Feed
 
 func (f Feed) MarshalJSON() ([]byte, error) {
 	res := feedInter{
-		Uid:            NewUid(int64(f.ID)),
+		UID:            NewUID(int64(f.ID)),
 		Title:          f.Title,
 		Description:    f.Description,
 		Link:           f.Link,
@@ -65,7 +65,7 @@ func (f *Feed) UnmarshalJSON(b []byte) error {
 		}
 	}
 
-	f.ID = content.FeedID(res.Uid.ToInt())
+	f.ID = content.FeedID(res.UID.ToInt())
 	f.Title = res.Title
 	f.Description = res.Description
 	f.Link = res.Link
@@ -79,7 +79,7 @@ func (f *Feed) UnmarshalJSON(b []byte) error {
 }
 
 type feedInter struct {
-	Uid
+	UID
 	Title          string        `json:"title"`
 	Description    string        `json:"description"`
 	Link           string        `json:"feed.link"`
@@ -115,7 +115,46 @@ func (r feedRepo) ForTag(content.Tag, content.User) ([]content.Feed, error) {
 }
 
 func (r feedRepo) All() ([]content.Feed, error) {
-	panic("not implemented")
+	r.log.Infoln("Getting all feeds")
+
+	resp, err := r.dg.NewReadOnlyTxn().Query(context.Background(), `{
+feed(func: has(feed.link)) {
+	uid
+	title
+	description
+	feed.link
+	siteLink
+	hubLink
+	updateError
+	subscribeError
+	ttl
+	skipHours
+	skipDays
+}
+}`)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "getting all feeds")
+	}
+
+	var root struct {
+		Feeds []Feed `json:"feed"`
+	}
+
+	if err := json.Unmarshal(resp.Json, &root); err != nil {
+		return nil, errors.Wrap(err, "unmarshaling feed data")
+	}
+
+	feeds := make([]content.Feed, 0, len(root.Feeds))
+
+	for _, f := range root.Feeds {
+		if f.Link == "" {
+			continue
+		}
+		feeds = append(feeds, content.Feed(f))
+	}
+
+	return feeds, nil
 }
 
 func (r feedRepo) IDs() ([]content.FeedID, error) {
@@ -150,7 +189,7 @@ func (r feedRepo) Update(feed *content.Feed) ([]content.Article, error) {
 	}
 
 	if len(resp.Uids) > 0 {
-		feed.ID = content.FeedID(Uid{resp.Uids["blank-0"]}.ToInt())
+		feed.ID = content.FeedID(UID{resp.Uids["blank-0"]}.ToInt())
 	}
 
 	/* FIXME:
@@ -171,7 +210,7 @@ func (r feedRepo) Delete(feed content.Feed) error {
 
 	r.log.Infof("Deleting feed %s", feed)
 
-	uid := NewUid(int64(feed.ID))
+	uid := NewUID(int64(feed.ID))
 	b, err := json.Marshal(uid)
 	if err != nil {
 		return errors.Wrapf(err, "marshaling uid for feed %s", feed)
@@ -193,8 +232,40 @@ func (r feedRepo) Users(content.Feed) ([]content.User, error) {
 	panic("not implemented")
 }
 
-func (r feedRepo) AttachTo(content.Feed, content.User) error {
-	panic("not implemented")
+func (r feedRepo) AttachTo(feed content.Feed, user content.User) error {
+	if err := feed.Validate(); err != nil {
+		return errors.WithMessage(err, "validating feed")
+	}
+
+	if err := user.Validate(); err != nil {
+		return errors.WithMessage(err, "validating user")
+	}
+
+	r.log.Infof("Attaching feed %s to %s", feed, user)
+
+	ctx := context.Background()
+	tx := r.dg.NewTxn()
+	defer tx.Discard(ctx)
+
+	uid, err := userUID(ctx, tx, user)
+	if err != nil {
+		return err
+	}
+
+	if !uid.Valid() {
+		return errors.Errorf("Invalid user %s", user)
+	}
+
+	_, err = tx.Mutate(ctx, &api.Mutation{
+		CommitNow: true,
+		Set:       []*api.NQuad{{Subject: uid.Value, Predicate: "feed", ObjectId: NewUID(int64(feed.ID)).Value}},
+	})
+
+	if err != nil {
+		return errors.Wrapf(err, "updating user %s, feed %s, link", user, feed)
+	}
+
+	return nil
 }
 
 func (r feedRepo) DetachFrom(content.Feed, content.User) error {

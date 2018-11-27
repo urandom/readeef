@@ -5,16 +5,20 @@ import (
 	"strconv"
 )
 
-type Uid struct {
-	Uid string `json:"uid"`
+type UID struct {
+	Value string `json:"uid"`
 }
 
-func NewUid(id int64) Uid {
-	return Uid{Uid: intToUid(id)}
+func NewUID(id int64) UID {
+	return UID{Value: intToUid(id)}
 }
 
-func (u Uid) ToInt() int64 {
-	return uidToInt(u.Uid)
+func (u UID) ToInt() int64 {
+	return uidToInt(u.Value)
+}
+
+func (u UID) Valid() bool {
+	return u.Value != ""
 }
 
 func uidToInt(uid string) int64 {
