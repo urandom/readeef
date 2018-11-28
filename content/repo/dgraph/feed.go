@@ -295,8 +295,40 @@ func (r feedRepo) AttachTo(feed content.Feed, user content.User) error {
 	return nil
 }
 
-func (r feedRepo) DetachFrom(content.Feed, content.User) error {
-	panic("not implemented")
+func (r feedRepo) DetachFrom(feed content.Feed, user content.User) error {
+	if err := feed.Validate(); err != nil {
+		return errors.WithMessage(err, "validating feed")
+	}
+
+	if err := user.Validate(); err != nil {
+		return errors.WithMessage(err, "validating user")
+	}
+
+	r.log.Infof("Detaching feed %s from %s", feed, user)
+
+	ctx := context.Background()
+	tx := r.dg.NewTxn()
+	defer tx.Discard(ctx)
+
+	uid, err := userUID(ctx, tx, user)
+	if err != nil {
+		return err
+	}
+
+	if !uid.Valid() {
+		return errors.Errorf("Invalid user %s", user)
+	}
+
+	_, err = tx.Mutate(ctx, &api.Mutation{
+		CommitNow: true,
+		Del:       []*api.NQuad{{Subject: uid.Value, Predicate: "feed", ObjectId: NewUID(int64(feed.ID)).Value}},
+	})
+
+	if err != nil {
+		return errors.Wrapf(err, "updating user %s, feed %s, link", user, feed)
+	}
+
+	return nil
 }
 
 func (r feedRepo) SetUserTags(content.Feed, content.User, []*content.Tag) error {
