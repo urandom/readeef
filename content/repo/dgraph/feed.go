@@ -103,8 +103,49 @@ type feedRepo struct {
 	log log.Log
 }
 
-func (r feedRepo) Get(content.FeedID, content.User) (content.Feed, error) {
-	panic("not implemented")
+func (r feedRepo) Get(id content.FeedID, user content.User) (content.Feed, error) {
+	r.log.Infof("Getting user %s feed %d", user, id)
+
+	query := `query Feed($id: string, $login: string) {
+feeds as var(func: uid($id)) @cascade {
+	uid feed.link
+	%s
+}
+
+feeds(func: uid(feeds)) {
+	%s
+}
+	}`
+	userFilter := `
+	~feed @filter(eq(login, $login)) {
+		uid
+	}
+	`
+	if user.Login == "" {
+		userFilter = ""
+	}
+
+	resp, err := r.dg.NewReadOnlyTxn().QueryWithVars(
+		context.Background(), fmt.Sprintf(query, userFilter, feedPredicates),
+		map[string]string{"$id": intToUid(int64(id)), "$login": string(user.Login)},
+	)
+	if err != nil {
+		return content.Feed{}, errors.Wrapf(err, "getting feed %d", id)
+	}
+
+	var root struct {
+		Feeds []Feed `json:"feeds"`
+	}
+
+	if err := json.Unmarshal(resp.Json, &root); err != nil {
+		return content.Feed{}, errors.Wrap(err, "unmarshaling feed data")
+	}
+
+	if len(root.Feeds) == 0 {
+		return content.Feed{}, content.ErrNoContent
+	}
+
+	return content.Feed(root.Feeds[0]), nil
 }
 
 func (r feedRepo) FindByLink(link string) (content.Feed, error) {
@@ -123,9 +164,13 @@ func (r feedRepo) All() ([]content.Feed, error) {
 	r.log.Infoln("Getting all feeds")
 
 	resp, err := r.dg.NewReadOnlyTxn().Query(context.Background(), fmt.Sprintf(`{
-feed(func: has(feed.link)) {
-	%s
-}
+  feeds as var(func: has(feed.link)) @cascade {
+    uid
+    feed.link
+  }
+  feeds(func: uid(feeds)) {
+    %s
+  }
 }`, feedPredicates))
 
 	if err != nil {
@@ -133,7 +178,7 @@ feed(func: has(feed.link)) {
 	}
 
 	var root struct {
-		Feeds []Feed `json:"feed"`
+		Feeds []Feed `json:"feeds"`
 	}
 
 	if err := json.Unmarshal(resp.Json, &root); err != nil {
@@ -143,9 +188,6 @@ feed(func: has(feed.link)) {
 	feeds := make([]content.Feed, 0, len(root.Feeds))
 
 	for _, f := range root.Feeds {
-		if f.Link == "" {
-			continue
-		}
 		feeds = append(feeds, content.Feed(f))
 	}
 
@@ -153,7 +195,38 @@ feed(func: has(feed.link)) {
 }
 
 func (r feedRepo) IDs() ([]content.FeedID, error) {
-	panic("not implemented")
+	r.log.Info("Getting feed IDs")
+
+	resp, err := r.dg.NewReadOnlyTxn().Query(context.Background(), `{
+  feeds as var(func: has(feed.link)) @cascade {
+    uid
+    feed.link
+  }
+    
+  ids(func: uid(feeds)) {
+    uid
+  }
+}`)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "getting all feed ids")
+	}
+
+	var root struct {
+		UIDs []UID `json:"ids"`
+	}
+
+	if err := json.Unmarshal(resp.Json, &root); err != nil {
+		return nil, errors.Wrap(err, "unmarshaling feed data")
+	}
+
+	ids := make([]content.FeedID, 0, len(root.UIDs))
+
+	for _, uid := range root.UIDs {
+		ids = append(ids, content.FeedID(uid.ToInt()))
+	}
+
+	return ids, nil
 }
 
 func (r feedRepo) Unsubscribed() ([]content.Feed, error) {
