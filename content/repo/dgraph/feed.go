@@ -3,6 +3,7 @@ package dgraph
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/dgraph-io/dgo"
@@ -10,6 +11,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/log"
+)
+
+const (
+	feedPredicates = `uid title description feed.link siteLink hubLink updateError subscribeError ttl skipHours skipDays`
 )
 
 type Feed content.Feed
@@ -117,21 +122,11 @@ func (r feedRepo) ForTag(content.Tag, content.User) ([]content.Feed, error) {
 func (r feedRepo) All() ([]content.Feed, error) {
 	r.log.Infoln("Getting all feeds")
 
-	resp, err := r.dg.NewReadOnlyTxn().Query(context.Background(), `{
+	resp, err := r.dg.NewReadOnlyTxn().Query(context.Background(), fmt.Sprintf(`{
 feed(func: has(feed.link)) {
-	uid
-	title
-	description
-	feed.link
-	siteLink
-	hubLink
-	updateError
-	subscribeError
-	ttl
-	skipHours
-	skipDays
+	%s
 }
-}`)
+}`, feedPredicates))
 
 	if err != nil {
 		return nil, errors.Wrap(err, "getting all feeds")
@@ -228,8 +223,40 @@ func (r feedRepo) Delete(feed content.Feed) error {
 	return nil
 }
 
-func (r feedRepo) Users(content.Feed) ([]content.User, error) {
-	panic("not implemented")
+func (r feedRepo) Users(feed content.Feed) ([]content.User, error) {
+	if err := feed.Validate(); err != nil {
+		return []content.User{}, errors.WithMessage(err, "validating feed")
+	}
+
+	r.log.Infof("Getting users for feed %s", feed)
+	resp, err := r.dg.NewReadOnlyTxn().QueryWithVars(context.Background(), fmt.Sprintf(`
+query Users($id: string) {
+	users(func: uid($id)) @normalize {
+		~feed {
+			%s
+		}
+	}
+}`, aliasPredicates(userPredicates)), map[string]string{"$id": intToUid(int64(feed.ID))})
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting users of feed %s", feed)
+	}
+
+	var root struct {
+		Users []User `json:"users"`
+	}
+
+	if err := json.Unmarshal(resp.Json, &root); err != nil {
+		return nil, errors.Wrap(err, "unmarshaling user data")
+	}
+
+	users := make([]content.User, 0, len(root.Users))
+
+	for _, u := range root.Users {
+		users = append(users, u.User)
+	}
+
+	return users, nil
 }
 
 func (r feedRepo) AttachTo(feed content.Feed, user content.User) error {

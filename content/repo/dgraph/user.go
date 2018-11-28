@@ -4,12 +4,17 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
 	"github.com/dgraph-io/dgo"
 	"github.com/dgraph-io/dgo/protos/api"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/content"
 	"github.com/urandom/readeef/log"
+)
+
+const (
+	userPredicates = `login firstName lastName email hashType admin active salt hash md5api profileData`
 )
 
 type User struct {
@@ -92,20 +97,11 @@ func (r userRepo) Get(login content.Login) (content.User, error) {
 	r.log.Infof("Getting user %s", login)
 
 	resp, err := r.dg.NewReadOnlyTxn().QueryWithVars(context.Background(),
-		`query User($login: string) {
+		fmt.Sprintf(`query User($login: string) {
 user(func: eq(login, $login)) {
-	firstName
-	lastName
-	email
-	hashType
-	admin
-	active
-	salt
-	hash
-	md5api
-	profileData
+	%s
 }
-}`, map[string]string{
+}`, userPredicates), map[string]string{
 			"$login": string(login),
 		})
 
@@ -125,37 +121,24 @@ user(func: eq(login, $login)) {
 		return content.User{}, content.ErrNoContent
 	}
 
-	user := root.User[0].User
-	user.Login = login
-
-	return user, nil
+	return root.User[0].User, nil
 }
 
 func (r userRepo) All() ([]content.User, error) {
 	r.log.Infoln("Getting all users")
 
-	resp, err := r.dg.NewReadOnlyTxn().Query(context.Background(), `{
-user(func: has(login)) {
-	login
-	firstName
-	lastName
-	email
-	hashType
-	admin
-	active
-	salt
-	hash
-	md5api
-	profileData
+	resp, err := r.dg.NewReadOnlyTxn().Query(context.Background(), fmt.Sprintf(`{
+users(func: has(login)) {
+	%s
 }
-}`)
+}`, userPredicates))
 
 	if err != nil {
 		return nil, errors.Wrap(err, "getting all users")
 	}
 
 	var root struct {
-		Users []User `json:"user"`
+		Users []User `json:"users"`
 	}
 
 	if err := json.Unmarshal(resp.Json, &root); err != nil {

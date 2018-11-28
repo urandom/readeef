@@ -14,7 +14,7 @@ login: string @index(hash) @upsert .
 md5api: string @index(hash) .
 admin: bool .
 active: bool .
-feed: uid .
+feed: uid @reverse .
 tag: uid .
 
 feed.link: string @index(hash) .
@@ -22,7 +22,6 @@ ttl: int .
 
 value: string .
 
-feed: uid .
 leaseDuration: int .
 verificationTime: dateTime .
 subscriptionFailure: bool .

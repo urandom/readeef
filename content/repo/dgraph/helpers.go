@@ -3,6 +3,7 @@ package dgraph
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type UID struct {
@@ -32,4 +33,17 @@ func uidToInt(uid string) int64 {
 
 func intToUid(id int64) string {
 	return fmt.Sprintf("0x%s", strconv.FormatInt(id, 16))
+}
+
+func aliasPredicates(predicates string) string {
+	fields := strings.Fields(predicates)
+
+	aliased := make([]string, len(fields)*2)
+
+	for i, j := 0, 0; i < len(fields); i, j = i+1, j+2 {
+		aliased[j] = fields[i] + ":"
+		aliased[j+1] = fields[i]
+	}
+
+	return strings.Join(aliased, " ")
 }
