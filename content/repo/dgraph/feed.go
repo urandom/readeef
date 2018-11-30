@@ -149,11 +149,78 @@ feeds(func: uid(feeds)) {
 }
 
 func (r feedRepo) FindByLink(link string) (content.Feed, error) {
-	panic("not implemented")
+	r.log.Infof("Getting feed by link %s", link)
+
+	resp, err := r.dg.NewReadOnlyTxn().QueryWithVars(
+		context.Background(), fmt.Sprintf(`query Feed($link: string) {
+feeds(func: eq(feed.link, $link)) {
+	%s
+}
+}`, feedPredicates),
+		map[string]string{"$link": link},
+	)
+	if err != nil {
+		return content.Feed{}, errors.Wrapf(err, "getting feed by link %s", link)
+	}
+
+	var root struct {
+		Feeds []Feed `json:"feeds"`
+	}
+
+	if err := json.Unmarshal(resp.Json, &root); err != nil {
+		return content.Feed{}, errors.Wrap(err, "unmarshaling feed data")
+	}
+
+	if len(root.Feeds) == 0 {
+		return content.Feed{}, content.ErrNoContent
+	}
+
+	return content.Feed(root.Feeds[0]), nil
 }
 
-func (r feedRepo) ForUser(content.User) ([]content.Feed, error) {
-	panic("not implemented")
+func (r feedRepo) ForUser(user content.User) ([]content.Feed, error) {
+	if err := user.Validate(); err != nil {
+		return []content.Feed{}, errors.WithMessage(err, "validating user")
+	}
+
+	r.log.Infof("Getting user %s feeds", user)
+
+	query := `query Feed($login: string) {
+feeds as var(func: has(feed.link)) @cascade {
+	uid feed.link
+	~feed @filter(eq(login, $login)) {
+		uid
+	}
+}
+
+feeds(func: uid(feeds)) {
+	%s
+}
+	}`
+
+	resp, err := r.dg.NewReadOnlyTxn().QueryWithVars(
+		context.Background(), fmt.Sprintf(query, feedPredicates),
+		map[string]string{"$login": string(user.Login)},
+	)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting feeds for user %s", user)
+	}
+
+	var root struct {
+		Feeds []Feed `json:"feeds"`
+	}
+
+	if err := json.Unmarshal(resp.Json, &root); err != nil {
+		return nil, errors.Wrap(err, "unmarshaling feed data")
+	}
+
+	feeds := make([]content.Feed, len(root.Feeds))
+	for i := range root.Feeds {
+		feeds[i] = content.Feed(root.Feeds[i])
+	}
+
+	return feeds, nil
 }
 
 func (r feedRepo) ForTag(content.Tag, content.User) ([]content.Feed, error) {
