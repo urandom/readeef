@@ -128,7 +128,11 @@ func (r userRepo) All() ([]content.User, error) {
 	r.log.Infoln("Getting all users")
 
 	resp, err := r.dg.NewReadOnlyTxn().Query(context.Background(), fmt.Sprintf(`{
-users(func: has(login)) {
+users as var(func: has(login)) @cascade {
+	uid login
+}
+
+users(func: uid(users)) {
 	%s
 }
 }`, userPredicates))
@@ -164,7 +168,7 @@ func (r userRepo) Update(u content.User) error {
 	defer tx.Discard(ctx)
 
 	uid, err := userUID(ctx, tx, u)
-	if err != nil {
+	if err != nil && !content.IsNoContent(err) {
 		return err
 	}
 
@@ -206,10 +210,6 @@ func (r userRepo) Delete(u content.User) error {
 	uid, err := userUID(ctx, tx, u)
 	if err != nil {
 		return err
-	}
-
-	if !uid.Valid() {
-		return nil
 	}
 
 	b, err := json.Marshal(uid)
@@ -297,7 +297,7 @@ query Uid($login: string) {
 	}
 
 	if len(data.UID) == 0 {
-		return UID{}, nil
+		return UID{}, errors.Wrapf(content.ErrNoContent, "user %s not found", u)
 	}
 
 	return data.UID[0], nil

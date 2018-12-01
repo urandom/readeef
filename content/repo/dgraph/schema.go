@@ -15,12 +15,12 @@ md5api: string @index(hash) .
 admin: bool .
 active: bool .
 feed: uid @reverse .
-tag: uid .
+tag: uid @reverse .
 
 feed.link: string @index(hash) .
 ttl: int .
 
-value: string .
+tag.value: string @index(hash) @upsert .
 
 leaseDuration: int .
 verificationTime: dateTime .

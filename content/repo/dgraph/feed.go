@@ -117,9 +117,7 @@ feeds(func: uid(feeds)) {
 }
 	}`
 	userFilter := `
-	~feed @filter(eq(login, $login)) {
-		uid
-	}
+	~feed @filter(eq(login, $login))
 	`
 	if user.Login == "" {
 		userFilter = ""
@@ -188,9 +186,7 @@ func (r feedRepo) ForUser(user content.User) ([]content.Feed, error) {
 	query := `query Feed($login: string) {
 feeds as var(func: has(feed.link)) @cascade {
 	uid feed.link
-	~feed @filter(eq(login, $login)) {
-		uid
-	}
+	~feed @filter(eq(login, $login))
 }
 
 feeds(func: uid(feeds)) {
@@ -223,8 +219,55 @@ feeds(func: uid(feeds)) {
 	return feeds, nil
 }
 
-func (r feedRepo) ForTag(content.Tag, content.User) ([]content.Feed, error) {
-	panic("not implemented")
+func (r feedRepo) ForTag(tag content.Tag, user content.User) ([]content.Feed, error) {
+	if err := tag.Validate(); err != nil {
+		return []content.Feed{}, errors.WithMessage(err, "validating tag")
+	}
+
+	if err := user.Validate(); err != nil {
+		return []content.Feed{}, errors.WithMessage(err, "validating user")
+	}
+
+	r.log.Infof("Getting tag %s feeds", tag)
+
+	query := `query Feed($login: string, $id: string) {
+feeds as var(func: has(feed.link)) @cascade {
+	uid feed.link
+	~feed @filter(eq(login, $login))
+}
+
+forTag as var(func: uid(feeds)) @cascade {
+	~feed @filter(uid($id))
+}
+
+feeds(func: uid(forTag)) {
+	%s
+}
+	}`
+
+	resp, err := r.dg.NewReadOnlyTxn().QueryWithVars(
+		context.Background(), fmt.Sprintf(query, feedPredicates),
+		map[string]string{"$id": intToUid(int64(tag.ID)), "$login": string(user.Login)},
+	)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting feeds for tag %s and user %s", tag, user)
+	}
+
+	var root struct {
+		Feeds []Feed `json:"feeds"`
+	}
+
+	if err := json.Unmarshal(resp.Json, &root); err != nil {
+		return nil, errors.Wrap(err, "unmarshaling feed data")
+	}
+
+	feeds := make([]content.Feed, len(root.Feeds))
+	for i := range root.Feeds {
+		feeds[i] = content.Feed(root.Feeds[i])
+	}
+
+	return feeds, nil
 }
 
 func (r feedRepo) All() ([]content.Feed, error) {
@@ -419,10 +462,6 @@ func (r feedRepo) AttachTo(feed content.Feed, user content.User) error {
 		return err
 	}
 
-	if !uid.Valid() {
-		return errors.Errorf("Invalid user %s", user)
-	}
-
 	_, err = tx.Mutate(ctx, &api.Mutation{
 		CommitNow: true,
 		Set:       []*api.NQuad{{Subject: uid.Value, Predicate: "feed", ObjectId: NewUID(int64(feed.ID)).Value}},
@@ -455,10 +494,6 @@ func (r feedRepo) DetachFrom(feed content.Feed, user content.User) error {
 		return err
 	}
 
-	if !uid.Valid() {
-		return errors.Errorf("Invalid user %s", user)
-	}
-
 	_, err = tx.Mutate(ctx, &api.Mutation{
 		CommitNow: true,
 		Del:       []*api.NQuad{{Subject: uid.Value, Predicate: "feed", ObjectId: NewUID(int64(feed.ID)).Value}},
@@ -471,6 +506,122 @@ func (r feedRepo) DetachFrom(feed content.Feed, user content.User) error {
 	return nil
 }
 
-func (r feedRepo) SetUserTags(content.Feed, content.User, []*content.Tag) error {
-	panic("not implemented")
+func (r feedRepo) SetUserTags(feed content.Feed, user content.User, tags []*content.Tag) error {
+	if err := feed.Validate(); err != nil {
+		return errors.WithMessage(err, "validating feed")
+	}
+
+	if err := user.Validate(); err != nil {
+		return errors.WithMessage(err, "validating user")
+	}
+
+	if users, err := r.Users(feed); err == nil {
+		found := false
+		for _, u := range users {
+			if u.Login == user.Login {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return errors.Errorf("feed %s does not belong to user %s", feed, user)
+		}
+	} else {
+		return errors.Wrap(err, "getting feed users")
+	}
+
+	r.log.Infof("Setting feed %s user %s tags", feed, user)
+
+	ctx := context.Background()
+	tx := r.dg.NewTxn()
+	defer tx.Discard(ctx)
+
+	query := `query Q($id: string) {
+feedTags as var(func: has(tag.value)) {
+	feed @filter(uid($id))
+}
+
+ids(func: uid(feedTags)) {
+	uid
+}
+}
+`
+
+	feedUID := NewUID(int64(feed.ID)).Value
+	resp, err := tx.QueryWithVars(ctx, query, map[string]string{"$id": feedUID})
+	if err != nil {
+		return errors.Wrapf(err, "getting tags for feed %s", feed)
+	}
+
+	var root struct {
+		UIDs []UID `json:"ids"`
+	}
+
+	if err := json.Unmarshal(resp.Json, &root); err != nil {
+		return errors.Wrap(err, "unmarshaling tag ids")
+	}
+
+	if len(root.UIDs) > 0 {
+		nquads := make([]*api.NQuad, len(root.UIDs))
+		for i := range root.UIDs {
+			nquads[i] = &api.NQuad{Subject: root.UIDs[i].Value, Predicate: "feed", ObjectId: feedUID}
+		}
+
+		// Clean the current feed's tags
+		_, err = tx.Mutate(ctx, &api.Mutation{
+			Del: nquads,
+		})
+		if err != nil {
+			return errors.Wrapf(err, "deleting tags for feed %s", feed)
+		}
+	}
+
+	// Create any tags that do not exist yet
+	for i := range tags {
+		if tags[i].ID == 0 {
+			uid, err := tagUID(ctx, tx, *tags[i])
+			if err == nil {
+				tags[i].ID = content.TagID(uid.ToInt())
+			} else {
+				if content.IsNoContent(err) {
+					b, err := json.Marshal(Tag(*tags[i]))
+					if err != nil {
+						return errors.Wrapf(err, "marshaling tag %s", tags[i].Value)
+					}
+
+					if resp, err := tx.Mutate(ctx, &api.Mutation{SetJson: b}); err != nil {
+						return errors.Wrapf(err, "creating tag %s", tags[i].Value)
+					} else if len(resp.Uids) > 0 {
+						tags[i].ID = content.TagID(UID{resp.Uids["blank-0"]}.ToInt())
+					}
+				} else {
+					return errors.Wrapf(err, "getting tag by value %s", tags[i].Value)
+				}
+			}
+		}
+	}
+
+	// Link tags to user and feed
+	uid, err := userUID(ctx, tx, user)
+	if err != nil {
+		return err
+	}
+
+	nquads := make([]*api.NQuad, len(tags)*2)
+	for i := range tags {
+		tuid := NewUID(int64(tags[i].ID)).Value
+		nquads[i] = &api.NQuad{Subject: uid.Value, Predicate: "tag", ObjectId: tuid}
+		nquads[len(tags)+i] = &api.NQuad{Subject: tuid, Predicate: "feed", ObjectId: feedUID}
+	}
+
+	if _, err := tx.Mutate(ctx, &api.Mutation{Set: nquads}); err != nil {
+		return errors.Wrapf(err, "settings tags for user %s and feed %s", user, feed)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return errors.Wrapf(err, "committing tx for user %s feed %s tags", user, feed)
+	}
+
+	return nil
 }
