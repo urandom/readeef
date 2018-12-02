@@ -340,7 +340,46 @@ func (r feedRepo) IDs() ([]content.FeedID, error) {
 }
 
 func (r feedRepo) Unsubscribed() ([]content.Feed, error) {
-	panic("not implemented")
+	r.log.Infoln("Getting all unsubscribed feeds")
+
+	query := `{
+subscribed as var(func: has(feed.link)) @cascade {
+	subscription {
+		uid
+	}
+}
+
+feeds as var(func: has(feed.link)) @filter(NOT uid(subscribed)) @cascade {
+	feed.link
+}
+
+feeds(func: uid(feeds)) {
+	%s
+}
+}`
+
+	resp, err := r.dg.NewReadOnlyTxn().Query(
+		context.Background(), fmt.Sprintf(query, feedPredicates),
+	)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting unsubscribed feeds")
+	}
+
+	var root struct {
+		Feeds []Feed `json:"feeds"`
+	}
+
+	if err := json.Unmarshal(resp.Json, &root); err != nil {
+		return nil, errors.Wrap(err, "unmarshaling feed data")
+	}
+
+	feeds := make([]content.Feed, len(root.Feeds))
+	for i := range root.Feeds {
+		feeds[i] = content.Feed(root.Feeds[i])
+	}
+
+	return feeds, nil
 }
 
 func (r feedRepo) Update(feed *content.Feed) ([]content.Article, error) {
@@ -394,12 +433,21 @@ func (r feedRepo) Delete(feed content.Feed) error {
 		return errors.Wrapf(err, "marshaling uid for feed %s", feed)
 	}
 
-	_, err = r.dg.NewTxn().Mutate(context.Background(), &api.Mutation{
-		CommitNow:  true,
+	ctx := context.Background()
+	tx := r.dg.NewTxn()
+	defer tx.Discard(ctx)
+
+	// FIXME: delete subscriptions and articles, which should delete their descendants
+
+	_, err = tx.Mutate(ctx, &api.Mutation{
 		DeleteJson: b,
 	})
 
 	if err != nil {
+		return errors.Wrapf(err, "deleting feed %s", feed)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
 		return errors.Wrapf(err, "deleting feed %s", feed)
 	}
 

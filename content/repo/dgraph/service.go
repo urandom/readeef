@@ -34,9 +34,10 @@ func NewService(source string, log log.Log) (Service, error) {
 	}
 
 	return Service{
-		user: userRepo{dg, log},
-		feed: feedRepo{dg, log},
-		tag:  tagRepo{dg, log},
+		user:         userRepo{dg, log},
+		feed:         feedRepo{dg, log},
+		tag:          tagRepo{dg, log},
+		subscription: subscriptionRepo{dg, log},
 	}, nil
 }
 

@@ -19,15 +19,18 @@ tag: uid @reverse .
 
 feed.link: string @index(hash) .
 ttl: int .
+subscription: uid .
 
 tag.value: string @index(hash) @upsert .
 
+sub.link: string @index(hash) @upsert .
 leaseDuration: int .
 verificationTime: dateTime .
 subscriptionFailure: bool .
 
 article: uid .
-score: int .
+score: uid .
+total.score: int .
 score1: int .
 score2: int .
 score3: int .
