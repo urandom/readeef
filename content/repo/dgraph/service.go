@@ -38,6 +38,7 @@ func NewService(source string, log log.Log) (Service, error) {
 		feed:         feedRepo{dg, log},
 		tag:          tagRepo{dg, log},
 		subscription: subscriptionRepo{dg, log},
+		article:      articleRepo{dg, log},
 	}, nil
 }
 
