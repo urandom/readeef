@@ -5,6 +5,8 @@ require (
 	github.com/BurntSushi/toml v0.3.0
 	github.com/ChimeraCoder/anaconda v0.0.0-20180305151339-a1f48994eee0
 	github.com/ChimeraCoder/tokenbucket v0.0.0-20131201223612-c5a927568de7
+	github.com/Masterminds/semver v1.4.2 // indirect
+	github.com/Masterminds/sprig v2.16.0+incompatible
 	github.com/PuerkitoBio/goquery v1.4.1
 	github.com/RoaringBitmap/roaring v0.4.11
 	github.com/Sirupsen/logrus v1.0.5
@@ -13,6 +15,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
 	github.com/alexedwards/scs v1.3.0
 	github.com/andybalholm/cascadia v1.0.0
+	github.com/aokoli/goutils v1.0.1 // indirect
 	github.com/araddon/dateparse v0.0.0-20180630172013-89c8cfc1bf06
 	github.com/azr/backoff v0.0.0-20160115115103-53511d3c7330
 	github.com/blevesearch/bleve v0.0.0-20180627232020-9bad601c3a5a
@@ -34,11 +37,14 @@ require (
 	github.com/gigawattio/window v0.0.0-20180317192513-0f5467e35573
 	github.com/glycerine/go-unsnap-stream v0.0.0-20180323001048-9f0cb55181dd
 	github.com/go-chi/chi v3.3.2+incompatible
-	github.com/go-test/deep v1.0.1 // indirect
+	github.com/go-test/deep v1.0.1
 	github.com/golang/mock v1.1.1
 	github.com/golang/protobuf v1.2.0
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db
 	github.com/google/shlex v0.0.0-20181106134648-c34317bd91bf // indirect
+	github.com/google/uuid v1.1.0 // indirect
+	github.com/huandu/xstrings v1.2.0 // indirect
+	github.com/imdario/mergo v0.3.6 // indirect
 	github.com/jaytaylor/html2text v0.0.0-20180606194806-57d518f124b0
 	github.com/jmoiron/sqlx v0.0.0-20180614180643-0dae4fefe7c0
 	github.com/josharian/impl v0.0.0-20180228163738-3d0f908298c4 // indirect

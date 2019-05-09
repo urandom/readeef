@@ -49,6 +49,7 @@ func NewFeedManager(repo repo.Feed, c config.Config, l log.Log) *FeedManager {
 
 func (fm *FeedManager) SetHubbub(hubbub *Hubbub) {
 	fm.hubbub = hubbub
+	fm.
 }
 
 func (fm *FeedManager) AddFeedProcessor(p processor.Feed) {

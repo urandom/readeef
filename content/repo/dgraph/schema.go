@@ -38,6 +38,7 @@ score4: int .
 score5: int .
 score6: int .
 
+article.link: string @index(trigram) .
 guid: string @index(hash) .
 date: dateTime .
 `
