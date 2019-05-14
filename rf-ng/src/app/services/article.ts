@@ -1,16 +1,14 @@
-import { Injectable } from '@angular/core'
-import { Response } from '@angular/http'
+import { Injectable } from '@angular/core';
+import { Data, Params, Router } from '@angular/router';
+import { BehaviorSubject, ConnectableObservable, merge, Observable, of, Subject } from "rxjs";
+import { catchError, combineLatest, delay, distinctUntilChanged, distinctUntilKeyChanged, filter, first, flatMap, map, publishReplay, scan, shareReplay, startWith, switchMap, take } from 'rxjs/operators';
+import { getArticleRoute, listRoute } from "../main/routing-util";
+import { EventService, FeedUpdateEvent, QueryOptions as EventableQueryOptions } from "../services/events";
+import { FeedService } from "../services/feed";
+import { ListPreferences, PreferencesService } from "../services/preferences";
+import { TagService } from "../services/tag";
 import { APIService } from "./api";
 import { TokenService } from "./auth";
-import { Router, ActivatedRouteSnapshot, NavigationEnd, ParamMap, Data, Params } from '@angular/router';
-import { Feed, FeedService } from "../services/feed"
-import { Tag, TagFeedIDs, TagService } from "../services/tag"
-import { EventService, FeedUpdateEvent, QueryOptions as EventableQueryOptions } from "../services/events"
-import { ListPreferences, PreferencesService } from "../services/preferences"
-import { Observable, BehaviorSubject, Subject, pipe ,  fromEvent, interval, merge, ConnectableObservable, of } from "rxjs";
-import { listRoute, getArticleRoute } from "../main/routing-util"
-import { filter, map, distinctUntilKeyChanged, switchMap, shareReplay, combineLatest, flatMap, delay, startWith, scan, distinctUntilChanged, publishReplay, first, take, catchError } from 'rxjs/operators';
-import { QueryEncoder } from '@angular/http/src/url_search_params';
 
 export class Article {
     id: number;
@@ -27,7 +25,7 @@ export class Article {
     time: string;
     hits: Hits;
     format: ArticleFormat;
-	score?: number;
+    score?: number;
 }
 
 export interface ArticleFormat {
@@ -54,17 +52,17 @@ interface IDsResponse {
 }
 
 interface Paging {
-	time?: number;
-	unreadTime?: number;
-	score?: number;
-	unreadScore?: number;
+    time?: number;
+    unreadTime?: number;
+    score?: number;
+    unreadScore?: number;
 }
 
 interface ArticleStateResponse {
     success: boolean;
 }
 
-function processArticlesDates(articles: Article[]) : Article[] {
+function processArticlesDates(articles: Article[]): Article[] {
     return articles.map(a => {
         if (typeof a.date == "string") {
             a.date = new Date(a.date);
@@ -84,61 +82,61 @@ export interface QueryOptions {
     afterID?: number;
     beforeTime?: number;
     afterTime?: number;
-	beforeScore?: number;
-	afterScore?: number;
+    beforeScore?: number;
+    afterScore?: number;
 }
 
 export interface Source {
-    url : string
+    url: string
     updatable: boolean
 }
 
 export class UserSource {
     updatable = true
-    get url() : string {
+    get url(): string {
         return "";
     }
 }
 
 export class FavoriteSource {
     updatable = false
-    get url() : string {
+    get url(): string {
         return "/favorite";
     }
 }
 
 export class PopularSource {
     updatable = false
-    constructor(private secondary: UserSource | FeedSource | TagSource) {}
+    constructor(private secondary: UserSource | FeedSource | TagSource) { }
 
-    get url() : string {
+    get url(): string {
         return "/popular" + this.secondary.url;
     }
 }
 
 export class FeedSource {
     updatable = true
-    constructor(public readonly id : number) {}
+    constructor(public readonly id: number) { }
 
-    get url() : string {
+    get url(): string {
         return `/feed/${this.id}`;
     }
 }
 
 export class TagSource {
     updatable = true
-    constructor(public readonly id : number) {}
+    constructor(public readonly id: number) { }
 
-    get url() : string {
+    get url(): string {
         return `/tag/${this.id}`;
     }
 }
 
 export class SearchSource {
     updatable = false
-    constructor(private query: string, private secondary: UserSource | FeedSource | TagSource) {}
+    constructor(private query: string, private secondary: UserSource | FeedSource | TagSource) { }
 
-    get url() : string {
+    get url(): string {
         return `/search${this.secondary.url}?query=${encodeURIComponent(this.query)}`;
     }
 }
@@ -165,14 +163,14 @@ interface ArticlesPayload {
     providedIn: "root",
 })
 export class ArticleService {
-    private articles : ConnectableObservable<Article[]>
+    private articles: ConnectableObservable<Article[]>
     private paging = new BehaviorSubject<any>(null)
     private stateChange = new Subject<ArticleProperty>()
     private updateSubject = new Subject<[QueryOptions, number]>()
     private refresh = new BehaviorSubject<any>(null)
     private limit: number = 200
     private initialFetched = false
-    private source : Observable<Source>
+    private source: Observable<Source>
 
     constructor(
         private api: APIService,
@@ -193,7 +191,15 @@ export class ArticleService {
         );
 
         let feedsTagsObservable = this.tokenService.tokenObservable().pipe(
-            switchMap(token =>
+            scan<string, [string, string, boolean]>((acc, token) => {
+                var user = this.tokenService.tokenUser(token)
+                acc[0] = token;
+                acc[2] = acc[1] != user
+                acc[1] = user;
+                return acc
+            }, ["", "", false]),
+            filter(acc => acc[2]),
+            switchMap(() =>
                 this.feedService.getFeeds().pipe(combineLatest(
                     this.tagService.getTagsFeedIDs(),
                     (feeds, tags): [Map<number, string>, Map<number, number[]>] => {
@@ -214,7 +220,7 @@ export class ArticleService {
                 ))
             ),
             shareReplay(1),
-        );
+        )
 
         this.articles = feedsTagsObservable.pipe(
             switchMap(feedsTags =>
@@ -228,7 +234,7 @@ export class ArticleService {
                                 merge(
                                     this.paging.pipe(
                                         flatMap(v => this.datePaging(source, prefs.unreadFirst)),
-                                        switchMap(paging => 
+                                        switchMap(paging =>
                                             this.getArticlesFor(source, { olderFirst: prefs.olderFirst, unreadOnly: prefs.unreadOnly }, this.limit, paging)
                                         ),
                                         map(articles => <ArticlesPayload>{
@@ -393,12 +399,13 @@ export class ArticleService {
                                             }
                                             return data;
                                         }
-                                ),
-                                map(data => data.articles),
-                            )
-                        ),
-                        startWith<Article[]>([]),
-                    )})
+                                    ),
+                                    map(data => data.articles),
+                                )
+                            ),
+                            startWith<Article[]>([]),
+                        )
+                    })
                 )
             ),
             publishReplay(1),
@@ -426,9 +433,9 @@ export class ArticleService {
 
         this.eventService.articleState.subscribe(
             event => this.stateChange.next({
-                    options: event.options,
-                    name: event.state,
-                    value: event.value,
+                options: event.options,
+                name: event.state,
+                value: event.value,
             })
         )
 
@@ -438,7 +445,7 @@ export class ArticleService {
                 feedsTagsObservable.pipe(
                     combineLatest(
                         this.source,
-                        (feedsTags, source) : [Map<number, string>, Map<number, number[]>, Source] => {
+                        (feedsTags, source): [Map<number, string>, Map<number, number[]>, Source] => {
                             return [feedsTags[0], feedsTags[1], source];
                         }
                     ),
@@ -475,7 +482,7 @@ export class ArticleService {
         });
     }
 
-    articleObservable() : Observable<Article[]> {
+    articleObservable(): Observable<Article[]> {
         return this.articles;
     }
 
@@ -497,7 +504,7 @@ export class ArticleService {
         this.refresh.next(null)
     }
 
-    public favor(id: number, favor: boolean) : Observable<Boolean> {
+    public favor(id: number, favor: boolean): Observable<Boolean> {
         return this.articleStateChange(id, "favorite", favor);
     }
 
@@ -513,14 +520,14 @@ export class ArticleService {
             flatMap(url => this.api.post<ArticleStateResponse>(url)),
             map(response => response.success),
         ).subscribe(
-            success => {},
+            success => { },
             error => console.log(error),
         )
     }
 
-    private articleStateChange(id: number, name: string, state: boolean) : Observable<Boolean> {
+    private articleStateChange(id: number, name: string, state: boolean): Observable<Boolean> {
         let url = `article/${id}/${name}`
-        let o : Observable<ArticleStateResponse>
+        let o: Observable<ArticleStateResponse>
         if (state) {
             o = this.api.post<ArticleStateResponse>(url);
         } else {
@@ -548,31 +555,31 @@ export class ArticleService {
         limit: number,
         paging: Paging,
     ): Observable<Article[]> {
-        let original : QueryOptions = Object.assign({}, prefs, {limit: limit});
-        let options : QueryOptions = Object.assign({}, original);
+        let original: QueryOptions = Object.assign({}, prefs, { limit: limit });
+        let options: QueryOptions = Object.assign({}, original);
 
         let time = -1
-		let score = 0;
-		if (paging.unreadTime) {
-			time = paging.unreadTime;
-			score = paging.unreadScore;
+        let score = 0;
+        if (paging.unreadTime) {
+            time = paging.unreadTime;
+            score = paging.unreadScore;
             options.unreadOnly = true;
-		} else if (paging.time) {
-			time = paging.time;
-			score = paging.score;
-		}
+        } else if (paging.time) {
+            time = paging.time;
+            score = paging.score;
+        }
 
         if (time != -1) {
             if (prefs.olderFirst) {
                 options.afterTime = time;
-				if (score) {
-					options.afterScore = score;
-				}
+                if (score) {
+                    options.afterScore = score;
+                }
             } else {
                 options.beforeTime = time;
-				if (score) {
-					options.beforeScore = score;
-				}
+                if (score) {
+                    options.beforeScore = score;
+                }
             }
         }
 
@@ -586,14 +593,14 @@ export class ArticleService {
             if (paging.time) {
                 if (prefs.olderFirst) {
                     options.afterTime = paging.time;
-					if (paging.score) {
-						options.afterScore = paging.score;
-					}
+                    if (paging.score) {
+                        options.afterScore = paging.score;
+                    }
                 } else {
                     options.beforeTime = paging.time;
-					if (paging.score) {
-						options.beforeScore = paging.score;
-					}
+                    if (paging.score) {
+                        options.beforeScore = paging.score;
+                    }
                 }
             }
 
@@ -619,7 +626,7 @@ export class ArticleService {
 
                 let maxID = Math.max.apply(Math, articles.map(a => a.id))
 
-                let mod: QueryOptions = Object.assign({}, options, {afterID: maxID});
+                let mod: QueryOptions = Object.assign({}, options, { afterID: maxID });
                 return this.getArticlesFor(source, mod, limit, paging).pipe(
                     map(next => next && next.length ? next.concat(articles) : articles)
                 );
@@ -635,7 +642,7 @@ export class ArticleService {
                 let id = +route.params["articleID"];
 
                 return this.api.get<ArticlesResponse>(this.buildURL(
-                    "article" + new UserSource().url, {ids: [id]}
+                    "article" + new UserSource().url, { ids: [id] }
                 )).pipe(
                     map(response => processArticlesDates(response.articles)[0]),
                     take(1),
@@ -670,7 +677,7 @@ export class ArticleService {
         }));
     }
 
-    private buildURL(base: string, options?: QueryOptions) : string {
+    private buildURL(base: string, options?: QueryOptions): string {
         if (!options) {
             options = {};
         }
@@ -712,9 +719,9 @@ export class ArticleService {
         return base;
     }
 
-    private nameToSource(data: Data | string, params: Params) : Source {
-        let name : string
-        let secondary : string
+    private nameToSource(data: Data | string, params: Params): Source {
+        let name: string
+        let secondary: string
         if (typeof data == "string") {
             name = data;
         } else {
@@ -738,7 +745,7 @@ export class ArticleService {
         }
     }
 
-    private datePaging(source: Source, unreadFirst: boolean) : Observable<Paging> {
+    private datePaging(source: Source, unreadFirst: boolean): Observable<Paging> {
         return this.articles.pipe(
             take(1),
             map(articles => {
@@ -786,7 +793,7 @@ export class ArticleService {
         );
     }
 
-    private hasOptions(options: EventableQueryOptions) : boolean {
+    private hasOptions(options: EventableQueryOptions): boolean {
         if (!options.feedIDs && !options.readOnly &&
             !options.unreadOnly && !options.favoriteOnly &&
             !options.untaggedOnly && !options.beforeID &&
@@ -797,7 +804,7 @@ export class ArticleService {
         return true;
     }
 
-    private shouldUpdate(event : FeedUpdateEvent, source: Source, tagMap: Map<number, number[]>) : boolean {
+    private shouldUpdate(event: FeedUpdateEvent, source: Source, tagMap: Map<number, number[]>): boolean {
         let s = source
         if (s instanceof UserSource) {
             return true;
@@ -815,7 +822,7 @@ export class ArticleService {
         return false;
     }
 
-    private shouldInsert(incoming: Article, current: Article, options: ListPreferences) : boolean {
+    private shouldInsert(incoming: Article, current: Article, options: ListPreferences): boolean {
         if (options.unreadFirst && incoming.read != current.read) {
             return !incoming.read;
         }
@@ -833,7 +840,7 @@ export class ArticleService {
         return false
     }
 
-    private shouldSet(article: Article, options: EventableQueryOptions, tagged: Set<number>) : boolean {
+    private shouldSet(article: Article, options: EventableQueryOptions, tagged: Set<number>): boolean {
         if (options.feedIDs && options.feedIDs.indexOf(article.feedID) == -1) {
             return false;
         }
