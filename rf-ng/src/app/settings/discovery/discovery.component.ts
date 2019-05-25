@@ -1,8 +1,8 @@
-import { Component, ViewChild, ViewChildren, QueryList } from "@angular/core" ;
+import { Component, QueryList, ViewChild, ViewChildren } from "@angular/core";
 import { FormControl } from '@angular/forms';
 import { MatCheckbox } from "@angular/material";
-import { FeedService, Feed, OPMLimport, AddFeedResponse } from "../../services/feed";
 import { Observable, Observer } from "rxjs";
+import { AddFeedResponse, Feed, FeedService, OPMLimport } from "../../services/feed";
 
 
 @Component({
@@ -16,7 +16,7 @@ export class DiscoverySettingsComponent {
     loading = false
     feeds = new Array<Feed>()
     emptySelection = false
-    addFeedResult : AddFeedResponse
+    addFeedResult: AddFeedResponse
 
     queryFormControl = new FormControl('');
 
@@ -28,7 +28,7 @@ export class DiscoverySettingsComponent {
 
     constructor(
         private feedService: FeedService,
-    ) {}
+    ) { }
 
     search() {
         if (this.loading) {
@@ -36,28 +36,28 @@ export class DiscoverySettingsComponent {
         }
 
         if (this.query == "" && !this.opml.nativeElement.files.length) {
-            this.queryFormControl.setErrors({"empty": true});
+            this.queryFormControl.setErrors({ "empty": true });
             return;
         }
 
         this.loading = true;
 
-        let feedObservable : Observable<Feed[]>
+        let feedObservable: Observable<Feed[]>
 
         if (this.opml.nativeElement.files.length) {
             let file = this.opml.nativeElement.files[0];
 
-            feedObservable = Observable.create((observer : Observer<OPMLimport>) => {
+            feedObservable = Observable.create((observer: Observer<OPMLimport>) => {
                 let fileReader = new FileReader();
 
-                fileReader.onload = function(event: Event) {
+                fileReader.onload = function (event: Event) {
                     let contents = event.target["result"];
 
-                    observer.next({opml: contents, dryRun: true});
+                    observer.next({ opml: contents, dryRun: true });
                     observer.complete();
                 }
 
-                fileReader.onerror = function(event: ErrorEvent) : any {
+                fileReader.onerror = function (event: ProgressEvent): any {
                     observer.error(event);
                 }
 
@@ -113,7 +113,7 @@ export class DiscoverySettingsComponent {
         )
     }
 
-    baseURL(url: string) : string {
+    baseURL(url: string): string {
         let parser = document.createElement("a");
         parser.href = url;
         parser.pathname = "";
