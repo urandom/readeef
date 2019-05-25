@@ -25,6 +25,7 @@ mat-card-content {
     flex: 0 1 auto;
     overflow: hidden;
     text-overflow: ellipsis-lastline;
+    font-size: 12px;
     /*
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -47,6 +48,7 @@ mat-card-actions {
 
 .title {
     font-weight: bold;
+    font-size: 14px;
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1;
@@ -64,7 +66,7 @@ mat-card-actions {
 }
 
 .time {
-    font-size: 12px;
+    font-size: 11px;
     text-align: end;
 }
 
