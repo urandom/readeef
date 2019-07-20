@@ -61,7 +61,7 @@ func convertRelativeLinksToAbsolute(d *goquery.Document, articleLink *url.URL) b
 			if u.Host == "" {
 				u.Host = articleLink.Host
 
-				if u.Path[0] != '/' {
+				if len(u.Path) > 0 && u.Path[0] != '/' {
 					u.Path = path.Join(path.Dir(articleLink.Path), u.Path)
 				}
 			}
