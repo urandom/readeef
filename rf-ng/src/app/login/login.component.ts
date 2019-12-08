@@ -4,7 +4,6 @@ import { TokenService } from "../services/auth"
 import { HttpErrorResponse } from "@angular/common/http";
 
 @Component({
-    moduleId: module.id,
     templateUrl: "./login.html",
     styleUrls: ["./login.css"],
 })

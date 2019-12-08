@@ -10,7 +10,6 @@ import { Article, ArticleFormat, ArticleService } from '../services/article'
 import { FeaturesService } from '../services/features'
 import { Observable, Subscription, Subject, BehaviorSubject, pipe, of, interval, from } from 'rxjs';
 import * as moment from 'moment';
-import { viewParentEl } from '@angular/core/src/view/util';
 import { switchMap, startWith, map, filter, distinctUntilChanged, flatMap, catchError, ignoreElements, take } from 'rxjs/operators';
 
 enum State {
@@ -40,9 +39,9 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     slides: Article[] = []
     index: string
 
-    @ViewChild("carousel")
+    @ViewChild("carousel", {static: false})
     private carousel : NgbCarousel;
-    @ViewChild("carousel", {read: ElementRef})
+    @ViewChild('carousel', {read: ElementRef, static: false})
     private carouselElement: ElementRef;
 
     private active: Article

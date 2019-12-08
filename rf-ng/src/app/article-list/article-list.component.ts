@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, HostListener } from "@angular/core";
 import { Router, ActivatedRoute, ParamMap, Data, Params } from '@angular/router';
 import { Article, Source, UserSource, FavoriteSource, PopularSource, FeedSource, TagSource, ArticleService, QueryOptions } from "../services/article"
-import { ChangeEvent } from 'angular2-virtual-scroll';
+import { IPageInfo } from 'ngx-virtual-scroller';
 import { Observable, Subscription ,  BehaviorSubject, interval } from "rxjs";
 import * as moment from 'moment';
 import { scan, map, switchMap, startWith } from "rxjs/operators";
@@ -75,8 +75,8 @@ export class ArticleListComponent implements OnInit, OnDestroy {
         this.subscription.unsubscribe();
     }
 
-    fetchMore(event: ChangeEvent) {
-        if (event.end == this.items.length && !this.loading && !this.finished) {
+    fetchMore(event: IPageInfo) {
+        if (event.endIndex === this.items.length && !this.loading && !this.finished) {
             this.loading = true;
             this.articleService.requestNextPage();
         }

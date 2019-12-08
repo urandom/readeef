@@ -11,16 +11,16 @@ import { AddFeedResponse, Feed, FeedService, OPMLimport } from "../../services/f
     styleUrls: ["../common.css", "./discovery.css"]
 })
 export class DiscoverySettingsComponent {
-    query = ""
-    phase = "query"
-    loading = false
-    feeds = new Array<Feed>()
-    emptySelection = false
-    addFeedResult: AddFeedResponse
+    query = '';
+    phase = 'query';
+    loading = false;
+    feeds = new Array<Feed>();
+    emptySelection = false;
+    addFeedResult: AddFeedResponse;
 
     queryFormControl = new FormControl('');
 
-    @ViewChild("opmlInput")
+    @ViewChild('opmlInput', {static: false})
     private opml;
 
     @ViewChildren(MatCheckbox)

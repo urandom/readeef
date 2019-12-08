@@ -90,3 +90,5 @@ require (
 	gopkg.in/olivere/elastic.v5 v5.0.69
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
+
+go 1.13

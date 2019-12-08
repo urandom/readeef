@@ -1,6 +1,6 @@
-<virtual-scroll [items]="items" (update)="scrollItems = $event" (end)="fetchMore($event)">
+<virtual-scroller [items]="items" (vsEnd)="fetchMore($event)" #scroll>
 
-    <list-item *ngFor="let item of scrollItems" [item]="item"> </list-item>
+    <list-item *ngFor="let item of scroll.viewPortItems" [item]="item"> </list-item>
 
     <div *ngIf="loading" class="loader" i18n>Loading...</div>
-</virtual-scroll>
+</virtual-scroller>

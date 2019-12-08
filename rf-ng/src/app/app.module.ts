@@ -26,7 +26,7 @@ import { SideBarSettingsComponent } from './sidebar/sidebar.settings.component';
 import { ToolbarSettingsComponent } from './toolbar/toolbar.settings.component';
 import { ShareServicesSettingsComponent } from './settings/share-services/share-services.component';
 import { ListItemComponent } from './article-list/list-item.component';
-import { VirtualScrollModule } from 'angular2-virtual-scroll';
+import { VirtualScrollerModule } from 'ngx-virtual-scroller';
 import { SideBarFeedComponent } from './sidebar/sidebar.feed.component';
 
 @NgModule({
@@ -81,8 +81,8 @@ import { SideBarFeedComponent } from './sidebar/sidebar.feed.component';
     MatSidenavModule,
     MatSlideToggleModule,
     MatToolbarModule,
-    NgbModule.forRoot(),
-    VirtualScrollModule,
+    NgbModule,
+    VirtualScrollerModule,
   ],
   bootstrap: [AppComponent]
 })

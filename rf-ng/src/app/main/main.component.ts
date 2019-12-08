@@ -6,7 +6,6 @@ import { TokenService } from "../services/auth";
 import { filter, switchMap, map, combineLatest } from "rxjs/operators";
 
 @Component({
-    moduleId: module.id,
     templateUrl: "./main.html",
     styleUrls: ["./main.css"],
 })
