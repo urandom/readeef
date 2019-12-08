@@ -76,7 +76,7 @@ export class ArticleListComponent implements OnInit, OnDestroy {
     }
 
     fetchMore(event: IPageInfo) {
-        if (event.endIndex === this.items.length && !this.loading && !this.finished) {
+        if (event.endIndex === this.items.length - 1 && !this.loading && !this.finished) {
             this.loading = true;
             this.articleService.requestNextPage();
         }

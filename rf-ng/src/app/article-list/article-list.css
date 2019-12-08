@@ -4,7 +4,7 @@
 	height: calc(100% - 64px);
 }
 
-virtual-scroll {
+virtual-scroller {
     overflow: hidden;
     overflow-y: auto;
     display: block;
