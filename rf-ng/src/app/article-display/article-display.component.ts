@@ -36,19 +36,19 @@ interface NavigationPayload {
 export class ArticleDisplayComponent implements OnInit, OnDestroy {
     canExtract: boolean;
 
-    slides: Article[] = []
-    index: string
+    slides: Article[] = [];
+    index: string;
 
-    @ViewChild("carousel", {static: false})
-    private carousel : NgbCarousel;
+    @ViewChild('carousel', {static: true})
+    private carousel: NgbCarousel;
     @ViewChild('carousel', {read: ElementRef, static: false})
     private carouselElement: ElementRef;
 
-    private active: Article
-    private offset = new Subject<number>()
-    private stateChange = new BehaviorSubject<[number, State]>([-1, State.DESCRIPTION])
+    private active: Article;
+    private offset = new Subject<number>();
+    private stateChange = new BehaviorSubject<[number, State]>([-1, State.DESCRIPTION]);
     private states = new Map<number, State>();
-    private subscriptions = new Array<Subscription>()
+    private subscriptions = new Array<Subscription>();
 
     constructor(
         config: NgbCarouselConfig,
