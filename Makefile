@@ -31,4 +31,8 @@ generate: build-ui
 build: generate
 	go build -ldflags="-s -w" ./cmd/readeef
 
+build-docker:
+	@docker build -t x0rzkov/readeef:alpine3.10-go1.13 .
+
 all: build
+
