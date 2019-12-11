@@ -10,7 +10,7 @@ COPY . /opt/rf-ng
 
 WORKDIR /opt/rf-ng
 RUN npm install && \
-    npm build
+    npm run-script build
 
 VOLUME /opt/rf-ng/build
 

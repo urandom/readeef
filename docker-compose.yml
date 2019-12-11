@@ -1,4 +1,5 @@
 ---
+version: '3.7'
 services:
 
   readeef:
@@ -27,15 +28,51 @@ services:
   db:
     image: postgres:10.1-alpine
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+    - postgres_data:/var/lib/postgresql/data/
     ports:
-      - "5432:5432"
+    - "5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
 
+  elasticsearch:
+    #restart: unless-stopped
+    #environment:
+    #  - ES_JAVA_OPTS=-Xms2g -Xmx2g
+    # mem_limit: 4g
+    # memswap_limit: 4g
+    build:
+      context: ./.docker/elasticsearch
+      dockerfile: Dockerfile
+      args:
+      - CEREBRO_VERSION=0.7.2
+    container_name: elasticsearch
+    entrypoint: /usr/share/elasticsearch/start
+    ports:
+    - "9200:9200" # Elasticsearch
+    - "9000:9000" # Cerebro
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      #nofile:
+      #  soft: 65536
+      #  hard: 65536
+    #cap_add:
+    #  - IPC_LOCK
+    volumes:
+    - esdata:/usr/share/elasticsearch/data
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.0.1
+    container_name: kibana
+    ports:
+    - 5601:5601
+
 volumes:
   postgres_data:
   rfng_build:
     external: true
+  esdata:
+    driver: local

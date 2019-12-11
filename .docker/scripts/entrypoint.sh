@@ -13,6 +13,10 @@ case "$1" in
   	exec readeef-client $@ $ARGS
 	;;
 
+  'index')
+    exec readeef search-index $@ $ARGS
+  ;;
+
   'readeef-static-locator')
   	exec readeef-static-locator $@ $ARGS
   	;;

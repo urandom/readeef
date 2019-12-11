@@ -1,0 +1,25 @@
+cluster.name: "docker-cluster"
+# cluster.initial_master_nodes
+network.host: 0.0.0.0
+
+node.name: elasticsearch
+cluster.initial_master_nodes: elasticsearch
+bootstrap.memory_lock: true
+#index.blocks.read_only_allow_delete: null
+# minimum_master_nodes need to be explicitly set when bound on a public IP
+# set to 1 to allow single node clusters
+# Details: https://github.com/elastic/elasticsearch/pull/17288
+discovery.zen.minimum_master_nodes: 1
+#discovery.seed_hosts
+#discovery.seed_providers
+xpack.license.self_generated.type: basic
+
+# ---------------------------------- Network -----------------------------------
+
+# CORS Settings
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+http.cors.allow-methods: OPTIONS, HEAD, GET, POST, PUT, DELETE
+http.cors.allow-headers: "X-Requested-With, Content-Type, Content-Length, X-User"
+
+# twint -u noneprivacy -es localhost:9200
