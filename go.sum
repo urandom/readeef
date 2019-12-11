@@ -1,8 +1,8 @@
 github.com/BurntSushi/toml v0.3.0 h1:e1/Ivsx3Z0FVTV0NSOv/aVgbUWyQuzj7DDnFblkRvsY=
 github.com/BurntSushi/toml v0.3.0/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/ChimeraCoder/anaconda v0.0.0-20180305151339-a1f48994eee0 h1:H1EOt8lQLYImwgpm6Anq2C55Vg9GKiIfPxA88HWj1Qc=
+github.com/ChimeraCoder/anaconda v0.0.0-20180305151339-a1f48994eee0 h1:Zbz75e92VMLIxbkUrIpRNjHs8yzsbKVsArDsFPi5boM=
 github.com/ChimeraCoder/anaconda v0.0.0-20180305151339-a1f48994eee0/go.mod h1:TCt3MijIq3Qqo9SBtuW/rrM4x7rDfWqYWHj8T7hLcLg=
-github.com/ChimeraCoder/tokenbucket v0.0.0-20131201223612-c5a927568de7 h1:VhNF/1LOAMtJOPjNt+f785lF3H37n1b/kiinFgqL6hM=
+github.com/ChimeraCoder/tokenbucket v0.0.0-20131201223612-c5a927568de7 h1:r+EmXjfPosKO4wfiMLe1XQictsIlhErTufbWUsjOTZs=
 github.com/ChimeraCoder/tokenbucket v0.0.0-20131201223612-c5a927568de7/go.mod h1:b2EuEMLSG9q3bZ95ql1+8oVqzzrTNSiOQqSXWFBzxeI=
 github.com/PuerkitoBio/goquery v1.4.1 h1:smcIRGdYm/w7JSbcdeLHEMzxmsBQvl8lhf0dSw2nzMI=
 github.com/PuerkitoBio/goquery v1.4.1/go.mod h1:T9ezsOHcCrDCgA8aF1Cqr3sSYbO/xgdy8/R/XiIMAhA=
