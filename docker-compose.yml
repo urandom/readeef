@@ -8,7 +8,21 @@ services:
       dockerfile: Dockerfile
     ports:
     - 8080:8080
+    depends_on:
+    - db
+    links:
+    - db
     command: ["readeef", "server"]
+
+  rfng:
+    image: rf-ng:alpine3.10-go1.13
+    build:
+      context: ./rf-ng
+      dockerfile: Dockerfile
+    ports:
+    - 4200:4200    
+    volumes:
+    - rfng_build:/opt/rf-ng/build
 
   db:
     image: postgres:10.1-alpine
@@ -23,3 +37,5 @@ services:
 
 volumes:
   postgres_data:
+  rfng_build:
+    external: true
