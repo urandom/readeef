@@ -13,7 +13,7 @@ services:
     - db
     links:
     - db
-    command: ["readeef", "server"]
+    command: ["dev"]
 
   rfng:
     image: rf-ng:alpine3.10-go1.13

@@ -13,6 +13,11 @@ case "$1" in
   	exec readeef-client $@ $ARGS
 	;;
 
+  'dev')
+    apk add --no-cache nano bash
+    exec /bin/bash $@ $ARGS
+  ;;
+
   'index')
     exec readeef search-index $@ $ARGS
   ;;
