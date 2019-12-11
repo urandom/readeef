@@ -5,3 +5,7 @@
 Dockerfile
 docker-compose.yml
 docker-sync.yml
+vendor
+vendor/
+vendor/*
+vendor/**
