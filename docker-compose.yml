@@ -13,7 +13,7 @@ services:
     - db
     links:
     - db
-    command: ["dev"]
+    command: ["/opt/readeef/bin/readeef", "-config=/opt/readeef/config/readeef.toml", "server"]
 
   rfng:
     image: rf-ng:alpine3.10-go1.13
