@@ -4,6 +4,7 @@ services:
 
   readeef:
     image: readeef:alpine3.10-go1.13
+    container_name: readeef
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,12 +12,16 @@ services:
     - 8080:8080
     depends_on:
     - db
+    - elasticv7
     links:
     - db
+    - elasticv7
+    #restart: unless-stopped
     command: ["/opt/readeef/bin/readeef", "-config=/opt/readeef/config/readeef.toml", "server"]
 
   rfng:
     image: rf-ng:alpine3.10-go1.13
+    container_name: rfng
     build:
       context: ./rf-ng
       dockerfile: Dockerfile
@@ -24,31 +29,32 @@ services:
     - 4200:4200    
     volumes:
     - rfng_build:/opt/rf-ng/build
+    #restart: unless-stopped
 
   db:
     image: postgres:10.1-alpine
-    volumes:
-    - postgres_data:/var/lib/postgresql/data/
-    ports:
-    - "5432:5432"
+    container_name: readeefdb
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-
-  elasticsearch:
+    ports:
+    - "5432:5432"
+    volumes:
+    - postgres_data:/var/lib/postgresql/data/
     #restart: unless-stopped
-    #environment:
-    #  - ES_JAVA_OPTS=-Xms2g -Xmx2g
-    # mem_limit: 4g
-    # memswap_limit: 4g
+
+  elasticv7:
     build:
       context: .docker/elasticsearch/7.0/
       dockerfile: Dockerfile
       args:
       - CEREBRO_VERSION=0.7.2
     container_name: elasticsearch
-    entrypoint: /usr/share/elasticsearch/start
+    #environment:
+    #  - ES_JAVA_OPTS=-Xms2g -Xmx2g
+    # mem_limit: 4g
+    # memswap_limit: 4g
     ports:
     - "9200:9200" # Elasticsearch
     - "9000:9000" # Cerebro
@@ -63,16 +69,20 @@ services:
     #  - IPC_LOCK
     volumes:
     - esdata:/usr/share/elasticsearch/data
+    #restart: unless-stopped
+    entrypoint: /usr/share/elasticsearch/start
 
   kibana:
     image: docker.elastic.co/kibana/kibana:7.0.1
     container_name: kibana
     ports:
     - 5601:5601
+    #restart: unless-stopped
 
 volumes:
   postgres_data:
+    driver: local
   rfng_build:
-    external: true
+    driver: local
   esdata:
     driver: local

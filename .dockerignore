@@ -9,3 +9,5 @@ vendor
 vendor/
 vendor/*
 vendor/**
+Makfile
+Dockerfile.dev

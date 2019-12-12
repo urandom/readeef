@@ -1,7 +1,7 @@
 FROM golang:alpine3.10 AS builder
 MAINTAINER x0rzkov
 
-RUN apk add --no-cache bash nano make gcc g++ git ca-certificates musl-dev nodejs npm sqlite-dev sqlite
+RUN apk add --no-cache make gcc g++ git ca-certificates musl-dev nodejs npm sqlite-dev sqlite
 
 COPY . /go/src/github.com/urandom/readeef
 WORKDIR /go/src/github.com/urandom/readeef
