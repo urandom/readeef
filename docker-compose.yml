@@ -43,7 +43,7 @@ services:
     # mem_limit: 4g
     # memswap_limit: 4g
     build:
-      context: ./.docker/elasticsearch
+      context: .docker/elasticsearch/7.0/
       dockerfile: Dockerfile
       args:
       - CEREBRO_VERSION=0.7.2

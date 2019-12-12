@@ -3,9 +3,9 @@ FROM docker.elastic.co/elasticsearch/elasticsearch:7.0.1
 USER elasticsearch
 
 # Copy config files
-COPY ./jvm.options /usr/share/elasticsearch/config/
-COPY ./log4j2.properties /usr/share/elasticsearch/config/
-COPY ./elasticsearch.yml /usr/share/elasticsearch/config/
+COPY ./config/jvm.options /usr/share/elasticsearch/config/
+COPY ./config/log4j2.properties /usr/share/elasticsearch/config/
+COPY ./config/elasticsearch.yml /usr/share/elasticsearch/config/
 
 # Install Cerebro
 ARG CEREBRO_VERSION
@@ -16,4 +16,4 @@ RUN cd /usr/share/elasticsearch/ \
     && mkdir cerebro-${CEREBRO_VERSION}/logs \
     && mv cerebro-${CEREBRO_VERSION} cerebro
 
-COPY ./docker-entrypoint.sh /usr/share/elasticsearch/start
+COPY ./scripts/docker-entrypoint.sh /usr/share/elasticsearch/start
