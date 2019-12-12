@@ -62,6 +62,19 @@ docker-build:
 docker-run:
 	@docker run -ti -p 8080:8080 urandom/readeef:alpine3.10-go1.13
 
+## docker-ps		:	List running containers.
+.PHONY: docker-ps
+docker-ps:
+	@docker ps --filter name='$(PROJECT_NAME)*'
+
+## docker-logs		:	View containers logs.
+##				You can optinally pass an argument with the service name to limit logs
+##				logs readeef	: View `readeff` container logs.
+##				logs readeef postgres	: View `readeef` and `postgres` containers logs.
+.PHONY: docker-logs
+docker-logs:
+	@docker-compose logs -f $(filter-out $@,$(MAKECMDGOALS))
+
 ## compose-up		:	Start up containers.
 .PHONY: compose-up
 compose-up:
@@ -93,19 +106,6 @@ compose-stop:
 compose-prune:
 	@echo "Removing containers for $(PROJECT_NAME)..."
 	@docker-compose down -v $(filter-out $@,$(MAKECMDGOALS))
-
-## docker-ps		:	List running containers.
-.PHONY: docker-ps
-docker-ps:
-	@docker ps --filter name='$(PROJECT_NAME)*'
-
-## docker-logs		:	View containers logs.
-##				You can optinally pass an argument with the service name to limit logs
-##				logs readeef	: View `readeff` container logs.
-##				logs readeef postgres	: View `readeef` and `postgres` containers logs.
-.PHONY: docker-logs
-docker-logs:
-	@docker-compose logs -f $(filter-out $@,$(MAKECMDGOALS))
 
 # https://stackoverflow.com/a/6273809/1826109
 %:
