@@ -6,7 +6,6 @@ set -e
 # build binaries
 go mod tidy
 go get github.com/urandom/embed/cmd/embed
-# go get github.com/urandom/readeef/cmd/readeef
 go get github.com/urandom/readeef/cmd/readeef-static-locator
 
 # requirements for building ui
