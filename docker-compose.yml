@@ -9,15 +9,17 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-    - 8080:8080
+    - ${READEEF_PORT}:8080
     depends_on:
     - db
-    - elasticv7
+    - elastic
     links:
     - db
-    - elasticv7
-    #restart: unless-stopped
+    - elastic
+    volumes:
+    - .docker/readeef/config/readeef.toml:/opt/readeef/config/readeef.toml
     command: ["/opt/readeef/bin/readeef", "-config=/opt/readeef/config/readeef.toml", "server"]
+    #restart: unless-stopped
 
   rfng:
     image: rf-ng:alpine3.10-go1.13
@@ -26,38 +28,38 @@ services:
       context: ./rf-ng
       dockerfile: Dockerfile
     ports:
-    - 4200:4200    
+    - ${READEEF_NG_PORT}:4200    
     volumes:
     - rfng_build:/opt/rf-ng/build
     #restart: unless-stopped
 
   db:
-    image: postgres:10.1-alpine
+    image: postgres:${POSTGRES_VERSION}-alpine
     container_name: readeefdb
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-    - "5432:5432"
+    - "${POSTGRES_PORT}:5432"
     volumes:
     - postgres_data:/var/lib/postgresql/data/
     #restart: unless-stopped
 
-  elasticv7:
+  elastic:
     build:
-      context: .docker/elasticsearch/7.0/
+      context: .docker/elasticsearch/${ELASTIC_VERSION}/
       dockerfile: Dockerfile
       args:
-      - CEREBRO_VERSION=0.7.2
+      - CEREBRO_VERSION=${CEREBRO_VERSION:-"0.7.2"}
     container_name: elasticsearch
     #environment:
     #  - ES_JAVA_OPTS=-Xms2g -Xmx2g
     # mem_limit: 4g
     # memswap_limit: 4g
     ports:
-    - "9200:9200" # Elasticsearch
-    - "9000:9000" # Cerebro
+    - "${ELASTIC_PORT}:9200" # Elasticsearch
+    - "${CEREBRO_PORT}:9000" # Cerebro
     ulimits:
       memlock:
         soft: -1
@@ -69,15 +71,16 @@ services:
     #  - IPC_LOCK
     volumes:
     - esdata:/usr/share/elasticsearch/data
-    #restart: unless-stopped
     entrypoint: /usr/share/elasticsearch/start
+    #restart: unless-stopped
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:7.0.1
+    image: docker.elastic.co/kibana/kibana:${KIBANA_VERSION}
     container_name: kibana
     ports:
-    - 5601:5601
+    - ${KIBANA_PORT}:5601
     #restart: unless-stopped
+
 
 volumes:
   postgres_data:
