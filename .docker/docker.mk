@@ -20,7 +20,7 @@ docker-build:
 ## docker-run	:	Run the dev container.
 .PHONY: docker-run
 docker-run:
-	@docker run -ti urandom/readeef:alpine3.10-go1.13
+	@docker run -ti -p 8080:8080 urandom/readeef:alpine3.10-go1.13
 
 ## up	:	Start up containers.
 .PHONY: up

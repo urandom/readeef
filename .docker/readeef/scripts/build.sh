@@ -3,18 +3,16 @@
 set -x
 set -e
 
-# go get github.com/golang/dep/cmd/dep
-# go get github.com/urandom/readeef/cmd/readeef
+# build binaries
 go mod tidy
-pwd
-ls -l
+go get github.com/urandom/embed/cmd/embed
+# go get github.com/urandom/readeef/cmd/readeef
+go get github.com/urandom/readeef/cmd/readeef-static-locator
 
-# dep ensure
-# ls -l
-
+# requirements for building ui
 cd rf-ng
 npm install --unsafe-perm -g node-gyp webpack-dev-server rimraf webpack typescript @angular/cli
 npm install
 cd ..
 
-# dep ensure
+make all
