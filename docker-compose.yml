@@ -12,10 +12,10 @@ services:
     - ${READEEF_PORT}:8080
     depends_on:
     - db
-    - elastic
+    - elasticsearch
     links:
     - db
-    - elastic
+    - elasticsearch
     volumes:
     - .docker/readeef/config/readeef.toml:/opt/readeef/config/readeef.toml
     command: ["/opt/readeef/bin/readeef", "-config=/opt/readeef/config/readeef.toml", "server"]
@@ -46,7 +46,7 @@ services:
     - postgres_data:/var/lib/postgresql/data/
     #restart: unless-stopped
 
-  elastic:
+  elasticsearch:
     build:
       context: .docker/elasticsearch/${ELASTIC_VERSION}/
       dockerfile: Dockerfile

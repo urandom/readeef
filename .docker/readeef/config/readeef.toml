@@ -1,6 +1,6 @@
 [db]
     driver = "postgres"
-    connect = "host=db user=readeef dbname=readeef"
+    connect = "host=db user=readeef dbname=readeef password=readeef sslmode=disable"
 
 #[ui]
 #    path = "/path/to/a/different/ui"
