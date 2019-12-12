@@ -9,10 +9,6 @@ case "$1" in
   	exec readeef server $@ $ARGS
 	;;
 
-  'client')
-  	exec readeef-client $@ $ARGS
-	;;
-
   'dev')
     apk add --no-cache nano bash
     exec /bin/bash $@ $ARGS
