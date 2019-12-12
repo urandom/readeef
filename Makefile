@@ -1,4 +1,4 @@
-.PHONY: all
+include .env
 
 .DEFAULT_GOAL := all
 
@@ -42,15 +42,8 @@ build: generate
 	go build -ldflags="-s -w" ./cmd/readeef
 
 ## all			:	Build all files (local).
+.PHONY: all
 all: build
-
-include .env
-default: up
-
-## help			:	Print commands help.
-.PHONY: help
-help : Makefile
-	@sed -n 's/^##//p' $<
 
 ## docker-build		:	Build the production container.
 .PHONY: docker-build
@@ -79,7 +72,7 @@ docker-ps:
 
 ## docker-logs		:	View containers logs.
 ##				You can optinally pass an argument with the service name to limit logs
-##				logs readeef	: View `readeff` container logs.
+##				logs readeef	: View `readeef` container logs.
 ##				logs readeef postgres	: View `readeef` and `postgres` containers logs.
 .PHONY: docker-logs
 docker-logs:
@@ -116,6 +109,11 @@ compose-stop:
 compose-prune:
 	@echo "Removing containers for $(PROJECT_NAME)..."
 	@docker-compose down -v $(filter-out $@,$(MAKECMDGOALS))
+
+## help			:	Print commands help.
+.PHONY: help
+help : Makefile
+	@sed -n 's/^##//p' $<
 
 # https://stackoverflow.com/a/6273809/1826109
 %:
