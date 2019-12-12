@@ -52,14 +52,24 @@ default: up
 help : Makefile
 	@sed -n 's/^##//p' $<
 
-## docker-build		:	Build the dev container.
+## docker-build		:	Build the production container.
 .PHONY: docker-build
 docker-build:
 	@docker build -t urandom/readeef:alpine3.10-go1.13 .
 
-## docker-run		:	Run the dev container.
+## docker-build-dev	:	Build the dev container.
+.PHONY: docker-build-dev
+docker-build-dev:
+	@docker build -t urandom/readeef:alpine3.10-go1.13 -f Dockerfile.dev .
+
+## docker-run		:	Run the production container.
 .PHONY: docker-run
 docker-run:
+	@docker run -ti -p 8080:8080 urandom/readeef:alpine3.10-go1.13
+
+## docker-run-dev		:	Run the dev container.
+.PHONY: docker-run-dev
+docker-run-dev:
 	@docker run -ti -p 8080:8080 urandom/readeef:alpine3.10-go1.13
 
 ## docker-ps		:	List running containers.
