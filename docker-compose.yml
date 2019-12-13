@@ -21,17 +21,17 @@ services:
     command: ["/opt/readeef/bin/readeef", "-config=/opt/readeef/config/readeef.toml", "server"]
     #restart: unless-stopped
 
-  rfng:
-    image: urandom/rf-ng:alpine3.10-go1.13
-    container_name: rfng
-    build:
-      context: ./rf-ng
-      dockerfile: Dockerfile
-    ports:
-    - ${READEEF_NG_PORT}:4200    
-    volumes:
-    - rfng_build:/opt/rf-ng/build
-    #restart: unless-stopped
+  #rfng:
+  #  image: urandom/rf-ng:alpine3.10-go1.13
+  #  container_name: rfng
+  #  build:
+  #    context: ./rf-ng
+  #    dockerfile: Dockerfile
+  #  ports:
+  #  - ${READEEF_NG_PORT}:4200    
+  #  volumes:
+  #  - rfng_build:/opt/rf-ng/build
+  #  restart: unless-stopped
 
   db:
     image: postgres:${POSTGRES_VERSION}-alpine

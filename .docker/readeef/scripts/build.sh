@@ -15,3 +15,4 @@ npm install
 cd ..
 
 make all
+ls -l ./rf-ng/ui
