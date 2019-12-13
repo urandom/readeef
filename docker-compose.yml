@@ -3,7 +3,7 @@ version: '3.7'
 services:
 
   readeef:
-    image: readeef:alpine3.10-go1.13
+    image: urandom/readeef:alpine3.10-go1.13
     container_name: readeef
     build:
       context: .
@@ -22,7 +22,7 @@ services:
     #restart: unless-stopped
 
   rfng:
-    image: rf-ng:alpine3.10-go1.13
+    image: urandom/rf-ng:alpine3.10-go1.13
     container_name: rfng
     build:
       context: ./rf-ng
