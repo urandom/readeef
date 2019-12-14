@@ -1,22 +1,22 @@
 module github.com/urandom/readeef
 
 require (
-	github.com/BurntSushi/toml v0.3.0
+	github.com/BurntSushi/toml v0.3.1
 	github.com/ChimeraCoder/anaconda v0.0.0-20180305151339-a1f48994eee0
 	github.com/ChimeraCoder/tokenbucket v0.0.0-20131201223612-c5a927568de7 // indirect
 	github.com/PuerkitoBio/goquery v1.4.1
 	github.com/RoaringBitmap/roaring v0.4.11 // indirect
 	github.com/Sirupsen/logrus v1.0.5
-	github.com/advancedlogic/GoOse v0.0.0-20180605210919-94cde938491a
+	github.com/advancedlogic/GoOse v0.0.0-20191112112754-e742535969c1
 	github.com/alexedwards/scs v1.3.0
-	github.com/andybalholm/cascadia v1.0.0 // indirect
-	github.com/araddon/dateparse v0.0.0-20180630172013-89c8cfc1bf06 // indirect
 	github.com/azr/backoff v0.0.0-20160115115103-53511d3c7330 // indirect
 	github.com/blevesearch/bleve v0.0.0-20180627232020-9bad601c3a5a
 	github.com/blevesearch/blevex v0.0.0-20180227211930-4b158bb555a3 // indirect
 	github.com/blevesearch/go-porterstemmer v1.0.1 // indirect
 	github.com/blevesearch/segment v0.0.0-20160915185041-762005e7a34f // indirect
 	github.com/boltdb/bolt v1.3.1
+	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/cenkalti/backoff/v3 v3.1.1
 	github.com/couchbase/vellum v0.0.0-20180627231655-77a271452dad // indirect
 	github.com/cznic/b v0.0.0-20181122101859-a26611c4d92d // indirect
 	github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 // indirect
@@ -30,7 +30,6 @@ require (
 	github.com/facebookgo/subset v0.0.0-20150612182917-8dac2c3c4870 // indirect
 	github.com/fortytw2/leaktest v1.3.0 // indirect
 	github.com/garyburd/go-oauth v0.0.0-20180319155456-bca2e7f09a17 // indirect
-	github.com/gigawattio/window v0.0.0-20180317192513-0f5467e35573 // indirect
 	github.com/glycerine/go-unsnap-stream v0.0.0-20180323001048-9f0cb55181dd // indirect
 	github.com/glycerine/goconvey v0.0.0-20190410193231-58a59202ab31 // indirect
 	github.com/go-chi/chi v3.3.2+incompatible
@@ -38,33 +37,32 @@ require (
 	github.com/go-test/deep v1.0.1
 	github.com/golang/mock v0.0.0-20171121184817-747e9e6390e1
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
-	github.com/jaytaylor/html2text v0.0.0-20180606194806-57d518f124b0 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/jmoiron/sqlx v0.0.0-20180614180643-0dae4fefe7c0
+	github.com/kisielk/gotool v1.0.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lib/pq v0.0.0-20180523175426-90697d60dd84
 	github.com/mailru/easyjson v0.0.0-20180606163543-3fdea8d05856 // indirect
-	github.com/mattn/go-runewidth v0.0.2 // indirect
 	github.com/mattn/go-sqlite3 v1.9.0
-	github.com/mitchellh/mapstructure v0.0.0-20180511142126-bb74f1db0675 // indirect
 	github.com/mschoch/smat v0.0.0-20160514031455-90eadee771ae // indirect
+	github.com/neelance/astrewrite v0.0.0-20160511093645-99348263ae86 // indirect
+	github.com/neelance/sourcemap v0.0.0-20151028013722-8c68805598ab // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/nicksnyder/go-i18n v1.10.0
-	github.com/olekukonko/tablewriter v0.0.0-20180506121414-d4647c9c7a84 // indirect
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml v1.2.0
 	github.com/philhofer/fwd v1.0.0 // indirect
-	github.com/pkg/errors v0.8.0
+	github.com/pkg/errors v0.8.1
 	github.com/remyoudompheng/bigfft v0.0.0-20190512091148-babf20351dd7 // indirect
 	github.com/rs/cors v1.4.0
-	github.com/simplereach/timeutils v1.2.0 // indirect
+	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190710185942-9d28bd7c0945 // indirect
-	github.com/ssor/bom v0.0.0-20170718123548-6386211fdfcf // indirect
+	github.com/spf13/cobra v0.0.5 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/steveyen/gtreap v0.0.0-20150807155958-0abe01ef9be2 // indirect
-	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/syndtr/goleveldb v0.0.0-20180621010148-0d5a0ceb10cf // indirect
 	github.com/tecbot/gorocksdb v0.0.0-20190705090504-162552197222 // indirect
 	github.com/tinylib/msgp v1.0.2 // indirect
@@ -76,7 +74,7 @@ require (
 	github.com/willf/bitset v1.1.3 // indirect
 	github.com/zserge/webview v0.0.0-20180817065719-24af6cb9b33b
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
-	golang.org/x/net v0.0.0-20190311183353-d8887717615a
+	golang.org/x/net v0.0.0-20190628185345-da137c7871d7
 	golang.org/x/oauth2 v0.0.0-20180620175406-ef147856a6dd // indirect
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58 // indirect
 	golang.org/x/text v0.3.0
@@ -85,7 +83,6 @@ require (
 	gopkg.in/fatih/set.v0 v0.1.0 // indirect
 	gopkg.in/gcfg.v1 v1.2.3
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
-	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0-20170531160350-a96e63847dc3
 	gopkg.in/olivere/elastic.v5 v5.0.69
 	gopkg.in/warnings.v0 v0.1.2 // indirect

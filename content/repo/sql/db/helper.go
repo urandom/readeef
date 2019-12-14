@@ -10,6 +10,7 @@ type Helper interface {
 	Upgrade(db *DB, old, new int) error
 
 	WhereMultipleORs(string, string, int, bool) string
+	RetryableErr(err error) bool
 }
 
 type ArticleStmts struct {

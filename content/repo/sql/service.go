@@ -28,6 +28,7 @@ func NewService(driver, source string, log log.Log) (Service, error) {
 			return Service{}, errors.Wrap(err, "connecting to database")
 		}
 
+		log.Infof("Initializing sql repo with driver %s", driver)
 		return Service{
 			user:         userRepo{db, log},
 			tag:          tagRepo{db, log},

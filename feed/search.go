@@ -57,15 +57,14 @@ func searchByURL(u *url.URL, log log.Log) (map[string]parser.Feed, error) {
 
 func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 	log.Infof("Searching for feeds via %s", query)
-	doc, err := goquery.NewDocument("https://www.google.com/search?q=" + url.QueryEscape(query))
+	doc, err := goquery.NewDocument("https://duckduckgo.com/html/?q=" + url.QueryEscape(query))
 	if err != nil {
 		return nil, errors.Wrapf(err, "querying google with %s", query)
 	}
 
-	links := doc.Find("div.g .r a").Map(func(i int, s *goquery.Selection) string {
+	links := doc.Find("a.result__a").Map(func(i int, s *goquery.Selection) string {
 		href := s.AttrOr("data-href", s.AttrOr("href", ""))
-
-		if !strings.HasPrefix(href, "/url") {
+		if href[0] != '/' {
 			return href
 		}
 
@@ -74,7 +73,7 @@ func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 			return ""
 		}
 
-		return u.Query().Get("q")
+		return u.Query().Get("uddg")
 	})
 
 	log.Debugf("Found links %#v for query %s", links, query)

@@ -86,6 +86,10 @@ func (h Helper) WhereMultipleORs(column, prefix string, length int, equal bool) 
 	return fmt.Sprintf("%s %s (%s)", column, sign, strings.Join(orSlice, ", "))
 }
 
+func (h Helper) RetryableErr(err error) bool {
+	return false
+}
+
 var (
 	sqlStmts = db.SqlStmts{}
 )
