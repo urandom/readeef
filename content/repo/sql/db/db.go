@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/cenkalti/backoff/v3"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"github.com/urandom/readeef/log"
@@ -22,7 +23,8 @@ type DB struct {
 
 	log log.Log
 
-	mu sync.RWMutex
+	mu     sync.RWMutex
+	helper Helper
 }
 
 var (
@@ -53,13 +55,7 @@ func (db *DB) Open(driver, connect string) (err error) {
 }
 
 func (db *DB) CreateWithID(tx *sqlx.Tx, sql string, arg interface{}) (int64, error) {
-	driver := db.DriverName()
-
-	if h, ok := helpers[driver]; ok {
-		return h.CreateWithID(tx, sql, arg)
-	} else {
-		panic("No helper registered for " + driver)
-	}
+	return db.helper.CreateWithID(tx, sql, arg)
 }
 
 func (db *DB) WhereMultipleORs(column, prefix string, length int, equal bool) string {
@@ -76,12 +72,7 @@ func (db *DB) WhereMultipleORs(column, prefix string, length int, equal bool) st
 		return "(" + strings.Join(orSlice, " OR ") + ")"
 	}
 
-	driver := db.DriverName()
-	if h, ok := helpers[driver]; ok {
-		return h.WhereMultipleORs(column, prefix, length, equal)
-	} else {
-		panic("No helper registered for " + driver)
-	}
+	return db.helper.WhereMultipleORs(column, prefix, length, equal)
 }
 
 func (db *DB) WithNamedStmt(query string, tx *sqlx.Tx, cb func(*sqlx.NamedStmt) error) error {
@@ -94,7 +85,17 @@ func (db *DB) WithNamedStmt(query string, tx *sqlx.Tx, cb func(*sqlx.NamedStmt) 
 		stmt = tx.NamedStmt(stmt)
 	}
 
-	return cb(stmt)
+	return backoff.Retry(func() error {
+		err := cb(stmt)
+		if err == nil {
+			return nil
+		}
+		if !db.helper.RetryableErr(err) {
+			return backoff.Permanent(err)
+		}
+		db.log.Debugln("Retrying query", query)
+		return err
+	}, backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 5))
 }
 
 func (db *DB) WithStmt(query string, tx *sqlx.Tx, cb func(*sqlx.Stmt) error) error {
@@ -107,7 +108,17 @@ func (db *DB) WithStmt(query string, tx *sqlx.Tx, cb func(*sqlx.Stmt) error) err
 		stmt = tx.Stmtx(stmt)
 	}
 
-	return cb(stmt)
+	return backoff.Retry(func() error {
+		err := cb(stmt)
+		if err == nil {
+			return nil
+		}
+		if !db.helper.RetryableErr(err) {
+			return backoff.Permanent(err)
+		}
+		db.log.Debugln("Retrying query", query)
+		return err
+	}, backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 5))
 }
 
 func (db *DB) WithTx(cb func(*sqlx.Tx) error) error {
@@ -134,6 +145,7 @@ func (db *DB) init() error {
 	if helper == nil {
 		return errors.Errorf("no helper provided for driver '%s'", db.DriverName())
 	}
+	db.helper = helper
 
 	for _, sql := range helper.InitSQL() {
 		_, err := db.Exec(sql)

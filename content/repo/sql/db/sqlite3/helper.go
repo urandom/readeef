@@ -6,8 +6,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mattn/go-sqlite3"
 	"github.com/urandom/readeef/content/repo/sql/db"
 	"github.com/urandom/readeef/content/repo/sql/db/base"
+
+	perrors "github.com/pkg/errors"
 )
 
 type Helper struct {
@@ -37,6 +40,18 @@ func (h Helper) Upgrade(db *db.DB, old, new int) error {
 	}
 
 	return nil
+}
+
+func (h Helper) RetryableErr(err error) bool {
+	var serr sqlite3.Error
+
+	if errors.As(perrors.Cause(err), &serr) {
+		switch serr.Code {
+		case sqlite3.ErrLocked:
+			return true
+		}
+	}
+	return false
 }
 
 func upgrade1to2(db *db.DB) error {
