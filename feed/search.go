@@ -93,7 +93,7 @@ func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 	go func() {
 		var mainErr error
 
-		for _, link := range links {
+		for _, link := range links[:10] {
 			u, err := url.Parse(link)
 			if err != nil {
 				mainErr = errors.Wrapf(err, "parsing link %s", link)
@@ -114,6 +114,7 @@ func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 		go func() {
 			for u := range input {
 				res, err := downloadLinkContent(u, log)
+				log.Debugf("Ending download for %s", u)
 				output <- out{res, err}
 			}
 			wg.Done()
