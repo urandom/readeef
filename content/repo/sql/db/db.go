@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -20,6 +21,8 @@ type DB struct {
 	namedStmtCache map[string]*sqlx.NamedStmt
 
 	log log.Log
+
+	mu sync.RWMutex
 }
 
 var (
@@ -173,9 +176,15 @@ func (db *DB) init() error {
 }
 
 func (db *DB) getNamedStmt(query string) (stmt *sqlx.NamedStmt, err error) {
-	if stmt = db.namedStmtCache[query]; stmt == nil {
+	db.mu.RLock()
+	stmt = db.namedStmtCache[query]
+	db.mu.RUnlock()
+
+	if stmt == nil {
 		if stmt, err = db.PrepareNamed(query); err == nil {
+			db.mu.Lock()
 			db.namedStmtCache[query] = stmt
+			db.mu.Unlock()
 		}
 	}
 
