@@ -16,43 +16,37 @@ services:
     links:
     - db
     - elasticsearch
+    networks:
+    - elastic
+    - web
     volumes:
     - .docker/readeef/config/readeef.toml:/opt/readeef/config/readeef.toml
     command: ["/opt/readeef/bin/readeef", "-config=/opt/readeef/config/readeef.toml", "server"]
-    #restart: unless-stopped
-
-  #rfng:
-  #  image: urandom/rf-ng:alpine3.10-go1.13
-  #  container_name: rfng
-  #  build:
-  #    context: ./rf-ng
-  #    dockerfile: Dockerfile
-  #  ports:
-  #  - ${READEEF_NG_PORT}:4200    
-  #  volumes:
-  #  - rfng_build:/opt/rf-ng/build
-  #  restart: unless-stopped
+    restart: unless-stopped
 
   db:
     image: postgres:${POSTGRES_VERSION}-alpine
-    container_name: readeefdb
+    container_name: readeef-db
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
     - "${POSTGRES_PORT}:5432"
+    networks:
+    - web
     volumes:
-    - postgres_data:/var/lib/postgresql/data/
-    #restart: unless-stopped
+    - pgdata:/var/lib/postgresql/data/
+    restart: unless-stopped
 
   elasticsearch:
     build:
       context: .docker/elasticsearch/${ELASTIC_VERSION}/
       dockerfile: Dockerfile
       args:
-      - CEREBRO_VERSION=${CEREBRO_VERSION:-"0.7.2"}
-    container_name: elasticsearch
+      - CEREBRO_VERSION=${CEREBRO_VERSION:-"0.8.5"}
+    container_name: readeef-es
+    # hostname: elasticsearch
     #environment:
     #  - ES_JAVA_OPTS=-Xms2g -Xmx2g
     # mem_limit: 4g
@@ -71,21 +65,29 @@ services:
     #  - IPC_LOCK
     volumes:
     - esdata:/usr/share/elasticsearch/data
+    networks:
+    - elastic
     entrypoint: /usr/share/elasticsearch/start
-    #restart: unless-stopped
+    restart: unless-stopped
 
   kibana:
     image: docker.elastic.co/kibana/kibana:${KIBANA_VERSION}
-    container_name: kibana
+    container_name: readeef-kibana
     ports:
     - ${KIBANA_PORT}:5601
-    #restart: unless-stopped
+    networks:
+    - elastic
+    restart: unless-stopped
 
+networks:
+  web:
+    external: false  
+    # driver: bridge
+  elastic:
+    external: false
 
 volumes:
-  postgres_data:
-    driver: local
-  rfng_build:
+  pgdata:
     driver: local
   esdata:
     driver: local

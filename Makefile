@@ -5,6 +5,12 @@ include .env
 ## build-ui		:	[DESCRIPTION]
 build-ui: build-ui-en build-ui-bg
 
+## build-ui-deps		:	[DESCRIPTION]
+build-ui-deps:
+	go get -u github.com/urandom/embed/cmd/embed
+	npm install --unsafe-perm -g node-gyp webpack-dev-server rimraf webpack typescript @angular/cli @angular/compiler-cli @angular/compiler @angular/core rxjs
+	cd rf-ng; npm install
+
 ## build-ui-en		:	[DESCRIPTION]
 build-ui-en:
 	cd rf-ng; ng build --output-path ui/en --base-href /en/ --prod

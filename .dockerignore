@@ -11,3 +11,8 @@ vendor/*
 vendor/**
 Makfile
 Dockerfile.dev
+/node_modules/
+node_modules
+node_modules/
+node_modules/*
+node_modules/**
