@@ -1,0 +1,93 @@
+---
+version: '3.7'
+services:
+
+  readeef:
+    image: urandom/readeef:alpine3.10-go1.13
+    container_name: readeef
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+    - ${READEEF_PORT}:8080
+    depends_on:
+    - db
+    - elasticsearch
+    links:
+    - db
+    - elasticsearch
+    networks:
+    - elastic
+    - web
+    volumes:
+    - .docker/readeef/config/readeef.toml:/opt/readeef/config/readeef.toml
+    command: ["/opt/readeef/bin/readeef", "-config=/opt/readeef/config/readeef.toml", "server"]
+    restart: unless-stopped
+
+  db:
+    image: postgres:${POSTGRES_VERSION}-alpine
+    container_name: readeef-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+    - "${POSTGRES_PORT}:5432"
+    networks:
+    - web
+    volumes:
+    - pgdata:/var/lib/postgresql/data/
+    restart: unless-stopped
+
+  elasticsearch:
+    build:
+      context: .docker/elasticsearch/${ELASTIC_VERSION}/
+      dockerfile: Dockerfile
+      args:
+      - CEREBRO_VERSION=${CEREBRO_VERSION:-"0.8.5"}
+    container_name: readeef-es
+    # hostname: elasticsearch
+    #environment:
+    #  - ES_JAVA_OPTS=-Xms2g -Xmx2g
+    # mem_limit: 4g
+    # memswap_limit: 4g
+    ports:
+    - "${ELASTIC_PORT}:9200" # Elasticsearch
+    - "${CEREBRO_PORT}:9000" # Cerebro
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      #nofile:
+      #  soft: 65536
+      #  hard: 65536
+    #cap_add:
+    #  - IPC_LOCK
+    volumes:
+    - esdata:/usr/share/elasticsearch/data
+    networks:
+    - elastic
+    entrypoint: /usr/share/elasticsearch/start
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${KIBANA_VERSION}
+    container_name: readeef-kibana
+    ports:
+    - ${KIBANA_PORT}:5601
+    networks:
+    - elastic
+    restart: unless-stopped
+
+networks:
+  web:
+    external: false  
+    # driver: bridge
+  elastic:
+    external: false
+
+volumes:
+  pgdata:
+    driver: local
+  esdata:
+    driver: local

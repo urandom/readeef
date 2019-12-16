@@ -126,7 +126,7 @@ func timeout(d time.Duration) func(http.Handler) http.Handler {
 
 func tokenRoutes(repo repo.User, storage token.Storage, secret []byte, log log.Log, gzip, access mw) routes {
 	return routes{path: "/token", route: func(r chi.Router) {
-		r.Use(timeout(time.Second), gzip, access)
+		r.Use(timeout(5*time.Second), gzip, access)
 		r.Method(method.POST, "/", tokenCreate(repo, secret, log))
 		r.Method(method.DELETE, "/", tokenDelete(storage, secret, log))
 	}}

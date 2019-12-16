@@ -1,0 +1,63 @@
+[server]
+	port = 8080
+
+[server.auto-cert]
+	storage-path = "./storage/certs"
+
+[log]
+	level = "info"     # error, info, debug
+	file = "-"         # stderr, or a filename
+	formatter = "text" # text, json
+	access-file = ""   # stdout or a filename
+
+[api]
+	emulators = []     # ["tt-rss", "fever"]
+
+[api.limits]
+	articles-per-query = 200
+
+[auth]
+	session-storage-path = "./storage/session.db"
+	token-storage-path = "./storage/token.db"
+
+[db]
+    driver = "postgres"
+    connect = "host=db user=readeef dbname=readeef password=readeef sslmode=disable"
+
+[feed-manager]
+	update-interval = "30m"
+	monitors = ["index", "thumbnailer"]
+
+[timeout]
+	connect = "1s"
+	read-write = "2s"
+
+[hubbub]
+	from = "readeef"
+
+[popularity]
+	delay = "5s"
+	# providers = ["Reddit", "Twitter"]
+
+[feed-parser]
+	processors = ["cleanup", "top-image-marker", "absolutize-urls"]
+	proxy-http-url-template = "/proxy?url={{ . }}"
+
+[content]
+	thumbnail-generator = "description"
+
+[content.extract]
+	generator = "goose" # readability
+
+[content.search]
+	provider = "bleve"
+	batch-size = 100
+	bleve-path = "./storage/search.bleve"
+	elastic-url = "http://elasticsearch:9200"
+
+[content.article]
+	processors = ["insert-thumbnail-target"]
+	proxy-http-url-template = "/proxy?url={{ . }}"
+
+#[ui]
+#	path = "/opt/readeef/ui"

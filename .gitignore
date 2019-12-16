@@ -1,1 +1,15 @@
 static/dist
+.bck
+vendor
+vendor/
+vendor/*
+vendor/**
+node_modules
+node_modules/
+node_modules/*
+node_modules/**
+storage
+storage/
+storage/*
+storage/**
+# fs_files.go
