@@ -5,9 +5,7 @@ import { IPageInfo } from 'ngx-virtual-scroller';
 import { Observable, Subscription ,  BehaviorSubject, interval } from "rxjs";
 import * as moment from 'moment';
 import { scan, map, switchMap, startWith } from "rxjs/operators";
-
-
-
+import { NgxMasonryModule } from 'ngx-masonry';
 
 
 class ArticleCounter {
