@@ -15,7 +15,7 @@ import { combineLatest } from "rxjs/operators";
 export class ManagementSettingsComponent implements OnInit {
     feeds = new Array<[Feed, string[]]>()
 
-    @ViewChild('downloader', {read: ElementRef, static: false})
+    @ViewChild('downloader', { read: ElementRef })
     private downloader : ElementRef;
 
     constructor(

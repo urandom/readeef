@@ -41,7 +41,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
     @ViewChild('carousel', {static: true})
     private carousel: NgbCarousel;
-    @ViewChild('carousel', {read: ElementRef, static: false})
+    @ViewChild('carousel', { read: ElementRef })
     private carouselElement: ElementRef;
 
     private active: Article;

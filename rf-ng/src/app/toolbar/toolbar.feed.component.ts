@@ -33,7 +33,7 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
     private articleID : Observable<number>
     private subscriptions = new Array<Subscription>()
 
-    @ViewChild('search', {static: false})
+    @ViewChild('search')
     private searchInput;
 
     get searchEntry() : boolean {

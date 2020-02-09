@@ -21,7 +21,7 @@ export class DiscoverySettingsComponent {
 
     queryFormControl = new FormControl('');
 
-    @ViewChild('opmlInput', { static: false })
+    @ViewChild('opmlInput')
     private opml;
 
     @ViewChildren(MatCheckbox)
