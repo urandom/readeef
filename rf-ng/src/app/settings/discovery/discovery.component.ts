@@ -2,6 +2,7 @@ import { Component, QueryList, ViewChild, ViewChildren } from "@angular/core";
 import { FormControl } from '@angular/forms';
 import { MatCheckbox } from "@angular/material";
 import { Observable, Observer } from "rxjs";
+import { flatMap } from 'rxjs/operators';
 import { AddFeedResponse, Feed, FeedService, OPMLimport } from "../../services/feed";
 
 
@@ -20,7 +21,7 @@ export class DiscoverySettingsComponent {
 
     queryFormControl = new FormControl('');
 
-    @ViewChild('opmlInput', {static: false})
+    @ViewChild('opmlInput', { static: false })
     private opml;
 
     @ViewChildren(MatCheckbox)
@@ -62,7 +63,9 @@ export class DiscoverySettingsComponent {
                 }
 
                 fileReader.readAsText(file);
-            }).flatMap(data => this.feedService.importOPML(data));
+            }).pipe(
+                flatMap(data => this.feedService.importOPML(data as OPMLimport))
+            );
         } else {
             feedObservable = this.feedService.discover(this.query);
         }
