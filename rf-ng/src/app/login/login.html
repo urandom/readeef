@@ -1,13 +1,14 @@
 <div class="content">
-    <form class="login-form" (ngSubmit)="login()" #f="ngForm" novalidate> 
+    <ng-form class="login-form" (ngSubmit)="login()" #f="ngForm" novalidate>
         <mat-form-field>
             <input matInput [(ngModel)]="user" name="user" i18n-placeholder placeholder="User name" required>
         </mat-form-field>
         <mat-form-field>
-            <input matInput type="password" [(ngModel)]="password" name="password" i18n-placeholder placeholder="Password" required>
+            <input matInput type="password" [(ngModel)]="password" name="password" i18n-placeholder
+                placeholder="Password" required>
         </mat-form-field>
         <br>
-        <button mat-raised-button type="submit" [disabled]="loading || !f.form.valid" i18n>Submit</button>
+        <button mat-raised-button type="submit" [disabled]="loading || !f.valid" i18n>Submit</button>
         <ngb-alert [dismissible]="false" [type]="'danger'" *ngIf="invalidLogin">Invalid username or password</ngb-alert>
-    </form>
+    </ng-form>
 </div>
