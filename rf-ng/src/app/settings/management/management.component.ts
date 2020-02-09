@@ -1,5 +1,5 @@
 import { Component, OnInit, Inject, ViewChild, ElementRef } from "@angular/core" ;
-import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { FeedService, Feed } from "../../services/feed";
 import { TagService } from "../../services/tag";
 import { FaviconService } from "../../services/favicon";

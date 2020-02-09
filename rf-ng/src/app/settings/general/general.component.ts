@@ -1,6 +1,6 @@
 import { Component, OnInit } from "@angular/core" ;
 import { FormControl, Validators } from '@angular/forms';
-import { MatDialog, MatDialogRef } from "@angular/material";
+import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { UserService } from "../../services/user";
 import { HttpErrorResponse } from "@angular/common/http";
 

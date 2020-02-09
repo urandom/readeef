@@ -1,7 +1,7 @@
 import { Component, OnInit } from "@angular/core" ;
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { UserService, User } from "../../services/user";
-import { MatDialog, MatDialogRef } from "@angular/material";
+import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { Observable, Subject } from "rxjs";
 import { startWith, switchMap, combineLatest } from "rxjs/operators";
 

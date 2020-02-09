@@ -1,4 +1,4 @@
-import { BrowserModule } from '@angular/platform-browser';
+import { BrowserModule, HAMMER_GESTURE_CONFIG, HammerModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { HttpClientModule } from '@angular/common/http';
@@ -8,7 +8,19 @@ import { AppRouting } from './app.routing';
 
 import { LoginComponent } from './login/login.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { MatInputModule, MatButtonModule, MatSidenavModule, MatIconModule, MatToolbarModule, MatDialogModule, MatSelectModule, MatCheckboxModule, MatSlideToggleModule, MatCardModule, MatMenuModule, MatProgressBarModule, MatSnackBarModule } from '@angular/material';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatToolbarModule } from '@angular/material/toolbar';
 import { MainComponent } from './main/main.component';
 import { CommonModule } from '@angular/common';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
@@ -28,6 +40,7 @@ import { ShareServicesSettingsComponent } from './settings/share-services/share-
 import { ListItemComponent } from './article-list/list-item.component';
 import { VirtualScrollerModule } from 'ngx-virtual-scroller';
 import { SideBarFeedComponent } from './sidebar/sidebar.feed.component';
+import { GestureConfig } from "../gesture-config";
 
 @NgModule({
   declarations: [
@@ -83,7 +96,9 @@ import { SideBarFeedComponent } from './sidebar/sidebar.feed.component';
     MatToolbarModule,
     NgbModule,
     VirtualScrollerModule,
+    HammerModule,
   ],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
+  providers: [{ provide: HAMMER_GESTURE_CONFIG, useClass: GestureConfig }]
 })
 export class AppModule { }

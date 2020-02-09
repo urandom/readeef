@@ -1,6 +1,6 @@
 import { Component, QueryList, ViewChild, ViewChildren } from "@angular/core";
 import { FormControl } from '@angular/forms';
-import { MatCheckbox } from "@angular/material";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { Observable, Observer } from "rxjs";
 import { flatMap } from 'rxjs/operators';
 import { AddFeedResponse, Feed, FeedService, OPMLimport } from "../../services/feed";

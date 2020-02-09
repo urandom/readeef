@@ -1,6 +1,6 @@
 import { Component, OnInit, Inject, ViewChild, ElementRef } from "@angular/core";
 import { FormBuilder, FormGroup, Validators, ValidationErrors } from '@angular/forms';
-import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material';
+import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { UserService, User } from "../../services/user";
 import { FeedService, Feed } from "../../services/feed";
 import { TagService, Tag } from "../../services/tag";

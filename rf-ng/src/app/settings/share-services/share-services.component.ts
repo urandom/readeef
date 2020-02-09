@@ -1,5 +1,5 @@
 import { Component, OnInit } from "@angular/core" ;
-import { MatSlideToggle } from "@angular/material";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { SharingService, ShareService } from "../../services/sharing"
 
 @Component({
