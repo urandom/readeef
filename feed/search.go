@@ -1,6 +1,7 @@
 package feed
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -156,6 +157,9 @@ func downloadLinkContent(u *url.URL, log log.Log) (map[string]parser.Feed, error
 	resp, err := http.Get(u.String())
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting link %s", u)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.WithStack(fmt.Errorf("getting link %s, invalid status code: %d (%s)", u, resp.StatusCode, resp.Status))
 	}
 	defer resp.Body.Close()
 
