@@ -1,7 +1,8 @@
 <h5 class="title" i18n>Discover/import feeds</h5>
 <div *ngIf="phase == 'query'">
     <p i18n>
-        You can enter the url of a feed directly, as well as a url of a site that may contain one or more feeds, or a search query.
+        You can enter the url of a feed directly, as well as a url of a site that may contain one or more feeds, or a
+        search query.
     </p>
     <mat-form-field>
         <input matInput [(ngModel)]="query" i18n-placeholder placeholder="URL/query" (keydown.Enter)="search()">
@@ -39,6 +40,7 @@
     </p>
 
     <button mat-raised-button (click)="add()" [disabled]="loading" *ngIf="feeds.length > 0" i18n>Add</button>
+    <button mat-raised-button (click)="phase = 'query'" i18n *ngIf="feeds.length == 0">Discover more feeds</button>
 </div>
 <div *ngIf="phase == 'add-result'">
     <p *ngIf="!addFeedResult.success" i18n>
@@ -53,5 +55,5 @@
         </p>
     </div>
 
-    <button mat-raised-button (click)="phase = 'query'"i18n>Discover more feeds</button>
+    <button mat-raised-button (click)="phase = 'query'" i18n>Discover more feeds</button>
 </div>
