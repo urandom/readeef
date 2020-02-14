@@ -1,7 +1,7 @@
-import { Component, OnInit } from "@angular/core";
-import { Router, ActivatedRoute } from "@angular/router";
-import { TokenService } from "../services/auth"
 import { HttpErrorResponse } from "@angular/common/http";
+import { Component, OnInit } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { TokenService } from "../services/auth";
 
 @Component({
     templateUrl: "./login.html",
