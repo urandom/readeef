@@ -54,8 +54,13 @@ func (db *DB) Open(driver, connect string) (err error) {
 	return err
 }
 
-func (db *DB) CreateWithID(tx *sqlx.Tx, sql string, arg interface{}) (int64, error) {
-	return db.helper.CreateWithID(tx, sql, arg)
+func (db *DB) CreateWithID(tx *sqlx.Tx, sql string, arg interface{}) (id int64, err error) {
+	err = backoff.Retry(func() error {
+		id, err = db.helper.CreateWithID(tx, sql, arg)
+		return err
+	}, backoff.WithMaxRetries(backoff.NewExponentialBackOff(), 5))
+
+	return id, err
 }
 
 func (db *DB) WhereMultipleORs(column, prefix string, length int, equal bool) string {

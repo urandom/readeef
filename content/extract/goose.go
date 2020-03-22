@@ -43,6 +43,9 @@ func (e goose) Generate(link string) (extract content.Extract, err error) {
 	g := goOse.New()
 	/* TODO: preserve links */
 	formatted, err := g.ExtractFromURL(link)
+	if err != nil {
+		return extract, errors.Wrapf(err, "extracting from url: %s", link)
+	}
 
 	content := formatted.CleanedText
 	e.buf.Reset()

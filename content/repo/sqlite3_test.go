@@ -13,7 +13,7 @@ import (
 
 func TestMain(m *testing.M) {
 	db := db.New(logger)
-	if err := db.Open("sqlite3", "file:/tmp/readeef-test.sqlite3?cache=shared"); err != nil {
+	if err := db.Open("sqlite3", "file:/tmp/readeef-test.sqlite3?cache=shared&_foreign_keys=1&_journal=wal"); err != nil {
 		// if err := db.Open("sqlite3", "file::memory:?cache=shared"); err != nil {
 		panic(err)
 	}
@@ -29,7 +29,7 @@ func TestMain(m *testing.M) {
 	db.Exec("DELETE FROM users_feeds_tags")
 
 	var err error
-	service, err = sql.NewService("sqlite3", "file:/tmp/readeef-test.sqlite3?cache=shared", logger)
+	service, err = sql.NewService("sqlite3", "file:/tmp/readeef-test.sqlite3?cache=shared&_foreign_keys=1&_journal=wal", logger)
 	if err != nil {
 		panic(err)
 	}

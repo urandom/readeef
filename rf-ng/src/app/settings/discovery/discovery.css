@@ -12,3 +12,8 @@ input[type="file"] {
 mat-progress-bar {
     margin-top: 1em;
 }
+
+.discovery-link {
+    display: block;
+    text-align: end;
+}

@@ -237,7 +237,7 @@ func feedsRoutes(service repo.Service, feedManager *readeef.FeedManager, log log
 		feedRepo := service.FeedRepo()
 		r.Use(gzip, access)
 		r.With(timeout(5*time.Second)).Get("/", listFeeds(feedRepo, log))
-		r.With(timeout(15*time.Second)).Post("/", addFeed(feedRepo, feedManager))
+		r.With(timeout(30*time.Second)).Post("/", addFeed(feedRepo, feedManager))
 
 		r.With(timeout(30*time.Second)).Get("/discover", discoverFeeds(feedRepo, feedManager, log))
 

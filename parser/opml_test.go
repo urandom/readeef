@@ -2,6 +2,7 @@ package parser
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -24,8 +25,13 @@ func TestParseOpml(t *testing.T) {
 				t.Errorf("ParseOpml() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			for fi := range got.Feeds {
+				sort.Slice(got.Feeds[fi].Tags, func(i, j int) bool {
+					return got.Feeds[fi].Tags[i] < got.Feeds[fi].Tags[j]
+				})
+			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ParseOpml() = %v, want %v", got, tt.want)
+				t.Errorf("ParseOpml() = %#v, want %#v", got, tt.want)
 			}
 		})
 	}

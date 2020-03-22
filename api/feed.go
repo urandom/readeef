@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
@@ -99,13 +100,40 @@ func addFeed(repo repo.Feed, feedManager feedManager) http.HandlerFunc {
 
 		links := r.Form["link"]
 
-		errs := make([]error, 0, len(links))
-		feeds := map[string]content.Feed{}
-		for _, link := range links {
-			feed, err := addFeedByURL(link, user, repo, feedManager)
-			if err == nil {
-				feeds[link] = feed
-			} else {
+		var wait sync.WaitGroup
+		wait.Add(len(links))
+
+		feedResp := make([]struct {
+			link string
+			feed content.Feed
+		}, len(links))
+		errsResp := make([]error, len(links))
+
+		for i, link := range links {
+			go func(i int, link string) {
+				defer wait.Done()
+				feed, err := addFeedByURL(link, user, repo, feedManager)
+				if err == nil {
+					feedResp[i].link = link
+					feedResp[i].feed = feed
+				} else {
+					errsResp[i] = err
+				}
+			}(i, link)
+		}
+
+		wait.Wait()
+
+		feeds := make(map[string]content.Feed, len(links))
+		for _, f := range feedResp {
+			if err := f.feed.Validate(); err == nil {
+				feeds[f.link] = f.feed
+			}
+		}
+
+		errs := make([]error, 0, len(errsResp))
+		for _, err := range errsResp {
+			if err != nil {
 				errs = append(errs, err)
 			}
 		}

@@ -30,8 +30,7 @@
     <div *ngFor="let feed of feeds">
         <mat-checkbox>{{ feed.title }}</mat-checkbox>
         <br>
-        <a href="{{ baseURL(feed.link) }}">{{ feed.description || feed.title }}</a>
-        <br>
+        <a href="{{ baseURL(feed.link) }}" class="discovery-link">{{ feed.description || feed.title }}</a>
         <hr>
     </div>
 

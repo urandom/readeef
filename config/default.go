@@ -35,7 +35,7 @@ var DefaultCfg = `
 	articles-per-query = 200
 [db]
 	driver = "sqlite3"
-	connect = "file:./storage/content.sqlite3?cache=shared&mode=rwc&_busy_timeout=50000000"
+	connect = "file:./storage/content.sqlite3?cache=shared&mode=rwc&_busy_timeout=50000000&_foreign_keys=1&_journal=wal"
 [auth]
 	session-storage-path = "./storage/session.db"
 	token-storage-path = "./storage/token.db"
