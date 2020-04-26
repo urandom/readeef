@@ -384,9 +384,9 @@ func initThumbnailGenerator(
 	log log.Log,
 ) (thumbnail.Generator, error) {
 
-	switch config.ThumbnailGenerator {
+	switch config.Thumbnail.Generator {
 	case "extract":
-		if t, err := thumbnail.FromExtract(service.ThumbnailRepo(), service.ExtractRepo(), extract, processors, log); err == nil {
+		if t, err := thumbnail.FromExtract(service.ThumbnailRepo(), service.ExtractRepo(), extract, processors, config.Thumbnail.Store, log); err == nil {
 			return t, nil
 		} else {
 			return nil, errors.WithMessage(err, "initializing Extract thumbnail generator")
@@ -394,7 +394,7 @@ func initThumbnailGenerator(
 	case "description":
 		fallthrough
 	default:
-		return thumbnail.FromDescription(service.ThumbnailRepo(), log), nil
+		return thumbnail.FromDescription(service.ThumbnailRepo(), config.Thumbnail.Store, log), nil
 	}
 }
 

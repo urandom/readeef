@@ -22,6 +22,7 @@ export class Article {
     read: boolean;
     favorite: boolean;
     thumbnail: string;
+    thumbnailLink: string;
     time: string;
     hits: Hits;
     format: ArticleFormat;

@@ -10,6 +10,7 @@
         </mat-card-title>
     </mat-card-header>
     <div mat-card-image [style.backgroundImage]="'url(' + item.thumbnail + ')'" *ngIf="item.thumbnail"></div>
+    <div mat-card-image [style.backgroundImage]="'url(' + item.thumbnailLink + ')'" *ngIf="item.thumbnailLink && !item.thumbnail"></div>
     <mat-card-content>
         <div [innerHTML]="item.stripped"></div>
     </mat-card-content>

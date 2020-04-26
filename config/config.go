@@ -37,7 +37,7 @@ func Read(path string) (Config, error) {
 		return Config{}, err
 	}
 
-	for _, c := range []converter{&c.API, &c.Log, &c.Timeout, &c.FeedManager, &c.Popularity} {
+	for _, c := range []converter{&c.API, &c.Log, &c.Timeout, &c.FeedManager, &c.Popularity, &c.Content} {
 		c.Convert()
 	}
 

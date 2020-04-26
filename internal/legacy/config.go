@@ -231,7 +231,7 @@ func (c Config) convertToV2() (config.Config, error) {
 	cfg.Content.Search.ElasticURL = c.Content.ElasticURL
 	cfg.Content.Extract.Generator = c.Content.Extractor
 	cfg.Content.Extract.ReadabilityKey = c.Content.ReadabilityKey
-	cfg.Content.ThumbnailGenerator = c.Content.Thumbnailer
+	cfg.Content.Thumbnail.Generator = c.Content.Thumbnailer
 
 	cfg.Auth.Secret = c.Auth.Secret
 

@@ -53,8 +53,6 @@ var DefaultCfg = `
 [feed-parser]
 	processors = ["cleanup", "top-image-marker", "absolutize-urls"]
 	proxy-http-url-template = "/proxy?url={{ . }}"
-[content]
-	thumbnail-generator = "description"
 [content.extract]
 	generator = "goose" # readability
 [content.search]
@@ -65,6 +63,8 @@ var DefaultCfg = `
 [content.article]
 	processors = ["insert-thumbnail-target"]
 	proxy-http-url-template = "/proxy?url={{ . }}"
+[content.thumbnail]
+	store = true
 [ui]
 	path = "./rf-ng/ui"
 `

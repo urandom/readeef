@@ -109,7 +109,10 @@ type FeedManager struct {
 }
 
 type Content struct {
-	ThumbnailGenerator string `toml:"thumbnail-generator"`
+	Thumbnail struct {
+		Generator string `toml:"generator"`
+		Store     bool   `toml:"store"`
+	} `toml:"thumbnail"`
 
 	Extract struct {
 		Generator      string `toml:"generator"`
@@ -127,6 +130,9 @@ type Content struct {
 		Processors           []string `toml:"processors"`
 		ProxyHTTPURLTemplate string   `toml:"proxy-http-url-template"`
 	} `toml:"article"`
+
+	// deprecated
+	ThumbnailGenerator string `toml:"thumbnail-generator"`
 }
 
 type UI struct {
@@ -181,5 +187,15 @@ func (c *FeedManager) Convert() {
 		c.Converted.UpdateInterval = d
 	} else {
 		c.Converted.UpdateInterval = 30 * time.Minute
+	}
+}
+
+func (c *Content) Convert() {
+	if c.Thumbnail.Generator == "" {
+		if c.ThumbnailGenerator != "" {
+			c.Thumbnail.Generator = c.ThumbnailGenerator
+		} else {
+			c.Thumbnail.Generator = "description"
+		}
 	}
 }

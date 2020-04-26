@@ -18,6 +18,7 @@ type ext struct {
 	extractRepo repo.Extract
 	generator   extract.Generator
 	processors  []processor.Article
+	store       bool
 	log         log.Log
 }
 
@@ -26,6 +27,7 @@ func FromExtract(
 	extractRepo repo.Extract,
 	g extract.Generator,
 	processors []processor.Article,
+	store bool,
 	log log.Log,
 ) (Generator, error) {
 	if g == nil {
@@ -34,7 +36,7 @@ func FromExtract(
 
 	processors = filterProcessors(processors)
 
-	return ext{repo: repo, extractRepo: extractRepo, generator: g, processors: processors, log: log}, nil
+	return ext{repo: repo, extractRepo: extractRepo, generator: g, processors: processors, store: store, log: log}, nil
 }
 
 func (t ext) Generate(a content.Article) error {
@@ -57,9 +59,15 @@ func (t ext) Generate(a content.Article) error {
 			t.log.Debugf("Extract for %s doesn't contain a top image", a)
 		} else {
 			t.log.Debugf("Generating thumbnail from top image %s of %s\n", extract.TopImage, a)
-			thumbnail.Thumbnail = generateThumbnailFromImageLink(extract.TopImage)
+			if t.store {
+				thumbnail.Thumbnail = generateThumbnailFromImageLink(extract.TopImage)
+			}
 			thumbnail.Link = extract.TopImage
 		}
+	}
+
+	if !t.store {
+		thumbnail.Thumbnail = ""
 	}
 
 	if err := t.repo.Update(thumbnail); err != nil {

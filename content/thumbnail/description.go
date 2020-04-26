@@ -11,12 +11,13 @@ import (
 )
 
 type description struct {
-	repo repo.Thumbnail
-	log  log.Log
+	repo  repo.Thumbnail
+	store bool
+	log   log.Log
 }
 
-func FromDescription(repo repo.Thumbnail, log log.Log) Generator {
-	return description{repo: repo, log: log}
+func FromDescription(repo repo.Thumbnail, store bool, log log.Log) Generator {
+	return description{repo: repo, store: store, log: log}
 }
 
 func (t description) Generate(a content.Article) error {
@@ -26,6 +27,10 @@ func (t description) Generate(a content.Article) error {
 
 	thumbnail.Thumbnail, thumbnail.Link =
 		generateThumbnailFromDescription(strings.NewReader(a.Description))
+
+	if !t.store {
+		thumbnail.Thumbnail = ""
+	}
 
 	if err := t.repo.Update(thumbnail); err != nil {
 		return errors.WithMessage(err, fmt.Sprintf("saving thumbnail of %s", a))
