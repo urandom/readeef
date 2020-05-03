@@ -13,6 +13,7 @@ import (
 type feed struct {
 	Id         content.FeedID `json:"id"`
 	Title      string         `json:"title"`
+	FaviconID  content.FeedID `json:"favicon_id"`
 	Url        string         `json:"url"`
 	SiteUrl    string         `json:"site_url"`
 	IsSpark    int            `json:"is_spark"`
@@ -38,7 +39,8 @@ func feeds(
 	now := time.Now().Unix()
 	for _, f := range feeds {
 		feed := feed{
-			Id: f.ID, Title: f.Title, Url: f.Link, SiteUrl: f.SiteLink, UpdateTime: now,
+			Id: f.ID, FaviconID: f.ID, Title: f.Title, Url: f.Link,
+			SiteUrl: f.SiteLink, UpdateTime: now,
 		}
 
 		feverFeeds = append(feverFeeds, feed)

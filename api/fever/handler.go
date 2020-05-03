@@ -38,7 +38,10 @@ func Handler(
 		var err error
 		var user content.User
 
-		err = r.ParseForm()
+		err = r.ParseMultipartForm(0)
+		if err == http.ErrNotMultipart {
+			err = r.ParseForm()
+		}
 
 		if err == nil {
 			user, err = readeefUser(service.UserRepo(), r.FormValue("api_key"), log)

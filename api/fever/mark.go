@@ -86,6 +86,8 @@ func markItem(
 	}
 
 	switch action := r.FormValue("as"); action {
+	case "unread":
+		return service.ArticleRepo().Read(false, user, opts...)
 	case "read":
 		return service.ArticleRepo().Read(true, user, opts...)
 	case "saved":
