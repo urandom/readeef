@@ -1,6 +1,6 @@
 import {
      Component, OnInit, OnDestroy,
-     ViewChild, ElementRef, OnChanges,
+     ViewChild, ElementRef,
      HostListener,
 } from '@angular/core';
 import { DomSanitizer } from "@angular/platform-browser";
@@ -8,7 +8,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NgbCarouselConfig, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
 import { Article, ArticleFormat, ArticleService } from '../services/article'
 import { FeaturesService } from '../services/features'
-import { Observable, Subscription, Subject, BehaviorSubject, pipe, of, interval, from } from 'rxjs';
+import { Observable, Subscription, Subject, BehaviorSubject, of, interval, from } from 'rxjs';
 import * as moment from 'moment';
 import { switchMap, startWith, map, filter, distinctUntilChanged, flatMap, catchError, ignoreElements, take } from 'rxjs/operators';
 
@@ -65,6 +65,8 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
     ngOnInit(): void {
         this.subscriptions.push(this.articleService.articleObservable().pipe(
+            filter(articles => articles !== true),
+            map(articles => (articles as Article[])),
             switchMap(articles =>
                 this.stateChange.pipe(
                     switchMap(stateChange =>
@@ -151,7 +153,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 }
 
                 return this.articleService.read(data.active.id, true).pipe(
-                    map(s => data),
+                    map(_ => data),
                     catchError(err => of(err)),
                     ignoreElements(),
                     startWith(data),
@@ -159,7 +161,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
             }),
             switchMap(data => interval(60000).pipe(
                 startWith(0),
-                map(v => {
+                map(_ => {
                     data.slides = data.slides.map(article => {
                         article.time = moment(article.date).fromNow();
                         return article;
@@ -211,7 +213,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
     favor(id: number, favor: boolean) {
         this.articleService.favor(id, favor).subscribe(
-            success => { },
+            _ => { },
             error => console.log(error)
         )
     }
@@ -241,6 +243,8 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     previousUnread() {
         let id = this.route.snapshot.params["articleID"];
         this.articleService.articleObservable().pipe(
+            filter(articles => articles !== true),
+            map(articles => (articles as Article[])),
             map(articles => {
                 let idx = articles.findIndex(article => article.id == id);
 
@@ -262,7 +266,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
             flatMap(id =>
                 from(this.router.navigate(
                     ['../', id], { relativeTo: this.route }
-                )).pipe(map(r => id))
+                )).pipe(map(_ => id))
         )).subscribe(
             id => {
                 this.stateChange.next([id, State.DESCRIPTION]);
@@ -275,6 +279,8 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     nextUnread() {
         let id = this.route.snapshot.params["articleID"];
         this.articleService.articleObservable().pipe(
+            filter(articles => articles !== true),
+            map(articles => (articles as Article[])),
             map(articles => {
                 let idx = articles.findIndex(article => article.id == id);
 
@@ -296,7 +302,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
             flatMap(id =>
                 from(this.router.navigate(
                     ['../', id], { relativeTo: this.route }
-                )).pipe(map(r => id))
+                )).pipe(map(_ => id))
             ),
         ).subscribe(
             id => {
@@ -366,7 +372,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         this.articleService.favor(
             article.id, !article.favorite
         ).subscribe(
-            success => { },
+            _ => { },
             error => console.log(error)
         )
     }

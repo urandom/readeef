@@ -164,7 +164,7 @@ interface ArticlesPayload {
     providedIn: "root",
 })
 export class ArticleService {
-    private articles: ConnectableObservable<Article[]>
+    private articles: ConnectableObservable<Article[]|true>
     private paging = new BehaviorSubject<any>(null)
     private stateChange = new Subject<ArticleProperty>()
     private updateSubject = new Subject<[QueryOptions, number]>()
@@ -226,7 +226,7 @@ export class ArticleService {
         this.articles = feedsTagsObservable.pipe(
             switchMap(feedsTags =>
                 this.source.pipe(
-                    combineLatest(this.refresh, (source, v) => source),
+                    combineLatest(this.refresh, (source, _) => source),
                     switchMap(source => {
                         this.paging = new BehaviorSubject<number>(0);
 
@@ -234,7 +234,7 @@ export class ArticleService {
                             switchMap(prefs =>
                                 merge(
                                     this.paging.pipe(
-                                        flatMap(v => this.datePaging(source, prefs.unreadFirst)),
+                                        flatMap(_ => this.datePaging(source, prefs.unreadFirst)),
                                         switchMap(paging =>
                                             this.getArticlesFor(source, { olderFirst: prefs.olderFirst, unreadOnly: prefs.unreadOnly }, this.limit, paging)
                                         ),
@@ -404,7 +404,8 @@ export class ArticleService {
                                     map(data => data.articles),
                                 )
                             ),
-                            startWith<Article[]>([]),
+                            // Indicate that articles are being loaded
+                            startWith(true),
                         )
                     })
                 )
@@ -416,9 +417,11 @@ export class ArticleService {
 
         this.eventService.connection().pipe(
             filter(c => c),
-            switchMap(v => this.articles.pipe(
+            switchMap(_ => this.articles.pipe(
                 first(),
             )),
+            filter(articles => articles !== true),
+            map(articles => (articles as Article[])),
             filter(articles => articles.length > 0),
             map(articles => articles.map(a => a.id)),
             map(ids => [Math.min.apply(Math, ids), Math.max.apply(Math, ids)]),
@@ -483,7 +486,7 @@ export class ArticleService {
         });
     }
 
-    articleObservable(): Observable<Article[]> {
+    articleObservable(): Observable<Article[]|true> {
         return this.articles;
     }
 
@@ -750,7 +753,7 @@ export class ArticleService {
         return this.articles.pipe(
             take(1),
             map(articles => {
-                if (articles.length == 0) {
+                if (articles === true || articles.length == 0) {
                     // Initial query
                     return unreadFirst ? { unreadTime: -1 } : {};
                 }

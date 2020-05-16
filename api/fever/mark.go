@@ -45,7 +45,7 @@ func markItem(
 		content.Filters(content.GetUserFilters(user)),
 	}
 
-	id, err := strconv.ParseInt(r.PostFormValue("id"), 10, 64)
+	id, err := strconv.ParseInt(r.FormValue("id"), 10, 64)
 	if err != nil {
 		return errors.Wrapf(err, "parsing id %s", r.FormValue("id"))
 	}

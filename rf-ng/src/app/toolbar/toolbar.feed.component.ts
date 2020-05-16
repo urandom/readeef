@@ -100,6 +100,8 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
 
                 let initial = true
                 return this.articleService.articleObservable().pipe(
+                    filter(articles => articles !== true),
+                    map(articles => (articles as Article[])),
                     map(articles => {
                         for (let article of articles) {
                             if (article.id == id) {
@@ -206,6 +208,7 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
         if (idx != -1) {
             this.router.navigateByUrl(path.substring(0, idx));
         } else if (this.inSearch) {
+            this.searchQuery = "";
             this.router.navigateByUrl(path.substring(0, path.indexOf("/search/")));
         }
     }
@@ -219,8 +222,9 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
                 }
 
                 return this.articleService.articleObservable().pipe(
+                    filter(articles => articles !== true),
                     map(articles => {
-                        for (let article of articles) {
+                        for (let article of (articles as Article[])) {
                             if (article.id == id) {
                                 return article;
                             }
@@ -233,7 +237,7 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
             }),
             flatMap(article => this.articleService.read(article.id, !article.read)),
         ).subscribe(
-            success => {},
+            _ => {},
             error => console.log(error),
         )
     }
@@ -264,6 +268,8 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
             filter(id => id != -1),
             switchMap(id =>
                 this.articleService.articleObservable().pipe(
+                    filter(articles => articles !== true),
+                    map(articles => (articles as Article[])),
                     map(articles => articles.filter(a => a.id == id)),
                     filter(articles => articles.length > 0),
                     map(articles => articles[0]),

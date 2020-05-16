@@ -1,17 +1,14 @@
 import { Component, OnInit, OnDestroy, HostListener } from "@angular/core";
-import { Router, ActivatedRoute, ParamMap, Data, Params } from '@angular/router';
-import { Article, Source, UserSource, FavoriteSource, PopularSource, FeedSource, TagSource, ArticleService, QueryOptions } from "../services/article"
+import { Router, ActivatedRoute } from '@angular/router';;
+import { Article, ArticleService } from "../services/article";
 import { IPageInfo } from 'ngx-virtual-scroller';
-import { Observable, Subscription ,  BehaviorSubject, interval } from "rxjs";
+import { Subscription, interval } from "rxjs";
 import * as moment from 'moment';
-import { scan, map, switchMap, startWith } from "rxjs/operators";
-
-
-
-
+import { scan, filter, map, switchMap, startWith } from "rxjs/operators";
 
 class ArticleCounter {
     constructor(
+        public loading: boolean,
         public iteration: number,
         public articles: Array<Article>,
     ) { }
@@ -28,7 +25,6 @@ export class ArticleListComponent implements OnInit, OnDestroy {
     loading: boolean
 
     private finished = false
-    private limit: number = 200;
     private subscription: Subscription;
 
     constructor(
@@ -42,31 +38,39 @@ export class ArticleListComponent implements OnInit, OnDestroy {
         this.loading = true;
 
         this.subscription = this.articleService.articleObservable().pipe(
-            scan<Article[], ArticleCounter>((acc, articles, index) => {
-                if (acc.iteration > 0 && acc.articles.length == articles.length) {
-                    this.finished = true
+            scan<Article[]|true, ArticleCounter>((acc, articles, _) => {
+                if (articles === true) { 
+                    acc.loading = true;
+                    return acc;
                 }
 
-                acc.articles = [].concat(articles)
-                acc.iteration++
-                return acc
-            }, new ArticleCounter(0, [])),
-            map(acc => acc.articles),
-            switchMap(articles => interval(60000).pipe(
+                if (acc.iteration > 0 && acc.articles.length == articles.length) {
+                    this.finished = true;
+                }
+
+                acc.articles = [].concat(articles);
+                acc.iteration++;
+                acc.loading = false;
+                return acc;
+            }, new ArticleCounter(false, 0, [])),
+            switchMap(acc => interval(60000).pipe(
                 startWith(0),
-                map(v => articles.map(article => {
-                    article.time = moment(article.date).fromNow();
-                    return article;
-                })),
+                map(_ => {
+                    acc.articles.map(article => {
+                        article.time = moment(article.date).fromNow();
+                        return article;
+                    });
+                    return acc;
+                }),
             )
         )).subscribe(
-            articles => {
-                this.loading = false;
-                this.items = articles;
+            acc => {
+                this.items = acc.articles;
+                this.loading = acc.loading;
             },
             error => {
-                this.loading = false;
                 console.log(error);
+                this.loading = false;
             }
         )
     }
@@ -76,7 +80,7 @@ export class ArticleListComponent implements OnInit, OnDestroy {
     }
 
     fetchMore(event: IPageInfo) {
-        if (event.endIndex === this.items.length - 1 && !this.loading && !this.finished) {
+        if (this.items.length > 0 && event.endIndex === this.items.length - 1 && !this.loading && !this.finished) {
             this.loading = true;
             this.articleService.requestNextPage();
         }
