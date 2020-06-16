@@ -3,8 +3,8 @@ readeef
 
 readeef is a self-hosted feed aggregator. Similar to Google Reader, but on your own server.
 
-For a more detailed description, [click here](http://www.sugr.org:32443/en/products/readeef).
-Some screenshots may also be had [on this page](http://www.sugr.org:32443/en/products/readeef#gallery)
+For a more detailed description, [click here](https://www.sugr.org:32443/en/products/readeef).
+Some screenshots may also be had [on this page](https://www.sugr.org:32443/en/products/readeef#gallery)
 
 Quick start
 ===========
