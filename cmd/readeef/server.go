@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"flag"
 	"fmt"
 	"net/http"
@@ -188,20 +187,14 @@ func runServer(cfg config.Config, args []string) error {
 			return errors.Wrapf(err, "creating autocert storage dir %s", cfg.Server.AutoCert.StoragePath)
 		}
 
-		hostPolicy := func(ctx context.Context, host string) error {
-			if host == cfg.Server.AutoCert.Host {
-				return nil
-			}
-			return errors.Errorf("acme/autocert: only %s host is allowed", cfg.Server.AutoCert.Host)
-		}
-
+		logger.Infof("Initializing autocert manager for host: %q and storage path: %q", cfg.Server.AutoCert.Host, cfg.Server.AutoCert.StoragePath)
 		m := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
-			HostPolicy: hostPolicy,
+			HostPolicy: autocert.HostWhitelist(cfg.Server.AutoCert.Host),
 			Cache:      autocert.DirCache(cfg.Server.AutoCert.StoragePath),
 		}
 
-		server.TLSConfig = &tls.Config{GetCertificate: m.GetCertificate}
+		server.TLSConfig = m.TLSConfig()
 
 		if err := server.ListenAndServeTLS("", ""); err != nil {
 			return errors.Wrap(err, "starting auto-cert server")
