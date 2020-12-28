@@ -5,6 +5,7 @@
 }
 
 ngb-carousel {
+    user-select: text !important;
     overflow-y: auto;
     flex-grow: 1;
 }

@@ -1,4 +1,6 @@
-<ngb-carousel (slid)="slideEvent($event)" (swipeleft)="swipeEvent(true)" (swiperight)="swipeEvent(false)" #carousel>;
+<ngb-carousel (slid)="slideEvent($event)"
+    (swipeleft)="swipeEvent(true)" (swiperight)="swipeEvent(false)"
+    #carousel>;
     <ng-template ngbSlide *ngFor="let item of slides" [id]="item.id.toString()">
         <div class="container">
             <h3 class="title">

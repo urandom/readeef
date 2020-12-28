@@ -10,7 +10,7 @@ import { Article, ArticleFormat, ArticleService } from '../services/article'
 import { FeaturesService } from '../services/features'
 import { Observable, Subscription, Subject, BehaviorSubject, of, interval, from } from 'rxjs';
 import * as moment from 'moment';
-import { switchMap, startWith, map, filter, distinctUntilChanged, flatMap, catchError, ignoreElements, take } from 'rxjs/operators';
+import { switchMap, startWith, map, filter, distinctUntilChanged, mergeMap, catchError, ignoreElements, take } from 'rxjs/operators';
 
 enum State {
     DESCRIPTION, FORMAT, SUMMARY,
@@ -146,7 +146,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 (a.slides[0] || {})['id'] == (b.slides[0] || {})['id'] &&
                 (a.slides[2] || {})['id'] == (b.slides[2] || {})['id']
             ),
-            flatMap(data => {
+            mergeMap(data => {
                 if (data.active.read) {
                     return of(data);
                 }
@@ -283,7 +283,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
             }),
             take(1),
             filter(a => a != id),
-            flatMap(id =>
+            mergeMap(id =>
                 from(this.router.navigate(
                     ['../', id], { relativeTo: this.route }
                 )).pipe(map(_ => id))
@@ -319,7 +319,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
             }),
             take(1),
             filter(a => a != id),
-            flatMap(id =>
+            mergeMap(id =>
                 from(this.router.navigate(
                     ['../', id], { relativeTo: this.route }
                 )).pipe(map(_ => id))
