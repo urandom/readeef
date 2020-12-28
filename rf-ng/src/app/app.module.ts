@@ -15,7 +15,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { BrowserModule, HammerModule, HAMMER_GESTURE_CONFIG } from '@angular/platform-browser';
+import { BrowserModule, HammerModule, HAMMER_GESTURE_CONFIG, HAMMER_LOADER } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { VirtualScrollerModule } from 'ngx-virtual-scroller';
@@ -93,6 +93,8 @@ import { ToolbarSettingsComponent } from './toolbar/toolbar.settings.component';
     HammerModule,
   ],
   bootstrap: [AppComponent],
-  providers: [{ provide: HAMMER_GESTURE_CONFIG, useClass: GestureConfig }]
+  providers: [{ provide: HAMMER_LOADER, useValue: async () => {
+      return import('hammerjs/hammer');
+    }, }]
 })
 export class AppModule { }

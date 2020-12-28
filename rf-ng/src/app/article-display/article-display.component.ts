@@ -5,7 +5,7 @@ import {
 } from '@angular/core';
 import { DomSanitizer } from "@angular/platform-browser";
 import { ActivatedRoute, Router } from '@angular/router';
-import { NgbCarouselConfig, NgbCarousel } from '@ng-bootstrap/ng-bootstrap';
+import { NgbCarouselConfig, NgbCarousel, NgbSlideEvent, NgbSlideEventSource } from '@ng-bootstrap/ng-bootstrap';
 import { Article, ArticleFormat, ArticleService } from '../services/article'
 import { FeaturesService } from '../services/features'
 import { Observable, Subscription, Subject, BehaviorSubject, of, interval, from } from 'rxjs';
@@ -41,8 +41,6 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
     @ViewChild('carousel', {static: true})
     private carousel: NgbCarousel;
-    @ViewChild('carousel', { read: ElementRef })
-    private carouselElement: ElementRef;
 
     private active: Article;
     private offset = new Subject<number>();
@@ -58,9 +56,10 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         private featuresService: FeaturesService,
         private sanitizer: DomSanitizer,
     ) {
-        config.interval = 0
-        config.wrap = false
-        config.keyboard = false
+        config.interval = 0;
+        config.wrap = false;
+        config.keyboard = false;
+        config.showNavigationArrows = false;
     }
 
     ngOnInit(): void {
@@ -172,7 +171,6 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
             ))
         ).subscribe(
             data => {
-                this.carousel.activeId = data.active.id.toString();
                 this.slides = data.slides;
                 this.active = data.slides.find(article => article.id == data.active.id);
 
@@ -181,6 +179,16 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 }
 
                 this.index = `${data.index + 1}/${data.total}`
+
+                if (!this.carousel.slides) {
+                    // Set the initial active id, to prevent unwanted slide
+                    // animations during view init
+                    this.carousel.activeId = data.active.id.toString();
+                }
+                // Use the select method after the carousel has populated its slides
+                setTimeout(() => {
+                    this.carousel.select(data.active.id.toString(), NgbSlideEventSource.TIMER);
+                }, 0)
             },
             error => console.log(error)
         ));
@@ -203,11 +211,23 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         }
     }
 
-    slideEvent(next: boolean) {
-        if (next) {
+    slideEvent(event: NgbSlideEvent) {
+        if (event.source == NgbSlideEventSource.TIMER) {
+            return;
+        }
+
+        if (event.direction == "left") {
             this.offset.next(1);
         } else {
             this.offset.next(-1);
+        }
+    }
+
+    swipeEvent(next: boolean) {
+        if (next) {
+            this.carousel.next()
+        } else {
+            this.carousel.prev()
         }
     }
 

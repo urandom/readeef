@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Data, Params, Router } from '@angular/router';
 import { BehaviorSubject, ConnectableObservable, merge, Observable, of, Subject } from "rxjs";
-import { catchError, combineLatest, delay, distinctUntilChanged, distinctUntilKeyChanged, filter, first, flatMap, map, publishReplay, scan, shareReplay, startWith, switchMap, take } from 'rxjs/operators';
+import { catchError, combineLatest, delay, distinctUntilChanged, distinctUntilKeyChanged, filter, first, mergeMap, map, publishReplay, scan, shareReplay, startWith, switchMap, take } from 'rxjs/operators';
 import { getArticleRoute, listRoute } from "../main/routing-util";
 import { EventService, FeedUpdateEvent, QueryOptions as EventableQueryOptions } from "../services/events";
 import { FeedService } from "../services/feed";
@@ -228,13 +228,13 @@ export class ArticleService {
                 this.source.pipe(
                     combineLatest(this.refresh, (source, _) => source),
                     switchMap(source => {
-                        this.paging = new BehaviorSubject<number>(0);
+                        this.paging = new BehaviorSubject<any>(0);
 
                         return queryPreferences.pipe(
                             switchMap(prefs =>
                                 merge(
                                     this.paging.pipe(
-                                        flatMap(_ => this.datePaging(source, prefs.unreadFirst)),
+                                        mergeMap(_ => this.datePaging(source, prefs.unreadFirst)),
                                         switchMap(paging =>
                                             this.getArticlesFor(source, { olderFirst: prefs.olderFirst, unreadOnly: prefs.unreadOnly }, this.limit, paging)
                                         ),
@@ -261,7 +261,7 @@ export class ArticleService {
                                     this.eventService.feedUpdate.pipe(
                                         filter(event => this.shouldUpdate(event, source, feedsTags[1])),
                                         delay(30000),
-                                        flatMap(event =>
+                                        mergeMap(event =>
                                             this.getArticlesFor(new FeedSource(event.feedID), {
                                                 ids: event.articleIDs,
                                                 olderFirst: prefs.olderFirst,
@@ -521,7 +521,7 @@ export class ArticleService {
             take(1),
             filter(source => source.updatable),
             map(source => "article" + source.url + "/read"),
-            flatMap(url => this.api.post<ArticleStateResponse>(url)),
+            mergeMap(url => this.api.post<ArticleStateResponse>(url)),
             map(response => response.success),
         ).subscribe(
             success => { },
@@ -608,7 +608,7 @@ export class ArticleService {
                 }
             }
 
-            res = res.pipe(flatMap(articles => {
+            res = res.pipe(mergeMap(articles => {
                 if (articles.length == limit) {
                     return of(articles);
                 }
@@ -623,7 +623,7 @@ export class ArticleService {
         }
 
         if (options.afterID) {
-            res = res.pipe(flatMap(articles => {
+            res = res.pipe(mergeMap(articles => {
                 if (!articles || !articles.length) {
                     return of(articles);
                 }
@@ -650,7 +650,7 @@ export class ArticleService {
                 )).pipe(
                     map(response => processArticlesDates(response.articles)[0]),
                     take(1),
-                    flatMap(initial => res.pipe(
+                    mergeMap(initial => res.pipe(
                         map(articles => {
                             for (let i = 0; i < articles.length; i++) {
                                 let article = articles[i];
