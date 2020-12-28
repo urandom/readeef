@@ -15,7 +15,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatToolbarModule } from '@angular/material/toolbar';
-import { BrowserModule, HammerModule, HAMMER_GESTURE_CONFIG, HAMMER_LOADER } from '@angular/platform-browser';
+import { BrowserModule, HammerGestureConfig, HammerModule, HAMMER_GESTURE_CONFIG, HAMMER_LOADER } from '@angular/platform-browser';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { VirtualScrollerModule } from 'ngx-virtual-scroller';
@@ -40,7 +40,13 @@ import { SideBarSettingsComponent } from './sidebar/sidebar.settings.component';
 import { ToolbarFeedComponent } from './toolbar/toolbar.feed.component';
 import { ToolbarSettingsComponent } from './toolbar/toolbar.settings.component';
 
-
+export class CustomHammerConfig extends HammerGestureConfig  {
+    overrides = <any>{
+        'pan': { direction: 6 },
+        'pinch': { enable: false },
+        'rotate': { enable: false }
+    }
+}
 
 @NgModule({
   declarations: [
@@ -95,6 +101,6 @@ import { ToolbarSettingsComponent } from './toolbar/toolbar.settings.component';
   bootstrap: [AppComponent],
   providers: [{ provide: HAMMER_LOADER, useValue: async () => {
       return import('hammerjs/hammer');
-    }, }]
+    } }, { provide: HAMMER_GESTURE_CONFIG, useClass: CustomHammerConfig }]
 })
 export class AppModule { }
