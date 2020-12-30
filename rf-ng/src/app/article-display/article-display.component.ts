@@ -1,7 +1,6 @@
 import {
      Component, OnInit, OnDestroy,
-     ViewChild, ElementRef,
-     HostListener,
+     ViewChild, HostListener,
 } from '@angular/core';
 import { DomSanitizer } from "@angular/platform-browser";
 import { ActivatedRoute, Router } from '@angular/router';

@@ -39,7 +39,7 @@
     </p>
 
     <button mat-raised-button (click)="add()" [disabled]="loading" *ngIf="feeds.length > 0" i18n>Add</button>
-    <button mat-raised-button (click)="phase = 'query'" i18n *ngIf="feeds.length == 0">Discover more feeds</button>
+    <button mat-raised-button (click)="phase = 'query'" i18n>Discover more feeds</button>
 </div>
 <div *ngIf="phase == 'add-result'">
     <p *ngIf="!addFeedResult.success" i18n>

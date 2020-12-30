@@ -1,11 +1,11 @@
 import { Router, NavigationEnd, ActivatedRouteSnapshot } from '@angular/router';
-import { Observable, pipe } from "rxjs";
+import { Observable } from "rxjs";
 import { filter, map, startWith, distinctUntilChanged, shareReplay } from 'rxjs/operators';
 
 export function listRoute(router: Router) : Observable<ActivatedRouteSnapshot> {
     return router.events.pipe(
         filter(event => event instanceof NavigationEnd),
-        map(v => {
+        map(_ => {
             return getListRoute([router.routerState.snapshot.root])
         }),
         startWith(getListRoute([router.routerState.snapshot.root])),

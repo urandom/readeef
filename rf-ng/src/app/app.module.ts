@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
-import { NgModule } from '@angular/core';
+import { Injectable, NgModule } from '@angular/core';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -19,7 +19,6 @@ import { BrowserModule, HammerGestureConfig, HammerModule, HAMMER_GESTURE_CONFIG
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { VirtualScrollerModule } from 'ngx-virtual-scroller';
-import { GestureConfig } from "../gesture-config";
 import { AppRouting } from './app.routing';
 import { ArticleDisplayComponent } from './article-display/article-display.component';
 import { ArticleListComponent } from './article-list/article-list.component';
@@ -40,6 +39,7 @@ import { SideBarSettingsComponent } from './sidebar/sidebar.settings.component';
 import { ToolbarFeedComponent } from './toolbar/toolbar.feed.component';
 import { ToolbarSettingsComponent } from './toolbar/toolbar.settings.component';
 
+@Injectable()
 export class CustomHammerConfig extends HammerGestureConfig  {
     overrides = <any>{
         'pan': { direction: 6 },

@@ -27,8 +27,6 @@ export class SideBarSettingsComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void {
-        for (let subscription of this.subscriptions) {
-            subscription.unsubscribe()
-        }
+        this.subscriptions.forEach(s => s.unsubscribe());
     }
 }

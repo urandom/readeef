@@ -1,9 +1,10 @@
-import { Component, OnInit, OnDestroy } from "@angular/core";
-import { Router } from '@angular/router';
+import { Component, OnInit, OnDestroy, ViewChild } from "@angular/core";
+import { NavigationEnd, Router, RouterEvent } from '@angular/router';
 import { Subscription } from "rxjs";
 import { listRoute, articleRoute } from "./routing-util"
 import { TokenService } from "../services/auth";
 import { filter, switchMap, map, combineLatest } from "rxjs/operators";
+import { MatSidenav } from '@angular/material/sidenav';
 
 @Component({
     templateUrl: "./main.html",
@@ -13,7 +14,10 @@ export class MainComponent implements OnInit, OnDestroy {
     showsArticle = false
     inSearch = false
 
-    private subscription : Subscription;
+    private subscriptions = new Array<Subscription>();
+
+    @ViewChild('sidenav', {static: true})
+    private sidenav: MatSidenav;
 
     constructor(
         private tokenService: TokenService,
@@ -21,9 +25,9 @@ export class MainComponent implements OnInit, OnDestroy {
     ) {}
 
     ngOnInit() {
-        this.subscription = this.tokenService.tokenObservable().pipe(
+        this.subscriptions.push(this.tokenService.tokenObservable().pipe(
             filter(token => token != ""),
-            switchMap(token =>
+            switchMap(_ =>
                 articleRoute(this.router).pipe(
                     map(route => route != null),
                     combineLatest(
@@ -41,10 +45,16 @@ export class MainComponent implements OnInit, OnDestroy {
                 this.inSearch = data[1];
             },
             error => console.log(error)
-        );
+        ));
+
+        this.subscriptions.push(this.router.events.pipe(
+           filter(e => e instanceof NavigationEnd)
+        ).subscribe(_ => {
+            this.sidenav.close();
+        }, err => console.log(err)));
     }
 
     ngOnDestroy(): void {
-        this.subscription.unsubscribe()
+        this.subscriptions.forEach(s => s.unsubscribe());
     }
 }

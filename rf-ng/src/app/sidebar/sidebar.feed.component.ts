@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
-import { Tag, TagFeedIDs, TagService } from '../services/tag';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { TagFeedIDs, TagService } from '../services/tag';
 import { Feed, FeedService } from '../services/feed';
 import { Features, FeaturesService } from "../services/features"
 import { FaviconService } from "../services/favicon"
 import { combineLatest } from 'rxjs/operators';
+import { Subscription } from 'rxjs';
 
 
 
@@ -12,12 +13,13 @@ import { combineLatest } from 'rxjs/operators';
   templateUrl: './side-bar-feed.html',
   styleUrls: ['./side-bar.css']
 })
-export class SideBarFeedComponent implements OnInit {
+export class SideBarFeedComponent implements OnInit, OnDestroy {
     popularity: boolean
     collapses: Map<any, boolean> = new Map()
     popularityItems : Array<Item> = new Array();
     allItems : Array<Item> = new Array();
     tags : Array<Category> = new Array();
+    private subscriptions = new Array<Subscription>();
 
     constructor(
         private tagService: TagService,
@@ -30,7 +32,7 @@ export class SideBarFeedComponent implements OnInit {
     }
 
     ngOnInit(): void {
-        this.featuresService.getFeatures().pipe(
+        this.subscriptions.push(this.featuresService.getFeatures().pipe(
             combineLatest(
                 this.feedService.getFeeds(),
                 this.tagService.getTagsFeedIDs(),
@@ -68,7 +70,11 @@ export class SideBarFeedComponent implements OnInit {
                 }
             },
             err => console.log(err),
-        );
+        ));
+    }
+
+    ngOnDestroy(): void {
+        this.subscriptions.forEach(s => s.unsubscribe());
     }
 
     favicon(url: string) : string {

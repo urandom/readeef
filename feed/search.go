@@ -1,12 +1,14 @@
 package feed
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/pkg/errors"
@@ -39,14 +41,14 @@ func searchByURL(u *url.URL, log log.Log) (map[string]parser.Feed, error) {
 	if u.Scheme == "http" {
 		u.Scheme = "https"
 
-		if feeds, err := downloadLinkContent(u, log); err == nil {
+		if feeds, err := downloadLinkContent(context.TODO(), u, log); err == nil {
 			return feeds, nil
 		}
 
 		u.Scheme = "http"
 	}
 
-	feeds, err := downloadLinkContent(u, log)
+	feeds, err := downloadLinkContent(context.TODO(), u, log)
 	if err != nil {
 		return nil, errors.WithMessage(err, "searching by url "+u.String())
 	}
@@ -58,7 +60,7 @@ func searchByURL(u *url.URL, log log.Log) (map[string]parser.Feed, error) {
 
 func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 	log.Infof("Searching for feeds via %s", query)
-	doc, err := goquery.NewDocument("https://duckduckgo.com/html/?q=" + url.QueryEscape(query))
+	doc, err := goquery.NewDocument("https://html.duckduckgo.com/html/?q=" + url.QueryEscape(query))
 	if err != nil {
 		return nil, errors.Wrapf(err, "querying google with %s", query)
 	}
@@ -93,8 +95,11 @@ func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 
 	go func() {
 		var mainErr error
+		if len(links) > 40 {
+			links = links[:40]
+		}
 
-		for _, link := range links[:10] {
+		for _, link := range links {
 			u, err := url.Parse(link)
 			if err != nil {
 				mainErr = errors.Wrapf(err, "parsing link %s", link)
@@ -111,10 +116,13 @@ func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 
 	numProviders := 10
 	wg.Add(numProviders)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	for i := 0; i < numProviders; i++ {
 		go func() {
 			for u := range input {
-				res, err := downloadLinkContent(u, log)
+				res, err := downloadLinkContent(ctx, u, log)
 				log.Debugf("Ending download for %s", u)
 				output <- out{res, err}
 			}
@@ -152,12 +160,23 @@ func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 	return parsed, nil
 }
 
-func downloadLinkContent(u *url.URL, log log.Log) (map[string]parser.Feed, error) {
+func downloadLinkContent(ctx context.Context, u *url.URL, log log.Log) (map[string]parser.Feed, error) {
 	log.Debugf("Downloading content from %s", u)
-	resp, err := http.Get(u.String())
+	req, err := http.NewRequest("GET", u.String(), nil)
+	var resp *http.Response
+	if err == nil {
+		req = req.WithContext(ctx)
+		resp, err = http.DefaultClient.Do(req)
+	}
 	if err != nil {
+		switch err {
+		case context.Canceled, context.DeadlineExceeded:
+			log.Info("Download of %q timed out", u.String())
+			return nil, nil
+		}
 		return nil, errors.Wrapf(err, "getting link %s", u)
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.WithStack(fmt.Errorf("getting link %s, invalid status code: %d (%s)", u, resp.StatusCode, resp.Status))
 	}
@@ -196,7 +215,7 @@ func downloadLinkContent(u *url.URL, log log.Log) (map[string]parser.Feed, error
 
 				}
 
-				feedMap, err := downloadLinkContent(docURL, log)
+				feedMap, err := downloadLinkContent(ctx, docURL, log)
 				if err != nil {
 					return nil, err
 				}
