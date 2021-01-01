@@ -206,7 +206,7 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
         let path = this.location.path()
         let idx = path.indexOf("/article/")
         if (idx != -1) {
-            this.router.navigateByUrl(path.substring(0, idx));
+            this.router.navigateByUrl(path.substring(0, idx), {state: {"articleID": path.substring(idx+9)}});
         } else if (this.inSearch) {
             this.searchQuery = "";
             this.router.navigateByUrl(path.substring(0, path.indexOf("/search/")));

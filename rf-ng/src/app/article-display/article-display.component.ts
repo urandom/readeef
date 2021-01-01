@@ -241,7 +241,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     @HostListener('window:keydown.shift.arrowUp')
     @HostListener('window:keydown.h')
     goUp() {
-        this.router.navigate(['../../'], { relativeTo: this.route })
+        this.router.navigate(['../../'], { relativeTo: this.route, state: {"articleID": this.active.id} })
         document.getSelection().removeAllRanges();
     }
 

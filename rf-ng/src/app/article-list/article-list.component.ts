@@ -1,10 +1,10 @@
-import { Component, OnInit, OnDestroy, HostListener } from "@angular/core";
+import { Component, OnInit, OnDestroy, HostListener, ViewChild } from "@angular/core";
 import { Router, ActivatedRoute } from '@angular/router';;
 import { Article, ArticleService } from "../services/article";
-import { IPageInfo } from 'ngx-virtual-scroller';
+import { IPageInfo, VirtualScrollerComponent } from 'ngx-virtual-scroller';
 import { Subscription, interval } from "rxjs";
 import * as moment from 'moment';
-import { scan, filter, map, switchMap, startWith } from "rxjs/operators";
+import { scan, map, switchMap, startWith } from "rxjs/operators";
 
 class ArticleCounter {
     constructor(
@@ -20,24 +20,28 @@ class ArticleCounter {
     styleUrls: ["./article-list.css"],
 })
 export class ArticleListComponent implements OnInit, OnDestroy {
-    items: Article[] = []
-    scrollItems: Article[]
-    loading: boolean
+    items: Article[] = [];
+    loading: boolean;
 
     private finished = false
-    private subscription: Subscription;
+    private subscriptions = new Array<Subscription>();
+    private articleID: number;
+
+    @ViewChild('scroll', {static: true})
+    private scroller: VirtualScrollerComponent;
 
     constructor(
         private articleService: ArticleService,
         private router: Router,
         private route: ActivatedRoute,
     ) {
+        this.articleID = (this.router.getCurrentNavigation().extras.state ?? {})["articleID"];
     }
 
     ngOnInit(): void {
         this.loading = true;
 
-        this.subscription = this.articleService.articleObservable().pipe(
+        this.subscriptions.push(this.articleService.articleObservable().pipe(
             scan<Article[]|true, ArticleCounter>((acc, articles, _) => {
                 if (articles === true) { 
                     acc.loading = true;
@@ -67,16 +71,25 @@ export class ArticleListComponent implements OnInit, OnDestroy {
             acc => {
                 this.items = acc.articles;
                 this.loading = acc.loading;
+                if (this.articleID) {
+                    setTimeout(() => {
+                        let idx = this.items.findIndex(i => i.id == this.articleID);
+                        if (idx != -1) {
+                            this.scroller.scrollToIndex(idx);
+                        }
+                        this.articleID = 0;
+                    }, 0);
+                }
             },
             error => {
                 console.log(error);
                 this.loading = false;
             }
-        )
+        ));
     }
 
     ngOnDestroy(): void {
-        this.subscription.unsubscribe();
+        this.subscriptions.forEach(s => s.unsubscribe());
     }
 
     fetchMore(event: IPageInfo) {
