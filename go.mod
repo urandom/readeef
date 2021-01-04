@@ -7,7 +7,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.4.1
 	github.com/RoaringBitmap/roaring v0.4.11 // indirect
 	github.com/Sirupsen/logrus v1.0.5
-	github.com/advancedlogic/GoOse v0.0.0-20191112112754-e742535969c1
+	github.com/advancedlogic/GoOse v0.0.0-20200830213114-1225d531e0ad
 	github.com/alexedwards/scs v1.3.0
 	github.com/azr/backoff v0.0.0-20160115115103-53511d3c7330 // indirect
 	github.com/blevesearch/bleve v0.0.0-20180627232020-9bad601c3a5a

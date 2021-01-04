@@ -16,6 +16,8 @@ github.com/advancedlogic/GoOse v0.0.0-20180605210919-94cde938491a h1:mlwzfjTIPPr
 github.com/advancedlogic/GoOse v0.0.0-20180605210919-94cde938491a/go.mod h1:+hZjQNJyAtQVe/ZIdfc+SaBv66ciqiRBXDPJgToTHO0=
 github.com/advancedlogic/GoOse v0.0.0-20191112112754-e742535969c1 h1:d0Ct1dZwgwMO0Llf81Eu+Lyj6kwqXdqHP/WsSkEria0=
 github.com/advancedlogic/GoOse v0.0.0-20191112112754-e742535969c1/go.mod h1:f3HCSN1fBWjcpGtXyM119MJgeQl838v6so/PQOqvE1w=
+github.com/advancedlogic/GoOse v0.0.0-20200830213114-1225d531e0ad h1:gyzOmx++wVkSj5kLzYtvNN2ooeJGTFTtV37t5Do4sdM=
+github.com/advancedlogic/GoOse v0.0.0-20200830213114-1225d531e0ad/go.mod h1:f3HCSN1fBWjcpGtXyM119MJgeQl838v6so/PQOqvE1w=
 github.com/alexedwards/scs v1.3.0 h1:jbBiSNTKVZvhJERIU//uuGWhFAy1pXT8cnYEllVOc4c=
 github.com/alexedwards/scs v1.3.0/go.mod h1:JRIFiXthhMSivuGbxpzUa0/hT5rz2hpyw61Bmd+S1bg=
 github.com/andybalholm/cascadia v1.0.0 h1:hOCXnnZ5A+3eVDX8pvgl4kofXv2ELss0bKcqRySc45o=

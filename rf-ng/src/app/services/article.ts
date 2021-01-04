@@ -88,25 +88,25 @@ export interface QueryOptions {
 }
 
 export interface Source {
-    url: string
-    updatable: boolean
+    url: string;
+    updatable: boolean;
 }
 
-export class UserSource {
-    updatable = true
+export class UserSource implements Source {
+    updatable = true;
     get url(): string {
         return "";
     }
 }
 
-export class FavoriteSource {
+export class FavoriteSource implements Source {
     updatable = false
     get url(): string {
         return "/favorite";
     }
 }
 
-export class PopularSource {
+export class PopularSource implements Source {
     updatable = false
     constructor(private secondary: UserSource | FeedSource | TagSource) { }
 
@@ -115,8 +115,8 @@ export class PopularSource {
     }
 }
 
-export class FeedSource {
-    updatable = true
+export class FeedSource implements Source {
+    updatable = true 
     constructor(public readonly id: number) { }
 
     get url(): string {
@@ -124,7 +124,7 @@ export class FeedSource {
     }
 }
 
-export class TagSource {
+export class TagSource implements Source {
     updatable = true
     constructor(public readonly id: number) { }
 
@@ -133,7 +133,7 @@ export class TagSource {
     }
 }
 
-export class SearchSource {
+export class SearchSource implements Source {
     updatable = false
     constructor(private query: string, private secondary: UserSource | FeedSource | TagSource) { }
 

@@ -71,6 +71,9 @@ export class ArticleListComponent implements OnInit, OnDestroy {
             acc => {
                 this.items = acc.articles;
                 this.loading = acc.loading;
+                if (this.loading) {
+                    this.scroller.scrollToIndex(0);
+                }
                 if (this.articleID) {
                     setTimeout(() => {
                         let idx = this.items.findIndex(i => i.id == this.articleID);
@@ -129,8 +132,8 @@ export class ArticleListComponent implements OnInit, OnDestroy {
     @HostListener('window:keydown.r')
     refresh() {
         if (document.activeElement.matches("input")) {
-            return
+            return;
         }
-        this.articleService.refreshArticles()
+        this.articleService.refreshArticles();
     }
 }
