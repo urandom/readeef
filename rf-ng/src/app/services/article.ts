@@ -320,7 +320,7 @@ export class ArticleService {
                                                         if (this.shouldInsert(
                                                             incoming, acc.articles[i], prefs
                                                         )) {
-                                                            acc.articles.splice(i, 0, incoming)
+                                                            acc.articles.splice(i+1, 0, incoming)
                                                             break
                                                         }
 
@@ -831,14 +831,8 @@ export class ArticleService {
             return !incoming.read;
         }
 
-        if (options.olderFirst) {
-            if (incoming.date < current.date) {
-                return true
-            }
-        } else {
-            if (incoming.date > current.date) {
-                return true
-            }
+        if (incoming.date > current.date) {
+            return true
         }
 
         return false

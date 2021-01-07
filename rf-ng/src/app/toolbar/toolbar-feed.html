@@ -1,7 +1,7 @@
 <button mat-icon-button (click)="up()" *ngIf="showsArticle || inSearch">
     <mat-icon>keyboard_backspace</mat-icon>
 </button>
-<span i18n *ngIf="!searchEntry">Articles</span>
+<span i18n *ngIf="!searchEntry" (click)="titleClick()" style="cursor: default;">Articles</span>
 <span class="spacer" *ngIf="!searchEntry"></span>
 
 <div class="input-group" *ngIf="searchEntry">

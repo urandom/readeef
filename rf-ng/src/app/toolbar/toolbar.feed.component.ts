@@ -8,6 +8,7 @@ import { Router, NavigationStart } from '@angular/router';
 import { Observable, Subscription, of, timer, empty } from "rxjs";
 import { articleRoute, listRoute, getListRoute } from "../main/routing-util"
 import { map, distinctUntilChanged, shareReplay, switchMap, delayWhen, filter, combineLatest, take, flatMap } from 'rxjs/operators';
+import { InteractionService } from '../services/interaction';
 
 @Component({
   templateUrl: './toolbar-feed.html',
@@ -67,6 +68,7 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
         private router: Router,
         private location: Location,
         private sharingService: SharingService,
+        private interactionService: InteractionService,
     ) { 
         this.searchQuery = localStorage.getItem(ToolbarFeedComponent.key) || ""
     }
@@ -211,6 +213,10 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
             this.searchQuery = "";
             this.router.navigateByUrl(path.substring(0, path.indexOf("/search/")));
         }
+    }
+
+    titleClick() {
+        this.interactionService.toolbarTitleClick();
     }
 
     toggleRead() {

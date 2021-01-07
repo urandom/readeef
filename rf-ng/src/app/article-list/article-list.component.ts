@@ -5,6 +5,8 @@ import { IPageInfo, VirtualScrollerComponent } from 'ngx-virtual-scroller';
 import { Subscription, interval } from "rxjs";
 import * as moment from 'moment';
 import { scan, map, switchMap, startWith } from "rxjs/operators";
+import { InteractionService } from '../services/interaction';
+import { PreferencesService } from '../services/preferences';
 
 class ArticleCounter {
     constructor(
@@ -34,6 +36,8 @@ export class ArticleListComponent implements OnInit, OnDestroy {
         private articleService: ArticleService,
         private router: Router,
         private route: ActivatedRoute,
+        private interactionService: InteractionService,
+        private preferencesService: PreferencesService,
     ) {
         this.articleID = (this.router.getCurrentNavigation().extras.state ?? {})["articleID"];
     }
@@ -88,6 +92,37 @@ export class ArticleListComponent implements OnInit, OnDestroy {
                 console.log(error);
                 this.loading = false;
             }
+        ));
+
+        this.subscriptions.push(this.interactionService.toolbarTitleClickEvent.subscribe(
+            () => {
+                if (this.scroller.viewPortInfo.startIndex == 0) {
+                    // If already at the start of the list, go to the oldest unread item
+
+                    let idx = -1;
+                    if (this.preferencesService.olderFirst) {
+                        for (let i = 0; i < this.items.length; i++) {
+                            if (!this.items[i].read) {
+                                idx = i;
+                                break;
+                            }       
+                        }
+                    } else {
+                        for (let i = this.items.length - 1; i > -1; i--) {
+                            if (!this.items[i].read) {
+                                idx = i;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (idx != -1) {
+                        this.scroller.scrollToIndex(idx);
+                    }
+                    return;
+                }
+                this.scroller.scrollToIndex(0);
+            },
         ));
     }
 

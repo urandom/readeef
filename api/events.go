@@ -116,7 +116,7 @@ type feedMonitor struct {
 	log     log.Log
 }
 
-type connMap map[string]connData
+type connMap map[string]*connData
 type feedSet map[content.FeedID]struct{}
 
 type connData struct {
@@ -126,6 +126,13 @@ type connData struct {
 	feedSet   feedSet
 	login     content.Login
 	done      chan struct{}
+}
+
+func (d *connData) Close() {
+	if d.done != nil {
+		close(d.done)
+		d.done = nil
+	}
 }
 
 func (e event) Write(w io.Writer, flusher http.Flusher, log log.Log) error {
@@ -178,7 +185,7 @@ func (fm *feedMonitor) processEvent(ev eventable.Event) {
 			}
 
 			if !d.validator() {
-				close(d.done)
+				d.Close()
 				continue
 			}
 
@@ -197,7 +204,7 @@ func (fm *feedMonitor) ping(addr string) {
 	fm.ops <- func(conns connMap) {
 		if d, ok := conns[addr]; ok {
 			if !d.validator() {
-				close(d.done)
+				d.Close()
 				return
 			}
 
@@ -214,7 +221,7 @@ func (fm *feedMonitor) addConn(w io.Writer, flusher http.Flusher, validator func
 	done := make(chan struct{})
 
 	fm.ops <- func(conns connMap) {
-		conns[addr] = connData{w, flusher, validator, feedSet, user.Login, done}
+		conns[addr] = &connData{w, flusher, validator, feedSet, user.Login, done}
 	}
 
 	return done
