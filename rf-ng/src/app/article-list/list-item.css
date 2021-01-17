@@ -5,7 +5,7 @@
 mat-card {
     display: flex;
     flex-direction: column;
-    max-height: calc(100% - 12px);
+    height: calc(100% - 12px);
     cursor: pointer;
 }
 
@@ -16,14 +16,14 @@ mat-card-header {
 
 [mat-card-image] {
     height: 240px;
-    flex: 1 0 auto;
+    flex: 0 0 auto;
     background-position: center center;
     background-repeat: no-repeat;
     background-size: contain;
 }
 
 mat-card-content {
-    flex: 0 1 auto;
+    flex: 1 1 auto;
     overflow: hidden;
     text-overflow: ellipsis-lastline;
     font-size: 12px;
