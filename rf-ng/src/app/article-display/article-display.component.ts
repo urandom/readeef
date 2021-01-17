@@ -1,6 +1,6 @@
 import {
      Component, OnInit, OnDestroy,
-     ViewChild, HostListener,
+     ViewChild, HostListener, ElementRef,
 } from '@angular/core';
 import { DomSanitizer } from "@angular/platform-browser";
 import { ActivatedRoute, Router } from '@angular/router';
@@ -10,6 +10,7 @@ import { FeaturesService } from '../services/features'
 import { Observable, Subscription, Subject, BehaviorSubject, of, interval, from } from 'rxjs';
 import * as moment from 'moment';
 import { switchMap, startWith, map, filter, distinctUntilChanged, mergeMap, catchError, ignoreElements, take } from 'rxjs/operators';
+import { InteractionService } from '../services/interaction';
 
 enum State {
     DESCRIPTION, FORMAT, SUMMARY,
@@ -37,9 +38,13 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
     slides: Article[] = [];
     index: string;
+    activeId: string;
 
-    @ViewChild('carousel', {static: true})
+    @ViewChild('carousel', {static: false})
     private carousel: NgbCarousel;
+
+    @ViewChild('carousel', {read: ElementRef})
+    private carouselEl: ElementRef;
 
     private active: Article;
     private offset = new Subject<number>();
@@ -54,6 +59,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         private articleService: ArticleService,
         private featuresService: FeaturesService,
         private sanitizer: DomSanitizer,
+        private interactionService: InteractionService,
     ) {
         config.interval = 0;
         config.wrap = false;
@@ -178,16 +184,11 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 }
 
                 this.index = `${data.index + 1}/${data.total}`
+                this.activeId = data.active.id.toString();
 
-                if (!this.carousel.slides) {
-                    // Set the initial active id, to prevent unwanted slide
-                    // animations during view init
-                    this.carousel.activeId = data.active.id.toString();
-                }
-                // Use the select method after the carousel has populated its slides
-                setTimeout(() => {
+                if (this.carousel) {
                     this.carousel.select(data.active.id.toString(), NgbSlideEventSource.TIMER);
-                }, 0)
+                }
             },
             error => console.log(error)
         ));
@@ -201,6 +202,12 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
         this.subscriptions.push(this.stateChange.subscribe(
             stateChange => this.states.set(stateChange[0], stateChange[1])
+        ));
+
+        this.subscriptions.push(this.interactionService.toolbarTitleClickEvent.subscribe(
+            () => {
+                this.carouselEl.nativeElement.scrollTop = 0;
+            },
         ));
     }
 
@@ -220,6 +227,8 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         } else {
             this.offset.next(-1);
         }
+
+        this.carouselEl.nativeElement.scrollTop = 0;
     }
 
     swipeEvent(next: boolean) {

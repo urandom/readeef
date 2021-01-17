@@ -38,6 +38,8 @@ import { SideBarFeedComponent } from './sidebar/sidebar.feed.component';
 import { SideBarSettingsComponent } from './sidebar/sidebar.settings.component';
 import { ToolbarFeedComponent } from './toolbar/toolbar.feed.component';
 import { ToolbarSettingsComponent } from './toolbar/toolbar.settings.component';
+import { ServiceWorkerModule } from '@angular/service-worker';
+import { environment } from '../environments/environment';
 
 @Injectable()
 export class CustomHammerConfig extends HammerGestureConfig  {
@@ -97,6 +99,7 @@ export class CustomHammerConfig extends HammerGestureConfig  {
     NgbModule,
     VirtualScrollerModule,
     HammerModule,
+    ServiceWorkerModule.register('ngsw-worker.js', { enabled: environment.production }),
   ],
   bootstrap: [AppComponent],
   providers: [{ provide: HAMMER_LOADER, useValue: async () => {

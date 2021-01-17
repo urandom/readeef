@@ -652,10 +652,24 @@ export class ArticleService {
                     take(1),
                     mergeMap(initial => res.pipe(
                         map(articles => {
+                            if (options.unreadOnly) {
+                                if (articles.findIndex(a => a.id == initial.id) != -1) {
+                                    return;
+                                }
+
+                                if (options.olderFirst) {
+                                    articles.unshift(initial);
+                                } else {
+                                    articles.push(initial);
+                                }
+
+                                return articles;
+                            }
+
                             for (let i = 0; i < articles.length; i++) {
                                 let article = articles[i];
                                 if (article.id == initial.id) {
-                                    return articles
+                                    return articles;
                                 }
                                 let prefs: ListPreferences = {
                                     unreadFirst: !!paging.unreadTime,
@@ -664,12 +678,12 @@ export class ArticleService {
                                 };
                                 if (this.shouldInsert(initial, article, prefs)) {
                                     articles.splice(i, 0, initial)
-                                    return articles
+                                    return articles;
                                 }
                             }
 
                             articles.push(initial)
-                            return articles
+                            return articles;
                         }))
                     )
                 );

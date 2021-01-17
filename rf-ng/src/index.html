@@ -8,13 +8,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
-  <link rel="icon" type="image/png" sizes="48x48" href="readeef-small.png">
-  <link rel="icon" type="image/png" sizes="196x196" href="readeef.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="assets/icons/readeef-small.png">
+  <link rel="icon" type="image/png" sizes="196x196" href="assets/icons/readeef.png">
 
-  <link rel="apple-touch-icon-precomposed" type="image/png" href="readeef.png">
-  <link rel="apple-touch-icon-precomposed" type="image/png" sizes="72x72" href="readeef-72.png">
-  <link rel="apple-touch-icon-precomposed" type="image/png" sizes="114x114" href="readeef-114.png">
-  <link rel="apple-touch-icon-precomposed" type="image/png" sizes="144x144" href="readeef-144.png">
+  <link rel="apple-touch-icon-precomposed" type="image/png" href="assets/icons/readeef.png">
+  <link rel="apple-touch-icon-precomposed" type="image/png" sizes="72x72" href="assets/icons/readeef-72.png">
+  <link rel="apple-touch-icon-precomposed" type="image/png" sizes="114x114" href="assets/icons/readeef-114.png">
+  <link rel="apple-touch-icon-precomposed" type="image/png" sizes="144x144" href="assets/icons/readeef-144.png">
 
   <style>
 html, body{
@@ -27,8 +27,11 @@ html, body{
     var locale = document.querySelector("base").getAttribute("href").replace(/\//g, "");
     localStorage.setItem("locale", locale);
   </script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1976d2">
 </head>
 <body>
   <app-root></app-root>
+  <noscript>Please enable JavaScript to continue using this application.</noscript>
 </body>
 </html>
