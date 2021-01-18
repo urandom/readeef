@@ -49,6 +49,11 @@ a {
     font-weight: 200;
     font-size: 10px;
     text-align: start;
+    margin-left: 15px;
+    margin-right: 15px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .index {
