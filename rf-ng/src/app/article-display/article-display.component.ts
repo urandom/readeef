@@ -126,7 +126,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
                             slide["formatted"] =
                                 this.sanitizer.bypassSecurityTrustHtml(
-                                    this.formatSource(slide["formatted"])
+                                    this.formatSource(slide["formatted"], slide.thumbnail)
                                 )
                             return slide
                         })
@@ -442,7 +442,13 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         )
     }
 
-    private formatSource(source: string) : string {
-        return source.replace("<img ", `<img class="center" `);
+    private formatSource(source: string, thumbnail?: string) : string {
+        source = source.replace("<img ", `<img class="center" `);
+
+        if (thumbnail) {
+            source = source.replace("<img ", `<img onerror="this.src='${thumbnail}'; this.onerror=''" `);
+        }
+
+        return source;
     }
 }
