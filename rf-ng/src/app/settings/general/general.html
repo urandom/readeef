@@ -15,7 +15,7 @@
 </mat-form-field>
 <br>
 <mat-form-field>
-    <mat-select i18n-placeholder placeholder="Language" (change)="languageChange($event.value)" [(ngModel)]="language">
+    <mat-select i18n-placeholder placeholder="Language" (selectionChange)="languageChange($event.value)" [(value)]="language">
         <mat-option [value]="'en'">English</mat-option>
         <mat-option [value]="'bg'">Български</mat-option>
     </mat-select>
