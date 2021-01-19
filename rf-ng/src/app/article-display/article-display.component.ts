@@ -38,7 +38,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
     slides: Article[] = [];
     index: string;
-    activeId: string;
+    initialId: string;
 
     @ViewChild('carousel', {static: false})
     private carousel: NgbCarousel;
@@ -48,7 +48,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
 
     private active: Article;
     private offset = new Subject<number>();
-    private stateChange = new BehaviorSubject<[number, State]>([-1, State.DESCRIPTION]);
+    private stateChange = new BehaviorSubject<[number, number, State]>([-1, -1, State.DESCRIPTION]);
     private states = new Map<number, State>();
     private subscriptions = new Array<Subscription>();
 
@@ -68,6 +68,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
+        this.initialId = this.route.snapshot.params["articleID"];
         this.subscriptions.push(this.articleService.articleObservable().pipe(
             filter(articles => articles !== true),
             map(articles => (articles as Article[])),
@@ -76,7 +77,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                     switchMap(stateChange =>
                         this.offset.pipe(
                             startWith(0),
-                            map((offset): [number, [number, State]] => {
+                            map((offset): [number, [number, number, State]] => {
                                 return [offset, stateChange]
                             })
                         ),
@@ -107,9 +108,20 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                             slides.push(articles[index + 1]);
                         }
 
+                        // If the previously visible slide isn't in the current
+                        // list, it has to be added, or the carousel will break
+                        if (stateChange[1] > 0 && stateChange[1] != stateChange[0]) {
+                            let lastIdx = articles.findIndex(article => article.id == stateChange[1]);
+                            if (lastIdx < index - 1) {
+                                slides.unshift(articles[lastIdx]);
+                            } else if (lastIdx > index + 1) {
+                                slides.push(articles[lastIdx]);
+                            }
+                        }
+
                         slides = slides.map(slide => {
                             if (slide.id == stateChange[0]) {
-                                switch (stateChange[1]) {
+                                switch (stateChange[2]) {
                                     case State.DESCRIPTION:
                                         slide["formatted"] = slide.description
                                         break
@@ -136,7 +148,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                             active: {
                                 id: articles[index].id,
                                 read: articles[index].read,
-                                state: stateChange[1],
+                                state: stateChange[2],
                             },
                             index: index,
                             total: articles.length,
@@ -184,11 +196,12 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 }
 
                 this.index = `${data.index + 1}/${data.total}`
-                this.activeId = data.active.id.toString();
 
-                if (this.carousel) {
-                    this.carousel.select(data.active.id.toString(), NgbSlideEventSource.TIMER);
-                }
+                setTimeout(() => {
+                    if (this.carousel) {
+                        this.carousel.select(data.active.id.toString(), NgbSlideEventSource.TIMER);
+                    }
+                }, 0)
             },
             error => console.log(error)
         ));
@@ -201,7 +214,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         ));
 
         this.subscriptions.push(this.stateChange.subscribe(
-            stateChange => this.states.set(stateChange[0], stateChange[1])
+            stateChange => this.states.set(stateChange[0], stateChange[2])
         ));
 
         this.subscriptions.push(this.interactionService.toolbarTitleClickEvent.subscribe(
@@ -269,12 +282,12 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     @HostListener('window:keydown.shift.arrowLeft')
     @HostListener('window:keydown.shift.j')
     previousUnread() {
-        let id = this.route.snapshot.params["articleID"];
+        let currentId = this.route.snapshot.params["articleID"];
         this.articleService.articleObservable().pipe(
             filter(articles => articles !== true),
             map(articles => (articles as Article[])),
             map(articles => {
-                let idx = articles.findIndex(article => article.id == id);
+                let idx = articles.findIndex(article => article.id == currentId);
 
                 while (idx > 0) {
                     idx--;
@@ -284,20 +297,20 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 }
 
                 if (articles[idx].read) {
-                    return id;
+                    return currentId;
                 }
 
                 return articles[idx].id;
             }),
             take(1),
-            filter(a => a != id),
+            filter(a => a != currentId),
             mergeMap(id =>
                 from(this.router.navigate(
                     ['../', id], { relativeTo: this.route }
                 )).pipe(map(_ => id))
         )).subscribe(
             id => {
-                this.stateChange.next([id, State.DESCRIPTION]);
+                this.stateChange.next([id, currentId, State.DESCRIPTION]);
             }
         )
     }
@@ -305,12 +318,12 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     @HostListener('window:keydown.shift.arrowRight')
     @HostListener('window:keydown.shift.k')
     nextUnread() {
-        let id = this.route.snapshot.params["articleID"];
+        let currentId = this.route.snapshot.params["articleID"];
         this.articleService.articleObservable().pipe(
             filter(articles => articles !== true),
             map(articles => (articles as Article[])),
             map(articles => {
-                let idx = articles.findIndex(article => article.id == id);
+                let idx = articles.findIndex(article => article.id == currentId);
 
                 while (idx < articles.length - 1) {
                     idx++;
@@ -320,13 +333,13 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 }
 
                 if (articles[idx].read) {
-                    return id;
+                    return currentId;
                 }
 
                 return articles[idx].id;
             }),
             take(1),
-            filter(a => a != id),
+            filter(a => a != currentId),
             mergeMap(id =>
                 from(this.router.navigate(
                     ['../', id], { relativeTo: this.route }
@@ -334,7 +347,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
             ),
         ).subscribe(
             id => {
-                this.stateChange.next([id, State.DESCRIPTION]);
+                this.stateChange.next([id, currentId, State.DESCRIPTION]);
             }
         )
     }
@@ -422,7 +435,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     private setFormat(article: Article, state: State) {
         let active = this.active
         if (state == State.DESCRIPTION) {
-            this.stateChange.next([active.id, state])
+            this.stateChange.next([active.id, active.id, state])
             return
         }
 
@@ -436,7 +449,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         o.subscribe(
             format => {
                 active.format = format
-                this.stateChange.next([active.id, state])
+                this.stateChange.next([active.id, active.id, state])
             },
             error => console.log(error)
         )

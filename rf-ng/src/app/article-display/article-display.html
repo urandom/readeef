@@ -1,5 +1,5 @@
 <ngb-carousel *ngIf="slides.length"
-    [activeId]="activeId"
+    [activeId]="initialId"
     (slid)="slideEvent($event)"
     (swipeleft)="swipeEvent(true)" (swiperight)="swipeEvent(false)"
     #carousel>;
