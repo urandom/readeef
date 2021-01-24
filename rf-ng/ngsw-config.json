@@ -30,24 +30,5 @@
         ]
       }
     }
-  ],
-  "dataGroups": [{
-    "name": "fresh",
-    "urls": ["/api/v2/tag/feedIDs", "/api/v2/feed", "/api/v2/article"],
-    "cacheConfig": {
-      "strategy": "freshness",
-      "timeout": "2s",
-      "maxAge": "3d",
-      "maxSize": 100
-    }
-  }, {
-    "name": "perf",
-    "urls": ["/api/v2/features"],
-    "cacheConfig": {
-      "strategy": "performance",
-      "timeout": "2s",
-      "maxAge": "3d",
-      "maxSize": 100
-    }
-  }]
+  ]
 }
