@@ -18,7 +18,6 @@ import { InteractionService } from '../services/interaction';
   }
 })
 export class ToolbarFeedComponent implements OnInit, OnDestroy {
-    olderFirst = false
     showsArticle = false
     articleRead = false
     searchButton = false
@@ -64,7 +63,7 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
     constructor(
         private articleService: ArticleService,
         private featuresServices: FeaturesService,
-        private preferences : PreferencesService,
+        public preferences : PreferencesService,
         private router: Router,
         private location: Location,
         private sharingService: SharingService,
@@ -193,7 +192,6 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
 
     toggleOlderFirst() {
         this.preferences.olderFirst = !this.preferences.olderFirst;
-        this.olderFirst = this.preferences.olderFirst;
     }
 
     toggleUnreadOnly() {
