@@ -227,12 +227,11 @@ export class ArticleService {
             switchMap(feedsTags =>
                 this.source.pipe(
                     combineLatest(this.refresh, (source, _) => source),
-                    switchMap(source => {
-                        this.paging = new BehaviorSubject<any>(0);
+                    switchMap(source => queryPreferences.pipe(
+                            switchMap(prefs => {
+                                this.paging = new BehaviorSubject<any>(0);
 
-                        return queryPreferences.pipe(
-                            switchMap(prefs =>
-                                merge(
+                                return merge(
                                     this.paging.pipe(
                                         mergeMap(_ => this.datePaging(source, prefs.unreadFirst)),
                                         switchMap(paging =>
@@ -402,12 +401,12 @@ export class ArticleService {
                                         }
                                     ),
                                     map(data => data.articles),
+                                    // Indicate that articles are being loaded
+                                    startWith(true),
                                 )
-                            ),
-                            // Indicate that articles are being loaded
-                            startWith(true),
+                            }),
                         )
-                    })
+                    )
                 )
             ),
             publishReplay(1),
