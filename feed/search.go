@@ -60,12 +60,21 @@ func searchByURL(u *url.URL, log log.Log) (map[string]parser.Feed, error) {
 
 func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 	log.Infof("Searching for feeds via %s", query)
-	doc, err := goquery.NewDocument("https://html.duckduckgo.com/html/?q=" + url.QueryEscape(query))
+	req, err := http.NewRequest("GET", "https://html.duckduckgo.com/html/?q="+url.QueryEscape(query), nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating feed search query with %s", query)
+	}
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.16; rv:85.0) Gecko/20100101 Firefox/85.0")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errors.Wrap(err, "executing feed search request")
+	}
+	doc, err := goquery.NewDocumentFromResponse(resp)
 	if err != nil {
 		return nil, errors.Wrapf(err, "querying google with %s", query)
 	}
 
-	links := doc.Find("a.result__a").Map(func(i int, s *goquery.Selection) string {
+	links := doc.Find("a.result__url").Map(func(i int, s *goquery.Selection) string {
 		href := s.AttrOr("data-href", s.AttrOr("href", ""))
 		if href[0] != '/' {
 			return href
@@ -89,12 +98,10 @@ func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 	parsed := map[string]parser.Feed{}
 	input := make(chan *url.URL, 5)
 	output := make(chan out)
-	parseErr := make(chan error)
 
 	var wg sync.WaitGroup
 
 	go func() {
-		var mainErr error
 		if len(links) > 40 {
 			links = links[:40]
 		}
@@ -102,7 +109,7 @@ func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 		for _, link := range links {
 			u, err := url.Parse(link)
 			if err != nil {
-				mainErr = errors.Wrapf(err, "parsing link %s", link)
+				log.Printf("Error parsing link %s: %v", link, err)
 				continue
 			}
 
@@ -110,8 +117,6 @@ func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 		}
 
 		close(input)
-
-		parseErr <- mainErr
 	}()
 
 	numProviders := 10
@@ -121,12 +126,11 @@ func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 
 	for i := 0; i < numProviders; i++ {
 		go func() {
+			defer wg.Done()
 			for u := range input {
 				res, err := downloadLinkContent(ctx, u, log)
-				log.Debugf("Ending download for %s", u)
 				output <- out{res, err}
 			}
-			wg.Done()
 		}()
 	}
 
@@ -134,10 +138,6 @@ func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 		wg.Wait()
 		close(output)
 	}()
-
-	if perr := <-parseErr; perr != nil {
-		log.Print(perr.Error())
-	}
 
 	var outErr error
 	for out := range output {
@@ -162,6 +162,8 @@ func searchByQuery(query string, log log.Log) (map[string]parser.Feed, error) {
 
 func downloadLinkContent(ctx context.Context, u *url.URL, log log.Log) (map[string]parser.Feed, error) {
 	log.Debugf("Downloading content from %s", u)
+	defer log.Debugf("Ending download for %s", u)
+
 	req, err := http.NewRequest("GET", u.String(), nil)
 	var resp *http.Response
 	if err == nil {
