@@ -75,11 +75,12 @@ export class ArticleListComponent implements OnInit, OnDestroy {
             acc => {
                 this.items = acc.articles;
                 this.loading = acc.loading;
-                if (this.loading) {
-                    this.scroller.scrollToIndex(0);
-                }
-                if (this.articleID) {
+                if (this.articleID || this.loading) {
                     setTimeout(() => {
+                        if (this.loading) {
+                            this.scroller.scrollToIndex(0);
+                            return;
+                        }
                         let idx = this.items.findIndex(i => i.id == this.articleID);
                         if (idx != -1) {
                             this.scroller.scrollToIndex(idx);
