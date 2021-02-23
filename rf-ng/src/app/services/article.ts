@@ -247,7 +247,7 @@ export class ArticleService {
                                             this.getArticlesFor(
                                                 source, opts[0], this.limit, {}
                                             ).pipe(combineLatest(
-                                                this.ids(source, { unreadOnly: true, beforeID: opts[0].afterID + 1, afterID: opts[1] - 1 }),
+                                                this.ids(source, { unreadOnly: true, beforeID: opts[0].afterID + 1, afterID: opts[1] - 1, limit: 20000 }),
                                                 (articles, ids) => <ArticlesPayload>{
                                                     articles: articles,
                                                     unreadIDs: new Set(ids),
