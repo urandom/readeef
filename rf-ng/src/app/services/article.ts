@@ -78,6 +78,7 @@ export interface QueryOptions {
     unreadOnly?: boolean;
     readOnly?: boolean;
     olderFirst?: boolean;
+    defaultFirst?: boolean;
     ids?: number[];
     beforeID?: number
     afterID?: number;
@@ -235,7 +236,7 @@ export class ArticleService {
                                     this.paging.pipe(
                                         mergeMap(_ => this.datePaging(source, prefs.unreadFirst)),
                                         switchMap(paging =>
-                                            this.getArticlesFor(source, { olderFirst: prefs.olderFirst, unreadOnly: prefs.unreadOnly }, this.limit, paging)
+                                            this.getArticlesFor(source, this.queryOptsBuilder(source, prefs, this.limit), paging)
                                         ),
                                         map(articles => <ArticlesPayload>{
                                             articles: articles,
@@ -245,7 +246,7 @@ export class ArticleService {
                                     this.updateSubject.pipe(
                                         switchMap(opts =>
                                             this.getArticlesFor(
-                                                source, opts[0], this.limit, {}
+                                                source, this.queryOptsBuilder(source, prefs, this.limit, opts[0]), {}
                                             ).pipe(combineLatest(
                                                 this.ids(source, { unreadOnly: true, beforeID: opts[0].afterID + 1, afterID: opts[1] - 1, limit: 20000 }),
                                                 (articles, ids) => <ArticlesPayload>{
@@ -261,11 +262,21 @@ export class ArticleService {
                                         filter(event => this.shouldUpdate(event, source, feedsTags[1])),
                                         delay(30000),
                                         mergeMap(event =>
-                                            this.getArticlesFor(new FeedSource(event.feedID), {
-                                                ids: event.articleIDs,
-                                                olderFirst: prefs.olderFirst,
-                                                unreadOnly: prefs.unreadOnly,
-                                            }, this.limit, {})
+                                            prefs.olderFirst ?
+                                                // When older articles are listed first, simply load the next page on a feed update
+                                                this.datePaging(source, prefs.unreadFirst).pipe(
+                                                    mergeMap(paging =>
+                                                        this.getArticlesFor(
+                                                            source, this.queryOptsBuilder(source, prefs, this.limit), paging
+                                                        )
+                                                    )
+                                                ) :
+                                                this.getArticlesFor(new FeedSource(event.feedID),
+                                                    this.queryOptsBuilder(source, prefs, this.limit, {
+                                                        ids: event.articleIDs,
+                                                        olderFirst: prefs.olderFirst,
+                                                        unreadOnly: prefs.unreadOnly,
+                                                    }), {})
                                         ),
                                         map(articles => <ArticlesPayload>{
                                             articles: articles,
@@ -405,6 +416,7 @@ export class ArticleService {
                                     startWith(true),
                                 )
                             }),
+                            startWith([]),
                         )
                     )
                 )
@@ -552,13 +564,35 @@ export class ArticleService {
         );
     }
 
+    private queryOptsBuilder(source: Source, prefs: ListPreferences, limit: number, initial?: QueryOptions): QueryOptions {
+        if (!initial) {
+            initial = {};
+        }
+        let opts: QueryOptions = Object.assign({}, initial, { limit: limit });
+
+        if (source instanceof SearchSource) {
+            opts.unreadOnly = false;
+            switch (prefs.searchOrder) {
+                case "olderFirst":
+                    opts.olderFirst = true;
+                    break;
+                case "default":
+                    opts.defaultFirst = true;
+                    break;
+            }
+        } else {
+            opts.olderFirst = prefs.olderFirst;
+            opts.unreadOnly = prefs.unreadOnly;
+        }
+
+        return opts;
+    }
+
     private getArticlesFor(
         source: Source,
-        prefs: QueryOptions,
-        limit: number,
+        original: QueryOptions,
         paging: Paging,
     ): Observable<Article[]> {
-        let original: QueryOptions = Object.assign({}, prefs, { limit: limit });
         let options: QueryOptions = Object.assign({}, original);
 
         let time = -1
@@ -573,7 +607,7 @@ export class ArticleService {
         }
 
         if (time != -1) {
-            if (prefs.olderFirst) {
+            if (original.olderFirst) {
                 options.afterTime = time;
                 if (score) {
                     options.afterScore = score;
@@ -590,11 +624,12 @@ export class ArticleService {
             map(response => processArticlesDates(response.articles)),
         );
 
-        if (paging.unreadTime) {
+        // Add a fetch for read articles
+        if (paging.unreadTime && !original.unreadOnly) {
             options = Object.assign({}, original);
             options.readOnly = true;
             if (paging.time) {
-                if (prefs.olderFirst) {
+                if (original.olderFirst) {
                     options.afterTime = paging.time;
                     if (paging.score) {
                         options.afterScore = paging.score;
@@ -608,11 +643,11 @@ export class ArticleService {
             }
 
             res = res.pipe(mergeMap(articles => {
-                if (articles.length == limit) {
+                if (articles.length == original.limit) {
                     return of(articles);
                 }
 
-                options.limit = limit - articles.length;
+                options.limit = original.limit - articles.length;
 
                 return this.api.get<ArticlesResponse>(this.buildURL("article" + source.url, options)).pipe(
                     map(response => processArticlesDates(response.articles)),
@@ -630,7 +665,7 @@ export class ArticleService {
                 let maxID = Math.max.apply(Math, articles.map(a => a.id))
 
                 let mod: QueryOptions = Object.assign({}, options, { afterID: maxID });
-                return this.getArticlesFor(source, mod, limit, paging).pipe(
+                return this.getArticlesFor(source, mod, paging).pipe(
                     map(next => next && next.length ? next.concat(articles) : articles)
                 );
             }))
@@ -674,6 +709,7 @@ export class ArticleService {
                                     unreadFirst: !!paging.unreadTime,
                                     unreadOnly: options.unreadOnly,
                                     olderFirst: options.olderFirst,
+                                    searchOrder: "default",
                                 };
                                 if (this.shouldInsert(initial, article, prefs)) {
                                     articles.splice(i, 0, initial)

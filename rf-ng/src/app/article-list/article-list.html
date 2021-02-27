@@ -3,10 +3,12 @@
         No articles to display
     </span>
 </h4>
-<h4 *ngIf="loading" class="empty-list">
+<h4 *ngIf="!items.length && loading" class="empty-list">
     <span i18n class="loader">Loading...</span>
 </h4>
-<virtual-scroller [items]="items" (vsEnd)="fetchMore($event)" #scroll>
 
+<virtual-scroller [items]="items" (vsEnd)="fetchMore($event)" #scroll>
     <list-item *ngFor="let item of scroll.viewPortItems" [item]="item"> </list-item>
 </virtual-scroller>
+
+<div *ngIf="items.length && loading" class="loader" i18n>Loading...</div>

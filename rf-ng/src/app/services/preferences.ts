@@ -6,13 +6,17 @@ interface Prefs  {
     olderFirst: boolean;
     unreadOnly: boolean;
     unreadFirst: boolean;
+    searchOrder: SearchOrder;
 }
 
 export interface ListPreferences {
     olderFirst: boolean
     unreadOnly: boolean
     unreadFirst: boolean
+    searchOrder: SearchOrder
 }
+
+type SearchOrder = "default" | "olderFirst" | "newerFirst";
 
 @Injectable({providedIn: "root"})
 export class PreferencesService {
@@ -46,6 +50,20 @@ export class PreferencesService {
 
     set unreadOnly(val: boolean) {
         this.prefs.unreadOnly = val;
+        this.queryPreferencesSubject.next(this.prefs);
+
+        this.saveToStorage();
+    }
+
+    get searchOrder(): SearchOrder {
+        if (!this.prefs.searchOrder) {
+            return this.prefs.olderFirst ? "olderFirst" : "newerFirst";
+        }
+        return this.prefs.searchOrder;
+    }
+
+    set searchOrder(val: SearchOrder) {
+        this.prefs.searchOrder = val;
         this.queryPreferencesSubject.next(this.prefs);
 
         this.saveToStorage();

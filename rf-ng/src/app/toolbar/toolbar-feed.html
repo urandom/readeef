@@ -37,16 +37,19 @@
     <mat-icon>more_vert</mat-icon>
 </button>
 <mat-menu #other="matMenu">
-    <button mat-menu-item *ngIf="!preferences.olderFirst" (click)="toggleOlderFirst()">
+    <button mat-menu-item *ngIf="inSearch && preferences.searchOrder != 'olderFirst' || !inSearch && !preferences.olderFirst" (click)="toggleOlderFirst(true)">
         <span>Older first</span>
     </button>
-    <button mat-menu-item *ngIf="preferences.olderFirst" (click)="toggleOlderFirst()">
+    <button mat-menu-item *ngIf="inSearch && preferences.searchOrder != 'newerFirst' || !inSearch && preferences.olderFirst" (click)="toggleOlderFirst(false)">
         <span>Newer first</span>
     </button>
-    <button mat-menu-item *ngIf="!preferences.unreadOnly" (click)="toggleUnreadOnly()">
+    <button mat-menu-item *ngIf="inSearch && preferences.searchOrder != 'default'" (click)="toggleDefaultOrder()">
+        <span>Default order</span>
+    </button>
+    <button mat-menu-item *ngIf="!preferences.unreadOnly && !inSearch" (click)="toggleUnreadOnly()">
         <span>Unread only</span>
     </button>
-    <button mat-menu-item *ngIf="preferences.unreadOnly" (click)="toggleUnreadOnly()">
+    <button mat-menu-item *ngIf="preferences.unreadOnly && !inSearch" (click)="toggleUnreadOnly()">
         <span>Read and unread</span>
     </button>
     <button mat-menu-item (click)="markAsRead()" *ngIf="!inSearch && markAllRead">

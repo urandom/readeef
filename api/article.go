@@ -587,6 +587,8 @@ func articleQueryOptions(w http.ResponseWriter, r *http.Request, articlesLimit i
 
 	if _, ok := query["olderFirst"]; ok {
 		o = append(o, content.Sorting(content.SortByDate, content.AscendingOrder))
+	} else if _, ok := query["defaultFirst"]; ok {
+		o = append(o, content.Sorting(content.DefaultSort, content.AscendingOrder))
 	} else {
 		o = append(o, content.Sorting(content.SortByDate, content.DescendingOrder))
 	}

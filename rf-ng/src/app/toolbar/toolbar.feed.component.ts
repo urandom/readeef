@@ -4,7 +4,7 @@ import { Article, ArticleService } from "../services/article";
 import { FeaturesService } from "../services/features";
 import { PreferencesService } from "../services/preferences";
 import { SharingService, ShareService } from "../services/sharing";
-import { Router, NavigationStart } from '@angular/router';
+import { Router } from '@angular/router';
 import { Observable, Subscription, of, timer, empty } from "rxjs";
 import { articleRoute, listRoute, getListRoute } from "../main/routing-util"
 import { map, distinctUntilChanged, shareReplay, switchMap, delayWhen, filter, combineLatest, take, flatMap } from 'rxjs/operators';
@@ -190,8 +190,16 @@ export class ToolbarFeedComponent implements OnInit, OnDestroy {
         this.subscriptions.forEach(s => s.unsubscribe())
     }
 
-    toggleOlderFirst() {
-        this.preferences.olderFirst = !this.preferences.olderFirst;
+    toggleOlderFirst(val: boolean) {
+        if (this.inSearch) {
+            this.preferences.searchOrder = val ? "olderFirst" : "newerFirst";
+        } else {
+            this.preferences.olderFirst = val;
+        }
+    }
+
+    toggleDefaultOrder() {
+        this.preferences.searchOrder = "default";
     }
 
     toggleUnreadOnly() {
