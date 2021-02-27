@@ -2,12 +2,13 @@ import {
      Component, OnInit, OnDestroy,
      ViewChild, HostListener, ElementRef,
 } from '@angular/core';
+import { Location } from "@angular/common";
 import { DomSanitizer } from "@angular/platform-browser";
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgbCarouselConfig, NgbCarousel, NgbSlideEvent, NgbSlideEventSource } from '@ng-bootstrap/ng-bootstrap';
 import { Article, ArticleFormat, ArticleService } from '../services/article'
 import { FeaturesService } from '../services/features'
-import { Observable, Subscription, Subject, BehaviorSubject, of, interval, from } from 'rxjs';
+import { Observable, Subscription, Subject, BehaviorSubject, of, interval, from, SubscriptionLike } from 'rxjs';
 import * as moment from 'moment';
 import { switchMap, startWith, map, filter, distinctUntilChanged, mergeMap, catchError, ignoreElements, take } from 'rxjs/operators';
 import { InteractionService } from '../services/interaction';
@@ -50,7 +51,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
     private offset = new Subject<number>();
     private stateChange = new BehaviorSubject<[number, number, State]>([-1, -1, State.DESCRIPTION]);
     private states = new Map<number, State>();
-    private subscriptions = new Array<Subscription>();
+    private subscriptions = new Array<SubscriptionLike>();
 
     constructor(
         config: NgbCarouselConfig,
@@ -60,6 +61,7 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
         private featuresService: FeaturesService,
         private sanitizer: DomSanitizer,
         private interactionService: InteractionService,
+        private location: Location,
     ) {
         config.interval = 0;
         config.wrap = false;
@@ -222,6 +224,14 @@ export class ArticleDisplayComponent implements OnInit, OnDestroy {
                 this.carouselEl.nativeElement.scrollTop = 0;
             },
         ));
+
+        this.subscriptions.push(this.location.subscribe(event => {
+            if (event.pop) {
+                setTimeout(() => {
+                    this.interactionService.navigateUp();
+                }, 0)
+            }
+        }));
     }
 
     ngOnDestroy(): void {
