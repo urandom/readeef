@@ -14,9 +14,9 @@ func TestCleanup_ProcessFeed(t *testing.T) {
 		want  parser.Feed
 	}{
 		{"data1", parser.Feed{Articles: []parser.Article{
-			{Description: data1},
+			{Description: data1, Link: "http://example.com/foo/bar#baz"},
 		}}, parser.Feed{Articles: []parser.Article{
-			{Description: exp1},
+			{Description: exp1, Link: "http://example.com/foo/bar"},
 		}}},
 	}
 	for _, tt := range tests {

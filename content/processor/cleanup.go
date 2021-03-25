@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"net/url"
 	"regexp"
 	"strings"
 	"unicode"
@@ -56,6 +57,15 @@ func (p Cleanup) ProcessFeed(f parser.Feed) parser.Feed {
 				f.Articles[i].Description = content
 			}
 		}
+
+		u, err := url.Parse(f.Articles[i].Link)
+		if err != nil {
+			p.log.Infof("Error parsing article link %q: %v", f.Articles[i].Link, err)
+		}
+
+		u.Fragment = ""
+
+		f.Articles[i].Link = u.String()
 	}
 
 	return f
