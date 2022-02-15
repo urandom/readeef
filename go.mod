@@ -73,11 +73,11 @@ require (
 	github.com/urandom/text-summary v0.0.0-20150104142726-3e2dd4c46c53
 	github.com/willf/bitset v1.1.3 // indirect
 	github.com/zserge/webview v0.0.0-20180817065719-24af6cb9b33b
-	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
-	golang.org/x/net v0.0.0-20190628185345-da137c7871d7
+	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
+	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 	golang.org/x/oauth2 v0.0.0-20180620175406-ef147856a6dd // indirect
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	golang.org/x/text v0.3.0
+	golang.org/x/text v0.3.6
 	google.golang.org/appengine v1.1.0 // indirect
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/fatih/set.v0 v0.1.0 // indirect
