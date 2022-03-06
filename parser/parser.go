@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	RFC1123NoSecond = "Mon, 02 Jan 2006 15:04 MST"
+	RFC1123NoSecond      = "Mon, 02 Jan 2006 15:04 MST"
+	HackerNewsTimeFormat = "Mon, _2 Jan 2006 15:04:05 -0700"
 )
 
 var (
@@ -47,6 +48,7 @@ func parseDate(date string) (time.Time, error) {
 		time.RFC3339,
 		time.RFC3339Nano,
 		http.TimeFormat,
+		HackerNewsTimeFormat,
 	}
 
 	date = strings.TrimSpace(date)
