@@ -15,6 +15,7 @@ type Server struct {
 	Port     int    `toml:"port"`
 	CertFile string `toml:"cert-file"`
 	KeyFile  string `toml:"key-file"`
+	PProf    bool   `toml:"pprof"`
 
 	AutoCert struct {
 		Host        string `toml:"host"`
