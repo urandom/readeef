@@ -93,11 +93,11 @@ func runServer(cfg config.Config, args []string) error {
 	mux.Mount("/", accessMiddleware(encoding.Gzip(handler)))
 
 	if cfg.Server.PProf {
-		mux.HandleFunc("/debug/pprof/", pprof.Index)
-		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		mux.Get("/debug/pprof/", pprof.Index)
+		mux.Get("/debug/pprof/cmdline", pprof.Cmdline)
+		mux.Get("/debug/pprof/profile", pprof.Profile)
+		mux.Get("/debug/pprof/symbol", pprof.Symbol)
+		mux.Get("/debug/pprof/trace", pprof.Trace)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
