@@ -52,6 +52,7 @@ require (
 	github.com/pelletier/go-toml v1.2.0
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pkg/errors v0.8.1
+	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/rs/cors v1.4.0
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190710185942-9d28bd7c0945 // indirect
@@ -67,9 +68,9 @@ require (
 	github.com/willf/bitset v1.1.3 // indirect
 	github.com/zserge/webview v0.0.0-20180817065719-24af6cb9b33b
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
-	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
+	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
 	golang.org/x/oauth2 v0.0.0-20180620175406-ef147856a6dd // indirect
-	golang.org/x/text v0.3.6
+	golang.org/x/text v0.3.8
 	google.golang.org/appengine v1.1.0 // indirect
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/gcfg.v1 v1.2.3
@@ -77,7 +78,6 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0-20170531160350-a96e63847dc3
 	gopkg.in/olivere/elastic.v5 v5.0.69
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	modernc.org/sqlite v1.14.8
 )
 
 go 1.13
