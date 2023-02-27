@@ -68,9 +68,9 @@ require (
 	github.com/willf/bitset v1.1.3 // indirect
 	github.com/zserge/webview v0.0.0-20180817065719-24af6cb9b33b
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
+	golang.org/x/net v0.7.0
 	golang.org/x/oauth2 v0.0.0-20180620175406-ef147856a6dd // indirect
-	golang.org/x/text v0.3.8
+	golang.org/x/text v0.7.0
 	google.golang.org/appengine v1.1.0 // indirect
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/gcfg.v1 v1.2.3
