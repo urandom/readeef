@@ -176,6 +176,7 @@ func emulatorRoutes(
 				route: func(r chi.Router) {
 					r.Use(timeout(10*time.Second), gzip, access)
 					r.Post("/", fever.Handler(service, processors, log))
+					r.Get("/", fever.Handler(service, processors, log))
 				},
 			})
 		}

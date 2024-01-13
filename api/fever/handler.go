@@ -85,6 +85,7 @@ func Handler(
 
 func writeJSON(w http.ResponseWriter, data interface{}) {
 	if b, err := json.Marshal(data); err == nil {
+		w.Header().Set("Content-Type", "application/json")
 		w.Write(b)
 	} else {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
