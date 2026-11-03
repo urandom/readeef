@@ -52,7 +52,7 @@ You might then want to turn that user into an administrator:
 ===========================
 
     # Install the server in $GOPATH/.bin/
-    go get github.com/urandom/readeef/cmd/readeef
+    go install github.com/urandom/readeef/cmd/readeef@latest
     # Run it using the default settings
     readeef server
     
